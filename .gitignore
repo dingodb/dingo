@@ -1,0 +1,35 @@
+.*
+!.gitignore
+!.gitattributes
+!.editorconfig
+!.github
+!.gitlab-ci.yml
+
+# Java Files
+*.class
+!gradle-wrapper.jar
+
+# Maven Files
+target/
+dependency-reduced-pom.xml
+
+# IntelliJ IDEA Files
+*.iml
+!.idea
+.idea/dictionaries/
+.idea/libraries/
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/libraries-with-intellij-classes.xml
+.idea/modules.xml
+.idea/uiDesigner.xml
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+dingo-cli/dingo
+
+# Error log
+hs_err_*

@@ -1,0 +1,34 @@
+cluster.name: dingo_demo
+cluster.coordinator.name: coordinator-resource
+cluster.coordinator.tag: coordinator-tag
+cluster.coordinator.replicas: 3
+cluster.coordinator.partitions: 1
+
+instance.host: executor
+zookeeper.servers: zookeeper:2181
+
+controller.name: dingo_controller
+controller.mode: STANDALONE
+
+server.coordinator.port: 19181
+server.executor.port: 19191
+
+default.replicas: 3
+default.partitions: 3
+data.dir: /opt/dingo/data
+
+SRCBUCKET_BUCKET: test
+SRCBUCKET_PREFIX: test
+SRCBUCKET_OBJECT: test
+SRCBUCKET_REGION: ""
+DESTBUCKET_BUCKET: test
+DESTBUCKET_PREFIX: test
+DESTBUCKET_OBJECT: test
+DESTBUCKET_REGION: ""
+ENDPOINTADDR: minio:9000
+BOOTSTRAP_SERVER: broker:9092
+
+batch.size: 1000
+batch.time: 3000
+
+#active: REPLICA

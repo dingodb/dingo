@@ -1,0 +1,34 @@
+{
+  "name": "test",
+  "columns": [
+    {
+      "name": "id0",
+      "type": "integer",
+      "primary": true,
+      "notNull": true
+    },
+    {
+      "name": "id1",
+      "type": "varchar",
+      "primary": true,
+      "notNull": true
+    },
+    {
+      "name": "id2",
+      "type": "boolean",
+      "primary": true,
+      "notNull": true
+    },
+    {
+      "name": "name",
+      "type": "varchar",
+      "precision": 64,
+      "default": "Peso",
+      "notNull": true
+    },
+    {
+      "name": "amount",
+      "type": "double"
+    }
+  ]
+}

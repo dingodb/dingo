@@ -1,0 +1,117 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.calcite.rule;
+
+import io.dingodb.calcite.DingoConventions;
+import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.common.table.TupleMapping;
+import io.dingodb.exec.aggregate.Agg;
+import io.dingodb.exec.aggregate.CountAgg;
+import io.dingodb.exec.aggregate.SumAgg;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+
+import static io.dingodb.common.util.Utils.sole;
+
+public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
+    protected DingoAggregateRule(Config config) {
+        super(config);
+    }
+
+    @Nonnull
+    private static TupleMapping getAggKeys(@Nonnull Aggregate rel) {
+        return TupleMapping.of(
+            rel.getGroupSet().asList().stream()
+                .mapToInt(Integer::intValue)
+                .toArray()
+        );
+    }
+
+    @Nonnull
+    private static Agg toAgg(@Nonnull AggregateCall call) {
+        switch (call.getAggregation().getKind()) {
+            case COUNT:
+                return new CountAgg();
+            case SUM:
+            case SUM0:
+                return new SumAgg(sole(call.getArgList()));
+            default:
+                break;
+        }
+        throw new UnsupportedOperationException(
+            "Unsupported aggregates function: \"" + call.getAggregation().getKind() + "\"."
+        );
+    }
+
+    private static List<Agg> getAggList(@Nonnull Aggregate rel) {
+        return rel.getAggCallList().stream()
+            .map(DingoAggregateRule::toAgg)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public void onMatch(@Nonnull RelOptRuleCall call) {
+        Aggregate rel = call.rel(0);
+        RelOptCluster cluster = rel.getCluster();
+        TupleMapping keyMapping = getAggKeys(rel);
+        List<Agg> aggList = getAggList(rel);
+        call.transformTo(
+            new DingoReduce(
+                cluster,
+                rel.getTraitSet().replace(DingoConventions.ROOT),
+                new DingoExchange(
+                    cluster,
+                    rel.getTraitSet().replace(DingoConventions.PARTITIONED),
+                    new DingoAggregate(
+                        cluster,
+                        rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                        convert(rel.getInput(), DingoConventions.DISTRIBUTED),
+                        keyMapping,
+                        aggList,
+                        rel.getRowType()
+                    )
+                ),
+                keyMapping,
+                aggList
+            )
+        );
+    }
+
+    public interface Config extends RelRule.Config {
+        Config DEFAULT = EMPTY
+            .withOperandSupplier(b0 ->
+                b0.operand(Aggregate.class).trait(Convention.NONE).anyInputs()
+            )
+            .withDescription("DingoAggregateRule")
+            .as(Config.class);
+
+        @Override
+        default DingoAggregateRule toRule() {
+            return new DingoAggregateRule(this);
+        }
+    }
+}

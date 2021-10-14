@@ -1,0 +1,92 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.common.table;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import io.dingodb.common.util.TypeMapping;
+import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.TypeCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.apache.avro.Schema;
+import org.apache.calcite.rel.type.RelDataType;
+
+import javax.annotation.Nonnull;
+
+@RequiredArgsConstructor
+public class ElementSchema implements CompileContext {
+    private final int type;
+    @Getter
+    @Setter
+    private Integer id;
+
+    @Nonnull
+    @JsonCreator
+    public static ElementSchema fromString(String value) {
+        return new ElementSchema(TypeCode.codeOf(value));
+    }
+
+    @Nonnull
+    public static ElementSchema fromRelDataType(@Nonnull RelDataType relDataType) {
+        return new ElementSchema(TypeMapping.formSqlTypeName(relDataType.getSqlTypeName()));
+    }
+
+    @Override
+    public int getTypeCode() {
+        return type;
+    }
+
+    @Override
+    public CompileContext getChild(Object index) {
+        return null;
+    }
+
+    @JsonValue
+    @Override
+    public String toString() {
+        return TypeCode.nameOf(type);
+    }
+
+    @Nonnull
+    private Schema getAvroSchema() {
+        return Schema.create(TypeMapping.toAvroSchemaType(type));
+    }
+
+    public Schema.Field getAvroSchemaField(String name) {
+        Schema schema = getAvroSchema();
+        return new Schema.Field(name, schema);
+    }
+
+    public Object parse(String str) {
+        switch (type) {
+            case TypeCode.INTEGER:
+                return Integer.parseInt(str);
+            case TypeCode.LONG:
+                return Long.parseLong(str);
+            case TypeCode.DOUBLE:
+                return Double.parseDouble(str);
+            case TypeCode.BOOLEAN:
+                return Boolean.parseBoolean(str);
+            case TypeCode.STRING:
+            default:
+                break;
+        }
+        return str;
+    }
+}

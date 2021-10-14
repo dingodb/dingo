@@ -1,0 +1,119 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.calcite;
+
+import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.rule.DingoRules;
+import lombok.Getter;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.prepare.PlannerImpl;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.sql2rel.StandardConvertletTable;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.Programs;
+
+import java.util.Collections;
+import java.util.Map;
+
+public final class DingoParser {
+    private final RelOptPlanner planner;
+    @Getter
+    private final CalciteCatalogReader catalogReader;
+    private final SqlValidator sqlValidator;
+    @Getter
+    private final RelOptCluster cluster;
+
+    public DingoParser(Map<String, Object> props) {
+        CalciteSchema calciteSchema = CalciteSchema.createRootSchema(
+            true,
+            true,
+            DingoSchema.SCHEMA_NAME,
+            DingoSchema.ROOT
+        );
+        RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
+        catalogReader = new CalciteCatalogReader(
+            calciteSchema,
+            Collections.singletonList(DingoSchema.SCHEMA_NAME),
+            typeFactory,
+            CalciteConnectionConfig.DEFAULT
+        );
+        // CatalogReader is also serving as SqlOperatorTable
+        sqlValidator = SqlValidatorUtil.newValidator(
+            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), catalogReader),
+            catalogReader,
+            typeFactory,
+            SqlValidator.Config.DEFAULT
+        );
+        this.planner = new VolcanoPlanner();
+        // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
+        this.planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        RexBuilder rexBuilder = new RexBuilder(typeFactory);
+        cluster = RelOptCluster.create(planner, rexBuilder);
+    }
+
+    public RelRoot parse(String sql) throws SqlParseException {
+        //
+        // Parse
+        //
+        SqlParser parser = SqlParser.create(sql);
+        SqlNode sqlNode = parser.parseQuery();
+        //
+        // Convert SqlNode to RelNode
+        //
+        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
+            (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
+            sqlValidator,
+            catalogReader,
+            cluster,
+            StandardConvertletTable.INSTANCE,
+            SqlToRelConverter.config()
+                .withTrimUnusedFields(true)
+                .withExpand(false)
+                .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
+        );
+        return sqlToRelConverter.convertQuery(sqlNode, true, true);
+    }
+
+    public RelNode optimize(RelNode relNode) {
+        Program program = Programs.ofRules(DingoRules.rules());
+        RelTraitSet traitSet = planner.emptyTraitSet().replace(EnumerableConvention.INSTANCE);
+        return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+    }
+}
