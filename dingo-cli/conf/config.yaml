@@ -16,19 +16,3 @@ server.executor.port: 19191
 default.replicas: 3
 default.partitions: 3
 data.dir: /opt/dingo/data
-
-SRCBUCKET_BUCKET: test
-SRCBUCKET_PREFIX: test
-SRCBUCKET_OBJECT: test
-SRCBUCKET_REGION: ""
-DESTBUCKET_BUCKET: test
-DESTBUCKET_PREFIX: test
-DESTBUCKET_OBJECT: test
-DESTBUCKET_REGION: ""
-ENDPOINTADDR: minio:9000
-BOOTSTRAP_SERVER: broker:9092
-
-batch.size: 1000
-batch.time: 3000
-
-#active: REPLICA

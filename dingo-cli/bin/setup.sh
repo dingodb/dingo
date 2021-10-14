@@ -21,8 +21,8 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 
 java ${JAVA_OPTS} \
-     -Dlog4j.configuration=file:log4j.properties \
-     -classpath dingo-cli-all.jar \
+     -Dlog4j.configuration=file:${ROOT}/conf/log4j.properties \
+     -classpath ${JAR_PATH} \
      io.dingodb.cli.SetUp \
-     --config config.yaml \
+     --config ${ROOT}/conf/config.yaml \
      $@
