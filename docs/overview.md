@@ -5,6 +5,8 @@
 DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. It can execute high-frequency query and
 upsert, interactive analysis, multi-dimensional analysis in extremely low latency.
 
+![](./architecture/images/dingo_stack.png)
+
 ## Features
 
 1. Compliant with ANSI SQL  
@@ -15,8 +17,7 @@ upsert, interactive analysis, multi-dimensional analysis in extremely low latenc
    By using the log structured key-value storage [RocksDB](https://rocksdb.org/), DingoDB support high frequency write
    operation like INSERT, UPDATE, DELETE.
 3. Support point query and multi-dimensional analysis simultaneously  
-   DingoDB can store table data in both row-oriented and column-oriented format, providing capability of fast point
-   query and fast multi-dimensional analysis in low latency.
+   DingoDB own capability to execute high concurrent point query, upsert and fast multi-dimensional analysis in low latency.
 4. Easily integrated with streaming data and other DBMS's  
    By providing dedicated APIs for popular streaming data processing engine,
    e.g. [Apache Flink](https://flink.apache.org/), DingoDB can easily accept data from them, and support more analysis
