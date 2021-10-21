@@ -40,8 +40,7 @@ at [IntelliJ IDEA website](https://www.jetbrains.com/idea/).
 
 ## Documentation
 
-The documentation of Apache Flink is located on the
-website: [https://dingodb.readthedocs.io](https://dingodb.readthedocs.io)
+The documentation of DingoDB is located on the website: [https://dingodb.readthedocs.io](https://dingodb.readthedocs.io)
 or in the `docs/` directory of the source code.
 
 ## About
