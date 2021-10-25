@@ -22,7 +22,6 @@ import io.dingodb.cli.handler.CsvBatchHandler;
 import io.dingodb.cli.handler.ExecutorTagHandler;
 import io.dingodb.cli.handler.RabalanceHandler;
 import io.dingodb.cli.handler.ResourceTagHandler;
-import io.dingodb.cli.handler.SqlHandler;
 import io.dingodb.cli.handler.SqlLineHandler;
 import io.dingodb.common.config.DingoConfiguration;
 import org.apache.log4j.PropertyConfigurator;
@@ -30,7 +29,6 @@ import org.apache.log4j.PropertyConfigurator;
 import java.io.FileInputStream;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Scanner;
 
 import static io.dingodb.expr.json.runtime.Parser.YAML;
 
@@ -57,13 +55,13 @@ public class Tools {
     @Parameter(names = "--port", description = "Coordinator port.", order = 6)
     private Integer port;
 
-    @Parameter(names = "--printLog", description = "Print log.", order = 7)
+    @Parameter(names = "--printLog", description = "Whether print log.", order = 7)
     private boolean printLog = false;
 
-    @Parameter(names = "--executor", order = 8)
+    @Parameter(names = "--executor", description = "Executor name(instance id).", order = 8)
     private boolean executor;
 
-    @Parameter(names = "--table", order = 9)
+    @Parameter(names = "--table", description = "Table name.", order = 9)
     private boolean table;
 
     @Parameter(names = "--name", order = 10)
@@ -84,7 +82,7 @@ public class Tools {
     @Parameter(names = "--delete", order = 15)
     private boolean delete;
 
-    @Parameter(names = "--tag", order = 16)
+    @Parameter(names = "--tag", description = "Tag.", order = 16)
     private String tag;
 
     public static void main(String[] args) throws Exception {
@@ -108,24 +106,16 @@ public class Tools {
         }
         switch (cmd.toUpperCase()) {
             case "REBALANCE":
-                if (resource == null || resource.trim().isEmpty() || replicas == null) {
-                    System.out.println("Run rebalance, resource and replicas must be specified");
+                if (name == null || name.trim().isEmpty()) {
+                    System.out.println("Run rebalance, table must be specified");
                     commander.usage();
                 }
                 RabalanceHandler.handler(
-                    resource,
+                    name,
                     replicas
                 );
                 break;
             case "SQL":
-                String sql;
-                String exit = "exit";
-                System.out.print(">>");
-                while (!(sql = new Scanner(System.in).nextLine()).equalsIgnoreCase(exit)) {
-                    SqlHandler.handler(host, port, sql);
-                    System.out.print(">>");
-                }
-                break;
             case "SQLLINE":
                 SqlLineHandler.handler(new String[0]);
                 break;
