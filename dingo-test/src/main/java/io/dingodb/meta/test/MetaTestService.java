@@ -19,6 +19,8 @@ package io.dingodb.meta.test;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Location;
 import io.dingodb.net.netty.NetServiceConfiguration;
@@ -118,9 +120,9 @@ public class MetaTestService implements MetaService {
             tableDefinitionMap = null;
             Map<Object, Location> partLocations = getPartLocations(tableName);
             for (Map.Entry<Object, Location> entry : partLocations.entrySet()) {
-                Services.STORE.getInstance(entry.getValue().getPath()).getTablePart(
-                    tableName,
-                    entry.getKey(),
+                KvStoreInstance store = Services.KV_STORE.getInstance(entry.getValue().getPath());
+                new PartInKvStore(
+                    store.getKvBlock(tableName, entry.getKey()),
                     tableDefinition.getTupleSchema(),
                     tableDefinition.getKeyMapping()
                 );

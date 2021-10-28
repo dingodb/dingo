@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-}
+package io.dingodb.calcite.mock;
 
-dependencies {
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    implementation project(':dingo-calcite')
-    implementation project(':dingo-net-netty')
-    runtimeOnly project(':dingo-kvstore-rocks')
+import com.google.auto.service.AutoService;
+import io.dingodb.kvstore.KvStoreService;
+import io.dingodb.kvstore.KvStoreServiceProvider;
+import org.mockito.Mockito;
+
+@AutoService(KvStoreServiceProvider.class)
+public class MockKvStoreServiceProvider implements KvStoreServiceProvider {
+    @Override
+    public KvStoreService get() {
+        KvStoreService storeService = Mockito.mock(KvStoreService.class);
+        return storeService;
+    }
 }

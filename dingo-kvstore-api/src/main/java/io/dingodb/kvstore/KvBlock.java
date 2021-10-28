@@ -14,15 +14,27 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-}
+package io.dingodb.kvstore;
 
-dependencies {
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    implementation project(':dingo-calcite')
-    implementation project(':dingo-net-netty')
-    runtimeOnly project(':dingo-kvstore-rocks')
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+
+public interface KvBlock {
+    void create();
+
+    Iterator<KeyValue> getIterator();
+
+    boolean contains(byte[] key);
+
+    void put(@Nonnull KeyValue keyValue);
+
+    void delete(byte[] key);
+
+    byte[] get(byte[] key);
+
+    default List<byte[]> multiGet(@Nonnull List<byte[]> keys) {
+        return keys.stream().map(this::get).collect(Collectors.toList());
+    }
 }

@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.rocks;
+package io.dingodb.kvstore;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.store.StoreService;
-import io.dingodb.store.StoreServiceProvider;
 
-@AutoService(StoreServiceProvider.class)
-public class RocksStoreServiceProvider implements StoreServiceProvider {
+@AutoService(KvStoreServiceProvider.class)
+public class RocksStoreServiceProvider implements KvStoreServiceProvider {
     @Override
-    public StoreService get() {
+    public KvStoreService get() {
         return RocksStoreService.INSTANCE;
     }
 }

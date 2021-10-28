@@ -1,0 +1,28 @@
+plugins {
+    id 'java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly project(':dingo-kvstore-api')
+    implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
+    implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+}
+
+task fatJar(type: Jar) {
+    classifier 'all'
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}

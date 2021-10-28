@@ -95,7 +95,8 @@ public class TupleSchema implements CompileContext {
 
     public TupleSchema select(@Nonnull TupleMapping mapping) {
         ElementSchema[] newElements = new ElementSchema[mapping.size()];
-        mapping.revMap(newElements, elementSchemas);
+        // Must do deep copying here
+        mapping.revMap(newElements, elementSchemas, ElementSchema::copy);
         return new TupleSchema(newElements);
     }
 

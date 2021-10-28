@@ -23,6 +23,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
@@ -107,9 +108,21 @@ public final class TupleMapping {
         }
     }
 
+    public <T> void map(@Nonnull T[] dst, @Nonnull T[] src, Function<T, T> cloneFunc) {
+        for (int i = 0; i < mappings.length; i++) {
+            dst[mappings[i]] = cloneFunc.apply(src[i]);
+        }
+    }
+
     public <T> void revMap(@Nonnull T[] dst, @Nonnull T[] src) {
         for (int i = 0; i < mappings.length; i++) {
             dst[i] = src[mappings[i]];
+        }
+    }
+
+    public <T> void revMap(@Nonnull T[] dst, @Nonnull T[] src, Function<T, T> cloneFunc) {
+        for (int i = 0; i < mappings.length; i++) {
+            dst[i] = cloneFunc.apply(src[mappings[i]]);
         }
     }
 

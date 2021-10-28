@@ -14,37 +14,38 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.rocks;
+package io.dingodb.exec.table;
 
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.kvstore.KeyValue;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
 
-public class RocksKeyValueCodec {
+public class KeyValueCodec {
     private final AvroCodec keyCodec;
     private final AvroCodec valueCodec;
     private final TupleMapping keyMapping;
     private final TupleMapping valueMapping;
 
-    public RocksKeyValueCodec(@Nonnull TupleSchema schema, @Nonnull TupleMapping keyMapping) {
+    public KeyValueCodec(@Nonnull TupleSchema schema, @Nonnull TupleMapping keyMapping) {
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.size());
         keyCodec = new AvroCodec(schema.select(keyMapping).getAvroSchema());
         valueCodec = new AvroCodec(schema.select(valueMapping).getAvroSchema());
     }
 
-    public Object[] decode(@Nonnull RocksKeyValue keyValue) throws IOException {
+    public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyCodec.decode(result, keyValue.getKey(), keyMapping);
         valueCodec.decode(result, keyValue.getValue(), valueMapping);
         return result;
     }
 
-    public RocksKeyValue encode(@Nonnull Object[] record) throws IOException {
-        return new RocksKeyValue(
+    public KeyValue encode(@Nonnull Object[] record) throws IOException {
+        return new KeyValue(
             keyCodec.encode(record, keyMapping),
             valueCodec.encode(record, valueMapping)
         );

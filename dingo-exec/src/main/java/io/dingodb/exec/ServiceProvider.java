@@ -16,9 +16,9 @@
 
 package io.dingodb.exec;
 
+import io.dingodb.kvstore.KvStoreServiceProvider;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.store.StoreServiceProvider;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
@@ -26,8 +26,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class ServiceProvider<T> {
-    public static final ServiceProvider<StoreServiceProvider> STORE_PROVIDER
-        = new ServiceProvider<>(StoreServiceProvider.class);
+    public static final ServiceProvider<KvStoreServiceProvider> KV_STORE_PROVIDER
+        = new ServiceProvider<>(KvStoreServiceProvider.class);
     public static final ServiceProvider<MetaServiceProvider> META_PROVIDER
         = new ServiceProvider<>(MetaServiceProvider.class);
     public static final ServiceProvider<NetServiceProvider> NET_PROVIDER

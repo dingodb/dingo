@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.rocks;
+package io.dingodb.kvstore;
 
-import io.dingodb.store.StoreInstance;
-import io.dingodb.store.StoreService;
 import org.rocksdb.RocksDB;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
-public class RocksStoreService implements StoreService {
+public class RocksStoreService implements KvStoreService {
     public static final RocksStoreService INSTANCE = new RocksStoreService();
 
     static {
         RocksDB.loadLibrary();
     }
 
-    private final Map<String, StoreInstance> locationStoreInstanceMap = new ConcurrentHashMap<>();
+    private final Map<String, KvStoreInstance> locationStoreInstanceMap = new ConcurrentHashMap<>();
 
     private RocksStoreService() {
     }
 
     @Override
-    public StoreInstance getInstance(@Nonnull String path) {
+    public KvStoreInstance getInstance(@Nonnull String path) {
         return locationStoreInstanceMap.compute(path, (l, i) -> i == null ? new RocksStoreInstance(path) : i);
     }
 }

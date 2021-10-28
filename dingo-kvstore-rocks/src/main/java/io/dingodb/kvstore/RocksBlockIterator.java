@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.rocks;
+package io.dingodb.kvstore;
 
 import org.rocksdb.RocksDB;
-import org.rocksdb.RocksIterator;
 
 import java.util.Iterator;
 import javax.annotation.Nonnull;
 
-public class RocksDbIterator implements Iterator<RocksKeyValue> {
-    private final RocksIterator iterator;
+public class RocksBlockIterator implements Iterator<KeyValue> {
+    private final org.rocksdb.RocksIterator iterator;
 
-    public RocksDbIterator(@Nonnull RocksDB db) {
+    public RocksBlockIterator(@Nonnull RocksDB db) {
         iterator = db.newIterator();
         iterator.seekToFirst();
     }
 
     @Override
-    public RocksKeyValue next() {
+    public KeyValue next() {
         byte[] key = iterator.key();
         byte[] value = iterator.value();
         iterator.next();
-        return new RocksKeyValue(key, value);
+        return new KeyValue(key, value);
     }
 
     @Override

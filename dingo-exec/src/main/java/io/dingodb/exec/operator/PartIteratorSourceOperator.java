@@ -20,8 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
-import io.dingodb.store.StoreInstance;
-import io.dingodb.store.TablePart;
+import io.dingodb.exec.table.Part;
+import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.kvstore.KvStoreInstance;
 
 public abstract class PartIteratorSourceOperator extends IteratorSourceOperator {
     @JsonProperty("table")
@@ -33,7 +34,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     @JsonProperty("keyMapping")
     protected TupleMapping keyMapping;
 
-    protected TablePart part;
+    protected Part part;
 
     protected PartIteratorSourceOperator(
         String tableName,
@@ -50,10 +51,9 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     @Override
     public void init() {
         super.init();
-        StoreInstance storeInstance = Services.STORE.getInstance(task.getLocation().getPath());
-        part = storeInstance.getTablePart(
-            tableName,
-            partId,
+        KvStoreInstance store = Services.KV_STORE.getInstance(task.getLocation().getPath());
+        part = new PartInKvStore(
+            store.getKvBlock(tableName, partId),
             schema,
             keyMapping
         );

@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-}
+package io.dingodb.kvstore;
 
-dependencies {
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    implementation project(':dingo-calcite')
-    implementation project(':dingo-net-netty')
-    runtimeOnly project(':dingo-kvstore-rocks')
+import javax.annotation.Nonnull;
+
+public interface KvStoreService {
+    KvStoreInstance getInstance(@Nonnull String path);
 }

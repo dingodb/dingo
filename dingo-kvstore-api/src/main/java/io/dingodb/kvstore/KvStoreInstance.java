@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.mock;
+package io.dingodb.kvstore;
 
-import com.google.auto.service.AutoService;
-import io.dingodb.store.StoreService;
-import io.dingodb.store.StoreServiceProvider;
-import org.mockito.Mockito;
+public interface KvStoreInstance {
+    KvBlock getKvBlock(String tableName, Object partId, boolean isMain);
 
-@AutoService(StoreServiceProvider.class)
-public class MockStoreServiceProvider implements StoreServiceProvider {
-    @Override
-    public StoreService get() {
-        StoreService storeService = Mockito.mock(StoreService.class);
-        return storeService;
+    default KvBlock getKvBlock(String tableName, Object partId) {
+        return getKvBlock(tableName, partId, true);
     }
 }

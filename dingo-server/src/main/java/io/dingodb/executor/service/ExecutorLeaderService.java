@@ -21,9 +21,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.helix.service.AbstractLeaderService;
 import io.dingodb.helix.service.StateService;
 import io.dingodb.helix.service.StateServiceContext;
+import io.dingodb.kvstore.KvBlock;
+import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.net.NetService;
-import io.dingodb.store.StoreInstance;
-import io.dingodb.store.TablePart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
 
@@ -31,11 +31,11 @@ import org.apache.helix.NotificationContext;
 public class ExecutorLeaderService extends AbstractLeaderService {
 
     private final NetService netService;
-    private final StoreInstance storeInstance;
+    private final KvStoreInstance storeInstance;
 
-    private TablePart tablePart;
+    private KvBlock kvBlock;
 
-    public ExecutorLeaderService(StateServiceContext context, NetService netService, StoreInstance storeService) {
+    public ExecutorLeaderService(StateServiceContext context, NetService netService, KvStoreInstance storeService) {
         super(context);
         this.netService = netService;
         this.storeInstance = storeService;
@@ -43,7 +43,7 @@ public class ExecutorLeaderService extends AbstractLeaderService {
 
     @Override
     public void start(org.apache.helix.model.Message stateMessage, NotificationContext context) throws Exception {
-        openTablePart();
+        openKvBlock();
         if (this.context.lastService() != null) {
             this.context.lastService().close();
         }
@@ -55,24 +55,17 @@ public class ExecutorLeaderService extends AbstractLeaderService {
         log.info("Start {}.", getClass().getSimpleName());
     }
 
-    private void openTablePart() {
+    private void openKvBlock() {
         TableDefinition td = Services.META.getTableDefinition(resource());
-        tablePart = storeInstance.createTablePart(
-            resource(),
-            partitionId(),
-            td.getTupleSchema(),
-            td.getKeyMapping(),
-            true
-        );
+        kvBlock = storeInstance.getKvBlock(resource(), partitionId(), true);
     }
 
-    private void closeTablePart() {
-
+    private void closeKvBlock() {
     }
 
     @Override
     public void close() throws Exception {
         super.close();
-        closeTablePart();
+        closeKvBlock();
     }
 }

@@ -22,13 +22,13 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.impl.TaskImpl;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.util.TagUtil;
+import io.dingodb.kvstore.KvStoreService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetError;
 import io.dingodb.net.NetService;
 import io.dingodb.net.SimpleTag;
-import io.dingodb.store.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
@@ -40,8 +40,8 @@ import java.util.concurrent.Executors;
 
 @Slf4j
 public final class Services {
-    public static final StoreService STORE = Objects.requireNonNull(
-        ServiceProvider.STORE_PROVIDER.provider(),
+    public static final KvStoreService KV_STORE = Objects.requireNonNull(
+        ServiceProvider.KV_STORE_PROVIDER.provider(),
         "No store service provider was found."
     ).get();
     public static final MetaService META = Objects.requireNonNull(

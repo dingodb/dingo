@@ -21,15 +21,15 @@ import io.dingodb.helix.service.AbstractLeaderService;
 import io.dingodb.helix.service.AbstractOfflineService;
 import io.dingodb.helix.service.LeaderFollowerServiceProvider;
 import io.dingodb.helix.service.StateServiceContext;
+import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.net.NetService;
-import io.dingodb.store.StoreInstance;
 
 public class ExecutorLeaderFollowerServiceProvider implements LeaderFollowerServiceProvider {
 
     private final NetService netService;
-    private final StoreInstance storeInstance;
+    private final KvStoreInstance storeInstance;
 
-    public ExecutorLeaderFollowerServiceProvider(NetService netService, StoreInstance storeInstance) {
+    public ExecutorLeaderFollowerServiceProvider(NetService netService, KvStoreInstance storeInstance) {
         this.netService = netService;
         this.storeInstance = storeInstance;
     }

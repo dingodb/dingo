@@ -21,9 +21,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.helix.service.AbstractFollowerService;
 import io.dingodb.helix.service.StateService;
 import io.dingodb.helix.service.StateServiceContext;
+import io.dingodb.kvstore.KvBlock;
+import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.net.NetService;
-import io.dingodb.store.StoreInstance;
-import io.dingodb.store.TablePart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
 
@@ -31,11 +31,11 @@ import org.apache.helix.NotificationContext;
 public class ExecutorFollowerService extends AbstractFollowerService {
 
     private final NetService netService;
-    private final StoreInstance storeInstance;
+    private final KvStoreInstance storeInstance;
 
-    private TablePart tablePart;
+    private KvBlock kvBlock;
 
-    public ExecutorFollowerService(StateServiceContext context, NetService netService, StoreInstance storeInstance) {
+    public ExecutorFollowerService(StateServiceContext context, NetService netService, KvStoreInstance storeInstance) {
         super(context);
         this.netService = netService;
         this.storeInstance = storeInstance;
@@ -43,7 +43,7 @@ public class ExecutorFollowerService extends AbstractFollowerService {
 
     @Override
     public void start(org.apache.helix.model.Message stateMessage, NotificationContext context) throws Exception {
-        openTablePart();
+        openKvBlock();
         StateService lastService = this.context.lastService();
         if (lastService != null) {
             lastService.close();
@@ -52,19 +52,12 @@ public class ExecutorFollowerService extends AbstractFollowerService {
         log.info("Start {}.", getClass().getSimpleName());
     }
 
-    private void openTablePart() {
+    private void openKvBlock() {
         TableDefinition td = Services.META.getTableDefinition(resource());
-        tablePart = storeInstance.createTablePart(
-            resource(),
-            partitionId(),
-            td.getTupleSchema(),
-            td.getKeyMapping(),
-            false
-        );
+        kvBlock = storeInstance.getKvBlock(resource(), partitionId(), false);
     }
 
     private void closeTablePart() {
-
     }
 
     @Override

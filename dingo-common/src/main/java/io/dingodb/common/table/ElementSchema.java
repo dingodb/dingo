@@ -47,6 +47,11 @@ public class ElementSchema implements CompileContext {
         return new ElementSchema(TypeMapping.formSqlTypeName(relDataType.getSqlTypeName()));
     }
 
+    @Nonnull
+    public static ElementSchema copy(@Nonnull ElementSchema obj) {
+        return new ElementSchema(obj.getTypeCode());
+    }
+
     @Override
     public int getTypeCode() {
         return type;

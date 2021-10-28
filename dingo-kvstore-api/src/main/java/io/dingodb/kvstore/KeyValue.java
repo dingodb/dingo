@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.rocks;
+package io.dingodb.kvstore;
 
 import lombok.Data;
 
 @Data
-public class RocksKeyValue {
+public class KeyValue {
     private final byte[] key;
     private final byte[] value;
 }

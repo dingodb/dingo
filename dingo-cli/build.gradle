@@ -51,7 +51,7 @@ task fatJar(type: Jar) {
 }
 
 task copyDepends(type: Copy) {
-    dependsOn(fatJar, ':dingo-store-local:fatJar')
+    dependsOn(fatJar, ':dingo-kvstore-rocks:fatJar')
 
     from(layout.projectDirectory) {
         include "conf/**"
@@ -64,8 +64,8 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from (project(':dingo-store-local').layout.buildDirectory) {
-        include('libs/dingo-store-local-*-all.jar')
+    from(project(':dingo-kvstore-rocks').layout.buildDirectory) {
+        include('libs/dingo-kvstore-rocks-*-all.jar')
     }
     into layout.projectDirectory.dir("dingo")
 
