@@ -136,13 +136,12 @@ public class HelixMetaService implements MetaService {
         Map<Object, Location> result = new HashMap<>();
         ExternalView externalView = helixAdmin.getResourceExternalView(clusterName, name);
         for (String partitionName : externalView.getPartitionSet()) {
+            String[] ss = partitionName.split(Constants.SEP);
+            int partitionId = Integer.parseInt(ss[ss.length - 1]);
             externalView.getStateMap(partitionName).entrySet().stream()
                 .filter(e -> LEADER.equals(e.getValue()))
                 .findFirst()
-                .ifPresent(instance -> result.put(
-                    Integer.valueOf(partitionName.split(Constants.SEP)[1]),
-                    getInstanceLocation(instance.getKey())
-                ));
+                .ifPresent(instance -> result.put(partitionId, getInstanceLocation(instance.getKey())));
         }
         return result;
     }

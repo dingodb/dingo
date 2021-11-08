@@ -123,14 +123,26 @@ public class LeaderFollowerResourceAssigner implements ResourceAssigner {
         for (Map.Entry<String, String> instanceState : currentPartitionState.entrySet()) {
             switch (instanceState.getValue()) {
                 case LeaderFollowerStateModelDefinition.LEADER:
-                    leader = instanceState.getKey();
-                    availableInstances.remove(leader);
+                    if (availableInstances.contains(instanceState.getKey())) {
+                        leader = instanceState.getKey();
+                        availableInstances.remove(leader);
+                    } else {
+                        result.put(instanceState.getKey(), LeaderFollowerStateModelDefinition.OFFLINE);
+                    }
                     break;
                 case LeaderFollowerStateModelDefinition.FOLLOWER:
-                    followerInstances.add(instanceState.getKey());
+                    if (availableInstances.contains(instanceState.getKey())) {
+                        followerInstances.add(instanceState.getKey());
+                    } else {
+                        result.put(instanceState.getKey(), LeaderFollowerStateModelDefinition.OFFLINE);
+                    }
                     break;
                 case LeaderFollowerStateModelDefinition.OFFLINE:
-                    offlineInstances.add(instanceState.getKey());
+                    if (availableInstances.contains(instanceState.getKey())) {
+                        offlineInstances.add(instanceState.getKey());
+                    } else {
+                        result.put(instanceState.getKey(), LeaderFollowerStateModelDefinition.DROPPED);
+                    }
                     break;
                 default:
                     break;

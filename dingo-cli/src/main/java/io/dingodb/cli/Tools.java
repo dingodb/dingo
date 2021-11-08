@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.cli.handler.CsvBatchHandler;
 import io.dingodb.cli.handler.ExecutorTagHandler;
-import io.dingodb.cli.handler.RabalanceHandler;
+import io.dingodb.cli.handler.RebalanceHandler;
 import io.dingodb.cli.handler.ResourceTagHandler;
 import io.dingodb.cli.handler.SqlLineHandler;
 import io.dingodb.common.config.DingoConfiguration;
@@ -110,8 +110,8 @@ public class Tools {
                     System.out.println("Run rebalance, table must be specified");
                     commander.usage();
                 }
-                RabalanceHandler.handler(
-                    name,
+                RebalanceHandler.handler(
+                    name.toUpperCase(),
                     replicas
                 );
                 break;
@@ -124,10 +124,10 @@ public class Tools {
                 break;
             case "TAG":
                 if (executor) {
-                    ExecutorTagHandler.handler(name, tag, delete);
+                    ExecutorTagHandler.handler(name.toUpperCase(), tag, delete);
                 }
                 if (table) {
-                    ResourceTagHandler.handler(name, tag);
+                    ResourceTagHandler.handler(name.toUpperCase(), tag);
                 }
                 break;
             default:

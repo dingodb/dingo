@@ -19,7 +19,7 @@ package io.dingodb.cli.handler;
 import io.dingodb.server.ServerConfiguration;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 
-public class RabalanceHandler {
+public class RebalanceHandler {
 
     public static void handler(String resource, Integer replicas) {
         ServerConfiguration configuration = ServerConfiguration.instance();

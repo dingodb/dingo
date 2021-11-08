@@ -74,7 +74,7 @@ public class ServerConfiguration {
     }
 
     public String tableTag() {
-        return getString(STORE_KEY, TABLE_TAG);
+        return getString(DEFAULT_TABLE_TAG_KEY, TABLE_TAG);
     }
 
     public ServerConfiguration tableTag(String tag) {
