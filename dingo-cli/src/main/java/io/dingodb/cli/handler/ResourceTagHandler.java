@@ -16,13 +16,23 @@
 
 package io.dingodb.cli.handler;
 
+import io.dingodb.helix.HelixAccessor;
 import io.dingodb.server.ServerConfiguration;
+import org.apache.helix.BaseDataAccessor;
+import org.apache.helix.manager.zk.GenericZkHelixApiBuilder;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
+import org.apache.helix.manager.zk.ZKHelixDataAccessor;
+import org.apache.helix.manager.zk.ZkBaseDataAccessor;
 import org.apache.helix.model.IdealState;
+import org.apache.helix.model.ResourceConfig;
+import org.apache.helix.zookeeper.api.client.RealmAwareZkClient;
+import org.apache.helix.zookeeper.datamodel.ZNRecord;
+
+import java.lang.reflect.Field;
 
 public class ResourceTagHandler {
 
-    public static void handler(String name, String tag) {
+    public static void handler(String name, String tag) throws NoSuchFieldException {
         ServerConfiguration configuration = ServerConfiguration.instance();
         String zkServers = configuration.zkServers();
         String clusterName = configuration.clusterName();
@@ -32,6 +42,16 @@ public class ResourceTagHandler {
         IdealState idealState = helixAdmin.getResourceIdealState(clusterName, name);
         idealState.setInstanceGroupTag(tag);
         helixAdmin.setResourceIdealState(clusterName, name, idealState);
+
+        HelixAccessor helixAccessor = new HelixAccessor(null, new ZKHelixDataAccessor(clusterName,
+            new ZkBaseDataAccessor.Builder<ZNRecord>().setZkAddress(zkServers).build()), clusterName);
+
+        helixAccessor.setSimpleField(
+            helixAccessor.externalView(name),
+            ResourceConfig.ResourceConfigProperty.INSTANCE_GROUP_TAG.name(),
+            tag
+        );
+        RebalanceHandler.handler(name, Integer.valueOf(idealState.getReplicas()));
     }
 
 }

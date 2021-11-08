@@ -81,6 +81,16 @@ public class HelixAccessor {
             ));
     }
 
+    public void setSimpleField(PropertyKey propertyKey, String fieldName, String fieldValue) {
+        HelixProperty property = dataAccessor.getProperty(propertyKey);
+        property.getRecord().setSimpleField(fieldName, fieldValue);
+        dataAccessor.setProperty(propertyKey, property);
+    }
+
+    public String getSimpleField(PropertyKey propertyKey, String fieldName) {
+        return dataAccessor.getProperty(propertyKey).getRecord().getSimpleField(fieldName);
+    }
+
     public Map<String, Map<String, String>> mapFields(PropertyKey propertyKey) {
         return mapFields(dataAccessor.getProperty(propertyKey).getRecord());
     }
