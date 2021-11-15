@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.fin.Fin;
 
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -26,10 +27,18 @@ import javax.annotation.Nonnull;
  * Sink operator has only one input and no output.
  */
 public abstract class SinkOperator extends AbstractOperator {
-    public abstract boolean push(Object[] tuple);
+    protected abstract boolean push(Object[] tuple);
 
+    @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         return push(tuple);
+    }
+
+    protected abstract void fin(Fin fin);
+
+    @Override
+    public void fin(int pin, Fin fin) {
+        fin(fin);
     }
 
     @Override

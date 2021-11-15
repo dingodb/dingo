@@ -33,7 +33,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 
-import java.nio.charset.StandardCharsets;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -45,7 +44,7 @@ public final class JobRunner {
     @Nonnull
     public static Enumerable<Object[]> run(String serializedJob) {
         try {
-            final Job job = JobImpl.deserialize(serializedJob);
+            final Job job = JobImpl.fromString(serializedJob);
             final JobRunner runner = new JobRunner(job);
             return new AbstractEnumerable<Object[]>() {
                 @Override
@@ -62,7 +61,7 @@ public final class JobRunner {
     @Nonnull
     public static Enumerable<Object> runOneColumn(String serializedJob) {
         try {
-            final Job job = JobImpl.deserialize(serializedJob);
+            final Job job = JobImpl.fromString(serializedJob);
             final JobRunner runner = new JobRunner(job);
             return new AbstractEnumerable<Object>() {
                 @Override
@@ -107,12 +106,11 @@ public final class JobRunner {
             }
             Location location = task.getLocation();
             if (!location.equals(Services.META.currentLocation())) {
-                task.serialize();
                 try {
                     Channel channel = Services.openNewSysChannel(location.getHost(), location.getPort());
                     Message msg = SimpleMessage.builder()
                         .tag(SimpleTag.TASK_TAG)
-                        .content(task.serialize().getBytes(StandardCharsets.UTF_8))
+                        .content(task.serialize())
                         .build();
                     channel.send(msg);
                     channel.close();

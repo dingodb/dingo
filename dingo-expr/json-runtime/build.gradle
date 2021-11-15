@@ -26,4 +26,5 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-csv', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
+    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
 }

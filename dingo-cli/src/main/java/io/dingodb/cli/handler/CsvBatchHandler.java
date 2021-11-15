@@ -56,7 +56,7 @@ public class CsvBatchHandler {
         executor = new ScheduledThreadPoolExecutor(parallel);
         CSVParser csvParser = CSVParser.parse(new FileReader(fileName), CSVFormat.DEFAULT.withFirstRecordAsHeader());
         List<String> headers = csvParser.getHeaderNames();
-        String headersJson = JSON.serialize(headers);
+        String headersJson = JSON.stringify(headers);
         String insert = String.format("insert into %s(%s)", table, headersJson.substring(1, headersJson.length() - 2))
             .replaceAll("\"", "");
         init();
@@ -111,7 +111,7 @@ public class CsvBatchHandler {
 
     private static String valuesSql(List<String> headers, CSVRecord record) {
         try {
-            String valuesJson = JSON.serialize(headers.stream().map(record::get).collect(Collectors.toList()));
+            String valuesJson = JSON.stringify(headers.stream().map(record::get).collect(Collectors.toList()));
             return String.format("(%s)", valuesJson.substring(1, valuesJson.length() - 2)).replaceAll("\"", "'");
         } catch (JsonProcessingException e) {
             e.printStackTrace();

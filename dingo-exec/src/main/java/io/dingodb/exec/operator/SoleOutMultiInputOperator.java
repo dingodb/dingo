@@ -17,10 +17,18 @@
 package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.OperatorProfile;
 import lombok.RequiredArgsConstructor;
+
+import java.util.LinkedList;
+import java.util.List;
 
 @RequiredArgsConstructor
 public abstract class SoleOutMultiInputOperator extends SoleOutOperator {
+    private final List<OperatorProfile> profiles = new LinkedList<>();
+
     @JsonProperty("inputNum")
     private final int inputNum;
     private boolean[] finFlag;
@@ -31,10 +39,13 @@ public abstract class SoleOutMultiInputOperator extends SoleOutOperator {
         finFlag = new boolean[inputNum];
     }
 
-    protected void setFin(int pin) {
+    protected void setFin(int pin, Fin fin) {
         assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
         assert !finFlag[pin] : "Input on pin (" + pin + ") is already finished.";
         finFlag[pin] = true;
+        if (fin instanceof FinWithProfiles) {
+            profiles.addAll(((FinWithProfiles) fin).getProfiles());
+        }
     }
 
     protected boolean isAllFin() {
@@ -44,5 +55,9 @@ public abstract class SoleOutMultiInputOperator extends SoleOutOperator {
             }
         }
         return true;
+    }
+
+    protected void outputFin() {
+        output.pushFin(new FinWithProfiles(profiles));
     }
 }

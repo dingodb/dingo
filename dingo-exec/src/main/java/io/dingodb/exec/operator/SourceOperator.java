@@ -16,16 +16,31 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.OperatorProfile;
+
 import javax.annotation.Nonnull;
 
 /**
  * Source operator has no inputs and only one output.
  */
 public abstract class SourceOperator extends SoleOutOperator {
+    protected final OperatorProfile profile = new OperatorProfile();
+
+    @Override
+    public void init() {
+        super.init();
+        profile.setOperatorId(id);
+    }
+
     public abstract boolean push();
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         return push();
+    }
+
+    @Override
+    public synchronized void fin(int pin, Fin fin) {
     }
 }

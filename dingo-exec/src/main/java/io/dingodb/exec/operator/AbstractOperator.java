@@ -19,14 +19,11 @@ package io.dingodb.exec.operator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Arrays;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -51,17 +48,10 @@ import java.util.Arrays;
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractOperator implements Operator {
-    public static Object[] FIN = new Object[0];
-    public static byte[] FIN_BYTES = new byte[0];
-
     @Getter
     @Setter
     protected Id id;
     @Getter
     @Setter
     protected Task task;
-
-    protected static String formatTuple(TupleSchema schema, Object[] tuple) {
-        return Arrays.equals(tuple, FIN) ? "{<<FIN>>}" : schema.formatTuple(tuple);
-    }
 }

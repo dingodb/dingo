@@ -20,17 +20,19 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Id;
+import io.dingodb.exec.codec.AvroTxRxCodec;
+import io.dingodb.exec.codec.TxRxCodec;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.util.TagUtil;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.SimpleMessage;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
+import java.io.IOException;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -51,7 +53,7 @@ public final class SendOperator extends SinkOperator {
 
     private String tag;
     private Channel channel;
-    private AvroCodec codec;
+    private TxRxCodec codec;
 
     @JsonCreator
     public SendOperator(
@@ -70,7 +72,7 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void init() {
         super.init();
-        codec = new AvroCodec(schema.getAvroSchema());
+        codec = new AvroTxRxCodec(schema);
         tag = TagUtil.tag(getTask().getJobId(), receiveId);
         try {
             SendOperator so = Services.rcvReadyFlag.putIfAbsent(tag, this);
@@ -101,26 +103,30 @@ public final class SendOperator extends SinkOperator {
     public boolean push(@Nonnull Object[] tuple) {
         try {
             if (log.isDebugEnabled()) {
-                log.debug("(tag = {}) Send tuple {}...", tag, formatTuple(schema, tuple));
+                log.debug("(tag = {}) Send tuple {}...", tag, schema.formatTuple(tuple));
             }
-            if (!Arrays.equals(tuple, FIN)) {
-                Message msg = SimpleMessage.builder()
-                    .tag(TagUtil.getTag(tag))
-                    .content(codec.encode(tuple))
-                    .build();
-                channel.send(msg);
-                return true;
-            } else {
-                Message msg = SimpleMessage.builder()
-                    .tag(TagUtil.getTag(tag))
-                    .content(FIN_BYTES)
-                    .build();
-                channel.send(msg);
-                channel.close();
-                return false;
-            }
-        } catch (Exception e) {
+            Message msg = SimpleMessage.builder()
+                .tag(TagUtil.getTag(tag))
+                .content(codec.encode(tuple))
+                .build();
+            channel.send(msg);
+            return true;
+        } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void fin(@Nonnull Fin fin) {
+        try {
+            Message msg = SimpleMessage.builder()
+                .tag(TagUtil.getTag(tag))
+                .content(codec.encodeFin(fin))
+                .build();
+            channel.send(msg);
+            channel.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

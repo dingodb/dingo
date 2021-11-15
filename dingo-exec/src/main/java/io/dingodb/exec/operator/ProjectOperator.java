@@ -21,12 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.util.ExprUtil;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TupleEvalContext;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
-import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -52,9 +52,6 @@ public final class ProjectOperator extends SoleOutOperator {
 
     @Nonnull
     public static Object[] doProject(Object[] tuple, @Nonnull RtExpr[] projectExpr) {
-        if (Arrays.equals(tuple, FIN)) {
-            return FIN;
-        }
         Object[] newTuple = new Object[projectExpr.length];
         for (int i = 0; i < newTuple.length; ++i) {
             try {
@@ -75,6 +72,11 @@ public final class ProjectOperator extends SoleOutOperator {
 
     @Override
     public boolean push(int pin, Object[] tuple) {
-        return pushOutput(doProject(tuple, exprs));
+        return output.push(doProject(tuple, exprs));
+    }
+
+    @Override
+    public void fin(int pin, Fin fin) {
+        output.pushFin(fin);
     }
 }
