@@ -33,6 +33,8 @@ import org.apache.avro.util.Utf8;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import javax.annotation.Nonnull;
 
 public class AvroCodec {
@@ -50,34 +52,32 @@ public class AvroCodec {
     }
 
     private static GenericRecord decodeBytes(
-        byte[] bytes,
+        InputStream is,
         @Nonnull DatumReader<GenericRecord> reader
     ) throws IOException {
         BinaryDecoder decoder = decoderLocal.get();
-        decoder = DecoderFactory.get().directBinaryDecoder(new ByteArrayInputStream(bytes), decoder);
+        decoder = DecoderFactory.get().directBinaryDecoder(is, decoder);
         decoderLocal.set(decoder);
         return reader.read(null, decoder);
     }
 
-    @Nonnull
-    private static byte[] encodeBytes(
+    private static void encodeBytes(
+        OutputStream os,
         GenericRecord record,
         @Nonnull DatumWriter<GenericRecord> writer
     ) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
         BinaryEncoder encoder = encoderLocal.get();
-        encoder = EncoderFactory.get().directBinaryEncoder(out, encoder);
+        encoder = EncoderFactory.get().directBinaryEncoder(os, encoder);
         encoderLocal.set(encoder);
         writer.write(record, encoder);
-        return out.toByteArray();
     }
 
     private static Object convert(Object in) {
         return in instanceof Utf8 ? in.toString() : in;
     }
 
-    public Object[] decode(@Nonnull byte[] bytes) throws IOException {
-        final GenericRecord keyRecord = decodeBytes(bytes, reader);
+    public Object[] decode(@Nonnull InputStream is) throws IOException {
+        final GenericRecord keyRecord = decodeBytes(is, reader);
         int size = schema.getFields().size();
         Object[] tuple = new Object[size];
         for (int i = 0; i < size; ++i) {
@@ -86,24 +86,44 @@ public class AvroCodec {
         return tuple;
     }
 
+    public Object[] decode(@Nonnull byte[] bytes) throws IOException {
+        return decode(new ByteArrayInputStream(bytes));
+    }
+
     public void decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
         Object[] tuple = decode(bytes);
         mapping.map(result, tuple);
     }
 
-    public byte[] encode(@Nonnull Object[] tuple) throws IOException {
+    public void encode(OutputStream os, @Nonnull Object[] tuple) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < tuple.length; ++i) {
             record.put(i, tuple[i]);
         }
-        return encodeBytes(record, writer);
+        encodeBytes(os, record, writer);
     }
 
-    public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException {
+    public void encode(
+        OutputStream os,
+        @Nonnull Object[] tuple,
+        @Nonnull TupleMapping mapping
+    ) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < mapping.size(); ++i) {
             record.put(i, tuple[mapping.get(i)]);
         }
-        return encodeBytes(record, writer);
+        encodeBytes(os, record, writer);
+    }
+
+    public byte[] encode(@Nonnull Object[] tuple) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        encode(os, tuple);
+        return os.toByteArray();
+    }
+
+    public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        encode(os, tuple, mapping);
+        return os.toByteArray();
     }
 }

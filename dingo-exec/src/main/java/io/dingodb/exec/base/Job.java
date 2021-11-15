@@ -39,6 +39,4 @@ public interface Job {
     default boolean isEmpty() {
         return getTasks().isEmpty();
     }
-
-    String serialize();
 }

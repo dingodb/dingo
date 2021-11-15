@@ -25,8 +25,8 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.aggregate.AbstractAgg;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.AggCache;
+import io.dingodb.exec.fin.Fin;
 
-import java.util.Arrays;
 import java.util.List;
 
 @JsonTypeName("aggregate")
@@ -55,17 +55,18 @@ public final class AggregateOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(int pin, Object[] tuple) {
-        if (Arrays.equals(tuple, FIN)) {
-            for (Object[] t : cache) {
-                if (!pushOutput(t)) {
-                    break;
-                }
-            }
-            pushOutput(FIN);
-            return false;
-        }
+    public synchronized boolean push(int pin, Object[] tuple) {
         cache.addTuple(tuple);
         return true;
+    }
+
+    @Override
+    public synchronized void fin(int pin, Fin fin) {
+        for (Object[] t : cache) {
+            if (!output.push(t)) {
+                break;
+            }
+        }
+        output.pushFin(fin);
     }
 }

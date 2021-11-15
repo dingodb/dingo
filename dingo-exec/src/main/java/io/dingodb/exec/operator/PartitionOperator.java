@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.net.Location;
 import lombok.Getter;
@@ -56,6 +57,11 @@ public final class PartitionOperator extends AbstractOperator {
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         // TODO: partition and push next level.
         return false;
+    }
+
+    @Override
+    public void fin(int pin, Fin fin) {
+        // TODO:
     }
 
     public void createOutputs(@Nonnull Map<Object, Location> partLocations) {

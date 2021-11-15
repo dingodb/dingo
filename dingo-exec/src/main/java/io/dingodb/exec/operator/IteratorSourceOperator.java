@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.exec.fin.FinWithProfiles;
+
 import java.util.Iterator;
 
 public abstract class IteratorSourceOperator extends SourceOperator {
@@ -23,13 +25,18 @@ public abstract class IteratorSourceOperator extends SourceOperator {
 
     @Override
     public boolean push() {
+        long count = 0;
+        profile.setStartTimeStamp(System.currentTimeMillis());
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
-            if (!pushOutput(tuple)) {
+            ++count;
+            if (!output.push(tuple)) {
                 return false;
             }
         }
-        pushOutput(FIN);
+        profile.setProcessedTupleCount(count);
+        profile.setEndTimeStamp(System.currentTimeMillis());
+        output.pushFin(FinWithProfiles.of(profile));
         return false;
     }
 }

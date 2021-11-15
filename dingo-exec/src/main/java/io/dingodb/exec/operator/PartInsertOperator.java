@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 
-import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("insert")
@@ -46,13 +45,9 @@ public final class PartInsertOperator extends PartModifyOperator {
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        if (!Arrays.equals(tuple, FIN)) {
-            if (part.insert(tuple)) {
-                count++;
-            }
-            return true;
+        if (part.insert(tuple)) {
+            count++;
         }
-        pushCountAndFin();
-        return false;
+        return true;
     }
 }

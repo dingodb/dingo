@@ -16,13 +16,13 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.exec.operator.AbstractOperator;
 import io.dingodb.exec.operator.RootOperator;
 import org.apache.calcite.linq4j.Enumerator;
 
 import javax.annotation.Nonnull;
 
 public class RootEnumerator implements Enumerator<Object[]> {
+
     private final RootOperator root;
     private Object[] current;
 
@@ -38,7 +38,7 @@ public class RootEnumerator implements Enumerator<Object[]> {
     @Override
     public boolean moveNext() {
         current = root.popValue();
-        return current != AbstractOperator.FIN;
+        return current != RootOperator.FIN;
     }
 
     @Override

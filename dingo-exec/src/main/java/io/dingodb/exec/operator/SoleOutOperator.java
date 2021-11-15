@@ -43,8 +43,4 @@ public abstract class SoleOutOperator extends AbstractOperator {
     public List<Output> getOutputs() {
         return ImmutableList.of(output);
     }
-
-    protected boolean pushOutput(Object[] tuple) {
-        return output.push(tuple);
-    }
 }

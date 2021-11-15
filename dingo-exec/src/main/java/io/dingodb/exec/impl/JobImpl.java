@@ -52,7 +52,7 @@ public final class JobImpl implements Job {
         this.tasks = new LinkedList<>();
     }
 
-    public static JobImpl deserialize(String str) throws JsonProcessingException {
+    public static JobImpl fromString(String str) throws JsonProcessingException {
         return PARSER.parse(str, JobImpl.class);
     }
 
@@ -71,13 +71,8 @@ public final class JobImpl implements Job {
 
     @Override
     public String toString() {
-        return serialize();
-    }
-
-    @Override
-    public String serialize() {
         try {
-            return PARSER.serialize(this);
+            return PARSER.stringify(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

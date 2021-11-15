@@ -64,7 +64,7 @@ public final class EnumerableRoot extends SingleRel implements EnumerableRel {
             return implementor.result(
                 physType,
                 Blocks.toBlock(
-                    Expressions.call(method, Expressions.constant(job.serialize()))
+                    Expressions.call(method, Expressions.constant(job.toString()))
                 )
             );
         } catch (NoSuchMethodException e) {

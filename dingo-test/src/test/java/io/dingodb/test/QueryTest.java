@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -51,8 +52,6 @@ public class QueryTest {
         SqlHelper.execUpdate("/table-test-create.sql");
         SqlHelper.execUpdate("/table-test1-create.sql");
         SqlHelper.execUpdate("/table-test2-create.sql");
-        SqlHelper.execUpdate("/table-test-data.sql");
-        SqlHelper.execUpdate("/table-test2-data.sql");
         connection = Connections.getConnection();
     }
 
@@ -61,6 +60,7 @@ public class QueryTest {
         connection.close();
         Services.META.clear();
     }
+
 
     private static void checkDatumInTestTable(String data) throws SQLException {
         String sql = "select * from test";
@@ -132,6 +132,12 @@ public class QueryTest {
                 );
             }
         }
+    }
+
+    @Test
+    public void testInsert() throws SQLException, IOException {
+        SqlHelper.execUpdate("/table-test-data.sql");
+        SqlHelper.execUpdate("/table-test2-data.sql");
     }
 
     @Test
