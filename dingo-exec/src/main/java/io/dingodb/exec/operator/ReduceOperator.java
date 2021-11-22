@@ -26,8 +26,8 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.aggregate.AbstractAgg;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.AggCache;
+import io.dingodb.exec.fin.Fin;
 
-import java.util.Arrays;
 import java.util.List;
 
 @JsonTypeName("reduce")
@@ -61,20 +61,20 @@ public final class ReduceOperator extends SoleOutMultiInputOperator {
 
     @Override
     public boolean push(int pin, Object[] tuple) {
-        if (Arrays.equals(tuple, FIN)) {
-            setFin(pin);
-            if (isAllFin()) {
-                for (Object[] t : cache) {
-                    if (!pushOutput(t)) {
-                        break;
-                    }
-                }
-                pushOutput(FIN);
-                return false;
-            }
-        } else {
-            cache.reduce(tuple);
-        }
+        cache.reduce(tuple);
         return true;
+    }
+
+    @Override
+    public void fin(int pin, Fin fin) {
+        setFin(pin, fin);
+        if (isAllFin()) {
+            for (Object[] t : cache) {
+                if (!output.push(t)) {
+                    break;
+                }
+            }
+            outputFin();
+        }
     }
 }

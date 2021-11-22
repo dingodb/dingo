@@ -31,6 +31,7 @@ public class CustomTestOrder implements MethodOrderer {
         "testExplainInsertValues",
         "testExplainScan",
         "testSimpleValues",
+        "testInsert",
         "testScan",
         "testScan2",
         "testGetByKey",

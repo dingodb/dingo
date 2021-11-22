@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.fin.Fin;
 
-import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("sumUp")
@@ -45,17 +45,17 @@ public class SumUpOperator extends SoleOutMultiInputOperator {
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        if (!Arrays.equals(tuple, FIN)) {
-            sum += (long) tuple[0];
-            return true;
-        }
-        setFin(pin);
-        if (isAllFin()) {
-            if (pushOutput(new Object[]{sum})) {
-                pushOutput(FIN);
-            }
-            return false;
-        }
+        sum += (long) tuple[0];
         return true;
+    }
+
+    @Override
+    public void fin(int pin, Fin fin) {
+        setFin(pin, fin);
+        if (isAllFin()) {
+            if (output.push(new Object[]{sum})) {
+                outputFin();
+            }
+        }
     }
 }

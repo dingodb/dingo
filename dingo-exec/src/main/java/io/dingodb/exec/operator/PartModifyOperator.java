@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.kvstore.KvStoreInstance;
@@ -61,9 +62,10 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         count = 0;
     }
 
-    protected void pushCountAndFin() {
-        if (pushOutput(new Object[]{count})) {
-            pushOutput(FIN);
+    @Override
+    public void fin(int pin, Fin fin) {
+        if (output.push(new Object[]{count})) {
+            output.pushFin(fin);
         }
     }
 }

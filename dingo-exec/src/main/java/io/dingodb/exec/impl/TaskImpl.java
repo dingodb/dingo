@@ -33,6 +33,7 @@ import io.dingodb.net.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -113,17 +114,27 @@ public final class TaskImpl implements Task {
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
             executorService.execute(() -> {
-                while (operator.push(0, null)) {
-                    log.info("Operator {} need another pushing.", operator.getId());
+                try {
+                    while (operator.push(0, null)) {
+                        log.info("Operator {} need another pushing.", operator.getId());
+                    }
+                } catch (RuntimeException e) {
+                    e.printStackTrace();
                 }
             });
         });
     }
 
+    @Nonnull
     @Override
-    public String serialize() {
+    public byte[] serialize() {
+        return toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public String toString() {
         try {
-            return JobImpl.PARSER.serialize(this);
+            return JobImpl.PARSER.stringify(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

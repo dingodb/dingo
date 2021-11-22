@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.net.Location;
 
 import javax.annotation.Nonnull;
@@ -32,6 +33,11 @@ public interface Output {
     default boolean push(Object[] tuple) {
         Input link = getLink();
         return link.getOperator().push(link.getPin(), tuple);
+    }
+
+    default void pushFin(Fin fin) {
+        Input link = getLink();
+        link.getOperator().fin(link.getPin(), fin);
     }
 
     default Task getTask() {

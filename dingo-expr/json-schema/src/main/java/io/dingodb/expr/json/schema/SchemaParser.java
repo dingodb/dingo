@@ -80,6 +80,6 @@ public final class SchemaParser extends Parser {
      * @throws JsonProcessingException if something is wrong
      */
     public String serialize(@Nonnull RtSchemaRoot rtSchemaRoot) throws JsonProcessingException {
-        return serialize(rtSchemaRoot.getSchema());
+        return stringify(rtSchemaRoot.getSchema());
     }
 }

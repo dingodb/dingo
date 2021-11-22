@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 
-import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("delete")
@@ -46,13 +45,9 @@ public final class PartDeleteOperator extends PartModifyOperator {
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        if (!Arrays.equals(tuple, FIN)) {
-            if (part.remove(tuple)) {
-                count++;
-            }
-            return true;
+        if (part.remove(tuple)) {
+            count++;
         }
-        pushCountAndFin();
-        return false;
+        return true;
     }
 }

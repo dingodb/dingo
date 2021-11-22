@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.util.QueueUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,8 @@ import javax.annotation.Nonnull;
 @JsonTypeName("root")
 @JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
+    public static final Object[] FIN = new Object[0];
+
     @JsonProperty("schema")
     private final TupleSchema schema;
 
@@ -53,10 +56,18 @@ public final class RootOperator extends SinkOperator {
     @Override
     public boolean push(Object[] tuple) {
         if (log.isDebugEnabled()) {
-            log.debug("Put tuple {} into root queue.", formatTuple(schema, tuple));
+            log.debug("Put tuple {} into root queue.", schema.formatTuple(tuple));
         }
         QueueUtil.forcePut(tupleQueue, tuple);
         return true;
+    }
+
+    @Override
+    public void fin(Fin fin) {
+        if (log.isDebugEnabled()) {
+            log.debug("Received FIN. {}", fin.detail());
+        }
+        QueueUtil.forcePut(tupleQueue, FIN);
     }
 
     @Nonnull

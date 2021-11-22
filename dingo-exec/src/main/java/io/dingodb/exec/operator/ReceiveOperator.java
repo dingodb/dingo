@@ -20,9 +20,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.codec.AvroTxRxCodec;
+import io.dingodb.exec.codec.TxRxCodec;
+import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.util.QueueUtil;
 import io.dingodb.exec.util.TagUtil;
 import io.dingodb.net.Channel;
@@ -33,7 +36,6 @@ import io.dingodb.net.SimpleTag;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import javax.annotation.Nonnull;
@@ -50,7 +52,7 @@ public final class ReceiveOperator extends SourceOperator {
     private final TupleSchema schema;
 
     private String tag;
-    private AvroCodec codec;
+    private TxRxCodec codec;
     private BlockingQueue<Object[]> tupleQueue;
     private ReceiveMessageListenerProvider messageListenerProvider;
 
@@ -69,7 +71,7 @@ public final class ReceiveOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        codec = new AvroCodec(schema.getAvroSchema());
+        codec = new AvroTxRxCodec(schema);
         tupleQueue = new LinkedBlockingDeque<>();
         messageListenerProvider = new ReceiveMessageListenerProvider();
         tag = TagUtil.tag(getTask().getJobId(), getId());
@@ -93,13 +95,24 @@ public final class ReceiveOperator extends SourceOperator {
 
     @Override
     public boolean push() {
+        long count = 0;
+        profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
             Object[] tuple = QueueUtil.forceTake(tupleQueue);
-            if (log.isDebugEnabled()) {
-                log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, formatTuple(schema, tuple));
-            }
-            pushOutput(tuple);
-            if (Arrays.equals(tuple, FIN)) {
+            if (!(tuple[0] instanceof Fin)) {
+                ++count;
+                if (log.isDebugEnabled()) {
+                    log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.formatTuple(tuple));
+                }
+                output.push(tuple);
+            } else {
+                profile.setEndTimeStamp(System.currentTimeMillis());
+                profile.setProcessedTupleCount(count);
+                Fin fin = (Fin) tuple[0];
+                if (fin instanceof FinWithProfiles) {
+                    ((FinWithProfiles) fin).getProfiles().add(profile);
+                }
+                output.pushFin(fin);
                 break;
             }
         }
@@ -117,9 +130,11 @@ public final class ReceiveOperator extends SourceOperator {
             return (message, channel) -> {
                 try {
                     byte[] content = message.toBytes();
-                    Object[] tuple = !Arrays.equals(content, FIN_BYTES) ? codec.decode(content) : FIN;
-                    if (log.isDebugEnabled()) {
-                        log.debug("(tag = {}) Received tuple {}.", tag, formatTuple(schema, tuple));
+                    Object[] tuple = codec.decode(content);
+                    if (!(tuple[0] instanceof Fin)) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("(tag = {}) Received tuple {}.", tag, schema.formatTuple(tuple));
+                        }
                     }
                     QueueUtil.forcePut(tupleQueue, tuple);
                 } catch (IOException e) {

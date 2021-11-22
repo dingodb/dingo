@@ -182,7 +182,7 @@ public class TableDefinition {
     }
 
     public String toJson() throws JsonProcessingException {
-        return PARSER.serialize(this);
+        return PARSER.stringify(this);
     }
 
     public void writeJson(OutputStream os) throws IOException {

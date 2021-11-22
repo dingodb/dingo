@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.fin.Fin;
 
-import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("coalesce")
@@ -36,13 +36,14 @@ public final class CoalesceOperator extends SoleOutMultiInputOperator {
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        if (!Arrays.equals(tuple, FIN)) {
-            return pushOutput(tuple);
-        }
-        setFin(pin);
+        return output.push(tuple);
+    }
+
+    @Override
+    public synchronized void fin(int pin, Fin fin) {
+        setFin(pin, fin);
         if (isAllFin()) {
-            return pushOutput(FIN);
+            outputFin();
         }
-        return true;
     }
 }

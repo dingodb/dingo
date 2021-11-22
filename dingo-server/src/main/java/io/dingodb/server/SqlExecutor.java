@@ -114,7 +114,7 @@ public class SqlExecutor implements MessageListener {
     }
 
     private String serializeResult(Object result) throws JsonProcessingException {
-        return JSON.serialize(result);
+        return JSON.stringify(result);
     }
 
     public static class SqlExecutorProvider implements MessageListenerProvider {

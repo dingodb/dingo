@@ -65,5 +65,5 @@ public interface Task {
         return getOperators().get(id);
     }
 
-    String serialize();
+    byte[] serialize();
 }

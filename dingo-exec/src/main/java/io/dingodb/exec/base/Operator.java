@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.exec.fin.Fin;
+
 import java.util.List;
 
 import static io.dingodb.common.util.Utils.sole;
@@ -45,6 +47,8 @@ public interface Operator {
      * @return `true` means another push needed, `false` means the task is canceled or finished
      */
     boolean push(int pin, Object[] tuple);
+
+    void fin(int pin, Fin fin);
 
     default Input getInput(int pin) {
         Input input = new Input(getId(), pin);

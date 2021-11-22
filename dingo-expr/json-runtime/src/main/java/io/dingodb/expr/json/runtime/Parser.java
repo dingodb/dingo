@@ -25,6 +25,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,12 +45,18 @@ public class Parser implements Serializable {
     protected Parser(@Nonnull DataFormat format) {
         switch (format) {
             case APPLICATION_JSON:
-                mapper = setJsonFeature(new JsonMapper());
+                mapper = JsonMapper.builder()
+                    .addModule(new AfterburnerModule())
+                    .build();
+                setJsonFeature(mapper);
                 break;
             case APPLICATION_YAML:
                 YAMLFactory yamlFactory = new YAMLFactory()
                     .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
-                mapper = setJsonFeature(new ObjectMapper(yamlFactory));
+                mapper = JsonMapper.builder(yamlFactory)
+                    .addModule(new AfterburnerModule())
+                    .build();
+                setJsonFeature(mapper);
                 break;
             case TEXT_CSV:
                 mapper = setCsvFeature(new CsvMapper());
@@ -60,8 +67,7 @@ public class Parser implements Serializable {
         }
     }
 
-    @Nonnull
-    private static ObjectMapper setJsonFeature(@Nonnull ObjectMapper mapper) {
+    private static void setJsonFeature(@Nonnull ObjectMapper mapper) {
         mapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
         mapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
         mapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
@@ -69,7 +75,6 @@ public class Parser implements Serializable {
         mapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
         mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        return mapper;
     }
 
     @Nonnull
@@ -102,7 +107,7 @@ public class Parser implements Serializable {
         return mapper.readValue(is, clazz);
     }
 
-    public <T> String serialize(T obj) throws JsonProcessingException {
+    public <T> String stringify(T obj) throws JsonProcessingException {
         return mapper.writeValueAsString(obj);
     }
 
