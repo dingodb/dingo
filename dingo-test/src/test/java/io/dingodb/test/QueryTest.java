@@ -23,7 +23,9 @@ import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.test.assertion.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
@@ -37,8 +39,17 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@TestMethodOrder(CustomTestOrder.class)
 public class QueryTest {
+    private static final String TEST_ALL_DATA
+        = "1, Alice, 3.5\n"
+        + "2, Betty, 4.0\n"
+        + "3, Cindy, 4.5\n"
+        + "4, Doris, 5.0\n"
+        + "5, Emily, 5.5\n"
+        + "6, Alice, 6.0\n"
+        + "7, Betty, 6.5\n"
+        + "8, Alice, 7.0\n"
+        + "9, Cindy, 7.5\n";
     private static Connection connection;
 
     @BeforeAll
@@ -61,18 +72,36 @@ public class QueryTest {
         Services.META.clear();
     }
 
-
-    private static void checkDatumInTestTable(String data) throws SQLException {
-        String sql = "select * from test";
+    private static void checkDatumInTable(
+        String tableName,
+        String[] columns,
+        TupleSchema schema,
+        String data
+    ) throws SQLException {
+        String sql = "select * from " + tableName;
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet).isRecords(
-                    new String[]{"id", "name", "amount"},
-                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
-                    data
-                );
+                AssertResultSet.of(resultSet).isRecords(columns, schema, data);
             }
         }
+    }
+
+    private static void checkDatumInTestTable(String data) throws SQLException {
+        checkDatumInTable("test",
+            new String[]{"id", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            data
+        );
+    }
+
+    @BeforeEach
+    public void setup() throws Exception {
+        SqlHelper.execUpdate("/table-test-data.sql");
+    }
+
+    @AfterEach
+    public void cleanUp() throws Exception {
+        SqlHelper.clear("test");
     }
 
     @Test
@@ -135,29 +164,14 @@ public class QueryTest {
     }
 
     @Test
-    public void testInsert() throws SQLException, IOException {
-        SqlHelper.execUpdate("/table-test-data.sql");
-        SqlHelper.execUpdate("/table-test2-data.sql");
-    }
-
-    @Test
-    public void testScan() throws SQLException {
-        checkDatumInTestTable(
-            "1, Alice, 3.5\n"
-                + "2, Betty, 4.0\n"
-                + "3, Cindy, 4.5\n"
-                + "4, Doris, 5.0\n"
-                + "5, Emily, 5.5\n"
-                + "6, Alice, 6.0\n"
-                + "7, Betty, 6.5\n"
-                + "8, Alice, 7.0\n"
-                + "9, Cindy, 7.5\n"
-        );
+    public void testScan() throws SQLException, IOException {
+        checkDatumInTestTable(TEST_ALL_DATA);
     }
 
     // TODO: currently the records overlap to each other for the key is empty if there is no primary key.
     @Test
-    public void testScan2() throws SQLException {
+    public void testScan2() throws SQLException, IOException {
+        SqlHelper.execUpdate("/table-test2-data.sql");
         String sql = "select * from test2";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
@@ -172,6 +186,7 @@ public class QueryTest {
                 assertThat(count).isEqualTo(1);
             }
         }
+        SqlHelper.clear("test2");
     }
 
     @Test
@@ -349,18 +364,18 @@ public class QueryTest {
         try (Statement statement = connection.createStatement()) {
             int count = statement.executeUpdate(sql);
             assertThat(count).isEqualTo(1);
-            checkDatumInTestTable(
-                "1, Alice, 100.0\n"
-                    + "2, Betty, 4.0\n"
-                    + "3, Cindy, 4.5\n"
-                    + "4, Doris, 5.0\n"
-                    + "5, Emily, 5.5\n"
-                    + "6, Alice, 6.0\n"
-                    + "7, Betty, 6.5\n"
-                    + "8, Alice, 7.0\n"
-                    + "9, Cindy, 7.5\n"
-            );
         }
+        checkDatumInTestTable(
+            "1, Alice, 100.0\n"
+                + "2, Betty, 4.0\n"
+                + "3, Cindy, 4.5\n"
+                + "4, Doris, 5.0\n"
+                + "5, Emily, 5.5\n"
+                + "6, Alice, 6.0\n"
+                + "7, Betty, 6.5\n"
+                + "8, Alice, 7.0\n"
+                + "9, Cindy, 7.5\n"
+        );
     }
 
     @Test
@@ -369,18 +384,18 @@ public class QueryTest {
         try (Statement statement = connection.createStatement()) {
             int count = statement.executeUpdate(sql);
             assertThat(count).isEqualTo(9);
-            checkDatumInTestTable(
-                "1, Alice, 200.0\n"
-                    + "2, Betty, 104.0\n"
-                    + "3, Cindy, 104.5\n"
-                    + "4, Doris, 105.0\n"
-                    + "5, Emily, 105.5\n"
-                    + "6, Alice, 106.0\n"
-                    + "7, Betty, 106.5\n"
-                    + "8, Alice, 107.0\n"
-                    + "9, Cindy, 107.5\n"
-            );
         }
+        checkDatumInTestTable(
+            "1, Alice, 103.5\n"
+                + "2, Betty, 104.0\n"
+                + "3, Cindy, 104.5\n"
+                + "4, Doris, 105.0\n"
+                + "5, Emily, 105.5\n"
+                + "6, Alice, 106.0\n"
+                + "7, Betty, 106.5\n"
+                + "8, Alice, 107.0\n"
+                + "9, Cindy, 107.5\n"
+        );
     }
 
     @Test
@@ -389,16 +404,16 @@ public class QueryTest {
         try (Statement statement = connection.createStatement()) {
             int count = statement.executeUpdate(sql);
             assertThat(count).isEqualTo(2);
-            checkDatumInTestTable(
-                "1, Alice, 200.0\n"
-                    + "2, Betty, 104.0\n"
-                    + "5, Emily, 105.5\n"
-                    + "6, Alice, 106.0\n"
-                    + "7, Betty, 106.5\n"
-                    + "8, Alice, 107.0\n"
-                    + "9, Cindy, 107.5\n"
-            );
         }
+        checkDatumInTestTable(
+            "1, Alice, 3.5\n"
+                + "2, Betty, 4.0\n"
+                + "5, Emily, 5.5\n"
+                + "6, Alice, 6.0\n"
+                + "7, Betty, 6.5\n"
+                + "8, Alice, 7.0\n"
+                + "9, Cindy, 7.5\n"
+        );
     }
 
     @Test
@@ -407,12 +422,47 @@ public class QueryTest {
         try (Statement statement = connection.createStatement()) {
             int count = statement.executeUpdate(sql);
             assertThat(count).isEqualTo(3);
-            checkDatumInTestTable(
-                "2, Betty, 104.0\n"
-                    + "5, Emily, 105.5\n"
-                    + "7, Betty, 106.5\n"
-                    + "9, Cindy, 107.5\n"
-            );
         }
+        checkDatumInTestTable(
+            "2, Betty, 4.0\n"
+                + "3, Cindy, 4.5\n"
+                + "4, Doris, 5.0\n"
+                + "5, Emily, 5.5\n"
+                + "7, Betty, 6.5\n"
+                + "9, Cindy, 7.5\n"
+        );
+    }
+
+    @Test
+    public void testInsert() throws SQLException {
+        String sql = "insert into test values(10, 'Alice', 8.0), (11, 'Cindy', 8.5)";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(2);
+        }
+        checkDatumInTestTable(
+            TEST_ALL_DATA
+                + "10, Alice, 8.0\n"
+                + "11, Cindy, 8.5\n"
+        );
+    }
+
+    @Test
+    public void testTransfer() throws SQLException {
+        String sql = "insert into test1 select id, name, amount > 6.0, name, amount+1.0 from test where amount > 5.0";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(5);
+        }
+        checkDatumInTable(
+            "test1",
+            new String[]{"id0", "id1", "id2", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN", "STRING", "DOUBLE"),
+            "5, Emily, false, Emily, 6.5\n"
+                + "6, Alice, false, Alice, 7.0\n"
+                + "7, Betty, true, Betty, 7.5\n"
+                + "8, Alice, true, Alice, 8.0\n"
+                + "9, Cindy, true, Cindy, 8.5\n"
+        );
     }
 }

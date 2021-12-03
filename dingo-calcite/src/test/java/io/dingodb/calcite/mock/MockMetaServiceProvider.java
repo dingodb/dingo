@@ -47,8 +47,8 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
             e.printStackTrace();
         }
         when(metaService.getPartLocations(TABLE_NAME)).thenReturn(ImmutableMap.of(
-            0, LOC_0,
-            1, LOC_1
+            "0", LOC_0,
+            "1", LOC_1
         ));
         when(metaService.currentLocation()).thenReturn(LOC_0);
         return metaService;

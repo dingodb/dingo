@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.part;
+package io.dingodb.exec.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Getter;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+@JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
-public class SimpleHashStrategy extends AbstractPartStrategy {
+public final class SimpleHashStrategy extends PartitionStrategy {
     @JsonProperty("partNum")
     @Getter
     private final int partNum;
@@ -34,12 +36,14 @@ public class SimpleHashStrategy extends AbstractPartStrategy {
     public SimpleHashStrategy(
         @JsonProperty("partNum") int partNum
     ) {
+        super();
         this.partNum = partNum;
     }
 
+    @Nonnull
     @Override
-    public Object calcPartId(@Nonnull Object[] keyTuples) {
+    public String calcPartId(@Nonnull Object[] keyTuples) {
         int hash = Objects.hash(keyTuples);
-        return Math.abs(hash) % partNum;
+        return Integer.toString(Math.abs(hash) % partNum);
     }
 }

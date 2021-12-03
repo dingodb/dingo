@@ -67,6 +67,6 @@ public final class AggregateOperator extends SoleOutOperator {
                 break;
             }
         }
-        output.pushFin(fin);
+        output.fin(fin);
     }
 }

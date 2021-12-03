@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.part;
+package io.dingodb.exec.partition;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dingodb.common.table.TupleMapping;
 
 import java.util.Collection;
@@ -25,35 +27,43 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-public interface PartStrategy {
-    int getPartNum();
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type"
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(SimpleHashStrategy.class),
+})
+public abstract class PartitionStrategy {
+    public abstract int getPartNum();
 
-    Object calcPartId(@Nonnull final Object[] keyTuple);
+    // Should be `String` for json serialization.
+    public abstract String calcPartId(@Nonnull final Object[] keyTuple);
 
-    default Object calcPartId(@Nonnull final Object[] tuple, @Nonnull TupleMapping keyMapping) {
+    public String calcPartId(@Nonnull final Object[] tuple, @Nonnull TupleMapping keyMapping) {
         Object[] keyTuple = keyMapping.revMap(tuple);
         return calcPartId(keyTuple);
     }
 
-    default Map<Object, List<Object[]>> partKeyTuples(
+    public Map<String, List<Object[]>> partKeyTuples(
         @Nonnull final Collection<Object[]> keyTuples
     ) {
-        Map<Object, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
+        Map<String, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
         for (Object[] tuple : keyTuples) {
-            Object partId = calcPartId(tuple);
+            String partId = calcPartId(tuple);
             map.putIfAbsent(partId, new LinkedList<>());
             map.get(partId).add(tuple);
         }
         return map;
     }
 
-    default Map<Object, List<Object[]>> partTuples(
+    public Map<String, List<Object[]>> partTuples(
         @Nonnull final Collection<Object[]> tuples,
         @Nonnull TupleMapping keyMappings
     ) {
-        Map<Object, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
+        Map<String, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
         for (Object[] tuple : tuples) {
-            Object partId = calcPartId(tuple, keyMappings);
+            String partId = calcPartId(tuple, keyMappings);
             map.putIfAbsent(partId, new LinkedList<>());
             map.get(partId).add(tuple);
         }

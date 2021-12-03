@@ -65,7 +65,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, Fin fin) {
         if (output.push(new Object[]{count})) {
-            output.pushFin(fin);
+            output.fin(fin);
         }
     }
 }

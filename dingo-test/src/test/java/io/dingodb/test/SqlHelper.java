@@ -33,6 +33,7 @@ public final class SqlHelper {
     private SqlHelper() {
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public static int execUpdate(@Nonnull String sqlFile) throws IOException, SQLException {
         int result = -1;
         try (Connection connection = Connections.getConnection()) {
@@ -49,5 +50,13 @@ public final class SqlHelper {
             }
         }
         return result;
+    }
+
+    public static void clear(String tableName) throws SQLException {
+        try (Connection connection = Connections.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("delete from " + tableName);
+            }
+        }
     }
 }
