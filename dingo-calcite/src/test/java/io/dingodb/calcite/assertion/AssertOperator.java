@@ -19,10 +19,8 @@ package io.dingodb.calcite.assertion;
 import io.dingodb.exec.base.Input;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.operator.PartScanOperator;
-import io.dingodb.exec.operator.PartitionOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
 
-import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,24 +38,13 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
     @Nonnull
     public AssertOperator soleOutput() {
         isA(SoleOutOperator.class);
-        Input input = instance.getOutputs().get(0).getLink();
+        Input input = instance.getSoleOutput().getLink();
         return operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null);
-    }
-
-    public AssertOperator output(int index, @Nonnull Consumer<AssertOperator> consumer) {
-        Input input = instance.getOutputs().get(index).getLink();
-        consumer.accept(operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null));
-        return this;
     }
 
     public AssertOperator isPartScan(String tableName, Object partId) {
         return isA(PartScanOperator.class)
             .prop("tableName", tableName)
             .prop("partId", partId);
-    }
-
-    public AssertOperator isPartition(String tableName) {
-        return isA(PartitionOperator.class)
-            .prop("tableName", tableName);
     }
 }

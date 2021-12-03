@@ -36,7 +36,7 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         }
         profile.setProcessedTupleCount(count);
         profile.setEndTimeStamp(System.currentTimeMillis());
-        output.pushFin(FinWithProfiles.of(profile));
+        output.fin(FinWithProfiles.of(profile));
         return false;
     }
 }

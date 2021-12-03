@@ -42,7 +42,7 @@ public interface MetaService {
         return getTableDefinitions().get(name);
     }
 
-    Map<Object, Location> getPartLocations(String name);
+    Map<String, Location> getPartLocations(String name);
 
     Location currentLocation();
 }

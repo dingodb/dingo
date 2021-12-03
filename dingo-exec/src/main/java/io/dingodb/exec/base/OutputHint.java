@@ -39,7 +39,6 @@ public class OutputHint {
     @Nonnull
     public static OutputHint of(String tableName, Object partId) {
         OutputHint hint = new OutputHint();
-        hint.tableName = tableName;
         hint.partId = partId;
         return hint;
     }

@@ -22,58 +22,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
+import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.net.Location;
-import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("partition")
-@JsonPropertyOrder({"table", "outputs"})
+@JsonPropertyOrder({"strategy", "keyMapping", "outputs"})
 public final class PartitionOperator extends AbstractOperator {
-    @JsonProperty("table")
-    private final String tableName;
+    @JsonProperty("strategy")
+    private final PartitionStrategy strategy;
+    @JsonProperty("keyMapping")
+    private final TupleMapping keyMapping;
     @JsonProperty("outputs")
     @JsonSerialize(contentAs = OutputIml.class)
     @JsonDeserialize(contentAs = OutputIml.class)
-    @Getter
-    private List<Output> outputs;
+    private Map<Object, Output> outputs;
 
     @JsonCreator
     public PartitionOperator(
-        @JsonProperty("table") String tableName
+        @JsonProperty("strategy") PartitionStrategy strategy,
+        @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         super();
-        this.tableName = tableName;
+        this.strategy = strategy;
+        this.keyMapping = keyMapping;
     }
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        // TODO: partition and push next level.
-        return false;
+        Object partId = strategy.calcPartId(tuple, keyMapping);
+        outputs.get(partId).push(tuple);
+        return true;
     }
 
     @Override
     public void fin(int pin, Fin fin) {
-        // TODO:
+        for (Output output : outputs.values()) {
+            output.fin(fin);
+        }
     }
 
-    public void createOutputs(@Nonnull Map<Object, Location> partLocations) {
-        outputs = new ArrayList<>(partLocations.size());
-        for (Map.Entry<Object, Location> partLocation : partLocations.entrySet()) {
-            OutputHint hint = new OutputHint();
-            hint.setTableName(tableName);
-            hint.setPartId(partLocation.getKey());
+    @Nonnull
+    @Override
+    public Collection<Output> getOutputs() {
+        return outputs.values();
+    }
+
+    public void createOutputs(String tableName, @Nonnull Map<String, Location> partLocations) {
+        outputs = new HashMap<>(partLocations.size());
+        for (Map.Entry<String, Location> partLocation : partLocations.entrySet()) {
+            OutputHint hint = OutputHint.of(tableName, partLocation.getKey());
             hint.setLocation(partLocation.getValue());
             Output output = OutputIml.of(this);
             output.setHint(hint);
-            outputs.add(output);
+            outputs.put(partLocation.getKey(), output);
         }
     }
 }
