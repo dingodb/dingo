@@ -112,7 +112,7 @@ public final class ReceiveOperator extends SourceOperator {
                 if (fin instanceof FinWithProfiles) {
                     ((FinWithProfiles) fin).getProfiles().add(profile);
                 }
-                output.pushFin(fin);
+                output.fin(fin);
                 break;
             }
         }

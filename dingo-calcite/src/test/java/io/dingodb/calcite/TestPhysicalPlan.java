@@ -262,4 +262,18 @@ public class TestPhysicalPlan {
             .singleInput().typeName("DingoPartModify").convention(DingoConventions.DISTRIBUTED)
             .singleInput().typeName("DingoGetByKeys").convention(DingoConventions.DISTRIBUTED);
     }
+
+    @Test
+    public void testTransfer() throws SqlParseException {
+        String sql = "insert into test1 select id as id1, id as id2, id as id3, name, amount from test";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).typeName("EnumerableRoot").convention(EnumerableConvention.INSTANCE)
+            .singleInput().typeName("DingoCoalesce").convention(DingoConventions.ROOT)
+            .singleInput().typeName("DingoExchange").convention(DingoConventions.PARTITIONED)
+            .singleInput().typeName("DingoPartModify").convention(DingoConventions.DISTRIBUTED)
+            .singleInput().typeName("DingoExchange").convention(DingoConventions.DISTRIBUTED)
+            .singleInput().typeName("DingoPartition").convention(DingoConventions.DISTRIBUTED)
+            .singleInput().typeName("DingoProject").convention(DingoConventions.DISTRIBUTED)
+            .singleInput().typeName("DingoPartScan").convention(DingoConventions.DISTRIBUTED);
+    }
 }

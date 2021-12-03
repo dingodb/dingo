@@ -35,7 +35,7 @@ public interface Output {
         return link.getOperator().push(link.getPin(), tuple);
     }
 
-    default void pushFin(Fin fin) {
+    default void fin(Fin fin) {
         Input link = getLink();
         link.getOperator().fin(link.getPin(), fin);
     }

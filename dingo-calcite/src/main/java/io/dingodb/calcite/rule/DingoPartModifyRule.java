@@ -64,8 +64,8 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
                     rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                     new DingoPartition(
                         cluster,
-                        rel.getTraitSet().replace(DingoConventions.PARTITIONED),
-                        convert(input, DingoConventions.ROOT),
+                        rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                        convert(input, DingoConventions.DISTRIBUTED),
                         rel.getTable()
                     )
                 );

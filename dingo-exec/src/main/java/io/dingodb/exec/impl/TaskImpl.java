@@ -64,18 +64,12 @@ public final class TaskImpl implements Task {
     @JsonCreator
     public TaskImpl(
         @JsonProperty("jobId") String jobId,
-        @JsonProperty("operators") Map<Id, Operator> operators,
-        @JsonProperty("runList") List<Id> runList,
         @JsonProperty("location") Location location
     ) {
         this.jobId = jobId;
         this.location = location;
-        this.operators = operators;
-        this.runList = runList;
-    }
-
-    TaskImpl(String jobId, Location location) {
-        this(jobId, new HashMap<>(), new LinkedList<>(), location);
+        this.operators = new HashMap<>();
+        this.runList = new LinkedList<>();
     }
 
     public static TaskImpl deserialize(String str) throws JsonProcessingException {

@@ -18,7 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.exec.fin.Fin;
 
-import java.util.List;
+import java.util.Collection;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -56,18 +56,14 @@ public interface Operator {
         return input;
     }
 
-    List<Output> getOutputs();
-
-    default Output getOutput(int pin) {
-        return getOutputs().get(pin);
-    }
+    Collection<Output> getOutputs();
 
     /**
      * Get the only output of the operator. Exception is thrown if there are more than one outputs.
      *
      * @return the only output
      */
-    default Output getOutput() {
+    default Output getSoleOutput() {
         return sole(getOutputs());
     }
 

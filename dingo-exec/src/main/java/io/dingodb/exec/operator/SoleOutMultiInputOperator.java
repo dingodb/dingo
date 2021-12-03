@@ -58,6 +58,6 @@ public abstract class SoleOutMultiInputOperator extends SoleOutOperator {
     }
 
     protected void outputFin() {
-        output.pushFin(new FinWithProfiles(profiles));
+        output.fin(new FinWithProfiles(profiles));
     }
 }

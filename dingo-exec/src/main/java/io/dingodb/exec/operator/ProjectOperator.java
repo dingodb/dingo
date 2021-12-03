@@ -77,6 +77,6 @@ public final class ProjectOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, Fin fin) {
-        output.pushFin(fin);
+        output.fin(fin);
     }
 }

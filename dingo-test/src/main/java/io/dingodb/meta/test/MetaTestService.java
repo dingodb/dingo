@@ -118,8 +118,8 @@ public class MetaTestService implements MetaService {
             tableDefinition.writeJson(os);
             // force reload
             tableDefinitionMap = null;
-            Map<Object, Location> partLocations = getPartLocations(tableName);
-            for (Map.Entry<Object, Location> entry : partLocations.entrySet()) {
+            Map<String, Location> partLocations = getPartLocations(tableName);
+            for (Map.Entry<String, Location> entry : partLocations.entrySet()) {
                 KvStoreInstance store = Services.KV_STORE.getInstance(entry.getValue().getPath());
                 new PartInKvStore(
                     store.getKvBlock(tableName, entry.getKey()),
@@ -173,11 +173,11 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public Map<Object, Location> getPartLocations(String name) {
+    public Map<String, Location> getPartLocations(String name) {
         return ImmutableMap.of(
-            0, new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
-            1, new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath1.getAbsolutePath()),
-            2, new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath2.getAbsolutePath())
+            "0", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
+            "1", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath1.getAbsolutePath()),
+            "2", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath2.getAbsolutePath())
         );
     }
 }

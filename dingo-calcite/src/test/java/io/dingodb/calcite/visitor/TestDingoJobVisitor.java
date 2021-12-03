@@ -106,10 +106,10 @@ public class TestDingoJobVisitor {
         Job job = DingoJobVisitor.createJob(partScan);
         Assert.job(job).taskNum(2)
             .task(0, t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_0)
-                .soleSource().isPartScan(FULL_TABLE_NAME, 0)
+                .soleSource().isPartScan(FULL_TABLE_NAME, "0")
                 .soleOutput().isNull())
             .task(1, t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(FULL_TABLE_NAME, 1)
+                .soleSource().isPartScan(FULL_TABLE_NAME, "1")
                 .soleOutput().isNull());
     }
 
@@ -128,12 +128,12 @@ public class TestDingoJobVisitor {
         Job job = DingoJobVisitor.createJob(exchange);
         Assert.job(job).taskNum(2)
             .task(0, t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
-                .source(0, s -> s.isPartScan(FULL_TABLE_NAME, 0)
+                .source(0, s -> s.isPartScan(FULL_TABLE_NAME, "0")
                     .soleOutput().isNull())
                 .source(1, s -> s.isA(ReceiveOperator.class)
                     .soleOutput().isNull()))
             .task(1, t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(FULL_TABLE_NAME, 1)
+                .soleSource().isPartScan(FULL_TABLE_NAME, "1")
                 .soleOutput().isA(SendOperator.class));
     }
 
@@ -156,12 +156,12 @@ public class TestDingoJobVisitor {
         Job job = DingoJobVisitor.createJob(coalesce);
         Assert.job(job).taskNum(2)
             .task(0, t -> t.operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
-                .source(0, s -> s.isPartScan(FULL_TABLE_NAME, 0)
+                .source(0, s -> s.isPartScan(FULL_TABLE_NAME, "0")
                     .soleOutput().isA(CoalesceOperator.class))
                 .source(1, s -> s.isA(ReceiveOperator.class)
                     .soleOutput().isA(CoalesceOperator.class)))
             .task(1, t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(FULL_TABLE_NAME, 1)
+                .soleSource().isPartScan(FULL_TABLE_NAME, "1")
                 .soleOutput().isA(SendOperator.class));
     }
 

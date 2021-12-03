@@ -192,4 +192,13 @@ public class TestLogicalPlan {
             .singleInput().typeName("LogicalFilter").convention(Convention.NONE)
             .singleInput().typeName("DingoTableScan").convention(DingoConventions.DINGO);
     }
+
+    @Test
+    public void testTransfer() throws SqlParseException {
+        String sql = "insert into test1 select id as id1, id as id2, id as id3, name, amount from test";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).typeName("LogicalTableModify").convention(Convention.NONE)
+            .singleInput().typeName("LogicalProject").convention(Convention.NONE)
+            .singleInput().typeName("DingoTableScan").convention(DingoConventions.DINGO);
+    }
 }
