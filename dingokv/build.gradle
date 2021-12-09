@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+group 'io.dingodb'
+version '0.2.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'com.alipay.sofa', name: 'bolt', version: 'bolt'.v()
+    implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'dataformat'.v()
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'databind'.v()
+    implementation group: 'com.lmax', name: 'disruptor', version: 'disruptor'.v()
+    implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
+    implementation group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
+    implementation group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
+    implementation group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
+    implementation group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: 'log4j'.v()
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: 'log4j'.v()
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: 'log4j'.v()
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: 'log4j'.v()
+    implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-library', version: 'hamcrest'.v()
+    testImplementation group: 'org.mockito', name: 'mockito-all', version: 'mockito'.v()
+    testImplementation group: 'org.openjdk.jmh', name: 'jmh-core', version: 'jmh'.v()
+    testImplementation group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: 'jmh'.v()
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: 'junit'.v()
+    testRuntimeOnly group:'org.junit.jupiter', name: 'junit-jupiter-engine', version: 'junit'.v()
+}
+
+test {
+    useJUnitPlatform()
+}
