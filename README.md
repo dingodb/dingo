@@ -45,4 +45,6 @@ or in the `docs/` directory of the source code.
 
 ## About
 
-DingoDB is an open source project licensed in **Apache License Version 2.0**.
+DingoDB is an open source project licensed in **Apache License Version 2.0**. DingoDB relies on some third-party components, and their open source protocol is also Apache License 2.0.
+In addition, DingoDB also directly references some code (possibly with minor changes), which open source protocol is Apache License 2.0, including
+- [SOFAJRaft](https://github.com/sofastack/sofa-jraft/)
