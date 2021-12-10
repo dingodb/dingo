@@ -21,8 +21,5 @@ plugins {
 
 dependencies {
     implementation project(':dingo-calcite')
-    runtimeOnly project(':dingo-test')
-    testAnnotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
+    implementation project(':dingo-ddl')
 }

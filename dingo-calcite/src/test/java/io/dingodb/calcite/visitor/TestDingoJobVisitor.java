@@ -26,7 +26,6 @@ import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
-import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.operator.CoalesceOperator;
@@ -39,11 +38,8 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -61,14 +57,14 @@ public class TestDingoJobVisitor {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser(null);
-        table = parser.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
+        parser = new DingoParser();
+        table = parser.getContext().getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
         RelOptCluster cluster = parser.getCluster();
-        RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
+        RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
         RelDataType rowType = typeFactory.createStructType(
             ImmutableList.of(
                 typeFactory.createSqlType(SqlTypeName.INTEGER),
-                typeFactory.createSqlType(SqlTypeName.VARCHAR),
+                typeFactory.createSqlType(SqlTypeName.VARCHAR, 64),
                 typeFactory.createSqlType(SqlTypeName.DOUBLE)
             ),
             ImmutableList.of(
@@ -178,50 +174,6 @@ public class TestDingoJobVisitor {
             assertThat(obj[1]).isEqualTo("Alice");
             assertThat(obj[2]).isEqualTo(BigDecimal.valueOf(1));
         });
-    }
-
-    @Disabled
-    @Test
-    public void testVisitPartition() {
-        RelOptCluster cluster = parser.getCluster();
-        DingoPartition partition = new DingoPartition(
-            cluster,
-            cluster.traitSetOf(DingoConventions.PARTITIONED),
-            values,
-            table
-        );
-        Job job = DingoJobVisitor.createJob(partition);
-        Assert.job(job).taskNum(2)
-            .task(0, t -> t.location(MockMetaServiceProvider.LOC_0).operatorNum(1)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isNull())
-            .task(1, t -> t.location(MockMetaServiceProvider.LOC_1).operatorNum(1)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isNull());
-    }
-
-    @Disabled
-    @Test
-    public void testVisitExchangePartition() {
-        RelOptCluster cluster = parser.getCluster();
-        DingoExchange exchange = new DingoExchange(
-            cluster,
-            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-            new DingoPartition(
-                cluster,
-                cluster.traitSetOf(DingoConventions.PARTITIONED),
-                values,
-                table
-            )
-        );
-        Job job = DingoJobVisitor.createJob(exchange);
-        Assert.job(job).taskNum(2)
-            .task(0, t -> t.location(MockMetaServiceProvider.LOC_0).operatorNum(1)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isNull())
-            .task(1, t -> t.location(MockMetaServiceProvider.LOC_1).operatorNum(1)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isNull());
     }
 
     @Test

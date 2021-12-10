@@ -83,6 +83,10 @@ public class TupleSchema implements CompileContext {
         }
     }
 
+    public ElementSchema get(int index) {
+        return elementSchemas[index];
+    }
+
     @Override
     public int getTypeCode() {
         return TypeCode.TUPLE;

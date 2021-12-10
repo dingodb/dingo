@@ -24,6 +24,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlCollation;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.util.NlsString;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,11 +42,13 @@ public class TestLogicalPlan {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser(null);
+        parser = new DingoParser();
     }
 
     private static RelRoot parse(String sql) throws SqlParseException {
-        RelRoot relRoot = parser.parse(sql);
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
         log.info("relRoot = {}", relRoot);
         return relRoot;
     }
