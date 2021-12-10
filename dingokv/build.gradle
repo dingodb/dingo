@@ -25,6 +25,7 @@ dependencies {
     implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: 'log4j'.v()
     implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: 'log4j'.v()
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
 
     testImplementation group: 'org.hamcrest', name: 'hamcrest-library', version: 'hamcrest'.v()
