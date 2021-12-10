@@ -45,6 +45,6 @@ public class DingoDriver extends UnregisteredDriver {
 
     @Override
     public Meta createMeta(AvaticaConnection connection) {
-        return new DingoMetaImpl((DingoConnection) connection);
+        return new DingoMeta((DingoConnection) connection);
     }
 }

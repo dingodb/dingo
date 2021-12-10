@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +42,7 @@ public class TestRexConverter {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser(null);
+        parser = new DingoParser();
     }
 
     @Nonnull
@@ -57,8 +58,11 @@ public class TestRexConverter {
 
     @ParameterizedTest
     @MethodSource("getParameters")
-    public void test(String sql, String result) throws SqlParseException {
-        RelRoot relRoot = parser.parse("select " + sql + " from test");
+    public void test(String rex, String result) throws SqlParseException {
+        String sql = "select " + rex + " from test";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
         log.info("rexNode = {}", rexNode);

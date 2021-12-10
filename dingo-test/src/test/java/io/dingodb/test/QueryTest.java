@@ -20,14 +20,14 @@ import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.net.netty.NetServiceConfiguration;
-import io.dingodb.test.assertion.AssertResultSet;
+import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -105,6 +105,7 @@ public class QueryTest {
     }
 
     @Test
+    @Disabled
     public void testExplainSimpleValues() throws SQLException {
         String sql = "explain plan for select 1";
         try (Statement statement = connection.createStatement()) {
@@ -118,6 +119,7 @@ public class QueryTest {
     }
 
     @Test
+    @Disabled
     public void testExplainInsertValues() throws SQLException {
         String sql = "explain plan for insert into test values(1, 'Alice', 1.0)";
         try (Statement statement = connection.createStatement()) {
@@ -134,6 +136,7 @@ public class QueryTest {
     }
 
     @Test
+    @Disabled
     public void testExplainScan() throws SQLException {
         String sql = "explain plan for select * from dingo.test";
         try (Statement statement = connection.createStatement()) {
