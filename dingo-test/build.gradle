@@ -22,7 +22,9 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    implementation project(':dingo-calcite')
+    implementation project(':dingo-exec')
     implementation project(':dingo-net-netty')
-    runtimeOnly project(':dingo-kvstore-rocks')
+    testImplementation project(':dingo-calcite')
+    testRuntimeOnly project(':dingo-driver')
+    testRuntimeOnly project(':dingo-kvstore-rocks')
 }

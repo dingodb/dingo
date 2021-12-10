@@ -16,28 +16,31 @@
 
 package io.dingodb.driver;
 
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaDatabaseMetaData;
 import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaResultSetMetaData;
+import org.apache.calcite.avatica.AvaticaSpecificDatabaseMetaData;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.UnregisteredDriver;
-import org.apache.calcite.jdbc.CalciteFactory;
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.TimeZone;
 
-public class DingoFactory extends CalciteFactory {
-    public DingoFactory() {
-        super(4, 1);
+public class DingoFactory implements AvaticaFactory {
+    @Override
+    public int getJdbcMajorVersion() {
+        return 4;
+    }
+
+    @Override
+    public int getJdbcMinorVersion() {
+        return 1;
     }
 
     @Override
@@ -45,21 +48,14 @@ public class DingoFactory extends CalciteFactory {
         UnregisteredDriver driver,
         AvaticaFactory factory,
         String url,
-        Properties info,
-        @Nullable CalciteSchema rootSchema,
-        @Nullable JavaTypeFactory typeFactory
-    ) {
+        Properties info
+    ) throws SQLException {
         return new DingoConnection(
             (DingoDriver) driver,
             factory,
             url,
             info
         );
-    }
-
-    @Override
-    public DingoDatabaseMetaData newDatabaseMetaData(AvaticaConnection connection) {
-        return new DingoDatabaseMetaData(connection);
     }
 
     @Override
@@ -117,6 +113,11 @@ public class DingoFactory extends CalciteFactory {
     }
 
     @Override
+    public AvaticaSpecificDatabaseMetaData newDatabaseMetaData(AvaticaConnection connection) {
+        return new DingoDatabaseMetaData(connection);
+    }
+
+    @Override
     public ResultSetMetaData newResultSetMetaData(
         AvaticaStatement statement,
         Meta.Signature signature
@@ -124,6 +125,7 @@ public class DingoFactory extends CalciteFactory {
         return new AvaticaResultSetMetaData(statement, null, signature);
     }
 
+    // Must inherit, the constructor of the base class is protected.
     private static class DingoDatabaseMetaData extends AvaticaDatabaseMetaData {
         DingoDatabaseMetaData(AvaticaConnection connection) {
             super(connection);

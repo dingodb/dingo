@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.assertion;
+package io.dingodb.test.asserts;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.table.TupleSchema;

@@ -19,7 +19,7 @@ package io.dingodb.calcite.rule;
 import com.google.common.collect.Range;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.util.Datum;
+import io.dingodb.common.table.TupleSchema;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -38,12 +38,14 @@ import javax.annotation.Nullable;
 
 class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
     private final TupleMapping keyMapping;
+    private final TupleSchema keySchema;
     // reverse indices mapping from column index to key index.
     private final TupleMapping revKeyMapping;
 
     public KeyTuplesRexVisitor(@Nonnull TableDefinition tableDefinition) {
         super(true);
         keyMapping = tableDefinition.getKeyMapping();
+        keySchema = tableDefinition.getTupleSchema(true);
         int columnsCount = tableDefinition.getColumnsCount();
         revKeyMapping = keyMapping.reverse(columnsCount);
     }
@@ -180,7 +182,7 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
         if (0 <= index && index < revKeyMapping.size()) {
             int i = revKeyMapping.get(index);
             if (i >= 0) {
-                tuple[i] = Datum.convertCalcite(value);
+                tuple[i] = keySchema.get(i).convert(value);
             }
         }
         return tuple;
