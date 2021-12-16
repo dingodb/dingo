@@ -32,11 +32,10 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 public class TimeInterval implements Copiable<TimeInterval>, Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private long              startTimestamp;
-    private long              endTimestamp;
+    private long startTimestamp;
+    private long endTimestamp;
 
     public TimeInterval() {
     }

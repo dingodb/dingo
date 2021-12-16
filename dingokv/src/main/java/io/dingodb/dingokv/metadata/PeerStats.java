@@ -29,10 +29,9 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 public class PeerStats implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private Peer              peer;
-    private int               downSeconds;
+    private Peer peer;
+    private int downSeconds;
 }
 
