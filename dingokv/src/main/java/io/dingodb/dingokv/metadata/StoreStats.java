@@ -29,7 +29,6 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 public class StoreStats implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     private long storeId;

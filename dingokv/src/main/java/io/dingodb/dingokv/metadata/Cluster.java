@@ -26,7 +26,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @Getter
@@ -35,10 +34,9 @@ import java.util.Objects;
 @ToString
 @EqualsAndHashCode
 public class Cluster implements Copiable<Cluster>, Serializable {
-
     private static final long serialVersionUID = 3291666486933960310L;
 
-    private long              clusterId;
+    private long clusterId;
     private List<Store> stores;
 
     @Override

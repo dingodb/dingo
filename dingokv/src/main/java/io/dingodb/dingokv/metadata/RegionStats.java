@@ -16,7 +16,6 @@
 
 package io.dingodb.dingokv.metadata;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,11 +27,9 @@ import java.util.List;
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @Getter
 @Setter
-@AllArgsConstructor
 @ToString
 @EqualsAndHashCode
 public class RegionStats implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
     private long regionId;
