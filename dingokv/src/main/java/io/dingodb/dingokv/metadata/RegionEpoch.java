@@ -33,11 +33,10 @@ import java.util.Objects;
 @ToString
 @EqualsAndHashCode
 public class RegionEpoch implements Copiable<RegionEpoch>, Comparable<RegionEpoch>, Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private long              confVer;
-    private long              version;
+    private long confVer;
+    private long version;
 
     public RegionEpoch() {
     }

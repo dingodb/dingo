@@ -27,7 +27,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @Getter
@@ -36,7 +35,6 @@ import java.util.Objects;
 @ToString
 @EqualsAndHashCode
 public class Store implements Copiable<Store>, Serializable {
-
     private static final long serialVersionUID = 1L;
 
     private long id;
