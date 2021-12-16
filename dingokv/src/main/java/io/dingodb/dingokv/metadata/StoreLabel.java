@@ -28,11 +28,10 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 public class StoreLabel implements Copiable<StoreLabel>, Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private String            key;
-    private String            value;
+    private String key;
+    private String value;
 
     public StoreLabel() {
     }

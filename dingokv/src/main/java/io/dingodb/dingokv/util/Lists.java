@@ -33,7 +33,6 @@ import java.util.function.Function;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class Lists {
-
     public static <E> ArrayList<E> newArrayList() {
         return new ArrayList<>();
     }

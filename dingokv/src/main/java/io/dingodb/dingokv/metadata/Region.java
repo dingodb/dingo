@@ -23,30 +23,26 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @Getter
 @Setter
 @AllArgsConstructor
-@ToString
 @EqualsAndHashCode
 public class Region implements Copiable<Region>, Serializable {
-
-    private static final long serialVersionUID        = 1L;
+    private static final long serialVersionUID = 1L;
 
     public static final long  MIN_ID_WITH_MANUAL_CONF = -1L;
     public static final long  MAX_ID_WITH_MANUAL_CONF = 1000000L;
 
-    private long              id;
-    private byte[]            startKey;
-    private byte[]            endKey;
-    private RegionEpoch       regionEpoch;
-    private List<Peer>        peers;
+    private long id;
+    private byte[] startKey;
+    private byte[] endKey;
+    private RegionEpoch regionEpoch;
+    private List<Peer> peers;
 
     public Region() {
     }
@@ -65,5 +61,11 @@ public class Region implements Copiable<Region>, Serializable {
             }
         }
         return new Region(this.id, this.startKey, this.endKey, regionEpoch, peers);
+    }
+
+    @Override
+    public String toString() {
+        return "Region{" + "id=" + id + ", startKey=" + BytesUtil.toHex(startKey) + ", endKey="
+            + BytesUtil.toHex(endKey) + ", regionEpoch=" + regionEpoch + ", peers=" + peers + '}';
     }
 }

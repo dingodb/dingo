@@ -34,6 +34,7 @@
             <option value="$PROJECT_DIR$/dingo-store-api" />
             <option value="$PROJECT_DIR$/dingo-test" />
             <option value="$PROJECT_DIR$/dingo-web" />
+            <option value="$PROJECT_DIR$/dingokv" />
           </set>
         </option>
       </GradleProjectSettings>
