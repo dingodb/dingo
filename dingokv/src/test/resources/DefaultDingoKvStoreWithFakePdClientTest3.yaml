@@ -1,0 +1,29 @@
+##DingoKVStoreOptions
+---
+clusterId: 1
+clusterName: fakePd
+
+placementDriverOptions:
+    fake: true
+    cliOptions:
+        timeoutMs: 10000
+        maxRetry: 3
+        rpcProcessorThreadPoolSize: 4
+    pdGroupId: pdCluster-1
+    initialPdServerList: localhost:9080,localhost:9081,localhost:9082
+
+storeEngineOptions:
+    rocksDBOptions:
+        dbPath: temp_dingo_db_3/
+    raftDataPath: temp_dingo_raft_3/
+    serverAddress:
+        ip: localhost
+        port: 10182
+    regionEngineOptionsList:
+        - { regionId: 1,               endKey: 1000000, nodeOptions: { timerPoolSize: 1, rpcProcessorThreadPoolSize: 4 } }
+        - { regionId: 2, startKey: 1000000            , nodeOptions: { timerPoolSize: 1, rpcProcessorThreadPoolSize: 4 } }
+    leastKeysOnSplit: 10
+
+initialServerList: localhost:10180,localhost:10181,localhost:10182
+failoverRetries: 10
+futureTimeoutMillis: 30000
