@@ -407,7 +407,7 @@ public class KVOperation implements Serializable {
 
     @Override
     public String toString() {
-        return "KVOperation{" + "key=" + BytesUtil.toHex(key) + ", value=" + BytesUtil.toHex(value) + ", attach="
-               + attach + ", op=" + op + '}';
+        return "KVOperation{" + "key=" + BytesUtil.readUtf8(key) + ", attach="
+               + attach + ", op=" + KVOperation.opName(op) + '}';
     }
 }
