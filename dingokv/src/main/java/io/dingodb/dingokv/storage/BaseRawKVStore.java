@@ -20,6 +20,7 @@ import com.alipay.sofa.jraft.Lifecycle;
 import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.error.RaftError;
 import com.codahale.metrics.Timer;
+import io.dingodb.dingokv.ApproximateKVStats;
 import io.dingodb.dingokv.errors.Errors;
 import io.dingodb.dingokv.errors.StorageException;
 import io.dingodb.dingokv.metrics.KVMetrics;
@@ -140,7 +141,7 @@ public abstract class BaseRawKVStore<T> implements RawKVStore, Lifecycle<T> {
     /**
      * Note: This is not a very precise behavior, don't rely on its accuracy.
      */
-    public abstract long getApproximateKeysInRange(final byte[] startKey, final byte[] endKey);
+    public abstract ApproximateKVStats getApproximateKVStatsInRange(final byte[] startKey, final byte[] endKey);
 
     /**
      * Note: This is not a very precise behavior, don't rely on its accuracy.
