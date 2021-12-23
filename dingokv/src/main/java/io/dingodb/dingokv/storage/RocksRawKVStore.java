@@ -25,6 +25,7 @@ import com.alipay.sofa.jraft.util.StorageOptionsFactory;
 import com.alipay.sofa.jraft.util.SystemPropertyUtil;
 import com.alipay.sofa.jraft.util.concurrent.AdjustableSemaphore;
 import com.codahale.metrics.Timer;
+import io.dingodb.dingokv.ApproximateKVStats;
 import io.dingodb.dingokv.errors.StorageException;
 import io.dingodb.dingokv.metadata.Region;
 import io.dingodb.dingokv.options.RocksDBOptions;
@@ -1178,12 +1179,14 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public long getApproximateKeysInRange(final byte[] startKey, final byte[] endKey) {
+    public ApproximateKVStats getApproximateKVStatsInRange(final byte[] startKey, final byte[] endKey) {
         // TODO This is a sad code, the performance is too damn bad
         final Timer.Context timeCtx = getTimeContext("APPROXIMATE_KEYS");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
         final Snapshot snapshot = this.db.getSnapshot();
+        Long approximateTotalBytes = 0L;
+
         try (final ReadOptions readOptions = new ReadOptions()) {
             readOptions.setSnapshot(snapshot);
             try (final RocksIterator it = this.db.newIterator(readOptions)) {
@@ -1197,13 +1200,15 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                     // The accuracy is 100, don't ask more
                     for (int i = 0; i < 100; i++) {
                         if (!it.isValid()) {
-                            return approximateKeys;
+                            return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
                         }
                         it.next();
                         ++approximateKeys;
+                        approximateTotalBytes += it.key().length;
+                        approximateTotalBytes += it.value().length;
                     }
                     if (endKey != null && BytesUtil.compare(it.key(), endKey) >= 0) {
-                        return approximateKeys;
+                        return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
                     }
                 }
             }

@@ -17,6 +17,7 @@
 package io.dingodb.dingokv.client.pd;
 
 import com.codahale.metrics.Counter;
+import io.dingodb.dingokv.ApproximateKVStats;
 import io.dingodb.dingokv.StoreEngine;
 import io.dingodb.dingokv.metadata.Peer;
 import io.dingodb.dingokv.metadata.Region;
@@ -114,7 +115,10 @@ public class StatsCollector {
         // Approximate region size
         // TODO very important
         // Approximate number of keys
-        stats.setApproximateKeys(this.rawKVStore.getApproximateKeysInRange(region.getStartKey(), region.getEndKey()));
+        ApproximateKVStats rangeStats = this.rawKVStore.getApproximateKVStatsInRange(
+            region.getStartKey(), region.getEndKey());
+        stats.setApproximateKeys(rangeStats.getKeysCnt());
+        stats.setApproximateSize(rangeStats.getSizeInBytes());
         // Actually reported time interval
         stats.setInterval(timeInterval);
         LOG.info("Collect [RegionStats]: {}.", stats);
