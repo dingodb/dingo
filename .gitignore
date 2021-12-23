@@ -24,6 +24,8 @@ dependency-reduced-pom.xml
 .idea/modules.xml
 .idea/uiDesigner.xml
 .idea/gradle.xml
+.idea/CodeReadingNote.xml
+.idea/thriftCompiler.xml
 
 # Ignore Gradle project-specific cache directory
 .gradle
