@@ -481,11 +481,27 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         final Region parentRegion = parentEngine.getRegion();
         final byte[] startKey = BytesUtil.nullToEmpty(parentRegion.getStartKey());
         final byte[] endKey = parentRegion.getEndKey();
-        final long approximateKeys = this.rawKVStore.getApproximateKeysInRange(startKey, endKey);
+        ApproximateKVStats stats = this.rawKVStore.getApproximateKVStatsInRange(startKey, endKey);
+        final long approximateKeys =  stats.keysCnt;
+        final long approximateBytes = stats.sizeInBytes / 1024 / 1024;
         final long leastKeysOnSplit = this.storeOpts.getLeastKeysOnSplit();
-        if (approximateKeys < leastKeysOnSplit) {
+
+        boolean isSplitOK = (approximateBytes >= 64 || approximateBytes > leastKeysOnSplit);
+        LOG.info("Region:{} Split Condition is {}!. Disk Used:{} >= 64M, Write Keys:{} >= Expected Keys:{}",
+            parentEngine,
+            isSplitOK,
+            approximateBytes,
+            approximateKeys,
+            leastKeysOnSplit);
+
+        if (!isSplitOK) {
             closure.setError(Errors.TOO_SMALL_TO_SPLIT);
-            closure.run(new Status(-1, "RegionEngine[%s]'s keys less than %d", regionId, leastKeysOnSplit));
+            closure.run(new Status(-1, "RegionEngine[%s]'s split condition is not OK!. "
+                + "Write Keys:{} bytes(M): {}, Expected: keys:{}, bytes: 64M",
+                regionId,
+                approximateKeys,
+                approximateBytes,
+                leastKeysOnSplit));
             this.splitting.set(false);
             return;
         }

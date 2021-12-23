@@ -18,6 +18,7 @@ package io.dingodb.dingokv.storage;
 
 import com.alipay.sofa.jraft.util.BytesUtil;
 import com.codahale.metrics.Timer;
+import io.dingodb.dingokv.ApproximateKVStats;
 import io.dingodb.dingokv.metadata.Region;
 import io.dingodb.dingokv.options.MemoryDBOptions;
 import io.dingodb.dingokv.util.ByteArray;
@@ -668,7 +669,7 @@ public class MemoryRawKVStore extends BatchRawKVStore<MemoryDBOptions> {
     }
 
     @Override
-    public long getApproximateKeysInRange(final byte[] startKey, final byte[] endKey) {
+    public ApproximateKVStats getApproximateKVStatsInRange(final byte[] startKey, final byte[] endKey) {
         final Timer.Context timeCtx = getTimeContext("APPROXIMATE_KEYS");
         try {
             final byte[] realStartKey = BytesUtil.nullToEmpty(startKey);
@@ -678,7 +679,17 @@ public class MemoryRawKVStore extends BatchRawKVStore<MemoryDBOptions> {
             } else {
                 subMap = this.defaultDB.subMap(realStartKey, endKey);
             }
-            return subMap.size();
+
+            Long totalSize = 0L;
+            for (Map.Entry<byte[], byte[]> entry : subMap.entrySet()) {
+                if (entry.getKey() != null) {
+                    totalSize += entry.getKey().length;
+                }
+                if (entry.getValue() != null) {
+                    totalSize += entry.getValue().length;
+                }
+            }
+            return new ApproximateKVStats(Long.valueOf(subMap.size()), totalSize);
         } finally {
             timeCtx.stop();
         }
