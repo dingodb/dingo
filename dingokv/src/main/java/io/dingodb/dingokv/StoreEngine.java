@@ -486,7 +486,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         final long approximateBytes = stats.sizeInBytes / 1024 / 1024;
         final long leastKeysOnSplit = this.storeOpts.getLeastKeysOnSplit();
 
-        boolean isSplitOK = (approximateBytes >= 64 || approximateBytes > leastKeysOnSplit);
+        boolean isSplitOK = (approximateBytes >= 64 || approximateKeys > leastKeysOnSplit);
         LOG.info("Region:{} Split Condition is {}!. Disk Used:{} >= 64M, Write Keys:{} >= Expected Keys:{}",
             parentEngine,
             isSplitOK,
