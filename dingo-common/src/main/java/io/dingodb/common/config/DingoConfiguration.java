@@ -16,10 +16,21 @@
 
 package io.dingodb.common.config;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.beans.BeanInfo;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Supplier;
 
+@Slf4j
 public class DingoConfiguration {
 
     public static final DingoConfiguration INSTANCE = new DingoConfiguration();
@@ -33,11 +44,28 @@ public class DingoConfiguration {
     }
 
     public void set(String name, Object value) {
-        configs.put(name, value.toString());
+        configs.put(name, value);
     }
 
     public Object get(String name) {
-        return configs.get(name);
+        Object value;
+        if ((value = configs.get(name)) != null) {
+            return value;
+        }
+        String[] names = name.split("\\.");
+        Map<String, Object> configs = this.configs;
+        for (String s : names) {
+            value = configs.get(s);
+            if (!(value instanceof Map)) {
+                break;
+            }
+            configs = (Map<String, Object>) value;
+        }
+        return value;
+    }
+
+    public Boolean exist(String name) {
+        return get(name) != null;
     }
 
     public void setBool(String name, Boolean value) {
@@ -45,7 +73,7 @@ public class DingoConfiguration {
     }
 
     public Boolean getBool(String name) {
-        return Boolean.valueOf(getString(name, null));
+        return Boolean.valueOf(getString(name));
     }
 
     public void setString(String name, String value) {
@@ -74,16 +102,71 @@ public class DingoConfiguration {
 
     public Integer getInt(String name, Integer defaultValue) {
         try {
-            return Integer.parseInt(configs.get(name).toString());
-        } catch (NullPointerException e) {
+            return Integer.parseInt(getString(name));
+        } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+
+    public <T> List<T> getList(String name) {
+        Object o = get(name);
+        if (o instanceof String) {
+            o = Arrays.asList(((String) o).split(","));
+        }
+        return (List<T>) o;
     }
 
     public Properties toProperties() {
         Properties properties = new Properties();
         properties.putAll(configs);
         return properties;
+    }
+
+    public <T> T getAndConvert(String name, Class<T> cls, Supplier<T> defaultValueSupplier) {
+        try {
+            T result = mapToBean((Map<String, Object>) get(name), cls);
+            if (result == null) {
+                return defaultValueSupplier.get();
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("Get configuration and convert error, name: {}, class: {}", name, cls.getName(), e);
+            return defaultValueSupplier.get();
+        }
+    }
+
+    public <T> T getAndConvert(String name, Class<T> cls) {
+        return getAndConvert(name, cls, () -> null);
+    }
+
+    public <T> T mapToBean(Map<String, Object> map, Class<T> cls) throws Exception {
+        if (map == null) {
+            return null;
+        }
+
+        T obj = cls.newInstance();
+
+        BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
+        PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
+        for (PropertyDescriptor property : propertyDescriptors) {
+            if (!map.containsKey(property.getName())) {
+                continue;
+            }
+            Method setter = property.getWriteMethod();
+            if (setter != null) {
+                Object value = map.get(property.getName());
+                if (value instanceof Map) {
+                    value = mapToBean((Map<String, Object>) value, property.getPropertyType());
+                }
+                setter.invoke(obj, value);
+            } else {
+                Field field = cls.getDeclaredField(property.getName());
+                field.setAccessible(true);
+                field.set(obj, map.get(field.getName()));
+            }
+        }
+
+        return obj;
     }
 
 }
