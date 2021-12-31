@@ -44,7 +44,7 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
      *
      * @param keyTuples key tuples to be checked
      * @return <code>true</code> means the primary columns are all set for each row
-     * <code>false</code> means some columns are not set for any row, so full scan is needed
+     *     <code>false</code> means some columns are not set for any row, so full scan is needed
      */
     private static boolean checkKeyTuples(Set<Object[]> keyTuples) {
         if (keyTuples == null) {

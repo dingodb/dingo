@@ -24,12 +24,20 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalProject;
 
 public class DingoProjectRule extends ConverterRule {
-    public static final Config DEFAULT_CONFIG = Config.INSTANCE
+    public static final Config DISTRIBUTED = Config.INSTANCE
         .withConversion(
             LogicalProject.class,
             Convention.NONE,
             DingoConventions.DISTRIBUTED,
-            "DingoProjectRule"
+            "DingoProjectRule.DISTRIBUTED"
+        )
+        .withRuleFactory(DingoProjectRule::new);
+    public static final Config ROOT = Config.INSTANCE
+        .withConversion(
+            LogicalProject.class,
+            Convention.NONE,
+            DingoConventions.ROOT,
+            "DingoProjectRule.ROOT"
         )
         .withRuleFactory(DingoProjectRule::new);
 
@@ -40,11 +48,12 @@ public class DingoProjectRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
+        Convention convention = this.getOutConvention();
         return new DingoProject(
             project.getCluster(),
-            project.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+            project.getTraitSet().replace(convention),
             project.getHints(),
-            convert(project.getInput(), DingoConventions.DISTRIBUTED),
+            convert(project.getInput(), convention),
             project.getProjects(),
             project.getRowType()
         );

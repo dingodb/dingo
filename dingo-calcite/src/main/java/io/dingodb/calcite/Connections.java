@@ -29,11 +29,6 @@ import javax.annotation.Nonnull;
 
 public final class Connections {
     static {
-        try {
-            Class.forName("org.apache.calcite.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
     }
 
     private Connections() {
@@ -44,7 +39,21 @@ public final class Connections {
     }
 
     public static Connection getConnection() throws SQLException {
-        // TODO: This is not ideal.
+        try {
+            Class.forName("io.dingodb.driver.DingoDriver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return DriverManager.getConnection("jdbc:dingo:");
+    }
+
+    @SuppressWarnings("unused")
+    public static Connection getCalciteConnection() throws SQLException {
+        try {
+            Class.forName("org.apache.calcite.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         Hook.PLANNER.addThread(o -> {
             registerRules((RelOptPlanner) o);
         });

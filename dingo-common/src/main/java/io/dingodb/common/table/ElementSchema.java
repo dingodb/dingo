@@ -26,7 +26,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.NlsString;
 
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
@@ -93,5 +95,33 @@ public class ElementSchema implements CompileContext {
                 break;
         }
         return str;
+    }
+
+    public Object convert(Object origin) {
+        switch (type) {
+            case TypeCode.INTEGER:
+                if (origin instanceof BigDecimal) {
+                    return ((BigDecimal) origin).intValue();
+                }
+                break;
+            case TypeCode.LONG:
+                if (origin instanceof BigDecimal) {
+                    return ((BigDecimal) origin).longValue();
+                }
+                break;
+            case TypeCode.DOUBLE:
+                if (origin instanceof BigDecimal) {
+                    return ((BigDecimal) origin).doubleValue();
+                }
+                break;
+            case TypeCode.STRING:
+                if (origin instanceof NlsString) {
+                    return ((NlsString) origin).getValue();
+                }
+                break;
+            default:
+                break;
+        }
+        return origin;
     }
 }

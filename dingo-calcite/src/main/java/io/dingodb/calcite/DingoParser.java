@@ -20,26 +20,22 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -49,58 +45,64 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.List;
+import javax.annotation.Nonnull;
 
-public final class DingoParser {
-    private final RelOptPlanner planner;
+// Each sql parsing requires a new instance.
+public class DingoParser {
     @Getter
-    private final CalciteCatalogReader catalogReader;
-    private final SqlValidator sqlValidator;
+    private final DingoParserContext context;
     @Getter
     private final RelOptCluster cluster;
+    @Getter
+    private final RelOptPlanner planner;
+    @Getter
+    private final SqlValidator sqlValidator;
 
-    public DingoParser(Map<String, Object> props) {
-        CalciteSchema calciteSchema = CalciteSchema.createRootSchema(
-            true,
-            true,
-            DingoSchema.SCHEMA_NAME,
-            DingoSchema.ROOT
-        );
-        RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
-        catalogReader = new CalciteCatalogReader(
-            calciteSchema,
-            Collections.singletonList(DingoSchema.SCHEMA_NAME),
-            typeFactory,
-            CalciteConnectionConfig.DEFAULT
-        );
-        // CatalogReader is also serving as SqlOperatorTable
-        sqlValidator = SqlValidatorUtil.newValidator(
-            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), catalogReader),
-            catalogReader,
-            typeFactory,
-            SqlValidator.Config.DEFAULT
-        );
-        this.planner = new VolcanoPlanner();
-        // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
-        this.planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        RexBuilder rexBuilder = new RexBuilder(typeFactory);
-        cluster = RelOptCluster.create(planner, rexBuilder);
+    protected SqlParser.Config parserConfig = SqlParser.config();
+
+    public DingoParser() {
+        this(new DingoParserContext());
     }
 
-    public RelRoot parse(String sql) throws SqlParseException {
-        //
-        // Parse
-        //
-        SqlParser parser = SqlParser.create(sql);
-        SqlNode sqlNode = parser.parseQuery();
-        //
-        // Convert SqlNode to RelNode
-        //
+    public DingoParser(@Nonnull DingoParserContext context) {
+        this.context = context;
+        planner = new VolcanoPlanner();
+        // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
+        planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        RexBuilder rexBuilder = new RexBuilder(context.getTypeFactory());
+        cluster = RelOptCluster.create(planner, rexBuilder);
+        // CatalogReader is also serving as SqlOperatorTable
+        sqlValidator = SqlValidatorUtil.newValidator(
+            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), context.getCatalogReader()),
+            context.getCatalogReader(),
+            context.getTypeFactory(),
+            SqlValidator.Config.DEFAULT
+        );
+    }
+
+    public SqlNode parse(String sql) throws SqlParseException {
+        SqlParser parser = SqlParser.create(sql, parserConfig);
+        return parser.parseQuery();
+    }
+
+    public SqlNode validate(SqlNode sqlNode) {
+        return sqlValidator.validate(sqlNode);
+    }
+
+    public RelDataType getValidatedNodeType(SqlNode sqlNode) {
+        return sqlValidator.getValidatedNodeType(sqlNode);
+    }
+
+    public List<List<String>> getFieldOrigins(SqlNode sqlNode) {
+        return sqlValidator.getFieldOrigins(sqlNode);
+    }
+
+    public RelRoot convert(@Nonnull SqlNode sqlNode) {
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
             (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
             sqlValidator,
-            catalogReader,
+            context.getCatalogReader(),
             cluster,
             StandardConvertletTable.INSTANCE,
             SqlToRelConverter.config()
@@ -108,12 +110,16 @@ public final class DingoParser {
                 .withExpand(false)
                 .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
         );
-        return sqlToRelConverter.convertQuery(sqlNode, true, true);
+        return sqlToRelConverter.convertQuery(sqlNode, false, true);
     }
 
     public RelNode optimize(RelNode relNode) {
-        Program program = Programs.ofRules(DingoRules.rules());
-        RelTraitSet traitSet = planner.emptyTraitSet().replace(EnumerableConvention.INSTANCE);
+        return optimize(relNode, EnumerableConvention.INSTANCE);
+    }
+
+    public RelNode optimize(RelNode relNode, Convention convention) {
+        RelTraitSet traitSet = planner.emptyTraitSet().replace(convention);
+        final Program program = Programs.ofRules(DingoRules.rules());
         return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
     }
 }

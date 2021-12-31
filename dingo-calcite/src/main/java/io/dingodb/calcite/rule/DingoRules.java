@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.rules.CoreRules;
 
@@ -40,8 +39,10 @@ public final class DingoRules {
         = DingoPartModifyRule.Config.DEFAULT.toRule();
     public static final DingoPartScanRule DINGO_PART_SCAN_RULE
         = DingoPartScanRule.Config.DEFAULT.toRule();
-    public static final DingoProjectRule DINGO_PROJECT_RULE
-        = DingoProjectRule.DEFAULT_CONFIG.toRule(DingoProjectRule.class);
+    public static final DingoProjectRule DINGO_PROJECT_RULE_DISTRIBUTED
+        = DingoProjectRule.DISTRIBUTED.toRule(DingoProjectRule.class);
+    public static final DingoProjectRule DINGO_PROJECT_RULE_ROOT
+        = DingoProjectRule.ROOT.toRule(DingoProjectRule.class);
     public static final DingoProjectScanRule DINGO_PROJECT_SCAN_RULE
         = DingoProjectScanRule.Config.DEFAULT.toRule();
     public static final DingoTableModifyRule DINGO_TABLE_MODIFY_RULE
@@ -55,10 +56,6 @@ public final class DingoRules {
 
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.PROJECT_REMOVE,
-        EnumerableRules.ENUMERABLE_PROJECT_RULE,
-        EnumerableRules.ENUMERABLE_SORT_RULE,
-        EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE,
-        EnumerableRules.ENUMERABLE_LIMIT_RULE,
         DINGO_AGGREGATE_RULE,
         DINGO_VALUES_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
@@ -68,7 +65,8 @@ public final class DingoRules {
         DINGO_GET_BY_KEYS_RULE,
         DINGO_PART_MODIFY_RULE,
         DINGO_PART_SCAN_RULE,
-        DINGO_PROJECT_RULE,
+        DINGO_PROJECT_RULE_DISTRIBUTED,
+        DINGO_PROJECT_RULE_ROOT,
         DINGO_PROJECT_SCAN_RULE,
         DINGO_TABLE_MODIFY_RULE,
         //DINGO_TABLE_SCAN_RULE,

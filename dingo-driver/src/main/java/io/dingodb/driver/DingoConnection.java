@@ -16,12 +16,31 @@
 
 package io.dingodb.driver;
 
+import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoParserContext;
+import lombok.Getter;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.RelRunner;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
+import javax.annotation.Nonnull;
 
 public class DingoConnection extends AvaticaConnection {
+    @Getter
+    private final DingoParserContext context;
+
     protected DingoConnection(
         DingoDriver driver,
         AvaticaFactory factory,
@@ -29,5 +48,97 @@ public class DingoConnection extends AvaticaConnection {
         Properties info
     ) {
         super(driver, factory, url, info);
+        context = new DingoParserContext();
+    }
+
+    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
+        // `lookupStatement` is protected.
+        return (DingoStatement) lookupStatement(sh);
+    }
+
+    public CalcitePrepare.Context createContext() {
+        return new DingoContext(this);
+    }
+
+    static class DingoContext implements CalcitePrepare.Context {
+        private final DingoConnection connection;
+
+        DingoContext(DingoConnection connection) {
+            this.connection = connection;
+        }
+
+        @Override
+        public JavaTypeFactory getTypeFactory() {
+            return connection.context.getTypeFactory();
+        }
+
+        @Override
+        public CalciteSchema getRootSchema() {
+            return connection.context.getRootSchema();
+        }
+
+        @Override
+        public CalciteSchema getMutableRootSchema() {
+            return connection.context.getRootSchema();
+        }
+
+        @Override
+        public List<String> getDefaultSchemaPath() {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public CalciteConnectionConfig config() {
+            return null;
+        }
+
+        @Override
+        public CalcitePrepare.SparkHandler spark() {
+            return null;
+        }
+
+        @Override
+        public DataContext getDataContext() {
+            return new DingoDataContext(connection);
+        }
+
+        @Override
+        public @Nullable List<String> getObjectPath() {
+            return null;
+        }
+
+        @Override
+        public RelRunner getRelRunner() {
+            return null;
+        }
+    }
+
+    static class DingoDataContext implements DataContext {
+        private final DingoConnection connection;
+
+        DingoDataContext(DingoConnection connection) {
+            this.connection = connection;
+        }
+
+        @Override
+        public @Nullable SchemaPlus getRootSchema() {
+            CalciteSchema rootSchema = connection.context.getRootSchema();
+            return rootSchema == null ? null : rootSchema.plus();
+        }
+
+        @Override
+        public JavaTypeFactory getTypeFactory() {
+            return connection.context.getTypeFactory();
+        }
+
+        @Override
+        public QueryProvider getQueryProvider() {
+            return null;
+        }
+
+        @Override
+        public @Nullable Object get(String name) {
+            return null;
+        }
     }
 }
