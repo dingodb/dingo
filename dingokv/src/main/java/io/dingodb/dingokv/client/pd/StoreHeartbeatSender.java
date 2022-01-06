@@ -31,47 +31,39 @@ import com.alipay.sofa.jraft.util.timer.TimerTask;
 import io.dingodb.dingokv.StoreEngine;
 import io.dingodb.dingokv.cmd.pd.BaseRequest;
 import io.dingodb.dingokv.cmd.pd.BaseResponse;
-import io.dingodb.dingokv.cmd.pd.RegionHeartbeatRequest;
 import io.dingodb.dingokv.cmd.pd.StoreHeartbeatRequest;
 import io.dingodb.dingokv.errors.ErrorsHelper;
-import io.dingodb.dingokv.metadata.Instruction;
-import io.dingodb.dingokv.metadata.Region;
-import io.dingodb.dingokv.metadata.RegionStats;
 import io.dingodb.dingokv.metadata.StoreStats;
 import io.dingodb.dingokv.metadata.TimeInterval;
 import io.dingodb.dingokv.options.HeartbeatOptions;
 import io.dingodb.dingokv.rpc.ExtSerializerSupports;
 import io.dingodb.dingokv.storage.BaseKVStoreClosure;
-import io.dingodb.dingokv.util.Lists;
-import io.dingodb.dingokv.util.Pair;
 import io.dingodb.dingokv.util.StackTraceUtil;
 import io.dingodb.dingokv.util.concurrent.DiscardOldPolicyWithReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
-    private static final Logger LOG = LoggerFactory.getLogger(HeartbeatSender.class);
+public class StoreHeartbeatSender implements Lifecycle<HeartbeatOptions> {
+    private static final Logger LOG = LoggerFactory.getLogger(StoreHeartbeatSender.class);
 
     private final StoreEngine storeEngine;
     private final PlacementDriverClient pdClient;
     private final RpcClient rpcClient;
 
     private StatsCollector statsCollector;
-    private InstructionProcessor instructionProcessor;
     private int heartbeatRpcTimeoutMillis;
     private ThreadPoolExecutor heartbeatRpcCallbackExecutor;
     private HashedWheelTimer heartbeatTimer;
 
     private boolean started;
 
-    public HeartbeatSender(StoreEngine storeEngine) {
+    public StoreHeartbeatSender(StoreEngine storeEngine) {
         this.storeEngine = storeEngine;
         this.pdClient = storeEngine.getPlacementDriverClient();
         this.rpcClient = ((AbstractPlacementDriverClient) this.pdClient).getRpcClient();
@@ -84,7 +76,6 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
             return true;
         }
         this.statsCollector = new StatsCollector(this.storeEngine);
-        this.instructionProcessor = new InstructionProcessor(this.storeEngine);
         this.heartbeatTimer = new HashedWheelTimer(new NamedThreadFactory("heartbeat-timer", true), 50,
             TimeUnit.MILLISECONDS, 4096);
         this.heartbeatRpcTimeoutMillis = opts.getHeartbeatRpcTimeoutMillis();
@@ -93,32 +84,24 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
                                                + this.heartbeatRpcTimeoutMillis);
         }
         final String name = "dingokv-heartbeat-callback";
-        this.heartbeatRpcCallbackExecutor = ThreadPoolUtil.newBuilder() //
-            .poolName(name) //
-            .enableMetric(true) //
-            .coreThreads(4) //
-            .maximumThreads(4) //
-            .keepAliveSeconds(120L) //
-            .workQueue(new ArrayBlockingQueue<>(1024)) //
-            .threadFactory(new NamedThreadFactory(name, true)) //
-            .rejectedHandler(new DiscardOldPolicyWithReport(name)) //
+        this.heartbeatRpcCallbackExecutor = ThreadPoolUtil.newBuilder()
+            .poolName(name)
+            .enableMetric(true)
+            .coreThreads(4)
+            .maximumThreads(4)
+            .keepAliveSeconds(120L)
+            .workQueue(new ArrayBlockingQueue<>(1024))
+            .threadFactory(new NamedThreadFactory(name, true))
+            .rejectedHandler(new DiscardOldPolicyWithReport(name))
             .build();
         final long storeHeartbeatIntervalSeconds = opts.getStoreHeartbeatIntervalSeconds();
-        final long regionHeartbeatIntervalSeconds = opts.getRegionHeartbeatIntervalSeconds();
         if (storeHeartbeatIntervalSeconds <= 0) {
             throw new IllegalArgumentException("Store heartbeat interval seconds must > 0, "
                                                + storeHeartbeatIntervalSeconds);
         }
-        if (regionHeartbeatIntervalSeconds <= 0) {
-            throw new IllegalArgumentException("Region heartbeat interval seconds must > 0, "
-                                               + regionHeartbeatIntervalSeconds);
-        }
         final long now = System.currentTimeMillis();
         final StoreHeartbeatTask storeHeartbeatTask = new StoreHeartbeatTask(storeHeartbeatIntervalSeconds, now, false);
-        final RegionHeartbeatTask regionHeartbeatTask = new RegionHeartbeatTask(regionHeartbeatIntervalSeconds, now,
-            false);
         this.heartbeatTimer.newTimeout(storeHeartbeatTask, storeHeartbeatTask.getNextDelay(), TimeUnit.SECONDS);
-        this.heartbeatTimer.newTimeout(regionHeartbeatTask, regionHeartbeatTask.getNextDelay(), TimeUnit.SECONDS);
         LOG.info("[HeartbeatSender] start successfully, options: {}.", opts);
         return this.started = true;
     }
@@ -145,54 +128,6 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
                 final boolean forceRefresh = !status.isOk() && ErrorsHelper.isInvalidPeer(getError());
                 final StoreHeartbeatTask nexTask = new StoreHeartbeatTask(nextDelay, now, forceRefresh);
                 heartbeatTimer.newTimeout(nexTask, nexTask.getNextDelay(), TimeUnit.SECONDS);
-            }
-        };
-        final Endpoint endpoint = this.pdClient.getPdLeader(forceRefreshLeader, this.heartbeatRpcTimeoutMillis);
-        callAsyncWithRpc(endpoint, request, closure);
-    }
-
-    private void sendRegionHeartbeat(final long nextDelay, final long lastTime, final boolean forceRefreshLeader) {
-        final long now = System.currentTimeMillis();
-        final RegionHeartbeatRequest request = new RegionHeartbeatRequest();
-        request.setClusterId(this.storeEngine.getClusterId());
-        request.setStoreId(this.storeEngine.getStoreId());
-        request.setLeastKeysOnSplit(this.storeEngine.getStoreOpts().getLeastKeysOnSplit());
-        final List<Long> regionIdList = this.storeEngine.getLeaderRegionIds();
-        if (regionIdList.isEmpty()) {
-            // So sad, there is no even a region leader :(
-            final RegionHeartbeatTask nextTask = new RegionHeartbeatTask(nextDelay, now, false);
-            this.heartbeatTimer.newTimeout(nextTask, nextTask.getNextDelay(), TimeUnit.SECONDS);
-            if (LOG.isInfoEnabled()) {
-                LOG.info("So sad, there is no even a region leader on [clusterId:{}, storeId: {}, endpoint:{}].",
-                    this.storeEngine.getClusterId(), this.storeEngine.getStoreId(), this.storeEngine.getSelfEndpoint());
-            }
-            return;
-        }
-        final List<Pair<Region, RegionStats>> regionStatsList = Lists.newArrayListWithCapacity(regionIdList.size());
-        final TimeInterval timeInterval = new TimeInterval(lastTime, now);
-        for (final Long regionId : regionIdList) {
-            final Region region = this.pdClient.getRegionById(regionId);
-            final RegionStats stats = this.statsCollector.collectRegionStats(region, timeInterval);
-            if (stats == null) {
-                continue;
-            }
-            regionStatsList.add(Pair.of(region, stats));
-        }
-        request.setRegionStatsList(regionStatsList);
-        final HeartbeatClosure<List<Instruction>> closure = new HeartbeatClosure<List<Instruction>>() {
-
-            @Override
-            public void run(final Status status) {
-                final boolean isOk = status.isOk();
-                if (isOk) {
-                    final List<Instruction> instructions = getResult();
-                    if (instructions != null && !instructions.isEmpty()) {
-                        instructionProcessor.process(instructions);
-                    }
-                }
-                final boolean forceRefresh = !isOk && ErrorsHelper.isInvalidPeer(getError());
-                final RegionHeartbeatTask nextTask = new RegionHeartbeatTask(nextDelay, now, forceRefresh);
-                heartbeatTimer.newTimeout(nextTask, nextTask.getNextDelay(), TimeUnit.SECONDS);
             }
         };
         final Endpoint endpoint = this.pdClient.getPdLeader(forceRefreshLeader, this.heartbeatRpcTimeoutMillis);
@@ -272,28 +207,4 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
         }
     }
 
-    private final class RegionHeartbeatTask implements TimerTask {
-        private final long nextDelay;
-        private final long lastTime;
-        private final boolean forceRefreshLeader;
-
-        private RegionHeartbeatTask(long nextDelay, long lastTime, boolean forceRefreshLeader) {
-            this.nextDelay = nextDelay;
-            this.lastTime = lastTime;
-            this.forceRefreshLeader = forceRefreshLeader;
-        }
-
-        @Override
-        public void run(final Timeout timeout) throws Exception {
-            try {
-                sendRegionHeartbeat(this.nextDelay, this.lastTime, this.forceRefreshLeader);
-            } catch (final Throwable t) {
-                LOG.error("Caught a error on sending [RegionHeartbeat]: {}.", StackTraceUtil.stackTrace(t));
-            }
-        }
-
-        public long getNextDelay() {
-            return nextDelay;
-        }
-    }
 }

@@ -90,7 +90,7 @@ public class DefaultRegionKVService implements RegionKVService {
     }
 
     @Override
-    public long getRegionId() {
+    public String getRegionId() {
         return this.regionEngine.getRegion().getId();
     }
 
@@ -637,7 +637,7 @@ public class DefaultRegionKVService implements RegionKVService {
         response.setRegionEpoch(getRegionEpoch());
         try {
             // do not need to check the region epoch
-            final Long newRegionId = KVParameterRequires.requireNonNull(request.getNewRegionId(),
+            final String newRegionId = KVParameterRequires.requireNonNull(request.getNewRegionId(),
                 "rangeSplit.newRegionId");
             this.regionEngine.getStoreEngine().applySplit(request.getRegionId(), newRegionId, new BaseKVStoreClosure() {
 

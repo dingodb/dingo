@@ -64,7 +64,7 @@ stateDiagram
 
 Reset the mapping of which executors are responsible for which table partitions.
 
-Whne running this command, it resets the mapping that executor is responsible for for a given table partition,the coordinator then detects the change, it reassigns table partitions to the executor based on policies defined by the Leader/Follower state model.
+When running this command, it resets the mapping that executor is responsible for a given table partition,the coordinator then detects the change, it reassigns table partitions to the executor based on policies defined by the Leader/Follower state model.
 
 ```shell
 tools.sh rebalance --name TableName --replicas 3 # if replicas is not set or replicas less than 1, replicas use default replicas

@@ -36,8 +36,8 @@ import java.util.Objects;
 public class Peer implements Copiable<Peer>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private long id;
-    private long storeId;
+    private String id;
+    private String storeId;
     private Endpoint endpoint;
 
     public Peer() {

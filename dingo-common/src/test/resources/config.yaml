@@ -1,0 +1,16 @@
+configA:
+    idA: 1
+    nameA: nameA
+    beanB:
+        idB: 2
+        nameB: nameB
+        beanC:
+            idC: 3
+a:
+    b1: 1234
+    b2:
+        c: c
+    b3:
+      - 1
+      - 2
+      - 3

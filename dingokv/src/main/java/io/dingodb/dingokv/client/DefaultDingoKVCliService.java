@@ -64,7 +64,7 @@ public class DefaultDingoKVCliService implements DingoKVCliService {
     }
 
     @Override
-    public Status rangeSplit(final long regionId, final long newRegionId, final String groupId, final Configuration conf) {
+    public Status rangeSplit(final String regionId, final String newRegionId, final String groupId, final Configuration conf) {
         final PeerId leaderId = new PeerId();
         final Status st = this.cliService.getLeader(groupId, conf, leaderId);
         if (!st.isOk()) {

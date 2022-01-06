@@ -16,13 +16,13 @@
 
 package io.dingodb.net.netty.handler.encode;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.net.Message;
 import io.dingodb.net.Tag;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.channel.impl.SimpleChannelId;
 import io.dingodb.net.netty.packet.Header;
 import io.dingodb.net.netty.packet.Packet;
-import io.dingodb.net.netty.utils.Serializers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,16 +34,17 @@ import java.io.IOException;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+
 @Slf4j
 @ChannelHandler.Sharable
 public class MessageEncoder extends MessageToMessageEncoder<Packet<Message>> {
     private static byte[] encodeTag(Tag tag) throws IOException {
         if (tag == null) {
-            return Serializers.encodeVarInt(0);
+            return PrimitiveCodec.encodeVarInt(0);
         }
         ByteArrayOutputStream bais = new ByteArrayOutputStream();
         byte[] tagBytes = tag.toBytes();
-        bais.write(Serializers.encodeVarInt(tagBytes.length));
+        bais.write(PrimitiveCodec.encodeVarInt(tagBytes.length));
         bais.write(tagBytes);
         bais.flush();
         return bais.toByteArray();
@@ -57,14 +58,14 @@ public class MessageEncoder extends MessageToMessageEncoder<Packet<Message>> {
     private static byte[] encodeHeader(@Nonnull Header header) throws IOException {
         ByteArrayOutputStream bais = new ByteArrayOutputStream();
         byte[] channelId = encodeChannelId(header.channelId());
-        bais.write(Serializers.encodeVarInt(channelId.length));
+        bais.write(PrimitiveCodec.encodeVarInt(channelId.length));
         bais.write(channelId);
         channelId = encodeChannelId(header.targetChannelId());
-        bais.write(Serializers.encodeVarInt(channelId.length));
+        bais.write(PrimitiveCodec.encodeVarInt(channelId.length));
         bais.write(channelId);
         bais.write((byte) header.mode().ordinal());
         bais.write((byte) header.type().ordinal());
-        bais.write(Serializers.encodeVarLong(header.msgNo()));
+        bais.write(PrimitiveCodec.encodeVarLong(header.msgNo()));
         bais.flush();
         return bais.toByteArray();
     }
@@ -94,7 +95,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Packet<Message>> {
                 packet.header().msgNo()
             );
         }
-        buffer.writeBytes(Serializers.encodeVarInt(msgSize));
+        buffer.writeBytes(PrimitiveCodec.encodeVarInt(msgSize));
         buffer.writeBytes(header);
         buffer.writeBytes(tag);
         buffer.writeBytes(content);

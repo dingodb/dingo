@@ -16,9 +16,9 @@
 
 package io.dingodb.net.netty.utils;
 
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.packet.Packet;
-import io.dingodb.net.netty.utils.StackTraces;
 import org.slf4j.Logger;
 
 import static io.dingodb.net.netty.packet.PacketType.isPingPong;
@@ -32,7 +32,7 @@ public final class Logs {
         if ((log.isDebugEnabled() && !isPingPong(packet.header().type())) || log.isTraceEnabled()) {
             log.debug(
                 "{}::Packet [{}/{}] <------ [{}/{}], mode: [{}], type: [{}], msg no: [{}].",
-                StackTraces.traceLog(),
+                StackTraces.stack(),
                 connection.localAddress(),
                 packet.header().channelId(),
                 connection.remoteAddress(),
@@ -50,7 +50,7 @@ public final class Logs {
         }
         log.error(
             "{}::Packet [{}/{}] <------ [{}/{}], mode: [{}], type: [{}], msg no: [{}], {}.",
-            StackTraces.traceLog(),
+            StackTraces.stack(),
             connection.localAddress(),
             packet.header().channelId(),
             connection.remoteAddress(),

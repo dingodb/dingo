@@ -16,11 +16,11 @@
 
 package io.dingodb.net.netty.packet.message;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
 import io.dingodb.net.Tag;
-import io.dingodb.net.netty.utils.Serializers;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -57,8 +57,8 @@ public class ErrorMessage implements Message {
 
     @Override
     public ErrorMessage load(byte[] bytes) {
-        NetError netError = getErrorByCode(Serializers.readVarInt(bytes));
-        int codeLen = Serializers.computeVarIntSize(netError.getCode());
+        NetError netError = getErrorByCode(PrimitiveCodec.readVarInt(bytes));
+        int codeLen = PrimitiveCodec.computeVarIntSize(netError.getCode());
         netError.format(new String(bytes, codeLen - 1, bytes.length - codeLen));
         this.error = netError;
         return this;
@@ -72,7 +72,7 @@ public class ErrorMessage implements Message {
     @Override
     public byte[] toBytes() {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            baos.write(Serializers.encodeVarInt(getCode()));
+            baos.write(PrimitiveCodec.encodeVarInt(getCode()));
             baos.write(getMessage().getBytes());
             baos.flush();
             return baos.toByteArray();

@@ -29,38 +29,38 @@ import java.util.Map;
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class MultiRegionEngineOptionsConfigured implements Configured<List<RegionEngineOptions>> {
 
-    private final Map<Long, RegionEngineOptions> optsTable;
+    private final Map<String, RegionEngineOptions> optsTable;
 
     public static MultiRegionEngineOptionsConfigured newConfigured() {
         return new MultiRegionEngineOptionsConfigured(Maps.newHashMap());
     }
 
-    public MultiRegionEngineOptionsConfigured withStartKey(final Long regionId, final String startKey) {
+    public MultiRegionEngineOptionsConfigured withStartKey(final String regionId, final String startKey) {
         getOrCreateOptsById(regionId).setStartKey(startKey);
         return this;
     }
 
-    public MultiRegionEngineOptionsConfigured withStartKeyBytes(final Long regionId, final byte[] startKeyBytes) {
+    public MultiRegionEngineOptionsConfigured withStartKeyBytes(final String regionId, final byte[] startKeyBytes) {
         getOrCreateOptsById(regionId).setStartKeyBytes(startKeyBytes);
         return this;
     }
 
-    public MultiRegionEngineOptionsConfigured withEndKey(final Long regionId, final String endKey) {
+    public MultiRegionEngineOptionsConfigured withEndKey(final String regionId, final String endKey) {
         getOrCreateOptsById(regionId).setEndKey(endKey);
         return this;
     }
 
-    public MultiRegionEngineOptionsConfigured withEndKeyBytes(final Long regionId, final byte[] endKeyBytes) {
+    public MultiRegionEngineOptionsConfigured withEndKeyBytes(final String regionId, final byte[] endKeyBytes) {
         getOrCreateOptsById(regionId).setEndKeyBytes(endKeyBytes);
         return this;
     }
 
-    public MultiRegionEngineOptionsConfigured withNodeOptions(final Long regionId, final NodeOptions nodeOptions) {
+    public MultiRegionEngineOptionsConfigured withNodeOptions(final String regionId, final NodeOptions nodeOptions) {
         getOrCreateOptsById(regionId).setNodeOptions(nodeOptions);
         return this;
     }
 
-    public MultiRegionEngineOptionsConfigured withMetricsReportPeriod(final Long regionId,
+    public MultiRegionEngineOptionsConfigured withMetricsReportPeriod(final String regionId,
                                                                       final long metricsReportPeriod) {
         getOrCreateOptsById(regionId).setMetricsReportPeriod(metricsReportPeriod);
         return this;
@@ -71,7 +71,7 @@ public final class MultiRegionEngineOptionsConfigured implements Configured<List
         return Lists.newArrayList(this.optsTable.values());
     }
 
-    private RegionEngineOptions getOrCreateOptsById(final Long regionId) {
+    private RegionEngineOptions getOrCreateOptsById(final String regionId) {
         Requires.requireNonNull(regionId, "regionId");
         RegionEngineOptions opts = this.optsTable.get(regionId);
         if (opts != null) {
@@ -83,7 +83,7 @@ public final class MultiRegionEngineOptionsConfigured implements Configured<List
         return opts;
     }
 
-    private MultiRegionEngineOptionsConfigured(Map<Long, RegionEngineOptions> optsTable) {
+    private MultiRegionEngineOptionsConfigured(Map<String, RegionEngineOptions> optsTable) {
         this.optsTable = optsTable;
     }
 }

@@ -232,7 +232,7 @@ public class KVOperation implements Serializable {
         return new KVOperation(seqKey, BytesUtil.EMPTY_BYTES, null, RESET_SEQUENCE);
     }
 
-    public static KVOperation createRangeSplit(final byte[] splitKey, final long currentRegionId, final long newRegionId) {
+    public static KVOperation createRangeSplit(final byte[] splitKey, final String currentRegionId, final String newRegionId) {
         Requires.requireNonNull(splitKey, "splitKey");
         return new KVOperation(splitKey, BytesUtil.EMPTY_BYTES, Pair.of(currentRegionId, newRegionId), RANGE_SPLIT);
     }
@@ -323,13 +323,13 @@ public class KVOperation implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    public long getCurrentRegionId() {
-        return ((Pair<Long, Long>) this.attach).getKey();
+    public String getCurrentRegionId() {
+        return ((Pair<String, String>) this.attach).getKey();
     }
 
     @SuppressWarnings("unchecked")
-    public long getNewRegionId() {
-        return ((Pair<Long, Long>) this.attach).getValue();
+    public String getNewRegionId() {
+        return ((Pair<String, String>) this.attach).getValue();
     }
 
     @SuppressWarnings("unchecked")

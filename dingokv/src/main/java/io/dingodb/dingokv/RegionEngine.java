@@ -32,7 +32,10 @@ import com.alipay.sofa.jraft.util.internal.ThrowUtil;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;
+import io.dingodb.dingokv.client.pd.RegionHeartbeatSender;
+import io.dingodb.dingokv.client.pd.RemotePlacementDriverClient;
 import io.dingodb.dingokv.metadata.Region;
+import io.dingodb.dingokv.options.HeartbeatOptions;
 import io.dingodb.dingokv.options.RegionEngineOptions;
 import io.dingodb.dingokv.storage.KVStoreStateMachine;
 import io.dingodb.dingokv.storage.MetricsRawKVStore;
@@ -51,7 +54,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer {
+public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer, StateListener {
     private static final Logger LOG = LoggerFactory.getLogger(RegionEngine.class);
 
     private final Region region;
@@ -65,6 +68,7 @@ public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer {
     private RegionEngineOptions regionOpts;
 
     private ScheduledReporter regionMetricsReporter;
+    private RegionHeartbeatSender heartbeatSender;
 
     private boolean started;
 
@@ -81,6 +85,7 @@ public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer {
         }
         this.regionOpts = Requires.requireNonNull(opts, "opts");
         this.fsm = new KVStoreStateMachine(this.region, this.storeEngine);
+        this.storeEngine.getStateListenerContainer().addStateListener(this.region.getId(), this);
 
         // node options
         NodeOptions nodeOpts = opts.getNodeOptions();
@@ -137,14 +142,25 @@ public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer {
                 if (metricRegistry != null) {
                     final ScheduledExecutorService scheduler = this.storeEngine.getMetricsScheduler();
                     // start raft node metrics reporter
-                    this.regionMetricsReporter = Slf4jReporter.forRegistry(metricRegistry) //
-                        .prefixedWith("region_" + this.region.getId()) //
-                        .withLoggingLevel(Slf4jReporter.LoggingLevel.INFO) //
-                        .outputTo(LOG) //
-                        .scheduleOn(scheduler) //
-                        .shutdownExecutorOnStop(scheduler != null) //
+                    this.regionMetricsReporter = Slf4jReporter.forRegistry(metricRegistry)
+                        .prefixedWith("region_" + this.region.getId())
+                        .withLoggingLevel(Slf4jReporter.LoggingLevel.INFO)
+                        .outputTo(LOG)
+                        .scheduleOn(scheduler)
+                        .shutdownExecutorOnStop(scheduler != null)
                         .build();
                     this.regionMetricsReporter.start(metricsReportPeriod, TimeUnit.SECONDS);
+                }
+            }
+            if (this.storeEngine.getPlacementDriverClient() instanceof RemotePlacementDriverClient) {
+                HeartbeatOptions heartbeatOpts = opts.getHeartbeatOptions();
+                if (heartbeatOpts == null) {
+                    heartbeatOpts = new HeartbeatOptions();
+                }
+                this.heartbeatSender = new RegionHeartbeatSender(this);
+                if (!this.heartbeatSender.init(heartbeatOpts)) {
+                    LOG.error("Fail to init [HeartbeatSender].");
+                    return false;
                 }
             }
             this.started = true;
@@ -221,6 +237,36 @@ public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer {
     public RegionEngineOptions copyRegionOpts() {
         return Requires.requireNonNull(this.regionOpts, "opts").copy();
     }
+
+
+    @Override
+    public void onLeaderStart(long newTerm) {
+        if (heartbeatSender != null) {
+            heartbeatSender.start();
+        }
+    }
+
+    @Override
+    public void onLeaderStop(long oldTerm) {
+        if (heartbeatSender != null) {
+            heartbeatSender.shutdown();
+        }
+    }
+
+    @Override
+    public void onStartFollowing(PeerId newLeaderId, long newTerm) {
+        if (heartbeatSender != null) {
+            heartbeatSender.shutdown();
+        }
+    }
+
+    @Override
+    public void onStopFollowing(PeerId oldLeaderId, long oldTerm) {
+        if (heartbeatSender != null) {
+            heartbeatSender.shutdown();
+        }
+    }
+
 
     @Override
     public String toString() {

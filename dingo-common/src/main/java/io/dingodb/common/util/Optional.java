@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.utils;
+package io.dingodb.common.util;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,32 +59,34 @@ public class Optional<T> {
     }
 
     public Optional<T> ifPresent(Consumer<? super T> consumer) {
-        try {
-            optional.ifPresent(consumer);
-        } catch (Exception e) {
-            log.error("Run consumer error.", e);
-        }
+        optional.ifPresent(consumer);
         return this;
     }
 
     public Optional<T> ifPresent(Runnable runnable) {
         if (optional.isPresent()) {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                log.error("Run runnable error.", e);
-            }
+            runnable.run();
         }
         return this;
     }
 
     public Optional<T> ifAbsent(Runnable runnable) {
         if (!optional.isPresent()) {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                log.error("Run runnable error.", e);
-            }
+            runnable.run();
+        }
+        return this;
+    }
+
+    public Optional<T> ifAbsentSet(T other) {
+        if (!optional.isPresent()) {
+            return ofNullable(other);
+        }
+        return this;
+    }
+
+    public Optional<T> ifAbsentSet(Supplier<? extends T> other) {
+        if (!optional.isPresent()) {
+            return ofNullable(other.get());
         }
         return this;
     }
@@ -101,8 +103,16 @@ public class Optional<T> {
         return of(optional.flatMap(mapper));
     }
 
-    public T orElse(T other) {
-        return optional.orElse(other);
+    /**
+     * Use {@link Optional#orElseGet(Supplier)}.
+     */
+    @Deprecated
+    public T orElse(T other) throws Exception {
+        throw new UnsupportedOperationException("Use orElseGet method.");
+    }
+
+    public T orNull() {
+        return optional.orElse(null);
     }
 
     public T orElseGet(Supplier<? extends T> other) {

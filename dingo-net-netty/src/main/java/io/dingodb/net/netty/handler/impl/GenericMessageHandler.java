@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.handler.impl;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.util.Optional;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
@@ -29,7 +30,6 @@ import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.packet.impl.MessagePacket;
 import io.dingodb.net.netty.packet.message.ErrorMessage;
 import io.dingodb.net.netty.utils.Logs;
-import io.dingodb.net.netty.utils.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;

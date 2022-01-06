@@ -121,7 +121,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public Region getRegionById(final long regionId) {
+    public Region getRegionById(final String regionId) {
         return this.regionRouteTable.getRegionById(regionId);
     }
 
@@ -179,7 +179,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public boolean transferLeader(final long regionId, final Peer peer, final boolean refreshConf) {
+    public boolean transferLeader(final String regionId, final Peer peer, final boolean refreshConf) {
         Requires.requireNonNull(peer, "peer");
         Requires.requireNonNull(peer.getEndpoint(), "peer.endpoint");
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
@@ -196,7 +196,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public boolean addReplica(final long regionId, final Peer peer, final boolean refreshConf) {
+    public boolean addReplica(final String regionId, final Peer peer, final boolean refreshConf) {
         Requires.requireNonNull(peer, "peer");
         Requires.requireNonNull(peer.getEndpoint(), "peer.endpoint");
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
@@ -213,7 +213,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public boolean removeReplica(final long regionId, final Peer peer, final boolean refreshConf) {
+    public boolean removeReplica(final String regionId, final Peer peer, final boolean refreshConf) {
         Requires.requireNonNull(peer, "peer");
         Requires.requireNonNull(peer.getEndpoint(), "peer.endpoint");
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
@@ -230,12 +230,12 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public Endpoint getLeader(final long regionId, final boolean forceRefresh, final long timeoutMillis) {
+    public Endpoint getLeader(final String regionId, final boolean forceRefresh, final long timeoutMillis) {
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
-        PeerId leader = getLeader(raftGroupId, forceRefresh, timeoutMillis);
+        PeerId leader = getLeaderForRaftGroupId(raftGroupId, forceRefresh, timeoutMillis);
         if (leader == null && !forceRefresh) {
             // Could not found leader from cache, try again and force refresh cache
-            leader = getLeader(raftGroupId, true, timeoutMillis);
+            leader = getLeaderForRaftGroupId(raftGroupId, true, timeoutMillis);
         }
         if (leader == null) {
             throw new RouteTableException("no leader in group: " + raftGroupId);
@@ -243,7 +243,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
         return leader.getEndpoint();
     }
 
-    protected PeerId getLeader(final String raftGroupId, final boolean forceRefresh, final long timeoutMillis) {
+    protected PeerId getLeaderForRaftGroupId(final String raftGroupId, final boolean forceRefresh, final long timeoutMillis) {
         final RouteTable routeTable = RouteTable.getInstance();
         if (forceRefresh) {
             final long deadline = System.currentTimeMillis() + timeoutMillis;
@@ -293,7 +293,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public Endpoint getLuckyPeer(final long regionId, final boolean forceRefresh, final long timeoutMillis,
+    public Endpoint getLuckyPeer(final String regionId, final boolean forceRefresh, final long timeoutMillis,
                                  final Endpoint unExpect) {
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
         final RouteTable routeTable = RouteTable.getInstance();
@@ -351,10 +351,10 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public void refreshRouteConfiguration(final long regionId) {
+    public void refreshRouteConfiguration(final String regionId) {
         final String raftGroupId = JRaftHelper.getJRaftGroupId(this.clusterName, regionId);
         try {
-            getLeader(raftGroupId, true, 5000);
+            getLeaderForRaftGroupId(raftGroupId, true, 5000);
             RouteTable.getInstance().refreshConfiguration(this.cliClientService, raftGroupId, 5000);
         } catch (final Exception e) {
             LOG.error("Fail to refresh route configuration for {}, {}.", regionId, StackTraceUtil.stackTrace(e));
@@ -376,7 +376,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     protected void initRouteTableByRegion(final RegionRouteTableOptions opts) {
-        final long regionId = Requires.requireNonNull(opts.getRegionId(), "opts.regionId");
+        final String regionId = Requires.requireNonNull(opts.getRegionId(), "opts.regionId");
         final byte[] startKey = opts.getStartKeyBytes();
         final byte[] endKey = opts.getEndKeyBytes();
         final String initialServerList = opts.getInitialServerList();
@@ -397,11 +397,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     protected Region getLocalRegionMetadata(final RegionEngineOptions opts) {
-        final long regionId = Requires.requireNonNull(opts.getRegionId(), "opts.regionId");
-        Requires.requireTrue(regionId >= Region.MIN_ID_WITH_MANUAL_CONF, "opts.regionId must >= "
-                                                                         + Region.MIN_ID_WITH_MANUAL_CONF);
-        Requires.requireTrue(regionId < Region.MAX_ID_WITH_MANUAL_CONF, "opts.regionId must < "
-                                                                        + Region.MAX_ID_WITH_MANUAL_CONF);
+        final String regionId = Requires.requireNonNull(opts.getRegionId(), "opts.regionId");
         final byte[] startKey = opts.getStartKeyBytes();
         final byte[] endKey = opts.getEndKeyBytes();
         final String initialServerList = opts.getInitialServerList();
