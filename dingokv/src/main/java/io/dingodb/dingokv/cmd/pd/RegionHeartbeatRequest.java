@@ -16,14 +16,12 @@
 
 package io.dingodb.dingokv.cmd.pd;
 
+import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.dingokv.metadata.Region;
 import io.dingodb.dingokv.metadata.RegionStats;
-import io.dingodb.dingokv.util.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.util.List;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @Getter
@@ -32,9 +30,10 @@ import java.util.List;
 public class RegionHeartbeatRequest extends BaseRequest {
     private static final long serialVersionUID = -5149082334939576598L;
 
-    private long storeId;
     private long leastKeysOnSplit;
-    private List<Pair<Region, RegionStats>> regionStatsList;
+    private Region region;
+    private RegionStats regionStats;
+    private Endpoint selfEndpoint;
 
     @Override
     public byte magic() {

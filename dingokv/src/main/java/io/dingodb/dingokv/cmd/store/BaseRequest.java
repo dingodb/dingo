@@ -51,7 +51,7 @@ public abstract class BaseRequest implements Serializable {
     public static final byte  CONTAINS_KEY = 0x13;
     public static final byte  COMPARE_PUT_ALL = 0x14;
 
-    private long regionId;
+    private String regionId;
     private RegionEpoch regionEpoch;
 
     public abstract byte magic();

@@ -42,10 +42,10 @@ public class RegionRouteTable {
     private static final Comparator<byte[]> keyBytesComparator = BytesUtil.getDefaultByteArrayComparator();
 
     private final StampedLock stampedLock        = new StampedLock();
-    private final NavigableMap<byte[], Long> rangeTable         = new TreeMap<>(keyBytesComparator);
-    private final Map<Long, Region> regionTable        = Maps.newHashMap();
+    private final NavigableMap<byte[], String> rangeTable         = new TreeMap<>(keyBytesComparator);
+    private final Map<String, Region> regionTable        = Maps.newHashMap();
 
-    public Region getRegionById(final long regionId) {
+    public Region getRegionById(final String regionId) {
         final StampedLock stampedLock = this.stampedLock;
         long stamp = stampedLock.tryOptimisticRead();
         // validate() emit a load-fence, but no store-fence.  So you should only have
@@ -67,7 +67,7 @@ public class RegionRouteTable {
     public void addOrUpdateRegion(final Region region) {
         Requires.requireNonNull(region, "region");
         Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
-        final long regionId = region.getId();
+        final String regionId = region.getId();
         final byte[] startKey = BytesUtil.nullToEmpty(region.getStartKey());
         final StampedLock stampedLock = this.stampedLock;
         final long stamp = stampedLock.writeLock();
@@ -79,7 +79,7 @@ public class RegionRouteTable {
         }
     }
 
-    public void splitRegion(final long leftId, final Region right) {
+    public void splitRegion(final String leftId, final Region right) {
         Requires.requireNonNull(right, "right");
         Requires.requireNonNull(right.getRegionEpoch(), "right.regionEpoch");
         final StampedLock stampedLock = this.stampedLock;
@@ -89,7 +89,7 @@ public class RegionRouteTable {
             Requires.requireNonNull(left, "left");
             final byte[] leftStartKey = BytesUtil.nullToEmpty(left.getStartKey());
             final byte[] leftEndKey = left.getEndKey();
-            final long rightId = right.getId();
+            final String rightId = right.getId();
             final byte[] rightStartKey = right.getStartKey();
             final byte[] rightEndKey = right.getEndKey();
             Requires.requireNonNull(rightStartKey, "rightStartKey");
@@ -143,7 +143,7 @@ public class RegionRouteTable {
 
     private Region findRegionByKeyWithoutLock(final byte[] key) {
         // return the greatest key less than or equal to the given key
-        final Map.Entry<byte[], Long> entry = this.rangeTable.floorEntry(key);
+        final Map.Entry<byte[], String> entry = this.rangeTable.floorEntry(key);
         if (entry == null) {
             reportFail(key);
             throw reject(key, "fail to find region by key");
@@ -217,20 +217,20 @@ public class RegionRouteTable {
         final long stamp = stampedLock.readLock();
         try {
             final byte[] realStartKey = BytesUtil.nullToEmpty(startKey);
-            final NavigableMap<byte[], Long> subRegionMap;
+            final NavigableMap<byte[], String> subRegionMap;
             if (endKey == null) {
                 subRegionMap = this.rangeTable.tailMap(realStartKey, false);
             } else {
                 subRegionMap = this.rangeTable.subMap(realStartKey, false, endKey, true);
             }
             final List<Region> regionList = Lists.newArrayListWithCapacity(subRegionMap.size() + 1);
-            final Map.Entry<byte[], Long> headEntry = this.rangeTable.floorEntry(realStartKey);
+            final Map.Entry<byte[], String> headEntry = this.rangeTable.floorEntry(realStartKey);
             if (headEntry == null) {
                 reportFail(startKey);
                 throw reject(startKey, "fail to find region by startKey");
             }
             regionList.add(safeCopy(this.regionTable.get(headEntry.getValue())));
-            for (final Long regionId : subRegionMap.values()) {
+            for (final String regionId : subRegionMap.values()) {
                 regionList.add(safeCopy(this.regionTable.get(regionId)));
             }
             return regionList;

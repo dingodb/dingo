@@ -38,7 +38,7 @@ public class Region implements Copiable<Region>, Serializable {
     public static final long  MIN_ID_WITH_MANUAL_CONF = -1L;
     public static final long  MAX_ID_WITH_MANUAL_CONF = 1000000L;
 
-    private long id;
+    private String id;
     private byte[] startKey;
     private byte[] endKey;
     private RegionEpoch regionEpoch;

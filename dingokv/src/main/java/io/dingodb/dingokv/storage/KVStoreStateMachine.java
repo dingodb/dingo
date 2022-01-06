@@ -221,8 +221,8 @@ public class KVStoreStateMachine extends StateMachineAdapter {
         final byte[] parentKey = this.region.getStartKey();
         for (final KVState kvState : kvStates) {
             final KVOperation op = kvState.getOp();
-            final long currentRegionId = op.getCurrentRegionId();
-            final long newRegionId = op.getNewRegionId();
+            final String currentRegionId = op.getCurrentRegionId();
+            final String newRegionId = op.getNewRegionId();
             final byte[] splitKey = op.getKey();
             final KVStoreClosure closure = kvState.getDone();
             try {
@@ -334,7 +334,7 @@ public class KVStoreStateMachine extends StateMachineAdapter {
         return this.leaderTerm.get() > 0;
     }
 
-    public long getRegionId() {
+    public String getRegionId() {
         return this.region.getId();
     }
 

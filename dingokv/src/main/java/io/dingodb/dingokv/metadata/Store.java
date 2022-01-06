@@ -37,7 +37,7 @@ import java.util.List;
 public class Store implements Copiable<Store>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private long id;
+    private String id;
     private Endpoint endpoint;
     private StoreState state;
     private List<Region> regions;

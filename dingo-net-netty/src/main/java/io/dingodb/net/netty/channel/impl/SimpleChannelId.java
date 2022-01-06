@@ -16,8 +16,8 @@
 
 package io.dingodb.net.netty.channel.impl;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.utils.Serializers;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -45,12 +45,12 @@ public class SimpleChannelId implements ChannelId<Integer> {
 
     @Override
     public byte[] toBytes() {
-        return Serializers.encodeZigZagInt(channelId);
+        return PrimitiveCodec.encodeZigZagInt(channelId);
     }
 
     @Override
     public ChannelId<Integer> load(byte[] msg) {
-        this.channelId = Serializers.readZigZagInt(msg);
+        this.channelId = PrimitiveCodec.readZigZagInt(msg);
         return this;
     }
 

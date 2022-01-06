@@ -126,9 +126,9 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
 
     @Override
     public Endpoint getPdLeader(final boolean forceRefresh, final long timeoutMillis) {
-        PeerId leader = getLeader(this.pdGroupId, forceRefresh, timeoutMillis);
+        PeerId leader = getLeaderForRaftGroupId(this.pdGroupId, forceRefresh, timeoutMillis);
         if (leader == null && !forceRefresh) {
-            leader = getLeader(this.pdGroupId, true, timeoutMillis);
+            leader = getLeaderForRaftGroupId(this.pdGroupId, true, timeoutMillis);
         }
         if (leader == null) {
             throw new RouteTableException("no placement driver leader in group: " + this.pdGroupId);

@@ -29,7 +29,7 @@ import lombok.ToString;
 @Setter
 @ToString
 public class RegionEngineOptions implements Copiable<RegionEngineOptions> {
-    private Long        regionId;
+    private String        regionId;
     private String      startKey;
     private byte[]      startKeyBytes;
     private String      endKey;
@@ -45,12 +45,13 @@ public class RegionEngineOptions implements Copiable<RegionEngineOptions> {
     private String      initialServerList;
     // Can extends from StoreEngineOptions
     private long        metricsReportPeriod;
+    private HeartbeatOptions          heartbeatOptions;
 
-    public Long getRegionId() {
+    public String getRegionId() {
         return regionId;
     }
 
-    public void setRegionId(Long regionId) {
+    public void setRegionId(String regionId) {
         this.regionId = regionId;
     }
 

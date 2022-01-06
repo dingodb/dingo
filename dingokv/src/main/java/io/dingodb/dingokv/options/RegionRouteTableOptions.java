@@ -26,7 +26,7 @@ import lombok.ToString;
 @Setter
 @ToString
 public class RegionRouteTableOptions {
-    private Long regionId;
+    private String regionId;
     private String startKey;
     private byte[] startKeyBytes;
     private String endKey;

@@ -26,7 +26,7 @@ import java.util.List;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class JRaftHelper {
-    public static String getJRaftGroupId(final String clusterName, final long regionId) {
+    public static String getJRaftGroupId(final String clusterName, final String regionId) {
         Requires.requireNonNull(clusterName, "clusterName");
         return clusterName + "-" + regionId;
     }
@@ -54,8 +54,8 @@ public final class JRaftHelper {
         final Endpoint endpoint = peerId.getEndpoint();
         Requires.requireNonNull(endpoint, "peerId.endpoint");
         final Peer peer = new Peer();
-        peer.setId(-1);
-        peer.setStoreId(-1);
+        peer.setId("-1");
+        peer.setStoreId("-1");
         peer.setEndpoint(endpoint.copy());
         return peer;
     }
