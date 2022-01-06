@@ -687,7 +687,7 @@ public interface DingoKVStore extends Lifecycle<DingoKVStoreOptions> {
      * In a special case, if that is a single region environment,
      * then regionId = -1 as the input parameter.
      */
-    void addLeaderStateListener(final long regionId, final LeaderStateListener listener);
+    void addLeaderStateListener(final String regionId, final LeaderStateListener listener);
 
     /**
      * Add a listener for the state change of the follower with
@@ -696,7 +696,7 @@ public interface DingoKVStore extends Lifecycle<DingoKVStoreOptions> {
      * In a special case, if that is a single region environment,
      * then regionId = -1 as the input parameter.
      */
-    void addFollowerStateListener(final long regionId, final FollowerStateListener listener);
+    void addFollowerStateListener(final String regionId, final FollowerStateListener listener);
 
     /**
      * Add a listener for the state change (leader, follower) with
@@ -705,5 +705,5 @@ public interface DingoKVStore extends Lifecycle<DingoKVStoreOptions> {
      * In a special case, if that is a single region environment,
      * then regionId = -1 as the input parameter.
      */
-    void addStateListener(final long regionId, final StateListener listener);
+    void addStateListener(final String regionId, final StateListener listener);
 }

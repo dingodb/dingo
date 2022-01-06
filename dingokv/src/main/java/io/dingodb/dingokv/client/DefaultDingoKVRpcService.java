@@ -99,15 +99,15 @@ public class DefaultDingoKVRpcService implements DingoKVRpcService {
         return closure.future();
     }
 
-    public Endpoint getLeader(final long regionId, final boolean forceRefresh, final long timeoutMillis) {
+    public Endpoint getLeader(final String regionId, final boolean forceRefresh, final long timeoutMillis) {
         return this.pdClient.getLeader(regionId, forceRefresh, timeoutMillis);
     }
 
-    public Endpoint getLuckyPeer(final long regionId, final boolean forceRefresh, final long timeoutMillis) {
+    public Endpoint getLuckyPeer(final String regionId, final boolean forceRefresh, final long timeoutMillis) {
         return this.pdClient.getLuckyPeer(regionId, forceRefresh, timeoutMillis, this.selfEndpoint);
     }
 
-    public Endpoint getRpcEndpoint(final long regionId, final boolean forceRefresh, final long timeoutMillis,
+    public Endpoint getRpcEndpoint(final String regionId, final boolean forceRefresh, final long timeoutMillis,
                                    final boolean requireLeader) {
         if (requireLeader) {
             return getLeader(regionId, forceRefresh, timeoutMillis);

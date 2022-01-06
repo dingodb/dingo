@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.utils;
+package io.dingodb.common.util;
 
 /**
  * Default 0. 0 -> StackTraces method. 1 -> Current called method.
  */
 public class StackTraces {
 
-    public static final int CURRENT_STACK = 2;
+    public static final int CURRENT_STACK = 1;
+
+    private StackTraces() {
+    }
 
     public static String methodName() {
         return methodName(1);
@@ -72,11 +75,11 @@ public class StackTraces {
         return className.substring(0, className.lastIndexOf('.'));
     }
 
-    public static String traceLog() {
-        return traceLog(2);
+    public static String stack() {
+        return stack(2);
     }
 
-    public static String traceLog(int stack) {
+    public static String stack(int stack) {
         return String.format("%s.%s:%s", className(stack + 1), methodName(stack + 1), lineNumber(stack + 1));
     }
 

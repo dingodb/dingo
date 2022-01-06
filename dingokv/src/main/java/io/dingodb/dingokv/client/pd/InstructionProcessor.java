@@ -52,19 +52,27 @@ public class InstructionProcessor {
         }
     }
 
+    private boolean startRegion(final Instruction instruction) {
+        final Instruction.StartRegion startRegion = instruction.getStartRegion();
+        if (startRegion == null) {
+            return false;
+        }
+        return true;
+    }
+
     private boolean processSplit(final Instruction instruction) {
         try {
             final Instruction.RangeSplit rangeSplit = instruction.getRangeSplit();
             if (rangeSplit == null) {
                 return false;
             }
-            final Long newRegionId = rangeSplit.getNewRegionId();
+            final String newRegionId = rangeSplit.getNewRegionId();
             if (newRegionId == null) {
                 LOG.error("RangeSplit#newRegionId must not be null, {}.", instruction);
                 return false;
             }
             final Region region = instruction.getRegion();
-            final long regionId = region.getId();
+            final String regionId = region.getId();
             final RegionEngine engine = this.storeEngine.getRegionEngine(regionId);
             if (engine == null) {
                 LOG.error("Could not found regionEngine, {}.", instruction);
@@ -108,7 +116,7 @@ public class InstructionProcessor {
                 return false;
             }
             final Region region = instruction.getRegion();
-            final long regionId = region.getId();
+            final String regionId = region.getId();
             final RegionEngine engine = this.storeEngine.getRegionEngine(regionId);
             if (engine == null) {
                 LOG.error("Could not found regionEngine, {}.", instruction);

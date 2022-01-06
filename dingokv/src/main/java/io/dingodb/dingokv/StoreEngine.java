@@ -33,9 +33,9 @@ import com.alipay.sofa.jraft.util.ThreadPoolMetricRegistry;
 import com.alipay.sofa.jraft.util.Utils;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;
-import io.dingodb.dingokv.client.pd.HeartbeatSender;
 import io.dingodb.dingokv.client.pd.PlacementDriverClient;
 import io.dingodb.dingokv.client.pd.RemotePlacementDriverClient;
+import io.dingodb.dingokv.client.pd.StoreHeartbeatSender;
 import io.dingodb.dingokv.errors.DingoKVRuntimeException;
 import io.dingodb.dingokv.errors.Errors;
 import io.dingodb.dingokv.metadata.Region;
@@ -83,20 +83,20 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         ExtSerializerSupports.init();
     }
 
-    private final ConcurrentMap<Long, RegionKVService> regionKVServiceTable = Maps.newConcurrentMapLong();
-    private final ConcurrentMap<Long, RegionEngine> regionEngineTable = Maps.newConcurrentMapLong();
-    private final StateListenerContainer<Long> stateListenerContainer;
+    private final ConcurrentMap<String, RegionKVService> regionKVServiceTable = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, RegionEngine> regionEngineTable = Maps.newConcurrentMap();
+    private final StateListenerContainer<String> stateListenerContainer;
     private final PlacementDriverClient pdClient;
     private final long clusterId;
 
-    private Long storeId;
+    private String storeId;
     private final AtomicBoolean splitting = new AtomicBoolean(false);
     // When the store is started (unix timestamp in milliseconds)
     private long startTime = System.currentTimeMillis();
     private File dbPath;
     private RpcServer rpcServer;
     private BatchRawKVStore<?> rawKVStore;
-    private HeartbeatSender heartbeatSender;
+    private StoreHeartbeatSender storeHeartbeatSender;
     private StoreEngineOptions storeOpts;
 
     // Shared executor services
@@ -113,7 +113,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
 
     private boolean started;
 
-    public StoreEngine(PlacementDriverClient pdClient, StateListenerContainer<Long> stateListenerContainer) {
+    public StoreEngine(PlacementDriverClient pdClient, StateListenerContainer<String> stateListenerContainer) {
         this.pdClient = Requires.requireNonNull(pdClient, "pdClient");
         this.clusterId = pdClient.getClusterId();
         this.stateListenerContainer = Requires.requireNonNull(stateListenerContainer, "stateListenerContainer");
@@ -224,8 +224,8 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             if (heartbeatOpts == null) {
                 heartbeatOpts = new HeartbeatOptions();
             }
-            this.heartbeatSender = new HeartbeatSender(this);
-            if (!this.heartbeatSender.init(heartbeatOpts)) {
+            this.storeHeartbeatSender = new StoreHeartbeatSender(this);
+            if (!this.storeHeartbeatSender.init(heartbeatOpts)) {
                 LOG.error("Fail to init [HeartbeatSender].");
                 return false;
             }
@@ -252,8 +252,8 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         if (this.rawKVStore != null) {
             this.rawKVStore.shutdown();
         }
-        if (this.heartbeatSender != null) {
-            this.heartbeatSender.shutdown();
+        if (this.storeHeartbeatSender != null) {
+            this.storeHeartbeatSender.shutdown();
         }
         this.regionKVServiceTable.clear();
         if (this.kvMetricsReporter != null) {
@@ -281,7 +281,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return clusterId;
     }
 
-    public Long getStoreId() {
+    public String getStoreId() {
         return storeId;
     }
 
@@ -301,7 +301,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return rawKVStore;
     }
 
-    public RegionKVService getRegionKVService(final long regionId) {
+    public RegionKVService getRegionKVService(final String regionId) {
         return this.regionKVServiceTable.get(regionId);
     }
 
@@ -330,7 +330,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return this.storeOpts == null ? null : this.storeOpts.getServerAddress();
     }
 
-    public RegionEngine getRegionEngine(final long regionId) {
+    public RegionEngine getRegionEngine(final String regionId) {
         return this.regionEngineTable.get(regionId);
     }
 
@@ -419,12 +419,12 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return false;
     }
 
-    public StateListenerContainer<Long> getStateListenerContainer() {
+    public StateListenerContainer<String> getStateListenerContainer() {
         return stateListenerContainer;
     }
 
-    public List<Long> getLeaderRegionIds() {
-        final List<Long> regionIds = Lists.newArrayListWithCapacity(this.regionEngineTable.size());
+    public List<String> getLeaderRegionIds() {
+        final List<String> regionIds = Lists.newArrayListWithCapacity(this.regionEngineTable.size());
         for (final RegionEngine regionEngine : this.regionEngineTable.values()) {
             if (regionEngine.isLeader()) {
                 regionIds.add(regionEngine.getRegion().getId());
@@ -452,7 +452,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return splitting.get();
     }
 
-    public void applySplit(final Long regionId, final Long newRegionId, final KVStoreClosure closure) {
+    public void applySplit(final String regionId, final String newRegionId, final KVStoreClosure closure) {
         Requires.requireNonNull(regionId, "regionId");
         Requires.requireNonNull(newRegionId, "newRegionId");
         if (this.regionEngineTable.containsKey(newRegionId)) {
@@ -519,7 +519,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         parentEngine.getNode().apply(task);
     }
 
-    public void doSplit(final Long regionId, final Long newRegionId, final byte[] splitKey) {
+    public void doSplit(final String regionId, final String newRegionId, final byte[] splitKey) {
         try {
             Requires.requireNonNull(regionId, "regionId");
             Requires.requireNonNull(newRegionId, "newRegionId");
@@ -699,6 +699,20 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             }
         }
         return true;
+    }
+
+    public boolean startRegionEngine(Region region, RegionEngineOptions options) {
+        options.setRaftDataPath(Paths.get(this.storeOpts.getRaftDataPath(), storeId, region.getId()).toString());
+        Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
+        final RegionEngine engine = new RegionEngine(region, this);
+        if (engine.init(options)) {
+            final RegionKVService regionKVService = new DefaultRegionKVService(engine);
+            registerRegionKVService(regionKVService);
+            this.regionEngineTable.put(region.getId(), engine);
+            return true;
+        }
+        LOG.error("Fail to init [RegionEngine: {}].", region);
+        return false;
     }
 
     private boolean inConfiguration(final String curr, final String all) {

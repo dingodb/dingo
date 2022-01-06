@@ -40,7 +40,7 @@ public interface PlacementDriverClient extends Lifecycle<PlacementDriverOptions>
     /**
      * Query the region by region id.
      */
-    Region getRegionById(final long regionId);
+    Region getRegionById(final String regionId);
 
     /**
      * Returns the region to which the key belongs.
@@ -87,34 +87,34 @@ public interface PlacementDriverClient extends Lifecycle<PlacementDriverOptions>
     /**
      * Get the specified region leader communication address.
      */
-    Endpoint getLeader(final long regionId, final boolean forceRefresh, final long timeoutMillis);
+    Endpoint getLeader(final String regionId, final boolean forceRefresh, final long timeoutMillis);
 
     /**
      * Get the specified region random peer communication address,
      * format: [ip:port]
      */
-    Endpoint getLuckyPeer(final long regionId, final boolean forceRefresh, final long timeoutMillis,
+    Endpoint getLuckyPeer(final String regionId, final boolean forceRefresh, final long timeoutMillis,
                           final Endpoint unExpect);
 
     /**
      * Refresh the routing information of the specified region
      */
-    void refreshRouteConfiguration(final long regionId);
+    void refreshRouteConfiguration(final String regionId);
 
     /**
      * Transfer leader to specified peer.
      */
-    boolean transferLeader(final long regionId, final Peer peer, final boolean refreshConf);
+    boolean transferLeader(final String regionId, final Peer peer, final boolean refreshConf);
 
     /**
      * Join the specified region group.
      */
-    boolean addReplica(final long regionId, final Peer peer, final boolean refreshConf);
+    boolean addReplica(final String regionId, final Peer peer, final boolean refreshConf);
 
     /**
      * Depart from the specified region group.
      */
-    boolean removeReplica(final long regionId, final Peer peer, final boolean refreshConf);
+    boolean removeReplica(final String regionId, final Peer peer, final boolean refreshConf);
 
     /**
      * Returns raft cluster prefix id.

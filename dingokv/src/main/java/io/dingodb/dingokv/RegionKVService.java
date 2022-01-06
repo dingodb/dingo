@@ -42,7 +42,7 @@ import io.dingodb.dingokv.metadata.RegionEpoch;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface RegionKVService {
-    long getRegionId();
+    String getRegionId();
 
     RegionEpoch getRegionEpoch();
 

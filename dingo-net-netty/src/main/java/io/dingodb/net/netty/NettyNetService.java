@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
 import io.dingodb.net.MessageListenerProvider;
 import io.dingodb.net.NetAddress;
@@ -27,7 +28,6 @@ import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
 import io.dingodb.net.netty.handler.TagMessageHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.dingodb.net.netty.listener.impl.NettyServer;
-import io.dingodb.net.netty.utils.StackTraces;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
@@ -86,7 +86,7 @@ public class NettyNetService implements NetService {
         log.info("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
             new String(tag.toBytes()),
             listenerProvider.getClass().getName(),
-            StackTraces.traceLog(1));
+            StackTraces.stack(1));
         TagMessageHandler.INSTANCE.addTagListenerProvider(tag, listenerProvider);
     }
 
@@ -95,7 +95,7 @@ public class NettyNetService implements NetService {
         log.info("Unregister message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
             new String(tag.toBytes()),
             listenerProvider.getClass().getName(),
-            StackTraces.traceLog(1));
+            StackTraces.stack(1));
         TagMessageHandler.INSTANCE.removeTagListenerProvider(tag, listenerProvider);
     }
 

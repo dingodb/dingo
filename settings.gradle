@@ -49,4 +49,6 @@ include 'dingo-store-api'
 include 'dingo-test'
 include 'dingo-web'
 include 'dingokv'
+include 'dingo-coordinator'
+include 'dingo-executor'
 

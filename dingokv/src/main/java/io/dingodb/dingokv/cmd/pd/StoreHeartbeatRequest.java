@@ -16,6 +16,7 @@
 
 package io.dingodb.dingokv.cmd.pd;
 
+import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.dingokv.metadata.StoreStats;
 import lombok.Getter;
 import lombok.Setter;

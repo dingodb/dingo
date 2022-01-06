@@ -10,6 +10,10 @@ repositories {
 }
 
 dependencies {
+    implementation project(":dingo-common")
+    implementation project(":dingo-net-api")
+    implementation project(":dingo-net-netty")
+
     implementation group: 'com.alipay.sofa', name: 'bolt', version: 'bolt'.v()
     implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'dataformat'.v()
@@ -20,10 +24,6 @@ dependencies {
     implementation group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
     implementation group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
     implementation group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: 'log4j'.v()
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: 'log4j'.v()
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: 'log4j'.v()
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: 'log4j'.v()
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()

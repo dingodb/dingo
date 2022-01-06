@@ -66,7 +66,7 @@ public class FakePlacementDriverClient extends AbstractPlacementDriverClient {
         final Store store = new Store();
         final List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
         final List<Region> regionList = Lists.newArrayListWithCapacity(rOptsList.size());
-        store.setId(-1);
+        store.setId("-1");
         store.setEndpoint(opts.getServerAddress());
         for (final RegionEngineOptions rOpts : rOptsList) {
             regionList.add(getLocalRegionMetadata(rOpts));

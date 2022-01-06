@@ -50,8 +50,8 @@ public class MetricsRawKVStore implements RawKVStore {
     private final RawKVStore rawKVStore;
     private final Timer timer;
 
-    public MetricsRawKVStore(long regionId, RawKVStore rawKVStore) {
-        this.regionId = String.valueOf(regionId);
+    public MetricsRawKVStore(String regionId, RawKVStore rawKVStore) {
+        this.regionId = regionId;
         this.rawKVStore = rawKVStore;
         this.timer = KVMetrics.timer(RPC_REQUEST_HANDLE_TIMER, this.regionId);
     }

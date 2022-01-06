@@ -27,33 +27,33 @@ import java.util.Map;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class MultiRegionRouteTableOptionsConfigured implements Configured<List<RegionRouteTableOptions>> {
-    private final Map<Long, RegionRouteTableOptions> optsTable;
+    private final Map<String, RegionRouteTableOptions> optsTable;
 
     public static MultiRegionRouteTableOptionsConfigured newConfigured() {
         return new MultiRegionRouteTableOptionsConfigured(Maps.newHashMap());
     }
 
-    public MultiRegionRouteTableOptionsConfigured withStartKey(final Long regionId, final String startKey) {
+    public MultiRegionRouteTableOptionsConfigured withStartKey(final String regionId, final String startKey) {
         getOrCreateOptsById(regionId).setStartKey(startKey);
         return this;
     }
 
-    public MultiRegionRouteTableOptionsConfigured withStartKeyBytes(final Long regionId, final byte[] startKeyBytes) {
+    public MultiRegionRouteTableOptionsConfigured withStartKeyBytes(final String regionId, final byte[] startKeyBytes) {
         getOrCreateOptsById(regionId).setStartKeyBytes(startKeyBytes);
         return this;
     }
 
-    public MultiRegionRouteTableOptionsConfigured withEndKey(final Long regionId, final String endKey) {
+    public MultiRegionRouteTableOptionsConfigured withEndKey(final String regionId, final String endKey) {
         getOrCreateOptsById(regionId).setEndKey(endKey);
         return this;
     }
 
-    public MultiRegionRouteTableOptionsConfigured withEndKeyBytes(final Long regionId, final byte[] endKeyBytes) {
+    public MultiRegionRouteTableOptionsConfigured withEndKeyBytes(final String regionId, final byte[] endKeyBytes) {
         getOrCreateOptsById(regionId).setEndKeyBytes(endKeyBytes);
         return this;
     }
 
-    public MultiRegionRouteTableOptionsConfigured withInitialServerList(final Long regionId,
+    public MultiRegionRouteTableOptionsConfigured withInitialServerList(final String regionId,
                                                                         final String initialServerList) {
         getOrCreateOptsById(regionId).setInitialServerList(initialServerList);
         return this;
@@ -64,7 +64,7 @@ public final class MultiRegionRouteTableOptionsConfigured implements Configured<
         return Lists.newArrayList(this.optsTable.values());
     }
 
-    private RegionRouteTableOptions getOrCreateOptsById(final Long regionId) {
+    private RegionRouteTableOptions getOrCreateOptsById(final String regionId) {
         Requires.requireNonNull(regionId, "regionId");
         RegionRouteTableOptions opts = this.optsTable.get(regionId);
         if (opts != null) {
@@ -76,7 +76,7 @@ public final class MultiRegionRouteTableOptionsConfigured implements Configured<
         return opts;
     }
 
-    public MultiRegionRouteTableOptionsConfigured(Map<Long, RegionRouteTableOptions> optsTable) {
+    public MultiRegionRouteTableOptionsConfigured(Map<String, RegionRouteTableOptions> optsTable) {
         this.optsTable = optsTable;
     }
 }

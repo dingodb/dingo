@@ -16,6 +16,8 @@
 
 package io.dingodb.net.netty.connection.impl;
 
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
@@ -28,7 +30,6 @@ import io.dingodb.net.netty.handler.impl.GenericMessageHandler;
 import io.dingodb.net.netty.packet.Packet;
 import io.dingodb.net.netty.packet.impl.MessagePacket;
 import io.dingodb.net.netty.utils.Logs;
-import io.dingodb.net.netty.utils.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
@@ -38,10 +39,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.dingodb.common.util.StackTraces.stack;
 import static io.dingodb.net.NetError.OPEN_CHANNEL_TIME_OUT;
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.GENERIC_CHANNEL_ID;
 import static io.dingodb.net.netty.packet.message.HandshakeMessage.handshakePacket;
-import static io.dingodb.net.netty.utils.StackTraces.traceLog;
 
 @Slf4j
 public class NetServiceNettyConnection extends AbstractNettyConnection<Message> {
@@ -74,7 +75,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             NetError.OPEN_CONNECTION_INTERRUPT.throwError(remoteAddress());
         } catch (ExecutionException e) {
             close();
-            log.error("Open connection error, remote: [{}], caller: [{}]", remoteAddress(), traceLog(4));
+            log.error("Open connection error, remote: [{}], caller: [{}]", remoteAddress(), stack(4));
             NetError.UNKNOWN.throwError(e.getMessage());
         } catch (TimeoutException e) {
             close();
@@ -114,7 +115,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         } catch (ExecutionException e) {
             closeSubChannel(channel.channelId());
             log.error("Open channel error, channel id: [{}], caller: [{}]",
-                channel.channelId(), traceLog(2));
+                channel.channelId(), stack(2));
             NetError.UNKNOWN.throwError(e.getMessage());
         } catch (TimeoutException e) {
             closeSubChannel(channel.channelId());
@@ -122,7 +123,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         }
         if (log.isDebugEnabled()) {
             log.debug("Open channel from [{}] channel [{}], this channel: [{}], stacktrace: [{}], caller: [{}]",
-                remoteAddress(), channel.targetChannelId(), channel.channelId(), traceLog(), traceLog(3));
+                remoteAddress(), channel.targetChannelId(), channel.channelId(), StackTraces.stack(), stack(3));
         }
         channel.status(Channel.Status.ACTIVE);
         return channel;
@@ -136,7 +137,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         ).status(Channel.Status.ACTIVE);
         if (log.isDebugEnabled()) {
             log.debug("Open channel from [{}] channel [{}], this channel: [{}], stacktrace: [{}], caller: [{}]",
-                remoteAddress(), targetChannelId, channel.channelId(), traceLog(), traceLog(3));
+                remoteAddress(), targetChannelId, channel.channelId(), StackTraces.stack(), stack(3));
         }
         return channel;
     }
@@ -172,7 +173,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     public void close() {
         subChannels.values().forEach(NetServiceConnectionSubChannel::close);
         super.close();
-        log.info("Connection close, remote: [{}], [{}]", remoteAddress(), traceLog(2));
+        log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
     }
 
     public static class Provider implements Connection.Provider {

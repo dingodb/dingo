@@ -32,5 +32,5 @@ public interface DingoKVCliService extends Lifecycle<CliOptions> {
      * @param conf        current configuration
      * @return operation status
      */
-    Status rangeSplit(final long regionId, final long newRegionId, final String groupId, final Configuration conf);
+    Status rangeSplit(final String regionId, final String newRegionId, final String groupId, final Configuration conf);
 }
