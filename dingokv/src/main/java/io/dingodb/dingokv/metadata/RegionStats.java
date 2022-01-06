@@ -32,7 +32,7 @@ import java.util.List;
 public class RegionStats implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private long regionId;
+    private String regionId;
     private Peer leader;
     private List<PeerStats> downPeers;
     private List<PeerStats> pendingPeers;

@@ -17,6 +17,6 @@
 package io.dingodb.dingokv.cmd.pd;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public class GetStoreIdResponse extends BaseResponse<Long> {
+public class GetStoreIdResponse extends BaseResponse<String> {
     private static final long serialVersionUID = 1559432256700135322L;
 }

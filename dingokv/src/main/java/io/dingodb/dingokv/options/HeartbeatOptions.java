@@ -25,7 +25,7 @@ import lombok.ToString;
 @Setter
 @ToString
 public class HeartbeatOptions {
-    private long storeHeartbeatIntervalSeconds  = 60;
-    private long regionHeartbeatIntervalSeconds = 60;
+    private long storeHeartbeatIntervalSeconds  = 10;
+    private long regionHeartbeatIntervalSeconds = 5;
     private int  heartbeatRpcTimeoutMillis      = 5000;
 }

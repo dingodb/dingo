@@ -16,7 +16,11 @@
 
 package io.dingodb.dingokv.cmd.pd;
 
+import io.dingodb.dingokv.metadata.Instruction;
+
+import java.util.List;
+
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public class StoreHeartbeatResponse extends BaseResponse<Object> {
+public class StoreHeartbeatResponse extends BaseResponse<List<Instruction>> {
     private static final long serialVersionUID = -1881606836380822632L;
 }

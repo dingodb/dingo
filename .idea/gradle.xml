@@ -15,9 +15,11 @@
             <option value="$PROJECT_DIR$/dingo-calcite" />
             <option value="$PROJECT_DIR$/dingo-cli" />
             <option value="$PROJECT_DIR$/dingo-common" />
+            <option value="$PROJECT_DIR$/dingo-coordinator" />
             <option value="$PROJECT_DIR$/dingo-ddl" />
             <option value="$PROJECT_DIR$/dingo-driver" />
             <option value="$PROJECT_DIR$/dingo-exec" />
+            <option value="$PROJECT_DIR$/dingo-executor" />
             <option value="$PROJECT_DIR$/dingo-expr" />
             <option value="$PROJECT_DIR$/dingo-expr/annotations" />
             <option value="$PROJECT_DIR$/dingo-expr/console" />

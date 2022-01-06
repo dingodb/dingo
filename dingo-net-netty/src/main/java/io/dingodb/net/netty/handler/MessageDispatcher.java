@@ -16,12 +16,12 @@
 
 package io.dingodb.net.netty.handler;
 
+import io.dingodb.common.util.Optional;
 import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.packet.Packet;
 import io.dingodb.net.netty.packet.PacketMode;
 import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.utils.Logs;
-import io.dingodb.net.netty.utils.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;

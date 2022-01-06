@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetAddress;
@@ -24,7 +25,6 @@ import io.dingodb.net.SimpleMessage;
 import io.dingodb.net.SimpleTag;
 import io.dingodb.net.Tag;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
-import io.dingodb.net.netty.utils.StackTraces;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ServiceLoader;
@@ -47,7 +47,7 @@ public class NetServiceTest {
         netService.registerMessageListenerProvider(
             tag, () -> (msg, ch) -> System.out.println(
                 String.format("%s %s %s",
-                    new String(msg.toBytes()), ((ConnectionSubChannel) ch).channelId(), StackTraces.traceLog(2)))
+                    new String(msg.toBytes()), ((ConnectionSubChannel) ch).channelId(), StackTraces.stack(2)))
         );
 
         Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(19199).build());

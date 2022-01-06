@@ -118,7 +118,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
         ExtSerializerSupports.init();
     }
 
-    private final StateListenerContainer<Long> stateListenerContainer = new StateListenerContainer<>();
+    private final StateListenerContainer<String> stateListenerContainer = new StateListenerContainer<>();
     private StoreEngine storeEngine;
     private PlacementDriverClient pdClient;
     private DingoKVRpcService dingoKVRpcService;
@@ -180,7 +180,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
         this.dingoKVRpcService = new DefaultDingoKVRpcService(this.pdClient, selfEndpoint) {
 
             @Override
-            public Endpoint getLeader(final long regionId, final boolean forceRefresh, final long timeoutMillis) {
+            public Endpoint getLeader(final String regionId, final boolean forceRefresh, final long timeoutMillis) {
                 final Endpoint leader = getLeaderByRegionEngine(regionId);
                 if (leader != null) {
                     return leader;
@@ -253,7 +253,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
      * <p>
      * Caller should close the iterator when it is no longer needed.
      * The returned iterator should be closed before this db is closed.
-     * <p>
+     * </p>
      * <pre>
      *     KVIterator it = unsafeLocalIterator();
      *     try {
@@ -261,7 +261,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
      *     } finally {
      *         it.close();
      *     }
-     * <pre/>
+     * </pre>
      */
     public KVIterator unsafeLocalIterator() {
         checkState();
@@ -1415,7 +1415,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
     }
 
     // internal api
-    public CompletableFuture<Boolean> execute(final long regionId, final NodeExecutor executor) {
+    public CompletableFuture<Boolean> execute(final String regionId, final NodeExecutor executor) {
         checkState();
         Requires.requireNonNull(executor, "executor");
         final CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -1424,11 +1424,11 @@ public class DefaultDingoKVStore implements DingoKVStore {
     }
 
     // internal api
-    public Boolean bExecute(final long regionId, final NodeExecutor executor) {
+    public Boolean bExecute(final String regionId, final NodeExecutor executor) {
         return FutureHelper.get(execute(regionId, executor), this.futureTimeoutMillis);
     }
 
-    private void internalExecute(final long regionId, final NodeExecutor executor,
+    private void internalExecute(final String regionId, final NodeExecutor executor,
                                  final CompletableFuture<Boolean> future, final int retriesLeft, final Errors lastCause) {
         final Region region = this.pdClient.getRegionById(regionId);
         final RegionEngine regionEngine = getRegionEngine(region.getId(), true);
@@ -1541,17 +1541,17 @@ public class DefaultDingoKVStore implements DingoKVStore {
     }
 
     @Override
-    public void addLeaderStateListener(final long regionId, final LeaderStateListener listener) {
+    public void addLeaderStateListener(final String regionId, final LeaderStateListener listener) {
         addStateListener(regionId, listener);
     }
 
     @Override
-    public void addFollowerStateListener(final long regionId, final FollowerStateListener listener) {
+    public void addFollowerStateListener(final String regionId, final FollowerStateListener listener) {
         addStateListener(regionId, listener);
     }
 
     @Override
-    public void addStateListener(final long regionId, final StateListener listener) {
+    public void addStateListener(final String regionId, final StateListener listener) {
         this.stateListenerContainer.addStateListener(regionId, listener);
     }
 
@@ -1567,7 +1567,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
         return onlyLeaderRead;
     }
 
-    public boolean isLeader(final long regionId) {
+    public boolean isLeader(final String regionId) {
         checkState();
         final RegionEngine regionEngine = getRegionEngine(regionId);
         return regionEngine != null && regionEngine.isLeader();
@@ -1581,14 +1581,14 @@ public class DefaultDingoKVStore implements DingoKVStore {
         }
     }
 
-    private RegionEngine getRegionEngine(final long regionId) {
+    private RegionEngine getRegionEngine(final String regionId) {
         if (this.storeEngine == null) {
             return null;
         }
         return this.storeEngine.getRegionEngine(regionId);
     }
 
-    private RegionEngine getRegionEngine(final long regionId, final boolean requireLeader) {
+    private RegionEngine getRegionEngine(final String regionId, final boolean requireLeader) {
         final RegionEngine engine = getRegionEngine(regionId);
         if (engine == null) {
             return null;
@@ -1599,7 +1599,7 @@ public class DefaultDingoKVStore implements DingoKVStore {
         return engine;
     }
 
-    private Endpoint getLeaderByRegionEngine(final long regionId) {
+    private Endpoint getLeaderByRegionEngine(final String regionId) {
         final RegionEngine regionEngine = getRegionEngine(regionId);
         if (regionEngine != null) {
             final PeerId leader = regionEngine.getLeaderId();

@@ -32,7 +32,7 @@ public class BaseResponse<T> implements Serializable {
     private static final long serialVersionUID = 8411573936817037697L;
 
     private Errors error = Errors.NONE;
-    private long regionId;
+    private String regionId;
     private RegionEpoch regionEpoch;
     private T value;
 

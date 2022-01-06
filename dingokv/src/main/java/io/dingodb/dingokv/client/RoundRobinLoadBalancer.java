@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class RoundRobinLoadBalancer implements LoadBalancer {
-    private static final ConcurrentMap<Long, RoundRobinLoadBalancer> container = Maps.newConcurrentMapLong();
+    private static final ConcurrentMap<String, RoundRobinLoadBalancer> container = Maps.newConcurrentMap();
 
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater
         = AtomicIntegerFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, "index");
@@ -32,7 +32,7 @@ public class RoundRobinLoadBalancer implements LoadBalancer {
     @SuppressWarnings("unused")
     private volatile int index = 0;
 
-    public static RoundRobinLoadBalancer getInstance(final long regionId) {
+    public static RoundRobinLoadBalancer getInstance(final String regionId) {
         RoundRobinLoadBalancer instance = container.get(regionId);
         if (instance == null) {
             RoundRobinLoadBalancer newInstance = new RoundRobinLoadBalancer();

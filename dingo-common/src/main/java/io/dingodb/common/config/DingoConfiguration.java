@@ -23,6 +23,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -149,15 +150,18 @@ public class DingoConfiguration {
         BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
         PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
         for (PropertyDescriptor property : propertyDescriptors) {
-            if (!map.containsKey(property.getName())) {
+            Object value;
+            if ((value = map.get(property.getName())) == null) {
                 continue;
+            }
+            if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
+                value = mapToBean((Map<String, Object>) value, property.getPropertyType());
+            }
+            if (!property.getPropertyType().equals(value.getClass())) {
+                value = tryConvertValue(value, property.getPropertyType());
             }
             Method setter = property.getWriteMethod();
             if (setter != null) {
-                Object value = map.get(property.getName());
-                if (value instanceof Map) {
-                    value = mapToBean((Map<String, Object>) value, property.getPropertyType());
-                }
                 setter.invoke(obj, value);
             } else {
                 Field field = cls.getDeclaredField(property.getName());
@@ -169,4 +173,37 @@ public class DingoConfiguration {
         return obj;
     }
 
+    private Object tryConvertValue(Object obj, Class<?> type) {
+        String str = obj.toString();
+        if (type.equals(String.class)) {
+            return str;
+        }
+        if (type.equals(Integer.class)) {
+            return Integer.parseInt(str);
+        }
+        if (type.equals(Double.class)) {
+            return Double.parseDouble(str);
+        }
+        if (type.equals(Float.class)) {
+            return Float.parseFloat(str);
+        }
+        if (type.equals(Long.class)) {
+            return Long.parseLong(str);
+        }
+        if (type.equals(Boolean.class)) {
+            if (str.matches("[0-1]")) {
+                return Integer.parseInt(str) != 0;
+            }
+            if ("true".equalsIgnoreCase(str)) {
+                return true;
+            }
+            if ("false".equalsIgnoreCase(str)) {
+                return false;
+            }
+        }
+        if (type.equals(byte[].class)) {
+            return str.getBytes(StandardCharsets.UTF_8);
+        }
+        return obj;
+    }
 }
