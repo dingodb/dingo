@@ -16,3 +16,22 @@ server.executor.port: 19191
 default.replicas: 3
 default.partitions: 3
 data.dir: /opt/dingo/data
+
+kv.cluster.id: 1
+kv.cluster.name: dingo_kv_cluster
+kv.initialServerList: localhost:10181
+kv.failoverRetries: 10
+kv.futureTimeoutMillis: 30000
+placement.driver.options.fake: false
+placement.driver.options.pdGroupId: pdCluster-1
+placement.driver.options.initialPdServerList: localhost:9180
+placement.driver.options.cliOptions.timeoutMs: 10000
+placement.driver.options.cliOptions.maxRetry: 3
+placement.driver.options.cliOptions.rpcProcessorThreadPoolSize: 4
+store.engine.options.raftDataPath: temp_rhea_raft/
+store.engine.options.rocksDBOptions.dbPath: temp_rhea_db/
+store.engine.options.serverAddress.ip: localhost
+store.engine.options.serverAddress.port: 10181
+store.engine.options.regionEngineOptionsList:
+    - { regionId: 1, endKey: "1000000", nodeOptions: { timerPoolSize: 1, rpcProcessorThreadPoolSize: 4 } }
+    - { regionId: 2, startKey: "1000000", nodeOptions: { timerPoolSize: 1, rpcProcessorThreadPoolSize: 4 } }
