@@ -51,6 +51,18 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
+  release:
+    needs: [build]
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    # Use a trick method to trigger build image
+    if: "contains(github.head_ref, 'main')"
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
       # Build Docker Image
       - name: Build image
         run: docker build . --file ./docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
