@@ -19,7 +19,7 @@ package io.dingodb.calcite.assertion;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.SourceOperator;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import java.util.List;
 import java.util.function.Consumer;

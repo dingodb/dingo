@@ -17,24 +17,36 @@
 package io.dingodb.coordinator.meta.impl;
 
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.coordinator.GeneralId;
+import io.dingodb.coordinator.app.AppView;
+import io.dingodb.coordinator.app.impl.RegionApp;
+import io.dingodb.coordinator.app.impl.RegionView;
 import io.dingodb.coordinator.meta.TableMetaAdaptor;
+import io.dingodb.coordinator.resource.impl.ExecutorView;
 import io.dingodb.coordinator.store.AsyncKeyValueStore;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
+import io.dingodb.meta.LocationGroup;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class TableMetaAdaptorImpl implements TableMetaAdaptor {
 
     private final AsyncKeyValueStore store;
+    private final MetaStoreImpl metaStore;
 
-    public TableMetaAdaptorImpl(AsyncKeyValueStore store) {
+    public TableMetaAdaptorImpl(AsyncKeyValueStore store, MetaStoreImpl metaStore) {
         this.store = store;
+        this.metaStore = metaStore;
     }
 
     @Override
-    public CompletableFuture<?> save(
+    public CompletableFuture<Boolean> save(
         String tableName,
         byte[] bytes
     ) {
@@ -42,7 +54,7 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
     }
 
     @Override
-    public CompletableFuture<?> delete(String tableName) {
+    public CompletableFuture<Boolean> delete(String tableName) {
         return store.delete(tableName.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -55,11 +67,11 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
     public CompletableFuture<Long> getTableId(String tableName) {
         CompletableFuture<Long> future = new CompletableFuture<>();
         store.get(tableIdKey(tableName).getBytes(StandardCharsets.UTF_8))
-            .whenComplete((r, e) -> {
+            .whenCompleteAsync((r, e) -> {
                 if (e == null) {
                     Long id;
-                    if ((id = PrimitiveCodec.readVarLong(r)) == null) {
-                        store.increment("tableId".getBytes(StandardCharsets.UTF_8)).whenComplete((r1, e1) -> {
+                    if (r == null || (id = PrimitiveCodec.readVarLong(r)) == null) {
+                        store.increment("tableId".getBytes(StandardCharsets.UTF_8)).whenCompleteAsync((r1, e1) -> {
                             if (e1 == null) {
                                 future.complete(r1);
                             } else {
@@ -73,6 +85,8 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
                     future.completeExceptionally(e);
                 }
             });
+        future.thenAccept(r -> store.put(
+            tableIdKey(tableName).getBytes(StandardCharsets.UTF_8), PrimitiveCodec.encodeVarLong(r)));
         return future;
     }
 
@@ -81,8 +95,24 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
     }
 
     @Override
-    public Map<byte[], Object> rangeLocationGroup() {
-        return null;
+    public NavigableMap<byte[], LocationGroup> rangeLocationGroup() {
+        NavigableMap<byte[], LocationGroup> result = new TreeMap<>();
+        Map<GeneralId, AppView<?, ?>> map = this.metaStore.namespaceView().appViews();
+        for (Map.Entry<GeneralId, AppView<?, ?>> entry : map.entrySet()) {
+            if (entry.getValue() instanceof RegionView) {
+                RegionView view = (RegionView) entry.getValue();
+                ExecutorView executorView = this.metaStore.executorView(view.leader());
+                Location location = executorView.location();
+                List<Location> locationList = view.nodeResources().stream()
+                    .map(id -> this.metaStore.namespaceView().<ExecutorView>getResourceView(id))
+                    .map(ExecutorView::location)
+                    .collect(Collectors.toList());
+                LocationGroup locationGroup = new LocationGroup(location, locationList);
+                RegionApp regionApp = this.metaStore.regionApp(view.app());
+                result.put(regionApp.startKey(), locationGroup);
+            }
+        }
+        return result;
     }
 
     @Override

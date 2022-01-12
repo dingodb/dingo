@@ -18,7 +18,7 @@ package io.dingodb.coordinator.resource;
 
 import io.dingodb.coordinator.GeneralId;
 import io.dingodb.coordinator.score.Score;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import java.util.Map;
 

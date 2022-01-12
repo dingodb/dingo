@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.Lock;
@@ -221,7 +222,7 @@ public class RaftAsyncKeyValueStore implements AsyncKeyValueStore {
     }
 
     @Override
-    public synchronized CompletableFuture<Long> increment(byte[] key) {
+    public CompletableFuture<Long> increment(byte[] key) {
         String stack = watchWithStack ? StackTraces.stack(2) : null;
         CompletableFuture<Long> future = new CompletableFuture<>();
         get(key).whenComplete((r, e) -> {

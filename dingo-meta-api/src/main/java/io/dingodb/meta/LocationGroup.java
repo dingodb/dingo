@@ -14,12 +14,30 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.meta;
 
-dependencies {
-    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
-    api project(':dingo-common')
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.List;
+
+@Getter
+@Setter
+@EqualsAndHashCode
+public class LocationGroup {
+
+    private Location leader;
+
+    private List<Location> locations;
+
+    public LocationGroup(Location leader, List<Location> locations) {
+        this.leader = leader;
+        this.locations = locations;
+    }
+
+    @Override
+    public String toString() {
+        return "LocationGroup{" + "leader=" + leader + ", locations=" + locations + '}';
+    }
 }
