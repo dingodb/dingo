@@ -33,7 +33,7 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'org.apache.commons', name: 'commons-csv', version: 'commons-csv'.v()
-    implementation project(":dingo-kvstore-raft")
+    implementation project(":dingo-row-store-api")
 }
 
 task fatJar(type: Jar) {
@@ -52,7 +52,7 @@ task fatJar(type: Jar) {
 }
 
 task copyDepends(type: Copy) {
-    dependsOn(fatJar, ':dingo-kvstore-raft:fatJar')
+    dependsOn(fatJar, ':dingo-row-store-api:fatJar')
 
     from(layout.projectDirectory) {
         include "conf/**"
@@ -65,8 +65,8 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-kvstore-raft').layout.buildDirectory) {
-        include('libs/dingo-kvstore-raft-*-all.jar')
+    from(project(':dingo-row-store-api').layout.buildDirectory) {
+        include('libs/dingo-row-store-api-*-all.jar')
     }
     into layout.projectDirectory.dir("dingo")
 
