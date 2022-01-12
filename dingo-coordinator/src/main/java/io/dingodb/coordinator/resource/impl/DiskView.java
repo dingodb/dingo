@@ -19,7 +19,7 @@ package io.dingodb.coordinator.resource.impl;
 import io.dingodb.coordinator.GeneralId;
 import io.dingodb.coordinator.resource.ResourceView;
 import io.dingodb.coordinator.score.impl.SimplePercentScore;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import java.util.Map;
 

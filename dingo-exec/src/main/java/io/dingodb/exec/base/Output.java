@@ -17,7 +17,7 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import javax.annotation.Nonnull;
 

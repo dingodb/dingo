@@ -19,9 +19,9 @@ package io.dingodb.calcite.mock;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.Location;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
-import io.dingodb.net.Location;
 import org.mockito.Mockito;
 
 import java.io.IOException;

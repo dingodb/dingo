@@ -16,22 +16,23 @@
 
 package io.dingodb.coordinator.meta;
 
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
+import io.dingodb.meta.LocationGroup;
 
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 
 public interface TableMetaAdaptor {
-    CompletableFuture<?> save(String tableName, byte[] bytes);
+    CompletableFuture<Boolean> save(String tableName, byte[] bytes);
 
-    CompletableFuture<?> delete(String tableName);
+    CompletableFuture<Boolean> delete(String tableName);
 
-    CompletableFuture<?> get(String tableName);
+    CompletableFuture<byte[]> get(String tableName);
 
-    CompletableFuture<?> getTableId(String tableName);
+    CompletableFuture<Long> getTableId(String tableName);
 
-    // todo object -> LocationGroup
-    Map<byte[], Object> rangeLocationGroup();
+    NavigableMap<byte[], LocationGroup> rangeLocationGroup();
 
     Location currentLocation();
 }

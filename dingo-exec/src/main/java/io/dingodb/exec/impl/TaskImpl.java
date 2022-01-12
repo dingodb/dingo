@@ -29,7 +29,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.AbstractOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SourceOperator;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

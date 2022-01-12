@@ -28,7 +28,7 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import java.util.Collection;
 import java.util.HashMap;

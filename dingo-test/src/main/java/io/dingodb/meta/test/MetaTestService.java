@@ -17,12 +17,14 @@
 package io.dingodb.meta.test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.kvstore.KvStoreInstance;
+import io.dingodb.meta.Location;
+import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.Location;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -112,6 +114,16 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
+    public byte[] getTableKey(@Nonnull String tableName) {
+        return new byte[0];
+    }
+
+    @Override
+    public byte[] getIndexId(@Nonnull String tableName) {
+        return new byte[0];
+    }
+
+    @Override
     public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
         try {
             OutputStream os = new FileOutputStream(metaFile(tableName));
@@ -179,5 +191,16 @@ public class MetaTestService implements MetaService {
             "1", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath1.getAbsolutePath()),
             "2", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath2.getAbsolutePath())
         );
+    }
+
+    @Override
+    public LocationGroup getLocationGroup(String name) {
+        new LocationGroup(
+            new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
+            Lists.newArrayList(
+                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
+                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
+                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath())));
+        return null;
     }
 }

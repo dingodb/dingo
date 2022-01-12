@@ -22,7 +22,7 @@ import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.ValuesOperator;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

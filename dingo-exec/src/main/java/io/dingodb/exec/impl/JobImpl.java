@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import lombok.Getter;
 
 import java.util.LinkedList;

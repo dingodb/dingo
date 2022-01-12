@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.coordinator.meta.impl;
 
-dependencies {
-    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
-    api project(':dingo-common')
+import com.google.auto.service.AutoService;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.MetaServiceProvider;
+
+@AutoService(MetaServiceProvider.class)
+public class CoordinatorMetaServiceProvider implements MetaServiceProvider {
+    @Override
+    public MetaService get() {
+        return CoordinatorMetaService.instance();
+    }
 }
