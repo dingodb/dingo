@@ -24,6 +24,7 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'org.apache.helix', name: 'helix-core', version: 'helix'.v();
+    implementation project(":dingo-kvstore-api")
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-netty")
     implementation project(":dingokv")

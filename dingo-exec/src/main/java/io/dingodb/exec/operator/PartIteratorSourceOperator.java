@@ -22,7 +22,7 @@ import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.kvstore.KvStoreInstance;
+import io.dingodb.store.api.StoreInstance;
 
 public abstract class PartIteratorSourceOperator extends IteratorSourceOperator {
     @JsonProperty("table")
@@ -51,7 +51,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     @Override
     public void init() {
         super.init();
-        KvStoreInstance store = Services.KV_STORE.getInstance(task.getLocation().getPath());
+        StoreInstance store = Services.KV_STORE.getInstance(task.getLocation().getPath());
         part = new PartInKvStore(
             store.getKvBlock(tableName, partId),
             schema,

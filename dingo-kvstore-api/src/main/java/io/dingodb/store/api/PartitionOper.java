@@ -14,8 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.api;
 
-public interface KvStoreServiceProvider {
-    KvStoreService get();
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+
+public interface PartitionOper {
+    void create();
+
+    Iterator<KeyValue> getIterator();
+
+    boolean contains(byte[] key);
+
+    void put(@Nonnull KeyValue keyValue);
+
+    void delete(byte[] key);
+
+    byte[] get(byte[] key);
+
+    default List<byte[]> multiGet(@Nonnull List<byte[]> keys) {
+        return keys.stream().map(this::get).collect(Collectors.toList());
+    }
 }

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
+import io.dingodb.store.api.KeyValue;
 import org.rocksdb.RocksDB;
 
 import java.util.Iterator;

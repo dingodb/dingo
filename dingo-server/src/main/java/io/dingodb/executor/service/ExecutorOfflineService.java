@@ -19,9 +19,9 @@ package io.dingodb.executor.service;
 import io.dingodb.helix.service.AbstractOfflineService;
 import io.dingodb.helix.service.StateService;
 import io.dingodb.helix.service.StateServiceContext;
-import io.dingodb.kvstore.KvBlock;
-import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.net.NetService;
+import io.dingodb.store.api.PartitionOper;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
 
@@ -29,11 +29,11 @@ import org.apache.helix.NotificationContext;
 public class ExecutorOfflineService extends AbstractOfflineService {
 
     private final NetService netService;
-    private final KvStoreInstance storeInstance;
+    private final StoreInstance storeInstance;
 
-    private KvBlock kvBlock;
+    private PartitionOper kvBlock;
 
-    public ExecutorOfflineService(StateServiceContext context, NetService netService, KvStoreInstance storeInstance) {
+    public ExecutorOfflineService(StateServiceContext context, NetService netService, StoreInstance storeInstance) {
         super(context);
         this.netService = netService;
         this.storeInstance = storeInstance;
