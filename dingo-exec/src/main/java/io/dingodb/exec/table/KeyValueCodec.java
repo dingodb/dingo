@@ -19,7 +19,7 @@ package io.dingodb.exec.table;
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.kvstore.KeyValue;
+import io.dingodb.store.api.KeyValue;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;

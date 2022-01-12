@@ -21,9 +21,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.helix.service.AbstractLeaderService;
 import io.dingodb.helix.service.StateService;
 import io.dingodb.helix.service.StateServiceContext;
-import io.dingodb.kvstore.KvBlock;
-import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.net.NetService;
+import io.dingodb.store.api.PartitionOper;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
 
@@ -31,11 +31,11 @@ import org.apache.helix.NotificationContext;
 public class ExecutorLeaderService extends AbstractLeaderService {
 
     private final NetService netService;
-    private final KvStoreInstance storeInstance;
+    private final StoreInstance storeInstance;
 
-    private KvBlock kvBlock;
+    private PartitionOper kvBlock;
 
-    public ExecutorLeaderService(StateServiceContext context, NetService netService, KvStoreInstance storeService) {
+    public ExecutorLeaderService(StateServiceContext context, NetService netService, StoreInstance storeService) {
         super(context);
         this.netService = netService;
         this.storeInstance = storeService;

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.dingokv.client.DefaultDingoKVStore;
+import io.dingodb.store.api.KeyValue;
+import io.dingodb.store.api.PartitionOper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -31,12 +33,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Slf4j
-public final class DingoKvBlock implements KvBlock {
+public final class RowPartitionOp implements PartitionOper {
     private final String path;
 
     private DefaultDingoKVStore kvStore;
 
-    public DingoKvBlock(String path, DefaultDingoKVStore kvStore) {
+    public RowPartitionOp(String path, DefaultDingoKVStore kvStore) {
         this.path = path;
         this.kvStore = kvStore;
         create();
@@ -59,7 +61,7 @@ public final class DingoKvBlock implements KvBlock {
     @Override
     @Nonnull
     public Iterator<KeyValue> getIterator() {
-        return new DingoKvBlockIterator(kvStore);
+        return new RowBlockIterator(kvStore);
     }
 
     public boolean contains(byte[] key) {

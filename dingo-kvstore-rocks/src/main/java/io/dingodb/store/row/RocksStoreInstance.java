@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -24,7 +25,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public class RocksStoreInstance implements KvStoreInstance {
+public class RocksStoreInstance implements StoreInstance {
     private final String path;
 
     private final Map<String, RocksBlock> blockMap;

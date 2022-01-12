@@ -20,8 +20,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.kvstore.KeyValue;
-import io.dingodb.kvstore.KvBlock;
+import io.dingodb.store.api.KeyValue;
+import io.dingodb.store.api.PartitionOper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +37,11 @@ import javax.annotation.Nullable;
 
 @Slf4j
 public final class PartInKvStore implements Part {
-    private final KvBlock block;
+    private final PartitionOper block;
     @Getter
     private final KeyValueCodec codec;
 
-    public PartInKvStore(KvBlock block, TupleSchema schema, TupleMapping keyMapping) {
+    public PartInKvStore(PartitionOper block, TupleSchema schema, TupleMapping keyMapping) {
         this.block = block;
         this.codec = new KeyValueCodec(schema, keyMapping);
     }

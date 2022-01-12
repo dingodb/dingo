@@ -17,15 +17,15 @@
 package io.dingodb.calcite.mock;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.kvstore.KvStoreService;
-import io.dingodb.kvstore.KvStoreServiceProvider;
+import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
 import org.mockito.Mockito;
 
-@AutoService(KvStoreServiceProvider.class)
-public class MockKvStoreServiceProvider implements KvStoreServiceProvider {
+@AutoService(StoreServiceProvider.class)
+public class MockKvStoreServiceProvider implements StoreServiceProvider {
     @Override
-    public KvStoreService get() {
-        KvStoreService storeService = Mockito.mock(KvStoreService.class);
+    public StoreService get() {
+        StoreService storeService = Mockito.mock(StoreService.class);
         return storeService;
     }
 }

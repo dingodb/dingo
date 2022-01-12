@@ -17,11 +17,11 @@
 package io.dingodb.executor;
 
 import io.dingodb.exec.Services;
-import io.dingodb.kvstore.KvStoreService;
-import io.dingodb.kvstore.KvStoreServiceProvider;
 import io.dingodb.meta.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class ExecutorServer {
 
 
     private final NetService netService;
-    private final KvStoreService storeService;
+    private final StoreService storeService;
 
     private final Location location;
     private final ServerConfiguration configuration;
@@ -52,15 +52,15 @@ public class ExecutorServer {
         return ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
     }
 
-    private KvStoreService loadStoreService() {
+    private StoreService loadStoreService() {
         String store = configuration.store();
-        List<KvStoreServiceProvider> storeServiceProviders = new ArrayList<>();
-        ServiceLoader.load(KvStoreServiceProvider.class).forEach(storeServiceProviders::add);
+        List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
+        ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
         if (storeServiceProviders.size() == 1) {
-            return Optional.ofNullable(storeServiceProviders.get(0)).map(KvStoreServiceProvider::get).orElse(null);
+            return Optional.ofNullable(storeServiceProviders.get(0)).map(StoreServiceProvider::get).orElse(null);
         }
         return storeServiceProviders.stream().filter(provider -> store.equals(provider.getClass().getName())).findAny()
-            .map(KvStoreServiceProvider::get).orElse(null);
+            .map(StoreServiceProvider::get).orElse(null);
     }
 
     public void start() throws Exception {

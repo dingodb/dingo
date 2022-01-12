@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.api;
 
-import com.google.auto.service.AutoService;
-
-@AutoService(KvStoreServiceProvider.class)
-public class DingoKvStoreServiceProvider implements KvStoreServiceProvider {
-    @Override
-    public KvStoreService get() {
-        return DingoKvStoreService.INSTANCE;
-    }
+public interface StoreServiceProvider {
+    StoreService get();
 }

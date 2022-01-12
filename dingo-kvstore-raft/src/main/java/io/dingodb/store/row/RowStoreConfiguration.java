@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.dingokv.options.RegionEngineOptions;
@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class DingoKvStoreConfiguration {
+public class RowStoreConfiguration {
 
-    public static final DingoKvStoreConfiguration INSTANCE = new DingoKvStoreConfiguration();
+    public static final RowStoreConfiguration INSTANCE = new RowStoreConfiguration();
 
     private static final String CLUSTER_ID_KEY = "kv.cluster.id";
     private static final String CLUSTER_NAME_KEY = "kv.cluster.name";
@@ -65,14 +65,14 @@ public class DingoKvStoreConfiguration {
     @Delegate
     private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
 
-    private DingoKvStoreConfiguration() {
+    private RowStoreConfiguration() {
     }
 
-    public static DingoKvStoreConfiguration instance() {
+    public static RowStoreConfiguration instance() {
         return INSTANCE;
     }
 
-    public DingoKvStoreConfiguration clusterId(int clusterId) {
+    public RowStoreConfiguration clusterId(int clusterId) {
         setInt(CLUSTER_ID_KEY, clusterId);
         return this;
     }
@@ -81,7 +81,7 @@ public class DingoKvStoreConfiguration {
         return getInt(CLUSTER_ID_KEY);
     }
 
-    public DingoKvStoreConfiguration clusterName(String clusterName) {
+    public RowStoreConfiguration clusterName(String clusterName) {
         setString(CLUSTER_NAME_KEY, clusterName);
         return this;
     }
@@ -90,7 +90,7 @@ public class DingoKvStoreConfiguration {
         return getString(CLUSTER_NAME_KEY);
     }
 
-    public DingoKvStoreConfiguration clusterInitialServerList(String clusterInitialServerList) {
+    public RowStoreConfiguration clusterInitialServerList(String clusterInitialServerList) {
         setString(CLUSTER_INITIAL_SERVER_LIST_KEY, clusterInitialServerList);
         return this;
     }
@@ -99,7 +99,7 @@ public class DingoKvStoreConfiguration {
         return getString(CLUSTER_INITIAL_SERVER_LIST_KEY);
     }
 
-    public DingoKvStoreConfiguration clusterFailoverRetries(int clusterFailoverRetries) {
+    public RowStoreConfiguration clusterFailoverRetries(int clusterFailoverRetries) {
         setInt(CLUSTER_FAILOVER_RETRIES_KEY, clusterFailoverRetries);
         return this;
     }
@@ -108,7 +108,7 @@ public class DingoKvStoreConfiguration {
         return getInt(CLUSTER_FAILOVER_RETRIES_KEY);
     }
 
-    public DingoKvStoreConfiguration clusterFutureTimeoutMillis(int clusterFutureTimeoutMillis) {
+    public RowStoreConfiguration clusterFutureTimeoutMillis(int clusterFutureTimeoutMillis) {
         setInt(CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY, clusterFutureTimeoutMillis);
         return this;
     }
@@ -117,7 +117,7 @@ public class DingoKvStoreConfiguration {
         return getInt(CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY);
     }
 
-    public DingoKvStoreConfiguration placementDriverOptionsFake(boolean placementDriverOptionsFake) {
+    public RowStoreConfiguration placementDriverOptionsFake(boolean placementDriverOptionsFake) {
         setBool(PLACEMENT_DRIVER_OPTIONS_FAKE_KEY, placementDriverOptionsFake);
         return this;
     }
@@ -126,7 +126,7 @@ public class DingoKvStoreConfiguration {
         return getBool(PLACEMENT_DRIVER_OPTIONS_FAKE_KEY);
     }
 
-    public DingoKvStoreConfiguration placementDriverOptionsPDGroupId(String placementDriverOptionsPDGroupId) {
+    public RowStoreConfiguration placementDriverOptionsPDGroupId(String placementDriverOptionsPDGroupId) {
         setString(PLACEMENT_DRIVER_OPTIONS_PD_GROUP_ID_KEY, placementDriverOptionsPDGroupId);
         return this;
     }
@@ -135,7 +135,7 @@ public class DingoKvStoreConfiguration {
         return getString(PLACEMENT_DRIVER_OPTIONS_PD_GROUP_ID_KEY);
     }
 
-    public DingoKvStoreConfiguration placementDriverOptionsInitialPDServerList(
+    public RowStoreConfiguration placementDriverOptionsInitialPDServerList(
         String placementDriverOptionsInitialPDServerList) {
         setString(PLACEMENT_DRIVER_OPTIONS_INITIAL_PD_SERVER_LIST_KEY, placementDriverOptionsInitialPDServerList);
         return this;
@@ -145,7 +145,7 @@ public class DingoKvStoreConfiguration {
         return getString(PLACEMENT_DRIVER_OPTIONS_INITIAL_PD_SERVER_LIST_KEY);
     }
 
-    public DingoKvStoreConfiguration placementDriverOptionsCliOptionsTimeoutMs(
+    public RowStoreConfiguration placementDriverOptionsCliOptionsTimeoutMs(
         int placementDriverOptionsCliOptionsTimeoutMs) {
         setInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY, placementDriverOptionsCliOptionsTimeoutMs);
         return this;
@@ -155,7 +155,7 @@ public class DingoKvStoreConfiguration {
         return getInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY);
     }
 
-    public DingoKvStoreConfiguration placementDriverOptionsCliOptionsMaxRetry(
+    public RowStoreConfiguration placementDriverOptionsCliOptionsMaxRetry(
         int placementDriverOptionsCliOptionsMaxRetry) {
         setInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY, placementDriverOptionsCliOptionsMaxRetry);
         return this;
@@ -165,7 +165,7 @@ public class DingoKvStoreConfiguration {
         return getInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY);
     }
 
-    public DingoKvStoreConfiguration storeEngineOptionsRaftDataPath(String storeEngineOptionsRaftDataPath) {
+    public RowStoreConfiguration storeEngineOptionsRaftDataPath(String storeEngineOptionsRaftDataPath) {
         setString(STORE_ENGINE_OPTIONS_RAFT_DATA_PATH_KEY, storeEngineOptionsRaftDataPath);
         return this;
     }
@@ -174,7 +174,7 @@ public class DingoKvStoreConfiguration {
         return getString(STORE_ENGINE_OPTIONS_RAFT_DATA_PATH_KEY);
     }
 
-    public DingoKvStoreConfiguration storeEngineOptionsRocksDbOptionsDbPath(
+    public RowStoreConfiguration storeEngineOptionsRocksDbOptionsDbPath(
         String storeEngineOptionsRocksDbOptionsDbPath) {
         setString(STORE_ENGINE_OPTIONS_ROCKS_DB_OPTIONS_DB_PATH_KEY, storeEngineOptionsRocksDbOptionsDbPath);
         return this;
@@ -184,7 +184,7 @@ public class DingoKvStoreConfiguration {
         return getString(STORE_ENGINE_OPTIONS_ROCKS_DB_OPTIONS_DB_PATH_KEY);
     }
 
-    public DingoKvStoreConfiguration storeEngineOptionsServerAddressId(String storeEngineOptionsServerAddressId) {
+    public RowStoreConfiguration storeEngineOptionsServerAddressId(String storeEngineOptionsServerAddressId) {
         setString(STORE_ENGINE_OPTIONS_SERVER_ADDRESS_ID_KEY, storeEngineOptionsServerAddressId);
         return this;
     }
@@ -193,7 +193,7 @@ public class DingoKvStoreConfiguration {
         return getString(STORE_ENGINE_OPTIONS_SERVER_ADDRESS_ID_KEY);
     }
 
-    public DingoKvStoreConfiguration storeEngineOptionsServerAddressPort(int storeEngineOptionsServerAddressPort) {
+    public RowStoreConfiguration storeEngineOptionsServerAddressPort(int storeEngineOptionsServerAddressPort) {
         setInt(STORE_ENGINE_OPTIONS_SERVER_ADDRESS_PORT_KEY, storeEngineOptionsServerAddressPort);
         return this;
     }

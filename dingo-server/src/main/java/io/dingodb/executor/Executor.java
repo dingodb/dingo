@@ -22,14 +22,14 @@ import io.dingodb.helix.HelixAccessor;
 import io.dingodb.helix.part.HelixPart;
 import io.dingodb.helix.part.impl.ZkHelixParticipantPart;
 import io.dingodb.helix.state.LeaderFollowerStateModel;
-import io.dingodb.kvstore.KvStoreService;
-import io.dingodb.kvstore.KvStoreServiceProvider;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.helix.HelixMetaService;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.Constants;
 import io.dingodb.server.ServerConfiguration;
+import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class Executor {
 
     private final NetService netService;
     private final HelixMetaService metaService;
-    private final KvStoreService storeService;
+    private final StoreService storeService;
 
     private final Location location;
     private final ServerConfiguration configuration;
@@ -69,15 +69,15 @@ public class Executor {
         return ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
     }
 
-    private KvStoreService loadStoreService() {
+    private StoreService loadStoreService() {
         String store = configuration.store();
-        List<KvStoreServiceProvider> storeServiceProviders = new ArrayList<>();
-        ServiceLoader.load(KvStoreServiceProvider.class).forEach(storeServiceProviders::add);
+        List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
+        ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
         if (storeServiceProviders.size() == 1) {
-            return Optional.ofNullable(storeServiceProviders.get(0)).map(KvStoreServiceProvider::get).orElse(null);
+            return Optional.ofNullable(storeServiceProviders.get(0)).map(StoreServiceProvider::get).orElse(null);
         }
         return storeServiceProviders.stream().filter(provider -> store.equals(provider.getClass().getName())).findAny()
-            .map(KvStoreServiceProvider::get).orElse(null);
+            .map(StoreServiceProvider::get).orElse(null);
     }
 
     public void init() throws Exception {

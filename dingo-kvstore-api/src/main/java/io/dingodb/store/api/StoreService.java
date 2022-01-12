@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.api;
 
-import lombok.Data;
+import javax.annotation.Nonnull;
 
-@Data
-public class KeyValue {
-    private final byte[] key;
-    private final byte[] value;
+public interface StoreService {
+    StoreInstance getInstance(@Nonnull String path);
 }

@@ -21,11 +21,11 @@ import com.google.common.collect.Lists;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.kvstore.KvStoreInstance;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.netty.NetServiceConfiguration;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -132,7 +132,7 @@ public class MetaTestService implements MetaService {
             tableDefinitionMap = null;
             Map<String, Location> partLocations = getPartLocations(tableName);
             for (Map.Entry<String, Location> entry : partLocations.entrySet()) {
-                KvStoreInstance store = Services.KV_STORE.getInstance(entry.getValue().getPath());
+                StoreInstance store = Services.KV_STORE.getInstance(entry.getValue().getPath());
                 new PartInKvStore(
                     store.getKvBlock(tableName, entry.getKey()),
                     tableDefinition.getTupleSchema(),
