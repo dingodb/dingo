@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
+import com.google.auto.service.AutoService;
+import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
 
-public interface KvBlock {
-    void create();
-
-    Iterator<KeyValue> getIterator();
-
-    boolean contains(byte[] key);
-
-    void put(@Nonnull KeyValue keyValue);
-
-    void delete(byte[] key);
-
-    byte[] get(byte[] key);
-
-    default List<byte[]> multiGet(@Nonnull List<byte[]> keys) {
-        return keys.stream().map(this::get).collect(Collectors.toList());
+@AutoService(StoreServiceProvider.class)
+public class RowStoreServiceProvider implements StoreServiceProvider {
+    @Override
+    public StoreService get() {
+        return RowStoreService.INSTANCE;
     }
 }

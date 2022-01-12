@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
 import io.dingodb.dingokv.client.DefaultDingoKVIterator;
 import io.dingodb.dingokv.client.DefaultDingoKVStore;
 import io.dingodb.dingokv.client.DingoKVIterator;
 import io.dingodb.dingokv.storage.KVEntry;
+import io.dingodb.store.api.KeyValue;
 
 import java.util.Iterator;
 import javax.annotation.Nonnull;
 
-public class DingoKvBlockIterator implements Iterator<KeyValue> {
+public class RowBlockIterator implements Iterator<KeyValue> {
     private final DingoKVIterator iterator;
 
-    public DingoKvBlockIterator(@Nonnull DefaultDingoKVStore kvStore) {
+    public RowBlockIterator(@Nonnull DefaultDingoKVStore kvStore) {
         iterator = kvStore.iterator(new byte[]{0}, new byte[]{Byte.MAX_VALUE}, 1024);
     }
 

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.api;
 
-import javax.annotation.Nonnull;
+public interface StoreInstance {
+    PartitionOper getKvBlock(String tableName, Object partId, boolean isMain);
 
-public interface KvStoreService {
-    KvStoreInstance getInstance(@Nonnull String path);
+    default PartitionOper getKvBlock(String tableName, Object partId) {
+        return getKvBlock(tableName, partId, true);
+    }
 }

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.api;
 
-public interface KvStoreInstance {
-    KvBlock getKvBlock(String tableName, Object partId, boolean isMain);
+import lombok.Data;
 
-    default KvBlock getKvBlock(String tableName, Object partId) {
-        return getKvBlock(tableName, partId, true);
-    }
+@Data
+public class KeyValue {
+    private final byte[] key;
+    private final byte[] value;
 }

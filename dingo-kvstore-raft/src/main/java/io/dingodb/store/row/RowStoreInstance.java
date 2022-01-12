@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
 import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.util.Endpoint;
@@ -25,6 +25,7 @@ import io.dingodb.dingokv.options.PlacementDriverOptions;
 import io.dingodb.dingokv.options.RegionEngineOptions;
 import io.dingodb.dingokv.options.RocksDBOptions;
 import io.dingodb.dingokv.options.StoreEngineOptions;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -34,10 +35,10 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public class DingoKvStoreInstance implements KvStoreInstance {
+public class RowStoreInstance implements StoreInstance {
     private final String path;
 
-    private final Map<String, DingoKvBlock> blockMap;
+    private final Map<String, RowPartitionOp> blockMap;
 
     private static DefaultDingoKVStore kvStore;
 
@@ -49,7 +50,7 @@ public class DingoKvStoreInstance implements KvStoreInstance {
         }
     }
 
-    public DingoKvStoreInstance(String path) {
+    public RowStoreInstance(String path) {
         this.path = path;
         this.blockMap = new LinkedHashMap<>();
     }
@@ -62,13 +63,13 @@ public class DingoKvStoreInstance implements KvStoreInstance {
     }
 
     @Override
-    public synchronized DingoKvBlock getKvBlock(String tableName, Object partId, boolean isMain) {
+    public synchronized RowPartitionOp getKvBlock(String tableName, Object partId, boolean isMain) {
         String blockDir = blockDir(tableName, partId);
-        return blockMap.computeIfAbsent(blockDir, value -> new DingoKvBlock(path, kvStore));
+        return blockMap.computeIfAbsent(blockDir, value -> new RowPartitionOp(path, kvStore));
     }
 
     public static DingoKVStoreOptions getKvStoreOptions() {
-        DingoKvStoreConfiguration configuration = DingoKvStoreConfiguration.INSTANCE;
+        RowStoreConfiguration configuration = RowStoreConfiguration.INSTANCE;
 
         DingoKVStoreOptions options = new DingoKVStoreOptions();
 

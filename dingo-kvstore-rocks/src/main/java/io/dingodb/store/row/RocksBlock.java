@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.kvstore;
+package io.dingodb.store.row;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.store.api.KeyValue;
+import io.dingodb.store.api.PartitionOper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.rocksdb.Options;
@@ -31,7 +33,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Slf4j
-public final class RocksBlock implements KvBlock {
+public final class RocksBlock implements PartitionOper {
     private final String path;
 
     private RocksDB dbReadOnly;
