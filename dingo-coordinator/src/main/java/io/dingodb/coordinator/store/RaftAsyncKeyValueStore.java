@@ -22,10 +22,10 @@ import io.dingodb.common.util.NoBreakFunctionWrapper;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.coordinator.context.CoordinatorContext;
-import io.dingodb.dingokv.client.failover.impl.FailoverClosureImpl;
-import io.dingodb.dingokv.storage.KVStoreClosure;
-import io.dingodb.dingokv.storage.RaftRawKVStore;
-import io.dingodb.dingokv.storage.RocksRawKVStore;
+import io.dingodb.store.row.client.failover.impl.FailoverClosureImpl;
+import io.dingodb.store.row.storage.KVStoreClosure;
+import io.dingodb.store.row.storage.RaftRawKVStore;
+import io.dingodb.store.row.storage.RocksRawKVStore;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -34,11 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 @Slf4j

@@ -24,9 +24,9 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'org.apache.helix', name: 'helix-core', version: 'helix'.v();
+    implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
     implementation project(":dingo-store-api")
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-netty")
-    implementation project(":dingokv")
-    implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
+    implementation project(":dingo-row-store")
 }

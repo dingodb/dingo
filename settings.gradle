@@ -48,7 +48,7 @@ include 'dingo-net-netty'
 include 'dingo-server'
 include 'dingo-test'
 include 'dingo-web'
-include 'dingokv'
+include 'dingo-row-store'
 include 'dingo-coordinator'
 include 'dingo-executor'
 
