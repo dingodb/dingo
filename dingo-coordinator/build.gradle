@@ -26,5 +26,5 @@ dependencies {
     compileOnly project(":dingo-meta-api")
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-netty")
-    implementation project(":dingokv")
+    implementation project(":dingo-row-store")
 }

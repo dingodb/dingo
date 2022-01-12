@@ -17,7 +17,7 @@
 package io.dingodb.store.row;
 
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.dingokv.options.RegionEngineOptions;
+import io.dingodb.store.row.options.RegionEngineOptions;
 import lombok.experimental.Delegate;
 
 import java.util.ArrayList;

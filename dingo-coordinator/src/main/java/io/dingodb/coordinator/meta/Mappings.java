@@ -21,12 +21,12 @@ import io.dingodb.coordinator.GeneralId;
 import io.dingodb.coordinator.app.impl.RegionApp;
 import io.dingodb.coordinator.app.impl.RegionView;
 import io.dingodb.coordinator.resource.impl.ExecutorView;
-import io.dingodb.dingokv.metadata.Peer;
-import io.dingodb.dingokv.metadata.Region;
-import io.dingodb.dingokv.metadata.RegionEpoch;
-import io.dingodb.dingokv.metadata.RegionStats;
-import io.dingodb.dingokv.metadata.Store;
-import io.dingodb.dingokv.metadata.StoreLabel;
+import io.dingodb.store.row.metadata.Peer;
+import io.dingodb.store.row.metadata.Region;
+import io.dingodb.store.row.metadata.RegionEpoch;
+import io.dingodb.store.row.metadata.RegionStats;
+import io.dingodb.store.row.metadata.Store;
+import io.dingodb.store.row.metadata.StoreLabel;
 
 import java.util.List;
 import java.util.stream.Collectors;

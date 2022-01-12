@@ -32,10 +32,10 @@ import io.dingodb.coordinator.namespace.impl.NamespaceImpl;
 import io.dingodb.coordinator.namespace.impl.NamespaceViewImpl;
 import io.dingodb.coordinator.resource.impl.ExecutorView;
 import io.dingodb.coordinator.store.AsyncKeyValueStore;
-import io.dingodb.dingokv.metadata.Cluster;
-import io.dingodb.dingokv.metadata.Store;
-import io.dingodb.dingokv.serialization.Serializer;
-import io.dingodb.dingokv.serialization.Serializers;
+import io.dingodb.store.row.metadata.Cluster;
+import io.dingodb.store.row.metadata.Store;
+import io.dingodb.store.row.serialization.Serializer;
+import io.dingodb.store.row.serialization.Serializers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;

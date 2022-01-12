@@ -27,8 +27,8 @@ import io.dingodb.coordinator.handler.SetStoreHandler;
 import io.dingodb.coordinator.handler.StoreHeartbeatHandler;
 import io.dingodb.coordinator.meta.impl.MetaAdaptorImpl;
 import io.dingodb.coordinator.service.AbstractStateService;
-import io.dingodb.dingokv.rpc.ExtSerializerSupports;
 import io.dingodb.net.NetService;
+import io.dingodb.store.row.rpc.ExtSerializerSupports;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ThreadPoolExecutor;

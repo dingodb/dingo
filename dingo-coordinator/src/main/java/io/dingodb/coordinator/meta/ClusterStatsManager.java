@@ -17,11 +17,11 @@
 package io.dingodb.coordinator.meta;
 
 import com.alipay.remoting.util.ConcurrentHashSet;
-import io.dingodb.dingokv.metadata.Region;
-import io.dingodb.dingokv.metadata.RegionStats;
-import io.dingodb.dingokv.util.Lists;
-import io.dingodb.dingokv.util.Maps;
-import io.dingodb.dingokv.util.Pair;
+import io.dingodb.store.row.metadata.Region;
+import io.dingodb.store.row.metadata.RegionStats;
+import io.dingodb.store.row.util.Lists;
+import io.dingodb.store.row.util.Maps;
+import io.dingodb.store.row.util.Pair;
 
 import java.util.Collection;
 import java.util.Collections;

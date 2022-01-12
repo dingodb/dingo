@@ -26,14 +26,14 @@ import io.dingodb.coordinator.meta.GeneralIdHelper;
 import io.dingodb.coordinator.meta.MetaAdaptor;
 import io.dingodb.coordinator.meta.MetaStore;
 import io.dingodb.coordinator.resource.impl.ExecutorView;
-import io.dingodb.dingokv.metadata.Cluster;
-import io.dingodb.dingokv.metadata.Peer;
-import io.dingodb.dingokv.metadata.Region;
-import io.dingodb.dingokv.metadata.RegionEpoch;
-import io.dingodb.dingokv.metadata.RegionStats;
-import io.dingodb.dingokv.metadata.Store;
-import io.dingodb.dingokv.metadata.StoreLabel;
-import io.dingodb.dingokv.metadata.StoreStats;
+import io.dingodb.store.row.metadata.Cluster;
+import io.dingodb.store.row.metadata.Peer;
+import io.dingodb.store.row.metadata.Region;
+import io.dingodb.store.row.metadata.RegionEpoch;
+import io.dingodb.store.row.metadata.RegionStats;
+import io.dingodb.store.row.metadata.Store;
+import io.dingodb.store.row.metadata.StoreLabel;
+import io.dingodb.store.row.metadata.StoreStats;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -42,8 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.swing.text.html.Option;
 
 @Slf4j
 public class MetaAdaptorImpl implements MetaAdaptor {

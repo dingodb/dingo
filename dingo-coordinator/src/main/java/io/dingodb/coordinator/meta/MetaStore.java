@@ -24,7 +24,7 @@ import io.dingodb.coordinator.app.impl.RegionView;
 import io.dingodb.coordinator.namespace.Namespace;
 import io.dingodb.coordinator.namespace.NamespaceView;
 import io.dingodb.coordinator.resource.impl.ExecutorView;
-import io.dingodb.dingokv.metadata.Cluster;
+import io.dingodb.store.row.metadata.Cluster;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;

@@ -26,13 +26,12 @@ import com.alipay.sofa.jraft.util.CRC64;
 import com.alipay.sofa.jraft.util.Requires;
 import com.google.protobuf.ByteString;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
-import io.dingodb.dingokv.serialization.Serializer;
-import io.dingodb.dingokv.serialization.Serializers;
-import io.dingodb.dingokv.storage.RocksDBBackupInfo;
-import io.dingodb.dingokv.storage.RocksRawKVStore;
-import io.dingodb.dingokv.storage.RocksRawKVStoreDelegate;
-import io.dingodb.dingokv.storage.zip.ZipStrategyManager;
-import io.dingodb.dingokv.util.StackTraceUtil;
+import io.dingodb.store.row.serialization.Serializer;
+import io.dingodb.store.row.serialization.Serializers;
+import io.dingodb.store.row.storage.RocksDBBackupInfo;
+import io.dingodb.store.row.storage.RocksRawKVStore;
+import io.dingodb.store.row.storage.zip.ZipStrategyManager;
+import io.dingodb.store.row.util.StackTraceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -56,10 +55,10 @@ public class CoordinatorStateSnapshot {
 
     private final Serializer serializer       = Serializers.getDefault();
 
-    private final RocksRawKVStoreDelegate kvStore;
+    private final RocksRawKVStore kvStore;
 
     public CoordinatorStateSnapshot(RocksRawKVStore kvStore) {
-        this.kvStore = new RocksRawKVStoreDelegate(kvStore);
+        this.kvStore = kvStore;
     }
 
     public void save(final SnapshotWriter writer, final Closure done) {
