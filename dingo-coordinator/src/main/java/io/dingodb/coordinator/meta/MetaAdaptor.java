@@ -18,11 +18,11 @@ package io.dingodb.coordinator.meta;
 
 import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.coordinator.GeneralId;
-import io.dingodb.dingokv.metadata.Cluster;
-import io.dingodb.dingokv.metadata.Region;
-import io.dingodb.dingokv.metadata.RegionStats;
-import io.dingodb.dingokv.metadata.Store;
-import io.dingodb.dingokv.metadata.StoreStats;
+import io.dingodb.store.row.metadata.Cluster;
+import io.dingodb.store.row.metadata.Region;
+import io.dingodb.store.row.metadata.RegionStats;
+import io.dingodb.store.row.metadata.Store;
+import io.dingodb.store.row.metadata.StoreStats;
 
 import java.math.BigDecimal;
 import java.util.Map;

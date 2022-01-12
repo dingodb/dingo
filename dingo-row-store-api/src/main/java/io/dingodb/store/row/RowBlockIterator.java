@@ -16,25 +16,25 @@
 
 package io.dingodb.store.row;
 
-import io.dingodb.dingokv.client.DefaultDingoKVIterator;
-import io.dingodb.dingokv.client.DefaultDingoKVStore;
-import io.dingodb.dingokv.client.DingoKVIterator;
-import io.dingodb.dingokv.storage.KVEntry;
 import io.dingodb.store.api.KeyValue;
+import io.dingodb.store.row.client.DefaultDingoRowStore;
+import io.dingodb.store.row.client.DefaultDingoRowStoreIterator;
+import io.dingodb.store.row.client.DingoRowStoreIterator;
+import io.dingodb.store.row.storage.KVEntry;
 
 import java.util.Iterator;
 import javax.annotation.Nonnull;
 
 public class RowBlockIterator implements Iterator<KeyValue> {
-    private final DingoKVIterator iterator;
+    private final DingoRowStoreIterator iterator;
 
-    public RowBlockIterator(@Nonnull DefaultDingoKVStore kvStore) {
+    public RowBlockIterator(@Nonnull DefaultDingoRowStore kvStore) {
         iterator = kvStore.iterator(new byte[]{0}, new byte[]{Byte.MAX_VALUE}, 1024);
     }
 
     @Override
     public KeyValue next() {
-        KVEntry kvEntry = ((DefaultDingoKVIterator) iterator).next();
+        KVEntry kvEntry = ((DefaultDingoRowStoreIterator) iterator).next();
         byte[] key = kvEntry.getKey();
         byte[] value = kvEntry.getValue();
         return new KeyValue(key, value);

@@ -29,24 +29,24 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import io.dingodb.coordinator.context.CoordinatorContext;
 import io.dingodb.coordinator.service.StateService;
-import io.dingodb.dingokv.errors.IllegalKVOperationException;
-import io.dingodb.dingokv.errors.StoreCodecException;
-import io.dingodb.dingokv.metrics.KVMetrics;
-import io.dingodb.dingokv.serialization.Serializer;
-import io.dingodb.dingokv.serialization.Serializers;
-import io.dingodb.dingokv.storage.KVClosureAdapter;
-import io.dingodb.dingokv.storage.KVOperation;
-import io.dingodb.dingokv.storage.KVState;
-import io.dingodb.dingokv.storage.KVStateOutputList;
-import io.dingodb.dingokv.storage.RocksRawKVStore;
-import io.dingodb.dingokv.util.StackTraceUtil;
+import io.dingodb.store.row.errors.IllegalRowStoreOperationException;
+import io.dingodb.store.row.errors.StoreCodecException;
+import io.dingodb.store.row.metrics.KVMetrics;
+import io.dingodb.store.row.serialization.Serializer;
+import io.dingodb.store.row.serialization.Serializers;
+import io.dingodb.store.row.storage.KVClosureAdapter;
+import io.dingodb.store.row.storage.KVOperation;
+import io.dingodb.store.row.storage.KVState;
+import io.dingodb.store.row.storage.KVStateOutputList;
+import io.dingodb.store.row.storage.RocksRawKVStore;
+import io.dingodb.store.row.util.StackTraceUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.dingokv.metrics.KVMetricNames.STATE_MACHINE_APPLY_QPS;
-import static io.dingodb.dingokv.metrics.KVMetricNames.STATE_MACHINE_BATCH_WRITE;
+import static io.dingodb.store.row.metrics.KVMetricNames.STATE_MACHINE_APPLY_QPS;
+import static io.dingodb.store.row.metrics.KVMetricNames.STATE_MACHINE_BATCH_WRITE;
 
 @Slf4j
 public class CoordinatorStateMachine extends StateMachineAdapter {
@@ -130,7 +130,7 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
                 return 0;
             }
             if (!KVOperation.isValidOp(opByte)) {
-                throw new IllegalKVOperationException("Unknown operation: " + opByte);
+                throw new IllegalRowStoreOperationException("Unknown operation: " + opByte);
             }
             recordMetrics(opByte, size);
             batchApply(opByte, kvStates);
@@ -171,7 +171,7 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
                 this.rocksRawKVStore.batchMerge(kvStates);
                 break;
             default:
-                throw new IllegalKVOperationException("Unknown operation: " + opType);
+                throw new IllegalRowStoreOperationException("Unknown operation: " + opType);
         }
     }
 

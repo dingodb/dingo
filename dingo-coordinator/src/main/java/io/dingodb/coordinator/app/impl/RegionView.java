@@ -19,13 +19,12 @@ package io.dingodb.coordinator.app.impl;
 import io.dingodb.coordinator.GeneralId;
 import io.dingodb.coordinator.app.AppView;
 import io.dingodb.coordinator.score.impl.SimplePercentScore;
-import io.dingodb.dingokv.metadata.RegionStats;
+import io.dingodb.store.row.metadata.RegionStats;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.List;
 import java.util.Set;
 
 @ToString

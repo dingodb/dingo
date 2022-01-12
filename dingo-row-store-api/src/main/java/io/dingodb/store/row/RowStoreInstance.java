@@ -18,14 +18,14 @@ package io.dingodb.store.row;
 
 import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.util.Endpoint;
-import io.dingodb.dingokv.client.DefaultDingoKVStore;
-import io.dingodb.dingokv.errors.DingoKVRuntimeException;
-import io.dingodb.dingokv.options.DingoKVStoreOptions;
-import io.dingodb.dingokv.options.PlacementDriverOptions;
-import io.dingodb.dingokv.options.RegionEngineOptions;
-import io.dingodb.dingokv.options.RocksDBOptions;
-import io.dingodb.dingokv.options.StoreEngineOptions;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.row.client.DefaultDingoRowStore;
+import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;
+import io.dingodb.store.row.options.DingoRowStoreOptions;
+import io.dingodb.store.row.options.PlacementDriverOptions;
+import io.dingodb.store.row.options.RegionEngineOptions;
+import io.dingodb.store.row.options.RocksDBOptions;
+import io.dingodb.store.row.options.StoreEngineOptions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -38,15 +38,15 @@ import javax.annotation.Nonnull;
 public class RowStoreInstance implements StoreInstance {
     private final String path;
 
-    private final Map<String, RowPartitionOp> blockMap;
+    private final Map<String, RowPartitionOper> blockMap;
 
-    private static DefaultDingoKVStore kvStore;
+    private static DefaultDingoRowStore kvStore;
 
     static {
-        kvStore = new DefaultDingoKVStore();
-        DingoKVStoreOptions options = getKvStoreOptions();
+        kvStore = new DefaultDingoRowStore();
+        DingoRowStoreOptions options = getKvStoreOptions();
         if (!kvStore.init(options)) {
-            throw new DingoKVRuntimeException("Fail to start [DefaultDingoKVStore].");
+            throw new DingoRowStoreRuntimeException("Fail to start [DefaultDingoRowStore].");
         }
     }
 
@@ -63,15 +63,15 @@ public class RowStoreInstance implements StoreInstance {
     }
 
     @Override
-    public synchronized RowPartitionOp getKvBlock(String tableName, Object partId, boolean isMain) {
+    public synchronized RowPartitionOper getKvBlock(String tableName, Object partId, boolean isMain) {
         String blockDir = blockDir(tableName, partId);
-        return blockMap.computeIfAbsent(blockDir, value -> new RowPartitionOp(path, kvStore));
+        return blockMap.computeIfAbsent(blockDir, value -> new RowPartitionOper(path, kvStore));
     }
 
-    public static DingoKVStoreOptions getKvStoreOptions() {
+    public static DingoRowStoreOptions getKvStoreOptions() {
         RowStoreConfiguration configuration = RowStoreConfiguration.INSTANCE;
 
-        DingoKVStoreOptions options = new DingoKVStoreOptions();
+        DingoRowStoreOptions options = new DingoRowStoreOptions();
 
         options.setClusterId(configuration.clusterId());
         options.setClusterName(configuration.clusterName());

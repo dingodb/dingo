@@ -18,10 +18,9 @@ package io.dingodb.coordinator.config;
 
 import com.alipay.sofa.jraft.entity.PeerId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.dingokv.options.MemoryDBOptions;
+import io.dingodb.store.row.options.MemoryDBOptions;
 import lombok.experimental.Delegate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

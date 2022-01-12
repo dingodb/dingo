@@ -20,11 +20,11 @@ import com.alipay.sofa.jraft.rpc.RpcContext;
 import com.alipay.sofa.jraft.rpc.RpcProcessor;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.coordinator.meta.MetaAdaptor;
-import io.dingodb.dingokv.cmd.pd.GetStoreIdRequest;
-import io.dingodb.dingokv.cmd.pd.GetStoreIdResponse;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
+import io.dingodb.store.row.cmd.pd.GetStoreIdRequest;
+import io.dingodb.store.row.cmd.pd.GetStoreIdResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
