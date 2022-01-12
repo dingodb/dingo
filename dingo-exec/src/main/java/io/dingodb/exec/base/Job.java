@@ -16,7 +16,7 @@
 
 package io.dingodb.exec.base;
 
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -21,6 +21,7 @@ import com.alipay.sofa.jraft.rpc.RpcServer;
 import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.coordinator.config.ServerConfiguration;
 import io.dingodb.coordinator.meta.MetaStore;
+import io.dingodb.coordinator.meta.impl.TableMetaAdaptorImpl;
 import io.dingodb.coordinator.service.impl.CoordinatorLeaderFollowerServiceProvider;
 import io.dingodb.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.coordinator.store.RaftAsyncKeyValueStore;
@@ -53,6 +54,7 @@ public class CoordinatorContext {
     private ServerConfiguration configuration;
     private RocksRawKVStore rocksKVStore;
     private CoordinatorStateMachine stateMachine;
+    private TableMetaAdaptorImpl metaAdaptor;
 
     private MetaStore metaStore;
 

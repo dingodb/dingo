@@ -17,7 +17,6 @@
 package io.dingodb.meta;
 
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.net.Location;
 
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -36,6 +35,10 @@ public interface MetaService {
 
     boolean dropTable(@Nonnull String tableName);
 
+    byte[] getTableKey(@Nonnull String tableName);
+
+    byte[] getIndexId(@Nonnull String tableName);
+
     Map<String, TableDefinition> getTableDefinitions();
 
     default TableDefinition getTableDefinition(String name) {
@@ -43,6 +46,8 @@ public interface MetaService {
     }
 
     Map<String, Location> getPartLocations(String name);
+
+    LocationGroup getLocationGroup(String name);
 
     Location currentLocation();
 }

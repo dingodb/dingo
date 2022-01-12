@@ -109,6 +109,14 @@ public class DingoConfiguration {
         }
     }
 
+    public Long getLong(String name, Long defaultValue) {
+        try {
+            return Long.parseLong(getString(name));
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
     public <T> List<T> getList(String name) {
         Object o = get(name);
         if (o instanceof String) {

@@ -21,8 +21,9 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.coordinator.TableIdealStateBuilder;
 import io.dingodb.helix.HelixAccessor;
 import io.dingodb.helix.part.HelixPart;
+import io.dingodb.meta.Location;
+import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.Location;
 import io.dingodb.server.Constants;
 import io.dingodb.server.ServerConfiguration;
 import io.dingodb.server.ServerError;
@@ -102,6 +103,16 @@ public class HelixMetaService implements MetaService {
     }
 
     @Override
+    public byte[] getTableKey(@Nonnull String tableName) {
+        return new byte[0];
+    }
+
+    @Override
+    public byte[] getIndexId(@Nonnull String tableName) {
+        return new byte[0];
+    }
+
+    @Override
     public boolean dropTable(@Nonnull String name) {
         checkAndWaitHelixActive();
         if (!isCoordinatorLeader()) {
@@ -155,6 +166,11 @@ public class HelixMetaService implements MetaService {
     @Override
     public Location currentLocation() {
         return new Location(configuration.instanceHost(), configuration.port(), configuration.dataDir());
+    }
+
+    @Override
+    public LocationGroup getLocationGroup(String name) {
+        return null;
     }
 
     @Override

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.net;
+package io.dingodb.meta;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-//TODO: this should be in meta api to reduce dependencies.
 @ToString(of = {"host", "port", "path"})
 @EqualsAndHashCode
 public class Location {

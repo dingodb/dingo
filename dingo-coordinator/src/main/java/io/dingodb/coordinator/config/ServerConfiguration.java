@@ -65,6 +65,8 @@ public class ServerConfiguration {
 
     private static final String DEFAULT_COORDINATOR_RAFT_ID = "COORDINATOR_RAFT";
 
+    private static final String FUTURE_TIMEOUT_MILLIS = "futureTimeoutMillis";
+
     @Delegate private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
 
     private ServerConfiguration() {
@@ -253,5 +255,8 @@ public class ServerConfiguration {
         return getString(COORDINATOR_RAFT_DATA_DIR_KEY);
     }
 
+    public long futureTimeMillis() {
+        return getLong(FUTURE_TIMEOUT_MILLIS, 10000L);
+    }
 
 }

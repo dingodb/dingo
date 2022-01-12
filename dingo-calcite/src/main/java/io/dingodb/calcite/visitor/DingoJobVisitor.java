@@ -58,7 +58,7 @@ import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.SimpleHashStrategy;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;

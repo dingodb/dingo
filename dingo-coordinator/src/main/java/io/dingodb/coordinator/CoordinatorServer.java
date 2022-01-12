@@ -27,10 +27,11 @@ import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.coordinator.config.ServerConfiguration;
 import io.dingodb.coordinator.context.CoordinatorContext;
+import io.dingodb.coordinator.meta.impl.CoordinatorMetaService;
 import io.dingodb.coordinator.meta.impl.MetaStoreImpl;
+import io.dingodb.coordinator.meta.impl.TableMetaAdaptorImpl;
 import io.dingodb.coordinator.service.impl.CoordinatorLeaderFollowerServiceProvider;
 import io.dingodb.coordinator.state.CoordinatorStateMachine;
-import io.dingodb.coordinator.store.AsyncKeyValueStore;
 import io.dingodb.coordinator.store.RaftAsyncKeyValueStore;
 import io.dingodb.dingokv.options.MemoryDBOptions;
 import io.dingodb.dingokv.options.RocksDBOptions;
@@ -44,15 +45,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nonnull;
-
-import static io.dingodb.expr.json.runtime.Parser.YAML;
 
 @Slf4j
 public class CoordinatorServer {
@@ -80,7 +77,6 @@ public class CoordinatorServer {
             .configuration(configuration)
             .endpoint(endpoint)
             .netService(initNetService())
-            .metaService(initMetaService())
             .rocksKVStore(initRocksDB())
             .stateMachine(new CoordinatorStateMachine(context))
         ;
@@ -101,6 +97,8 @@ public class CoordinatorServer {
         keyValueStore.init(context);
         context.metaStore().init();
 
+        context.metaAdaptor(initTableMetaAdaptor(context.keyValueStore(), (MetaStoreImpl) context.metaStore()));
+        context.metaService(initMetaService(context.metaAdaptor()));
     }
 
     @Nonnull
@@ -135,9 +133,14 @@ public class CoordinatorServer {
         return nodeOptions;
     }
 
-    private MetaService initMetaService() {
-        // todo
-        return null;
+    private TableMetaAdaptorImpl initTableMetaAdaptor(RaftAsyncKeyValueStore keyValueStore, MetaStoreImpl metaStore) {
+        return new TableMetaAdaptorImpl(keyValueStore, metaStore);
+    }
+
+    private MetaService initMetaService(TableMetaAdaptorImpl metaAdaptor) {
+        CoordinatorMetaService metaService = CoordinatorMetaService.instance();
+        metaService.init(metaAdaptor);
+        return metaService;
     }
 
     private RocksRawKVStore initRocksDB() {

@@ -19,7 +19,7 @@ package io.dingodb.executor;
 import io.dingodb.exec.Services;
 import io.dingodb.kvstore.KvStoreService;
 import io.dingodb.kvstore.KvStoreServiceProvider;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import lombok.extern.slf4j.Slf4j;

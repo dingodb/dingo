@@ -22,7 +22,7 @@ import io.dingodb.coordinator.GeneralId;
 import io.dingodb.coordinator.resource.NodeResourceView;
 import io.dingodb.coordinator.score.Score;
 import io.dingodb.dingokv.metadata.StoreStats;
-import io.dingodb.net.Location;
+import io.dingodb.meta.Location;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.Delegate;
