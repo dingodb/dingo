@@ -22,7 +22,7 @@ plugins {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly project(':dingo-kvstore-api')
+    compileOnly project(':dingo-store-api')
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
     implementation project(":dingo-common")

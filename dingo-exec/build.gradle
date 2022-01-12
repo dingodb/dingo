@@ -20,7 +20,7 @@ plugins {
 }
 
 dependencies {
-    api project(':dingo-kvstore-api')
+    api project(':dingo-store-api')
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()

@@ -17,29 +17,7 @@
 plugins {
     id 'java-conventions'
     id 'java-library'
-    id 'maven-publish'
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/dingodb/dingo")
-            credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GPR_USER")
-                password = project.findProperty("gpr.key") ?: System.getenv("GPR_API_KEY")
-            }
-        }
-    }
-    publications {
-        gpr(MavenPublication) {
-            from(components.java)
-        }
-    }
 }
 
 dependencies {
-    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
-    api project(':dingo-common')
-    implementation project(':dingo-net-api')
 }
