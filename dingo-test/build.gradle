@@ -26,5 +26,5 @@ dependencies {
     implementation project(':dingo-net-netty')
     testImplementation project(':dingo-calcite')
     testRuntimeOnly project(':dingo-driver')
-    testRuntimeOnly project(':dingo-kvstore-rocks')
+    testRuntimeOnly project(':dingo-row-rocksdb-api')
 }
