@@ -13,21 +13,20 @@ controller.mode: STANDALONE
 server.coordinator.port: 19181
 server.executor.port: 19191
 
-default.replicas: 3
-default.partitions: 3
+store.default.replicas: 3
+store.default.partitions: 3
 data.dir: /opt/dingo/data
 
-kv.cluster.id: 1
-kv.cluster.name: dingo_kv_cluster
-kv.initialServerList: localhost:10181
-kv.failoverRetries: 10
-kv.futureTimeoutMillis: 30000
-placement.driver.options.fake: false
-placement.driver.options.pdGroupId: pdCluster-1
-placement.driver.options.initialPdServerList: localhost:9180
-placement.driver.options.cliOptions.timeoutMs: 10000
-placement.driver.options.cliOptions.maxRetry: 3
-placement.driver.options.cliOptions.rpcProcessorThreadPoolSize: 4
+store.cluster.id: 1
+store.cluster.name: dingo_kv_cluster
+store.initialServerList: localhost:10181
+store.failoverRetries: 10
+store.futureTimeoutMillis: 30000
+coordinator.options.fake: false
+coordinator.options.raftGroupId: pdCluster-1
+coordinator.options.initCoordinatorSrvList: localhost:9180
+coordinator.options.cliOptions.timeoutMs: 10000
+coordinator.options.cliOptions.maxRetry: 3
 store.engine.options.raftDataPath: temp_rhea_raft/
 store.engine.options.rocksDBOptions.dbPath: temp_rhea_db/
 store.engine.options.serverAddress.ip: localhost
