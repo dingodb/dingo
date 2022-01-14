@@ -80,12 +80,12 @@ public class RowStoreInstance implements StoreInstance {
         options.setFutureTimeoutMillis(configuration.clusterFutureTimeoutMillis());
 
         PlacementDriverOptions driverOptions = new PlacementDriverOptions();
-        driverOptions.setFake(configuration.placementDriverOptionsFake());
-        driverOptions.setPdGroupId(configuration.placementDriverOptionsPDGroupId());
-        driverOptions.setInitialPdServerList(configuration.placementDriverOptionsInitialPDServerList());
+        driverOptions.setFake(configuration.coordinatorOptionsFake());
+        driverOptions.setPdGroupId(configuration.coordinatorOptionsRaftGroupId());
+        driverOptions.setInitialPdServerList(configuration.coordinatorOptionsInitCoordinatorSrvList());
         CliOptions cliOptions = new CliOptions();
-        cliOptions.setMaxRetry(configuration.placementDriverOptionsCliOptionsMaxRetry());
-        cliOptions.setTimeoutMs(configuration.placementDriverOptionsCliOptionsTimeoutMs());
+        cliOptions.setMaxRetry(configuration.coordinatorOptionsCliOptionsMaxRetry());
+        cliOptions.setTimeoutMs(configuration.coordinatorOptionsCliOptionsTimeoutMs());
         driverOptions.setCliOptions(cliOptions);
         options.setPlacementDriverOptions(driverOptions);
 

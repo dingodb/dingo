@@ -55,9 +55,9 @@ public class ServerConfiguration {
     private static final String STATE_MODE_KEY = "active.state.mode";
     private static final String STORE_KEY = "active.executorView";
 
-    private static final String DEFAULT_REPLICAS_KEY = "default.replicas";
-    private static final String DEFAULT_PARTITIONS_KEY = "default.partitions";
-    private static final String DEFAULT_TABLE_TAG_KEY = "default.tag";
+    private static final String STORE_DEFAULT_REPLICAS_KEY = "store.default.replicas";
+    private static final String STORE_DEFAULT_PARTITIONS_KEY = "store.default.partitions";
+    private static final String STORE_DEFAULT_TABLE_TAG_KEY = "store.default.tag";
 
     private static final String TABLE_TAG = "TableTag";
     private static final String ROCKSDB = "io.dingodb.executorView.rocks.RocksStoreServiceProvider";
@@ -85,11 +85,11 @@ public class ServerConfiguration {
     }
 
     public String tableTag() {
-        return getString(DEFAULT_TABLE_TAG_KEY, TABLE_TAG);
+        return getString(STORE_DEFAULT_TABLE_TAG_KEY, TABLE_TAG);
     }
 
     public ServerConfiguration tableTag(String tag) {
-        setString(DEFAULT_TABLE_TAG_KEY, tag);
+        setString(STORE_DEFAULT_TABLE_TAG_KEY, tag);
         return this;
     }
 
@@ -207,21 +207,21 @@ public class ServerConfiguration {
     }
 
     public ServerConfiguration defaultReplicas(int defaultReplicas) {
-        setInt(DEFAULT_REPLICAS_KEY, defaultReplicas);
+        setInt(STORE_DEFAULT_REPLICAS_KEY, defaultReplicas);
         return this;
     }
 
     public int defaultReplicas() {
-        return getInt(DEFAULT_REPLICAS_KEY, 3);
+        return getInt(STORE_DEFAULT_REPLICAS_KEY, 3);
     }
 
     public ServerConfiguration defaultPartitions(int defaultPartitions) {
-        setInt(DEFAULT_PARTITIONS_KEY, defaultPartitions);
+        setInt(STORE_DEFAULT_PARTITIONS_KEY, defaultPartitions);
         return this;
     }
 
     public int defaultPartitions() {
-        return getInt(DEFAULT_PARTITIONS_KEY, 3);
+        return getInt(STORE_DEFAULT_PARTITIONS_KEY, 3);
     }
 
     public ServerConfiguration stateMode(String stateMode) {

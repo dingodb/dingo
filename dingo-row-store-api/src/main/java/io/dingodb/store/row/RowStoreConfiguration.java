@@ -28,23 +28,23 @@ public class RowStoreConfiguration {
 
     public static final RowStoreConfiguration INSTANCE = new RowStoreConfiguration();
 
-    private static final String CLUSTER_ID_KEY = "kv.cluster.id";
-    private static final String CLUSTER_NAME_KEY = "kv.cluster.name";
-    private static final String CLUSTER_INITIAL_SERVER_LIST_KEY = "kv.initialServerList";
-    private static final String CLUSTER_FAILOVER_RETRIES_KEY = "kv.failoverRetries";
-    private static final String CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY = "kv.futureTimeoutMillis";
+    private static final String STORE_CLUSTER_ID_KEY = "store.cluster.id";
+    private static final String STORE_CLUSTER_NAME_KEY = "store.cluster.name";
+    private static final String STORE_CLUSTER_INITIAL_SERVER_LIST_KEY = "store.initialServerList";
+    private static final String STORE_CLUSTER_FAILOVER_RETRIES_KEY = "store.failoverRetries";
+    private static final String STORE_CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY = "store.futureTimeoutMillis";
 
     // PlacementDriverOptions
-    private static final String PLACEMENT_DRIVER_OPTIONS_FAKE_KEY = "placement.driver.options.fake";
-    private static final String PLACEMENT_DRIVER_OPTIONS_PD_GROUP_ID_KEY = "placement.driver.options.pdGroupId";
-    private static final String PLACEMENT_DRIVER_OPTIONS_INITIAL_PD_SERVER_LIST_KEY =
-        "placement.driver.options.initialPdServerList";
+    private static final String COORDINATOR_OPTIONS_FAKE_KEY = "coordinator.options.fake";
+    private static final String COORDINATOR_OPTIONS_RAFT_GROUP_ID_KEY = "coordinator.options.raftGroupId";
+    private static final String COORDINATOR_OPTIONS_INITIAL_COORDINATOR_SERVER_LIST_KEY =
+        "coordinator.options.initCoordinatorSrvList";
 
-    // PlacementDriverOptions.cliOptions
-    private static final String PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY =
-        "placement.driver.options.cliOptions.timeoutMs";
-    private static final String PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY =
-        "placement.driver.options.cliOptions.maxRetry";
+    // CoordinatorOptions.cliOptions
+    private static final String COORDINATOR_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY =
+        "coordinator.options.cliOptions.timeoutMs";
+    private static final String COORDINATOR_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY =
+        "coordinator.options.cliOptions.maxRetry";
 
     // StoreEngineOptions
     //private static final String STORE_ENGINE_OPTIONS_STORAGE_TYPE_KEY = "store.engine.options.storageType";
@@ -73,96 +73,96 @@ public class RowStoreConfiguration {
     }
 
     public RowStoreConfiguration clusterId(int clusterId) {
-        setInt(CLUSTER_ID_KEY, clusterId);
+        setInt(STORE_CLUSTER_ID_KEY, clusterId);
         return this;
     }
 
     public int clusterId() {
-        return getInt(CLUSTER_ID_KEY);
+        return getInt(STORE_CLUSTER_ID_KEY);
     }
 
     public RowStoreConfiguration clusterName(String clusterName) {
-        setString(CLUSTER_NAME_KEY, clusterName);
+        setString(STORE_CLUSTER_NAME_KEY, clusterName);
         return this;
     }
 
     public String clusterName() {
-        return getString(CLUSTER_NAME_KEY);
+        return getString(STORE_CLUSTER_NAME_KEY);
     }
 
     public RowStoreConfiguration clusterInitialServerList(String clusterInitialServerList) {
-        setString(CLUSTER_INITIAL_SERVER_LIST_KEY, clusterInitialServerList);
+        setString(STORE_CLUSTER_INITIAL_SERVER_LIST_KEY, clusterInitialServerList);
         return this;
     }
 
     public String clusterInitialServerList() {
-        return getString(CLUSTER_INITIAL_SERVER_LIST_KEY);
+        return getString(STORE_CLUSTER_INITIAL_SERVER_LIST_KEY);
     }
 
     public RowStoreConfiguration clusterFailoverRetries(int clusterFailoverRetries) {
-        setInt(CLUSTER_FAILOVER_RETRIES_KEY, clusterFailoverRetries);
+        setInt(STORE_CLUSTER_FAILOVER_RETRIES_KEY, clusterFailoverRetries);
         return this;
     }
 
     public int clusterFailoverRetries() {
-        return getInt(CLUSTER_FAILOVER_RETRIES_KEY);
+        return getInt(STORE_CLUSTER_FAILOVER_RETRIES_KEY);
     }
 
     public RowStoreConfiguration clusterFutureTimeoutMillis(int clusterFutureTimeoutMillis) {
-        setInt(CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY, clusterFutureTimeoutMillis);
+        setInt(STORE_CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY, clusterFutureTimeoutMillis);
         return this;
     }
 
     public int clusterFutureTimeoutMillis() {
-        return getInt(CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY);
+        return getInt(STORE_CLUSTER_FUTURE_TIMEOUT_MILLIS_KEY);
     }
 
-    public RowStoreConfiguration placementDriverOptionsFake(boolean placementDriverOptionsFake) {
-        setBool(PLACEMENT_DRIVER_OPTIONS_FAKE_KEY, placementDriverOptionsFake);
+    public RowStoreConfiguration coordinatorOptionsFake(boolean coordinatorOptionsFake) {
+        setBool(COORDINATOR_OPTIONS_FAKE_KEY, coordinatorOptionsFake);
         return this;
     }
 
-    public boolean placementDriverOptionsFake() {
-        return getBool(PLACEMENT_DRIVER_OPTIONS_FAKE_KEY);
+    public boolean coordinatorOptionsFake() {
+        return getBool(COORDINATOR_OPTIONS_FAKE_KEY);
     }
 
-    public RowStoreConfiguration placementDriverOptionsPDGroupId(String placementDriverOptionsPDGroupId) {
-        setString(PLACEMENT_DRIVER_OPTIONS_PD_GROUP_ID_KEY, placementDriverOptionsPDGroupId);
+    public RowStoreConfiguration coordinatorOptionsRaftGroupId(String coordinatorOptionsRaftGroupId) {
+        setString(COORDINATOR_OPTIONS_RAFT_GROUP_ID_KEY, coordinatorOptionsRaftGroupId);
         return this;
     }
 
-    public String placementDriverOptionsPDGroupId() {
-        return getString(PLACEMENT_DRIVER_OPTIONS_PD_GROUP_ID_KEY);
+    public String coordinatorOptionsRaftGroupId() {
+        return getString(COORDINATOR_OPTIONS_RAFT_GROUP_ID_KEY);
     }
 
-    public RowStoreConfiguration placementDriverOptionsInitialPDServerList(
-        String placementDriverOptionsInitialPDServerList) {
-        setString(PLACEMENT_DRIVER_OPTIONS_INITIAL_PD_SERVER_LIST_KEY, placementDriverOptionsInitialPDServerList);
+    public RowStoreConfiguration coordinatorOptionsInitCoordinatorSrvList(
+        String coordinatorOptionsInitCoordinatorSrvList) {
+        setString(COORDINATOR_OPTIONS_INITIAL_COORDINATOR_SERVER_LIST_KEY, coordinatorOptionsInitCoordinatorSrvList);
         return this;
     }
 
-    public String placementDriverOptionsInitialPDServerList() {
-        return getString(PLACEMENT_DRIVER_OPTIONS_INITIAL_PD_SERVER_LIST_KEY);
+    public String coordinatorOptionsInitCoordinatorSrvList() {
+        return getString(COORDINATOR_OPTIONS_INITIAL_COORDINATOR_SERVER_LIST_KEY);
     }
 
-    public RowStoreConfiguration placementDriverOptionsCliOptionsTimeoutMs(
-        int placementDriverOptionsCliOptionsTimeoutMs) {
-        setInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY, placementDriverOptionsCliOptionsTimeoutMs);
+    public RowStoreConfiguration coordinatorOptionsCliOptionsTimeoutMs(
+        int coordinatorOptionsCliOptionsTimeoutMs) {
+        setInt(COORDINATOR_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY, coordinatorOptionsCliOptionsTimeoutMs);
         return this;
     }
 
-    public int placementDriverOptionsCliOptionsTimeoutMs() {
-        return getInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY);
+    public int coordinatorOptionsCliOptionsTimeoutMs() {
+        return getInt(COORDINATOR_OPTIONS_CLI_OPTIONS_TIMEOUT_MS_KEY);
     }
 
-    public RowStoreConfiguration placementDriverOptionsCliOptionsMaxRetry(
-        int placementDriverOptionsCliOptionsMaxRetry) {
-        setInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY, placementDriverOptionsCliOptionsMaxRetry);
+    public RowStoreConfiguration coordinatorOptionsCliOptionsMaxRetry(
+        int coordinatorOptionsCliOptionsMaxRetry) {
+        setInt(COORDINATOR_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY, coordinatorOptionsCliOptionsMaxRetry);
         return this;
     }
 
-    public int placementDriverOptionsCliOptionsMaxRetry() {
-        return getInt(PLACEMENT_DRIVER_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY);
+    public int coordinatorOptionsCliOptionsMaxRetry() {
+        return getInt(COORDINATOR_OPTIONS_CLI_OPTIONS_MAX_RETRY_KEY);
     }
 
     public RowStoreConfiguration storeEngineOptionsRaftDataPath(String storeEngineOptionsRaftDataPath) {
