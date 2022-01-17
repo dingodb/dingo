@@ -103,6 +103,7 @@ public class NetServiceLocalConnection implements Connection<Message> {
         if (channelId == null) {
             throw new UnsupportedOperationException("Send message must have sub channel.");
         }
+        // fdsfsd
         MessagePacket sendPacket = MessagePacket.builder()
             .mode(packet.header().mode())
             .type(packet.header().type())
