@@ -31,7 +31,7 @@ public class DingoRowStoreOptions {
     // A clusterId is required to connect to the PD server, and PD server
     // use clusterId isolate different cluster.  The fake PD mode does not
     // need to be configured.
-    private long                   clusterId;
+    private long                   clusterId = 0;
     // Each store node contains one or more raft-group replication groups.
     // This field is the name prefix of all replication groups. All raft-group
     // names follow the naming rules of [clusterName-regionId].

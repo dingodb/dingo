@@ -25,6 +25,8 @@ import io.dingodb.common.error.FormattingError;
 @SuppressWarnings("checkstyle:LineLength")
 public enum NetError implements FormattingError {
 
+    OK(0, "OK, no error."),
+
     /*********************************   Net service.   *****************************************************/
 
     /**
@@ -61,6 +63,12 @@ public enum NetError implements FormattingError {
     private final int code;
     private final String info;
     private final String format;
+
+    NetError(int code, String info) {
+        this.code = code;
+        this.info = info;
+        this.format = info;
+    }
 
     NetError(int code, String info, String format) {
         this.code = code;

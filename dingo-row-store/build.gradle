@@ -20,10 +20,6 @@ dependencies {
     compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
     compile group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
     compile group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: 'log4j'.v()
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: 'log4j'.v()
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: 'log4j'.v()
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: 'log4j'.v()
     compile group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
@@ -40,18 +36,18 @@ test {
     useJUnitPlatform()
 }
 
-task fatJar(type: Jar) {
-    classifier 'all'
-    from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-    )
-    with jar
-
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
-}
-
-tasks.named("build") { x ->
-    x.finalizedBy("fatJar")
-}
+//task fatJar(type: Jar) {
+//    classifier 'all'
+//    from(
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+//    )
+//    with jar
+//
+//    exclude "META-INF/*.SF"
+//    exclude "META-INF/*.DSA"
+//    exclude "META-INF/*.RSA"
+//}
+//
+//tasks.named("build") { x ->
+//    x.finalizedBy("fatJar")
+//}

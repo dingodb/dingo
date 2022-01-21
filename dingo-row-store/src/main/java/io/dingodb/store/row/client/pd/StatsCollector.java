@@ -91,7 +91,9 @@ public class StatsCollector {
         stats.setKeysRead(getStoreKeysRead(true));
         // Actually reported time interval
         stats.setInterval(timeInterval);
-        LOG.info("Collect [StoreStats]: {}.", stats);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Collect [StoreStats]: {}.", stats);
+        }
         return stats;
     }
 
@@ -115,10 +117,10 @@ public class StatsCollector {
         // Approximate region size
         // TODO very important
         // Approximate number of keys
-        ApproximateKVStats rangeStats = this.rawKVStore.getApproximateKVStatsInRange(
-            region.getStartKey(), region.getEndKey());
-        stats.setApproximateKeys(rangeStats.getKeysCnt());
-        stats.setApproximateSize(rangeStats.getSizeInBytes());
+        //ApproximateKVStats rangeStats = this.rawKVStore.getApproximateKVStatsInRange(
+        //    region.getStartKey(), region.getEndKey());
+        //stats.setApproximateKeys(rangeStats.getKeysCnt());
+        //stats.setApproximateSize(rangeStats.getSizeInBytes());
         // Actually reported time interval
         stats.setInterval(timeInterval);
         LOG.info("Collect [RegionStats]: {}.", stats);

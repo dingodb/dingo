@@ -22,9 +22,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @ToString(of = {"host", "port", "path"})
 @EqualsAndHashCode
-public class Location {
+public class Location implements Serializable {
+    private static final long serialVersionUID = 4013504472715015258L;
+
     @JsonProperty("host")
     @Getter
     private final String host;

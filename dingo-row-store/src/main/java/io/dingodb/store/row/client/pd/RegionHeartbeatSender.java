@@ -23,7 +23,6 @@ import com.alipay.sofa.jraft.util.timer.HashedWheelTimer;
 import com.alipay.sofa.jraft.util.timer.Timeout;
 import com.alipay.sofa.jraft.util.timer.TimerTask;
 import com.codahale.metrics.Counter;
-import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.RegionEngine;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.client.failover.impl.FailoverClosureImpl;
@@ -75,7 +74,7 @@ public class RegionHeartbeatSender implements Lifecycle<HeartbeatOptions> {
     @Override
     public synchronized boolean init(final HeartbeatOptions opts) {
         if (this.started) {
-            log.info("[HeartbeatSender] already started.");
+            log.info("[RegionHeartbeatSender] already started.");
             return true;
         }
         this.instructionProcessor = new InstructionProcessor(this.regionEngine.getStoreEngine());
@@ -84,7 +83,7 @@ public class RegionHeartbeatSender implements Lifecycle<HeartbeatOptions> {
             throw new IllegalArgumentException("Region heartbeat interval seconds must > 0, " + interval);
         }
 
-        log.info("[HeartbeatSender] init successfully, options: {}.", opts);
+        log.info("[RegionHeartbeatSender] init successfully, options: {}.", opts);
         return this.started = true;
     }
 
@@ -191,12 +190,17 @@ public class RegionHeartbeatSender implements Lifecycle<HeartbeatOptions> {
         // Approximate region size
         // TODO very important
         // Approximate number of keys
-        ApproximateKVStats rangeStats = store().getApproximateKVStatsInRange(region.getStartKey(), region.getEndKey());
+        //ApproximateKVStats rangeStats = store().getApproximateKVStatsInRange(
+        //    region.getStartKey(),
+        //    region.getEndKey()
+        //);
         //stats.setApproximateKeys(rangeStats.getKeysCnt());
         //stats.setApproximateSize(rangeStats.getSizeInBytes());
         // Actually reported time interval
         stats.setInterval(timeInterval);
-        log.info("Collect [RegionStats]: {}.", stats);
+        if (log.isDebugEnabled()) {
+            log.info("Collect [RegionStats]: {}.", stats);
+        }
         return stats;
     }
 

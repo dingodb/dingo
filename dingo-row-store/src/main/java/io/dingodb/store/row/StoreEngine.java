@@ -34,15 +34,12 @@ import com.alipay.sofa.jraft.util.Utils;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.store.row.client.pd.PlacementDriverClient;
-import io.dingodb.store.row.client.pd.RemotePlacementDriverClient;
-import io.dingodb.store.row.client.pd.StoreHeartbeatSender;
 import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;
 import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metadata.RegionEpoch;
 import io.dingodb.store.row.metadata.Store;
 import io.dingodb.store.row.metrics.KVMetrics;
-import io.dingodb.store.row.options.HeartbeatOptions;
 import io.dingodb.store.row.options.MemoryDBOptions;
 import io.dingodb.store.row.options.RegionEngineOptions;
 import io.dingodb.store.row.options.RocksDBOptions;
@@ -96,7 +93,6 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
     private File dbPath;
     private RpcServer rpcServer;
     private BatchRawKVStore<?> rawKVStore;
-    private StoreHeartbeatSender storeHeartbeatSender;
     private StoreEngineOptions storeOpts;
 
     // Shared executor services
@@ -218,18 +214,6 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             LOG.error("Fail to init all [RegionEngine].");
             return false;
         }
-        // heartbeat sender
-        if (this.pdClient instanceof RemotePlacementDriverClient) {
-            HeartbeatOptions heartbeatOpts = opts.getHeartbeatOptions();
-            if (heartbeatOpts == null) {
-                heartbeatOpts = new HeartbeatOptions();
-            }
-            this.storeHeartbeatSender = new StoreHeartbeatSender(this);
-            if (!this.storeHeartbeatSender.init(heartbeatOpts)) {
-                LOG.error("Fail to init [HeartbeatSender].");
-                return false;
-            }
-        }
         this.startTime = System.currentTimeMillis();
         LOG.info("[StoreEngine] start successfully: {}.", this);
         return this.started = true;
@@ -251,9 +235,6 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         }
         if (this.rawKVStore != null) {
             this.rawKVStore.shutdown();
-        }
-        if (this.storeHeartbeatSender != null) {
-            this.storeHeartbeatSender.shutdown();
         }
         this.regionKVServiceTable.clear();
         if (this.kvMetricsReporter != null) {

@@ -16,6 +16,9 @@
 
 package io.dingodb.common.util;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
 /**
  * Default 0. 0 -> StackTraces method. 1 -> Current called method.
  */
@@ -81,6 +84,21 @@ public class StackTraces {
 
     public static String stack(int stack) {
         return String.format("%s.%s:%s", className(stack + 1), methodName(stack + 1), lineNumber(stack + 1));
+    }
+
+    public static String stackTrace() {
+        return stackTrace(Integer.MAX_VALUE);
+    }
+
+    public static String stackTrace(int deep) {
+        StringJoiner joiner = new StringJoiner("\n");
+        for (StackTraceElement s : Thread.currentThread().getStackTrace()) {
+            joiner.add(s.toString());
+            if (deep-- < 0) {
+                break;
+            }
+        }
+        return joiner.toString();
     }
 
 }

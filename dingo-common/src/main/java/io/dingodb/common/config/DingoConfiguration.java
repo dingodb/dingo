@@ -34,6 +34,14 @@ import java.util.function.Supplier;
 @Slf4j
 public class DingoConfiguration {
 
+    public static final String CLUSTER_NAME_KEY = "cluster.name";
+    public static final String INSTANCE_HOST_KEY = "instance.host";
+    public static final String PORT_KEY = "instance.port";
+
+    public static final String DATA_DIR_KEY = "data.dir";
+
+    public static final String FUTURE_TIMEOUT_MILLIS = "futureTimeoutMillis";
+
     public static final DingoConfiguration INSTANCE = new DingoConfiguration();
     private final Map<String, Object> configs = new HashMap<>();
 
@@ -42,6 +50,51 @@ public class DingoConfiguration {
 
     public static DingoConfiguration instance() {
         return INSTANCE;
+    }
+
+    public DingoConfiguration clusterName(String clusterName) {
+        setString(CLUSTER_NAME_KEY, clusterName);
+        return this;
+    }
+
+    public String clusterName() {
+        return getString(CLUSTER_NAME_KEY);
+    }
+
+    public DingoConfiguration instanceHost(String instanceHost) {
+        setString(INSTANCE_HOST_KEY, instanceHost);
+        return this;
+    }
+
+    public String instanceHost() {
+        return getString(INSTANCE_HOST_KEY);
+    }
+
+    public DingoConfiguration instancePort(int port) {
+        setInt(PORT_KEY, port);
+        return this;
+    }
+
+    public int instancePort() {
+        return getInt(PORT_KEY, -1);
+    }
+
+    public DingoConfiguration dataDir(String dataDir) {
+        setString(DATA_DIR_KEY, dataDir);
+        return this;
+    }
+
+    public String dataDir() {
+        return getString(DATA_DIR_KEY, "/tmp");
+    }
+
+    public DingoConfiguration futureTimeMillis(long futureTimeoutMillis) {
+        set(FUTURE_TIMEOUT_MILLIS, futureTimeoutMillis);
+        return this;
+    }
+
+    public long futureTimeMillis() {
+        return getLong(FUTURE_TIMEOUT_MILLIS, 10000L);
     }
 
     public void set(String name, Object value) {
@@ -62,6 +115,7 @@ public class DingoConfiguration {
             }
             configs = (Map<String, Object>) value;
         }
+        this.configs.put(name, value);
         return value;
     }
 
@@ -74,6 +128,10 @@ public class DingoConfiguration {
     }
 
     public Boolean getBool(String name) {
+        return Boolean.valueOf(getString(name));
+    }
+
+    public Boolean getBool(String name, boolean defaultValue) {
         return Boolean.valueOf(getString(name));
     }
 

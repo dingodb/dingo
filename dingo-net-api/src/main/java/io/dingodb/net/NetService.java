@@ -19,19 +19,12 @@ package io.dingodb.net;
 public interface NetService extends AutoCloseable {
 
     /**
-     * Returns this service location.
-     *
-     * @return this service location
-     */
-    //Location currentLocation();
-
-    /**
      * Return a new channel connected to the remote-end.
      *
      * @param netAddress remote node
      * @return the channel connected to the remote node
      */
-    Channel newChannel(NetAddress netAddress) throws Exception;
+    Channel newChannel(NetAddress netAddress);
 
     /**
      * Register {@link MessageListenerProvider} on the net service,  When the remote-end send a message to current

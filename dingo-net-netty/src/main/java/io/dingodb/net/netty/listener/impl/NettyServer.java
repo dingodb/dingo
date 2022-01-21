@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty.listener.impl;
 
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.connection.ConnectionManager;
 import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
@@ -23,7 +24,7 @@ import io.dingodb.net.netty.handler.ExceptionHandler;
 import io.dingodb.net.netty.handler.InboundMessageHandler;
 import io.dingodb.net.netty.handler.decode.MessageDecoder;
 import io.dingodb.net.netty.handler.encode.MessageEncoder;
-import io.dingodb.net.netty.handler.handshake.ServerHandshakeHandler;
+import io.dingodb.net.netty.handler.handshake.ConnectionHandshakeHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -52,7 +53,7 @@ public class NettyServer implements PortListener {
     @Override
     public void init() {
         server = new ServerBootstrap();
-        eventLoopGroup = new NioEventLoopGroup();
+        eventLoopGroup = new NioEventLoopGroup(2, new ThreadPoolBuilder().name("Netty server " + port).build());
         server
             .localAddress(port)
             .channel(NioServerSocketChannel.class)
@@ -67,7 +68,6 @@ public class NettyServer implements PortListener {
 
     private ChannelInitializer<SocketChannel> channelInitializer() {
         MessageEncoder encoder = new MessageEncoder();
-
         return new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
@@ -75,7 +75,7 @@ public class NettyServer implements PortListener {
                 ch.pipeline()
                     .addLast(encoder)
                     .addLast(new MessageDecoder())
-                    .addLast(new ServerHandshakeHandler(connection))
+                    .addLast(new ConnectionHandshakeHandler(connection))
                     .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.heartbeat(), 0, 0, SECONDS))
                     .addLast(new InboundMessageHandler(connection))
                     .addLast(new ExceptionHandler(connection));

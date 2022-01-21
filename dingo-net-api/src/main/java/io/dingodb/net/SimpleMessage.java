@@ -16,6 +16,7 @@
 
 package io.dingodb.net;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -23,7 +24,10 @@ import lombok.Getter;
 @Builder
 @Getter
 @EqualsAndHashCode
+@AllArgsConstructor
 public class SimpleMessage implements Message {
+
+    public static final SimpleMessage EMPTY = new SimpleMessage(SimpleTag.DEFAULT_TAG, new byte[0]);
 
     private Tag tag;
     private byte[] content;

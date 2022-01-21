@@ -17,9 +17,12 @@
 package io.dingodb.net;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 
 import java.net.InetSocketAddress;
+import java.util.StringJoiner;
 
+@EqualsAndHashCode
 public class NetAddress {
 
     private final InetSocketAddress socketAddress;
@@ -49,4 +52,9 @@ public class NetAddress {
         return socketAddress.getPort();
     }
 
+
+    @Override
+    public String toString() {
+        return String.format("%s:%s", hostAddress(), port());
+    }
 }

@@ -16,6 +16,8 @@
 
 package io.dingodb.common.error;
 
+import java.util.function.Supplier;
+
 /**
  * A public auxiliary interface derived from DingoError to provide formation support for customized message.
  *
@@ -25,7 +27,16 @@ package io.dingodb.common.error;
  */
 public interface FormattingError extends DingoError {
 
-    default void throwError(Object... args) {
+    /**
+     * Throw an exception with customized message built from formation of {@link FormattingError#getFormat()} with given
+     * arguments, if {@link DingoError#getCode()} equals {@link NoError#getCode()} then skip throw.
+     *
+     * @param args arguments to format string
+     */
+    default void throwFormatError(Object... args) {
+        if (getCode() == NoError.OK.getCode()) {
+            return;
+        }
         throw this.formatAsException(args);
     }
 
@@ -64,6 +75,18 @@ public interface FormattingError extends DingoError {
             return DingoException.from(this);
         }
         return DingoException.from(this, message);
+    }
+
+    /**
+     * Construct an exception supplier with customized message built from formation of {@link #getFormat()} with given
+     * arguments.
+     *
+     * @param args arguments to format string
+     * @return a customized {@link Supplier} as {@link DingoException} with message formatted from {@link #getFormat()}
+     *      and given parameters.
+     */
+    default Supplier<RuntimeException> supplierException(FormattingError error, Object... args) {
+        return () -> error.formatAsException(args);
     }
 
 }
