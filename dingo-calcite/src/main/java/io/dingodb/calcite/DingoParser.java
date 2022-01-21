@@ -61,10 +61,6 @@ public class DingoParser {
 
     protected SqlParser.Config parserConfig = SqlParser.config();
 
-    public DingoParser() {
-        this(new DingoParserContext());
-    }
-
     public DingoParser(@Nonnull DingoParserContext context) {
         this.context = context;
         planner = new VolcanoPlanner();

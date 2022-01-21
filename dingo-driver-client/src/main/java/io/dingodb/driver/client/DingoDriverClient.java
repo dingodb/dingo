@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.driver;
+package io.dingodb.driver.client;
 
-import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.DriverVersion;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.UnregisteredDriver;
+import org.apache.calcite.avatica.remote.Driver;
 
-public class DingoDriver extends UnregisteredDriver {
-    public static final DingoDriver INSTANCE = new DingoDriver();
+public class DingoDriverClient extends Driver {
+    public static final String CONNECT_STRING_PREFIX = "jdbc:dingo:thin:";
 
-    public static final String CONNECT_STRING_PREFIX = "jdbc:dingo:";
+    static final DriverVersion DRIVER_VERSION = new DriverVersion(
+        "Dingo JDBC Thin Driver",
+        "0.1.0",
+        "DingoDB",
+        "0.1.0",
+        true,
+        0,
+        1,
+        0,
+        1
+    );
 
     static {
-        INSTANCE.register();
+        new DingoDriverClient().register();
     }
 
     @Override
@@ -36,17 +44,7 @@ public class DingoDriver extends UnregisteredDriver {
     }
 
     @Override
-    protected String getFactoryClassName(JdbcVersion jdbcVersion) {
-        return DingoFactory.class.getCanonicalName();
-    }
-
-    @Override
     protected DriverVersion createDriverVersion() {
-        return DingoDriverVersion.INSTANCE;
-    }
-
-    @Override
-    public Meta createMeta(AvaticaConnection connection) {
-        return new DingoMeta((DingoConnection) connection);
+        return DRIVER_VERSION;
     }
 }

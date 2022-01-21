@@ -19,13 +19,11 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Job;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalcitePrepare;
@@ -45,12 +43,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 public final class DingoDriverParser extends DingoParser {
-    public DingoDriverParser() {
-        super();
+    public DingoDriverParser(DingoParserContext context) {
+        super(context);
         parserConfig = SqlParser.config()
             .withParserFactory(DingoDdlParserFactory.INSTANCE);
     }
@@ -169,33 +166,5 @@ public final class DingoDriverParser extends DingoParser {
             statementType,
             job
         );
-    }
-
-    static class DingoSignature extends Meta.Signature {
-        @Getter
-        @Setter
-        private Job job;
-
-        public DingoSignature(
-            List<ColumnMetaData> columns,
-            String sql,
-            Meta.CursorFactory cursorFactory,
-            Meta.StatementType statementType
-        ) {
-            this(columns, sql, null, null, cursorFactory, statementType, null);
-        }
-
-        public DingoSignature(
-            List<ColumnMetaData> columns,
-            String sql,
-            List<AvaticaParameter> parameters,
-            Map<String, Object> internalParameters,
-            Meta.CursorFactory cursorFactory,
-            Meta.StatementType statementType,
-            Job job
-        ) {
-            super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
-            this.job = job;
-        }
     }
 }

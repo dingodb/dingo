@@ -28,7 +28,6 @@ import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
-import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
@@ -100,18 +99,18 @@ public class ElementSchema implements CompileContext {
     public Object convert(Object origin) {
         switch (type) {
             case TypeCode.INTEGER:
-                if (origin instanceof BigDecimal) {
-                    return ((BigDecimal) origin).intValue();
+                if (origin instanceof Number) {
+                    return ((Number) origin).intValue();
                 }
                 break;
             case TypeCode.LONG:
-                if (origin instanceof BigDecimal) {
-                    return ((BigDecimal) origin).longValue();
+                if (origin instanceof Number) {
+                    return ((Number) origin).longValue();
                 }
                 break;
             case TypeCode.DOUBLE:
-                if (origin instanceof BigDecimal) {
-                    return ((BigDecimal) origin).doubleValue();
+                if (origin instanceof Number) {
+                    return ((Number) origin).doubleValue();
                 }
                 break;
             case TypeCode.STRING:

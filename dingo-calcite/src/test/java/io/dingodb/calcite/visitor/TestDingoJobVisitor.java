@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
@@ -57,7 +58,7 @@ public class TestDingoJobVisitor {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser();
+        parser = new DingoParser(new DingoParserContext());
         table = parser.getContext().getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
         RelOptCluster cluster = parser.getCluster();
         RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();

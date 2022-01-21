@@ -18,6 +18,7 @@
             <option value="$PROJECT_DIR$/dingo-ddl" />
             <option value="$PROJECT_DIR$/dingo-dist" />
             <option value="$PROJECT_DIR$/dingo-driver" />
+            <option value="$PROJECT_DIR$/dingo-driver-client" />
             <option value="$PROJECT_DIR$/dingo-exec" />
             <option value="$PROJECT_DIR$/dingo-expr" />
             <option value="$PROJECT_DIR$/dingo-expr/annotations" />
