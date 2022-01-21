@@ -106,6 +106,9 @@ public final class ReceiveOperator extends SourceOperator {
                 }
                 output.push(tuple);
             } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("(tag = {}) Take out FIN.", tag);
+                }
                 profile.setEndTimeStamp(System.currentTimeMillis());
                 profile.setProcessedTupleCount(count);
                 Fin fin = (Fin) tuple[0];
@@ -131,9 +134,11 @@ public final class ReceiveOperator extends SourceOperator {
                 try {
                     byte[] content = message.toBytes();
                     Object[] tuple = codec.decode(content);
-                    if (!(tuple[0] instanceof Fin)) {
-                        if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled()) {
+                        if (!(tuple[0] instanceof Fin)) {
                             log.debug("(tag = {}) Received tuple {}.", tag, schema.formatTuple(tuple));
+                        } else {
+                            log.debug("(tag = {}) Received FIN.", tag);
                         }
                     }
                     QueueUtil.forcePut(tupleQueue, tuple);

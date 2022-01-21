@@ -18,17 +18,11 @@ package io.dingodb.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.cli.handler.CsvBatchHandler;
-import io.dingodb.cli.handler.ExecutorTagHandler;
-import io.dingodb.cli.handler.RebalanceHandler;
-import io.dingodb.cli.handler.ResourceTagHandler;
 import io.dingodb.cli.handler.SqlLineHandler;
 import io.dingodb.common.config.DingoConfiguration;
-import org.apache.log4j.PropertyConfigurator;
 
 import java.io.FileInputStream;
 import java.util.Map;
-import java.util.Properties;
 
 import static io.dingodb.expr.json.runtime.Parser.YAML;
 
@@ -99,36 +93,10 @@ public class Tools {
         }
         YAML.parse(new FileInputStream(this.config), Map.class)
             .forEach((k, v) -> DingoConfiguration.instance().set(k.toString(), v));
-        if (!printLog) {
-            Properties offLogProps = new Properties();
-            offLogProps.put("log4j.rootLogger", "OFF");
-            PropertyConfigurator.configure(offLogProps);
-        }
+
         switch (cmd.toUpperCase()) {
-            case "REBALANCE":
-                if (name == null || name.trim().isEmpty()) {
-                    System.out.println("Run rebalance, table must be specified");
-                    commander.usage();
-                }
-                RebalanceHandler.handler(
-                    name.toUpperCase(),
-                    replicas
-                );
-                break;
-            case "SQL":
             case "SQLLINE":
                 SqlLineHandler.handler(new String[0]);
-                break;
-            case "CSV":
-                CsvBatchHandler.handler(name, file, showSql, batch, parallel);
-                break;
-            case "TAG":
-                if (executor) {
-                    ExecutorTagHandler.handler(name.toUpperCase(), tag, delete);
-                }
-                if (table) {
-                    ResourceTagHandler.handler(name.toUpperCase(), tag);
-                }
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);

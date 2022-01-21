@@ -102,7 +102,7 @@ public class StoreHeartbeatSender implements Lifecycle<HeartbeatOptions> {
         final long now = System.currentTimeMillis();
         final StoreHeartbeatTask storeHeartbeatTask = new StoreHeartbeatTask(storeHeartbeatIntervalSeconds, now, false);
         this.heartbeatTimer.newTimeout(storeHeartbeatTask, storeHeartbeatTask.getNextDelay(), TimeUnit.SECONDS);
-        LOG.info("[HeartbeatSender] start successfully, options: {}.", opts);
+        LOG.info("[StoreHeartbeatSender] start successfully, options: {}.", opts);
         return this.started = true;
     }
 

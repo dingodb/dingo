@@ -16,7 +16,7 @@
 
 package io.dingodb.net;
 
-import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 
 public interface Channel extends AutoCloseable {
 
@@ -27,9 +27,14 @@ public interface Channel extends AutoCloseable {
     void send(Message msg);
 
     /**
-     * Register message listeners on the channel. When the remote-end returns a message, listeners will be notified.
+     * Register message listener on the channel. When the remote-end returns a message, listener will be notified.
      */
     void registerMessageListener(MessageListener listener);
+
+    /**
+     * Register close listener on the channel. When the channel close, listener will be notified.
+     */
+    void closeListener(Consumer<Channel> listener);
 
     /**
      * Returns current channel status {@link Status}.
@@ -39,12 +44,12 @@ public interface Channel extends AutoCloseable {
     /**
      * Returns current local address.
      */
-    InetSocketAddress localAddress();
+    NetAddress localAddress();
 
     /**
      * Returns remote-end address.
      */
-    InetSocketAddress remoteAddress();
+    NetAddress remoteAddress();
 
     enum Status {
         /**

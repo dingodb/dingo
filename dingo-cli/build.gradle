@@ -15,31 +15,24 @@
  */
 
 plugins {
-    id 'application'
     id 'java-conventions'
+    id 'java-library'
 }
-
-application {
-    mainClassName = 'io.github.datacanvasio.dingo.cli.SetUp'
-}
-
 
 dependencies {
-    implementation project(":dingo-server")
-    implementation project(":dingo-net-netty")
-    implementation project(":dingo-common")
-    implementation project(":dingo-calcite")
-    implementation group: 'org.apache.helix', name: 'helix-core', version: 'helix'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'org.apache.commons', name: 'commons-csv', version: 'commons-csv'.v()
-    implementation project(":dingo-row-store-api")
+
+    implementation project(":dingo-common")
+    implementation project(":dingo-calcite")
+    implementation project(":dingo-driver")
+    implementation project(":dingo-net-netty")
+    implementation project(":dingo-server:dingo-server-client")
+    implementation project(":dingo-server:dingo-server-protocol")
 }
 
 task fatJar(type: Jar) {
-    manifest {
-        attributes 'Main-Class': 'io.github.datacanvasio.dingo.cli.SetUp'
-    }
     classifier 'all'
     from(
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
@@ -51,49 +44,6 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.RSA"
 }
 
-task copyDepends(type: Copy) {
-    dependsOn(fatJar, ':dingo-row-store-api:fatJar')
-
-    from(layout.projectDirectory) {
-        include "conf/**"
-        include "bin/**"
-    }
-    into layout.projectDirectory.dir("dingo")
-
-    from(layout.buildDirectory) {
-        include("libs/dingo-cli-*-all.jar")
-    }
-    into layout.projectDirectory.dir("dingo")
-
-    from(project(':dingo-row-store-api').layout.buildDirectory) {
-        include('libs/dingo-row-store-api-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
-    rename { fileName ->
-        fileName.replace("-$project.version", "")
-    }
-
-}
-
-tasks.register('packageDistribution', Zip) {
-    dependsOn(copyDepends)
-    archiveFileName = "dingo.zip"
-    destinationDirectory = layout.buildDirectory.dir('distributions')
-    from layout.projectDirectory.dir("dingo")
-}
-
-copyDepends.mustRunAfter fatJar
-packageDistribution.mustRunAfter(copyDepends)
-
 tasks.named("build") { x ->
-    x.finalizedBy("packageDistribution")
+    x.finalizedBy("fatJar")
 }
-
-/**
- * do CleanUp to delete the release `dingo.zip` when run `gradlew clean`.
- */
-task cleanUp(type: Delete) {
-    delete layout.projectDirectory.dir("dingo")
-}
-tasks.clean.dependsOn(tasks.cleanUp)

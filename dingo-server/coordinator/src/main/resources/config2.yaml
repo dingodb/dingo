@@ -1,0 +1,23 @@
+cluster.name: dingo_zhengjy
+cluster.coordinator.name: coordinator-resource
+cluster.coordinator.tag: coordinator-tag
+cluster.coordinator.replicas: 3
+cluster.coordinator.partitions: 1
+cluster.coordinator.raft.servers: localhost:9181,localhost:9182,localhost:9183
+cluster.coordinator.raft.data.dir: dingo/data
+
+instance.host: localhost
+zookeeper.servers: 172.20.3.83:2181
+
+controller.name: dingo_controller
+controller.mode: STANDALONE
+
+server.coordinator.port: 19182
+server.executor.port: 19192
+
+cluster.coordinator.raft.port: 9182
+
+default.replicas: 3
+default.partitions: 3
+data.dir: dingo/data2
+

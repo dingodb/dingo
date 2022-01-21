@@ -1,0 +1,82 @@
+
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    id 'distribution'
+}
+
+task copyDepends(type: Copy) {
+
+    from(layout.projectDirectory) {
+        include "conf/**"
+        include "bin/**"
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(project(':dingo-cli').layout.buildDirectory) {
+        include("libs/dingo-cli-*-all.jar")
+    }
+    into layout.projectDirectory.dir("dingo")
+
+//    from(project(':dingo-row-store-api').layout.buildDirectory) {
+//        include('libs/dingo-row-store-api-*-all.jar')
+//    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(project(':dingo-server:dingo-server-executor').layout.buildDirectory) {
+        include('libs/dingo-server-executor-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(project(':dingo-server:dingo-server-coordinator').layout.buildDirectory) {
+        include('libs/dingo-server-coordinator-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    rename { fileName ->
+        fileName.replace("-$project.version", "")
+    }
+
+}
+
+tasks.register('packageDistribution', Zip) {
+    dependsOn(copyDepends)
+    archiveFileName = "dingo.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    from layout.projectDirectory.dir("dingo")
+}
+
+copyDepends.dependsOn([
+    ':dingo-server:dingo-server-coordinator:fatJar',
+    ':dingo-server:dingo-server-executor:fatJar',
+//    ':dingo-row-store-api:fatJar',
+    ':dingo-cli:fatJar',
+])
+
+packageDistribution.mustRunAfter(copyDepends)
+
+tasks.named("build") { x ->
+    x.finalizedBy("packageDistribution")
+}
+
+/**
+ * do CleanUp to delete the release `dingo.zip` when run `gradlew clean`.
+ */
+task cleanUp(type: Delete) {
+    delete layout.projectDirectory.dir("dingo")
+}
+tasks.clean.dependsOn(tasks.cleanUp)

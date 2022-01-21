@@ -24,7 +24,6 @@ public class NetServiceConfiguration {
     public static final NetServiceConfiguration INSTANCE = new NetServiceConfiguration();
     public static final int DEFAULT_HEARTBEAT = 10;
     public static final int MIN_HEARTBEAT = 2;
-    public static final String PORT_KEY = "active.port";
     public static final String HEARTBEAT = "heartbeat";
     @Delegate
     private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
@@ -34,10 +33,6 @@ public class NetServiceConfiguration {
 
     public static NetServiceConfiguration instance() {
         return INSTANCE;
-    }
-
-    public Integer port() {
-        return getInt(PORT_KEY);
     }
 
     public Integer heartbeat() {

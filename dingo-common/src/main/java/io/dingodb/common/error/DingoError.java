@@ -317,4 +317,37 @@ public interface DingoError {
         }
         return from(getCategory(), getMessage());
     }
+
+    /**
+     * Throw an exception with {@link DingoError},
+     * if {@link DingoError#getCode()} equals {@link NoError#getCode()} then skip throw.
+     */
+    default void throwError() {
+        if (getCode() == NoError.OK.getCode()) {
+            return;
+        }
+        throw DingoException.from(this);
+    }
+
+    /**
+     * Construct an exception with customized message.
+     *
+     * @return a customized {@link DingoException} with message
+     */
+    default DingoException asException() {
+        return asException(null);
+    }
+
+    /**
+     * Construct an exception with customized message.
+     *
+     * @param message error message
+     * @return a customized {@link DingoException} with message
+     */
+    default DingoException asException(String message) {
+        if (message == null) {
+            return DingoException.from(this);
+        }
+        return DingoException.from(this, message);
+    }
 }

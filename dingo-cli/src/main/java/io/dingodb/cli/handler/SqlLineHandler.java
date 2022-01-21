@@ -16,11 +16,9 @@
 
 package io.dingodb.cli.handler;
 
-import io.dingodb.helix.part.impl.ZkHelixSpectatorPart;
-import io.dingodb.meta.helix.HelixMetaService;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.ServerConfiguration;
 import sqlline.DingoSqlline;
 import sqlline.SqlLine;
 
@@ -34,13 +32,8 @@ public class SqlLineHandler {
     public static void handler(String[] args) throws Exception {
         DatagramSocket datagramSocket = new DatagramSocket();
         netService.listenPort(datagramSocket.getLocalPort());
-        ServerConfiguration.instance().port(datagramSocket.getLocalPort());
+        DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
         datagramSocket.close();
-        ZkHelixSpectatorPart helixSpectatorPart = new ZkHelixSpectatorPart(ServerConfiguration.instance());
-        helixSpectatorPart.init();
-        helixSpectatorPart.start();
-        HelixMetaService.instance().init(helixSpectatorPart);
-
         DingoSqlline sqlline = new DingoSqlline();
         sqlline.connect();
         SqlLine.Status status = sqlline.begin(args, null, true);

@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.handler.impl;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.handler.MessageDispatcher;
@@ -26,6 +27,8 @@ import io.dingodb.net.netty.packet.PacketMode;
 import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.utils.Logs;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.ExecutorService;
 
 @Slf4j
 public class UserDefineMessageHandler implements MessageHandler {
@@ -40,12 +43,14 @@ public class UserDefineMessageHandler implements MessageHandler {
         return INSTANCE;
     }
 
+    private final ExecutorService executorService = new ThreadPoolBuilder().name("UserDefineMessageHandler").build();
+
     @Override
     public void handle(Connection<Message> connection, Packet<Message> packet) {
         if (packet.header().type() != PacketType.USER_DEFINE) {
             throw new IllegalStateException("Unexpected value: " + packet.header().type());
         }
-        Logs.packetDbg(log, connection, packet);
+        Logs.packetDbg(false, log, connection, packet);
         connection.receive(packet);
     }
 

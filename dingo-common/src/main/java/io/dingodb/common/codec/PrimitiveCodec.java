@@ -18,8 +18,6 @@ package io.dingodb.common.codec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -180,22 +178,49 @@ public class PrimitiveCodec {
     /**
      * Read int from {@code buf}, and use ZigZagIng load.
      */
-    public static Integer readZigZagInt(DataInput buf) throws IOException {
+    public static Integer readZigZagInt(ByteBuffer buf) {
+        int readerIndex = buf.position();
         int maxBytes = INT_MAX_LEN;
         int b = Byte.MAX_VALUE + 1;
         int result = 0;
         while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            result ^= ((b = (buf.readByte() & 0XFF)) & 0X7FL) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
+            if (!buf.hasRemaining()) {
+                buf.position(readerIndex);
+                return null;
+            }
+            result ^= ((b = (buf.get() & 0XFF)) & 0X7FL) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
         }
         return result >>> 1 ^ -(result & 1);
     }
 
-    public static byte[] encodeString(String str) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(encodeVarInt(str.length()));
-        baos.write(str.getBytes(StandardCharsets.UTF_8));
-        baos.flush();
-        return baos.toByteArray();
+    /**
+     * Read int from {@code buf}, and use ZigZagIng load.
+     */
+    public static Integer readZigZagInt(ByteArrayInputStream bais) {
+        bais.mark(0);
+        int maxBytes = INT_MAX_LEN;
+        int b = Byte.MAX_VALUE + 1;
+        int result = 0;
+        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
+            if (bais.available() < 1) {
+                bais.reset();
+                return null;
+            }
+            result ^= ((b = (bais.read() & 0XFF)) & 0X7FL) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
+        }
+        return result >>> 1 ^ -(result & 1);
+    }
+
+    public static byte[] encodeString(String str) {
+        if (str == null) {
+            return new byte[0];
+        }
+        byte[] content = str.getBytes(StandardCharsets.UTF_8);
+        byte[] len = encodeVarInt(content.length);
+        byte[] result = new byte[len.length + content.length];
+        System.arraycopy(len, 0, result, 0, len.length);
+        System.arraycopy(content, 0, result, len.length, content.length);
+        return result;
     }
 
     public static String readString(byte[] bytes) {
@@ -204,6 +229,32 @@ public class PrimitiveCodec {
             return null;
         }
         return new String(bytes, computeVarIntSize(len), len);
+    }
+
+    public static String readString(ByteBuffer buf) {
+        int readerIndex = buf.position();
+        Integer len = readVarInt(buf);
+        if (len == null || len < 0 || buf.limit() - buf.position() < len) {
+            buf.position(readerIndex);
+            return null;
+        }
+        byte[] bytes = new byte[len];
+        buf.get(bytes);
+        return new String(bytes);
+    }
+
+    public static String readString(ByteArrayInputStream bais) {
+        bais.mark(0);
+        Integer len = readVarInt(bais);
+        if (len == null || len < 0 || bais.available() < len) {
+            bais.reset();
+            return null;
+        }
+        byte[] bytes = new byte[len];
+        for (int i = 0; i < len; i++) {
+            bytes[i] = (byte) bais.read();
+        }
+        return new String(bytes);
     }
 
 }

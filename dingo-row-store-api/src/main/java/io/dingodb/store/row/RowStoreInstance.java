@@ -55,6 +55,10 @@ public class RowStoreInstance implements StoreInstance {
         this.blockMap = new LinkedHashMap<>();
     }
 
+    public static DefaultDingoRowStore kvStore() {
+        return kvStore;
+    }
+
     @Nonnull
     public String blockDir(@Nonnull String tableName, @Nonnull Object partId) {
         return path + File.separator
@@ -77,7 +81,7 @@ public class RowStoreInstance implements StoreInstance {
         options.setClusterName(configuration.clusterName());
         options.setInitialServerList(configuration.clusterInitialServerList());
         options.setFailoverRetries(configuration.clusterFailoverRetries());
-        options.setFutureTimeoutMillis(configuration.clusterFutureTimeoutMillis());
+        options.setFutureTimeoutMillis(configuration.futureTimeMillis());
 
         PlacementDriverOptions driverOptions = new PlacementDriverOptions();
         driverOptions.setFake(configuration.coordinatorOptionsFake());

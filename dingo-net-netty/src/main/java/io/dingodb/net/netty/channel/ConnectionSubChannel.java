@@ -39,10 +39,12 @@ public interface ConnectionSubChannel<M> extends Channel {
     void receive(Packet<M> packet);
 
     /**
-     * Get next message no.
+     * Get next message seq.
      *
-     * @return message no.
+     * @return message seq.
      */
-    long nextMsgNo();
+    long nextSeq();
+
+    void start();
 
 }

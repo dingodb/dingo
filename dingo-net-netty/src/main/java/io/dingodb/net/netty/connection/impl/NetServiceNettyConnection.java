@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty.connection.impl;
 
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
@@ -35,11 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.dingodb.common.util.StackTraces.stack;
+import static io.dingodb.common.util.StackTraces.stackTrace;
 import static io.dingodb.net.NetError.OPEN_CHANNEL_TIME_OUT;
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.GENERIC_CHANNEL_ID;
 import static io.dingodb.net.netty.packet.message.HandshakeMessage.handshakePacket;
@@ -67,19 +70,19 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     protected void handshake() {
         Future<Packet<Message>> ack = GenericMessageHandler.instance().waitAck(this, genericSubChannel.channelId());
         genericSubChannel.send(handshakePacket(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID));
-        log.info("Connection open, remote: [{}]", remoteAddress());
         try {
             genericSubChannel.targetChannelId(ack.get(heartbeat, TimeUnit.SECONDS).header().targetChannelId());
+            log.info("Connection open, remote: [{}]", remoteAddress());
         } catch (InterruptedException e) {
             close();
-            NetError.OPEN_CONNECTION_INTERRUPT.throwError(remoteAddress());
+            NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(remoteAddress());
         } catch (ExecutionException e) {
             close();
             log.error("Open connection error, remote: [{}], caller: [{}]", remoteAddress(), stack(4));
-            NetError.UNKNOWN.throwError(e.getMessage());
+            NetError.UNKNOWN.throwFormatError(e.getMessage());
         } catch (TimeoutException e) {
             close();
-            NetError.OPEN_CONNECTION_TIME_OUT.throwError(remoteAddress());
+            NetError.OPEN_CONNECTION_TIME_OUT.throwFormatError(remoteAddress());
         }
         eventLoopGroup.scheduleAtFixedRate(this::sendHeartbeat, 0, heartbeat / 2, TimeUnit.SECONDS);
     }
@@ -95,7 +98,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         if (channelId == null || (channel = subChannels.get(channelId)) == null) {
             throw new RuntimeException("Not found channel for channel id: " + channelId);
         }
-        Logs.packetDbg(log, this, packet);
+        Logs.packetDbg(false, log, this, packet);
         channel.receive(packet);
     }
 
@@ -106,26 +109,31 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             cid -> new NetServiceConnectionSubChannel(cid, null, this)
         );
         Future<Packet<Message>> ack = GenericMessageHandler.instance().waitAck(this, channel.channelId());
-        channel.send(MessagePacket.connectRemoteChannel(channel.channelId(), channel.nextMsgNo()));
+        channel.send(MessagePacket.connectRemoteChannel(channel.channelId(), channel.nextSeq()));
         try {
             channel.targetChannelId(ack.get(heartbeat, TimeUnit.SECONDS).header().targetChannelId());
         } catch (InterruptedException e) {
             closeSubChannel(channel.channelId());
-            NetError.OPEN_CHANNEL_INTERRUPT.throwError();
+            NetError.OPEN_CHANNEL_INTERRUPT.throwFormatError();
         } catch (ExecutionException e) {
             closeSubChannel(channel.channelId());
             log.error("Open channel error, channel id: [{}], caller: [{}]",
                 channel.channelId(), stack(2));
-            NetError.UNKNOWN.throwError(e.getMessage());
+            NetError.UNKNOWN.throwFormatError(e.getMessage());
         } catch (TimeoutException e) {
             closeSubChannel(channel.channelId());
-            OPEN_CHANNEL_TIME_OUT.throwError();
+            OPEN_CHANNEL_TIME_OUT.throwFormatError();
         }
         if (log.isDebugEnabled()) {
-            log.debug("Open channel from [{}] channel [{}], this channel: [{}], stacktrace: [{}], caller: [{}]",
-                remoteAddress(), channel.targetChannelId(), channel.channelId(), StackTraces.stack(), stack(3));
+            log.debug(
+                "Open channel to [{}] channel [{}], this channel: [{}], caller: [{}]",
+                remoteAddress(),
+                channel.targetChannelId(),
+                channel.channelId(),
+                log.isTraceEnabled() ? stackTrace() : stack(3)
+            );
         }
-        channel.status(Channel.Status.ACTIVE);
+        channel.start();
         return channel;
     }
 
@@ -134,11 +142,17 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         NetServiceConnectionSubChannel channel = subChannels.computeIfAbsent(
             generateChannelId(),
             cid -> new NetServiceConnectionSubChannel(cid, targetChannelId, this)
-        ).status(Channel.Status.ACTIVE);
+        );
         if (log.isDebugEnabled()) {
-            log.debug("Open channel from [{}] channel [{}], this channel: [{}], stacktrace: [{}], caller: [{}]",
-                remoteAddress(), targetChannelId, channel.channelId(), StackTraces.stack(), stack(3));
+            log.debug(
+                "Open channel from [{}] channel [{}], this channel: [{}], caller: [{}]",
+                remoteAddress(),
+                targetChannelId,
+                channel.channelId(),
+                log.isTraceEnabled() ? stackTrace() : stack(3)
+            );
         }
+        channel.start();
         return channel;
     }
 

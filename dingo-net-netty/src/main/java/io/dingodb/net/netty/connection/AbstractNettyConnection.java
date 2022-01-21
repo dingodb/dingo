@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty.connection;
 
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
@@ -37,6 +38,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -69,8 +71,9 @@ public abstract class AbstractNettyConnection<M> implements Connection<M> {
 
     @Override
     public void open() throws InterruptedException {
+        ThreadPoolExecutor executor = new ThreadPoolBuilder().name("Netty connection " + remoteAddress).build();
         bootstrap = new Bootstrap();
-        eventLoopGroup = new NioEventLoopGroup();
+        eventLoopGroup = new NioEventLoopGroup(0, executor);
         bootstrap
             .channel(NioSocketChannel.class)
             .group(eventLoopGroup)
