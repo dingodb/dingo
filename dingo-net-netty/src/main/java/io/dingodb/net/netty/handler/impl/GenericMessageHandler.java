@@ -73,7 +73,6 @@ public class GenericMessageHandler implements MessageHandler {
 
     @Override
     public void handle(Connection<Message> connection, Packet<Message> packet) {
-        Logs.packetDbg(log, connection, packet);
         switch (packet.header().type()) {
             case PING:
                 connection.genericSubChannel().send(MessagePacket.pong(0));
@@ -82,7 +81,7 @@ public class GenericMessageHandler implements MessageHandler {
                 break;
             case CONNECT_CHANNEL:
                 ConnectionSubChannel<Message> channel = connection.openSubChannel(packet.header().targetChannelId());
-                channel.send(MessagePacket.ack(channel.channelId(), channel.targetChannelId(), channel.nextMsgNo()));
+                channel.send(MessagePacket.ack(channel.channelId(), channel.targetChannelId(), channel.nextSeq()));
                 break;
             case DIS_CONNECT_CHANNEL:
                 connection.closeSubChannel(packet.header().channelId());

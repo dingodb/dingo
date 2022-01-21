@@ -29,8 +29,7 @@ public class TaskHandler implements EventHandler<MessageEvent<Runnable>>, WorkHa
     private static final Logger LOG = LoggerFactory.getLogger(TaskHandler.class);
 
     @Override
-    public void onEvent(final MessageEvent<Runnable> event, final long sequence, final boolean endOfBatch)
-                                                                                                          throws Exception {
+    public void onEvent(final MessageEvent<Runnable> event, final long sequence, final boolean endOfBatch) {
         event.getMessage().run();
         event.reset();
     }

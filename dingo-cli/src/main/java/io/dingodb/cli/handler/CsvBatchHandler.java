@@ -18,17 +18,13 @@ package io.dingodb.cli.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.calcite.Connections;
-import io.dingodb.helix.part.impl.ZkHelixSpectatorPart;
-import io.dingodb.meta.helix.HelixMetaService;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.ServerConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.FileReader;
-import java.net.DatagramSocket;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
@@ -99,14 +95,14 @@ public class CsvBatchHandler {
     }
 
     private static void init() throws Exception {
-        DatagramSocket datagramSocket = new DatagramSocket();
-        netService.listenPort(datagramSocket.getLocalPort());
-        ServerConfiguration.instance().port(datagramSocket.getLocalPort());
-        datagramSocket.close();
-        ZkHelixSpectatorPart helixSpectatorPart = new ZkHelixSpectatorPart(ServerConfiguration.instance());
-        helixSpectatorPart.init();
-        helixSpectatorPart.start();
-        HelixMetaService.instance().init(helixSpectatorPart);
+        //DatagramSocket datagramSocket = new DatagramSocket();
+        //netService.listenPort(datagramSocket.getLocalPort());
+        //ServerConfiguration.instance().port(datagramSocket.getLocalPort());
+        //datagramSocket.close();
+        //ZkHelixSpectatorPart helixSpectatorPart = new ZkHelixSpectatorPart(ServerConfiguration.instance());
+        //helixSpectatorPart.init();
+        //helixSpectatorPart.start();
+        //HelixMetaService.instance().init(helixSpectatorPart);
     }
 
     private static String valuesSql(List<String> headers, CSVRecord record) {

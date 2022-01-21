@@ -21,11 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 
 @JsonTypeName("sumUp")
 @JsonPropertyOrder({"inputNum"})
+@Slf4j
 public class SumUpOperator extends SoleOutMultiInputOperator {
     private long sum;
     private boolean[] finFlag;
@@ -50,7 +52,7 @@ public class SumUpOperator extends SoleOutMultiInputOperator {
     }
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         setFin(pin, fin);
         if (isAllFin()) {
             if (output.push(new Object[]{sum})) {

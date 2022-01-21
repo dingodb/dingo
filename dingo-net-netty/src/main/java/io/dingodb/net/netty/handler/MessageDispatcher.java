@@ -56,8 +56,7 @@ public class MessageDispatcher {
         Optional.ofNullable(handlers.get(packet.header().mode()))
             .filter(typeHandlers -> !typeHandlers.isEmpty())
             .map(typeHandlers -> typeHandlers.get(packet.header().type()))
-            .ifPresent(() -> Logs.packetDbg(log, connection,packet))
-            .ifAbsent(() -> Logs.packetErr(log, connection,packet, "not found handler."))
+            .ifAbsent(() -> Logs.packetWarn(false, log, connection,packet, "not found handler."))
             .ifPresent(handler -> handler.handle(connection, packet));
     }
 

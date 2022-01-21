@@ -21,14 +21,17 @@ import io.dingodb.net.netty.packet.Packet;
 import io.dingodb.net.netty.utils.Logs;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
-public abstract class AbstractConnectionSubChannel<M> implements ConnectionSubChannel<M> {
+public abstract class AbstractConnectionSubChannel<M> extends Thread implements ConnectionSubChannel<M> {
+
+    private static final ThreadGroup THREAD_GROUP = new ThreadGroup("Connection channel");
 
     protected final ChannelId channelId;
     protected final Connection<M> connection;
-    private final AtomicLong msgNo;
+    private final AtomicLong seqNo;
     protected ChannelId targetChannelId;
 
     protected AbstractConnectionSubChannel(
@@ -36,11 +39,11 @@ public abstract class AbstractConnectionSubChannel<M> implements ConnectionSubCh
         ChannelId targetChannelId,
         Connection<M> connection
     ) {
+        super(THREAD_GROUP, String.format("%s/<%s>", connection.remoteAddress(), channelId.channelId()));
         this.channelId = channelId;
         this.targetChannelId = targetChannelId;
         this.connection = connection;
-        this.msgNo = new AtomicLong(1);
-
+        this.seqNo = new AtomicLong(1);
     }
 
     @Override
@@ -59,7 +62,7 @@ public abstract class AbstractConnectionSubChannel<M> implements ConnectionSubCh
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
 
     }
 
@@ -70,12 +73,12 @@ public abstract class AbstractConnectionSubChannel<M> implements ConnectionSubCh
 
     @Override
     public void send(Packet<M> packet) {
-        Logs.packetDbg(log, connection, packet);
+        Logs.packetDbg(true, log, connection, packet);
         connection.send(packet);
     }
 
     @Override
-    public long nextMsgNo() {
-        return msgNo.getAndIncrement();
+    public long nextSeq() {
+        return seqNo.getAndIncrement();
     }
 }

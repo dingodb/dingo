@@ -60,13 +60,13 @@ public final class ReduceOperator extends SoleOutMultiInputOperator {
     }
 
     @Override
-    public boolean push(int pin, Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         cache.reduce(tuple);
         return true;
     }
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         setFin(pin, fin);
         if (isAllFin()) {
             for (Object[] t : cache) {

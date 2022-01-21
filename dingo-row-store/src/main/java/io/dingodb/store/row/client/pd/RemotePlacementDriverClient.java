@@ -110,7 +110,7 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
             }
             return remoteStore;
         }
-        // local conf
+        // todo remove local conf
         final Store localStore = new Store();
         final List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
         final List<Region> regionList = Lists.newArrayListWithCapacity(rOptsList.size());

@@ -36,11 +36,8 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation project(":dingo-server")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-common")
-    implementation project(":dingo-cli")
-    implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

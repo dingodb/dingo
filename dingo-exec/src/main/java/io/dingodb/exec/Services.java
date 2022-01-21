@@ -18,6 +18,7 @@ package io.dingodb.exec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.error.DingoException;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.impl.TaskImpl;
 import io.dingodb.exec.operator.SendOperator;
@@ -29,6 +30,7 @@ import io.dingodb.net.NetError;
 import io.dingodb.net.NetService;
 import io.dingodb.net.SimpleTag;
 import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
@@ -40,10 +42,8 @@ import java.util.concurrent.Executors;
 
 @Slf4j
 public final class Services {
-    public static final StoreService KV_STORE = Objects.requireNonNull(
-        ServiceProvider.KV_STORE_PROVIDER.provider(),
-        "No store service provider was found."
-    ).get();
+    public static final StoreService KV_STORE = Optional.ofNullable(ServiceProvider.KV_STORE_PROVIDER.provider())
+        .map(StoreServiceProvider::get).orNull();
     public static final MetaService META = Objects.requireNonNull(
         ServiceProvider.META_PROVIDER.provider(),
         "No meta service provider was found."

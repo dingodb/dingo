@@ -16,7 +16,6 @@
 
 package io.dingodb.web.controller;
 
-import io.dingodb.cli.handler.SqlHandler;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,6 @@ public class SqlController {
     @ApiOperation("")
     @PostMapping("sql")
     public ResponseEntity<String> execute(String host, int port, String sql) throws Exception {
-        SqlHandler.handler(host, port, sql);
         return ResponseEntity.ok("Done");
     }
 }

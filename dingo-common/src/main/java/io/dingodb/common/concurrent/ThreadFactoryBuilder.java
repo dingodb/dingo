@@ -60,7 +60,7 @@ public class ThreadFactoryBuilder {
      */
     public ThreadFactory build() {
         return new ThreadFactory() {
-            private final AtomicInteger index = new AtomicInteger(1);
+            private final AtomicInteger index = new AtomicInteger(0);
             @Override
             public Thread newThread(@Nonnull Runnable runnable) {
                 String threadName = String.format("%s-thread-%d", name, this.index.incrementAndGet());

@@ -16,6 +16,7 @@
 
 package io.dingodb.net;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -25,7 +26,11 @@ import java.nio.charset.StandardCharsets;
 @Getter
 @Builder
 @EqualsAndHashCode
+@AllArgsConstructor
 public class SimpleTag implements Tag {
+    public static final Tag DEFAULT_TAG = SimpleTag.builder()
+        .tag(new byte[0])
+        .build();
     public static final Tag TASK_TAG = SimpleTag.builder()
         .tag("DINGO_TASK".getBytes(StandardCharsets.UTF_8))
         .build();

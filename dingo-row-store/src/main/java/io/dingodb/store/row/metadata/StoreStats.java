@@ -16,6 +16,7 @@
 
 package io.dingodb.store.row.metadata;
 
+import com.alipay.sofa.jraft.util.Endpoint;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,4 +48,10 @@ public class StoreStats implements Serializable {
     private long keysWritten;
     private long keysRead;
     private TimeInterval interval;
+
+    /**
+     * todo refactor and remove it.
+     */
+    private Endpoint location;
+
 }

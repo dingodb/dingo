@@ -22,12 +22,10 @@ import io.dingodb.net.netty.listener.OpenConnectionListener;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
@@ -52,7 +50,7 @@ public class ConnectionManager<C extends Connection<?>>
         try {
             connection.open();
         } catch (InterruptedException e) {
-            NetError.OPEN_CONNECTION_INTERRUPT.throwError(address);
+            NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(address);
         }
         connection.nettyChannel().closeFuture().addListener(future -> onCloseConnection(connection));
         return connection;

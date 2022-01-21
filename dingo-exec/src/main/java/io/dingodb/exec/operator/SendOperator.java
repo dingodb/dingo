@@ -119,6 +119,9 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(@Nonnull Fin fin) {
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("(tag = {}) Send FIN", tag);
+            }
             Message msg = SimpleMessage.builder()
                 .tag(TagUtil.getTag(tag))
                 .content(codec.encodeFin(fin))

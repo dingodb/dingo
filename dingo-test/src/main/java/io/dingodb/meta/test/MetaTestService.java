@@ -26,6 +26,7 @@ import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.store.api.StoreInstance;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -34,6 +35,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,6 +53,11 @@ public class MetaTestService implements MetaService {
     private File dataPath2;
     private boolean temporary = false;
     private Map<String, TableDefinition> tableDefinitionMap;
+
+    private int instancePort0;
+    private int instancePort1;
+    private int instancePort2;
+    private int instancePort3;
 
     @Nonnull
     private static File tempPath() {
@@ -87,6 +95,31 @@ public class MetaTestService implements MetaService {
         dataPath2 = tempPath();
         // force reload
         tableDefinitionMap = null;
+
+        try {
+            DatagramSocket tempSocket = new DatagramSocket();
+            Services.NET.listenPort(tempSocket.getLocalPort());
+            instancePort0 = tempSocket.getLocalPort();
+            log.info("Instance 0 port: [{}]", instancePort0);
+            tempSocket.close();
+            tempSocket = new DatagramSocket();
+            Services.NET.listenPort(tempSocket.getLocalPort());
+            instancePort1 = tempSocket.getLocalPort();
+            log.info("Instance 1 port: [{}]", instancePort1);
+            tempSocket.close();
+            tempSocket = new DatagramSocket();
+            Services.NET.listenPort(tempSocket.getLocalPort());
+            instancePort2 = tempSocket.getLocalPort();
+            log.info("Instance 2 port: [{}]", instancePort2);
+            tempSocket.close();
+            tempSocket = new DatagramSocket();
+            Services.NET.listenPort(tempSocket.getLocalPort());
+            instancePort3 = tempSocket.getLocalPort();
+            log.info("Instance 3 port: [{}]", instancePort3);
+            tempSocket.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -181,26 +214,27 @@ public class MetaTestService implements MetaService {
 
     @Override
     public Location currentLocation() {
-        return new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath());
+        return new Location("localhost", instancePort0, dataPath0.getAbsolutePath());
     }
 
     @Override
     public Map<String, Location> getPartLocations(String name) {
         return ImmutableMap.of(
-            "0", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
-            "1", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath1.getAbsolutePath()),
-            "2", new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath2.getAbsolutePath())
+            "0", new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
+            "1", new Location("localhost", instancePort0, dataPath1.getAbsolutePath()),
+            "2", new Location("localhost", instancePort0, dataPath2.getAbsolutePath())
         );
     }
 
     @Override
     public LocationGroup getLocationGroup(String name) {
         new LocationGroup(
-            new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
+            new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
             Lists.newArrayList(
-                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
-                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath()),
-                new Location("localhost", NetServiceConfiguration.INSTANCE.port(), dataPath0.getAbsolutePath())));
+                new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
+                new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
+                new Location("localhost", instancePort0, dataPath0.getAbsolutePath())
+            ));
         return null;
     }
 }

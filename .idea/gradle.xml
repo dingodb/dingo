@@ -15,11 +15,10 @@
             <option value="$PROJECT_DIR$/dingo-calcite" />
             <option value="$PROJECT_DIR$/dingo-cli" />
             <option value="$PROJECT_DIR$/dingo-common" />
-            <option value="$PROJECT_DIR$/dingo-coordinator" />
             <option value="$PROJECT_DIR$/dingo-ddl" />
+            <option value="$PROJECT_DIR$/dingo-dist" />
             <option value="$PROJECT_DIR$/dingo-driver" />
             <option value="$PROJECT_DIR$/dingo-exec" />
-            <option value="$PROJECT_DIR$/dingo-executor" />
             <option value="$PROJECT_DIR$/dingo-expr" />
             <option value="$PROJECT_DIR$/dingo-expr/annotations" />
             <option value="$PROJECT_DIR$/dingo-expr/console" />
@@ -27,16 +26,20 @@
             <option value="$PROJECT_DIR$/dingo-expr/json-schema" />
             <option value="$PROJECT_DIR$/dingo-expr/parser" />
             <option value="$PROJECT_DIR$/dingo-expr/runtime" />
-            <option value="$PROJECT_DIR$/dingo-kvstore-api" />
-            <option value="$PROJECT_DIR$/dingo-kvstore-rocks" />
             <option value="$PROJECT_DIR$/dingo-meta-api" />
             <option value="$PROJECT_DIR$/dingo-net-api" />
             <option value="$PROJECT_DIR$/dingo-net-netty" />
+            <option value="$PROJECT_DIR$/dingo-row-rocksdb-api" />
+            <option value="$PROJECT_DIR$/dingo-row-store" />
+            <option value="$PROJECT_DIR$/dingo-row-store-api" />
             <option value="$PROJECT_DIR$/dingo-server" />
+            <option value="$PROJECT_DIR$/dingo-server/client" />
+            <option value="$PROJECT_DIR$/dingo-server/coordinator" />
+            <option value="$PROJECT_DIR$/dingo-server/executor" />
+            <option value="$PROJECT_DIR$/dingo-server/protocol" />
             <option value="$PROJECT_DIR$/dingo-store-api" />
             <option value="$PROJECT_DIR$/dingo-test" />
             <option value="$PROJECT_DIR$/dingo-web" />
-            <option value="$PROJECT_DIR$/dingokv" />
           </set>
         </option>
       </GradleProjectSettings>

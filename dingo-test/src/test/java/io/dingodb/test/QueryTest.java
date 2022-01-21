@@ -19,6 +19,7 @@ package io.dingodb.test;
 import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
@@ -55,10 +56,7 @@ public class QueryTest {
     @BeforeAll
     public static void setupAll() throws Exception {
         Services.META.init(null);
-        DatagramSocket tempSocket = new DatagramSocket();
-        Services.NET.listenPort(tempSocket.getLocalPort());
-        NetServiceConfiguration.instance().setInt(NetServiceConfiguration.PORT_KEY, tempSocket.getLocalPort());
-        tempSocket.close();
+
         Services.initNetService();
         SqlHelper.execUpdate("/table-test-create.sql");
         SqlHelper.execUpdate("/table-test1-create.sql");

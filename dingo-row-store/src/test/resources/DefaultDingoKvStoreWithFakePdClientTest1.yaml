@@ -10,7 +10,7 @@ placementDriverOptions:
         maxRetry: 3
         rpcProcessorThreadPoolSize: 4
     pdGroupId: COORDINATOR_RAFT
-    initialPdServerList: localhost:19181
+    initialPdServerList: localhost:9181
 
 storeEngineOptions:
     rocksDBOptions:

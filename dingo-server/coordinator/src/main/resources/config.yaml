@@ -1,0 +1,14 @@
+cluster:
+    name: dingo_zhengjy
+coordinator:
+    server:
+        port: 19181
+    raft:
+        group:
+            id: COORDINATOR_RAFT
+        port: 9181
+        servers: localhost:9181
+
+instance.host: localhost
+
+data.dir: dingo/coordinator
