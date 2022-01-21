@@ -73,7 +73,7 @@ public final class AssertResultSet {
                     ++i;
                 }
                 log.info("Get tuple {}.", schema.formatTuple(row));
-                assertThat(row).isIn(target);
+                assertThat(schema.convert(row)).isIn(target);
                 ++count;
             }
             assertThat(count).isEqualTo(target.size());

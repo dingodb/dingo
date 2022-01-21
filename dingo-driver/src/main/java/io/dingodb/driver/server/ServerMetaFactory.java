@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.driver.server;
 
-dependencies {
-    api group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
-    implementation project(':dingo-calcite')
-    implementation project(':dingo-ddl')
+import org.apache.calcite.avatica.Meta;
+
+import java.util.List;
+
+// Used by HttpServer
+@SuppressWarnings("unused")
+public class ServerMetaFactory implements Meta.Factory {
+    @Override
+    public Meta create(List<String> args) {
+        return new ServerMeta();
+    }
 }

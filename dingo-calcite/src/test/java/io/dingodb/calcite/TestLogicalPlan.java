@@ -42,7 +42,8 @@ public class TestLogicalPlan {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser();
+        DingoParserContext context = new DingoParserContext();
+        parser = new DingoParser(context);
     }
 
     private static RelRoot parse(String sql) throws SqlParseException {

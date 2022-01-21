@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.Connections;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
@@ -29,34 +29,30 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 @Slf4j
+@RequiredArgsConstructor
 public final class SqlHelper {
-    private SqlHelper() {
-    }
+    private final Connection connection;
 
     @SuppressWarnings("UnusedReturnValue")
-    public static int execUpdate(@Nonnull String sqlFile) throws IOException, SQLException {
+    public int execUpdate(@Nonnull String sqlFile) throws IOException, SQLException {
         int result = -1;
-        try (Connection connection = Connections.getConnection()) {
-            String[] sqlList = IOUtils.toString(
-                Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)),
-                StandardCharsets.UTF_8
-            ).split(";");
-            try (Statement statement = connection.createStatement()) {
-                for (String sql : sqlList) {
-                    if (!sql.trim().isEmpty()) {
-                        result = statement.executeUpdate(sql);
-                    }
+        String[] sqlList = IOUtils.toString(
+            Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)),
+            StandardCharsets.UTF_8
+        ).split(";");
+        try (Statement statement = connection.createStatement()) {
+            for (String sql : sqlList) {
+                if (!sql.trim().isEmpty()) {
+                    result = statement.executeUpdate(sql);
                 }
             }
         }
         return result;
     }
 
-    public static void clear(String tableName) throws SQLException {
-        try (Connection connection = Connections.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("delete from " + tableName);
-            }
+    public void clear(String tableName) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("delete from " + tableName);
         }
     }
 }

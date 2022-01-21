@@ -56,7 +56,7 @@ public class DingoConnection extends AvaticaConnection {
         return (DingoStatement) lookupStatement(sh);
     }
 
-    public CalcitePrepare.Context createContext() {
+    public DingoContext createContext() {
         return new DingoContext(this);
     }
 
@@ -65,6 +65,10 @@ public class DingoConnection extends AvaticaConnection {
 
         DingoContext(DingoConnection connection) {
             this.connection = connection;
+        }
+
+        public DingoParserContext getParserContext() {
+            return connection.context;
         }
 
         @Override

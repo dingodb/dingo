@@ -41,7 +41,11 @@ public class DingoStatement extends AvaticaStatement {
         return getSignature().cursorFactory;
     }
 
+    void setDingoSignature(DingoSignature signature) {
+        setSignature(signature);
+    }
+
     Job getJob() {
-        return ((DingoDriverParser.DingoSignature) getSignature()).getJob();
+        return ((DingoSignature) getSignature()).getJob();
     }
 }
