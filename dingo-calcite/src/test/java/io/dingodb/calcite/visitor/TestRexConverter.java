@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.DingoParser;
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.expr.parser.Expr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
@@ -42,7 +43,7 @@ public class TestRexConverter {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser();
+        parser = new DingoParser(new DingoParserContext());
     }
 
     @Nonnull

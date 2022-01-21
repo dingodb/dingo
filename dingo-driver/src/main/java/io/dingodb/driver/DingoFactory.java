@@ -33,6 +33,8 @@ import java.util.Properties;
 import java.util.TimeZone;
 
 public class DingoFactory implements AvaticaFactory {
+    public static final DingoFactory INSTANCE = new DingoFactory();
+
     @Override
     public int getJdbcMajorVersion() {
         return 4;
@@ -49,7 +51,7 @@ public class DingoFactory implements AvaticaFactory {
         AvaticaFactory factory,
         String url,
         Properties info
-    ) throws SQLException {
+    ) {
         return new DingoConnection(
             (DingoDriver) driver,
             factory,

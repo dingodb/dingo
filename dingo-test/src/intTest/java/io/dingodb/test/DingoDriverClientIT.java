@@ -16,11 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.Services;
-import io.dingodb.meta.test.MetaTestService;
-import io.dingodb.net.netty.NetServiceConfiguration;
+import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -31,8 +28,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -40,7 +37,7 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class QueryTest {
+public class DingoDriverClientIT {
     private static final String TEST_ALL_DATA
         = "1, Alice, 3.5\n"
         + "2, Betty, 4.0\n"
@@ -56,9 +53,10 @@ public class QueryTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Services.META.init(null);
-        Services.initNetService();
-        connection = Connections.getConnection();
+        Class.forName("io.dingodb.driver.client.DingoDriverClient");
+        connection = DriverManager.getConnection(
+            DingoDriverClient.CONNECT_STRING_PREFIX + "url=http://localhost:8765"
+        );
         sqlHelper = new SqlHelper(connection);
         sqlHelper.execUpdate("/table-test-create.sql");
         sqlHelper.execUpdate("/table-test1-create.sql");
@@ -68,7 +66,6 @@ public class QueryTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         connection.close();
-        Services.META.clear();
     }
 
     private static void checkDatumInTable(

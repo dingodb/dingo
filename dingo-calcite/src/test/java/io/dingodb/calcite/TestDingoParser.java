@@ -36,7 +36,8 @@ public class TestDingoParser {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser();
+        DingoParserContext context = new DingoParserContext();
+        parser = new DingoParser(context);
     }
 
     private static SqlNode parse(String sql) throws SqlParseException {

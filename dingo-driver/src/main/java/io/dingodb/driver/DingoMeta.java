@@ -25,7 +25,6 @@ import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
-import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -70,9 +69,9 @@ class DingoMeta extends MetaImpl {
     ) throws NoSuchStatementException {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
-            CalcitePrepare.Context context = dingoConnection.createContext();
-            DingoDriverParser parser = new DingoDriverParser();
-            final Signature signature = parser.parseQuery(sql, context);
+            DingoConnection.DingoContext context = dingoConnection.createContext();
+            DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
+            final DingoSignature signature = parser.parseQuery(sql, context);
             final int updateCount;
             switch (signature.statementType) {
                 case CREATE:
@@ -87,9 +86,13 @@ class DingoMeta extends MetaImpl {
             }
             synchronized (callback.getMonitor()) {
                 callback.clear();
+                // For local driver, here signature is assigned to statement.
+                // Buf not for remote driver. Don't know why.
                 callback.assign(signature, null, updateCount);
             }
-            // Here `fetch` is called.
+            DingoStatement statement = dingoConnection.getStatement(sh);
+            statement.setDingoSignature(signature);
+            // For local driver, here `fetch` is called.
             callback.execute();
             final MetaResultSet metaResultSet = MetaResultSet.create(
                 sh.connectionId,

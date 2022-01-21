@@ -38,7 +38,8 @@ public class TestPhysicalPlan {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser();
+        DingoParserContext context = new DingoParserContext();
+        parser = new DingoParser(context);
     }
 
     private static RelNode parse(String sql) throws SqlParseException {
