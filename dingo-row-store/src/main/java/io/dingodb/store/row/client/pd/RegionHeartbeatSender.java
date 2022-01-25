@@ -16,12 +16,12 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
-import com.alipay.sofa.jraft.util.timer.HashedWheelTimer;
-import com.alipay.sofa.jraft.util.timer.Timeout;
-import com.alipay.sofa.jraft.util.timer.TimerTask;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.raft.util.timer.HashedWheelTimer;
+import io.dingodb.raft.util.timer.Timeout;
+import io.dingodb.raft.util.timer.TimerTask;
 import com.codahale.metrics.Counter;
 import io.dingodb.store.row.RegionEngine;
 import io.dingodb.store.row.client.failover.FailoverClosure;

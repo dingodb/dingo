@@ -16,10 +16,10 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.Ints;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.Ints;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import org.jctools.maps.NonBlockingHashMap;
 import org.jctools.maps.NonBlockingHashMapLong;
 

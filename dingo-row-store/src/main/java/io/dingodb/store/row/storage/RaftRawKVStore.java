@@ -16,12 +16,12 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.Node;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.closure.ReadIndexClosure;
-import com.alipay.sofa.jraft.entity.Task;
-import com.alipay.sofa.jraft.error.RaftError;
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.Node;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.closure.ReadIndexClosure;
+import io.dingodb.raft.entity.Task;
+import io.dingodb.raft.error.RaftError;
+import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.util.Clock;

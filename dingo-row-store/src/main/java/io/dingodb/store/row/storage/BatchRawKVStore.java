@@ -21,7 +21,6 @@ import io.dingodb.store.row.util.concurrent.DistributedLock;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public abstract class BatchRawKVStore<T> extends BaseRawKVStore<T> {
-
     public void batchPut(final KVStateOutputList kvStates) {
         for (int i = 0, l = kvStates.size(); i < l; i++) {
             final KVState kvState = kvStates.get(i);

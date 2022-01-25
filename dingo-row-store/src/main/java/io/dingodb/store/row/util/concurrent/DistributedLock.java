@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row.util.concurrent;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.util.UniqueIdUtil;
 
 import java.io.Serializable;

@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.options.configured;
 
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.options.HeartbeatOptions;
 import io.dingodb.store.row.options.MemoryDBOptions;
 import io.dingodb.store.row.options.RegionEngineOptions;

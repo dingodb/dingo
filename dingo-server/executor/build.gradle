@@ -25,7 +25,6 @@ application {
 
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
-    implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
 
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
@@ -33,6 +32,7 @@ dependencies {
     implementation project(":dingo-net-netty")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
+    implementation project(":dingo-raft")
     implementation project(":dingo-row-store")
     implementation project(":dingo-row-store-api")
 }

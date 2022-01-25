@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.rocks.support;
 
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
+import io.dingodb.raft.util.NamedThreadFactory;
 import org.rocksdb.HistogramData;
 import org.rocksdb.HistogramType;
 import org.rocksdb.Statistics;
@@ -32,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class RocksStatisticsCollector {
     private final CopyOnWriteArrayList<StatsCollectorInput> statsCollectorInputList = new CopyOnWriteArrayList<>();
-    private final long                                      statsCollectionIntervalInMillis;
-    private final ExecutorService                           executorService;
-    private volatile boolean                                isRunning               = true;
+    private final long statsCollectionIntervalInMillis;
+    private final ExecutorService executorService;
+    private volatile boolean isRunning = true;
 
     public RocksStatisticsCollector(final long statsCollectionIntervalInMillis) {
         this.statsCollectionIntervalInMillis = statsCollectionIntervalInMillis;

@@ -18,7 +18,7 @@ package io.dingodb.store.row.rpc;
 
 import com.alipay.remoting.exception.CodecException;
 import com.alipay.remoting.serialization.Serializer;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.util.Maps;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class ProtostuffSerializer implements Serializer {
-    public static final ProtostuffSerializer INSTANCE   = new ProtostuffSerializer();
+    public static final ProtostuffSerializer INSTANCE = new ProtostuffSerializer();
 
     private static final ConcurrentMap<String, Class<?>> classCache = Maps.newConcurrentMap();
 

@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.RouteTable;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.RouteTable;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.errors.RouteTableException;
 import io.dingodb.store.row.metadata.Cluster;
 import io.dingodb.store.row.metadata.Region;

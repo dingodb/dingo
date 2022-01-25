@@ -16,13 +16,12 @@
 
 package io.dingodb.server.coordinator.meta.service;
 
-import com.alipay.sofa.jraft.util.Requires;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.TableMetaAdaptor;
 import io.dingodb.server.protocol.ServerError;

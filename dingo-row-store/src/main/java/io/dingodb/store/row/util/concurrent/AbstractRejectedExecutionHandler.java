@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util.concurrent;
 
-import com.alipay.sofa.jraft.util.Utils;
+import io.dingodb.raft.util.Utils;
 import io.dingodb.store.row.util.JvmTools;
 import io.dingodb.store.row.util.StackTraceUtil;
 import org.slf4j.Logger;

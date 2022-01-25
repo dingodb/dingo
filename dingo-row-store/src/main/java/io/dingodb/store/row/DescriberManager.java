@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.util.Describer;
+import io.dingodb.raft.util.Describer;
 import io.dingodb.store.row.util.Lists;
 
 import java.util.List;

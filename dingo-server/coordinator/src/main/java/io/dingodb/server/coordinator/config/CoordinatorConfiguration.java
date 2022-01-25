@@ -16,8 +16,8 @@
 
 package io.dingodb.server.coordinator.config;
 
-import com.alipay.sofa.jraft.entity.PeerId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.raft.entity.PeerId;
 import lombok.experimental.Delegate;
 
 import java.util.List;

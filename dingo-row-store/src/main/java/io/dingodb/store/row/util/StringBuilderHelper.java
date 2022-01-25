@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.internal.ReferenceFieldUpdater;
-import com.alipay.sofa.jraft.util.internal.Updaters;
+import io.dingodb.raft.util.internal.ReferenceFieldUpdater;
+import io.dingodb.raft.util.internal.Updaters;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class StringBuilderHelper {

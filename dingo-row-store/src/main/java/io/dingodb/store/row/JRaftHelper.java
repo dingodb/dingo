@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.metadata.Peer;
 import io.dingodb.store.row.util.Lists;
 

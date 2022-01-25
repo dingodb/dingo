@@ -16,17 +16,17 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.Closure;
-import com.alipay.sofa.jraft.Iterator;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.core.StateMachineAdapter;
-import com.alipay.sofa.jraft.entity.LeaderChangeContext;
-import com.alipay.sofa.jraft.error.RaftError;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.RecycleUtil;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.Closure;
+import io.dingodb.raft.Iterator;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.core.StateMachineAdapter;
+import io.dingodb.raft.entity.LeaderChangeContext;
+import io.dingodb.raft.error.RaftError;
+import io.dingodb.raft.storage.snapshot.SnapshotReader;
+import io.dingodb.raft.storage.snapshot.SnapshotWriter;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.RecycleUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import io.dingodb.store.row.StateListener;

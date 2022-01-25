@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.options.configured;
 
-import com.alipay.sofa.jraft.option.CliOptions;
+import io.dingodb.raft.option.CliOptions;
 import io.dingodb.store.row.options.PlacementDriverOptions;
 import io.dingodb.store.row.options.RegionRouteTableOptions;
 import io.dingodb.store.row.options.RpcOptions;

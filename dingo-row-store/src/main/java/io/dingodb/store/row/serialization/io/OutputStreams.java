@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.serialization.io;
 
-import com.alipay.sofa.jraft.util.internal.ReferenceFieldUpdater;
-import com.alipay.sofa.jraft.util.internal.Updaters;
+import io.dingodb.raft.util.internal.ReferenceFieldUpdater;
+import io.dingodb.raft.util.internal.Updaters;
 import io.dingodb.store.row.serialization.Serializer;
 
 import java.io.ByteArrayOutputStream;

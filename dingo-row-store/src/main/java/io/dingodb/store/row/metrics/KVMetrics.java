@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.metrics;
 
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.Requires;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;

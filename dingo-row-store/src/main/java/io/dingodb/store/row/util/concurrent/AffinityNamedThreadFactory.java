@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util.concurrent;
 
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.Requires;
 import net.openhft.affinity.AffinityLock;
 import net.openhft.affinity.AffinityStrategies;
 import net.openhft.affinity.AffinityStrategy;

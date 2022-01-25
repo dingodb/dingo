@@ -16,8 +16,8 @@
 
 package io.dingodb.server.coordinator.handler;
 
-import com.alipay.sofa.jraft.rpc.RpcContext;
-import com.alipay.sofa.jraft.rpc.RpcProcessor;
+import io.dingodb.raft.rpc.RpcContext;
+import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

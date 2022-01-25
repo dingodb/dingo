@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.SystemPropertyUtil;
 
 import java.util.Formatter;
 

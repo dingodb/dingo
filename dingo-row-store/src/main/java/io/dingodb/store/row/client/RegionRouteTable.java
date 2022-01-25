@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.errors.RouteTableException;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metadata.RegionEpoch;

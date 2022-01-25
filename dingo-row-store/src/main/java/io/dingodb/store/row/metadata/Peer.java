@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.metadata;
 
-import com.alipay.sofa.jraft.util.Copiable;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Copiable;
+import io.dingodb.raft.util.Endpoint;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

@@ -16,14 +16,14 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.error.RaftError;
 import com.codahale.metrics.Timer;
 import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metrics.KVMetrics;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.error.RaftError;
 import io.dingodb.store.row.util.StackTraceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

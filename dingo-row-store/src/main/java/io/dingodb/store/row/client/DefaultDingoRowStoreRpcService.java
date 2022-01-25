@@ -16,16 +16,16 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.rpc.InvokeCallback;
-import com.alipay.sofa.jraft.rpc.InvokeContext;
-import com.alipay.sofa.jraft.rpc.RpcClient;
-import com.alipay.sofa.jraft.rpc.impl.BoltRpcClient;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.ExecutorServiceHelper;
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.ThreadPoolUtil;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.rpc.InvokeCallback;
+import io.dingodb.raft.rpc.InvokeContext;
+import io.dingodb.raft.rpc.RpcClient;
+import io.dingodb.raft.rpc.impl.BoltRpcClient;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.ExecutorServiceHelper;
+import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.ThreadPoolUtil;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.client.pd.AbstractPlacementDriverClient;
 import io.dingodb.store.row.client.pd.PlacementDriverClient;

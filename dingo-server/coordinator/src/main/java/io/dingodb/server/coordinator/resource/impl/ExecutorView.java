@@ -17,8 +17,8 @@
 package io.dingodb.server.coordinator.resource.impl;
 
 import com.alipay.remoting.util.ConcurrentHashSet;
-import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.meta.Location;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.server.coordinator.resource.NodeResourceView;
 import io.dingodb.server.coordinator.score.Score;

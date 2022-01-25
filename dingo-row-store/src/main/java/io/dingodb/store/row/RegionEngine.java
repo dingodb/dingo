@@ -16,19 +16,19 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.Node;
-import com.alipay.sofa.jraft.RaftGroupService;
-import com.alipay.sofa.jraft.RouteTable;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.conf.Configuration;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.rpc.RpcServer;
-import com.alipay.sofa.jraft.util.Describer;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.Node;
+import io.dingodb.raft.RaftGroupService;
+import io.dingodb.raft.RouteTable;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;

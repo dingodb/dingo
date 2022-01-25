@@ -26,7 +26,6 @@ application {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    implementation group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
 
     implementation project(":dingo-calcite")
@@ -34,6 +33,7 @@ dependencies {
     implementation project(":dingo-net-netty")
     implementation project(":dingo-meta-api")
     implementation project(":dingo-server:dingo-server-protocol")
+    implementation project(":dingo-raft")
     implementation project(":dingo-row-store")
 }
 
