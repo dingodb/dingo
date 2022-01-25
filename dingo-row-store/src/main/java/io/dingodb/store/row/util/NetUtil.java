@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;

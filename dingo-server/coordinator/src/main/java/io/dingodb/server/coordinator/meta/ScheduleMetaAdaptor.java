@@ -16,8 +16,7 @@
 
 package io.dingodb.server.coordinator.meta;
 
-
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.server.coordinator.app.impl.RegionApp;
 import io.dingodb.server.coordinator.app.impl.RegionView;
@@ -26,7 +25,6 @@ import io.dingodb.server.coordinator.namespace.NamespaceView;
 import io.dingodb.server.coordinator.resource.impl.ExecutorView;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public interface ScheduleMetaAdaptor extends MetaAdaptor {
 

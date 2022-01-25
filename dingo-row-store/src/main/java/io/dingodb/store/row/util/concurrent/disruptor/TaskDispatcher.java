@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.util.concurrent.disruptor;
 
-import com.alipay.sofa.jraft.util.Ints;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.Ints;
+import io.dingodb.raft.util.Requires;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.BusySpinWaitStrategy;
 import com.lmax.disruptor.EventFactory;

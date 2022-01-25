@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.serialization.impl.protostuff.io;
 
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import io.dingodb.store.row.serialization.io.OutputBuf;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.Output;

@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.option.CliOptions;
+import io.dingodb.raft.option.CliOptions;
 import io.dingodb.store.row.client.DefaultDingoRowStoreCliService;
 import io.dingodb.store.row.client.DingoRowStoreCliService;
 

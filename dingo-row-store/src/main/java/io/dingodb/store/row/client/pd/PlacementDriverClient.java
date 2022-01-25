@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.client.RegionRouteTable;
 import io.dingodb.store.row.metadata.Peer;
 import io.dingodb.store.row.metadata.Region;

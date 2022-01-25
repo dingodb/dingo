@@ -16,16 +16,16 @@
 
 package io.dingodb.server.coordinator;
 
-import com.alipay.sofa.jraft.Node;
-import com.alipay.sofa.jraft.NodeManager;
-import com.alipay.sofa.jraft.RaftServiceFactory;
-import com.alipay.sofa.jraft.StateMachine;
-import com.alipay.sofa.jraft.conf.Configuration;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.raft.Node;
+import io.dingodb.raft.NodeManager;
+import io.dingodb.raft.RaftServiceFactory;
+import io.dingodb.raft.StateMachine;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;

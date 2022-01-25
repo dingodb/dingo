@@ -16,10 +16,10 @@
 
 package io.dingodb.store.row.rocks.support;
 
-import com.alipay.sofa.jraft.util.DebugStatistics;
-import com.alipay.sofa.jraft.util.internal.ReferenceFieldUpdater;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
-import com.alipay.sofa.jraft.util.internal.Updaters;
+import io.dingodb.raft.util.DebugStatistics;
+import io.dingodb.raft.util.internal.ReferenceFieldUpdater;
+import io.dingodb.raft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.internal.Updaters;
 import io.dingodb.store.row.storage.RocksRawKVStore;
 import org.rocksdb.HistogramData;
 import org.rocksdb.HistogramType;
@@ -33,7 +33,7 @@ public final class RocksStatistics {
     private static final ReferenceFieldUpdater<RocksRawKVStore, DebugStatistics> statisticsGetter = Updaters
         .newReferenceFieldUpdater(RocksRawKVStore.class, "statistics");
 
-    private static final ReferenceFieldUpdater<RocksRawKVStore, RocksDB>         dbGetter         = Updaters
+    private static final ReferenceFieldUpdater<RocksRawKVStore, RocksDB> dbGetter = Updaters
         .newReferenceFieldUpdater(RocksRawKVStore.class, "db");
 
     /**

@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.serialization.impl.protostuff.io;
 
-import com.alipay.sofa.jraft.util.internal.UnsafeUtf8Util;
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.internal.UnsafeUtf8Util;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import io.dingodb.store.row.serialization.io.OutputBuf;
 import io.dingodb.store.row.util.VarInts;
 import io.dingodb.store.row.util.internal.UnsafeDirectBufferUtil;

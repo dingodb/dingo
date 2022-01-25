@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.metadata;
 
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Endpoint;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

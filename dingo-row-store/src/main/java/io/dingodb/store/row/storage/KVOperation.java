@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.util.Pair;
 import io.dingodb.store.row.util.concurrent.DistributedLock;
 
@@ -26,58 +26,58 @@ import java.util.List;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class KVOperation implements Serializable {
-    private static final long   serialVersionUID = 1368415383186519279L;
+    private static final long serialVersionUID = 1368415383186519279L;
 
     /** Encode magic number */
-    public static final byte    MAGIC            = 0x00;
+    public static final byte MAGIC = 0x00;
 
     /** Put operation */
-    public static final byte    PUT              = 0x01;
+    public static final byte PUT = 0x01;
     /** PutIfAbsent operation */
-    public static final byte    PUT_IF_ABSENT    = 0x02;
+    public static final byte PUT_IF_ABSENT = 0x02;
     /** Delete operation */
-    public static final byte    DELETE           = 0x03;
+    public static final byte DELETE = 0x03;
     /** Put list operation */
-    public static final byte    PUT_LIST         = 0x04;
+    public static final byte PUT_LIST = 0x04;
     /** Delete range operation */
-    public static final byte    DELETE_RANGE     = 0x05;
+    public static final byte DELETE_RANGE = 0x05;
     /** Get sequence operation */
-    public static final byte    GET_SEQUENCE     = 0x06;
+    public static final byte GET_SEQUENCE = 0x06;
     /** Execute on every node operation */
-    public static final byte    NODE_EXECUTE     = 0x07;
+    public static final byte NODE_EXECUTE = 0x07;
     /** Tries to lock the specified key */
-    public static final byte    KEY_LOCK         = 0x08;
+    public static final byte KEY_LOCK = 0x08;
     /** Unlock the specified key */
-    public static final byte    KEY_LOCK_RELEASE = 0x09;
+    public static final byte KEY_LOCK_RELEASE = 0x09;
     /** Get operation */
-    public static final byte    GET              = 0x0a;
+    public static final byte GET = 0x0a;
     /** MultiGet operation  */
-    public static final byte    MULTI_GET        = 0x0b;
+    public static final byte MULTI_GET = 0x0b;
     /** Scan operation */
-    public static final byte    SCAN             = 0x0c;
+    public static final byte SCAN = 0x0c;
     /** Get and put operation */
-    public static final byte    GET_PUT          = 0x0d;
+    public static final byte GET_PUT = 0x0d;
     /** Merge operation */
-    public static final byte    MERGE            = 0x0e;
+    public static final byte MERGE = 0x0e;
     /** Reset sequence operation */
-    public static final byte    RESET_SEQUENCE   = 0x0f;
+    public static final byte RESET_SEQUENCE = 0x0f;
 
     // split operation ***********************************
     /** Range split operation */
-    public static final byte    RANGE_SPLIT      = 0x10;
+    public static final byte RANGE_SPLIT = 0x10;
     /** Compare and put operation */
-    public static final byte    COMPARE_PUT      = 0x11;
+    public static final byte COMPARE_PUT = 0x11;
     /** Delete list operation */
-    public static final byte    DELETE_LIST      = 0x12;
+    public static final byte DELETE_LIST = 0x12;
     /** Contains key operation */
-    public static final byte    CONTAINS_KEY     = 0x13;
+    public static final byte CONTAINS_KEY = 0x13;
 
     /** Reverse Scan operation */
-    public static final byte    REVERSE_SCAN     = 0x14;
+    public static final byte REVERSE_SCAN = 0x14;
     /** Compare and put all */
-    public static final byte    COMPARE_PUT_ALL  = 0x15;
+    public static final byte COMPARE_PUT_ALL = 0x15;
 
-    public static final byte    EOF              = 0x16;
+    public static final byte EOF = 0x16;
 
     private static final byte[] VALID_OPS;
 
@@ -106,11 +106,11 @@ public class KVOperation implements Serializable {
         VALID_OPS[20] = COMPARE_PUT_ALL;
     }
 
-    private byte[]              key;                                    // also startKey for DELETE_RANGE
-    private byte[]              value;                                  // also endKey for DELETE_RANGE
-    private Object              attach;
+    private byte[] key;   // also startKey for DELETE_RANGE
+    private byte[] value;   // also endKey for DELETE_RANGE
+    private Object attach;
 
-    private byte                op;
+    private byte op;
 
     public static boolean isValidOp(final byte op) {
         return op > MAGIC && op < EOF;

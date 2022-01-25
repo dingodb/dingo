@@ -17,8 +17,8 @@
 package io.dingodb.server.coordinator.meta.impl;
 
 import com.alipay.remoting.util.ConcurrentHashSet;
-import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.common.util.Optional;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.server.coordinator.app.impl.RegionApp;
 import io.dingodb.server.coordinator.app.impl.RegionView;

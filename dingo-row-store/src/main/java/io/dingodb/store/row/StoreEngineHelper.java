@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.rpc.RpcServer;
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
-import com.alipay.sofa.jraft.util.ThreadPoolUtil;
+import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.raft.util.ThreadPoolUtil;
 import io.dingodb.store.row.cmd.store.BatchDeleteRequest;
 import io.dingodb.store.row.cmd.store.BatchPutRequest;
 import io.dingodb.store.row.cmd.store.CASAllRequest;

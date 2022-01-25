@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.Closure;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.rpc.RpcContext;
+import io.dingodb.raft.Closure;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.rpc.RpcContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

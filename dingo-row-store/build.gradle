@@ -10,19 +10,8 @@ repositories {
 }
 
 dependencies {
-    compile group: 'com.alipay.sofa', name: 'bolt', version: 'bolt'.v()
-    compile group: 'com.alipay.sofa', name: 'jraft-core', version: 'jraft'.v()
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'dataformat'.v()
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'databind'.v()
-    compile group: 'com.lmax', name: 'disruptor', version: 'disruptor'.v()
-    compile group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
-    compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
-    compile group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
-    compile group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
-    compile group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
-    implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+    compile project(":dingo-raft")
 
     testImplementation group: 'org.hamcrest', name: 'hamcrest-library', version: 'hamcrest'.v()
     testImplementation group: 'org.mockito', name: 'mockito-all', version: 'mockito'.v()
@@ -35,19 +24,3 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-
-//task fatJar(type: Jar) {
-//    classifier 'all'
-//    from(
-//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-//    )
-//    with jar
-//
-//    exclude "META-INF/*.SF"
-//    exclude "META-INF/*.DSA"
-//    exclude "META-INF/*.RSA"
-//}
-//
-//tasks.named("build") { x ->
-//    x.finalizedBy("fatJar")
-//}

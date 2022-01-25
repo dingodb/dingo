@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.serialization.impl.protostuff;
 
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.serialization.Serializer;
 import io.dingodb.store.row.serialization.impl.protostuff.io.Inputs;
 import io.dingodb.store.row.serialization.impl.protostuff.io.LinkedBuffers;

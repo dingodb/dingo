@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util.concurrent.collection;
 
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import sun.misc.Unsafe;
 
 import java.io.Serializable;

@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.Bits;
+import io.dingodb.raft.util.Bits;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.util.ByteArray;
@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-import static com.alipay.sofa.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
+import static io.dingodb.raft.entity.LocalFileMetaOutter.LocalFileMeta;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class MemoryKVStoreSnapshotFile extends AbstractKVStoreSnapshotFile {

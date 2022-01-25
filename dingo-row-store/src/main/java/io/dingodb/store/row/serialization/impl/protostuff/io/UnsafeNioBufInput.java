@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row.serialization.impl.protostuff.io;
 
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
-import com.alipay.sofa.jraft.util.internal.UnsafeUtf8Util;
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.internal.UnsafeUtf8Util;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import io.dingodb.store.row.util.internal.UnsafeDirectBufferUtil;
 import io.protostuff.ByteBufferInput;
 import io.protostuff.ByteString;
@@ -45,25 +45,25 @@ import static io.protostuff.WireFormat.makeTag;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 class UnsafeNioBufInput implements Input {
-    static final int         TAG_TYPE_BITS = 3;
-    static final int         TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
+    static final int TAG_TYPE_BITS = 3;
+    static final int TAG_TYPE_MASK = (1 << TAG_TYPE_BITS) - 1;
 
-    static final Method      byteStringWrapMethod;
+    static final Method byteStringWrapMethod;
 
     private final ByteBuffer nioBuffer;
-    private int              lastTag       = 0;
-    private int              packedLimit   = 0;
+    private int lastTag = 0;
+    private int packedLimit = 0;
 
     /**
      * Start address of the memory buffer The memory buffer should be non-movable, which normally means that is is allocated
      * off-heap
      */
-    private long             memoryAddress;
+    private long memoryAddress;
 
     /**
      * If true, the nested messages are group-encoded
      */
-    public final boolean     decodeNestedMessageAsGroup;
+    public final boolean decodeNestedMessageAsGroup;
 
     /**
      * An input for a ByteBuffer

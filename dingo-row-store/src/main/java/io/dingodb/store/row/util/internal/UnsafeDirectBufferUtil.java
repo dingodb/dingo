@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util.internal;
 
-import com.alipay.sofa.jraft.util.internal.UnsafeUtil;
+import io.dingodb.raft.util.internal.UnsafeUtil;
 import io.dingodb.store.row.util.StackTraceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

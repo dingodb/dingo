@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.store.row.metadata.Region;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>

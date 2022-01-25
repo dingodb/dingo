@@ -20,9 +20,7 @@ import io.dingodb.store.row.util.ZipUtil;
 
 import java.util.zip.Checksum;
 
-/**
- * @author hzh
- */
+// Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class JDKZipStrategy implements ZipStrategy {
     @Override
     public void compress(final String rootDir, final String sourceDir, final String outputZipFile,

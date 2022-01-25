@@ -16,18 +16,18 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.rpc.InvokeCallback;
-import com.alipay.sofa.jraft.rpc.RpcClient;
-import com.alipay.sofa.jraft.rpc.impl.BoltRpcClient;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.ExecutorServiceHelper;
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
-import com.alipay.sofa.jraft.util.ThreadPoolUtil;
-import com.alipay.sofa.jraft.util.timer.HashedWheelTimer;
-import com.alipay.sofa.jraft.util.timer.Timeout;
-import com.alipay.sofa.jraft.util.timer.TimerTask;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.rpc.InvokeCallback;
+import io.dingodb.raft.rpc.RpcClient;
+import io.dingodb.raft.rpc.impl.BoltRpcClient;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.ExecutorServiceHelper;
+import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.raft.util.ThreadPoolUtil;
+import io.dingodb.raft.util.timer.HashedWheelTimer;
+import io.dingodb.raft.util.timer.Timeout;
+import io.dingodb.raft.util.timer.TimerTask;
 import io.dingodb.store.row.StoreEngine;
 import io.dingodb.store.row.cmd.pd.BaseRequest;
 import io.dingodb.store.row.cmd.pd.BaseResponse;
@@ -136,7 +136,7 @@ public class StoreHeartbeatSender implements Lifecycle<HeartbeatOptions> {
 
     private <V> void callAsyncWithRpc(final Endpoint endpoint, final BaseRequest request,
                                       final HeartbeatClosure<V> closure) {
-        final com.alipay.sofa.jraft.rpc.InvokeContext invokeCtx = new com.alipay.sofa.jraft.rpc.InvokeContext();
+        final io.dingodb.raft.rpc.InvokeContext invokeCtx = new io.dingodb.raft.rpc.InvokeContext();
         invokeCtx.put(BoltRpcClient.BOLT_CTX, ExtSerializerSupports.getInvokeContext());
         final InvokeCallback invokeCallback = new InvokeCallback() {
 

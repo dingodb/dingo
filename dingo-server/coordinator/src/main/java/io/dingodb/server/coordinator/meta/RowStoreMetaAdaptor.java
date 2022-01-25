@@ -16,7 +16,7 @@
 
 package io.dingodb.server.coordinator.meta;
 
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.store.row.metadata.Cluster;
 import io.dingodb.store.row.metadata.Region;

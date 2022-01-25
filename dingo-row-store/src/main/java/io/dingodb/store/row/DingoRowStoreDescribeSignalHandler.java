@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.util.Describer;
-import com.alipay.sofa.jraft.util.FileOutputSignalHandler;
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.FileOutputSignalHandler;
+import io.dingodb.raft.util.SystemPropertyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

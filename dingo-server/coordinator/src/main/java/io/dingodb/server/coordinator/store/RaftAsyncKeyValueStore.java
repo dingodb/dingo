@@ -16,12 +16,12 @@
 
 package io.dingodb.server.coordinator.store;
 
-import com.alipay.sofa.jraft.Node;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.NoBreakFunctionWrapper;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.common.util.StackTraces;
+import io.dingodb.raft.Node;
 import io.dingodb.store.row.client.failover.impl.FailoverClosureImpl;
 import io.dingodb.store.row.storage.KVEntry;
 import io.dingodb.store.row.storage.KVStoreClosure;

@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.Status;
+import io.dingodb.raft.Status;
 import io.dingodb.store.row.cmd.store.BaseRequest;
 import io.dingodb.store.row.cmd.store.BaseResponse;
 import io.dingodb.store.row.cmd.store.BatchDeleteRequest;

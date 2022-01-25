@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.util;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Requires;
 
 import java.io.Serializable;
 import java.util.Arrays;

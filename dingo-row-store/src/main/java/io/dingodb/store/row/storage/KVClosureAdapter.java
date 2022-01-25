@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.Status;
+import io.dingodb.raft.Status;
 import io.dingodb.store.row.errors.Errors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

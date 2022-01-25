@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.errors.InvalidLockAcquirerException;
 import io.dingodb.store.row.util.StackTraceUtil;
 import io.dingodb.store.row.util.concurrent.DistributedLock;

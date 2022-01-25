@@ -16,17 +16,16 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 
 import java.io.Serializable;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class KVEntry implements Serializable {
-
     private static final long serialVersionUID = -5678680976506834026L;
 
-    private byte[]            key;
-    private byte[]            value;
+    private byte[] key;
+    private byte[] value;
 
     public KVEntry() {
     }

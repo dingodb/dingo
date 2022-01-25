@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 import com.codahale.metrics.Timer;
 import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.metadata.Region;
