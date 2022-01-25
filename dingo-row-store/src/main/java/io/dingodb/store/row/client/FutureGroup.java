@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.Requires;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

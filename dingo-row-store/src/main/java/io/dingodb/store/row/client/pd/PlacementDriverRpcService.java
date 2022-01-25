@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.Lifecycle;
+import io.dingodb.raft.Lifecycle;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.cmd.pd.BaseRequest;
 import io.dingodb.store.row.errors.Errors;

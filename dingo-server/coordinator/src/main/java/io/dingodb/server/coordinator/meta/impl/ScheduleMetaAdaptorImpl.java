@@ -16,11 +16,11 @@
 
 package io.dingodb.server.coordinator.meta.impl;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.NoBreakFunctionWrapper;
 import io.dingodb.common.util.Optional;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.server.coordinator.app.impl.RegionApp;
 import io.dingodb.server.coordinator.app.impl.RegionView;

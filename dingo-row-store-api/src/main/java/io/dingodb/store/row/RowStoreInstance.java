@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.option.CliOptions;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.option.CliOptions;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.row.client.DefaultDingoRowStore;
 import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;

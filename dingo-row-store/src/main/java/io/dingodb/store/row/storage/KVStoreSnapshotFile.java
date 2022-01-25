@@ -16,10 +16,10 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.Closure;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import io.dingodb.store.row.metadata.Region;
+import io.dingodb.raft.Closure;
+import io.dingodb.raft.storage.snapshot.SnapshotReader;
+import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 
 import java.util.concurrent.ExecutorService;
 

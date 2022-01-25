@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.RegionEngine;
 import io.dingodb.store.row.StoreEngine;
 import io.dingodb.store.row.metadata.Instruction;

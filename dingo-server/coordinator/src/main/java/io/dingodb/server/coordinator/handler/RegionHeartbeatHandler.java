@@ -16,14 +16,13 @@
 
 package io.dingodb.server.coordinator.handler;
 
-import com.alipay.sofa.jraft.rpc.RpcContext;
-import com.alipay.sofa.jraft.rpc.RpcProcessor;
-import com.alipay.sofa.jraft.util.Endpoint;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
+import io.dingodb.raft.rpc.RpcContext;
+import io.dingodb.raft.rpc.RpcProcessor;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.ClusterStatsManager;

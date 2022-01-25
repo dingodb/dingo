@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.util.Requires;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class KVStoreSnapshotFileFactory {

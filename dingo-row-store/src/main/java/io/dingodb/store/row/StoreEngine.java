@@ -16,21 +16,21 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.conf.Configuration;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.entity.Task;
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
-import com.alipay.sofa.jraft.rpc.RpcServer;
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Describer;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.ExecutorServiceHelper;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.ThreadPoolMetricRegistry;
-import com.alipay.sofa.jraft.util.Utils;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.entity.Task;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.rpc.RaftRpcServerFactory;
+import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.ExecutorServiceHelper;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.ThreadPoolMetricRegistry;
+import io.dingodb.raft.util.Utils;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.store.row.client.pd.PlacementDriverClient;

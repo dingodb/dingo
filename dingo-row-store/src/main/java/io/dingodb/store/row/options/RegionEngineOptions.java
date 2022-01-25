@@ -16,10 +16,10 @@
 
 package io.dingodb.store.row.options;
 
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Copiable;
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Copiable;
+import io.dingodb.raft.util.Endpoint;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

@@ -16,11 +16,10 @@
 
 package io.dingodb.server.coordinator.context;
 
-import com.alipay.sofa.jraft.Node;
-import com.alipay.sofa.jraft.rpc.RpcServer;
-import com.alipay.sofa.jraft.util.Endpoint;
-import io.dingodb.meta.MetaService;
 import io.dingodb.net.NetService;
+import io.dingodb.raft.Node;
+import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.server.coordinator.meta.ScheduleMetaAdaptor;

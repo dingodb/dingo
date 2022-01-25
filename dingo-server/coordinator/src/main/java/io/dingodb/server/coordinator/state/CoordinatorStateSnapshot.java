@@ -16,19 +16,18 @@
 
 package io.dingodb.server.coordinator.state;
 
-import com.alipay.sofa.jraft.Closure;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
-import com.alipay.sofa.jraft.error.RaftError;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
-import com.alipay.sofa.jraft.util.CRC64;
-import com.alipay.sofa.jraft.util.Requires;
 import com.google.protobuf.ByteString;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.raft.Closure;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.entity.LocalFileMetaOutter.LocalFileMeta;
+import io.dingodb.raft.error.RaftError;
+import io.dingodb.raft.storage.snapshot.SnapshotReader;
+import io.dingodb.raft.storage.snapshot.SnapshotWriter;
+import io.dingodb.raft.util.CRC64;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.serialization.Serializer;
 import io.dingodb.store.row.serialization.Serializers;
-import io.dingodb.store.row.storage.RawKVStore;
 import io.dingodb.store.row.storage.RocksDBBackupInfo;
 import io.dingodb.store.row.storage.RocksRawKVStore;
 import io.dingodb.store.row.storage.zip.ZipStrategyManager;

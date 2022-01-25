@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.cmd.pd;
 
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metadata.RegionStats;
 import lombok.Getter;

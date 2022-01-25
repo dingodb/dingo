@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.entity.PeerId;
+import io.dingodb.raft.entity.PeerId;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface StateListener {

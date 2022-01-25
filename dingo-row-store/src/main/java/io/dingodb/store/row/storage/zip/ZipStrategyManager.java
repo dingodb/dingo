@@ -20,10 +20,10 @@ import io.dingodb.store.row.options.DingoRowStoreOptions;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class ZipStrategyManager {
-    private static ZipStrategy[] zipStrategies     = new ZipStrategy[5];
-    private static byte          DEFAULT_STRATEGY  = 1;
-    public static final byte     JDK_STRATEGY      = 1;
-    public static final byte     PARALLEL_STRATEGY = 2;
+    private static ZipStrategy[] zipStrategies = new ZipStrategy[5];
+    private static byte DEFAULT_STRATEGY = 1;
+    public static final byte JDK_STRATEGY = 1;
+    public static final byte PARALLEL_STRATEGY = 2;
 
     static {
         addZipStrategy(JDK_STRATEGY, new JDKZipStrategy());

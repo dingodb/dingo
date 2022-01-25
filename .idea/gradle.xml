@@ -30,6 +30,7 @@
             <option value="$PROJECT_DIR$/dingo-meta-api" />
             <option value="$PROJECT_DIR$/dingo-net-api" />
             <option value="$PROJECT_DIR$/dingo-net-netty" />
+            <option value="$PROJECT_DIR$/dingo-raft" />
             <option value="$PROJECT_DIR$/dingo-row-rocksdb-api" />
             <option value="$PROJECT_DIR$/dingo-row-store" />
             <option value="$PROJECT_DIR$/dingo-row-store-api" />

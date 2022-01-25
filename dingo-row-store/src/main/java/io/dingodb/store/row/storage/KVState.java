@@ -18,7 +18,7 @@ package io.dingodb.store.row.storage;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class KVState {
-    private final KVOperation    op;
+    private final KVOperation op;
     private final KVStoreClosure done;
 
     public static KVState of(final KVOperation op, final KVStoreClosure done) {

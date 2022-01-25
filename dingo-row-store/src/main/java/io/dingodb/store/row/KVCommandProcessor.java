@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row;
 
-import com.alipay.sofa.jraft.rpc.RpcContext;
-import com.alipay.sofa.jraft.rpc.RpcProcessor;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.rpc.RpcContext;
+import io.dingodb.raft.rpc.RpcProcessor;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.cmd.store.BaseRequest;
 import io.dingodb.store.row.cmd.store.BaseResponse;
 import io.dingodb.store.row.cmd.store.BatchDeleteRequest;

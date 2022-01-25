@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client.failover.impl;
 
-import com.alipay.sofa.jraft.Status;
+import io.dingodb.raft.Status;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.client.failover.RetryRunner;
 import io.dingodb.store.row.errors.Errors;

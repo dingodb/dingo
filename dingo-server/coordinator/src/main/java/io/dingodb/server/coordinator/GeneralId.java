@@ -16,7 +16,7 @@
 
 package io.dingodb.server.coordinator;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.server.coordinator.namespace.Namespace;
 import lombok.EqualsAndHashCode;
 

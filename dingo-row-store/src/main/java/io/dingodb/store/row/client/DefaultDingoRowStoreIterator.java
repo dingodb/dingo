@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.store.row.client.pd.PlacementDriverClient;
 import io.dingodb.store.row.storage.KVEntry;
 

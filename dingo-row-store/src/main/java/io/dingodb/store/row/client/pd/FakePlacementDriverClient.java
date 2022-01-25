@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.client.pd;
 
-import com.alipay.sofa.jraft.util.Endpoint;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metadata.Store;
 import io.dingodb.store.row.options.PlacementDriverOptions;

@@ -23,7 +23,7 @@ import io.dingodb.store.row.util.RegionHelper;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-import static com.alipay.sofa.jraft.entity.LocalFileMetaOutter.LocalFileMeta;
+import static io.dingodb.raft.entity.LocalFileMetaOutter.LocalFileMeta;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class RocksKVStoreSnapshotFile extends AbstractKVStoreSnapshotFile {

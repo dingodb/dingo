@@ -16,8 +16,8 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
-import com.alipay.sofa.jraft.util.internal.ThrowUtil;
+import io.dingodb.raft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.errors.NeverGetHereException;
 import io.dingodb.store.row.util.Lists;
 import io.dingodb.store.row.util.Maps;

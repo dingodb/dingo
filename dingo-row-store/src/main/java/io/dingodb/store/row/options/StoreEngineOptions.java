@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row.options;
 
-import com.alipay.sofa.jraft.option.NodeOptions;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.Utils;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.Utils;
 import io.dingodb.store.row.storage.StorageType;
 import lombok.Getter;
 import lombok.Setter;

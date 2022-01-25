@@ -16,14 +16,14 @@
 
 package io.dingodb.store.row.storage;
 
-import com.alipay.sofa.jraft.util.Bits;
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.DebugStatistics;
-import com.alipay.sofa.jraft.util.Describer;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.StorageOptionsFactory;
-import com.alipay.sofa.jraft.util.SystemPropertyUtil;
-import com.alipay.sofa.jraft.util.concurrent.AdjustableSemaphore;
+import io.dingodb.raft.util.Bits;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.DebugStatistics;
+import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.StorageOptionsFactory;
+import io.dingodb.raft.util.SystemPropertyUtil;
+import io.dingodb.raft.util.concurrent.AdjustableSemaphore;
 import com.codahale.metrics.Timer;
 import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.errors.StorageException;

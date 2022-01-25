@@ -16,15 +16,15 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.RouteTable;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.util.BytesUtil;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.alipay.sofa.jraft.util.LogExceptionHandler;
-import com.alipay.sofa.jraft.util.NamedThreadFactory;
-import com.alipay.sofa.jraft.util.Requires;
-import com.alipay.sofa.jraft.util.Utils;
+import io.dingodb.raft.RouteTable;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.util.BytesUtil;
+import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.LogExceptionHandler;
+import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.raft.util.Requires;
+import io.dingodb.raft.util.Utils;
 import com.codahale.metrics.Histogram;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;

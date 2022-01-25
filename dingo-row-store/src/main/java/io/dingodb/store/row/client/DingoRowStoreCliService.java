@@ -16,10 +16,10 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.Lifecycle;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.conf.Configuration;
-import com.alipay.sofa.jraft.option.CliOptions;
+import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.option.CliOptions;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface DingoRowStoreCliService extends Lifecycle<CliOptions> {

@@ -16,9 +16,9 @@
 
 package io.dingodb.store.row.serialization.impl.protostuff.io;
 
-import com.alipay.sofa.jraft.util.internal.ReferenceFieldUpdater;
-import com.alipay.sofa.jraft.util.internal.UnsafeUtf8Util;
-import com.alipay.sofa.jraft.util.internal.Updaters;
+import io.dingodb.raft.util.internal.ReferenceFieldUpdater;
+import io.dingodb.raft.util.internal.UnsafeUtf8Util;
+import io.dingodb.raft.util.internal.Updaters;
 import io.dingodb.store.row.serialization.io.OutputBuf;
 import io.dingodb.store.row.util.VarInts;
 import io.protostuff.ByteString;
@@ -45,9 +45,9 @@ class NioBufOutput implements Output {
         = Updaters.newReferenceFieldUpdater(ByteString.class, "bytes");
 
     protected final OutputBuf outputBuf;
-    protected final int                                            maxCapacity;
-    protected ByteBuffer                                           nioBuffer;
-    protected int                                                  capacity;
+    protected final int maxCapacity;
+    protected ByteBuffer nioBuffer;
+    protected int capacity;
 
     NioBufOutput(OutputBuf outputBuf, int minWritableBytes, int maxCapacity) {
         this.outputBuf = outputBuf;

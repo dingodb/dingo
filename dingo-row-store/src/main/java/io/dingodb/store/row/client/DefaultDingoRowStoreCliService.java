@@ -16,17 +16,17 @@
 
 package io.dingodb.store.row.client;
 
-import com.alipay.sofa.jraft.CliService;
-import com.alipay.sofa.jraft.RaftServiceFactory;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.conf.Configuration;
-import com.alipay.sofa.jraft.core.CliServiceImpl;
-import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.option.CliOptions;
-import com.alipay.sofa.jraft.rpc.CliClientService;
-import com.alipay.sofa.jraft.rpc.RpcClient;
-import com.alipay.sofa.jraft.rpc.impl.AbstractClientService;
-import com.alipay.sofa.jraft.util.Requires;
+import io.dingodb.raft.CliService;
+import io.dingodb.raft.RaftServiceFactory;
+import io.dingodb.raft.Status;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.core.CliServiceImpl;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.option.CliOptions;
+import io.dingodb.raft.rpc.CliClientService;
+import io.dingodb.raft.rpc.RpcClient;
+import io.dingodb.raft.rpc.impl.AbstractClientService;
+import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.cmd.store.BaseResponse;
 import io.dingodb.store.row.cmd.store.RangeSplitRequest;
 import io.dingodb.store.row.util.StackTraceUtil;

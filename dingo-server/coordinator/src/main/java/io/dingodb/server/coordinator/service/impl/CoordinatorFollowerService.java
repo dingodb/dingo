@@ -16,8 +16,8 @@
 
 package io.dingodb.server.coordinator.service.impl;
 
-import com.alipay.sofa.jraft.rpc.RpcServer;
 import io.dingodb.net.NetService;
+import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
 import io.dingodb.server.coordinator.service.AbstractStateService;
 

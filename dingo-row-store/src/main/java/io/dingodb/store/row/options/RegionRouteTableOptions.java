@@ -16,7 +16,7 @@
 
 package io.dingodb.store.row.options;
 
-import com.alipay.sofa.jraft.util.BytesUtil;
+import io.dingodb.raft.util.BytesUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

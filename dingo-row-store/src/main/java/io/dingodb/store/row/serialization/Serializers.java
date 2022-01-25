@@ -20,7 +20,7 @@ import io.dingodb.store.row.serialization.impl.protostuff.ProtoStuffSerializer;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class Serializers {
-    public static final byte    PROTO_STUFF = 0x01;
+    public static final byte PROTO_STUFF = 0x01;
 
     private static Serializer[] serializers = new Serializer[5];
 
