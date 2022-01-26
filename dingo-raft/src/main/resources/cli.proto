@@ -1,0 +1,107 @@
+syntax="proto2";
+
+package raft;
+import "rpc.proto";
+
+option java_package="io.dingodb.raft.rpc";
+option java_outer_classname = "CliRequests";
+
+message AddPeerRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    required string peer_id = 3;
+}
+
+message AddPeerResponse {
+    repeated string old_peers = 1;
+    repeated string new_peers = 2;
+    optional ErrorResponse errorResponse = 99;
+}
+
+message RemovePeerRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    required string peer_id = 3;
+}
+
+message RemovePeerResponse {
+    repeated string old_peers = 1;
+    repeated string new_peers = 2;
+    optional ErrorResponse errorResponse = 99;
+}
+
+message ChangePeersRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    repeated string new_peers = 3;
+}
+
+message ChangePeersResponse {
+    repeated string old_peers = 1;
+    repeated string new_peers = 2;
+    optional ErrorResponse errorResponse = 99;
+}
+
+message SnapshotRequest {
+    required string group_id = 1;
+    optional string peer_id = 2;
+};
+
+message ResetPeerRequest {
+    required string group_id = 1;
+    required string peer_id = 2;
+    repeated string old_peers = 3;
+    repeated string new_peers = 4;
+}
+
+message TransferLeaderRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    optional string peer_id = 3;
+}
+
+message GetLeaderRequest {
+    required string group_id = 1;
+    optional string peer_id = 2;
+}
+
+message GetLeaderResponse {
+    required string leader_id = 1;
+    optional ErrorResponse errorResponse = 99;
+}
+
+message GetPeersRequest {
+    required string group_id = 1;
+    optional string leader_id = 2;
+    optional bool only_alive = 3 [default = false];
+}
+
+message GetPeersResponse {
+    repeated string peers = 1;
+    repeated string learners = 2;
+    optional ErrorResponse errorResponse = 99;
+}
+
+message AddLearnersRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    repeated string learners = 3;
+}
+
+message RemoveLearnersRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    repeated string learners = 3;
+}
+
+message ResetLearnersRequest {
+    required string group_id = 1;
+    required string leader_id = 2;
+    repeated string learners = 3;
+}
+
+message LearnersOpResponse {
+    repeated string old_learners = 1;
+    repeated string new_learners = 2;
+    optional ErrorResponse errorResponse = 99;
+}
