@@ -61,7 +61,7 @@ public class CoordinatorMetaService implements MetaService {
         this.metaAdaptor = metaAdaptor;
         metaAdaptor.getAllDefinition(bytes -> this.serializer.readObject(bytes, TableDefinition.class))
             .thenAcceptAsync(tableDefinitionMap::putAll);
-        metaAdaptor.getAllKey().thenAcceptAsync(tableKeyMap::putAll);
+        metaAdaptor.getAllKey().thenAcceptAsync(map -> map.forEach(this::generateTableKey));
     }
 
     @Override
@@ -145,6 +145,10 @@ public class CoordinatorMetaService implements MetaService {
         Long tableId = helperGet(metaAdaptor.getTableId(name));
         Requires.requireNonNull(tableId, "table id");
 
+        generateTableKey(name, tableId);
+    }
+
+    private void generateTableKey(String name, Long tableId) {
         char prefix = Utils.oddEvenHashAlphabetOrNumber(tableId);
         String fixedLenId = String.format("%08d", tableId);
         String key = StringBuilderHelper.get().append(prefix).append("00").append(fixedLenId).toString();
