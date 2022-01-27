@@ -33,7 +33,7 @@ public interface TableMetaAdaptor extends MetaAdaptor {
 
     <T> CompletableFuture<Map<String, T>> getAllDefinition(Function<byte[], T> deserializer);
 
-    CompletableFuture<Map<String, byte[]>> getAllKey();
+    CompletableFuture<Map<String, Long>> getAllKey();
 
     CompletableFuture<Long> getTableId(String tableName);
 

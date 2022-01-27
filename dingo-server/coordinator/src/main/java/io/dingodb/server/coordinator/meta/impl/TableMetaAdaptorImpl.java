@@ -73,8 +73,8 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
     }
 
     @Override
-    public CompletableFuture<Map<String, byte[]>> getAllKey() {
-        return getAll(GeneralId.tableDefinitionPrefix(), Function.identity());
+    public CompletableFuture<Map<String, Long>> getAllKey() {
+        return getAll(GeneralId.tableMetaPrefix(), PrimitiveCodec::readVarLong);
     }
 
     private <T> CompletableFuture<Map<String, T>> getAll(byte[] prefix, Function<byte[], T> deserializer) {
