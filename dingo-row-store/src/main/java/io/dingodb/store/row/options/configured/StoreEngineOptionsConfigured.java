@@ -18,11 +18,7 @@ package io.dingodb.store.row.options.configured;
 
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.util.Endpoint;
-import io.dingodb.store.row.options.HeartbeatOptions;
-import io.dingodb.store.row.options.MemoryDBOptions;
-import io.dingodb.store.row.options.RegionEngineOptions;
-import io.dingodb.store.row.options.RocksDBOptions;
-import io.dingodb.store.row.options.StoreEngineOptions;
+import io.dingodb.store.row.options.*;
 import io.dingodb.store.row.storage.StorageType;
 import io.dingodb.store.row.util.Configured;
 
@@ -41,8 +37,8 @@ public final class StoreEngineOptionsConfigured implements Configured<StoreEngin
         return this;
     }
 
-    public StoreEngineOptionsConfigured withRocksDBOptions(final RocksDBOptions rocksDBOptions) {
-        this.opts.setRocksDBOptions(rocksDBOptions);
+    public StoreEngineOptionsConfigured withRocksDBOptions(final StoreDBOptions storeDBOptions) {
+        this.opts.setStoreDBOptions(storeDBOptions);
         return this;
     }
 
@@ -51,8 +47,15 @@ public final class StoreEngineOptionsConfigured implements Configured<StoreEngin
         return this;
     }
 
+    public StoreEngineOptionsConfigured withRaftStoreOptions(final RaftStoreOptions raftStoreOptions) {
+        this.opts.setRaftStoreOptions(raftStoreOptions);
+        return this;
+    }
+
     public StoreEngineOptionsConfigured withRaftDataPath(final String raftDataPath) {
-        this.opts.setRaftDataPath(raftDataPath);
+        RaftStoreOptions storeOptions = new RaftStoreOptions();
+        storeOptions.setDataPath(raftDataPath);
+        this.opts.setRaftStoreOptions(storeOptions);
         return this;
     }
 
@@ -66,7 +69,8 @@ public final class StoreEngineOptionsConfigured implements Configured<StoreEngin
         return this;
     }
 
-    public StoreEngineOptionsConfigured withRegionEngineOptionsList(final List<RegionEngineOptions> regionEngineOptionsList) {
+    public StoreEngineOptionsConfigured withRegionEngineOptionsList(
+        final List<RegionEngineOptions> regionEngineOptionsList) {
         this.opts.setRegionEngineOptionsList(regionEngineOptionsList);
         return this;
     }

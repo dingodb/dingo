@@ -115,8 +115,14 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
      * Whether use global timer pool, if true, the {@code timerPoolSize} will be invalid.
      */
     private boolean sharedTimerPool = false;
+
     /**
-     * Timer manager thread pool size
+     * storage options about raft on rocksdb.
+     */
+    private RaftLogStorageOptions raftLogStorageOptions  = new RaftLogStorageOptions();
+
+    /**
+     * Timer manager thread pool size.
      */
     private int timerPoolSize = Utils.cpus() * 3 > 20 ? 20 : Utils.cpus() * 3;
 
@@ -124,35 +130,40 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
      * CLI service request RPC executor pool size, use default executor if -1.
      */
     private int cliRpcThreadPoolSize = Utils.cpus();
+
     /**
      * RAFT request RPC executor pool size, use default executor if -1.
      */
     private int raftRpcThreadPoolSize = Utils.cpus() * 6;
+
     /**
      * Whether to enable metrics for node.
      */
     private boolean enableMetrics = false;
 
     /**
-     *  If non-null, we will pass this SnapshotThrottle to SnapshotExecutor
-     * Default: NULL
+     *  If non-null, we will pass this SnapshotThrottle to SnapshotExecutor.
+     * Default: NULL.
      */
     private SnapshotThrottle snapshotThrottle;
 
     /**
-     * Whether use global election timer
+     * Whether use global election timer.
      */
     private boolean sharedElectionTimer = false;
+
     /**
-     * Whether use global vote timer
+     * Whether use global vote timer.
      */
     private boolean sharedVoteTimer = false;
+
     /**
-     * Whether use global step down timer
+     * Whether use global step down timer.
      */
     private boolean sharedStepDownTimer = false;
+
     /**
-     * Whether use global snapshot timer
+     * Whether use global snapshot timer.
      */
     private boolean sharedSnapshotTimer = false;
 
@@ -394,6 +405,14 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         this.sharedSnapshotTimer = sharedSnapshotTimer;
     }
 
+    public RaftLogStorageOptions getRaftLogStorageOptions() {
+        return raftLogStorageOptions;
+    }
+
+    public void setRaftLogStorageOptions(RaftLogStorageOptions raftLogStorageOptions) {
+        this.raftLogStorageOptions = raftLogStorageOptions;
+    }
+
     @Override
     public NodeOptions copy() {
         final NodeOptions nodeOptions = new NodeOptions();
@@ -415,6 +434,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         nodeOptions.setSharedVoteTimer(this.sharedVoteTimer);
         nodeOptions.setSharedStepDownTimer(this.sharedStepDownTimer);
         nodeOptions.setSharedSnapshotTimer(this.sharedSnapshotTimer);
+        nodeOptions.setRaftLogStorageOptions(this.raftLogStorageOptions);
         return nodeOptions;
     }
 
@@ -431,6 +451,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
                + raftRpcThreadPoolSize + ", enableMetrics=" + enableMetrics + ", snapshotThrottle=" + snapshotThrottle
                + ", sharedElectionTimer=" + sharedElectionTimer + ", sharedVoteTimer=" + sharedVoteTimer
                + ", sharedStepDownTimer=" + sharedStepDownTimer + ", sharedSnapshotTimer=" + sharedSnapshotTimer
-               + ", serviceFactory=" + serviceFactory + ", raftOptions=" + raftOptions + "} " + super.toString();
+               + ", serviceFactory=" + serviceFactory + ", raftOptions=" + raftOptions
+               + ", raftLogStorageOptions:" + this.raftLogStorageOptions + "} " + super.toString();
     }
 }
