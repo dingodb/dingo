@@ -72,8 +72,13 @@ public final class JRaftHelper {
         return peerList;
     }
 
-    public static String getRaftDataPath(String baseDataPath, String regionId, int endPointPort) {
-        String childPath = "raft_data_region_" + regionId + "_" + endPointPort;
+    public static String getRaftDataPath(final String baseDataPath, final String regionId, int endPointPort) {
+        String childPath = "region_" + regionId + "_" + endPointPort;
+        return Paths.get(baseDataPath, childPath).toString();
+    }
+
+    public static String getDBDataPath(final String baseDataPath, final String storeId, int endPointPort) {
+        String childPath = "store_" + storeId + "_" + endPointPort;
         return Paths.get(baseDataPath, childPath).toString();
     }
 }

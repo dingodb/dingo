@@ -46,34 +46,11 @@ public class RegionEngineOptions implements Copiable<RegionEngineOptions> {
     // Can extends from StoreEngineOptions
     private long        metricsReportPeriod;
     private HeartbeatOptions          heartbeatOptions;
-
-    public String getRegionId() {
-        return regionId;
-    }
-
-    public void setRegionId(String regionId) {
-        this.regionId = regionId;
-    }
-
-    public String getStartKey() {
-        return startKey;
-    }
+    private RaftStoreOptions raftStoreOptions;
 
     public void setStartKey(String startKey) {
         this.startKey = startKey;
         this.startKeyBytes = BytesUtil.writeUtf8(startKey);
-    }
-
-    public byte[] getStartKeyBytes() {
-        return startKeyBytes;
-    }
-
-    public void setStartKeyBytes(byte[] startKeyBytes) {
-        this.startKeyBytes = startKeyBytes;
-    }
-
-    public String getEndKey() {
-        return endKey;
     }
 
     public void setEndKey(String endKey) {
@@ -95,6 +72,7 @@ public class RegionEngineOptions implements Copiable<RegionEngineOptions> {
         copy.setServerAddress(this.serverAddress);
         copy.setInitialServerList(this.initialServerList);
         copy.setMetricsReportPeriod(this.metricsReportPeriod);
+        copy.setRaftStoreOptions(this.raftStoreOptions);
         return copy;
     }
 }

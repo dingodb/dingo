@@ -33,9 +33,10 @@ import java.util.concurrent.TimeUnit;
 @ToString
 public class StoreEngineOptions {
     private StorageType storageType                   = StorageType.RocksDB;
-    private RocksDBOptions            rocksDBOptions;
+    private StoreDBOptions            storeDBOptions;
+    private RaftStoreOptions          raftStoreOptions;
     private MemoryDBOptions           memoryDBOptions;
-    private String                    raftDataPath;
+
     private Endpoint serverAddress;
     // Most configurations do not need to be configured separately for each raft-group,
     // so a common configuration is provided, and each raft-group can copy from here.
