@@ -1598,6 +1598,8 @@ public class NodeImpl implements Node, RaftServerService {
                 event.entry = entry;
                 event.expectedTerm = task.getExpectedTerm();
             };
+            this.applyQueue.publishEvent(translator);
+            /*
             while (true) {
                 if (this.applyQueue.tryPublishEvent(translator)) {
                     break;
@@ -1613,7 +1615,7 @@ public class NodeImpl implements Node, RaftServerService {
                     ThreadHelper.onSpinWait();
                 }
             }
-
+             */
         } catch (final Exception e) {
             LOG.error("Fail to apply task.", e);
             Utils.runClosureInThread(task.getDone(), new Status(RaftError.EPERM, "Node is down."));

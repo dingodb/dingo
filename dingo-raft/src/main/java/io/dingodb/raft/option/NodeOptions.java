@@ -33,8 +33,8 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
 
     // A follower would become a candidate if it doesn't receive any message
     // from the leader in |election_timeout_ms| milliseconds
-    // Default: 1000 (1s)
-    private int electionTimeoutMs = 1000;                                         // follower to candidate timeout
+    // Default: 5000 (5s)
+    private int electionTimeoutMs = 5000;                                         // follower to candidate timeout
 
     // One node's local priority value would be set to | electionPriority |
     // value when it starts up.If this value is set to 0,the node will never be a leader.

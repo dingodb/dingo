@@ -16,11 +16,7 @@
 
 package io.dingodb.raft.storage.impl;
 
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.EventTranslator;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.TimeoutBlockingWaitStrategy;
+import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import io.dingodb.raft.FSMCaller;
@@ -123,17 +119,23 @@ public class LogManagerImpl implements LogManager {
     }
 
     /**
-     * Waiter metadata
-     * @author boyan (boyan@alibaba-inc.com)
-     *
-     * 2018-Apr-04 5:05:04 PM.
+     * Waiter metadata.
      */
     private static class WaitMeta {
-        /** callback when new log come in*/
+
+        /**
+         * callback when new log come in.
+         */
         NewLogCallback onNewLog;
-        /** callback error code*/
+
+        /**
+        * callback error code.
+        */
         int errorCode;
-        /** the waiter pass-in argument */
+
+        /**
+         * the waiter pass-in argument.
+         */
         Object arg;
 
         public WaitMeta(final NewLogCallback onNewLog, final Object arg, final int errorCode) {
@@ -182,19 +184,17 @@ public class LogManagerImpl implements LogManager {
             this.lastLogIndex = this.logStorage.getLastLogIndex();
             this.diskId = new LogId(this.lastLogIndex, getTermFromLogStorage(this.lastLogIndex));
             this.fsmCaller = opts.getFsmCaller();
-            this.disruptor = DisruptorBuilder.<StableClosureEvent> newInstance() //
+            this.disruptor = DisruptorBuilder.<StableClosureEvent>newInstance() //
                     .setEventFactory(new StableClosureEventFactory()) //
                     .setRingBufferSize(opts.getDisruptorBufferSize()) //
                     .setThreadFactory(new NamedThreadFactory("JRaft-LogManager-Disruptor-", true)) //
                     .setProducerType(ProducerType.MULTI) //
-                    /*
-                     *  Use timeout strategy in log manager. If timeout happens, it will called reportError to halt the node.
-                     */
-                    .setWaitStrategy(new TimeoutBlockingWaitStrategy(
-                        this.raftOptions.getDisruptorPublishEventWaitTimeoutSecs(), TimeUnit.SECONDS)) //
+                    .setWaitStrategy(new BlockingWaitStrategy())
                     .build();
             this.disruptor.handleEventsWith(new StableClosureEventHandler());
-            this.disruptor.setDefaultExceptionHandler(new LogExceptionHandler<Object>(this.getClass().getSimpleName(),
+            this.disruptor.setDefaultExceptionHandler(
+                new LogExceptionHandler<Object>(
+                    this.getClass().getSimpleName(),
                     (event, ex) -> reportError(-1, "LogManager handle event error")));
             this.diskQueue = this.disruptor.start();
             if (this.nodeMetrics.getMetricRegistry() != null) {
@@ -322,18 +322,9 @@ public class LogManagerImpl implements LogManager {
                 event.type = EventType.OTHER;
                 event.done = done;
             };
-            while (true) {
-                if (tryOfferEvent(done, translator)) {
-                    break;
-                } else {
-                    retryTimes++;
-                    if (retryTimes > APPEND_LOG_RETRY_TIMES) {
-                        reportError(RaftError.EBUSY.getNumber(), "LogManager is busy, disk queue overload.");
-                        return;
-                    }
-                    ThreadHelper.onSpinWait();
-                }
-            }
+
+            boolean isOK = false;
+            isOK = doPublish(done, translator);
             doUnlock = false;
             if (!wakeupAllWaiter(this.writeLock)) {
                 notifyLastLogIndexListeners();
@@ -345,27 +336,28 @@ public class LogManagerImpl implements LogManager {
         }
     }
 
-    private void offerEvent(final StableClosure done, final EventType type) {
+    private void doPublish(final StableClosure done, final EventType type) {
         if (this.stopped) {
             Utils.runClosureInThread(done, new Status(RaftError.ESTOP, "Log manager is stopped."));
             return;
         }
-        if (!this.diskQueue.tryPublishEvent((event, sequence) -> {
+
+        final EventTranslator<StableClosureEvent> translator = ((event, sequence) -> {
             event.reset();
             event.type = type;
             event.done = done;
-        })) {
-            reportError(RaftError.EBUSY.getNumber(), "Log manager is overload.");
-            Utils.runClosureInThread(done, new Status(RaftError.EBUSY, "Log manager is overload."));
-        }
+        });
+
+        this.diskQueue.publishEvent(translator);
     }
 
-    private boolean tryOfferEvent(final StableClosure done, final EventTranslator<StableClosureEvent> translator) {
+    private boolean doPublish(final StableClosure done, final EventTranslator<StableClosureEvent> translator) {
         if (this.stopped) {
             Utils.runClosureInThread(done, new Status(RaftError.ESTOP, "Log manager is stopped."));
             return true;
         }
-        return this.diskQueue.tryPublishEvent(translator);
+        this.diskQueue.publishEvent(translator);
+        return true;
     }
 
     private void notifyLastLogIndexListeners() {
@@ -820,7 +812,7 @@ public class LogManagerImpl implements LogManager {
                     return this.lastLogIndex;
                 }
                 c = new LastLogIdClosure();
-                offerEvent(c, EventType.LAST_LOG_ID);
+                doPublish(c, EventType.LAST_LOG_ID);
             }
         } finally {
             this.readLock.unlock();
@@ -868,7 +860,7 @@ public class LogManagerImpl implements LogManager {
                     return this.lastSnapshotId;
                 }
                 c = new LastLogIdClosure();
-                offerEvent(c, EventType.LAST_LOG_ID);
+                doPublish(c, EventType.LAST_LOG_ID);
             }
         } finally {
             this.readLock.unlock();
@@ -943,7 +935,7 @@ public class LogManagerImpl implements LogManager {
         LOG.debug("Truncate prefix, firstIndexKept is :{}", firstIndexKept);
         this.configManager.truncatePrefix(firstIndexKept);
         final TruncatePrefixClosure c = new TruncatePrefixClosure(firstIndexKept);
-        offerEvent(c, EventType.TRUNCATE_PREFIX);
+        doPublish(c, EventType.TRUNCATE_PREFIX);
         return true;
     }
 
@@ -956,7 +948,7 @@ public class LogManagerImpl implements LogManager {
             this.configManager.truncatePrefix(this.firstLogIndex);
             this.configManager.truncateSuffix(this.lastLogIndex);
             final ResetClosure c = new ResetClosure(nextLogIndex);
-            offerEvent(c, EventType.RESET);
+            doPublish(c, EventType.RESET);
             return true;
         } finally {
             this.writeLock.unlock();
@@ -978,7 +970,7 @@ public class LogManagerImpl implements LogManager {
         LOG.debug("Truncate suffix :{}", lastIndexKept);
         this.configManager.truncateSuffix(lastIndexKept);
         final TruncateSuffixClosure c = new TruncateSuffixClosure(lastIndexKept, lastTermKept);
-        offerEvent(c, EventType.TRUNCATE_SUFFIX);
+        doPublish(c, EventType.TRUNCATE_SUFFIX);
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
