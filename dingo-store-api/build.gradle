@@ -20,4 +20,5 @@ plugins {
 }
 
 dependencies {
+    implementation project(':dingo-common')
 }

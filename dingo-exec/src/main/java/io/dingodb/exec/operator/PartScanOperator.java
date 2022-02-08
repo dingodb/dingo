@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.collect.Iterators;
+import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.util.ExprUtil;
@@ -42,14 +43,14 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
 
     @JsonCreator
     public PartScanOperator(
-        @JsonProperty("table") String tableName,
+        @JsonProperty("table") TableId tableId,
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") TupleSchema schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") String filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
-        super(tableName, partId, schema, keyMapping);
+        super(tableId, partId, schema, keyMapping);
         this.filter = filter;
         this.selection = selection;
     }

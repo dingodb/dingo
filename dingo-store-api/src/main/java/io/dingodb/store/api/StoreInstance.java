@@ -16,10 +16,12 @@
 
 package io.dingodb.store.api;
 
-public interface StoreInstance {
-    PartitionOper getKvBlock(String tableName, Object partId, boolean isMain);
+import io.dingodb.common.table.TableId;
 
-    default PartitionOper getKvBlock(String tableName, Object partId) {
-        return getKvBlock(tableName, partId, true);
+public interface StoreInstance {
+    PartitionOper getKvBlock(TableId tableId, Object partId, boolean isMain);
+
+    default PartitionOper getKvBlock(TableId tableId, Object partId) {
+        return getKvBlock(tableId, partId, true);
     }
 }

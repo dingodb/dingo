@@ -19,14 +19,13 @@ package io.dingodb.meta.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.table.TableId;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.store.api.StoreInstance;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -36,7 +35,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -148,7 +147,7 @@ public class MetaTestService implements MetaService {
 
     @Override
     public byte[] getTableKey(@Nonnull String tableName) {
-        return new byte[0];
+        return tableName.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -167,7 +166,7 @@ public class MetaTestService implements MetaService {
             for (Map.Entry<String, Location> entry : partLocations.entrySet()) {
                 StoreInstance store = Services.KV_STORE.getInstance(entry.getValue().getPath());
                 new PartInKvStore(
-                    store.getKvBlock(tableName, entry.getKey()),
+                    store.getKvBlock(new TableId(getTableKey(tableName)), entry.getKey()),
                     tableDefinition.getTupleSchema(),
                     tableDefinition.getKeyMapping()
                 );
