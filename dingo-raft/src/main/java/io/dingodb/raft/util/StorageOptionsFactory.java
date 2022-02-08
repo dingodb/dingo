@@ -134,7 +134,26 @@ public final class StorageOptionsFactory {
 
         // The maximum number of concurrent flush operations. It is usually good enough
         // to set this to 1.
-        opts.setMaxBackgroundFlushes(1);
+        int backGroudJob = Math.min(Utils.cpus(), 8);
+        opts.setMaxBackgroundFlushes(backGroudJob);
+        opts.setMaxBackgroundCompactions(backGroudJob);
+        opts.setMaxSubcompactions(backGroudJob / 2);
+
+        // Use passed WriteBufferManager to control memory usage across multiple column families and/or DB instances.
+        // Check https://github.com/facebook/rocksdb/wiki/Write-Buffer-Manager for more details on when to use it
+        opts.setDbWriteBufferSize(2 << 30L);
+
+        // The maximum number of background jobs, default is 8
+        opts.setMaxBackgroundJobs(Math.min(Utils.cpus(), 8));
+
+        // WAL size and ttl
+        opts.setWalSizeLimitMB(1024);
+        opts.setWalTtlSeconds(0);
+        opts.setWritableFileMaxBufferSize(100 * 1024 * 1024L);
+
+        opts.setBytesPerSync(1 << 10L);
+        opts.setWalBytesPerSync(1 << 10L);
+        opts.setEnablePipelinedWrite(true);
 
         return opts;
     }
