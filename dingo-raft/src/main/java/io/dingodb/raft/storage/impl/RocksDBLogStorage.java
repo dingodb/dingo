@@ -25,6 +25,7 @@ import io.dingodb.raft.entity.LogId;
 import io.dingodb.raft.entity.codec.LogEntryDecoder;
 import io.dingodb.raft.entity.codec.LogEntryEncoder;
 import io.dingodb.raft.option.LogStorageOptions;
+import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftOptions;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.util.Bits;
@@ -54,12 +55,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-// Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class RocksDBLogStorage implements LogStorage, Describer {
     private static final Logger LOG = LoggerFactory.getLogger(RocksDBLogStorage.class);
 
@@ -69,18 +70,13 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     /**
      * Write batch template.
-     *
-     * @author boyan (boyan@alibaba-inc.com)
-     *
-     * 2017-Nov-08 11:19:22 AM
      */
     private interface WriteBatchTemplate {
         void execute(WriteBatch batch) throws RocksDBException, IOException, InterruptedException;
     }
 
     /**
-     * A write context
-     * @author boyan(boyan@antfin.com)
+     * A write context.
      *
      */
     public interface WriteContext {
@@ -91,7 +87,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         }
 
         /**
-         * Finish a sub job
+         * Finish a sub job.
          */
         default void finishJob() {
         }
@@ -99,15 +95,14 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         /**
          * Adds a callback that will be invoked after all sub jobs finish.
          */
-        default void addFinishHook(final Runnable r) {
-
+        default void addFinishHook(final Runnable runnable) {
         }
 
         /**
          * Set an exception to context.
          * @param e exception
          */
-        default void setError(final Exception e) {
+        default void setError(final Exception exception) {
         }
 
         /**
@@ -118,7 +113,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     }
 
     /**
-     * An empty write context
+     * An empty write context.
      * @author boyan(boyan@antfin.com)
      *
      */
@@ -142,6 +137,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     private final Lock writeLock = this.readWriteLock.writeLock();
 
     private volatile long firstLogIndex = 1;
+    private static HashMap<String, Long> manualCompactMap = new HashMap<>();
 
     private volatile boolean hasLoadFirstLogIndex;
 
@@ -173,6 +169,8 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         Requires.requireNonNull(opts.getConfigurationManager(), "Null conf manager");
         Requires.requireNonNull(opts.getLogEntryCodecFactory(), "Null log entry codec factory");
         this.writeLock.lock();
+        boolean isInputRaftLogEmpty = false;
+
         try {
             if (this.db != null) {
                 LOG.warn("RocksDBLogStorage init() already.");
@@ -193,7 +191,61 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             this.totalOrderReadOptions = new ReadOptions();
             this.totalOrderReadOptions.setTotalOrderSeek(true);
 
-            return initAndLoad(opts.getConfigurationManager());
+            this.dbOptions.setMaxTotalWalSize(4 << 30L);
+            RaftLogStorageOptions raftLogStorageOptions = opts.getRaftLogStorageOptions();
+            if (raftLogStorageOptions == null) {
+                raftLogStorageOptions = new RaftLogStorageOptions();
+                isInputRaftLogEmpty = true;
+            }
+
+            if (raftLogStorageOptions.getDbMaxTotalWalSize() != 0) {
+                this.dbOptions.setMaxTotalWalSize(raftLogStorageOptions.getDbMaxTotalWalSize());
+            }
+
+            this.dbOptions.setMaxSubcompactions(4);
+            if (raftLogStorageOptions.getDbMaxSubCompactions() != 0) {
+                this.dbOptions.setMaxSubcompactions(raftLogStorageOptions.getDbMaxSubCompactions());
+            }
+
+            this.dbOptions.setRecycleLogFileNum(4);
+            if (raftLogStorageOptions.getDbRecycleLogFileNum() != 0) {
+                this.dbOptions.setRecycleLogFileNum(raftLogStorageOptions.getDbRecycleLogFileNum());
+            }
+
+            this.dbOptions.setKeepLogFileNum(4);
+            if (raftLogStorageOptions.getDbKeepLogFileNum() != 0) {
+                this.dbOptions.setKeepLogFileNum(raftLogStorageOptions.getDbKeepLogFileNum());
+            }
+
+            this.dbOptions.setDbWriteBufferSize(20 << 30L);
+            if (raftLogStorageOptions.getDbWriteBufferSize() != 0) {
+                this.dbOptions.setDbWriteBufferSize(raftLogStorageOptions.getDbWriteBufferSize());
+            }
+
+            this.dbOptions.setMaxBackgroundJobs(16);
+            if (raftLogStorageOptions.getDbMaxBackGroupJobs() != 0) {
+                this.dbOptions.setMaxBackgroundJobs(raftLogStorageOptions.getDbMaxBackGroupJobs());
+            }
+
+            this.dbOptions.setMaxBackgroundCompactions(8);
+            if (raftLogStorageOptions.getDbMaxBackGroupCompactions() != 0) {
+                this.dbOptions.setMaxBackgroundCompactions(raftLogStorageOptions.getDbMaxBackGroupCompactions());
+            }
+
+            this.dbOptions.setMaxBackgroundFlushes(8);
+            if (raftLogStorageOptions.getDbMaxBackGroupFlushes() != 0) {
+                this.dbOptions.setMaxBackgroundFlushes(raftLogStorageOptions.getDbMaxBackGroupFlushes());
+            }
+
+            this.dbOptions.setMaxManifestFileSize(256 * 1024 * 1024L);
+            if (raftLogStorageOptions.getDbMaxManifestFileSize() != 0) {
+                this.dbOptions.setMaxManifestFileSize(raftLogStorageOptions.getDbMaxManifestFileSize());
+            }
+            LOG.info("Init raft log dbPath:{}, raft log options:{}, default options:{}",
+                this.path,
+                raftLogStorageOptions.toString(),
+                isInputRaftLogEmpty);
+            return initAndLoad(opts);
         } catch (final RocksDBException e) {
             LOG.error("Fail to init RocksDBLogStorage, path={}.", this.path, e);
             return false;
@@ -203,11 +255,52 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     }
 
-    private boolean initAndLoad(final ConfigurationManager confManager) throws RocksDBException {
+    private boolean initAndLoad(final LogStorageOptions lopts) throws RocksDBException {
         this.hasLoadFirstLogIndex = false;
         this.firstLogIndex = 1;
         final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
         final ColumnFamilyOptions cfOption = createColumnFamilyOptions();
+        ConfigurationManager confManager = lopts.getConfigurationManager();
+
+        BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
+        tableConfig.setBlockSize(128 * 1024);
+
+        RaftLogStorageOptions raftLogStorageOptions = lopts.getRaftLogStorageOptions();
+        if (raftLogStorageOptions.getCfBlockSize() != 0) {
+            tableConfig.setBlockSize(raftLogStorageOptions.getCfBlockSize());
+        }
+
+        tableConfig.setBlockCacheSize(200 / 4  * 1024 * 1024 * 1024L);
+        if (raftLogStorageOptions.getCfBlockCacheSize() != 0) {
+            tableConfig.setBlockSize(raftLogStorageOptions.getCfBlockCacheSize());
+        }
+        cfOption.setTableFormatConfig(tableConfig);
+
+        cfOption.setArenaBlockSize(128 * 1024 * 1024);
+        if (raftLogStorageOptions.getCfArenaBlockSize() != 0) {
+            cfOption.setArenaBlockSize(raftLogStorageOptions.getCfArenaBlockSize());
+        }
+
+        cfOption.setMinWriteBufferNumberToMerge(4);
+        if (raftLogStorageOptions.getCfMinWriteBufferNumberToMerge() != 0) {
+            cfOption.setMinWriteBufferNumberToMerge(raftLogStorageOptions.getCfMinWriteBufferNumberToMerge());
+        }
+
+        cfOption.setMaxWriteBufferNumber(5);
+        if (raftLogStorageOptions.getCfMaxWriteBufferNumber() != 0) {
+            cfOption.setMaxWriteBufferNumber(raftLogStorageOptions.getCfMaxWriteBufferNumber());
+        }
+
+        cfOption.setMaxCompactionBytes(512 * 1024 * 1024);
+        if (raftLogStorageOptions.getCfMaxCompactionBytes() != 0) {
+            cfOption.setMaxCompactionBytes(raftLogStorageOptions.getCfMaxCompactionBytes());
+        }
+
+        cfOption.setWriteBufferSize(1 * 1024 * 1024 * 1024);
+        if (raftLogStorageOptions.getCfWriteBufferSize() != 0) {
+            cfOption.setWriteBufferSize(raftLogStorageOptions.getCfWriteBufferSize());
+        }
+
         this.cfOptions.add(cfOption);
         // Column family to store configuration log entry.
         columnFamilyDescriptors.add(new ColumnFamilyDescriptor("Configuration".getBytes(), cfOption));
@@ -571,9 +664,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 if (this.db == null) {
                     return;
                 }
+                long startMS = System.nanoTime();
                 onTruncatePrefix(startIndex, firstIndexKept);
                 this.db.deleteRange(this.defaultHandle, getKeyBytes(startIndex), getKeyBytes(firstIndexKept));
                 this.db.deleteRange(this.confHandle, getKeyBytes(startIndex), getKeyBytes(firstIndexKept));
+                Long times = doCompactByTimes(this.path);
+                long endMS = System.nanoTime();
+                LOG.info("truncate Prefix: dbPath:{}, startIndex:{}, endIndex:{}, diff:{}, cost:{}, compactFlag:{}",
+                    this.path,
+                    startIndex,
+                    firstIndexKept,
+                    (firstIndexKept - startIndex),
+                    (endMS - startMS) / 1000 / 1000,
+                    times
+                );
             } catch (final RocksDBException | IOException e) {
                 LOG.error("Fail to truncatePrefix {}.", firstIndexKept, e);
             } finally {
@@ -585,14 +689,27 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     @Override
     public boolean truncateSuffix(final long lastIndexKept) {
         this.readLock.lock();
+        Long startMS = System.nanoTime();
         try {
             try {
                 onTruncateSuffix(lastIndexKept);
             } finally {
+                Long lastIndex = getLastLogIndex();
                 this.db.deleteRange(this.defaultHandle, this.writeOptions, getKeyBytes(lastIndexKept + 1),
                     getKeyBytes(getLastLogIndex() + 1));
                 this.db.deleteRange(this.confHandle, this.writeOptions, getKeyBytes(lastIndexKept + 1),
                     getKeyBytes(getLastLogIndex() + 1));
+
+                Long times = doCompactByTimes(this.path);
+                Long endMS = System.nanoTime();
+                LOG.info("truncate Suffix: dbPath:{}, last startIndex:{}, endIndex:{} diff:{}, cost:{}, compactFlag:{}",
+                    this.path,
+                    lastIndexKept,
+                    lastIndex,
+                    (lastIndex - lastIndexKept),
+                    (endMS - startMS) / 1000 / 1000,
+                    times
+                );
             }
             return true;
         } catch (final RocksDBException | IOException e) {
@@ -601,6 +718,28 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             this.readLock.unlock();
         }
         return false;
+    }
+
+    /**
+     * internal trigger rocksdb compaction.
+     * @param path input db path
+     * @return compactTimes
+     * @throws RocksDBException rockdbException
+     */
+    private Long doCompactByTimes(final String path) throws RocksDBException {
+        Long times = manualCompactMap.get(this.path);
+        if (times != null) {
+            manualCompactMap.put(this.path, ++times);
+        } else {
+            times = 1L;
+            manualCompactMap.put(this.path, times);
+        }
+
+        // todo Huzx
+        /*
+        this.db.compactRange();
+         */
+        return times;
     }
 
     @Override

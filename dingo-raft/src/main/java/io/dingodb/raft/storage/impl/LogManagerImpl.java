@@ -126,7 +126,7 @@ public class LogManagerImpl implements LogManager {
      * Waiter metadata
      * @author boyan (boyan@alibaba-inc.com)
      *
-     * 2018-Apr-04 5:05:04 PM
+     * 2018-Apr-04 5:05:04 PM.
      */
     private static class WaitMeta {
         /** callback when new log come in*/
@@ -172,6 +172,7 @@ public class LogManagerImpl implements LogManager {
             LogStorageOptions lsOpts = new LogStorageOptions();
             lsOpts.setConfigurationManager(this.configManager);
             lsOpts.setLogEntryCodecFactory(opts.getLogEntryCodecFactory());
+            lsOpts.setRaftLogStorageOptions(opts.getRaftLogStorageOptions());
 
             if (!this.logStorage.init(lsOpts)) {
                 LOG.error("Fail to init logStorage");

@@ -23,7 +23,11 @@ import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
 import io.dingodb.raft.storage.LogStorage;
 
-// Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class LogManagerOptions {
     private LogStorage logStorage;
     private ConfigurationManager configurationManager;
@@ -31,62 +35,10 @@ public class LogManagerOptions {
     private int disruptorBufferSize  = 1024;
     private RaftOptions raftOptions;
     private NodeMetrics nodeMetrics;
+    private RaftLogStorageOptions raftLogStorageOptions;
     private LogEntryCodecFactory logEntryCodecFactory = LogEntryV2CodecFactory.getInstance();
 
     public LogEntryCodecFactory getLogEntryCodecFactory() {
         return this.logEntryCodecFactory;
     }
-
-    public void setLogEntryCodecFactory(final LogEntryCodecFactory logEntryCodecFactory) {
-        this.logEntryCodecFactory = logEntryCodecFactory;
-    }
-
-    public NodeMetrics getNodeMetrics() {
-        return this.nodeMetrics;
-    }
-
-    public void setNodeMetrics(final NodeMetrics nodeMetrics) {
-        this.nodeMetrics = nodeMetrics;
-    }
-
-    public RaftOptions getRaftOptions() {
-        return this.raftOptions;
-    }
-
-    public void setRaftOptions(final RaftOptions raftOptions) {
-        this.raftOptions = raftOptions;
-    }
-
-    public int getDisruptorBufferSize() {
-        return this.disruptorBufferSize;
-    }
-
-    public void setDisruptorBufferSize(final int disruptorBufferSize) {
-        this.disruptorBufferSize = disruptorBufferSize;
-    }
-
-    public LogStorage getLogStorage() {
-        return this.logStorage;
-    }
-
-    public void setLogStorage(final LogStorage logStorage) {
-        this.logStorage = logStorage;
-    }
-
-    public ConfigurationManager getConfigurationManager() {
-        return this.configurationManager;
-    }
-
-    public void setConfigurationManager(final ConfigurationManager configurationManager) {
-        this.configurationManager = configurationManager;
-    }
-
-    public FSMCaller getFsmCaller() {
-        return this.fsmCaller;
-    }
-
-    public void setFsmCaller(final FSMCaller fsmCaller) {
-        this.fsmCaller = fsmCaller;
-    }
-
 }

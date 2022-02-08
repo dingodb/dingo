@@ -564,6 +564,7 @@ public class NodeImpl implements Node, RaftServerService {
         opts.setNodeMetrics(this.metrics);
         opts.setDisruptorBufferSize(this.raftOptions.getDisruptorBufferSize());
         opts.setRaftOptions(this.raftOptions);
+        opts.setRaftLogStorageOptions(this.options.getRaftLogStorageOptions());
         return this.logManager.init(opts);
     }
 

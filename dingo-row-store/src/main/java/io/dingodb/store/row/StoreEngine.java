@@ -40,10 +40,7 @@ import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metadata.RegionEpoch;
 import io.dingodb.store.row.metadata.Store;
 import io.dingodb.store.row.metrics.KVMetrics;
-import io.dingodb.store.row.options.MemoryDBOptions;
-import io.dingodb.store.row.options.RegionEngineOptions;
-import io.dingodb.store.row.options.RocksDBOptions;
-import io.dingodb.store.row.options.StoreEngineOptions;
+import io.dingodb.store.row.options.*;
 import io.dingodb.store.row.rpc.ExtSerializerSupports;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.storage.BatchRawKVStore;
@@ -65,7 +62,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -517,13 +516,17 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             rOpts.setRaftGroupId(JRaftHelper.getJRaftGroupId(this.pdClient.getClusterName(), newRegionId));
             rOpts.setRaftDataPath(null);
 
-            String baseRaftDataPath = this.storeOpts.getRaftDataPath();
-            if (Strings.isBlank(baseRaftDataPath)) {
-                baseRaftDataPath = "";
+            String baseRaftDataPath = "";
+            if (this.storeOpts.getStoreDBOptions() != null) {
+                baseRaftDataPath = this.storeOpts.getRaftStoreOptions().getDataPath();
             }
-            String raftDataPath = JRaftHelper.getRaftDataPath(baseRaftDataPath, region.getId(),
+            String raftDataPath = JRaftHelper.getRaftDataPath(
+                baseRaftDataPath,
+                region.getId(),
                 getSelfEndpoint().getPort());
             rOpts.setRaftDataPath(raftDataPath);
+            rOpts.setRaftStoreOptions(this.storeOpts.getRaftStoreOptions());
+
             final RegionEngine engine = new RegionEngine(region, this);
             if (!engine.init(rOpts)) {
                 LOG.error("Fail to init [RegionEngine: {}].", region);
@@ -545,6 +548,26 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
 
             // update local regionRouteTable
             this.pdClient.getRegionRouteTable().splitRegion(pRegion.getId(), region);
+
+            /**
+             * when Region is split, then the cluster info should be update.
+             * 1. using the split region to replace the old region
+             * 2. insert the split new region
+             * 3. call the pdClient to notify the placement driver.
+             */
+            // todo Huzx
+            /*
+            {
+                Store localStore = this.pdClient.getCurrentStore();
+                List<Region> regionList = new ArrayList<>();
+                for (Map.Entry<Long, RegionEngine> entry : this.regionEngineTable.entrySet()) {
+                    regionList.add(entry.getValue().getRegion().copy());
+                }
+                localStore.setRegions(regionList);
+                this.pdClient.refreshStore(localStore);
+            }
+             */
+
         } finally {
             this.splitting.set(false);
         }
@@ -598,12 +621,13 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
     }
 
     private boolean initRocksDB(final StoreEngineOptions opts) {
-        RocksDBOptions rocksOpts = opts.getRocksDBOptions();
+        StoreDBOptions rocksOpts = opts.getStoreDBOptions();
         if (rocksOpts == null) {
-            rocksOpts = new RocksDBOptions();
-            opts.setRocksDBOptions(rocksOpts);
+            rocksOpts = new StoreDBOptions();
+            opts.setStoreDBOptions(rocksOpts);
         }
-        String dbPath = rocksOpts.getDbPath();
+
+        String dbPath = rocksOpts.getDataPath();
         if (Strings.isNotBlank(dbPath)) {
             try {
                 FileUtils.forceMkdir(new File(dbPath));
@@ -614,9 +638,9 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         } else {
             dbPath = "";
         }
-        final String childPath = "db_" + this.storeId + "_" + opts.getServerAddress().getPort();
-        rocksOpts.setDbPath(Paths.get(dbPath, childPath).toString());
-        this.dbPath = new File(rocksOpts.getDbPath());
+        final String dbDataPath = JRaftHelper.getDBDataPath(dbPath, this.storeId, opts.getServerAddress().getPort());
+        rocksOpts.setDataPath(dbDataPath);
+        this.dbPath = new File(rocksOpts.getDataPath());
         final RocksRawKVStore rocksRawKVStore = new RocksRawKVStore();
         if (!rocksRawKVStore.init(rocksOpts)) {
             LOG.error("Fail to init [RocksRawKVStore].");
@@ -644,8 +668,10 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
     private boolean initAllRegionEngine(final StoreEngineOptions opts, final Store store) {
         Requires.requireNonNull(opts, "opts");
         Requires.requireNonNull(store, "store");
-        String baseRaftDataPath = opts.getRaftDataPath();
-        if (Strings.isNotBlank(baseRaftDataPath)) {
+        Requires.requireNonNull(opts.getRaftStoreOptions(), "raftDBOptions is Null");
+
+        String baseRaftDataPath = opts.getRaftStoreOptions().getDataPath();
+        if (baseRaftDataPath != null && Strings.isNotBlank(baseRaftDataPath)) {
             try {
                 FileUtils.forceMkdir(new File(baseRaftDataPath));
             } catch (final Throwable t) {
@@ -653,7 +679,10 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
                 return false;
             }
         } else {
-            baseRaftDataPath = "";
+            LOG.error("Init Region found region raft path is empty. store:{}, raftStoreOpt:{}",
+                store.getId(),
+                opts.getRaftStoreOptions());
+            return false;
         }
         final Endpoint serverAddress = opts.getServerAddress();
         final List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
@@ -666,7 +695,9 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             }
             final Region region = regionList.get(i);
             if (Strings.isBlank(rOpts.getRaftDataPath())) {
-                final String raftDataPath = JRaftHelper.getRaftDataPath(baseRaftDataPath, region.getId(),
+                final String raftDataPath = JRaftHelper.getRaftDataPath(
+                    baseRaftDataPath,
+                    region.getId(),
                     serverAddress.getPort());
                 rOpts.setRaftDataPath(raftDataPath);
             }
@@ -685,7 +716,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
     }
 
     public boolean startRegionEngine(Region region, RegionEngineOptions options) {
-        options.setRaftDataPath(Paths.get(this.storeOpts.getRaftDataPath(), storeId, region.getId()).toString());
+        options.setRaftDataPath(Paths.get(this.storeOpts.getStoreDBOptions().getDataPath(), storeId, region.getId()).toString());
         Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
         final RegionEngine engine = new RegionEngine(region, this);
         if (engine.init(options)) {

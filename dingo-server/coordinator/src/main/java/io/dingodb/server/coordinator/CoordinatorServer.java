@@ -40,7 +40,7 @@ import io.dingodb.server.coordinator.service.impl.CoordinatorLeaderFollowerServi
 import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.server.coordinator.store.AsyncKeyValueStore;
 import io.dingodb.server.coordinator.store.RaftAsyncKeyValueStore;
-import io.dingodb.store.row.options.RocksDBOptions;
+import io.dingodb.store.row.options.StoreDBOptions;
 import io.dingodb.store.row.storage.RawKVStore;
 import io.dingodb.store.row.storage.RocksRawKVStore;
 import io.dingodb.store.row.util.Strings;
@@ -171,17 +171,17 @@ public class CoordinatorServer {
 
         String dbPath = Paths.get(configuration.dataDir(), COORDINATOR, "db").toString();
 
-        RocksDBOptions opts = configuration.getAndConvert(
+        StoreDBOptions opts = configuration.getAndConvert(
             "cluster.coordinator.rocks",
-            RocksDBOptions.class,
-            RocksDBOptions::new
+            StoreDBOptions.class,
+            StoreDBOptions::new
         );
-        opts.setDbPath(dbPath);
+        opts.setDataPath(dbPath);
 
         try {
-            FileUtils.forceMkdir(new File(opts.getDbPath()));
+            FileUtils.forceMkdir(new File(opts.getDataPath()));
         } catch (final Throwable t) {
-            throw new RuntimeException("Fail to make dir for dbPath: " + opts.getDbPath());
+            throw new RuntimeException("Fail to make dir for dbPath: " + opts.getDataPath());
         }
 
         RocksRawKVStore rocksRawKVStore = new RocksRawKVStore();
