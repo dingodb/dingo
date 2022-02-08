@@ -97,10 +97,6 @@ public class FSMCallerImpl implements FSMCaller {
 
     /**
      * Apply task for disruptor.
-     *
-     * @author boyan (boyan@alibaba-inc.com)
-     *
-     * 2018-Apr-03 11:12:35 AM
      */
     private static class ApplyTask {
         TaskType type;
@@ -225,12 +221,19 @@ public class FSMCallerImpl implements FSMCaller {
             LOG.warn("FSMCaller is stopped, can not apply new task.");
             return false;
         }
+
+        // publish Event(if the queue is full, this operation will block)
+        this.taskQueue.publishEvent(tpl);
+        return true;
+
+        /*
         if (!this.taskQueue.tryPublishEvent(tpl)) {
             setError(new RaftException(EnumOutter.ErrorType.ERROR_TYPE_STATE_MACHINE, new Status(RaftError.EBUSY,
                 "FSMCaller is overload.")));
             return false;
         }
         return true;
+         */
     }
 
     @Override
