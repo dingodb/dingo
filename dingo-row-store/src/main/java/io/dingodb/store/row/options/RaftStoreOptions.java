@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.raft.option;
+package io.dingodb.store.row.options;
 
-import io.dingodb.raft.conf.ConfigurationManager;
-import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
+import io.dingodb.raft.option.RaftLogStorageOptions;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class LogStorageOptions {
-    private ConfigurationManager configurationManager;
-    private LogEntryCodecFactory logEntryCodecFactory;
+public class RaftStoreOptions {
+    private String                dataPath;
     private RaftLogStorageOptions raftLogStorageOptions;
+
+    @Override
+    public String toString() {
+        return "RaftDBOptions{" + "dataPath='" + dataPath + '\'' + ", raftLogStorageOptions=" + raftLogStorageOptions
+            + '}';
+    }
 }

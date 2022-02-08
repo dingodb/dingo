@@ -43,9 +43,4 @@ public class CoordinatorLeaderService extends AbstractStateService {
         rpcServer.shutdown();
     }
 
-
-
-
-
-
 }

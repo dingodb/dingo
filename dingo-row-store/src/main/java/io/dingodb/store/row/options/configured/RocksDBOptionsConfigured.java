@@ -16,15 +16,14 @@
 
 package io.dingodb.store.row.options.configured;
 
-import io.dingodb.store.row.options.RocksDBOptions;
+import io.dingodb.store.row.options.StoreDBOptions;
 import io.dingodb.store.row.util.Configured;
 
-// Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public final class RocksDBOptionsConfigured implements Configured<RocksDBOptions> {
-    private final RocksDBOptions opts;
+public final class RocksDBOptionsConfigured implements Configured<StoreDBOptions> {
+    private final StoreDBOptions opts;
 
     public static RocksDBOptionsConfigured newConfigured() {
-        return new RocksDBOptionsConfigured(new RocksDBOptions());
+        return new RocksDBOptionsConfigured(new StoreDBOptions());
     }
 
     public RocksDBOptionsConfigured withSync(final boolean sync) {
@@ -48,16 +47,16 @@ public final class RocksDBOptionsConfigured implements Configured<RocksDBOptions
     }
 
     public RocksDBOptionsConfigured withDbPath(final String dbPath) {
-        this.opts.setDbPath(dbPath);
+        this.opts.setDataPath(dbPath);
         return this;
     }
 
     @Override
-    public RocksDBOptions config() {
+    public StoreDBOptions config() {
         return this.opts;
     }
 
-    private RocksDBOptionsConfigured(RocksDBOptions opts) {
+    private RocksDBOptionsConfigured(StoreDBOptions opts) {
         this.opts = opts;
     }
 }

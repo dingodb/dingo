@@ -24,6 +24,7 @@ import io.dingodb.raft.Status;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Describer;
 import io.dingodb.raft.util.Endpoint;
@@ -36,6 +37,7 @@ import io.dingodb.store.row.client.pd.RegionHeartbeatSender;
 import io.dingodb.store.row.client.pd.RemotePlacementDriverClient;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.options.HeartbeatOptions;
+import io.dingodb.store.row.options.RaftStoreOptions;
 import io.dingodb.store.row.options.RegionEngineOptions;
 import io.dingodb.store.row.storage.KVStoreStateMachine;
 import io.dingodb.store.row.storage.MetricsRawKVStore;
@@ -123,8 +125,17 @@ public class RegionEngine implements Lifecycle<RegionEngineOptions>, Describer, 
             final Path snapshotUri = Paths.get(raftDataPath, "snapshot");
             nodeOpts.setSnapshotUri(snapshotUri.toString());
         }
-        LOG.info("[RegionEngine: {}], log uri: {}, raft meta uri: {}, snapshot uri: {}.", this.region,
-            nodeOpts.getLogUri(), nodeOpts.getRaftMetaUri(), nodeOpts.getSnapshotUri());
+
+        String storeOptionStr = "Null";
+        RaftStoreOptions raftStoreOptions = opts.getRaftStoreOptions();
+        if (raftStoreOptions != null) {
+            RaftLogStorageOptions raftLogStorageOptions = raftStoreOptions.getRaftLogStorageOptions();
+            nodeOpts.setRaftLogStorageOptions(raftLogStorageOptions);
+            storeOptionStr = raftStoreOptions.toString();
+        }
+
+        LOG.info("[RegionEngine: {}], log uri: {}, raft meta uri: {}, snapshot uri: {}. raftDBOptions:{}", this.region,
+            nodeOpts.getLogUri(), nodeOpts.getRaftMetaUri(), nodeOpts.getSnapshotUri(), storeOptionStr);
         final Endpoint serverAddress = opts.getServerAddress();
         final PeerId serverId = new PeerId(serverAddress, 0);
         final RpcServer rpcServer = this.storeEngine.getRpcServer();

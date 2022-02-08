@@ -28,7 +28,7 @@ import com.codahale.metrics.Timer;
 import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metadata.Region;
-import io.dingodb.store.row.options.RocksDBOptions;
+import io.dingodb.store.row.options.StoreDBOptions;
 import io.dingodb.store.row.rocks.support.RocksStatisticsCollector;
 import io.dingodb.store.row.serialization.Serializer;
 import io.dingodb.store.row.serialization.Serializers;
@@ -88,7 +88,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
-public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements Describer {
+public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements Describer {
     private static final Logger LOG = LoggerFactory.getLogger(RocksRawKVStore.class);
 
     static {
@@ -115,14 +115,14 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
 
     private RocksDB db;
 
-    private RocksDBOptions opts;
+    private StoreDBOptions opts;
     private DBOptions options;
     private WriteOptions writeOptions;
     private DebugStatistics statistics;
     private RocksStatisticsCollector statisticsCollector;
 
     @Override
-    public boolean init(final RocksDBOptions opts) {
+    public boolean init(final StoreDBOptions opts) {
         final Lock writeLock = this.readWriteLock.writeLock();
         writeLock.lock();
         try {
@@ -163,7 +163,7 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
             LOG.info("[RocksRawKVStore] start successfully, options: {}.", opts);
             return true;
         } catch (final Exception e) {
-            LOG.error("Fail to open rocksDB at path {}, {}.", opts.getDbPath(), StackTraceUtil.stackTrace(e));
+            LOG.error("Fail to open rocksDB at path {}, {}.", opts.getDataPath(), StackTraceUtil.stackTrace(e));
         } finally {
             writeLock.unlock();
         }
@@ -570,7 +570,10 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public void compareAndPut(final byte[] key, final byte[] expect, final byte[] update, final KVStoreClosure closure) {
+    public void compareAndPut(final byte[] key,
+                              final byte[] expect,
+                              final byte[] update,
+                              final KVStoreClosure closure) {
         final Timer.Context timeCtx = getTimeContext("COMPARE_PUT");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -685,9 +688,11 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                     for (final KVState kvState : segment) {
                         setSuccess(kvState.getDone(), Boolean.TRUE);
                     }
-                } catch (final Exception e) {
-                    LOG.error("Failed to [BATCH_MERGE], [size = {}] {}.", segment.size(), StackTraceUtil.stackTrace(e));
-                    setCriticalError(Lists.transform(kvStates, KVState::getDone), "Fail to [BATCH_MERGE]", e);
+                } catch (final Exception exp) {
+                    LOG.error("Failed to [BATCH_MERGE], [size = {}] {}.",
+                        segment.size(),
+                        StackTraceUtil.stackTrace(exp));
+                    setCriticalError(Lists.transform(kvStates, KVState::getDone), "Fail to [BATCH_MERGE]", exp);
                 }
                 return null;
             });
@@ -975,9 +980,12 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
             } while (false);
 
             setSuccess(closure, owner);
-        } catch (final Exception e) {
-            LOG.error("Fail to [TRY_LOCK], [{}, {}], {}.", BytesUtil.toHex(key), acquirer, StackTraceUtil.stackTrace(e));
-            setCriticalError(closure, "Fail to [TRY_LOCK]", e);
+        } catch (final Exception exception) {
+            LOG.error("Fail to [TRY_LOCK], [{}, {}], {}.",
+                BytesUtil.toHex(key),
+                acquirer,
+                StackTraceUtil.stackTrace(exception));
+            setCriticalError(closure, "Fail to [TRY_LOCK]", exception);
         } finally {
             readLock.unlock();
             timeCtx.stop();
@@ -985,7 +993,9 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public void releaseLockWith(final byte[] key, final DistributedLock.Acquirer acquirer, final KVStoreClosure closure) {
+    public void releaseLockWith(final byte[] key,
+                                final DistributedLock.Acquirer acquirer,
+                                final KVStoreClosure closure) {
         final Timer.Context timeCtx = getTimeContext("RELEASE_LOCK");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -1449,7 +1459,7 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         try (final BackupableDBOptions backupOpts = createBackupDBOptions(backupDBPath);
                 final BackupEngine backupEngine = BackupEngine.open(this.options.getEnv(), backupOpts);
                 final RestoreOptions restoreOpts = new RestoreOptions(false)) {
-            final String dbPath = this.opts.getDbPath();
+            final String dbPath = this.opts.getDataPath();
             backupEngine.restoreDbFromBackup(rocksBackupInfo.getBackupId(), dbPath, dbPath, restoreOpts);
             LOG.info("Restored rocksDB from {} with {}.", backupDBPath, rocksBackupInfo);
             // reopen the db
@@ -1497,7 +1507,7 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                 return;
             }
             closeRocksDB();
-            final String dbPath = this.opts.getDbPath();
+            final String dbPath = this.opts.getDataPath();
             final File dbFile = new File(dbPath);
             FileUtils.deleteDirectory(dbFile);
             if (!snapshotFile.renameTo(dbFile)) {
@@ -1591,10 +1601,10 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         }
     }
 
-    private void openRocksDB(final RocksDBOptions opts) throws RocksDBException {
+    private void openRocksDB(final StoreDBOptions opts) throws RocksDBException {
         final List<ColumnFamilyHandle> cfHandles = Lists.newArrayList();
         this.databaseVersion.incrementAndGet();
-        this.db = RocksDB.open(this.options, opts.getDbPath(), this.cfDescriptors, cfHandles);
+        this.db = RocksDB.open(this.options, opts.getDataPath(), this.cfDescriptors, cfHandles);
         this.defaultHandle = cfHandles.get(0);
         this.sequenceHandle = cfHandles.get(1);
         this.lockingHandle = cfHandles.get(2);
@@ -1608,14 +1618,14 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         }
     }
 
-    private void destroyRocksDB(final RocksDBOptions opts) throws RocksDBException {
+    private void destroyRocksDB(final StoreDBOptions opts) throws RocksDBException {
         // The major difference with directly deleting the DB directory manually is that
         // DestroyDB() will take care of the case where the RocksDB database is stored
         // in multiple directories. For instance, a single DB can be configured to store
         // its data in multiple directories by specifying different paths to
         // DBOptions::db_paths, DBOptions::db_log_dir, and DBOptions::wal_dir.
         try (final Options opt = new Options()) {
-            RocksDB.destroyDB(opts.getDbPath(), opt);
+            RocksDB.destroyDB(opts.getDataPath(), opt);
         }
     }
 

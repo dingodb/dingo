@@ -24,7 +24,7 @@ import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;
 import io.dingodb.store.row.options.DingoRowStoreOptions;
 import io.dingodb.store.row.options.PlacementDriverOptions;
 import io.dingodb.store.row.options.RegionEngineOptions;
-import io.dingodb.store.row.options.RocksDBOptions;
+import io.dingodb.store.row.options.StoreDBOptions;
 import io.dingodb.store.row.options.StoreEngineOptions;
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,10 +94,9 @@ public class RowStoreInstance implements StoreInstance {
         options.setPlacementDriverOptions(driverOptions);
 
         StoreEngineOptions storeEngineOptions = new StoreEngineOptions();
-        RocksDBOptions rocksDBOptions = new RocksDBOptions();
-        rocksDBOptions.setDbPath(configuration.storeEngineOptionsRocksDbOptionsDbPath());
-        storeEngineOptions.setRocksDBOptions(rocksDBOptions);
-        storeEngineOptions.setRaftDataPath(configuration.storeEngineOptionsRaftDataPath());
+        StoreDBOptions storeDBOptions = new StoreDBOptions();
+        storeDBOptions.setDataPath(configuration.storeEngineOptionsRocksDbOptionsDbPath());
+        storeEngineOptions.setStoreDBOptions(storeDBOptions);
         Endpoint endpoint = new Endpoint(configuration.storeEngineOptionsServerAddressId(),
             configuration.storeEngineOptionsServerAddressPort());
         storeEngineOptions.setServerAddress(endpoint);
