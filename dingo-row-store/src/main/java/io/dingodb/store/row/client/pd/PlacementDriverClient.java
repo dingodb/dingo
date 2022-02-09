@@ -90,14 +90,14 @@ public interface PlacementDriverClient extends Lifecycle<PlacementDriverOptions>
     Endpoint getLeader(final String regionId, final boolean forceRefresh, final long timeoutMillis);
 
     /**
-     * Get the specified region random peer communication address,
+     * Get the specified region random peer communication address.
      * format: [ip:port]
      */
     Endpoint getLuckyPeer(final String regionId, final boolean forceRefresh, final long timeoutMillis,
                           final Endpoint unExpect);
 
     /**
-     * Refresh the routing information of the specified region
+     * Refresh the routing information of the specified region.
      */
     void refreshRouteConfiguration(final String regionId);
 
@@ -130,4 +130,11 @@ public interface PlacementDriverClient extends Lifecycle<PlacementDriverOptions>
      * Returns the pd rpc service client.
      */
     PlacementDriverRpcService getPdRpcService();
+
+    /**
+     * refresh store to pd.
+     * @param store input store
+     */
+    void refreshStore(final Store store);
+
 }

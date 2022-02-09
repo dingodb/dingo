@@ -18,7 +18,10 @@ package io.dingodb.store.row.client.pd;
 
 import io.dingodb.raft.RouteTable;
 import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.raft.util.Endpoint;
+import io.dingodb.store.row.JRaftHelper;
 import io.dingodb.store.row.errors.RouteTableException;
 import io.dingodb.store.row.metadata.Cluster;
 import io.dingodb.store.row.metadata.Region;
@@ -32,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
@@ -39,6 +43,7 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
 
     private String pdGroupId;
     private MetadataRpcClient metadataRpcClient;
+    private Store  localStore;
 
     private boolean started;
 
@@ -101,16 +106,57 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
     @Override
     public Store getStoreMetadata(final StoreEngineOptions opts) {
         final Endpoint selfEndpoint = opts.getServerAddress();
+
+        /**
+         * for debugger.
+         */
+        for (RegionEngineOptions opt : opts.getRegionEngineOptionsList()) {
+            LOG.info("RegionEngineOptions-before: update from local conf. opt:{}", opt.toString());
+        }
+
         // remote conf is the preferred
         final Store remoteStore = this.metadataRpcClient.getStoreInfo(this.clusterId, selfEndpoint);
         if (!remoteStore.isEmpty()) {
             final List<Region> regions = remoteStore.getRegions();
+            Long metricsReportPeriodMs = opts.getMetricsReportPeriod();
+            if (opts.getRegionEngineOptionsList() != null && opts.getRegionEngineOptionsList().size() > 0) {
+                metricsReportPeriodMs = opts.getRegionEngineOptionsList().get(0).getMetricsReportPeriod();
+            }
+            opts.getRegionEngineOptionsList().clear();
             for (final Region region : regions) {
                 super.regionRouteTable.addOrUpdateRegion(region);
+                RegionEngineOptions engineOptions = new RegionEngineOptions();
+                engineOptions.setRegionId(region.getId());
+                engineOptions.setStartKey(BytesUtil.readUtf8(region.getStartKey()));
+                engineOptions.setStartKeyBytes(region.getStartKey());
+                engineOptions.setEndKey(BytesUtil.readUtf8(region.getEndKey()));
+                engineOptions.setEndKeyBytes(region.getEndKey());
+                engineOptions.setNodeOptions(new NodeOptions());
+                engineOptions.setRaftGroupId(JRaftHelper.getJRaftGroupId(this.clusterName, region.getId()));
+                String raftDataPath = JRaftHelper.getRaftDataPath(
+                    opts.getRaftDataPath(),
+                    region.getId(),
+                    opts.getServerAddress().getPort());
+                engineOptions.setRaftDataPath(raftDataPath);
+                engineOptions.setServerAddress(opts.getServerAddress());
+                String initServerList = region
+                    .getPeers()
+                    .stream().map(x -> x.getEndpoint().toString())
+                    .collect(Collectors.joining(","));
+                engineOptions.setInitialServerList(initServerList);
+                engineOptions.setMetricsReportPeriod(metricsReportPeriodMs);
+                opts.getRegionEngineOptionsList().add(engineOptions);
+            }
+
+            /**
+             * for debugger.
+             */
+            for (RegionEngineOptions opt : opts.getRegionEngineOptionsList()) {
+                LOG.info("RegionEngineOptions-After: update from remote PD. opt:{}", opt.toString());
             }
             return remoteStore;
         }
-        // todo remove local conf
+        // local conf
         final Store localStore = new Store();
         final List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
         final List<Region> regionList = Lists.newArrayListWithCapacity(rOptsList.size());
@@ -120,8 +166,27 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
             regionList.add(getLocalRegionMetadata(rOpts));
         }
         localStore.setRegions(regionList);
-        this.metadataRpcClient.updateStoreInfo(this.clusterId, localStore);
+        refreshStore(localStore);
         return localStore;
+    }
+
+    /**
+     * refresh Store to memory.
+     * @param newStore the new Store(such as region Split, the store has been update).
+     */
+    @Override
+    public void refreshStore(Store newStore) {
+        if (this.localStore != null) {
+            LOG.info("check store has update, then refresh it. ClusterId:{} Store in oldStatus:{}, newStatus:{}",
+                this.clusterId, this.localStore.toString(), newStore.toString());
+        }
+
+        if (newStore.equals(this.localStore)) {
+            localStore.setRegions(newStore.getRegions());
+        } else {
+            this.localStore = newStore.copy();
+        }
+        this.metadataRpcClient.updateStoreInfo(this.clusterId, newStore);
     }
 
     @Override

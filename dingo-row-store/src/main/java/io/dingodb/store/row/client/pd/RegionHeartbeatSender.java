@@ -23,6 +23,7 @@ import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.timer.HashedWheelTimer;
 import io.dingodb.raft.util.timer.Timeout;
 import io.dingodb.raft.util.timer.TimerTask;
+import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.RegionEngine;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.client.failover.impl.FailoverClosureImpl;
@@ -193,12 +194,12 @@ public class RegionHeartbeatSender implements Lifecycle<HeartbeatOptions> {
         // Approximate region size
         // TODO very important
         // Approximate number of keys
-        //ApproximateKVStats rangeStats = store().getApproximateKVStatsInRange(
-        //    region.getStartKey(),
-        //    region.getEndKey()
-        //);
-        //stats.setApproximateKeys(rangeStats.getKeysCnt());
-        //stats.setApproximateSize(rangeStats.getSizeInBytes());
+        ApproximateKVStats rangeStats = store().getApproximateKVStatsInRange(
+            region.getStartKey(),
+            region.getEndKey()
+        );
+        stats.setApproximateKeys(rangeStats.getKeysCnt());
+        stats.setApproximateSize(rangeStats.getSizeInBytes());
         // Actually reported time interval
         stats.setInterval(timeInterval);
         if (log.isDebugEnabled()) {
