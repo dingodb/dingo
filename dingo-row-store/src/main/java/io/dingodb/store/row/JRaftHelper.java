@@ -22,6 +22,7 @@ import io.dingodb.raft.util.Requires;
 import io.dingodb.store.row.metadata.Peer;
 import io.dingodb.store.row.util.Lists;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
@@ -69,5 +70,10 @@ public final class JRaftHelper {
             peerList.add(toPeer(peerId));
         }
         return peerList;
+    }
+
+    public static String getRaftDataPath(String baseDataPath, String regionId, int endPointPort) {
+        String childPath = "raft_data_region_" + regionId + "_" + endPointPort;
+        return Paths.get(baseDataPath, childPath).toString();
     }
 }

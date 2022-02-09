@@ -53,11 +53,14 @@ import org.rocksdb.EnvOptions;
 import org.rocksdb.Holder;
 import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;
+import org.rocksdb.Range;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RestoreOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.SizeApproximationFlag;
+import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 import org.rocksdb.SstFileWriter;
 import org.rocksdb.Statistics;
@@ -477,6 +480,26 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
+    public void put(final List<KVEntry> entries, final KVStoreClosure closure) {
+        final Timer.Context timeCtx = getTimeContext("PUT_LIST");
+        final Lock readLock = this.readWriteLock.readLock();
+        readLock.lock();
+        try (final WriteBatch batch = new WriteBatch()) {
+            for (final KVEntry entry : entries) {
+                batch.put(entry.getKey(), entry.getValue());
+            }
+            this.db.write(this.writeOptions, batch);
+            setSuccess(closure, Boolean.TRUE);
+        } catch (final Exception e) {
+            LOG.error("Failed to [PUT_LIST], [size = {}], {}.", entries.size(), StackTraceUtil.stackTrace(e));
+            setCriticalError(closure, "Fail to [PUT_LIST]", e);
+        } finally {
+            readLock.unlock();
+            timeCtx.stop();
+        }
+    }
+
+    @Override
     public void batchPut(final KVStateOutputList kvStates) {
         if (kvStates.isSingletonList()) {
             final KVState kvState = kvStates.getSingletonElement();
@@ -570,7 +593,8 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public void compareAndPut(final byte[] key, final byte[] expect, final byte[] update, final KVStoreClosure closure) {
+    public void compareAndPut(
+        final byte[] key, final byte[] expect, final byte[] update, final KVStoreClosure closure) {
         final Timer.Context timeCtx = getTimeContext("COMPARE_PUT");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -691,26 +715,6 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                 }
                 return null;
             });
-        } finally {
-            readLock.unlock();
-            timeCtx.stop();
-        }
-    }
-
-    @Override
-    public void put(final List<KVEntry> entries, final KVStoreClosure closure) {
-        final Timer.Context timeCtx = getTimeContext("PUT_LIST");
-        final Lock readLock = this.readWriteLock.readLock();
-        readLock.lock();
-        try (final WriteBatch batch = new WriteBatch()) {
-            for (final KVEntry entry : entries) {
-                batch.put(entry.getKey(), entry.getValue());
-            }
-            this.db.write(this.writeOptions, batch);
-            setSuccess(closure, Boolean.TRUE);
-        } catch (final Exception e) {
-            LOG.error("Failed to [PUT_LIST], [size = {}], {}.", entries.size(), StackTraceUtil.stackTrace(e));
-            setCriticalError(closure, "Fail to [PUT_LIST]", e);
         } finally {
             readLock.unlock();
             timeCtx.stop();
@@ -972,11 +976,15 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                     // set failure
                     .success(false).build();
                 LOG.debug("Another locker [{}] is trying the existed lock [{}].", acquirer, prevOwner);
-            } while (false);
+            }
+            while (false);
 
             setSuccess(closure, owner);
         } catch (final Exception e) {
-            LOG.error("Fail to [TRY_LOCK], [{}, {}], {}.", BytesUtil.toHex(key), acquirer, StackTraceUtil.stackTrace(e));
+            LOG.error("Fail to [TRY_LOCK], [{}, {}], {}.",
+                BytesUtil.toHex(key),
+                acquirer,
+                StackTraceUtil.stackTrace(e));
             setCriticalError(closure, "Fail to [TRY_LOCK]", e);
         } finally {
             readLock.unlock();
@@ -985,7 +993,8 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public void releaseLockWith(final byte[] key, final DistributedLock.Acquirer acquirer, final KVStoreClosure closure) {
+    public void releaseLockWith(
+        final byte[] key, final DistributedLock.Acquirer acquirer, final KVStoreClosure closure) {
         final Timer.Context timeCtx = getTimeContext("RELEASE_LOCK");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -1051,7 +1060,8 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                     // set failure
                     .success(false).build();
                 LOG.warn("The lock owner is: [{}], [{}] could't release it.", prevOwner, acquirer);
-            } while (false);
+            }
+            while (false);
 
             setSuccess(closure, owner);
         } catch (final Exception e) {
@@ -1101,6 +1111,26 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         } catch (final Exception e) {
             LOG.error("Fail to [DELETE], [{}], {}.", BytesUtil.toHex(key), StackTraceUtil.stackTrace(e));
             setCriticalError(closure, "Fail to [DELETE]", e);
+        } finally {
+            readLock.unlock();
+            timeCtx.stop();
+        }
+    }
+
+    @Override
+    public void delete(final List<byte[]> keys, final KVStoreClosure closure) {
+        final Timer.Context timeCtx = getTimeContext("DELETE_LIST");
+        final Lock readLock = this.readWriteLock.readLock();
+        readLock.lock();
+        try (final WriteBatch batch = new WriteBatch()) {
+            for (final byte[] key : keys) {
+                batch.delete(key);
+            }
+            this.db.write(this.writeOptions, batch);
+            setSuccess(closure, Boolean.TRUE);
+        } catch (final Exception e) {
+            LOG.error("Failed to [DELETE_LIST], [size = {}], {}.", keys.size(), StackTraceUtil.stackTrace(e));
+            setCriticalError(closure, "Fail to [DELETE_LIST]", e);
         } finally {
             readLock.unlock();
             timeCtx.stop();
@@ -1159,28 +1189,7 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
     }
 
     @Override
-    public void delete(final List<byte[]> keys, final KVStoreClosure closure) {
-        final Timer.Context timeCtx = getTimeContext("DELETE_LIST");
-        final Lock readLock = this.readWriteLock.readLock();
-        readLock.lock();
-        try (final WriteBatch batch = new WriteBatch()) {
-            for (final byte[] key : keys) {
-                batch.delete(key);
-            }
-            this.db.write(this.writeOptions, batch);
-            setSuccess(closure, Boolean.TRUE);
-        } catch (final Exception e) {
-            LOG.error("Failed to [DELETE_LIST], [size = {}], {}.", keys.size(), StackTraceUtil.stackTrace(e));
-            setCriticalError(closure, "Fail to [DELETE_LIST]", e);
-        } finally {
-            readLock.unlock();
-            timeCtx.stop();
-        }
-    }
-
-    @Override
     public ApproximateKVStats getApproximateKVStatsInRange(final byte[] startKey, final byte[] endKey) {
-        // TODO This is a sad code, the performance is too damn bad
         final Timer.Context timeCtx = getTimeContext("APPROXIMATE_KEYS");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -1190,28 +1199,29 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         try (final ReadOptions readOptions = new ReadOptions()) {
             readOptions.setSnapshot(snapshot);
             try (final RocksIterator it = this.db.newIterator(readOptions)) {
-                if (startKey == null) {
-                    it.seekToFirst();
-                } else {
-                    it.seek(startKey);
+                Slice start = null;
+                Slice limit = null;
+                it.seekToFirst();
+                if (it.isValid()) {
+                    start = new Slice(it.key());
                 }
-                long approximateKeys = 0;
-                for (;;) {
-                    // The accuracy is 100, don't ask more
-                    for (int i = 0; i < 100; i++) {
-                        if (!it.isValid()) {
-                            return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
-                        }
-                        it.next();
-                        ++approximateKeys;
-                        approximateTotalBytes += it.key().length;
-                        approximateTotalBytes += it.value().length;
-                    }
-                    if (endKey != null && BytesUtil.compare(it.key(), endKey) >= 0) {
-                        return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
-                    }
+                it.seekToLast();
+                if (it.isValid()) {
+                    limit = new Slice(it.key());
+                }
+                if (start != null && limit != null) {
+                    approximateTotalBytes = Arrays.stream(db.getApproximateSizes(
+                        Collections.singletonList(new Range(start, limit)),
+                        SizeApproximationFlag.INCLUDE_FILES,
+                        SizeApproximationFlag.INCLUDE_MEMTABLES
+                    )).sum();
                 }
             }
+            long longProperty = db.getLongProperty(defaultHandle, "rocksdb.estimate-num-keys");
+            return new ApproximateKVStats(longProperty, approximateTotalBytes);
+        } catch (RocksDBException e) {
+            e.printStackTrace();
+            return new ApproximateKVStats(1L, 2L);
         } finally {
             // Nothing to release, rocksDB never own the pointer for a snapshot.
             snapshot.close();
@@ -1429,7 +1439,8 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
                 return null;
             }
             // chose the backupInfo who has max backupId
-            final BackupInfo backupInfo = Collections.max(backupInfoList, Comparator.comparingInt(BackupInfo::backupId));
+            final BackupInfo backupInfo =
+                Collections.max(backupInfoList, Comparator.comparingInt(BackupInfo::backupId));
             final RocksDBBackupInfo rocksBackupInfo = new RocksDBBackupInfo(backupInfo);
             LOG.info("Backup rocksDB into {} with backupInfo {}.", backupDBPath, rocksBackupInfo);
             return rocksBackupInfo;
@@ -1513,7 +1524,8 @@ public class RocksRawKVStore extends BatchRawKVStore<RocksDBOptions> implements 
         }
     }
 
-    CompletableFuture<Void> writeSstSnapshot(final String snapshotPath, final Region region, final ExecutorService executor) {
+    CompletableFuture<Void> writeSstSnapshot(
+        final String snapshotPath, final Region region, final ExecutorService executor) {
         final Timer.Context timeCtx = getTimeContext("WRITE_SST_SNAPSHOT");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();

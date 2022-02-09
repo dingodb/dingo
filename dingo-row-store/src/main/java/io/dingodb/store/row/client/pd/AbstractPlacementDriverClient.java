@@ -16,18 +16,6 @@
 
 package io.dingodb.store.row.client.pd;
 
-import io.dingodb.store.row.JRaftHelper;
-import io.dingodb.store.row.client.RegionRouteTable;
-import io.dingodb.store.row.client.RoundRobinLoadBalancer;
-import io.dingodb.store.row.errors.RouteTableException;
-import io.dingodb.store.row.metadata.Peer;
-import io.dingodb.store.row.metadata.Region;
-import io.dingodb.store.row.metadata.RegionEpoch;
-import io.dingodb.store.row.options.PlacementDriverOptions;
-import io.dingodb.store.row.options.RegionEngineOptions;
-import io.dingodb.store.row.options.RegionRouteTableOptions;
-import io.dingodb.store.row.options.RpcOptions;
-import io.dingodb.store.row.options.configured.RpcOptionsConfigured;
 import io.dingodb.raft.CliService;
 import io.dingodb.raft.RaftServiceFactory;
 import io.dingodb.raft.RouteTable;
@@ -42,6 +30,19 @@ import io.dingodb.raft.rpc.impl.AbstractClientService;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.internal.ThrowUtil;
+import io.dingodb.store.row.JRaftHelper;
+import io.dingodb.store.row.client.RegionRouteTable;
+import io.dingodb.store.row.client.RoundRobinLoadBalancer;
+import io.dingodb.store.row.errors.RouteTableException;
+import io.dingodb.store.row.metadata.Peer;
+import io.dingodb.store.row.metadata.Region;
+import io.dingodb.store.row.metadata.RegionEpoch;
+import io.dingodb.store.row.metadata.Store;
+import io.dingodb.store.row.options.PlacementDriverOptions;
+import io.dingodb.store.row.options.RegionEngineOptions;
+import io.dingodb.store.row.options.RegionRouteTableOptions;
+import io.dingodb.store.row.options.RpcOptions;
+import io.dingodb.store.row.options.configured.RpcOptionsConfigured;
 import io.dingodb.store.row.storage.CASEntry;
 import io.dingodb.store.row.storage.KVEntry;
 import io.dingodb.store.row.util.StackTraceUtil;
@@ -142,7 +143,9 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
     }
 
     @Override
-    public Map<Region, List<KVEntry>> findRegionsByKvEntries(final List<KVEntry> kvEntries, final boolean forceRefresh) {
+    public Map<Region, List<KVEntry>> findRegionsByKvEntries(
+        final List<KVEntry> kvEntries,
+        final boolean forceRefresh) {
         if (forceRefresh) {
             refreshRouteTable();
         }
@@ -243,7 +246,10 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
         return leader.getEndpoint();
     }
 
-    protected PeerId getLeaderForRaftGroupId(final String raftGroupId, final boolean forceRefresh, final long timeoutMillis) {
+    protected PeerId getLeaderForRaftGroupId(
+        final String raftGroupId,
+        final boolean forceRefresh,
+        final long timeoutMillis) {
         final RouteTable routeTable = RouteTable.getInstance();
         if (forceRefresh) {
             final long deadline = System.currentTimeMillis() + timeoutMillis;
@@ -426,6 +432,12 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
         this.cliClientService = ((CliServiceImpl) this.cliService).getCliClientService();
         Requires.requireNonNull(this.cliClientService, "cliClientService");
         this.rpcClient = ((AbstractClientService) this.cliClientService).getRpcClient();
+    }
+
+    @Override
+    public void refreshStore(Store store) {
+        LOG.info("check store has update, then refresh it. ClusterId:{} store in newStatus:{}", this.clusterId,
+            store.toString());
     }
 
     protected abstract void refreshRouteTable();
