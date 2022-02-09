@@ -30,6 +30,7 @@ import io.dingodb.server.coordinator.meta.ScheduleMetaAdaptor;
 import io.dingodb.server.coordinator.meta.TableMetaAdaptor;
 import io.dingodb.server.coordinator.resource.impl.ExecutorView;
 import io.dingodb.server.coordinator.store.AsyncKeyValueStore;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -40,7 +41,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class TableMetaAdaptorImpl implements TableMetaAdaptor {
+@Slf4j
+public class TableMetaAdaptorImpl extends AbstractMetaAdaptor implements TableMetaAdaptor {
 
     private static final String DATA_DIR = DingoConfiguration.instance().dataDir();
 
@@ -78,10 +80,7 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
     }
 
     private <T> CompletableFuture<Map<String, T>> getAll(byte[] prefix, Function<byte[], T> deserializer) {
-        byte[] end = new byte[prefix.length];
-        System.arraycopy(prefix, 0, end, 0, prefix.length);
-        end[end.length - 1]++;
-        return store.scan(prefix, end)
+        return store.scan(prefix)
             .thenApplyAsync(entries ->
                 entries.stream().collect(Collectors.toMap(
                     e -> GeneralId.decode(e.getKey()).name(),
@@ -141,6 +140,7 @@ public class TableMetaAdaptorImpl implements TableMetaAdaptor {
                 result.put(BytesUtil.nullToEmpty(regionApp.startKey()), locationGroup);
             }
         }
+        log.info(result.toString());
         return result;
     }
 

@@ -17,14 +17,12 @@
 package io.dingodb.server.coordinator.service.impl;
 
 import io.dingodb.net.NetService;
-import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
 import io.dingodb.server.coordinator.service.AbstractStateService;
 
 public class CoordinatorFollowerService extends AbstractStateService {
 
     private final NetService netService;
-    private RpcServer rpcServer;
 
     public CoordinatorFollowerService(CoordinatorContext context) {
         super(context);
@@ -33,9 +31,11 @@ public class CoordinatorFollowerService extends AbstractStateService {
 
     @Override
     public void start() {
+        super.start();
     }
 
     @Override
     public void stop() {
+        super.stop();
     }
 }

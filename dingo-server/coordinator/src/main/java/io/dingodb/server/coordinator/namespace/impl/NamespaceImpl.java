@@ -30,8 +30,8 @@ public class NamespaceImpl implements Namespace {
     private final String namespace;
     private Map<GeneralId, App<?, ?>> apps = new HashMap<>();
 
-    public synchronized void updateApp(App<?, ?> app) {
-        apps.put(app.appId(), app);
+    public synchronized <A extends App<A, ?>> A updateApp(App<?, ?> app) {
+        return (A) apps.put(app.appId(), app);
     }
 
     @Override

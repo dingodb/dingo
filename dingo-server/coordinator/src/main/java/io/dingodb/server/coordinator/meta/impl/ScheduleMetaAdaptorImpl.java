@@ -16,7 +16,6 @@
 
 package io.dingodb.server.coordinator.meta.impl;
 
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.NoBreakFunctionWrapper;
 import io.dingodb.common.util.Optional;
 import io.dingodb.raft.util.BytesUtil;
@@ -36,35 +35,26 @@ import io.dingodb.store.row.serialization.Serializers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.dingodb.expr.json.runtime.Parser.JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
+public class ScheduleMetaAdaptorImpl extends AbstractMetaAdaptor implements ScheduleMetaAdaptor {
 
     public static final String META = "meta";
 
     public static final String SEQ = "seq";
     public static final String ANY = "*";
 
-    public static final byte[] APPS_KEY = GeneralId.appOf(0L, ANY).toString().getBytes(UTF_8);
-    public static final byte[] APPS_VIEW_KEY = GeneralId.appViewOf(0L, ANY).toString().getBytes(UTF_8);
-    public static final byte[] RESOURCES_KEY = GeneralId.resourceViewOf(0L, ANY).toString().getBytes(UTF_8);
-
     public static final byte[] APP_SEQ_KEY = GeneralId.appOf(0L, SEQ).toString().getBytes(UTF_8);
     public static final byte[] RESOURCE_SEQ_KEY = GeneralId.resourceViewOf(0L, SEQ).toString().getBytes(UTF_8);
-
-    public static final String APP_VIEW = "app.view";
-    public static final String RESOURCE_VIEW = "resource.view";
 
     private final AsyncKeyValueStore store;
     private Serializer serializer = Serializers.getDefault();
@@ -80,23 +70,15 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
 
     @Override
     public void init() {
-        List<GeneralId> apps = apps();
-        apps.stream()
-            .map(this::regionApp)
-            .filter(Objects::nonNull)
-            .forEach(namespace::updateApp);
-        apps.stream()
-            .map(GeneralId::seqNo)
-            .map(GeneralIdHelper::regionView)
-            .map(this::regionView)
-            .filter(Objects::nonNull)
-            .forEach(namespaceView::updateAppView);
-        namespaceView.appViews().values().forEach(v -> namespace.getApp(v.viewId()));
-        resourceViews().stream()
-            .map(this::executorView)
-            .filter(Objects::nonNull)
-            .peek(executorView -> executorView.addAllApp(apps))
-            .forEach(namespaceView::updateResourceView);
+        scanAllRegionApp()
+            .whenCompleteAsync((apps, e) -> apps.forEach(namespace::updateApp))
+            .whenCompleteAsync((apps, e) -> apps.stream()
+                .map(RegionApp::view)
+                .map(this::regionView)
+                .filter(Objects::nonNull)
+                .forEach(namespaceView::updateAppView));
+        scanAllExecutorView()
+            .whenCompleteAsync((executorViews, e) -> executorViews.forEach(namespaceView::updateResourceView));
     }
 
     @Override
@@ -117,7 +99,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
             .filter(id -> GeneralIdHelper.storeName(endpoint).equals(id.name()))
             .findAny()
             .orElseGet(() -> GeneralIdHelper.store(newResourceSeq().join(), endpoint));
-        log.debug("Get store id by endpoint, endpoint: [{}], store id: [{}]", endpoint, generalId);
+        if (log.isDebugEnabled()) {
+            log.debug("Get store id by endpoint, endpoint: [{}], store id: [{}]", endpoint, generalId);
+        }
         return generalId;
     }
 
@@ -129,7 +113,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
                     .map(bytes -> serializer.readObject(bytes, ExecutorView.class))
                     .orNull())
                 .orNull();
-            log.debug("Get executor view by id, id: [{}], view: {}", id, view);
+            if (log.isDebugEnabled()) {
+                log.debug("Get executor view by id, id: [{}], view: {}", id, view);
+            }
             return view;
         } catch (Exception e) {
             log.error("Get executor view error, id: [{}]", id, e);
@@ -151,7 +137,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
                     .map(bytes -> serializer.readObject(bytes, RegionApp.class))
                     .orNull())
                 .orNull();
-            log.debug("Get region app by id, id: [{}], region app: {}", id, regionApp);
+            if (log.isDebugEnabled()) {
+                log.debug("Get region app by id, id: [{}], region app: {}", id, regionApp);
+            }
             return regionApp;
         } catch (Exception e) {
             log.error("Get region app by id, id: [{}]", id, e);
@@ -168,7 +156,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
                     .ifPresent(view -> view.app(GeneralIdHelper.region(id.seqNo())))
                     .orNull())
                 .orNull();
-            log.debug("Get region app by id, id: [{}], region view: {}", id, regionView);
+            if (log.isDebugEnabled()) {
+                log.debug("Get region app by id, id: [{}], region view: {}", id, regionView);
+            }
             return regionView;
         } catch (Exception e) {
             log.error("Get region view by id, id: [{}]", id, e);
@@ -178,7 +168,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
 
     @Override
     public void updateRegionView(RegionApp regionApp, RegionView regionView) {
-        log.debug("Update region view for region app and region view, app: {}, view: {}", regionApp, regionView);
+        if (log.isDebugEnabled()) {
+            log.debug("Update region view for region app and region view, app: {}, view: {}", regionApp, regionView);
+        }
         updateRegionApp(regionApp);
 
         Optional.<RegionView>ofNullable(namespaceView.getAppView(regionApp.appId()))
@@ -220,7 +212,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
 
     @Override
     public void updateExecutorView(ExecutorView executorView) {
-        log.debug("Update executor view, view: {}", executorView);
+        if (log.isDebugEnabled()) {
+            log.debug("Update executor view, view: {}", executorView);
+        }
         Optional.ofNullable(namespaceView.<ExecutorView>getResourceView(executorView.resourceId()))
             .ifAbsent(() -> saveExecutorView(executorView))
             .ifPresent(v -> v.stats(executorView.stats()))
@@ -231,7 +225,9 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
     private ExecutorView newExecutorView(GeneralId id, Endpoint endpoint) {
         ExecutorView view = new ExecutorView(id, endpoint);
         updateExecutorView(view);
-        log.debug("Create executor view for id and endpoint, id: [{}], endpoint: [{}]", id, endpoint);
+        if (log.isDebugEnabled()) {
+            log.debug("Create executor view for id and endpoint, id: [{}], endpoint: [{}]", id, endpoint);
+        }
         return view;
     }
 
@@ -245,100 +241,53 @@ public class ScheduleMetaAdaptorImpl implements ScheduleMetaAdaptor {
         return store.increment(APP_SEQ_KEY);
     }
 
-    private AtomicLong getSeq(byte[] key) throws Exception {
-        byte[] bytes = store.get(key).get();
-        if (bytes == null) {
-            return new AtomicLong(0);
+    private RegionApp saveRegion(RegionApp app) {
+        if (log.isDebugEnabled()) {
+            log.debug("Save region app, app: {}", app);
         }
-        return new AtomicLong(PrimitiveCodec.readVarLong(bytes));
+        save(app, RegionApp::appId);
+        return namespace.updateApp(app);
     }
 
-    private CompletableFuture<RegionApp> saveRegion(RegionApp app) {
-        log.debug("Save region app, app: {}", app);
-        CompletableFuture<RegionApp> future = new CompletableFuture<>();
-        byte[] idKey = app.appId().toString().getBytes(UTF_8);
-        store.getAndPut(idKey, serializer.writeObject(app))
-            .whenComplete((r, e) -> {
-                if (e == null) {
-                    if (r == null) {
-                        store.merge(APPS_KEY, idKey).whenComplete((r1, e1) -> {
-                            if (e1 == null) {
-                                future.complete(null);
-                            } else {
-                                future.completeExceptionally(e1);
-                            }
-                        });
-                    } else {
-                        future.complete(serializer.readObject(r, RegionApp.class));
-                    }
-                    namespace.updateApp(app);
-                } else {
-                    future.completeExceptionally(e);
-                }
-            });
-        return future;
-    }
-
-    private byte[] saveRegionView(RegionView appView) {
-        log.debug("Save region view, view: {}", appView);
-        byte[] idKey = appView.viewId().toString().getBytes(UTF_8);
-        CompletableFuture<byte[]> future = store.getAndPut(idKey, serializer.writeObject(appView));
-        future.thenAccept(r -> namespaceView.updateAppView(appView));
-        return future.join();
-    }
-
-    private CompletableFuture<ExecutorView> saveExecutorView(ExecutorView executorView) {
-        log.debug("Save region executor view, view: {}", executorView);
-        CompletableFuture<ExecutorView> future = new CompletableFuture<>();
-        byte[] idKey = executorView.resourceId().toString().getBytes(UTF_8);
-        store.getAndPut(idKey, serializer.writeObject(executorView))
-            .whenComplete((r, e) -> {
-                if (e == null) {
-                    if (r == null) {
-                        store.merge(RESOURCES_KEY, idKey).whenComplete((r1, e1) -> {
-                            if (e1 == null) {
-                                future.complete(null);
-                            } else {
-                                future.completeExceptionally(e1);
-                            }
-                        });
-                    } else {
-                        future.complete(serializer.readObject(r, ExecutorView.class));
-                    }
-                    namespaceView.updateResourceView(executorView);
-                } else {
-                    future.completeExceptionally(e);
-                }
-            });
-        return future;
-    }
-
-    private List<GeneralId> apps() {
-        try {
-            byte[] bytes = store.get(APPS_KEY).get();
-            if (bytes == null) {
-                return Collections.emptyList();
-            }
-            return Arrays.stream(BytesUtil.readUtf8(bytes).split(","))
-                .map(GeneralId::fromStr)
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private RegionView saveRegionView(RegionView appView) {
+        if (log.isDebugEnabled()) {
+            log.debug("Save region view, view: {}", appView);
         }
+        save(appView, RegionView::viewId);
+        return namespaceView.updateAppView(appView);
     }
 
-    private List<GeneralId> resourceViews() {
-        try {
-            byte[] bytes = store.get(RESOURCES_KEY).get();
-            if (bytes == null) {
-                return Collections.emptyList();
-            }
-            return Arrays.stream(BytesUtil.readUtf8(bytes).split(","))
-                .map(GeneralId::fromStr)
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private ExecutorView saveExecutorView(ExecutorView executorView) {
+        if (log.isDebugEnabled()) {
+            log.debug("Save region executor view, view: {}", executorView);
         }
+        save(executorView, ExecutorView::resourceId);
+        return namespaceView.updateResourceView(executorView);
+    }
+
+    private <T> void save(T target, Function<T, GeneralId> getId) {
+        byte[] idKey = getId.apply(target).encode();
+        store.put(idKey, serializer.writeObject(target)).join();
+    }
+
+    private CompletableFuture<List<RegionApp>> scanAllRegionApp() {
+        byte[] prefix = GeneralIdHelper.regionPrefix();
+        System.out.println(BytesUtil.readUtf8(prefix));
+        return store.scan(prefix)
+            .thenApplyAsync(entries ->
+                entries.stream()
+                    .map(e -> serializer.readObject(e.getValue(), RegionApp.class))
+                    .collect(Collectors.toList()));
+    }
+
+    private CompletableFuture<List<ExecutorView>> scanAllExecutorView() {
+        byte[] prefix = GeneralIdHelper.executorViewPrefix();
+        System.out.println(BytesUtil.readUtf8(prefix));
+        return store.scan(prefix)
+            .thenApplyAsync(entries ->
+                entries.stream()
+                    .map(e -> serializer.readObject(e.getValue(), ExecutorView.class))
+                    .collect(Collectors.toList()));
     }
 
     public <T> T get(GeneralId id, Class<T> cls) {

@@ -23,6 +23,7 @@ import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.SimpleMessage;
+import io.dingodb.net.netty.packet.message.EmptyMessage;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Iterator;
 import io.dingodb.raft.Status;
@@ -45,7 +46,6 @@ import io.dingodb.server.coordinator.handler.GetLocationHandler.GetLocationReque
 import io.dingodb.server.coordinator.handler.GetLocationHandler.GetLocationResponse;
 import io.dingodb.server.coordinator.handler.GetStoreIdHandler;
 import io.dingodb.server.coordinator.handler.GetStoreInfoHandler;
-import io.dingodb.server.coordinator.handler.MetaServiceHandler;
 import io.dingodb.server.coordinator.handler.RegionHeartbeatHandler;
 import io.dingodb.server.coordinator.handler.SetStoreHandler;
 import io.dingodb.server.coordinator.handler.StoreHeartbeatHandler;
@@ -75,15 +75,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeZigZagInt;
-import static io.dingodb.common.error.CommonError.EXEC;
-import static io.dingodb.common.error.CommonError.EXEC_INTERRUPT;
 import static io.dingodb.raft.rpc.RaftRpcServerFactory.createRaftRpcServer;
-import static io.dingodb.server.protocol.ServerError.IO;
 import static io.dingodb.server.protocol.ServerError.UNSUPPORTED_CODE;
-import static io.dingodb.server.protocol.Tags.META_SERVICE;
 import static io.dingodb.server.protocol.code.BaseCode.PONG;
 import static io.dingodb.store.row.metrics.KVMetricNames.STATE_MACHINE_APPLY_QPS;
 import static io.dingodb.store.row.metrics.KVMetricNames.STATE_MACHINE_BATCH_WRITE;
@@ -95,6 +91,7 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
     private final Serializer serializer = Serializers.getDefault();
 
     private final CoordinatorContext context;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     private StateService stateService;
 
@@ -105,7 +102,6 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
     private final RocksRawKVStore rawKVStore;
     private CoordinatorStateSnapshot storeSnapshotFile;
 
-    private final Set<Channel> clients = new CopyOnWriteArraySet<>();
     private final Set<Channel> leaderListener = new CopyOnWriteArraySet<>();
 
     private RpcClient rpcClient;
@@ -245,6 +241,9 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
         }
         stateService = context.serviceProvider().followerService(context);
         stateService.start();
+        context.scheduleMetaAdaptor().disable();
+        context.tableMetaAdaptor().disable();
+        context.rowStoreMetaAdaptor().disable();
         onStartSuccess();
     }
 
@@ -252,6 +251,10 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
     public void onStopFollowing(final LeaderChangeContext ctx) {
         super.onStopFollowing(ctx);
         stateService.stop();
+        context.scheduleMetaAdaptor().disable();
+        context.tableMetaAdaptor().disable();
+        context.rowStoreMetaAdaptor().disable();
+        onStopSuccess();
     }
 
     @Override
@@ -261,11 +264,11 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
         stateService = context.serviceProvider().leaderService(context);
         stateService.start();
         leaderListener.forEach(channel -> channel.send(SimpleMessage.EMPTY));
+        context.scheduleMetaAdaptor().init();
+        context.tableMetaAdaptor().init();
+        context.rowStoreMetaAdaptor().init();
+        context.metaService().init(context.tableMetaAdaptor());
         onStartSuccess();
-        context.netService().registerMessageListenerProvider(
-            META_SERVICE,
-            new MetaServiceHandler(context.metaService())
-        );
     }
 
     @Override
@@ -273,24 +276,34 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
         super.onLeaderStop(status);
         this.leaderTerm.set(-1L);
         stateService.stop();
+        context.scheduleMetaAdaptor().disable();
+        context.tableMetaAdaptor().disable();
+        context.rowStoreMetaAdaptor().disable();
+        onStopSuccess();
     }
 
     public void onStartSuccess() {
-        rpcClient = ((AbstractClientService) ((NodeImpl) context.node()).getRpcService()).getRpcClient();
-        context.scheduleMetaAdaptor().init();
-        context.tableMetaAdaptor().init();
-        context.rowStoreMetaAdaptor().init();
-        context.metaService().init(context.tableMetaAdaptor());
+        if (started.compareAndSet(false, true)) {
+            rpcClient = ((AbstractClientService) ((NodeImpl) context.node()).getRpcService()).getRpcClient();
+            try {
+                context.netService().listenPort(context.configuration().port());
+            } catch (Exception e) {
+                log.error("Listen server port [{}] error.", context.configuration().instancePort(), e);
+                throw new RuntimeException();
+            }
+        }
+    }
+
+    public void onStopSuccess() {
         try {
-            context.netService().listenPort(context.configuration().port());
+            context.netService().cancelPort(context.configuration().port());
         } catch (Exception e) {
-            log.error("Listen server port [{}] error.", context.configuration().instancePort(), e);
+            log.error("Cancel server port [{}] error.", context.configuration().instancePort(), e);
             throw new RuntimeException();
         }
     }
 
     private void onMessage(Message message, Channel channel) {
-        clients.add(channel);
         ByteBuffer buffer = ByteBuffer.wrap(message.toBytes());
         Code code = Code.valueOf(PrimitiveCodec.readZigZagInt(buffer));
         if (code instanceof RaftServiceCode) {
@@ -338,13 +351,16 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
             channel.send(new SimpleMessage(null, baos.toByteArray()));
         } catch (IOException e) {
             log.error("Serialize leader location error", e);
-            channel.send(IO.message());
+            channel.send(EmptyMessage.INSTANCE);
         } catch (RemotingException e) {
             log.error("Get peer location error", e);
-            channel.send(SimpleMessage.builder().content(encodeZigZagInt(EXEC.getCode())).build());
+            channel.send(EmptyMessage.INSTANCE);
         } catch (InterruptedException e) {
             log.error("Get all location interrupt.", e);
-            channel.send(SimpleMessage.builder().content(encodeZigZagInt(EXEC_INTERRUPT.getCode())).build());
+            channel.send(EmptyMessage.INSTANCE);
+        } catch (Exception e) {
+            log.error("Get leader location error.", e);
+            channel.send(EmptyMessage.INSTANCE);
         }
     }
 
@@ -358,13 +374,16 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
             channel.send(SimpleMessage.builder().content(encodeHostPort(res.getHost(), res.getPort())).build());
         } catch (IOException e) {
             log.error("Serialize location error", e);
-            channel.send(IO.message());
+            channel.send(EmptyMessage.INSTANCE);
         } catch (RemotingException e) {
             log.error("Get leader peer location error", e);
-            channel.send(SimpleMessage.builder().content(encodeZigZagInt(EXEC.getCode())).build());
+            channel.send(EmptyMessage.INSTANCE);
         } catch (InterruptedException e) {
             log.error("Get leader location interrupt.", e);
-            channel.send(SimpleMessage.builder().content(encodeZigZagInt(EXEC_INTERRUPT.getCode())).build());
+            channel.send(EmptyMessage.INSTANCE);
+        } catch (Exception e) {
+            log.error("Get leader location error.", e);
+            channel.send(EmptyMessage.INSTANCE);
         }
     }
 
@@ -384,14 +403,15 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
     private RpcServer initRpcServer() {
         ExtSerializerSupports.init();
         RpcServer rpcServer = createRaftRpcServer(context.endpoint(), raftExecutor(), cliExecutor());
+        rpcServer.registerProcessor(new GetLocationHandler());
         rpcServer.registerProcessor(new GetClusterInfoHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new GetStoreInfoHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new GetStoreIdHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new RegionHeartbeatHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new SetStoreHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new StoreHeartbeatHandler(context.rowStoreMetaAdaptor()));
-        rpcServer.registerProcessor(new GetLocationHandler());
         log.info("Start coordinator raft rpc server, result: {}.", rpcServer.init(null));
+        context.rpcServer(rpcServer);
         return rpcServer;
     }
 

@@ -86,7 +86,7 @@ public class NettyServer implements PortListener {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         eventLoopGroup.shutdownGracefully();
     }
 

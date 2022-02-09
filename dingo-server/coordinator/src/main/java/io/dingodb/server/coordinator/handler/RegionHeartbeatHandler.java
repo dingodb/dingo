@@ -29,6 +29,7 @@ import io.dingodb.server.coordinator.meta.ClusterStatsManager;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.store.row.cmd.pd.RegionHeartbeatRequest;
 import io.dingodb.store.row.cmd.pd.RegionHeartbeatResponse;
+import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.metadata.Instruction;
 import io.dingodb.store.row.metadata.Peer;
 import io.dingodb.store.row.metadata.Region;
@@ -65,13 +66,17 @@ public class RegionHeartbeatHandler implements MessageListener, RpcProcessor<Reg
     @Override
     public void handleRequest(RpcContext rpcCtx, RegionHeartbeatRequest request) {
         RegionHeartbeatResponse response = new RegionHeartbeatResponse();
-        response.setValue(new ArrayList<>());
-        rowStoreMetaAdaptor.saveRegionHeartbeat(request.getRegion(), request.getRegionStats());
-        if (autoBalanceSplit) {
-            Optional.ofNullable(balance(request.getRegion(), request.getRegionStats()))
-                .ifAbsentSet(() -> split(request))
-                .ifPresent(response.getValue()::add);
+        if (rowStoreMetaAdaptor.available()) {
+            response.setValue(new ArrayList<>());
+            rowStoreMetaAdaptor.saveRegionHeartbeat(request.getRegion(), request.getRegionStats());
+            if (autoBalanceSplit) {
+                Optional.ofNullable(balance(request.getRegion(), request.getRegionStats()))
+                    .ifAbsentSet(() -> split(request))
+                    .ifPresent(response.getValue()::add);
 
+            }
+        } else {
+            response.setError(Errors.NOT_LEADER);
         }
         rpcCtx.sendResponse(response);
     }
@@ -205,7 +210,7 @@ public class RegionHeartbeatHandler implements MessageListener, RpcProcessor<Reg
             return null;
         }
 
-        final String newRegionId = rowStoreMetaAdaptor.newRegionId();
+        final String newRegionId = rowStoreMetaAdaptor.newRegionId().seqNo().toString();
         final Instruction.RangeSplit rangeSplit = new Instruction.RangeSplit();
         rangeSplit.setNewRegionId(newRegionId);
         final Instruction instruction = new Instruction();

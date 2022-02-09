@@ -24,6 +24,7 @@ import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.store.row.cmd.pd.StoreHeartbeatRequest;
 import io.dingodb.store.row.cmd.pd.StoreHeartbeatResponse;
+import io.dingodb.store.row.errors.Errors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -43,8 +44,13 @@ public class StoreHeartbeatHandler implements MessageListener, RpcProcessor<Stor
 
     @Override
     public void handleRequest(RpcContext rpcCtx, StoreHeartbeatRequest request) {
-        rowStoreMetaAdaptor.saveStoreStats(request.getStats());
-        rpcCtx.sendResponse(new StoreHeartbeatResponse());
+        StoreHeartbeatResponse response = new StoreHeartbeatResponse();
+        if (rowStoreMetaAdaptor.available()) {
+            rowStoreMetaAdaptor.saveStoreStats(request.getStats());
+        } else {
+            response.setError(Errors.NOT_LEADER);
+        }
+        rpcCtx.sendResponse(response);
     }
 
     @Override

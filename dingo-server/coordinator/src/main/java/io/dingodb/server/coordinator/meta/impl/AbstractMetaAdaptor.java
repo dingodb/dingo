@@ -14,29 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.coordinator.service.impl;
+package io.dingodb.server.coordinator.meta.impl;
 
-import io.dingodb.net.NetService;
-import io.dingodb.server.coordinator.context.CoordinatorContext;
-import io.dingodb.server.coordinator.service.AbstractStateService;
+import io.dingodb.server.coordinator.meta.MetaAdaptor;
 
-public class CoordinatorLearnerService extends AbstractStateService {
+public abstract class AbstractMetaAdaptor implements MetaAdaptor {
 
-    private final NetService netService;
+    protected boolean available;
 
-    public CoordinatorLearnerService(CoordinatorContext context) {
-        super(context);
-        this.netService = context.netService();
+    @Override
+    public void enable() {
+        available = true;
     }
 
     @Override
-    public void start() {
-        super.start();
+    public void disable() {
+        available = false;
     }
 
     @Override
-    public void stop() {
-        super.stop();
+    public boolean available() {
+        return available;
     }
-
 }

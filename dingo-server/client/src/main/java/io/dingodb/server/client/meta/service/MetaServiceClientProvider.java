@@ -17,15 +17,10 @@
 package io.dingodb.server.client.meta.service;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
-import io.dingodb.net.NetAddress;
 import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @AutoService(MetaServiceProvider.class)
 public class MetaServiceClientProvider implements MetaServiceProvider {

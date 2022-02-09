@@ -29,7 +29,7 @@
     <appender name="ALL_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_HOME}/${LOG_FILE}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/${LOG_FILE}.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/${LOG_FILE}.%d{yyyy-MM-dd}.%i</fileNamePattern>
             <maxHistory>7</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>20MB</maxFileSize>
@@ -42,9 +42,9 @@
     </appender>
 
     <appender name="ERROR_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_HOME}/${LOG_FILE}</file>
+        <file>${LOG_HOME}/${ERROR_LOG_FILE}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/${LOG_FILE}.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/${ERROR_LOG_FILE}.%d{yyyy-MM-dd}.%i</fileNamePattern>
             <maxHistory>7</maxHistory>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>20MB</maxFileSize>
