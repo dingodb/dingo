@@ -16,8 +16,6 @@
 
 package io.dingodb.net.netty.listener;
 
-import io.dingodb.net.netty.connection.Connection;
-
 public interface PortListener extends AutoCloseable {
 
     /**

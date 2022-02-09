@@ -24,7 +24,6 @@ import io.dingodb.net.Message;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.Connector;
 import io.dingodb.server.protocol.Tags;
 import io.dingodb.server.protocol.code.RaftServiceCode;
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,12 +65,19 @@ public class CoordinatorConnector implements Connector {
 
     public CoordinatorConnector(List<NetAddress> coordinatorAddresses) {
         this.coordinatorAddresses.addAll(coordinatorAddresses);
+        refresh();
     }
 
     @Override
     public Channel newChannel() {
-        if (!verify()) {
-            return null;
+        int times = 5;
+        while (!verify() && times-- > 0) {
+            try {
+                Thread.sleep(5000);
+                refresh();
+            } catch (InterruptedException e) {
+                System.err.println("Wait coordinator connector ready interrupt.");
+            }
         }
         return netService.newChannel(leaderChannel.get().remoteAddress());
     }
@@ -116,7 +121,13 @@ public class CoordinatorConnector implements Connector {
     }
 
     private void connectLeader(Message message, Channel channel) {
-        ByteBuffer buffer = ByteBuffer.wrap(message.toBytes());
+        byte[] bytes = message.toBytes();
+        if (bytes == null || bytes.length == 0) {
+            closeChannel(channel);
+            initChannels();
+            return;
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
         String host = PrimitiveCodec.readString(buffer);
         Integer port = PrimitiveCodec.readVarInt(buffer);
         NetAddress leaderAddress = new NetAddress(host, port);
@@ -134,6 +145,10 @@ public class CoordinatorConnector implements Connector {
             log.info("Connect coordinator leader success, remote: [{}]", newLeaderChannel.remoteAddress());
         } catch (Exception e) {
             log.error("Open coordinator leader channel error, address: {}", leaderAddress, e);
+            refresh.set(false);
+            if (!verify()) {
+                refresh();
+            }
         } finally {
             closeChannel(channel);
         }
@@ -151,8 +166,7 @@ public class CoordinatorConnector implements Connector {
         connected(null, channel);
         byte[] buf = message.toBytes();
         if (buf.length == 0) {
-            log.warn("Cluster msg is empty, maybe the leader changed, then refresh.");
-            refresh();
+            channel.send(GET_ALL_LOCATION.message());
             return;
         }
         ByteArrayInputStream bais = new ByteArrayInputStream(buf);
@@ -200,7 +214,6 @@ public class CoordinatorConnector implements Connector {
         if (this.leaderChannel.compareAndSet(channel, null)) {
             lastUpdateLeaderTime = System.currentTimeMillis();
             log.info("Coordinator leader channel closed, remote: [{}], then refresh", channel.remoteAddress());
-            refresh();
         }
     }
 

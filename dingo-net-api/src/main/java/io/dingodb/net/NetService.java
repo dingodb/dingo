@@ -43,4 +43,6 @@ public interface NetService extends AutoCloseable {
      * @param port listen port
      */
     void listenPort(int port) throws Exception;
+
+    void cancelPort(int port) throws Exception;
 }

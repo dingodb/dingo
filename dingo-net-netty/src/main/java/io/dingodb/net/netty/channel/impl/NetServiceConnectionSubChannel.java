@@ -184,12 +184,11 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
         }
         NetServiceConnectionSubChannel that = (NetServiceConnectionSubChannel) other;
         return Objects.equals(channelId, that.channelId)
-            && Objects.equals(targetChannelId, that.targetChannelId)
             && Objects.equals(remoteAddress, that.remoteAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(channelId, targetChannelId, remoteAddress);
+        return Objects.hash(channelId, remoteAddress);
     }
 }

@@ -17,16 +17,17 @@
 package io.dingodb.server.coordinator.service.impl;
 
 import io.dingodb.net.NetService;
-import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
+import io.dingodb.server.coordinator.handler.MetaServiceHandler;
 import io.dingodb.server.coordinator.service.AbstractStateService;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.dingodb.server.protocol.Tags.META_SERVICE;
 
 @Slf4j
 public class CoordinatorLeaderService extends AbstractStateService {
 
     private final NetService netService;
-    private RpcServer rpcServer;
 
     public CoordinatorLeaderService(CoordinatorContext context) {
         super(context);
@@ -35,17 +36,20 @@ public class CoordinatorLeaderService extends AbstractStateService {
 
     @Override
     public void start() {
-        //initRpcServer();
+        super.start();
+        netService.registerMessageListenerProvider(
+            META_SERVICE,
+            new MetaServiceHandler(context.metaService())
+        );
     }
 
     @Override
     public void stop() {
-        rpcServer.shutdown();
+        super.stop();
+        netService.unregisterMessageListenerProvider(
+            META_SERVICE,
+            new MetaServiceHandler(context.metaService())
+        );
     }
-
-
-
-
-
 
 }

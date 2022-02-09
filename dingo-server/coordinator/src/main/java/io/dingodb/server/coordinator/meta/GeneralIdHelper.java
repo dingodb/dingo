@@ -36,8 +36,20 @@ public class GeneralIdHelper {
         return GeneralId.appOf(Long.parseLong(regionId), DEFAULT_REGION_NAME);
     }
 
+    public static byte[] regionPrefix() {
+        return GeneralId.appPrefix(DEFAULT_REGION_NAME);
+    }
+
     public static GeneralId regionView(final long regionId) {
         return GeneralId.appViewOf(regionId, DEFAULT_REGION_VIEW_NAME);
+    }
+
+    public static byte[] regionViewPrefix() {
+        return GeneralId.appViewPrefix(DEFAULT_REGION_VIEW_NAME);
+    }
+
+    public static byte[] executorViewPrefix() {
+        return GeneralId.resourceViewPrefix(DEFAULT_EXECUTOR_NAME);
     }
 
     public static GeneralId store(final Endpoint endpoint) {
@@ -48,8 +60,13 @@ public class GeneralIdHelper {
         return GeneralId.resourceViewOf(storeId, storeName(endpoint));
     }
 
-    public static String storeName(final  Endpoint endpoint) {
+    public static String storeName(final Endpoint endpoint) {
         return DEFAULT_EXECUTOR_NAME + endpoint.toString();
+    }
+
+    public static Endpoint storeEndpoint(GeneralId id) {
+        String[] endpoint = id.name().split("@")[1].split(":");
+        return new Endpoint(endpoint[0], Integer.parseInt(endpoint[1]));
     }
 
 }

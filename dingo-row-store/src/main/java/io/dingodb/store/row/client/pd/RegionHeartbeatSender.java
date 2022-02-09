@@ -16,13 +16,13 @@
 
 package io.dingodb.store.row.client.pd;
 
+import com.codahale.metrics.Counter;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.timer.HashedWheelTimer;
 import io.dingodb.raft.util.timer.Timeout;
 import io.dingodb.raft.util.timer.TimerTask;
-import com.codahale.metrics.Counter;
 import io.dingodb.store.row.RegionEngine;
 import io.dingodb.store.row.client.failover.FailoverClosure;
 import io.dingodb.store.row.client.failover.impl.FailoverClosureImpl;
@@ -145,7 +145,10 @@ public class RegionHeartbeatSender implements Lifecycle<HeartbeatOptions> {
         FailoverClosure<?> closure = new FailoverClosureImpl<>(
             future,
             retriesLeft,
-            err -> callAsyncWithRpc(future, request, retriesLeft - 1, err)
+            err -> {
+                pdClient.getPdLeader(true, 3000);
+                callAsyncWithRpc(future, request, retriesLeft - 1, err);
+            }
         );
 
         pdClient.getPdRpcService().callPdServerWithRpc(request, closure, lastErr);

@@ -24,6 +24,7 @@ import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.store.row.cmd.pd.GetStoreInfoRequest;
 import io.dingodb.store.row.cmd.pd.GetStoreInfoResponse;
+import io.dingodb.store.row.errors.Errors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -44,9 +45,13 @@ public class GetStoreInfoHandler implements MessageListener, RpcProcessor<GetSto
 
     @Override
     public void handleRequest(RpcContext rpcCtx, GetStoreInfoRequest request) {
+        GetStoreInfoResponse response = new GetStoreInfoResponse();
         try {
-            GetStoreInfoResponse response = new GetStoreInfoResponse();
-            response.setValue(rowStoreMetaAdaptor.storeInfo(request.getEndpoint()));
+            if (rowStoreMetaAdaptor.available()) {
+                response.setValue(rowStoreMetaAdaptor.storeInfo(request.getEndpoint()));
+            } else {
+                response.setError(Errors.NOT_LEADER);
+            }
             rpcCtx.sendResponse(response);
         } catch (Exception e) {
             e.printStackTrace();
