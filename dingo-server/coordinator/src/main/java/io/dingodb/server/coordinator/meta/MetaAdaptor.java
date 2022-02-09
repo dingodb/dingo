@@ -19,7 +19,12 @@ package io.dingodb.server.coordinator.meta;
 public interface MetaAdaptor {
 
     default void init() {
-
+        enable();
     }
 
+    void enable();
+
+    void disable();
+
+    boolean available();
 }

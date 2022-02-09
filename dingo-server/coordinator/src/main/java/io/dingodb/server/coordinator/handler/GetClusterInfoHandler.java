@@ -24,6 +24,7 @@ import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.store.row.cmd.pd.GetClusterInfoRequest;
 import io.dingodb.store.row.cmd.pd.GetClusterInfoResponse;
+import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.metadata.Cluster;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,9 +47,13 @@ public class GetClusterInfoHandler implements MessageListener, RpcProcessor<GetC
     @Override
     public void handleRequest(RpcContext rpcCtx, GetClusterInfoRequest request) {
         GetClusterInfoResponse response = new GetClusterInfoResponse();
-        Cluster cluster = rowStoreMetaAdaptor.cluster();
-        response.setClusterId(cluster.getClusterId());
-        response.setValue(cluster);
+        if (rowStoreMetaAdaptor.available()) {
+            Cluster cluster = rowStoreMetaAdaptor.cluster();
+            response.setClusterId(cluster.getClusterId());
+            response.setValue(cluster);
+        } else {
+            response.setError(Errors.NOT_LEADER);
+        }
         rpcCtx.sendResponse(response);
     }
 

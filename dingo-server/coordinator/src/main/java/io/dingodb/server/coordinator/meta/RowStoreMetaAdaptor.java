@@ -48,6 +48,6 @@ public interface RowStoreMetaAdaptor extends MetaAdaptor {
 
     void saveStoreStats(StoreStats storeStats);
 
-    String newRegionId();
+    GeneralId newRegionId();
 
 }

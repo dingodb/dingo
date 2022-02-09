@@ -219,6 +219,14 @@ public class RaftAsyncKeyValueStore implements AsyncKeyValueStore {
     }
 
     @Override
+    public CompletableFuture<List<KVEntry>> scan(byte[] prefix) {
+        byte[] end = new byte[prefix.length];
+        System.arraycopy(prefix, 0, end, 0, prefix.length);
+        end[end.length - 1]++;
+        return scan(prefix, end);
+    }
+
+    @Override
     public CompletableFuture<byte[]> getAndPut(byte[] key, byte[] value) {
         String stack = watchWithStack ? StackTraces.stack(2) : null;
         CompletableFuture<byte[]> future = doKVOp(closure -> raftRawKVStore.getAndPut(key, value, closure));

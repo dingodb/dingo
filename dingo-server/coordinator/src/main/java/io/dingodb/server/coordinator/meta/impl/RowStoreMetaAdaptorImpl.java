@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class RowStoreMetaAdaptorImpl implements RowStoreMetaAdaptor {
+public class RowStoreMetaAdaptorImpl extends AbstractMetaAdaptor implements RowStoreMetaAdaptor {
 
     private final ScheduleMetaAdaptor scheduleMetaAdaptor;
 
@@ -165,8 +165,13 @@ public class RowStoreMetaAdaptorImpl implements RowStoreMetaAdaptor {
     }
 
     @Override
-    public String newRegionId() {
-        return GeneralIdHelper.region(scheduleMetaAdaptor.newAppSeq().join()).toString();
+    public GeneralId newRegionId() {
+        GeneralId newRegionId;
+        do {
+            newRegionId = GeneralIdHelper.region(scheduleMetaAdaptor.newAppSeq().join());
+        }
+        while (scheduleMetaAdaptor.regionApp(newRegionId) != null);
+        return newRegionId;
     }
 
     private void updateLeader(GeneralId regionId, GeneralId storeId) {
@@ -229,8 +234,7 @@ public class RowStoreMetaAdaptorImpl implements RowStoreMetaAdaptor {
 
         RegionView regionView = scheduleMetaAdaptor.regionView(regionApp.view());
         List<Peer> peerIds = regionView.nodeResources().stream()
-            .map(id -> scheduleMetaAdaptor.namespaceView().<ExecutorView>getResourceView(id))
-            .map(v -> new Peer(regionId, v.resourceId().toString(), new Endpoint(v.getHost(), v.getPort())))
+            .map(id -> new Peer(regionId, id.toString(), GeneralIdHelper.storeEndpoint(id)))
             .collect(Collectors.toList());
 
         return new Region(

@@ -16,6 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
+import com.codahale.metrics.Timer;
 import io.dingodb.raft.util.Bits;
 import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.raft.util.DebugStatistics;
@@ -24,7 +25,6 @@ import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.StorageOptionsFactory;
 import io.dingodb.raft.util.SystemPropertyUtil;
 import io.dingodb.raft.util.concurrent.AdjustableSemaphore;
-import com.codahale.metrics.Timer;
 import io.dingodb.store.row.ApproximateKVStats;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metadata.Region;

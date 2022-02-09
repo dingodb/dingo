@@ -66,6 +66,11 @@ public class NettyNetService implements NetService {
         log.info("Start listening {}.", port);
     }
 
+    @Override
+    public void cancelPort(int port) throws Exception {
+        portListeners.remove(port).close();
+    }
+
     private boolean isLocal(InetAddress address) {
         return     address.isLoopbackAddress()
                 || address.isLinkLocalAddress()

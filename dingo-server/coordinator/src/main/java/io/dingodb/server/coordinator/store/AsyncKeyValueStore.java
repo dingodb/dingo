@@ -55,6 +55,8 @@ public interface AsyncKeyValueStore {
 
     CompletableFuture<List<KVEntry>> scan(byte[] start, byte[] end);
 
+    CompletableFuture<List<KVEntry>> scan(byte[] start);
+
     CompletableFuture<byte[]> getAndPut(byte[] key, byte[] value);
 
     CompletableFuture<byte[]> merge(byte[] key, byte[] value);

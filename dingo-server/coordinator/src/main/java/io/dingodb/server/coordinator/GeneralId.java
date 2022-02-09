@@ -88,44 +88,47 @@ public class GeneralId implements Serializable {
         return new GeneralId(parts[0], parts[1], Long.parseLong(parts[2]));
     }
 
+    public static byte[] prefix(String namespace) {
+        return BytesUtil.writeUtf8(new StringJoiner(SEG_DELIMITER).add(namespace).toString());
+    }
+
+    public static byte[] prefix(String namespace, String prefix) {
+        return BytesUtil.writeUtf8(new StringJoiner(SEG_DELIMITER).add(namespace).add(prefix).toString());
+    }
+
     public static byte[] appPrefix() {
-        return BytesUtil.writeUtf8(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(APP).toString());
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(APP).toString());
+    }
+
+    public static byte[] appPrefix(String prefix) {
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(APP).toString(), prefix);
     }
 
     public static byte[] appViewPrefix() {
-        return BytesUtil.writeUtf8(new StringJoiner(DELIMITER)
-            .add(Namespace.DEFAULT)
-            .add(APP)
-            .add(VIEW)
-            .toString()
-        );
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(APP).add(VIEW).toString());
+    }
+
+    public static byte[] appViewPrefix(String prefix) {
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(APP).add(VIEW).toString(), prefix);
     }
 
     public static byte[] resourceViewPrefix() {
-        return BytesUtil.writeUtf8(new StringJoiner(DELIMITER)
-            .add(Namespace.DEFAULT)
-            .add(RESOURCE)
-            .add(VIEW)
-            .toString()
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(RESOURCE).add(VIEW).toString());
+    }
+
+    public static byte[] resourceViewPrefix(String prefix) {
+        return prefix(
+            new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(RESOURCE).add(VIEW).toString(),
+            prefix
         );
     }
 
     public static byte[] tableDefinitionPrefix() {
-        return BytesUtil.writeUtf8(new StringJoiner(DELIMITER)
-            .add(Namespace.DEFAULT)
-            .add(TABLE)
-            .add(DEFINITION)
-            .toString()
-        );
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(TABLE).add(DEFINITION).toString());
     }
 
     public static byte[] tableMetaPrefix() {
-        return BytesUtil.writeUtf8(new StringJoiner(DELIMITER)
-            .add(Namespace.DEFAULT)
-            .add(TABLE)
-            .add(META)
-            .toString()
-        );
+        return prefix(new StringJoiner(DELIMITER).add(Namespace.DEFAULT).add(TABLE).add(META).toString());
     }
 
     public static GeneralId appOf(long seqNo, String name) {

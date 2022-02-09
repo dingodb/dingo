@@ -34,12 +34,12 @@ public class NamespaceViewImpl implements NamespaceView {
     private Map<GeneralId, ExecutorView> resourceViews = new HashMap<>();
     private Map<GeneralId, AppView<?, ?>> appViews = new HashMap<>();
 
-    public synchronized void updateAppView(AppView<?, ?> appView) {
-        appViews.put(appView.viewId(), appView);
+    public synchronized <V extends AppView<V, A>, A extends App<A, V>> V updateAppView(AppView<?, ?> appView) {
+        return (V) appViews.put(appView.viewId(), appView);
     }
 
-    public synchronized void updateResourceView(ExecutorView resourceView) {
-        resourceViews.put(resourceView.resourceId(), resourceView);
+    public synchronized <R extends ResourceView> R updateResourceView(ExecutorView resourceView) {
+        return (R) resourceViews.put(resourceView.resourceId(), resourceView);
     }
 
     @Override

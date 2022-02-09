@@ -17,16 +17,24 @@
 package io.dingodb.server.coordinator.service;
 
 
+import io.dingodb.raft.Node;
+import io.dingodb.raft.core.NodeImpl;
+import io.dingodb.raft.rpc.RpcClient;
+import io.dingodb.raft.rpc.impl.AbstractClientService;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
 
 public abstract class AbstractStateService implements StateService {
 
     protected final CoordinatorContext context;
+    protected final Node node;
+    protected final RpcClient rpcClient;
 
     protected boolean stop = false;
 
     public AbstractStateService(CoordinatorContext coordinatorContext) {
         this.context = coordinatorContext;
+        this.node = context.node();
+        this.rpcClient = ((AbstractClientService) ((NodeImpl) context.node()).getRpcService()).getRpcClient();
     }
 
     @Override
@@ -34,5 +42,13 @@ public abstract class AbstractStateService implements StateService {
         return stop;
     }
 
+    @Override
+    public void start() {
+        stop = false;
+    }
 
+    @Override
+    public void stop() {
+        stop = true;
+    }
 }
