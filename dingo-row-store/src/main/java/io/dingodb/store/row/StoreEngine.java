@@ -16,6 +16,8 @@
 
 package io.dingodb.store.row;
 
+import com.codahale.metrics.ScheduledReporter;
+import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.conf.Configuration;
@@ -31,8 +33,6 @@ import io.dingodb.raft.util.ExecutorServiceHelper;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.ThreadPoolMetricRegistry;
 import io.dingodb.raft.util.Utils;
-import com.codahale.metrics.ScheduledReporter;
-import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.store.row.client.pd.PlacementDriverClient;
 import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;
 import io.dingodb.store.row.errors.Errors;
@@ -521,8 +521,9 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             if (Strings.isBlank(baseRaftDataPath)) {
                 baseRaftDataPath = "";
             }
-            rOpts.setRaftDataPath(baseRaftDataPath + "raft_data_region_" + region.getId() + "_"
-                                  + getSelfEndpoint().getPort());
+            String raftDataPath = JRaftHelper.getRaftDataPath(baseRaftDataPath, region.getId(),
+                getSelfEndpoint().getPort());
+            rOpts.setRaftDataPath(raftDataPath);
             final RegionEngine engine = new RegionEngine(region, this);
             if (!engine.init(rOpts)) {
                 LOG.error("Fail to init [RegionEngine: {}].", region);
@@ -665,8 +666,9 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             }
             final Region region = regionList.get(i);
             if (Strings.isBlank(rOpts.getRaftDataPath())) {
-                final String childPath = "raft_data_region_" + region.getId() + "_" + serverAddress.getPort();
-                rOpts.setRaftDataPath(Paths.get(baseRaftDataPath, childPath).toString());
+                final String raftDataPath = JRaftHelper.getRaftDataPath(baseRaftDataPath, region.getId(),
+                    serverAddress.getPort());
+                rOpts.setRaftDataPath(raftDataPath);
             }
             Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
             final RegionEngine engine = new RegionEngine(region, this);
