@@ -28,19 +28,23 @@ import javax.annotation.Nonnull;
 
 public class RowBlockIterator implements Iterator<KeyValue> {
     private final DingoRowStoreIterator<KVEntry> iterator;
+    private final byte[] keyPrefix;
 
     public RowBlockIterator(@Nonnull DefaultDingoRowStore kvStore, @Nonnull byte[] keyPrefix) {
         int length = keyPrefix.length;
         byte[] keyEnd = Arrays.copyOf(keyPrefix, length);
         ++keyEnd[length - 1];
         iterator = kvStore.iterator(keyPrefix, keyEnd, 1024);
+        this.keyPrefix = keyPrefix;
     }
 
     @Override
     public KeyValue next() {
-        KVEntry kvEntry = ((DefaultDingoRowStoreIterator) iterator).next();
-        byte[] key = kvEntry.getKey();
+        KVEntry kvEntry = iterator.next();
+        int realKeyLen = kvEntry.getKey().length - keyPrefix.length;
+        byte[] key = new byte[realKeyLen];
         byte[] value = kvEntry.getValue();
+        System.arraycopy(kvEntry.getKey(), keyPrefix.length, key, 0,realKeyLen);
         return new KeyValue(key, value);
     }
 
