@@ -34,16 +34,13 @@ import java.util.concurrent.ConcurrentMap;
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class ClusterStatsManager {
 
-    private static final ConcurrentMap<Long, ClusterStatsManager> clusterStatsManagerTable = Maps
-                                                                                               .newConcurrentMap();
+    private static final ConcurrentMap<Long, ClusterStatsManager> clusterStatsManagerTable = Maps.newConcurrentMap();
 
-    private final long                                            clusterId;
+    private final long clusterId;
     // Map<StoreId, Set<RegionId>>
-    private final ConcurrentMap<String, Set<String>>                  leaderTable              = Maps
-                                                                                               .newConcurrentMap();
+    private final ConcurrentMap<String, Set<String>> leaderTable = Maps.newConcurrentMap();
     // Map<RegionId, Pair<Region, RegionStats>>
-    private final ConcurrentMap<String, Pair<Region, RegionStats>>  regionStatsTable         = Maps
-                                                                                               .newConcurrentMap();
+    private final ConcurrentMap<String, Pair<Region, RegionStats>>  regionStatsTable = Maps.newConcurrentMap();
 
     private ClusterStatsManager(long clusterId) {
         this.clusterId = clusterId;
@@ -80,7 +77,7 @@ public final class ClusterStatsManager {
         }
         if (regionTable.add(regionId)) {
             for (final Map.Entry<String, Set<String>> entry : this.leaderTable.entrySet()) {
-                if (storeId == entry.getKey()) {
+                if (storeId.equals(entry.getKey())) {
                     continue;
                 }
                 entry.getValue().remove(regionId);

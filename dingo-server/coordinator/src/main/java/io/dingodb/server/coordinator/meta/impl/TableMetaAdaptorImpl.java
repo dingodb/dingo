@@ -140,7 +140,6 @@ public class TableMetaAdaptorImpl extends AbstractMetaAdaptor implements TableMe
                 result.put(BytesUtil.nullToEmpty(regionApp.startKey()), locationGroup);
             }
         }
-        log.info(result.toString());
         return result;
     }
 
