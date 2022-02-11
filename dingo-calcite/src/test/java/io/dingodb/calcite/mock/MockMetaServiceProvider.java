@@ -25,7 +25,9 @@ import io.dingodb.meta.MetaServiceProvider;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @AutoService(MetaServiceProvider.class)
@@ -43,6 +45,10 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
                 TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
                 TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json"))
             ));
+            when(metaService.getTableKey(anyString())).then(args -> {
+                String tableName = args.getArgument(0);
+                return tableName.getBytes(StandardCharsets.UTF_8);
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 
@@ -30,12 +31,12 @@ import javax.annotation.Nonnull;
 public final class PartInsertOperator extends PartModifyOperator {
     @JsonCreator
     public PartInsertOperator(
-        @JsonProperty("table") String tableName,
+        @JsonProperty("table") TableId tableId,
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") TupleSchema schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
-        super(tableName, partId, schema, keyMapping);
+        super(tableId, partId, schema, keyMapping);
     }
 
     @Override

@@ -25,6 +25,7 @@ dependencies {
     compileOnly project(':dingo-store-api')
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+    implementation project(':dingo-common')
 }
 
 task fatJar(type: Jar) {

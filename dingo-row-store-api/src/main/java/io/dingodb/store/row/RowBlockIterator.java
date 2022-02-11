@@ -22,14 +22,18 @@ import io.dingodb.store.row.client.DefaultDingoRowStoreIterator;
 import io.dingodb.store.row.client.DingoRowStoreIterator;
 import io.dingodb.store.row.storage.KVEntry;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import javax.annotation.Nonnull;
 
 public class RowBlockIterator implements Iterator<KeyValue> {
-    private final DingoRowStoreIterator iterator;
+    private final DingoRowStoreIterator<KVEntry> iterator;
 
-    public RowBlockIterator(@Nonnull DefaultDingoRowStore kvStore) {
-        iterator = kvStore.iterator(new byte[]{0}, new byte[]{Byte.MAX_VALUE}, 1024);
+    public RowBlockIterator(@Nonnull DefaultDingoRowStore kvStore, @Nonnull byte[] keyPrefix) {
+        int length = keyPrefix.length;
+        byte[] keyEnd = Arrays.copyOf(keyPrefix, length);
+        ++keyEnd[length - 1];
+        iterator = kvStore.iterator(keyPrefix, keyEnd, 1024);
     }
 
     @Override
