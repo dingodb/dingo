@@ -20,13 +20,24 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.cli.handler.SqlLineHandler;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.driver.server.ServerMetaFactory;
+import io.dingodb.exec.Services;
+import io.dingodb.net.NetService;
+import io.dingodb.net.NetServiceProvider;
+import org.apache.calcite.avatica.server.AvaticaJsonHandler;
+import org.apache.calcite.avatica.server.HttpServer;
+import org.apache.calcite.avatica.server.Main;
 
 import java.io.FileInputStream;
+import java.net.DatagramSocket;
 import java.util.Map;
+import java.util.ServiceLoader;
 
 import static io.dingodb.expr.json.runtime.Parser.YAML;
 
 public class Tools {
+
+    private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
     @Parameter(names = "--help", help = true, order = 0)
     private boolean help;
@@ -97,6 +108,20 @@ public class Tools {
         switch (cmd.toUpperCase()) {
             case "SQLLINE":
                 SqlLineHandler.handler(new String[0]);
+                break;
+            case "DRIVER":
+                DatagramSocket datagramSocket = new DatagramSocket();
+                netService.listenPort(datagramSocket.getLocalPort());
+                DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
+                datagramSocket.close();
+
+                Services.initNetService();
+                HttpServer server = Main.start(
+                    new String[]{ServerMetaFactory.class.getCanonicalName()},
+                    8765,
+                    AvaticaJsonHandler::new
+                );
+                server.join();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
