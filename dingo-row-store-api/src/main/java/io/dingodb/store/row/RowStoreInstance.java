@@ -16,6 +16,7 @@
 
 package io.dingodb.store.row;
 
+import io.dingodb.common.table.TableId;
 import io.dingodb.raft.option.CliOptions;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.api.StoreInstance;
@@ -28,7 +29,6 @@ import io.dingodb.store.row.options.RocksDBOptions;
 import io.dingodb.store.row.options.StoreEngineOptions;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +36,9 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 public class RowStoreInstance implements StoreInstance {
-    private final String path;
+    private final Map<byte[], RowPartitionOper> blockMap;
 
-    private final Map<String, RowPartitionOper> blockMap;
-
-    private static DefaultDingoRowStore kvStore;
+    private static final DefaultDingoRowStore kvStore;
 
     static {
         kvStore = new DefaultDingoRowStore();
@@ -51,7 +49,6 @@ public class RowStoreInstance implements StoreInstance {
     }
 
     public RowStoreInstance(String path) {
-        this.path = path;
         this.blockMap = new LinkedHashMap<>();
     }
 
@@ -59,19 +56,16 @@ public class RowStoreInstance implements StoreInstance {
         return kvStore;
     }
 
-    @Nonnull
-    public String blockDir(@Nonnull String tableName, @Nonnull Object partId) {
-        return path + File.separator
-            + tableName.replace(".", File.separator).toLowerCase() + File.separator
-            + partId;
-    }
-
     @Override
-    public synchronized RowPartitionOper getKvBlock(String tableName, Object partId, boolean isMain) {
-        String blockDir = blockDir(tableName, partId);
-        return blockMap.computeIfAbsent(blockDir, value -> new RowPartitionOper(path, kvStore));
+    public synchronized RowPartitionOper getKvBlock(@Nonnull TableId tableId, Object partId, boolean isMain) {
+        // `partId` is not used for `DefaultDingoRowStore`.
+        return blockMap.computeIfAbsent(
+            tableId.getValue(),
+            value -> new RowPartitionOper(kvStore, tableId.getValue())
+        );
     }
 
+    @Nonnull
     public static DingoRowStoreOptions getKvStoreOptions() {
         RowStoreConfiguration configuration = RowStoreConfiguration.INSTANCE;
 

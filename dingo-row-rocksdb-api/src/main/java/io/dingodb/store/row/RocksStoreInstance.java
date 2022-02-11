@@ -16,10 +16,12 @@
 
 package io.dingodb.store.row;
 
+import io.dingodb.common.table.TableId;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -43,8 +45,8 @@ public class RocksStoreInstance implements StoreInstance {
     }
 
     @Override
-    public RocksBlock getKvBlock(String tableName, Object partId, boolean isMain) {
-        String blockDir = blockDir(tableName, partId);
+    public RocksBlock getKvBlock(@Nonnull TableId tableId, Object partId, boolean isMain) {
+        String blockDir = blockDir(new String(tableId.getValue(), StandardCharsets.UTF_8), partId);
         return blockMap.computeIfAbsent(blockDir, RocksBlock::new);
     }
 }

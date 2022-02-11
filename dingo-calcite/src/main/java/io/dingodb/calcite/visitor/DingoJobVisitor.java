@@ -30,6 +30,7 @@ import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
@@ -238,12 +239,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final Map<String, Location> partLocations = Services.META.getPartLocations(tableName);
         final TableDefinition td = Services.META.getTableDefinition(tableName);
         final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
+        final TableId tableId = new TableId(Services.META.getTableKey(tableName));
         Map<String, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
         List<Output> outputs = new LinkedList<>();
         for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
             final Object partId = entry.getKey();
             GetByKeysOperator operator = new GetByKeysOperator(
-                tableName,
+                tableId,
                 partId,
                 td.getTupleSchema(),
                 td.getKeyMapping(),
@@ -288,13 +290,14 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         String tableName = getSimpleName(rel.getTable());
         List<Output> outputs = new LinkedList<>();
         TableDefinition td = Services.META.getTableDefinition(tableName);
+        final TableId tableId = new TableId(Services.META.getTableKey(tableName));
         for (Output input : inputs) {
             Task task = input.getTask();
             Operator operator;
             switch (rel.getOperation()) {
                 case INSERT:
                     operator = new PartInsertOperator(
-                        tableName,
+                        tableId,
                         input.getHint().getPartId(),
                         td.getTupleSchema(),
                         td.getKeyMapping()
@@ -302,7 +305,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     break;
                 case UPDATE:
                     operator = new PartUpdateOperator(
-                        tableName,
+                        tableId,
                         input.getHint().getPartId(),
                         td.getTupleSchema(),
                         td.getKeyMapping(),
@@ -314,7 +317,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     break;
                 case DELETE:
                     operator = new PartDeleteOperator(
-                        tableName,
+                        tableId,
                         input.getHint().getPartId(),
                         td.getTupleSchema(),
                         td.getKeyMapping()
@@ -342,6 +345,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         TableDefinition td = Services.META.getTableDefinition(tableName);
         Map<String, Location> parts = Services.META.getPartLocations(tableName);
         List<Output> outputs = new ArrayList<>(parts.size());
+        TableId tableId = new TableId(Services.META.getTableKey(tableName));
         String filterStr = null;
         if (rel.getFilter() != null) {
             filterStr = RexConverter.convert(rel.getFilter()).toString();
@@ -349,7 +353,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         for (Map.Entry<String, Location> entry : parts.entrySet()) {
             final Object partId = entry.getKey();
             PartScanOperator operator = new PartScanOperator(
-                tableName,
+                tableId,
                 entry.getKey(),
                 td.getTupleSchema(),
                 td.getKeyMapping(),
