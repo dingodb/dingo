@@ -1,4 +1,4 @@
-# Deployment
+# Standalone mode
 
 We want your experience getting started with DingoDB to be both low effort and high reward. Here you'll find a collection of quick start guides that contain starter distributions of the DingoDB platform.
 
