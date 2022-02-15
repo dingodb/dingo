@@ -5,9 +5,9 @@ Welcome to DingoDB's documentation!
    :maxdepth: 2
 
    overview
-   quick_start
+   usage/index
    architecture/index
-   deployment
+   deployment/index
    contributing
    release_notes/index
 
