@@ -23,5 +23,5 @@ nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
      -classpath ${JAR_PATH}:${STORE_JAR_PATH}  \
      io.dingodb.server.executor.Starter \
-     --config ${ROOT}/conf/config.yaml \
+     --config ${ROOT}/conf/executor.yaml \
      > ${ROOT}/log/executor.out &

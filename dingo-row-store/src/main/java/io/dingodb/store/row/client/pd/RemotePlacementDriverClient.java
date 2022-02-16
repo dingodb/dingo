@@ -134,7 +134,7 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
                 engineOptions.setNodeOptions(new NodeOptions());
                 engineOptions.setRaftGroupId(JRaftHelper.getJRaftGroupId(this.clusterName, region.getId()));
                 String raftDataPath = JRaftHelper.getRaftDataPath(
-                    opts.getRaftDataPath(),
+                    opts.getRaftStoreOptions().getDataPath(),
                     region.getId(),
                     opts.getServerAddress().getPort());
                 engineOptions.setRaftDataPath(raftDataPath);

@@ -18,13 +18,19 @@ package io.dingodb.server.coordinator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
+import io.dingodb.common.config.ClOptions;
+import io.dingodb.common.config.ClusterOptions;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.ExchangeOptions;
+import io.dingodb.server.coordinator.config.CoordinatorExtOptions;
+import io.dingodb.server.coordinator.config.CoordinatorOptions;
+import io.dingodb.server.coordinator.config.CoordinatorRaftOptions;
+import io.dingodb.server.coordinator.config.CoordinatorSchedule;
+import io.dingodb.store.row.options.StoreDBOptions;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.FileInputStream;
-import java.util.Map;
-
-import static io.dingodb.expr.json.runtime.Parser.YAML;
-
+@Slf4j
 public class Starter {
 
     @Parameter(names = "--help", description = "Print usage.", help = true, order = 0)
@@ -45,10 +51,28 @@ public class Starter {
             commander.usage();
             return;
         }
+        /*
         CoordinatorConfiguration configuration = CoordinatorConfiguration.instance();
         YAML.parse(new FileInputStream(this.config), Map.class).forEach((k, v) -> configuration.set(k.toString(), v));
-        CoordinatorServer server = new CoordinatorServer();
-        server.start();
-    }
+         */
 
+
+        DingoConfiguration.configParse(this.config);
+        CoordinatorOptions svrOpts = DingoConfiguration.instance().getAndConvert("coordinator",
+            CoordinatorOptions.class, CoordinatorOptions::new);
+        log.info("svrOpts: {}", svrOpts);
+
+        ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
+            ClusterOptions.class, ClusterOptions::new);
+        log.info("cluster opts: {}.", clusterOpts);
+
+        DingoOptions.instance().setClusterOpts(clusterOpts);
+        DingoOptions.instance().setIp(svrOpts.getIp());
+        DingoOptions.instance().setExchange(svrOpts.getExchange());
+        DingoOptions.instance().setCliOptions(svrOpts.getOptions().getCliOptions());
+        log.info("dingo options instance: {}.", DingoOptions.instance());
+
+        CoordinatorServer server = new CoordinatorServer();
+        server.start(svrOpts);
+    }
 }

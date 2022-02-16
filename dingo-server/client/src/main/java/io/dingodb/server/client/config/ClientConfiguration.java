@@ -23,6 +23,7 @@ import lombok.experimental.Delegate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class ClientConfiguration {
 
     public static final ClientConfiguration INSTANCE = new ClientConfiguration();
@@ -30,7 +31,7 @@ public class ClientConfiguration {
     public static final String COORDINATOR_SERVERS_KEY = "client.coordinator.servers";
     public static final String EXECUTOR_SERVERS_KEY = "client.executors.servers";
 
-    @Delegate private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
+    @Delegate private final DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
 
     public List<NetAddress> coordinatorServers() {
         List<String> servers = getList(COORDINATOR_SERVERS_KEY);

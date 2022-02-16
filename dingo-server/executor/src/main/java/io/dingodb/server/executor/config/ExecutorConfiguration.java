@@ -19,6 +19,7 @@ package io.dingodb.server.executor.config;
 import io.dingodb.common.config.DingoConfiguration;
 import lombok.experimental.Delegate;
 
+@Deprecated
 public class ExecutorConfiguration {
 
     public static final ExecutorConfiguration INSTANCE = new ExecutorConfiguration();
@@ -27,7 +28,7 @@ public class ExecutorConfiguration {
     private static final String STORE_KEY = "active.store";
 
     @Delegate
-    private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
+    private final DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
 
     private ExecutorConfiguration() {
     }
@@ -45,8 +46,9 @@ public class ExecutorConfiguration {
         return getString(STORE_KEY);
     }
 
+    /*
     public int port() {
         return getInt(EXECUTOR_SERVER_PORT, instancePort());
-    }
+    }*/
 
 }

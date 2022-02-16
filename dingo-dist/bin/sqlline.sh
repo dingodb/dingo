@@ -22,5 +22,5 @@ java ${JAVA_OPTS} \
     -Dlogback.configurationFile=file:${ROOT}/conf/logback-sqlline.xml \
     -classpath ${JAR_PATH} \
     io.dingodb.cli.Tools sqlline \
-    --config ${ROOT}/conf/config.yaml \
-    $@
+    --config ${ROOT}/conf/client.yaml \
+    $@  

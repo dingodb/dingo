@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class RowStoreConfiguration {
 
     public static final RowStoreConfiguration INSTANCE = new RowStoreConfiguration();
@@ -63,7 +64,7 @@ public class RowStoreConfiguration {
     public static final String DEFAULT_COORDINATOR_RAFT_ID = "COORDINATOR_RAFT";
 
     @Delegate
-    private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
+    private final DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
 
     private RowStoreConfiguration() {
     }
