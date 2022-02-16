@@ -16,6 +16,7 @@
 
 package io.dingodb.server.coordinator.meta.service;
 
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.Location;
@@ -46,7 +47,7 @@ public class CoordinatorMetaService implements MetaService {
     private static final CoordinatorMetaService INSTANCE = new CoordinatorMetaService();
     private final ConcurrentMap<String, byte[]> tableKeyMap = Maps.newConcurrentMap();
     private final ConcurrentMap<String, TableDefinition> tableDefinitionMap = Maps.newConcurrentMap();
-    private final CoordinatorConfiguration configuration = CoordinatorConfiguration.INSTANCE;
+    //private final CoordinatorConfiguration configuration = CoordinatorConfiguration.INSTANCE;
     private final Serializer serializer = Serializers.getDefault();
     private TableMetaAdaptor metaAdaptor;
 
@@ -134,7 +135,8 @@ public class CoordinatorMetaService implements MetaService {
 
     @Override
     public Location currentLocation() {
-        return new Location(configuration.instanceHost(), configuration.instancePort(), "");
+        //return new Location(configuration.instanceHost(), configuration.instancePort(), "");
+        return new Location(DingoOptions.instance().getIp(), DingoOptions.instance().getExchange().getPort(), "");
     }
 
     @Override
@@ -156,7 +158,8 @@ public class CoordinatorMetaService implements MetaService {
     }
 
     private <T> T helperGet(CompletableFuture<T> future) {
-        return FutureHelper.get(future, configuration.futureTimeMillis());
+        //return FutureHelper.get(future, configuration.futureTimeMillis());
+        return FutureHelper.get(future, DingoOptions.instance().getCliOptions().getTimeoutMs());
     }
 
     private boolean isCoordinatorLeader() {

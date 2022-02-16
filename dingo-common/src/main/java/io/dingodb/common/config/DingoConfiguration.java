@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.FileInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -31,18 +32,21 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import static io.dingodb.expr.json.runtime.Parser.YAML;
+
 @Slf4j
 public class DingoConfiguration {
 
-    public static final String CLUSTER_NAME_KEY = "cluster.name";
+    /*public static final String CLUSTER_NAME_KEY = "cluster.name";
     public static final String INSTANCE_HOST_KEY = "instance.host";
     public static final String PORT_KEY = "instance.port";
 
     public static final String DATA_DIR_KEY = "data.dir";
 
-    public static final String FUTURE_TIMEOUT_MILLIS = "futureTimeoutMillis";
+    public static final String FUTURE_TIMEOUT_MILLIS = "futureTimeoutMillis";*/
 
-    public static final DingoConfiguration INSTANCE = new DingoConfiguration();
+    //public static final DingoConfiguration INSTANCE = new DingoConfiguration();
+    private static final DingoConfiguration INSTANCE = new DingoConfiguration();
     private final Map<String, Object> configs = new HashMap<>();
 
     private DingoConfiguration() {
@@ -52,7 +56,7 @@ public class DingoConfiguration {
         return INSTANCE;
     }
 
-    public DingoConfiguration clusterName(String clusterName) {
+    /*public DingoConfiguration clusterName(String clusterName) {
         setString(CLUSTER_NAME_KEY, clusterName);
         return this;
     }
@@ -95,7 +99,7 @@ public class DingoConfiguration {
 
     public long futureTimeMillis() {
         return getLong(FUTURE_TIMEOUT_MILLIS, 10000L);
-    }
+    }*/
 
     public void set(String name, Object value) {
         configs.put(name, value);
@@ -216,23 +220,28 @@ public class DingoConfiguration {
         BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
         PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
         for (PropertyDescriptor property : propertyDescriptors) {
-            Object value;
-            if ((value = map.get(property.getName())) == null) {
-                continue;
-            }
-            if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
-                value = mapToBean((Map<String, Object>) value, property.getPropertyType());
-            }
-            if (!property.getPropertyType().equals(value.getClass())) {
-                value = tryConvertValue(value, property.getPropertyType());
-            }
-            Method setter = property.getWriteMethod();
-            if (setter != null) {
-                setter.invoke(obj, value);
-            } else {
-                Field field = cls.getDeclaredField(property.getName());
-                field.setAccessible(true);
-                field.set(obj, map.get(field.getName()));
+            try {
+                Object value;
+                if ((value = map.get(property.getName())) == null) {
+                    continue;
+                }
+                if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
+                    value = mapToBean((Map<String, Object>) value, property.getPropertyType());
+                }
+                if (!property.getPropertyType().equals(value.getClass())) {
+                    value = tryConvertValue(value, property.getPropertyType());
+                }
+                Method setter = property.getWriteMethod();
+                if (setter != null) {
+                    setter.invoke(obj, value);
+                } else {
+                    Field field = cls.getDeclaredField(property.getName());
+                    field.setAccessible(true);
+                    field.set(obj, map.get(field.getName()));
+                }
+            } catch (Exception e) {
+                log.error("parse property name: {}. class name: {}, exception: {}",
+                    property.getName(), cls.getName(), e);
             }
         }
 
@@ -271,5 +280,9 @@ public class DingoConfiguration {
             return str.getBytes(StandardCharsets.UTF_8);
         }
         return obj;
+    }
+
+    public static void configParse(final String configPath) throws Exception {
+        YAML.parse(new FileInputStream(configPath), Map.class).forEach((k, v) -> INSTANCE.set(k.toString(), v));
     }
 }

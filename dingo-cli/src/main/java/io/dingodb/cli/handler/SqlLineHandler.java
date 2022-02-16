@@ -17,6 +17,7 @@
 package io.dingodb.cli.handler;
 
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import sqlline.DingoSqlline;
@@ -32,7 +33,8 @@ public class SqlLineHandler {
     public static void handler(String[] args) throws Exception {
         DatagramSocket datagramSocket = new DatagramSocket();
         netService.listenPort(datagramSocket.getLocalPort());
-        DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
+        //DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
+        DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());// maybe problem
         datagramSocket.close();
         DingoSqlline sqlline = new DingoSqlline();
         sqlline.connect();

@@ -23,6 +23,7 @@ import lombok.experimental.Delegate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class CoordinatorConfiguration {
 
     public static final CoordinatorConfiguration INSTANCE = new CoordinatorConfiguration();
@@ -37,7 +38,7 @@ public class CoordinatorConfiguration {
 
     public static final String AUTO_SCHEDULE = "coordinator.schedule.auto";
 
-    @Delegate private final DingoConfiguration dingoConfiguration = DingoConfiguration.INSTANCE;
+    @Delegate private final DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
 
     private CoordinatorConfiguration() {
     }
@@ -71,7 +72,8 @@ public class CoordinatorConfiguration {
         return this;
     }
 
+    /*
     public int port() {
         return getInt(COORDINATOR_SERVER_PORT, instancePort());
-    }
+    }*/
 }

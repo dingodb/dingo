@@ -18,12 +18,11 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.server.executor.config.ExecutorConfiguration;
-
-import java.io.FileInputStream;
-import java.util.Map;
-
-import static io.dingodb.expr.json.runtime.Parser.YAML;
+import io.dingodb.common.config.ClusterOptions;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.GroupServerOptions;
+import io.dingodb.server.executor.config.ExecutorOptions;
 
 public class Starter {
 
@@ -45,10 +44,33 @@ public class Starter {
             commander.usage();
             return;
         }
+        /*
         ExecutorConfiguration configuration = ExecutorConfiguration.instance();
         YAML.parse(new FileInputStream(this.config), Map.class).forEach((k, v) -> configuration.set(k.toString(), v));
+
+         */
+        DingoConfiguration.configParse(this.config);
+        ExecutorOptions svrOpts = DingoConfiguration.instance().getAndConvert("executor",
+            ExecutorOptions.class, ExecutorOptions::new);
+        ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
+            ClusterOptions.class, ClusterOptions::new);
+        initDingoOptions(svrOpts, clusterOpts);
+
         ExecutorServer server = new ExecutorServer();
-        server.start();
+        server.start(svrOpts);
     }
 
+    private void initDingoOptions(final ExecutorOptions opts, final ClusterOptions clusterOpts) {
+        DingoOptions.instance().setClusterOpts(clusterOpts);
+        DingoOptions.instance().setIp(opts.getIp());
+        DingoOptions.instance().setExchange(opts.getExchange());
+
+        GroupServerOptions groupServerOptions = new GroupServerOptions();
+        groupServerOptions.setGroup(opts.getOptions().getCoordOptions().getGroup());
+        groupServerOptions.setInitCoordSrvList(
+            opts.getOptions().getCoordOptions().getInitCoordSrvList()
+        );
+        DingoOptions.instance().setCoordOptions(groupServerOptions);
+        DingoOptions.instance().setCliOptions(opts.getOptions().getCliOptions());
+    }
 }

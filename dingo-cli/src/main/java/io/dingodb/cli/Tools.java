@@ -19,22 +19,24 @@ package io.dingodb.cli;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.cli.handler.SqlLineHandler;
+import io.dingodb.common.config.ClusterOptions;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.ExchangeOptions;
 import io.dingodb.driver.server.ServerMetaFactory;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.client.config.ClientOptions;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.server.AvaticaJsonHandler;
 import org.apache.calcite.avatica.server.HttpServer;
 import org.apache.calcite.avatica.server.Main;
 
-import java.io.FileInputStream;
 import java.net.DatagramSocket;
-import java.util.Map;
 import java.util.ServiceLoader;
 
-import static io.dingodb.expr.json.runtime.Parser.YAML;
-
+@Slf4j
 public class Tools {
 
     private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
@@ -102,8 +104,18 @@ public class Tools {
             commander.usage();
             return;
         }
+        /*
         YAML.parse(new FileInputStream(this.config), Map.class)
-            .forEach((k, v) -> DingoConfiguration.instance().set(k.toString(), v));
+            .forEach((k, v) -> DingoConfiguration.instance().set(k.toString(), v));*/
+        DingoConfiguration.configParse(this.config);
+        ClientOptions clientOpts = DingoConfiguration.instance().getAndConvert("client",
+            ClientOptions.class, ClientOptions::new);
+        ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
+            ClusterOptions.class, ClusterOptions::new);
+        initDingoOptions(clientOpts, clusterOpts);
+
+        log.info("tools configuration: {}.", clientOpts);
+        log.info("instance configuration: {}.", DingoOptions.instance());
 
         switch (cmd.toUpperCase()) {
             case "SQLLINE":
@@ -112,7 +124,8 @@ public class Tools {
             case "DRIVER":
                 DatagramSocket datagramSocket = new DatagramSocket();
                 netService.listenPort(datagramSocket.getLocalPort());
-                DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
+                DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());
+                //DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
                 datagramSocket.close();
 
                 Services.initNetService();
@@ -126,6 +139,16 @@ public class Tools {
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
         }
+    }
+
+    private void initDingoOptions(final ClientOptions opts, final ClusterOptions clusterOpts) {
+        DingoOptions.instance().setClusterOpts(clusterOpts);
+        DingoOptions.instance().setIp(opts.getIp());
+        ExchangeOptions exchangeOptions = new ExchangeOptions();
+        // port will be set later
+        DingoOptions.instance().setExchange(exchangeOptions);
+        DingoOptions.instance().setCoordOptions(opts.getOptions().getCoordOptions());
+        DingoOptions.instance().setCliOptions(opts.getOptions().getCliOptions());
     }
 
 }

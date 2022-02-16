@@ -19,6 +19,7 @@ package io.dingodb.server.client.meta.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
@@ -61,9 +62,13 @@ import static io.dingodb.server.protocol.code.MetaServiceCode.GET_TABLE;
 public class MetaServiceClient implements MetaService {
 
     public static final Location CURRENT_LOCATION = new Location(
+        /*
         DingoConfiguration.instance().instanceHost(),
         DingoConfiguration.instance().instancePort(),
-        DingoConfiguration.instance().dataDir()
+        DingoConfiguration.instance().dataDir()*/
+        DingoOptions.instance().getIp(),
+        DingoOptions.instance().getExchange().getPort(),
+        ""
     );
 
     private final Map<String, TableEntry> tableEntries = new ConcurrentHashMap<>();
