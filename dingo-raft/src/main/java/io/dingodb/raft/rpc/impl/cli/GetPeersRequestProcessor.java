@@ -17,9 +17,9 @@
 package io.dingodb.raft.rpc.impl.cli;
 
 import com.google.protobuf.Message;
+import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
-import io.dingodb.raft.entity.PeerId;
 
 import java.util.List;
 import java.util.concurrent.Executor;

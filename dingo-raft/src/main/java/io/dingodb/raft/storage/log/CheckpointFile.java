@@ -17,8 +17,8 @@
 package io.dingodb.raft.storage.log;
 
 import com.google.protobuf.ZeroByteStringHelper;
-import io.dingodb.raft.storage.io.ProtoBufFile;
 import io.dingodb.raft.entity.LocalFileMetaOutter.LocalFileMeta;
+import io.dingodb.raft.storage.io.ProtoBufFile;
 import io.dingodb.raft.util.AsciiStringUtil;
 import io.dingodb.raft.util.Bits;
 import org.apache.commons.io.FileUtils;

@@ -17,9 +17,9 @@
 package io.dingodb.raft.option;
 
 import io.dingodb.raft.FSMCaller;
+import io.dingodb.raft.core.NodeImpl;
 import io.dingodb.raft.storage.LogManager;
 import io.dingodb.raft.storage.SnapshotThrottle;
-import io.dingodb.raft.core.NodeImpl;
 import io.dingodb.raft.util.Endpoint;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>

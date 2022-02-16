@@ -715,7 +715,8 @@ public class Replicator implements ThreadId.OnError {
             r.nextIndex = request.getMeta().getLastIncludedIndex() + 1;
             sb.append(" success=true");
             LOG.info(sb.toString());
-        } while (false);
+        }
+        while (false);
         // We don't retry installing the snapshot explicitly.
         // id is unlock in sendEntries
         if (!success) {
@@ -808,7 +809,7 @@ public class Replicator implements ThreadId.OnError {
             LOG.debug("Node {} send HeartbeatRequest to {} term {} lastCommittedIndex {}", this.options.getNode()
                 .getNodeId(), this.options.getPeerId(), this.options.getTerm(), rb.getCommittedIndex());
         } finally {
-                unlockId();
+            unlockId();
         }
     }
 

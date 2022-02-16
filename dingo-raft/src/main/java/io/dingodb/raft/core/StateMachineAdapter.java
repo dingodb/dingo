@@ -19,11 +19,11 @@ package io.dingodb.raft.core;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.StateMachine;
 import io.dingodb.raft.Status;
+import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.LeaderChangeContext;
 import io.dingodb.raft.error.RaftException;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
-import io.dingodb.raft.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

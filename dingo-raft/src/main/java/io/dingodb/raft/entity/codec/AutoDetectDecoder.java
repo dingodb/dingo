@@ -16,10 +16,10 @@
 
 package io.dingodb.raft.entity.codec;
 
+import io.dingodb.raft.entity.LogEntry;
 import io.dingodb.raft.entity.codec.v1.V1Decoder;
 import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
 import io.dingodb.raft.entity.codec.v2.V2Decoder;
-import io.dingodb.raft.entity.LogEntry;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class AutoDetectDecoder implements LogEntryDecoder {
