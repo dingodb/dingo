@@ -1,4 +1,4 @@
-# Usage about DingoDB
+# How to Use DingoDB?
 
 ## JDBC Driver
 

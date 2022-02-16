@@ -5,5 +5,5 @@ Architecture
    :maxdepth: 2
    :glob:
 
-   overview
+   architecture
    design/index.rst
