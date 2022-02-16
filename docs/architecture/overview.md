@@ -1,54 +1,45 @@
-# Architecture Overview
+# Architecture
 
-## Introduction
 
-The main architecture of DingoDB is illustrated in the following figure.
+As a distributed database, DingoDB is designed to consist of multiple components. These components communicate with each other and form a complete DingoDB system. The architecture is as follows:
 
-![](images/dingo-architecture.png)
+![Architecture about DingoDB](../images/dingo-architecture.png)
 
-The metadata of the database are kept in [Zookeeper](http://zookeeper.apache.org/). When the client request for DDL
-operation (e.g. creating or dropping tables), the coordinator will accept the request and modify the metadata stored in
-Zookeeper, so the whole cluster will know the modifications. When the client initiate DDL request (e.g. inserting,
-updating, deleting data or query the database), the coordinator will accept the request, parse and build job graph for
-the request, then distribute the tasks of the job to many executors. Each of the executors will run the tasks dispatched
-to it, accessing data in the corresponding local storage, or processing data received from other tasks. Finally, the
-result will be collected and returned to the client.
+## Computer Layer
 
-## Terminology
+The computer layer is a stateless SQL layer that exposes the connection endpoint of DingoDB using JDBC protocol to the outside. The Coordinator receives SQL requests, performs SQL parsing and optimization, and ultimately generates a distributed execution plan. It is horizontally scalable and provides the unified interface to the outside through the load balancing components such as Linux Virtual Server (LVS), HAProxy, or F5. The computer layer does not store data and is only for computing and SQL analyzing, transmitting actual data read requests to the storage layer.
 
 ### Coordinator
 
-Coordinators are the computing nodes where the SQL query is initiated, started and the results are collected. There may
-be several coordinators in a cluster, but for executing of an SQL statement, only one coordinator is involved.
+The Coordinator is the metadata managing component of the entire cluster using raft consensus protocol. It stores metadata of real-time data distribution on `Executor` and the topology structure of the entire DingoDB cluster. The Coordinator server is "the brain" of the entire DingoDB cluster because it not only stores metadata of the cluster, but also sends data scheduling commands to specific `Executor` nodes according to the data distribution state reported by `Executor` nodes in real-time. In addition, the Coordinator server consists of three nodes at least and has high availability. It is recommended to deploy an odd number of Coordinator nodes.
 
 ### Executor
 
-Executors are the computing nodes where the tasks of a job are running.
+The Executor is responsible for storing data. After processing SQL statements, the `Coordinator` server converts the SQL execution plan to an actual call to the Executor API. All the data in Executor is automatically maintained in multiple replicas (three replicas by default), so Executor has native high availability and supports automatic failover.
 
-### Part
+## Storage Layer
 
-Datum in a table are partitioned into multiple parts stored in different locations.
+The storage layer supports row and column storage mode. Row mode supports high-frequency insert and update scenarios; Column mode supports interactive analysis and multi-dimensional aggregation analysis in real-time and so on.
 
-### Location
+### Row Storage
 
-Generally, a location is defined as a computing node and a path into where parts are stored. A computing node may
-contain several locations.
+In row storage mode, the store is a distributed key-value storage engine embedded in Executor. The region is the basic unit to store and replicate data. Each Region stores the data for a particular Key Range which is a left-closed and right-open interval from StartKey to EndKey. Multiple Regions exist in each Executor node. Executor APIs provide native support to operator data,  such as get, put, scan, iterator, and so on. 
 
-### Job
+### Column Storage
 
-A job is an execution plan corresponding an SQL DML statement, which contains several tasks.
+To be designed and implemented.
 
-### Task
+## Clients
 
-A task is defined as directed acyclic graph (DAG) of operators and a specified location.
+Outside the DingoDB cluster, you can use clients to connect to DingoDB to do analysis. The client has Jdbc-driver and Sqlline mode.
 
-### Operator
+### JDBC Driver
 
-An operator describes a specified operation, which belongs to a specified task. Operators can be "**source operator**"
-producing datum for its task, or "**sink operator**" consuming input datum with no datum output, otherwise operators
-consume datum coming from the upstream operators, do calculation and transforming, and push the result to its outputs
-which connected to downstream operators.
+JDBC stands for Java Database Connectivity, which is a standard Java API for database-independent connectivity between the Java programming language and a wide range of databases. DingoDB is a flexible distributed database, you can use any database tool embedded [dingo-thin-client](../usage/connect_to_dingo.md) to connect to DingoDB such as the universal database tool [dbeaver](https://dbeaver.io/) .
 
-### Tuple
 
-Datum transferred between operators and tasks are generally define as tuples. In Java, a tuple is defined as `Object[]`.
+### Sqlline 
+
+SQLLine is a pure-Java console based utility for connecting to DingoDB and executing SQL commands,you can use it like `sqlplus `for Oracle,`mysql` for MySQL. It is implemented with the open source project [sqlline](https://github.com/julianhyde/sqlline).
+
+
