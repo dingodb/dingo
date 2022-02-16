@@ -16,6 +16,9 @@
 
 package io.dingodb.store.row;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ScheduledReporter;
+import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.RaftGroupService;
@@ -29,9 +32,6 @@ import io.dingodb.raft.util.Describer;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.internal.ThrowUtil;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
-import com.codahale.metrics.Slf4jReporter;
 import io.dingodb.store.row.client.pd.RegionHeartbeatSender;
 import io.dingodb.store.row.client.pd.RemotePlacementDriverClient;
 import io.dingodb.store.row.metadata.Region;

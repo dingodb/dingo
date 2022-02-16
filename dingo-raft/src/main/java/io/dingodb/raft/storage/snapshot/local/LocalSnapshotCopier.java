@@ -16,8 +16,6 @@
 
 package io.dingodb.raft.storage.snapshot.local;
 
-import io.dingodb.raft.storage.snapshot.remote.RemoteFileCopier;
-import io.dingodb.raft.storage.snapshot.remote.Session;
 import io.dingodb.raft.entity.LocalFileMetaOutter.FileSource;
 import io.dingodb.raft.entity.LocalFileMetaOutter.LocalFileMeta;
 import io.dingodb.raft.error.RaftError;
@@ -27,6 +25,8 @@ import io.dingodb.raft.storage.SnapshotThrottle;
 import io.dingodb.raft.storage.snapshot.Snapshot;
 import io.dingodb.raft.storage.snapshot.SnapshotCopier;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
+import io.dingodb.raft.storage.snapshot.remote.RemoteFileCopier;
+import io.dingodb.raft.storage.snapshot.remote.Session;
 import io.dingodb.raft.util.ArrayDeque;
 import io.dingodb.raft.util.ByteBufferCollector;
 import io.dingodb.raft.util.Requires;

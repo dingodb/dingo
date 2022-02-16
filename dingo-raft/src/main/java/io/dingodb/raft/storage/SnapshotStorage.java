@@ -17,10 +17,10 @@
 package io.dingodb.raft.storage;
 
 import io.dingodb.raft.Lifecycle;
+import io.dingodb.raft.option.SnapshotCopierOptions;
 import io.dingodb.raft.storage.snapshot.SnapshotCopier;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
-import io.dingodb.raft.option.SnapshotCopierOptions;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface SnapshotStorage extends Lifecycle<Void>, Storage {

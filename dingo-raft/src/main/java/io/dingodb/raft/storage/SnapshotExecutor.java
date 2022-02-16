@@ -18,10 +18,10 @@ package io.dingodb.raft.storage;
 
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Lifecycle;
-import io.dingodb.raft.rpc.RpcRequestClosure;
-import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.core.NodeImpl;
 import io.dingodb.raft.option.SnapshotExecutorOptions;
+import io.dingodb.raft.rpc.RpcRequestClosure;
+import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.util.Describer;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>

@@ -16,10 +16,10 @@
 
 package io.dingodb.raft;
 
-import io.dingodb.raft.rpc.ProtobufMsgFactory;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RpcOptions;
+import io.dingodb.raft.rpc.ProtobufMsgFactory;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;

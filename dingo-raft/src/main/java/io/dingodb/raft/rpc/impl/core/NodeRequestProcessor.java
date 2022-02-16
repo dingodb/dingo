@@ -19,11 +19,11 @@ package io.dingodb.raft.rpc.impl.core;
 import com.google.protobuf.Message;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
+import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequestProcessor;
-import io.dingodb.raft.entity.PeerId;
-import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.concurrent.Executor;

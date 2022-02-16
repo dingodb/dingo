@@ -17,12 +17,12 @@
 package io.dingodb.raft.rpc.impl.cli;
 
 import com.google.protobuf.Message;
+import io.dingodb.raft.option.CliOptions;
+import io.dingodb.raft.option.RpcOptions;
 import io.dingodb.raft.rpc.CliClientService;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.rpc.RpcResponseClosure;
-import io.dingodb.raft.option.CliOptions;
-import io.dingodb.raft.option.RpcOptions;
 import io.dingodb.raft.rpc.impl.AbstractClientService;
 import io.dingodb.raft.util.Endpoint;
 

@@ -16,6 +16,11 @@
 
 package io.dingodb.store.row.client;
 
+import com.codahale.metrics.Histogram;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
 import io.dingodb.raft.RouteTable;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.entity.PeerId;
@@ -25,11 +30,6 @@ import io.dingodb.raft.util.LogExceptionHandler;
 import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.Utils;
-import com.codahale.metrics.Histogram;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
 import io.dingodb.store.row.DescriberManager;
 import io.dingodb.store.row.FollowerStateListener;
 import io.dingodb.store.row.JRaftHelper;
