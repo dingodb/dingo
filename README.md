@@ -5,7 +5,7 @@ upsert, interactive analysis, multi-dimensional analysis in extremely low latenc
 
 ![](docs/images/dingo_stack.png)
 
-## Features
+## Key Features
 
 1. Compliant with ANSI SQL  
    Based on the popular [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB can parse, optimize and

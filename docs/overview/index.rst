@@ -6,3 +6,4 @@ Overview
    :glob:
 
    overview.md
+   terminology.md
