@@ -286,9 +286,11 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
         if (started.compareAndSet(false, true)) {
             rpcClient = ((AbstractClientService) ((NodeImpl) context.node()).getRpcService()).getRpcClient();
             try {
-                context.netService().listenPort(context.configuration().port());
+                context.netService().listenPort(context.coordOpts().getExchange().getPort());
+                //context.netService().listenPort(context.configuration().port());
             } catch (Exception e) {
-                log.error("Listen server port [{}] error.", context.configuration().instancePort(), e);
+                log.error("Listen server port [{}] error.", context.coordOpts().getExchange().getPort(), e);
+                //log.error("Listen server port [{}] error.", context.configuration().instancePort(), e);
                 throw new RuntimeException();
             }
         }
@@ -296,9 +298,10 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
 
     public void onStopSuccess() {
         try {
-            context.netService().cancelPort(context.configuration().port());
+            context.netService().listenPort(context.coordOpts().getExchange().getPort());
+            // context.netService().listenPort(context.configuration().port());
         } catch (Exception e) {
-            log.error("Cancel server port [{}] error.", context.configuration().instancePort(), e);
+            log.error("Listen server port [{}] error.", context.coordOpts().getExchange().getPort(), e);
             throw new RuntimeException();
         }
     }
@@ -402,12 +405,14 @@ public class CoordinatorStateMachine extends StateMachineAdapter {
 
     private RpcServer initRpcServer() {
         ExtSerializerSupports.init();
+        boolean isAutoBalanceSplit = context.coordOpts().getSchedule().isAutoBalanceSplit();
+        log.info("coordOpt, isAutoBalanceSplit: {}", isAutoBalanceSplit);
         RpcServer rpcServer = createRaftRpcServer(context.endpoint(), raftExecutor(), cliExecutor());
         rpcServer.registerProcessor(new GetLocationHandler());
         rpcServer.registerProcessor(new GetClusterInfoHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new GetStoreInfoHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new GetStoreIdHandler(context.rowStoreMetaAdaptor()));
-        rpcServer.registerProcessor(new RegionHeartbeatHandler(context.rowStoreMetaAdaptor()));
+        rpcServer.registerProcessor(new RegionHeartbeatHandler(context.rowStoreMetaAdaptor(),isAutoBalanceSplit));
         rpcServer.registerProcessor(new SetStoreHandler(context.rowStoreMetaAdaptor()));
         rpcServer.registerProcessor(new StoreHeartbeatHandler(context.rowStoreMetaAdaptor()));
         log.info("Start coordinator raft rpc server, result: {}.", rpcServer.init(null));

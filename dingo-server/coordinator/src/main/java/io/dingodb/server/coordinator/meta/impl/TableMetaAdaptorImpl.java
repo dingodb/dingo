@@ -44,7 +44,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TableMetaAdaptorImpl extends AbstractMetaAdaptor implements TableMetaAdaptor {
 
-    private static final String DATA_DIR = DingoConfiguration.instance().dataDir();
+    //private static final String DATA_DIR = DingoConfiguration.instance().dataDir();
+    private static final String DATA_DIR = "";
 
     private final AsyncKeyValueStore store;
     private final ScheduleMetaAdaptor scheduleMetaAdaptor;

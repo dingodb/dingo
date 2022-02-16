@@ -16,14 +16,21 @@
 
 package io.dingodb.server.executor;
 
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.raft.option.CliOptions;
+import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.executor.config.ExecutorConfiguration;
+import io.dingodb.server.executor.config.ExecutorExtOptions;
+import io.dingodb.server.executor.config.ExecutorOptions;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
 import io.dingodb.store.row.RowStoreInstance;
+import io.dingodb.store.row.options.DingoRowStoreOptions;
 import io.dingodb.store.row.options.HeartbeatOptions;
+import io.dingodb.store.row.options.PlacementDriverOptions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -37,12 +44,14 @@ public class ExecutorServer {
 
     private final NetService netService;
 
-    private final ExecutorConfiguration configuration;
+    //private final ExecutorConfiguration configuration;
+    private ExecutorOptions svrOpts;
 
     public ExecutorServer() {
+        /*
         this.configuration = ExecutorConfiguration.instance();
         this.configuration.instancePort(configuration.port());
-
+        */
         this.netService = loadNetService();
     }
 
@@ -52,6 +61,23 @@ public class ExecutorServer {
         return netService;
     }
 
+    public void start(final ExecutorOptions opts) throws Exception {
+        this.svrOpts = opts;
+        log.info("Executor all configuration: {}.", this.svrOpts);
+        log.info("instance configuration: {}.", DingoOptions.instance());
+
+        netService.listenPort(svrOpts.getExchange().getPort());
+        DingoRowStoreOptions rowStoreOpts = buildRowStoreOptions();
+        RowStoreInstance.setRowStoreOptions(rowStoreOpts);
+
+        StoreService storeService = loadStoreService();
+        storeService.getInstance("/tmp");
+
+        // todo refactor
+        storeHeartBeatSender();
+    }
+
+    /*
     public void start() throws Exception {
         netService.listenPort(configuration.port());
         StoreService storeService = loadStoreService();
@@ -59,11 +85,41 @@ public class ExecutorServer {
 
         // todo refactor
         storeHeartBeatSender();
+    }*/
+
+    private DingoRowStoreOptions buildRowStoreOptions() {
+        DingoRowStoreOptions rowStoreOpts = new DingoRowStoreOptions();
+        ExecutorExtOptions extOpts = svrOpts.getOptions();
+
+        //rowStoreOpts.setClusterId();
+        rowStoreOpts.setClusterName(DingoOptions.instance().getClusterOpts().getName());
+        rowStoreOpts.setInitialServerList(svrOpts.getRaft().getInitExecSrvList());
+        rowStoreOpts.setFailoverRetries(extOpts.getCliOptions().getMaxRetry());
+        rowStoreOpts.setFutureTimeoutMillis(extOpts.getCliOptions().getTimeoutMs());
+
+        PlacementDriverOptions driverOptions = new PlacementDriverOptions();
+        driverOptions.setFake(false);
+        driverOptions.setPdGroupId(extOpts.getCoordOptions().getGroup());
+        driverOptions.setInitialPdServerList(extOpts.getCoordOptions().getInitCoordRaftList());
+        CliOptions cliOptions = new CliOptions();
+        cliOptions.setMaxRetry(extOpts.getCliOptions().getMaxRetry());
+        cliOptions.setTimeoutMs(extOpts.getCliOptions().getTimeoutMs());
+        driverOptions.setCliOptions(cliOptions);
+        rowStoreOpts.setPlacementDriverOptions(driverOptions);
+
+        // StoreEngineOptions.serverAddress is replace by raft configuration
+        Endpoint endpoint = new Endpoint(svrOpts.getIp(), svrOpts.getRaft().getPort());
+        extOpts.getStoreEngineOptions().setServerAddress(endpoint);
+
+        rowStoreOpts.setStoreEngineOptions(extOpts.getStoreEngineOptions());
+        return rowStoreOpts;
     }
 
     private void storeHeartBeatSender() {
-        HeartbeatOptions heartbeatOpts = RowStoreInstance.getKvStoreOptions().getStoreEngineOptions()
-            .getHeartbeatOptions();
+        /*HeartbeatOptions heartbeatOpts = RowStoreInstance.getKvStoreOptions().getStoreEngineOptions()
+            .getHeartbeatOptions();*/
+        HeartbeatOptions heartbeatOpts =
+            svrOpts.getOptions().getStoreEngineOptions().getHeartbeatOptions();
         if (heartbeatOpts == null) {
             heartbeatOpts = new HeartbeatOptions();
         }
@@ -72,7 +128,7 @@ public class ExecutorServer {
     }
 
     private StoreService loadStoreService() {
-        String store = configuration.store();
+        String store = "";
         List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
         ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
         if (storeServiceProviders.size() == 1) {
@@ -82,4 +138,15 @@ public class ExecutorServer {
             .map(StoreServiceProvider::get).orElse(null);
     }
 
+    /*
+    private StoreService loadStoreService() {
+        String store = configuration.store();
+        List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
+        ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
+        if (storeServiceProviders.size() == 1) {
+            return Optional.ofNullable(storeServiceProviders.get(0)).map(StoreServiceProvider::get).orElse(null);
+        }
+        return storeServiceProviders.stream().filter(provider -> store.equals(provider.getClass().getName())).findAny()
+            .map(StoreServiceProvider::get).orElse(null);
+    }*/
 }

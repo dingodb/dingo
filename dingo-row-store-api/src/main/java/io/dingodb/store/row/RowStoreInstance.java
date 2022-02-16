@@ -37,24 +37,55 @@ import javax.annotation.Nonnull;
 @Slf4j
 public class RowStoreInstance implements StoreInstance {
     private final Map<byte[], RowPartitionOper> blockMap;
+    private static volatile DefaultDingoRowStore kvStore;
+    private static DingoRowStoreOptions rowStoreOptions;
 
-    private static final DefaultDingoRowStore kvStore;
-
+    /*
     static {
         kvStore = new DefaultDingoRowStore();
         DingoRowStoreOptions options = getKvStoreOptions();
         if (!kvStore.init(options)) {
             throw new DingoRowStoreRuntimeException("Fail to start [DefaultDingoRowStore].");
         }
-    }
+    }*/
 
     public RowStoreInstance(String path) {
         this.blockMap = new LinkedHashMap<>();
     }
 
+    public static void setRowStoreOptions(DingoRowStoreOptions opts) {
+        rowStoreOptions = opts;
+    }
+
     public static DefaultDingoRowStore kvStore() {
+        log.info("get kv store!!!");
+        if (kvStore == null) {
+            synchronized (DefaultDingoRowStore.class) {
+                if (kvStore == null) {
+                    kvStore = new DefaultDingoRowStore();
+                    if (!kvStore.init(rowStoreOptions)) {
+                        throw new DingoRowStoreRuntimeException("Fail to start [DefaultDingoRowStore].");
+                    }
+                }
+            }
+        }
         return kvStore;
     }
+
+
+    /*
+    public static DefaultDingoRowStore kvStore() {
+        log.info("get kv store!!!");
+        return kvStore;
+    }*/
+
+    /*
+    @Nonnull
+    public String blockDir(@Nonnull String tableName, @Nonnull Object partId) {
+        return path + File.separator
+            + tableName.replace(".", File.separator).toLowerCase() + File.separator
+            + partId;
+    }*/
 
     @Override
     public synchronized RowPartitionOper getKvBlock(@Nonnull TableId tableId, Object partId, boolean isMain) {
@@ -65,8 +96,8 @@ public class RowStoreInstance implements StoreInstance {
         );
     }
 
-    @Nonnull
-    public static DingoRowStoreOptions getKvStoreOptions() {
+
+    /*public static DingoRowStoreOptions getKvStoreOptions() {
         RowStoreConfiguration configuration = RowStoreConfiguration.INSTANCE;
 
         DingoRowStoreOptions options = new DingoRowStoreOptions();
@@ -100,5 +131,5 @@ public class RowStoreInstance implements StoreInstance {
 
         options.setStoreEngineOptions(storeEngineOptions);
         return options;
-    }
+    }*/
 }

@@ -6,8 +6,9 @@
       <GradleProjectSettings>
         <option name="delegatedBuild" value="true" />
         <option name="testRunner" value="GRADLE" />
-        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="distributionType" value="LOCAL" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleHome" value="$PROJECT_DIR$/../../../../Program Files/gradle-6.8.1" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />

@@ -23,5 +23,5 @@ nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-coordinator.xml \
      -classpath ${JAR_PATH} \
      io.dingodb.server.coordinator.Starter \
-     --config ${ROOT}/conf/config.yaml \
+     --config ${ROOT}/conf/coordinator.yaml \
      > ${ROOT}/log/coordinator.out &
