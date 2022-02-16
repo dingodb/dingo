@@ -2,11 +2,8 @@ Architecture
 ============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :glob:
 
    overview
-   cluster
-   sql_execution
-   network
-   expression
+   design/index.rst

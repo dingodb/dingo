@@ -1,4 +1,4 @@
-# DingoDB 0.1.0 Release Notes
+# Release Notes v0.1.0 
 
 * Cluster
     1. Distributed computing. Cluster nodes are classified into coordinator role and executor role.

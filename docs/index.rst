@@ -4,12 +4,12 @@ Welcome to DingoDB's documentation!
 .. toctree::
    :maxdepth: 2
 
-   overview
+   overview/index
    usage/index
    architecture/index
    deployment/index
-   contributing
    release_notes/index
+   contribute/index
 
 Indices and Search
 ==================

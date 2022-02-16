@@ -1,11 +1,9 @@
-# Overview
-
-## About DingoDB
+# What is DingoDB?
 
 DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. It can execute high-frequency query and
 upsert, interactive analysis, multi-dimensional analysis in extremely low latency.
 
-![](./architecture/images/dingo_stack.png)
+![](../images/dingo_stack.png)
 
 ## Features
 
@@ -23,6 +21,7 @@ upsert, interactive analysis, multi-dimensional analysis in extremely low latenc
    e.g. [Apache Flink](https://flink.apache.org/), DingoDB can easily accept data from them, and support more analysis
    working or web serving that is not applicable to be done in stream. DingoDB can also access databases of many types,
    using pluggable connectors for each of them.
-5. Resilience for deployment and maintenance  
+5. A distributed architecture with flexible and elastic scalability  
    DingoDB stores and processes data in a distributed manner with strong cluster and resource management functionality,
    which make it easy to expand the capacity.
+6. Supports high availability with automatic failover when a minority of replicas fail; transparent to applications.
