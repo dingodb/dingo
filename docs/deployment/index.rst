@@ -1,4 +1,4 @@
-Deployment
+Ops Guide
 ========================
 
 .. toctree::
