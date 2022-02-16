@@ -17,11 +17,11 @@
 package io.dingodb.raft.option;
 
 import io.dingodb.raft.FSMCaller;
+import io.dingodb.raft.conf.ConfigurationManager;
+import io.dingodb.raft.core.NodeMetrics;
 import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
 import io.dingodb.raft.storage.LogStorage;
-import io.dingodb.raft.conf.ConfigurationManager;
-import io.dingodb.raft.core.NodeMetrics;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class LogManagerOptions {

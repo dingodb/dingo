@@ -37,9 +37,9 @@ import java.util.Set;
 public class LocalSnapshotReader extends SnapshotReader {
     private static final Logger LOG = LoggerFactory.getLogger(LocalSnapshotReader.class);
 
-    /** Generated reader id*/
+    /* Generated reader id*/
     private long readerId;
-    /** remote peer addr */
+    /* remote peer addr */
     private final Endpoint addr;
     private final LocalSnapshotMetaTable metaTable;
     private final String path;

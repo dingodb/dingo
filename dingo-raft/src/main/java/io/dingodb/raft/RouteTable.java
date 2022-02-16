@@ -17,12 +17,12 @@
 package io.dingodb.raft;
 
 import com.google.protobuf.Message;
-import io.dingodb.raft.rpc.CliClientService;
-import io.dingodb.raft.rpc.CliRequests;
-import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.error.RaftError;
+import io.dingodb.raft.rpc.CliClientService;
+import io.dingodb.raft.rpc.CliRequests;
+import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.util.Describer;
 import io.dingodb.raft.util.Requires;
 import org.apache.commons.lang.StringUtils;

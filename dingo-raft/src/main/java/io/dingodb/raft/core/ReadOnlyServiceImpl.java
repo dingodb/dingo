@@ -256,7 +256,7 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
 
         this.scheduledExecutorService = Executors
             .newSingleThreadScheduledExecutor(new NamedThreadFactory("ReadOnlyService-PendingNotify-Scanner", true));
-        this.readIndexDisruptor = DisruptorBuilder.<ReadIndexEvent> newInstance() //
+        this.readIndexDisruptor = DisruptorBuilder.<ReadIndexEvent>newInstance() //
             .setEventFactory(new ReadIndexEventFactory()) //
             .setRingBufferSize(this.raftOptions.getDisruptorBufferSize()) //
             .setThreadFactory(new NamedThreadFactory("JRaft-ReadOnlyService-Disruptor-", true)) //

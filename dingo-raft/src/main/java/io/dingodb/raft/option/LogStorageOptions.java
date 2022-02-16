@@ -16,8 +16,8 @@
 
 package io.dingodb.raft.option;
 
-import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import io.dingodb.raft.conf.ConfigurationManager;
+import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class LogStorageOptions {

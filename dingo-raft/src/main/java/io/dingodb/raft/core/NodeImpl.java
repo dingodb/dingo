@@ -38,6 +38,9 @@ import io.dingodb.raft.closure.ClosureQueue;
 import io.dingodb.raft.closure.ClosureQueueImpl;
 import io.dingodb.raft.closure.ReadIndexClosure;
 import io.dingodb.raft.closure.SynchronizedClosure;
+import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.conf.ConfigurationEntry;
+import io.dingodb.raft.conf.ConfigurationManager;
 import io.dingodb.raft.entity.Ballot;
 import io.dingodb.raft.entity.EnumOutter;
 import io.dingodb.raft.entity.LeaderChangeContext;
@@ -63,6 +66,7 @@ import io.dingodb.raft.option.ReadOnlyOption;
 import io.dingodb.raft.option.ReadOnlyServiceOptions;
 import io.dingodb.raft.option.ReplicatorGroupOptions;
 import io.dingodb.raft.option.SnapshotExecutorOptions;
+import io.dingodb.raft.rpc.RaftClientService;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
@@ -94,10 +98,6 @@ import io.dingodb.raft.util.ThreadId;
 import io.dingodb.raft.util.Utils;
 import io.dingodb.raft.util.concurrent.LongHeldDetectingReadWriteLock;
 import io.dingodb.raft.util.timer.RaftTimerFactory;
-import io.dingodb.raft.conf.Configuration;
-import io.dingodb.raft.conf.ConfigurationEntry;
-import io.dingodb.raft.conf.ConfigurationManager;
-import io.dingodb.raft.rpc.RaftClientService;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,7 +145,7 @@ public class NodeImpl implements Node, RaftServerService {
 
     public static final AtomicInteger GLOBAL_NUM_NODES = new AtomicInteger(0);
 
-    /** Internal states */
+    /* Internal states */
     private final ReadWriteLock readWriteLock = new NodeReadWriteLock(this);
     protected final Lock writeLock = this.readWriteLock.writeLock();
     protected final Lock readLock = this.readWriteLock.readLock();
@@ -159,12 +159,12 @@ public class NodeImpl implements Node, RaftServerService {
     private final Ballot prevVoteCtx = new Ballot();
     private ConfigurationEntry conf;
     private StopTransferArg stopTransferArg;
-    /** Raft group and node options and identifier */
+    /* Raft group and node options and identifier */
     private final String groupId;
     private NodeOptions options;
     private RaftOptions raftOptions;
     private final PeerId serverId;
-    /** Other services */
+    /* Other services */
     private final ConfigurationCtx confCtx;
     private LogStorage logStorage;
     private RaftMetaStorage metaStorage;
@@ -178,7 +178,7 @@ public class NodeImpl implements Node, RaftServerService {
     private final List<Closure> shutdownContinuations = new ArrayList<>();
     private RaftClientService rpcService;
     private ReadOnlyService readOnlyService;
-    /** Timers */
+    /* Timers */
     private Scheduler timerManager;
     private RepeatedTimer electionTimer;
     private RepeatedTimer voteTimer;
@@ -186,22 +186,22 @@ public class NodeImpl implements Node, RaftServerService {
     private RepeatedTimer snapshotTimer;
     private ScheduledFuture<?> transferTimer;
     private ThreadId wakingCandidate;
-    /** Disruptor to run node service */
+    /* Disruptor to run node service */
     private Disruptor<LogEntryAndClosure> applyDisruptor;
     private RingBuffer<LogEntryAndClosure> applyQueue;
 
-    /** Metrics */
+    /* Metrics */
     private NodeMetrics metrics;
 
     private NodeId nodeId;
     private JRaftServiceFactory serviceFactory;
 
-    /** ReplicatorStateListeners */
+    /* ReplicatorStateListeners */
     private final CopyOnWriteArrayList<Replicator.ReplicatorStateListener> replicatorStateListeners
         = new CopyOnWriteArrayList<>();
-    /** Node's target leader election priority value */
+    /* Node's target leader election priority value */
     private volatile int targetPriority;
-    /** The number of elections time out for current node */
+    /* The number of elections time out for current node */
     private volatile int electionTimeoutCounter;
 
     private static class NodeReadWriteLock extends LongHeldDetectingReadWriteLock {
@@ -958,7 +958,7 @@ public class NodeImpl implements Node, RaftServerService {
 
         this.configManager = new ConfigurationManager();
 
-        this.applyDisruptor = DisruptorBuilder.<LogEntryAndClosure> newInstance() //
+        this.applyDisruptor = DisruptorBuilder.<LogEntryAndClosure>newInstance() //
             .setRingBufferSize(this.raftOptions.getDisruptorBufferSize()) //
             .setEventFactory(new LogEntryAndClosureFactory()) //
             .setThreadFactory(new NamedThreadFactory("JRaft-NodeImpl-Disruptor-", true)) //
@@ -1679,7 +1679,8 @@ public class NodeImpl implements Node, RaftServerService {
                     "Node {} received PreVoteRequest from {}, term={}, currTerm={}, granted={}, requestLastLogId={}, lastLogId={}.",
                     getNodeId(), request.getServerId(), request.getTerm(), this.currTerm, granted, requestLastLogId,
                     lastLogId);
-            } while (false);
+            }
+            while (false);
 
             return RpcRequests.RequestVoteResponse.newBuilder() //
                 .setTerm(this.currTerm) //

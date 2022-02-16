@@ -16,12 +16,12 @@
 
 package io.dingodb.raft.option;
 
-import io.dingodb.raft.storage.LogManager;
-import io.dingodb.raft.storage.SnapshotStorage;
 import io.dingodb.raft.core.BallotBox;
 import io.dingodb.raft.core.NodeImpl;
 import io.dingodb.raft.core.Scheduler;
 import io.dingodb.raft.rpc.RaftClientService;
+import io.dingodb.raft.storage.LogManager;
+import io.dingodb.raft.storage.SnapshotStorage;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class ReplicatorGroupOptions {

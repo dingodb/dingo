@@ -19,9 +19,9 @@ package io.dingodb.raft.option;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.StateMachine;
 import io.dingodb.raft.closure.ClosureQueue;
-import io.dingodb.raft.storage.LogManager;
 import io.dingodb.raft.core.NodeImpl;
 import io.dingodb.raft.entity.LogId;
+import io.dingodb.raft.storage.LogManager;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class FSMCallerOptions {
