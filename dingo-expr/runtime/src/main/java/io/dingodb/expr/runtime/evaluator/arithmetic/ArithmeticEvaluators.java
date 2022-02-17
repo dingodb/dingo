@@ -194,4 +194,44 @@ final class ArithmeticEvaluators {
     static double abs(double num) {
         return Math.abs(num);
     }
+
+    @Evaluators.Base(IntegerEvaluator.class)
+    static int min(int value0, int value1) {
+        return Math.min(value0, value1);
+    }
+
+    @Evaluators.Base(LongEvaluator.class)
+    static long min(long value0, long value1) {
+        return Math.min(value0, value1);
+    }
+
+    @Evaluators.Base(DoubleEvaluator.class)
+    static double min(double value0, double value1) {
+        return Math.min(value0, value1);
+    }
+
+    @Evaluators.Base(DecimalEvaluator.class)
+    static BigDecimal min(@Nonnull BigDecimal value0, BigDecimal value1) {
+        return value0.compareTo(value1) <= 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(IntegerEvaluator.class)
+    static int max(int value0, int value1) {
+        return Math.max(value0, value1);
+    }
+
+    @Evaluators.Base(LongEvaluator.class)
+    static long max(long value0, long value1) {
+        return Math.max(value0, value1);
+    }
+
+    @Evaluators.Base(DoubleEvaluator.class)
+    static double max(double value0, double value1) {
+        return Math.max(value0, value1);
+    }
+
+    @Evaluators.Base(DecimalEvaluator.class)
+    static BigDecimal max(@Nonnull BigDecimal value0, BigDecimal value1) {
+        return value0.compareTo(value1) >= 0 ? value0 : value1;
+    }
 }
