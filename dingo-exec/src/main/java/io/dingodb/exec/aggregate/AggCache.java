@@ -40,22 +40,19 @@ public class AggCache implements Iterable<Object[]> {
 
     @Nonnull
     private Object[] getVars(AggCacheKey key) {
-        Object[] vars = cache.get(key);
-        if (vars == null) {
-            vars = new Object[aggList.size()];
-            for (int i = 0; i < vars.length; ++i) {
-                vars[i] = aggList.get(i).init();
-            }
-            cache.put(key, vars);
-        }
-        return vars;
+        return cache.computeIfAbsent(key, k -> new Object[aggList.size()]);
     }
 
     public void addTuple(Object[] tuple) {
         Object[] keyTuple = keyMapping.revMap(tuple);
         Object[] vars = getVars(new AggCacheKey(keyTuple));
         for (int i = 0; i < vars.length; ++i) {
-            vars[i] = aggList.get(i).add(vars[i], tuple);
+            Agg agg = aggList.get(i);
+            if (vars[i] == null) {
+                vars[i] = agg.first(tuple);
+            } else {
+                vars[i] = agg.add(vars[i], tuple);
+            }
         }
     }
 
@@ -69,8 +66,24 @@ public class AggCache implements Iterable<Object[]> {
         }
     }
 
+    @Nonnull
+    private Object[] calValue(@Nonnull Object[] vars) {
+        Object[] result = new Object[vars.length];
+        for (int i = 0; i < vars.length; ++i) {
+            result[i] = aggList.get(i).getValue(vars[i]);
+        }
+        return result;
+    }
+
     @Override
     public Iterator<Object[]> iterator() {
+        return Iterators.transform(
+            cache.entrySet().iterator(),
+            e -> Utils.combine(e.getKey().getTuple(), calValue(e.getValue()))
+        );
+    }
+
+    public Iterator<Object[]> iteratorCache() {
         return Iterators.transform(
             cache.entrySet().iterator(),
             e -> Utils.combine(e.getKey().getTuple(), e.getValue())

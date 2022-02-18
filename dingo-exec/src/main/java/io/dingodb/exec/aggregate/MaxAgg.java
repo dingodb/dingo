@@ -20,18 +20,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.ElementSchema;
-import io.dingodb.expr.runtime.evaluator.arithmetic.AddEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
 
 import javax.annotation.Nonnull;
 
-@JsonTypeName("sum")
-public class SumAgg extends UnityEvaluatorAgg {
+@JsonTypeName("max")
+public class MaxAgg extends UnityEvaluatorAgg {
     @JsonCreator
-    public SumAgg(
+    public MaxAgg(
         @JsonProperty("index") int index,
         @Nonnull @JsonProperty("type") ElementSchema type
     ) {
         super(index, type);
-        setEvaluator(AddEvaluatorFactory.INSTANCE);
+        setEvaluator(MaxEvaluatorFactory.INSTANCE);
     }
 }

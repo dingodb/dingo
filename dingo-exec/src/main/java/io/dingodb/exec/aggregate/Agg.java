@@ -17,11 +17,30 @@
 package io.dingodb.exec.aggregate;
 
 public interface Agg {
-    Object init();
+    /**
+     * Called when the first tuple arrived.
+     *
+     * @param tuple the tuple
+     * @return the aggregating context, may be a compound type
+     */
+    Object first(Object[] tuple);
 
     Object add(Object var, Object[] tuple);
 
+    /**
+     * Called to merge two aggregating context.
+     *
+     * @param var1 the 1st aggregating context, may be null
+     * @param var2 the 2nd aggregating context, may be null
+     * @return the merged aggregating context
+     */
     Object merge(Object var1, Object var2);
 
+    /**
+     * Called to get the output value from aggregating context.
+     *
+     * @param var the aggregating context, may be null
+     * @return the output value
+     */
     Object getValue(Object var);
 }
