@@ -175,7 +175,14 @@ public class TestWithoutVar {
             arguments("decimal(8.5)", BigDecimal.valueOf(8.5)),
             arguments("decimal(decimal(8.5))", BigDecimal.valueOf(8.5)),
             arguments("decimal('8.5')", new BigDecimal("8.5")),
-            arguments("substring(string(TAU), 0, 4)", "6.28")
+            arguments("substring(string(TAU), 0, 4)", "6.28"),
+            // min, max
+            arguments("min(3, 5)", 3L),
+            arguments("min(7.5, 5)", 5.0),
+            arguments("min(decimal(3), 5.0)", BigDecimal.valueOf(3)),
+            arguments("max(3, 5)", 5L),
+            arguments("max(7.5, 5)", 7.5),
+            arguments("max(decimal(3), 5.0)", BigDecimal.valueOf(5.0))
         );
     }
 

@@ -21,21 +21,17 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.aggregate.CountAgg;
-import io.dingodb.exec.aggregate.SumAgg;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-
-import static io.dingodb.common.util.Utils.sole;
 
 public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
     protected DingoAggregateRule(Config config) {
@@ -51,25 +47,13 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
         );
     }
 
-    @Nonnull
-    private static Agg toAgg(@Nonnull AggregateCall call) {
-        switch (call.getAggregation().getKind()) {
-            case COUNT:
-                return new CountAgg();
-            case SUM:
-            case SUM0:
-                return new SumAgg(sole(call.getArgList()));
-            default:
-                break;
-        }
-        throw new UnsupportedOperationException(
-            "Unsupported aggregates function: \"" + call.getAggregation().getKind() + "\"."
-        );
-    }
-
     private static List<Agg> getAggList(@Nonnull Aggregate rel) {
         return rel.getAggCallList().stream()
-            .map(DingoAggregateRule::toAgg)
+            .map(c -> AggFactory.getAgg(
+                c.getAggregation().getKind(),
+                c.getArgList(),
+                TupleSchema.fromRelDataType(rel.getRowType())
+            ))
             .collect(Collectors.toList());
     }
 

@@ -19,8 +19,6 @@ package io.dingodb.test;
 import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
-import io.dingodb.meta.test.MetaTestService;
-import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -31,7 +29,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -355,6 +352,34 @@ public class QueryTest {
                     new String[]{"all_sum"},
                     TupleSchema.ofTypes("DOUBLE"),
                     "49.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMin() throws SQLException {
+        String sql = "select min(amount) as min_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"min_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "3.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMax() throws SQLException {
+        String sql = "select max(amount) as max_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"max_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "7.5\n"
                 );
             }
         }
