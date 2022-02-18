@@ -8,3 +8,4 @@ Design
    sql_execution
    network
    expression
+   kvstore
