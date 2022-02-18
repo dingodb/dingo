@@ -21,8 +21,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName("count")
 public class CountAgg extends AbstractAgg {
     @Override
-    public Object init() {
-        return 0L;
+    public Object first(Object[] tuple) {
+        return 1L;
     }
 
     @Override
@@ -32,11 +32,17 @@ public class CountAgg extends AbstractAgg {
 
     @Override
     public Object merge(Object var1, Object var2) {
-        return (long) var1 + (long) var2;
+        if (var1 != null) {
+            if (var2 != null) {
+                return (long) var1 + (long) var2;
+            }
+            return var1;
+        }
+        return var2;
     }
 
     @Override
     public Object getValue(Object var) {
-        return var;
+        return var != null ? var : 0L;
     }
 }

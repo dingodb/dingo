@@ -18,6 +18,8 @@ package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.arithmetic.AbsEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AcosEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AsinEvaluatorFactory;
@@ -57,6 +59,9 @@ public final class FunFactory {
 
     private FunFactory() {
         funSuppliers = new HashMap<>(64);
+        // min, max
+        registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
+        registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);
         // Mathematical
         registerEvaluator("abs", AbsEvaluatorFactory.INSTANCE);
         registerEvaluator("sin", SinEvaluatorFactory.INSTANCE);
