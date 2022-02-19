@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DingoDB'
-copyright = '2021, DataCanvas'
+copyright = '2022, DataCanvas'
 author = 'DataCanvas'
 
 # The full version, including alpha/beta/rc tags
