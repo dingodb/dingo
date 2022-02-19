@@ -1,4 +1,4 @@
-# KV Store
+# Distributed Key-Value Store
 
 ## Raft
 Dingo KvStore is based on [Raft Algorithm](https://raft.github.io/raft.pdf). Raft is a consensus algorithm for managing a replicated log. It produces a result equivalent to (multi-)Paxos, and it is as efficient as Paxos, but its structure is different from Paxos; this makes Raft more understandable than Paxos and also provides a better foundation for building practical systems. In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforces a stronger degree of coherency to reduce the number of states that must be considered. Results from a user study demonstrate that Raft is easier for students to learn than Paxos. Raft also includes a new mechanism for changing the cluster membership, which uses overlapping majorities to guarantee safety. Raft algorithms allow a collection of machines to work as a coherent group that can survive the failures of some of its members.
@@ -17,7 +17,7 @@ Raft arise in the context of replicated state machines. In this approach, state 
 ![](../../images/kvstore_raft.png)
 
 
-#### Log Replication:
+### Log Replication
    Only leader servicies client requests. Each client request contains a command to be executed by the replicated state machines. The leader appends the command to its log as a new entry, then issues AppendEntries RPCs in parallel to each of the other servers to replicate the entry. When the entry has been safely replicated, the leader applies the entry to its state machine and returns the result of that execution to the client. If followers crash or run slowly, or if network packets are lost, the leader retries AppendEntries RPCs indefinitely (even after it has responded to the client) until all followers eventually store all log entries.
 
 Each log entry stores  a state machine command along with the term number when the entry was received by the leader. The term numbers in log entries are used to detect inconsistencies between logs. Each log entry also has an integer index identifying its position in the log.
@@ -36,7 +36,7 @@ Leader: io.dingodb.raft.core.Replicator#onAppendEntriesReturned
 ```
 ![](../../images/kvstore_logcommit.png)
 
-#### Snapshot
+### Snapshot
 Snapshotting is the simplest approach to compaction. Raft’s log grows during normal operation to incorporate more client requests, but in a practical system, it cannot grow without bound. As the log grows longer, it occupies more space and takes more time to replay. This will eventually cause availability problems without some mechanism to discard obsolete information that has accumulated in the log. In snapshotting, the entire current system state is written to a snapshot on stable storage, then the entire log up to that point is discarded. A server replaces the committed entries in its log with a new snapshot, which stores just the current state.
 
 ![](../../images/kvstore_snapshot.png)
@@ -51,7 +51,7 @@ Follower:io.dingodb.raft.core.NodeImpl#handleInstallSnapshot
 Leader: io.dingodb.raft.core.Replicator#onInstallSnapshotReturned
 ```
 
-#### Membership Changes:
+### Membership Changes
 A Raft cluster contains several servers; five is a typical
 number, which allows the system to tolerate two failures.
 At any given time each server is in one of three states:
