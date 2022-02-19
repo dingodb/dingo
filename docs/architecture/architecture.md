@@ -35,7 +35,7 @@ Outside the DingoDB cluster, you can use clients to connect to DingoDB to do ana
 
 ### JDBC Driver
 
-JDBC stands for Java Database Connectivity, which is a standard Java API for database-independent connectivity between the Java programming language and a wide range of databases. DingoDB is a flexible distributed database, you can use any database tool embedded [dingo-thin-client](../usage/connect_to_dingo.md) to connect to DingoDB such as the universal database tool [dbeaver](https://dbeaver.io/) .
+JDBC stands for Java Database Connectivity, which is a standard Java API for database-independent connectivity between the Java programming language and a wide range of databases. DingoDB is a flexible distributed database, you can use any database tool embedded [dingo-thin-client](../usage/how_to_use_dingodb.md) to connect to DingoDB such as the universal database tool [dbeaver](https://dbeaver.io/) .
 
 
 ### Sqlline 
