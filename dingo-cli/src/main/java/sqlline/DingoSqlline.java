@@ -35,7 +35,7 @@ public class DingoSqlline {
     }
 
     public void connect() throws SQLException {
-        setConnection(new SqllineDatabaseConnection(this.sqlLine, Connections.getCalciteConnection()));
+        setConnection(new SqllineDatabaseConnection(this.sqlLine, Connections.getConnection()));
     }
 
 }
