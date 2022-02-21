@@ -17,11 +17,10 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
-STORE_JAR_PATH=$(find $ROOT -name dingo-store*.jar)
 
-java ${JAVA_OPTS} \
-     -Dlog4j.configuration=file:${ROOT}/conf/log4j-sqlline.properties \
-     -classpath ${JAR_PATH}:${STORE_JAR_PATH}  \
-     io.dingodb.cli.Tools sqlline \
-     --config ${ROOT}/conf/config.yaml \
-     $@
+nohup java ${JAVA_OPTS} \
+    -Dlogback.configurationFile=file:${ROOT}/conf/logback-driver.xml \
+    -classpath ${JAR_PATH} \
+    io.dingodb.cli.Tools DRIVER \
+    --config ${ROOT}/conf/client.yaml \
+    $@ > ${ROOT}/log/driver.out &
