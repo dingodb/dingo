@@ -25,6 +25,6 @@ import lombok.ToString;
 @ToString
 public class ExecutorCoordOptions {
     private String group = "COORDINATOR_RAFT";
-    private String initCoordRaftList;
-    private String initCoordSrvList;
+    private String initCoordRaftSvrList;
+    private String initCoordExchangeSvrList;
 }

@@ -25,5 +25,5 @@ import lombok.ToString;
 @ToString
 public class GroupServerOptions {
     private String group = "COORDINATOR_RAFT";
-    private String initCoordSrvList;
+    private String initCoordExchangeSvrList;
 }

@@ -20,7 +20,6 @@ import io.dingodb.net.NetService;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.config.CoordinatorOptions;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.server.coordinator.meta.ScheduleMetaAdaptor;
@@ -55,7 +54,6 @@ public class CoordinatorContext {
     private RpcServer rpcServer;
     private CoordinatorMetaService metaService;
 
-    //private CoordinatorConfiguration configuration;
     private CoordinatorOptions coordOpts;
 
     private CoordinatorStateMachine stateMachine;

@@ -59,7 +59,6 @@ public class CoordinatorServer {
 
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(CoordinatorServer.class);
     private CoordinatorContext context;
-    //private CoordinatorConfiguration configuration;
     private CoordinatorOptions svrOpts;
     private Node node;
 
@@ -111,48 +110,6 @@ public class CoordinatorServer {
         keyValueStore.init();
     }
 
-    /*
-    public void start() throws Exception {
-        this.context = new CoordinatorContext();
-        this.configuration = CoordinatorConfiguration.instance();
-        this.configuration.instancePort(configuration.port());
-
-        final String raftId = configuration.coordinatorRaftId();
-        final Endpoint endpoint = new Endpoint(configuration.instanceHost(), configuration.coordinatorRaftServerPort());
-        final RocksRawKVStore rawKVStore = createRocksDB();
-
-        final CoordinatorStateMachine stateMachine = createStateMachine(raftId, rawKVStore, context);
-        final Node node = RaftServiceFactory.createRaftNode(raftId, new PeerId(endpoint, 0));
-        final AsyncKeyValueStore keyValueStore = createStore(rawKVStore, node);
-        final ScheduleMetaAdaptor scheduleMetaAdaptor = createScheduleMetaAdaptor(keyValueStore);
-        final TableMetaAdaptor tableMetaAdaptor = createTableMetaAdaptor(keyValueStore, scheduleMetaAdaptor);
-        final CoordinatorMetaService metaService = createMetaService();
-        final RowStoreMetaAdaptor rowStoreMetaAdaptor = createRowStoreMetaAdaptor(scheduleMetaAdaptor);
-
-
-        context
-            .configuration(configuration)
-            .endpoint(endpoint)
-            .netService(createNetService())
-            .rocksKVStore(rawKVStore)
-            .stateMachine(stateMachine)
-            .keyValueStore(keyValueStore)
-            .node(node)
-            .scheduleMetaAdaptor(scheduleMetaAdaptor)
-            .serviceProvider(createServiceProvider())
-            .tableMetaAdaptor(tableMetaAdaptor)
-            .rowStoreMetaAdaptor(rowStoreMetaAdaptor)
-            .metaService(metaService);
-
-        NodeManager.getInstance().addAddress(endpoint);
-        stateMachine.init();
-        final NodeOptions nodeOptions = initNodeOptions(stateMachine);
-        node.init(nodeOptions);
-        keyValueStore.init();
-
-    }
-     */
-
     @Nonnull
     private RowStoreMetaAdaptorImpl createRowStoreMetaAdaptor(ScheduleMetaAdaptor scheduleMetaAdaptor) {
         return new RowStoreMetaAdaptorImpl(scheduleMetaAdaptor);
@@ -184,7 +141,7 @@ public class CoordinatorServer {
 
     private NodeOptions initNodeOptions(StateMachine stateMachine) {
         final Configuration initialConf = new Configuration();
-        String svrList = svrOpts.getRaft().getInitCoordSrvList();
+        String svrList = svrOpts.getRaft().getInitCoordRaftSvrList();
         if (!initialConf.parse(svrList)) {
             throw new RuntimeException("configuration parse error, initCoordSrvList: " + svrList);
         }
@@ -245,29 +202,4 @@ public class CoordinatorServer {
         return rocksRawKVStore;
     }
 
-    /*
-    private RocksRawKVStore createRocksDB() {
-
-        String dbPath = Paths.get(configuration.dataDir(), COORDINATOR, "db").toString();
-
-        StoreDBOptions opts = configuration.getAndConvert(
-            "cluster.coordinator.rocks",
-            StoreDBOptions.class,
-            StoreDBOptions::new
-        );
-        opts.setDataPath(dbPath);
-
-        try {
-            FileUtils.forceMkdir(new File(opts.getDataPath()));
-        } catch (final Throwable t) {
-            throw new RuntimeException("Fail to make dir for dbPath: " + opts.getDataPath());
-        }
-
-        RocksRawKVStore rocksRawKVStore = new RocksRawKVStore();
-        if (!rocksRawKVStore.init(opts)) {
-            throw new RuntimeException("Fail to init RocksRawKVStore.");
-        }
-
-        return rocksRawKVStore;
-    }*/
 }

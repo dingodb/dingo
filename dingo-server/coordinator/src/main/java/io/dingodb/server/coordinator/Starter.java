@@ -51,26 +51,18 @@ public class Starter {
             commander.usage();
             return;
         }
-        /*
-        CoordinatorConfiguration configuration = CoordinatorConfiguration.instance();
-        YAML.parse(new FileInputStream(this.config), Map.class).forEach((k, v) -> configuration.set(k.toString(), v));
-         */
-
 
         DingoConfiguration.configParse(this.config);
         CoordinatorOptions svrOpts = DingoConfiguration.instance().getAndConvert("coordinator",
             CoordinatorOptions.class, CoordinatorOptions::new);
-        log.info("svrOpts: {}", svrOpts);
 
         ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
             ClusterOptions.class, ClusterOptions::new);
-        log.info("cluster opts: {}.", clusterOpts);
 
         DingoOptions.instance().setClusterOpts(clusterOpts);
         DingoOptions.instance().setIp(svrOpts.getIp());
         DingoOptions.instance().setExchange(svrOpts.getExchange());
         DingoOptions.instance().setCliOptions(svrOpts.getOptions().getCliOptions());
-        log.info("dingo options instance: {}.", DingoOptions.instance());
 
         CoordinatorServer server = new CoordinatorServer();
         server.start(svrOpts);

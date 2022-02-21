@@ -25,5 +25,5 @@ import lombok.ToString;
 @ToString
 public class ExecutorRaftOptions {
     private int port;
-    private String initExecSrvList;
+    private String initExecRaftSvrList;
 }

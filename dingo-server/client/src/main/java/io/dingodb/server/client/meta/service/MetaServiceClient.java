@@ -18,9 +18,7 @@ package io.dingodb.server.client.meta.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.Location;
@@ -28,25 +26,19 @@ import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
-import io.dingodb.net.NetAddress;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.RemoteServerCaller;
-import io.dingodb.server.protocol.Tags;
 import io.dingodb.server.protocol.code.BaseCode;
 import io.dingodb.server.protocol.code.MetaServiceCode;
 import io.dingodb.server.protocol.proto.TableEntry;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -62,10 +54,6 @@ import static io.dingodb.server.protocol.code.MetaServiceCode.GET_TABLE;
 public class MetaServiceClient implements MetaService {
 
     public static final Location CURRENT_LOCATION = new Location(
-        /*
-        DingoConfiguration.instance().instanceHost(),
-        DingoConfiguration.instance().instancePort(),
-        DingoConfiguration.instance().dataDir()*/
         DingoOptions.instance().getIp(),
         DingoOptions.instance().getExchange().getPort(),
         ""
