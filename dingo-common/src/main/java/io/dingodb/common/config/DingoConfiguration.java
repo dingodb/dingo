@@ -237,7 +237,7 @@ public class DingoConfiguration {
                 } else {
                     Field field = cls.getDeclaredField(property.getName());
                     field.setAccessible(true);
-                    field.set(obj, map.get(field.getName()));
+                    field.set(obj, value);
                 }
             } catch (Exception e) {
                 log.error("parse property name: {}. class name: {}, exception: {}",
