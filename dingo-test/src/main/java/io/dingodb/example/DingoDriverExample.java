@@ -34,33 +34,90 @@ import java.util.Map;
 public class DingoDriverExample {
     private static Logger log = LoggerFactory.getLogger(DingoDriverExample.class);
 
+    private static final String defaultConnectIp = "172.20.3.13";
+    private static String connectUrl = "url=http://" + defaultConnectIp + ":8765";
     private static Connection connection;
 
-    private static String connectUrl = "url=http://172.20.3.200:8765";
-
-    public static void main(String[] args) throws Exception {
-        Class.forName("io.dingodb.driver.client.DingoDriverClient");
-        connection = DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + connectUrl
-        );
-
-        Statement statement = connection.createStatement();
-
-        createTable(statement);
-        insertData(statement);
-        queryData(statement);
-
-        if (statement != null) {
-            statement.close();
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Usage: java -jar io.dingodb.example.DingoDriverExample\r\n"
+                + "\t\t 172.20.3.14 create exampletest\r\n"
+                + "\t\t 172.20.3.14 insert exampletest 100000 10\r\n"
+                + "\t\t 172.20.3.14 query  exampletest");
+            return;
         }
 
-        if (connection != null) {
-            connection.close();
+        final Long startTime = System.currentTimeMillis();
+        Long recordCnt = 1L;
+        Statement statement = null;
+
+        try {
+            Class.forName("io.dingodb.driver.client.DingoDriverClient");
+            connection = DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + connectUrl);
+            statement = connection.createStatement();
+        } catch (ClassNotFoundException ex) {
+            log.info("Init driver catch ClassNotFoundExeption:{}", ex.toString(), ex);
+            return ;
+        } catch (SQLException ex) {
+            log.info("Init driver catch SQLException:{}", ex.toString(), ex);
+            return ;
         }
+
+        // default ip:172.20.3.13
+        String inputConnect = args[0];
+        connectUrl = connectUrl.replace(defaultConnectIp, inputConnect);
+        String command = args[1];
+        String tableName =  args[2];
+        int batchCnt = 20;
+        if (args.length > 3) {
+            recordCnt = Long.parseLong(args[3]);
+        }
+        if (args.length > 4) {
+            batchCnt = Integer.parseInt(args[4]);
+        }
+
+        try {
+            switch (command.toUpperCase()) {
+                case "CREATE": {
+                    createTable(statement, tableName);
+                    break;
+                }
+                case "INSERT": {
+                    insertData(statement, tableName, recordCnt, batchCnt);
+                    break;
+                }
+                case "QUERY": {
+                    queryData(statement, tableName);
+                    break;
+                }
+                default: {
+                    log.info("Invalid input command:{}", command);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+        final Long endTime = System.currentTimeMillis();
+        System.out.println("Current Command:" + command
+            + ", RecordCnt:" + recordCnt
+            + ", AvgCost:" + (endTime - startTime) /  recordCnt
+            + "ms, totalCnt:" + recordCnt
+            + ", batchCnt:" + batchCnt);
     }
 
-    private static void createTable(Statement statement) throws Exception {
-        String sql = "create table exampleTest ("
+    private static void createTable(final Statement statement, final String tableName) throws SQLException {
+        String sql = "create table " + tableName + "("
             + "id int,"
             + "name varchar(32) not null,"
             + "age int,"
@@ -70,14 +127,51 @@ public class DingoDriverExample {
         statement.execute(sql);
     }
 
-    private static void insertData(Statement statement) throws Exception {
-        String sql = "insert into exampleTest values (1, 'example001', 19, 11.0)";
-        int count = statement.executeUpdate(sql);
-        log.info("Insert data count = [{}]", count);
+    private static void insertData(final Statement statement,
+                                   final String tableName,
+                                   final Long recordCnt,
+                                   final int batchCnt) throws SQLException {
+        String initStr = "insert into " + tableName + " values ";
+        String midStr = initStr;
+        for (long i = 1; i < recordCnt + 1; i++) {
+            String row = "(" + i + ","
+                + padLeftZeros(String.valueOf(i), 10) + ","
+                + getRandomInt(10, 30) + ","
+                + getRandomDouble(10, 30) + "),";
+            midStr += row;
+            if (i % batchCnt == 0 || i == recordCnt) {
+                midStr = midStr.substring(0, midStr.length() - 1);
+                int count = statement.executeUpdate(midStr);
+                if (count != batchCnt) {
+                    System.out.println("Insert Record Failed: Index:" + i + ",RealCnt:" + count);
+                }
+                midStr = initStr;
+            }
+        }
     }
 
-    private static void queryData(Statement statement) throws Exception {
-        String sql = "select * from exampleTest";
+    public static String padLeftZeros(final String inputString, int length) {
+        if (inputString.length() >= length) {
+            return inputString;
+        }
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < length - inputString.length()) {
+            sb.append('0');
+        }
+        sb.append(inputString);
+        return sb.toString();
+    }
+
+    private static int getRandomInt(int min, int max) {
+        return min + (int)(Math.random() * ((max - min) + 1));
+    }
+
+    private static double getRandomDouble(int min, int max) {
+        return min + (Math.random() * ((max - min) + 1));
+    }
+
+    private static void queryData(final Statement statement, final String tableName) throws SQLException {
+        String sql = "select * from " + tableName;
 
         try (ResultSet resultSet = statement.executeQuery(sql)) {
             ResultSetMetaData metaData = resultSet.getMetaData();
