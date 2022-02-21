@@ -22,3 +22,19 @@ plugins {
 dependencies {
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
 }
+
+task fatJar(type: Jar) {
+    classifier 'all'
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}
