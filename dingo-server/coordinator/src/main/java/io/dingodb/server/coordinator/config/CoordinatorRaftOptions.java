@@ -26,5 +26,5 @@ import lombok.ToString;
 public class CoordinatorRaftOptions {
     private  String group = "COORDINATOR_RAFT";
     private int port;
-    private String initCoordSrvList;
+    private String initCoordRaftSvrList;
 }

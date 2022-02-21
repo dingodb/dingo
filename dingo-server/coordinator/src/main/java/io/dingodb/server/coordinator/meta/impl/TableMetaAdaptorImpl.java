@@ -17,7 +17,6 @@
 package io.dingodb.server.coordinator.meta.impl;
 
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.LocationGroup;
 import io.dingodb.raft.util.BytesUtil;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TableMetaAdaptorImpl extends AbstractMetaAdaptor implements TableMetaAdaptor {
 
-    //private static final String DATA_DIR = DingoConfiguration.instance().dataDir();
     private static final String DATA_DIR = "";
 
     private final AsyncKeyValueStore store;

@@ -104,9 +104,6 @@ public class Tools {
             commander.usage();
             return;
         }
-        /*
-        YAML.parse(new FileInputStream(this.config), Map.class)
-            .forEach((k, v) -> DingoConfiguration.instance().set(k.toString(), v));*/
         DingoConfiguration.configParse(this.config);
         ClientOptions clientOpts = DingoConfiguration.instance().getAndConvert("client",
             ClientOptions.class, ClientOptions::new);
@@ -125,7 +122,6 @@ public class Tools {
                 DatagramSocket datagramSocket = new DatagramSocket();
                 netService.listenPort(datagramSocket.getLocalPort());
                 DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());
-                //DingoConfiguration.instance().instancePort(datagramSocket.getLocalPort());
                 datagramSocket.close();
 
                 Services.initNetService();

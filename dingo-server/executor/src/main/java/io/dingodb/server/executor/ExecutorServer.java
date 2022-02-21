@@ -22,7 +22,6 @@ import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.option.CliOptions;
 import io.dingodb.raft.util.Endpoint;
-import io.dingodb.server.executor.config.ExecutorConfiguration;
 import io.dingodb.server.executor.config.ExecutorExtOptions;
 import io.dingodb.server.executor.config.ExecutorOptions;
 import io.dingodb.store.api.StoreService;
@@ -41,17 +40,11 @@ import java.util.ServiceLoader;
 @Slf4j
 public class ExecutorServer {
 
-
     private final NetService netService;
 
-    //private final ExecutorConfiguration configuration;
     private ExecutorOptions svrOpts;
 
     public ExecutorServer() {
-        /*
-        this.configuration = ExecutorConfiguration.instance();
-        this.configuration.instancePort(configuration.port());
-        */
         this.netService = loadNetService();
     }
 
@@ -77,37 +70,25 @@ public class ExecutorServer {
         storeHeartBeatSender();
     }
 
-    /*
-    public void start() throws Exception {
-        netService.listenPort(configuration.port());
-        StoreService storeService = loadStoreService();
-        storeService.getInstance(configuration.dataDir());
-
-        // todo refactor
-        storeHeartBeatSender();
-    }*/
-
     private DingoRowStoreOptions buildRowStoreOptions() {
         DingoRowStoreOptions rowStoreOpts = new DingoRowStoreOptions();
         ExecutorExtOptions extOpts = svrOpts.getOptions();
 
-        //rowStoreOpts.setClusterId();
         rowStoreOpts.setClusterName(DingoOptions.instance().getClusterOpts().getName());
-        rowStoreOpts.setInitialServerList(svrOpts.getRaft().getInitExecSrvList());
+        rowStoreOpts.setInitialServerList(svrOpts.getRaft().getInitExecRaftSvrList());
         rowStoreOpts.setFailoverRetries(extOpts.getCliOptions().getMaxRetry());
         rowStoreOpts.setFutureTimeoutMillis(extOpts.getCliOptions().getTimeoutMs());
 
         PlacementDriverOptions driverOptions = new PlacementDriverOptions();
         driverOptions.setFake(false);
         driverOptions.setPdGroupId(extOpts.getCoordOptions().getGroup());
-        driverOptions.setInitialPdServerList(extOpts.getCoordOptions().getInitCoordRaftList());
+        driverOptions.setInitialPdServerList(extOpts.getCoordOptions().getInitCoordRaftSvrList());
         CliOptions cliOptions = new CliOptions();
         cliOptions.setMaxRetry(extOpts.getCliOptions().getMaxRetry());
         cliOptions.setTimeoutMs(extOpts.getCliOptions().getTimeoutMs());
         driverOptions.setCliOptions(cliOptions);
         rowStoreOpts.setPlacementDriverOptions(driverOptions);
 
-        // StoreEngineOptions.serverAddress is replace by raft configuration
         Endpoint endpoint = new Endpoint(svrOpts.getIp(), svrOpts.getRaft().getPort());
         extOpts.getStoreEngineOptions().setServerAddress(endpoint);
 
@@ -116,8 +97,6 @@ public class ExecutorServer {
     }
 
     private void storeHeartBeatSender() {
-        /*HeartbeatOptions heartbeatOpts = RowStoreInstance.getKvStoreOptions().getStoreEngineOptions()
-            .getHeartbeatOptions();*/
         HeartbeatOptions heartbeatOpts =
             svrOpts.getOptions().getStoreEngineOptions().getHeartbeatOptions();
         if (heartbeatOpts == null) {
@@ -138,15 +117,4 @@ public class ExecutorServer {
             .map(StoreServiceProvider::get).orElse(null);
     }
 
-    /*
-    private StoreService loadStoreService() {
-        String store = configuration.store();
-        List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
-        ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
-        if (storeServiceProviders.size() == 1) {
-            return Optional.ofNullable(storeServiceProviders.get(0)).map(StoreServiceProvider::get).orElse(null);
-        }
-        return storeServiceProviders.stream().filter(provider -> store.equals(provider.getClass().getName())).findAny()
-            .map(StoreServiceProvider::get).orElse(null);
-    }*/
 }

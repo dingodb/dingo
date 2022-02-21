@@ -9,7 +9,7 @@ coordinator:
     raft:
         group: COORDINATOR_RAFT
         port: 9181
-        initCoordSrvList: 172.20.3.94:9181,172.20.3.95:9181,172.20.3.96:9181
+        initCoordRaftSvrList: 172.20.3.94:9181,172.20.3.95:9181,172.20.3.96:9181
     options:
         storeDBOptions:
             dataPath: /opt/dingo/meta

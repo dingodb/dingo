@@ -17,12 +17,10 @@
 package io.dingodb.server.client.meta.service;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.NetAddress;
-import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,10 +35,8 @@ public class MetaServiceClientProvider implements MetaServiceProvider {
     private static final MetaServiceClient META_SERVICE_CLIENT;
 
     static {
-        //int times = 5;
-        //CoordinatorConnector connector = new CoordinatorConnector(ClientConfiguration.INSTANCE.coordinatorServers());
         int times = DingoOptions.instance().getCliOptions().getMaxRetry();
-        final String coordSrvList = DingoOptions.instance().getCoordOptions().getInitCoordSrvList();
+        final String coordSrvList = DingoOptions.instance().getCoordOptions().getInitCoordExchangeSvrList();
         log.info("Meta service provider, coordSrvList: {}", coordSrvList);
         List<String> servers = Arrays.asList(coordSrvList.split(","));
 
