@@ -17,20 +17,13 @@
 package io.dingodb.store.row;
 
 import io.dingodb.common.table.TableId;
-import io.dingodb.raft.option.CliOptions;
-import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.row.client.DefaultDingoRowStore;
 import io.dingodb.store.row.errors.DingoRowStoreRuntimeException;
 import io.dingodb.store.row.options.DingoRowStoreOptions;
-import io.dingodb.store.row.options.PlacementDriverOptions;
-import io.dingodb.store.row.options.RegionEngineOptions;
-import io.dingodb.store.row.options.StoreDBOptions;
-import io.dingodb.store.row.options.StoreEngineOptions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
@@ -39,15 +32,6 @@ public class RowStoreInstance implements StoreInstance {
     private final Map<byte[], RowPartitionOper> blockMap;
     private static volatile DefaultDingoRowStore kvStore;
     private static DingoRowStoreOptions rowStoreOptions;
-
-    /*
-    static {
-        kvStore = new DefaultDingoRowStore();
-        DingoRowStoreOptions options = getKvStoreOptions();
-        if (!kvStore.init(options)) {
-            throw new DingoRowStoreRuntimeException("Fail to start [DefaultDingoRowStore].");
-        }
-    }*/
 
     public RowStoreInstance(String path) {
         this.blockMap = new LinkedHashMap<>();
@@ -72,21 +56,6 @@ public class RowStoreInstance implements StoreInstance {
         return kvStore;
     }
 
-
-    /*
-    public static DefaultDingoRowStore kvStore() {
-        log.info("get kv store!!!");
-        return kvStore;
-    }*/
-
-    /*
-    @Nonnull
-    public String blockDir(@Nonnull String tableName, @Nonnull Object partId) {
-        return path + File.separator
-            + tableName.replace(".", File.separator).toLowerCase() + File.separator
-            + partId;
-    }*/
-
     @Override
     public synchronized RowPartitionOper getKvBlock(@Nonnull TableId tableId, Object partId, boolean isMain) {
         // `partId` is not used for `DefaultDingoRowStore`.
@@ -96,40 +65,4 @@ public class RowStoreInstance implements StoreInstance {
         );
     }
 
-
-    /*public static DingoRowStoreOptions getKvStoreOptions() {
-        RowStoreConfiguration configuration = RowStoreConfiguration.INSTANCE;
-
-        DingoRowStoreOptions options = new DingoRowStoreOptions();
-
-        options.setClusterId(configuration.clusterId());
-        options.setClusterName(configuration.clusterName());
-        options.setInitialServerList(configuration.clusterInitialServerList());
-        options.setFailoverRetries(configuration.clusterFailoverRetries());
-        options.setFutureTimeoutMillis(configuration.futureTimeMillis());
-
-        PlacementDriverOptions driverOptions = new PlacementDriverOptions();
-        driverOptions.setFake(configuration.coordinatorOptionsFake());
-        driverOptions.setPdGroupId(configuration.coordinatorOptionsRaftGroupId());
-        driverOptions.setInitialPdServerList(configuration.coordinatorOptionsInitCoordinatorSrvList());
-        CliOptions cliOptions = new CliOptions();
-        cliOptions.setMaxRetry(configuration.coordinatorOptionsCliOptionsMaxRetry());
-        cliOptions.setTimeoutMs(configuration.coordinatorOptionsCliOptionsTimeoutMs());
-        driverOptions.setCliOptions(cliOptions);
-        options.setPlacementDriverOptions(driverOptions);
-
-        StoreEngineOptions storeEngineOptions = new StoreEngineOptions();
-        StoreDBOptions storeDBOptions = new StoreDBOptions();
-        storeDBOptions.setDataPath(configuration.storeEngineOptionsRocksDbOptionsDbPath());
-        storeEngineOptions.setStoreDBOptions(storeDBOptions);
-        Endpoint endpoint = new Endpoint(configuration.storeEngineOptionsServerAddressId(),
-            configuration.storeEngineOptionsServerAddressPort());
-        storeEngineOptions.setServerAddress(endpoint);
-
-        List<RegionEngineOptions> regionEngineOptionsList = configuration.storeEngineOptionsRegionEngineOptionsList();
-        storeEngineOptions.setRegionEngineOptionsList(regionEngineOptionsList);
-
-        options.setStoreEngineOptions(storeEngineOptions);
-        return options;
-    }*/
 }

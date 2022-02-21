@@ -1,17 +1,17 @@
 cluster:
     name: dingo
 executor:
-    ip: 172.20.3.95
+    ip: 172.20.3.95 # your ip
     exchange:
-        port: 19191
+        port: 19191 # listen port
     raft:
-        port: 10181
-        initExecSrvList: 172.20.3.94:10181,172.20.3.95:10181,172.20.3.96:10181
+        port: 10181 # store port
+        initExecRaftSvrList: 172.20.3.94:10181,172.20.3.95:10181,172.20.3.96:10181
     options:
         coordOptions:
             group: COORDINATOR_RAFT
-            initCoordRaftList: 172.20.3.94:9181,172.20.3.95:9181,172.20.3.96:9181
-            initCoordSrvList: 172.20.3.94:19181,172.20.3.95:19181,172.20.3.96:19181
+            initCoordRaftSvrList: 172.20.3.94:9181,172.20.3.95:9181,172.20.3.96:9181
+            initCoordExchangeSvrList: 172.20.3.94:19181,172.20.3.95:19181,172.20.3.96:19181
         storeEngineOptions:
             kvRpcCoreThreads: 8
             storeDBOptions:

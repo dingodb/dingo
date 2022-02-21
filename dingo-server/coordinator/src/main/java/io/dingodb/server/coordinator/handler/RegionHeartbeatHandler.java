@@ -24,7 +24,6 @@ import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.GeneralId;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.ClusterStatsManager;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
 import io.dingodb.store.row.cmd.pd.RegionHeartbeatRequest;
@@ -51,7 +50,6 @@ public class RegionHeartbeatHandler implements MessageListener, RpcProcessor<Reg
     public static final Class<RegionHeartbeatRequest> REQ_CLASS = RegionHeartbeatRequest.class;
 
     private final RowStoreMetaAdaptor rowStoreMetaAdaptor;
-    //private final boolean autoBalanceSplit = CoordinatorConfiguration.instance().autoSchedule();
     private boolean autoBalanceSplit;
     private ClusterStatsManager clusterStatsManager = ClusterStatsManager.getInstance(0);
 

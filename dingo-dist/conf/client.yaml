@@ -1,11 +1,11 @@
 cluster:
     name: dingo
 client:
-    ip: 172.20.3.95
+    ip: 172.20.3.95 # your ip
     options:
         coordOptions:
             group: COORDINATOR_RAFT
-            initCoordSrvList: 172.20.3.94:19181,172.20.3.95:19181,172.20.3.96:19181
+            initCoordExchangeSvrList: 172.20.3.94:19181,172.20.3.95:19181,172.20.3.96:19181
         cliOptions:
             timeoutMs: 10000
             maxRetry: 3

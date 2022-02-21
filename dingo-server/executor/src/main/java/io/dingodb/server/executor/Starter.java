@@ -44,11 +44,7 @@ public class Starter {
             commander.usage();
             return;
         }
-        /*
-        ExecutorConfiguration configuration = ExecutorConfiguration.instance();
-        YAML.parse(new FileInputStream(this.config), Map.class).forEach((k, v) -> configuration.set(k.toString(), v));
 
-         */
         DingoConfiguration.configParse(this.config);
         ExecutorOptions svrOpts = DingoConfiguration.instance().getAndConvert("executor",
             ExecutorOptions.class, ExecutorOptions::new);
@@ -67,8 +63,8 @@ public class Starter {
 
         GroupServerOptions groupServerOptions = new GroupServerOptions();
         groupServerOptions.setGroup(opts.getOptions().getCoordOptions().getGroup());
-        groupServerOptions.setInitCoordSrvList(
-            opts.getOptions().getCoordOptions().getInitCoordSrvList()
+        groupServerOptions.setInitCoordExchangeSvrList(
+            opts.getOptions().getCoordOptions().getInitCoordExchangeSvrList()
         );
         DingoOptions.instance().setCoordOptions(groupServerOptions);
         DingoOptions.instance().setCliOptions(opts.getOptions().getCliOptions());

@@ -19,7 +19,6 @@ package io.dingodb.server.coordinator.handler;
 import io.dingodb.common.config.DingoOptions;
 import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcProcessor;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -27,8 +26,6 @@ import lombok.ToString;
 import java.io.Serializable;
 
 public class GetLocationHandler implements RpcProcessor<GetLocationHandler.GetLocationRequest> {
-
-    //private final CoordinatorConfiguration configuration = CoordinatorConfiguration.instance();
 
     @Override
     public void handleRequest(RpcContext rpcCtx, GetLocationRequest request) {

@@ -16,7 +16,6 @@
 
 package io.dingodb.server.executor;
 
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Status;
@@ -58,8 +57,6 @@ public class StoreHeartbeatSender implements Lifecycle<HeartbeatOptions> {
     private static final Logger LOG = LoggerFactory.getLogger(StoreHeartbeatSender.class);
 
     public static final Endpoint CURRENT_LOCATION = new Endpoint(
-        //DingoConfiguration.instance().instanceHost(),
-        //DingoConfiguration.instance().instancePort()
         DingoOptions.instance().getIp(),
         DingoOptions.instance().getExchange().getPort()
     );

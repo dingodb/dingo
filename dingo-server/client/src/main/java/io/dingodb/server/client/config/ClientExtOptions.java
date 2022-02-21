@@ -27,6 +27,5 @@ import lombok.ToString;
 @ToString
 public class ClientExtOptions {
     private GroupServerOptions coordOptions;
-    //private ClientExecutorOptions execOptions;
     private ClOptions cliOptions;
 }
