@@ -9,7 +9,7 @@ Maintain status of global and branch transactions, drive the global commit or ro
 
 ## Raft Engine
 
-Raft Engine is an embedded persistent storage engine with a log-structured design. It is built for TiKV to store multi-Raft logs. DingoDB supports using Raft Engine as the log storage engine.
+Raft Engine is an embedded persistent storage engine with a log-structured design. It is built for distributed key-value store to store multi-Raft logs. DingoDB supports using Raft Engine as the log storage engine.
 
 ## Region
 
