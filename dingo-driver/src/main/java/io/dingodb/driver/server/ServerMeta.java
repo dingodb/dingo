@@ -18,6 +18,7 @@ package io.dingodb.driver.server;
 
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.driver.DingoFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -33,6 +34,7 @@ import javax.annotation.Nonnull;
 
 // Only one meta instance exists in avatica server.
 // Bridge it to connection specified meta of local driver.
+@Slf4j
 public class ServerMeta implements Meta {
     private final Map<String, Meta> metaMap = new LinkedHashMap<>();
 
@@ -444,6 +446,10 @@ public class ServerMeta implements Meta {
     @Override
     public void closeStatement(@Nonnull StatementHandle sh) {
         Meta meta = metaMap.get(sh.connectionId);
+        if (meta == null) {
+            log.warn("Close statement id [{}], unknown connection id [{}].", sh.id, sh.connectionId);
+            return;
+        }
         meta.closeStatement(sh);
     }
 

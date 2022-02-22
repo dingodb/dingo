@@ -38,7 +38,7 @@ public final class DingoParserContext {
         typeFactory = new JavaTypeFactoryImpl();
         rootSchema = CalciteSchema.createRootSchema(
             true,
-            true,
+            false,
             DingoSchema.SCHEMA_NAME,
             DingoSchema.ROOT
         );

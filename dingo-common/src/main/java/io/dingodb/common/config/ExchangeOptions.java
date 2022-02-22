@@ -24,5 +24,5 @@ import lombok.ToString;
 @Setter
 @ToString
 public class ExchangeOptions {
-    private int port;
+    private Integer port;
 }

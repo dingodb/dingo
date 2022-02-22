@@ -52,6 +52,9 @@ public class DingoConfiguration {
     }
 
     public Object get(String name) {
+        if (name == null || name.isEmpty()) {
+            return new HashMap<>(configs);
+        }
         Object value;
         if ((value = configs.get(name)) != null) {
             return value;

@@ -18,7 +18,6 @@ package io.dingodb.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.cli.handler.SqlLineHandler;
 import io.dingodb.common.config.ClusterOptions;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
@@ -32,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.server.AvaticaJsonHandler;
 import org.apache.calcite.avatica.server.HttpServer;
 import org.apache.calcite.avatica.server.Main;
+import sqlline.DingoSqlline;
+import sqlline.SqlLine;
 
 import java.net.DatagramSocket;
 import java.util.ServiceLoader;
@@ -50,47 +51,8 @@ public class Tools {
     @Parameter(names = "--config", description = "Config file path.", order = 2)
     private String config;
 
-    @Parameter(names = "--resource", description = "Resource name.", order = 3)
-        private String resource;
-
-    @Parameter(names = "--replicas", description = "Resource replicas.", order = 4)
-    private Integer replicas;
-
-    @Parameter(names = "--host", description = "Coordinator host.", order = 5)
-    private String host;
-
     @Parameter(names = "--port", description = "Coordinator port.", order = 6)
-    private Integer port;
-
-    @Parameter(names = "--printLog", description = "Whether print log.", order = 7)
-    private boolean printLog = false;
-
-    @Parameter(names = "--executor", description = "Executor name(instance id).", order = 8)
-    private boolean executor;
-
-    @Parameter(names = "--table", description = "Table name.", order = 9)
-    private boolean table;
-
-    @Parameter(names = "--name", order = 10)
-    private String name;
-
-    @Parameter(names = "--file", order = 11)
-    private String file;
-
-    @Parameter(names = "--batch", order = 12)
-    private int batch = 1000;
-
-    @Parameter(names = "--parallel", order = 13)
-    private int parallel = 10;
-
-    @Parameter(names = "--showSql", order = 14)
-    private boolean showSql;
-
-    @Parameter(names = "--delete", order = 15)
-    private boolean delete;
-
-    @Parameter(names = "--tag", description = "Tag.", order = 16)
-    private String tag;
+    private Integer port = 8765;
 
     public static void main(String[] args) throws Exception {
         Tools tools = new Tools();
@@ -116,18 +78,20 @@ public class Tools {
 
         switch (cmd.toUpperCase()) {
             case "SQLLINE":
-                SqlLineHandler.handler(new String[0]);
+                log.info("Listen exchange port {}.", listenRandomPort());
+                DingoSqlline sqlline = new DingoSqlline();
+                sqlline.connect();
+                SqlLine.Status status = sqlline.begin(new String[0], null, true);
+                if (!Boolean.getBoolean("sqlline.system.exit")) {
+                    System.exit(status.ordinal());
+                }
                 break;
             case "DRIVER":
-                DatagramSocket datagramSocket = new DatagramSocket();
-                netService.listenPort(datagramSocket.getLocalPort());
-                DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());
-                datagramSocket.close();
-
+                log.info("Listen exchange port {}.", listenRandomPort());
                 Services.initNetService();
                 HttpServer server = Main.start(
                     new String[]{ServerMetaFactory.class.getCanonicalName()},
-                    8765,
+                    port,
                     AvaticaJsonHandler::new
                 );
                 server.join();
@@ -135,6 +99,22 @@ public class Tools {
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
         }
+    }
+
+    private int listenRandomPort()  {
+        int times = 3;
+        while (times-- > 0) {
+            try {
+                DatagramSocket datagramSocket = new DatagramSocket();
+                netService.listenPort(datagramSocket.getLocalPort());
+                DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());
+                datagramSocket.close();
+                return datagramSocket.getLocalPort();
+            } catch (Exception e) {
+                log.error("Listen port error.", e);
+            }
+        }
+        throw new RuntimeException("Listen port failed.");
     }
 
     private void initDingoOptions(final ClientOptions opts, final ClusterOptions clusterOpts) {
