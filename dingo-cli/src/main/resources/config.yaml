@@ -5,7 +5,7 @@ client:
     options:
         coordOptions:
             group: COORDINATOR_RAFT
-            initCoordSrvList: node1:19181,node2:19181,node3:19181
+            initCoordExchangeSvrList: node1:19181,node2:19181,node3:19181
         cliOptions:
             timeoutMs: 10000
             maxRetry: 3
