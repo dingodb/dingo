@@ -47,9 +47,15 @@ public class DingoDriverExample {
             return;
         }
 
-        final Long startTime = System.currentTimeMillis();
+        String inputConnect = args[0];
+        String command = args[1];
         Long recordCnt = 1L;
+        String tableName = args[2];
+
         Statement statement = null;
+        final Long startTime = System.currentTimeMillis();
+        // default ip:172.20.3.13
+        connectUrl = connectUrl.replace(defaultConnectIp, inputConnect);
 
         try {
             Class.forName("io.dingodb.driver.client.DingoDriverClient");
@@ -63,12 +69,9 @@ public class DingoDriverExample {
             return ;
         }
 
-        // default ip:172.20.3.13
-        String inputConnect = args[0];
-        connectUrl = connectUrl.replace(defaultConnectIp, inputConnect);
-        String command = args[1];
-        String tableName =  args[2];
         int batchCnt = 20;
+        recordCnt = 1000L;
+
         if (args.length > 3) {
             recordCnt = Long.parseLong(args[3]);
         }
