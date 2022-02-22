@@ -114,6 +114,7 @@ public final class TaskImpl implements Task {
                     }
                 } catch (RuntimeException e) {
                     e.printStackTrace();
+                    log.error("Operator:{} run catch Exception:{}", operator.getId(), e.toString(), e);
                 }
             });
         });

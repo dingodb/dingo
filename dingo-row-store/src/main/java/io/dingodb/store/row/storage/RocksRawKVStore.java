@@ -1204,29 +1204,28 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
         try (final ReadOptions readOptions = new ReadOptions()) {
             readOptions.setSnapshot(snapshot);
             try (final RocksIterator it = this.db.newIterator(readOptions)) {
-                Slice start = null;
-                Slice limit = null;
-                it.seekToFirst();
-                if (it.isValid()) {
-                    start = new Slice(it.key());
+                if (startKey == null) {
+                    it.seekToFirst();
+                } else {
+                    it.seek(startKey);
                 }
-                it.seekToLast();
-                if (it.isValid()) {
-                    limit = new Slice(it.key());
-                }
-                if (start != null && limit != null) {
-                    approximateTotalBytes = Arrays.stream(db.getApproximateSizes(
-                        Collections.singletonList(new Range(start, limit)),
-                        SizeApproximationFlag.INCLUDE_FILES,
-                        SizeApproximationFlag.INCLUDE_MEMTABLES
-                    )).sum();
+                long approximateKeys = 0;
+                for (;;) {
+                    // The accuracy is 100, don't ask more
+                    for (int i = 0; i < 100; i++) {
+                        if (!it.isValid()) {
+                            return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
+                        }
+                        approximateTotalBytes += it.key().length;
+                        approximateTotalBytes += it.value().length;
+                        it.next();
+                        ++approximateKeys;
+                    }
+                    if (endKey != null && BytesUtil.compare(it.key(), endKey) >= 0) {
+                        return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
+                    }
                 }
             }
-            long longProperty = db.getLongProperty(defaultHandle, "rocksdb.estimate-num-keys");
-            return new ApproximateKVStats(longProperty, approximateTotalBytes);
-        } catch (RocksDBException e) {
-            e.printStackTrace();
-            return new ApproximateKVStats(1L, 2L);
         } finally {
             // Nothing to release, rocksDB never own the pointer for a snapshot.
             snapshot.close();

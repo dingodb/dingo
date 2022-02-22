@@ -477,7 +477,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         if (!isSplitOK) {
             closure.setError(Errors.TOO_SMALL_TO_SPLIT);
             closure.run(new Status(-1, "RegionEngine[%s]'s split condition is not OK!. "
-                + "Write Keys:{} bytes(M): {}, Expected: keys:{}, bytes: 64M",
+                + "Write Keys:%ld bytes(M): %ld, Expected: keys:%ld, bytes: 64M",
                 regionId,
                 approximateKeys,
                 approximateBytes,
@@ -493,6 +493,14 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             return;
         }
         final KVOperation op = KVOperation.createRangeSplit(splitKey, regionId, newRegionId);
+        LOG.info("Store receive region split instruction: Old Region:{}, oldStartKey:{}, oldEndKey:{}, "
+                + "approximateKeys:{}, newRegionId:{}, splitKey:{}",
+            parentEngine.toString(),
+            startKey != null ? BytesUtil.toHex(startKey) : "null",
+            endKey != null ? BytesUtil.toHex(endKey) : "null",
+            approximateKeys,
+            newRegionId,
+            splitKey != null ? BytesUtil.toHex(splitKey) : "null");
         final Task task = new Task();
         task.setData(ByteBuffer.wrap(Serializers.getDefault().writeObject(op)));
         task.setDone(new KVClosureAdapter(closure, op));

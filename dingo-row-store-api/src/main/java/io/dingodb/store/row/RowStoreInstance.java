@@ -42,7 +42,6 @@ public class RowStoreInstance implements StoreInstance {
     }
 
     public static DefaultDingoRowStore kvStore() {
-        log.info("get kv store!!!");
         if (kvStore == null) {
             synchronized (DefaultDingoRowStore.class) {
                 if (kvStore == null) {
