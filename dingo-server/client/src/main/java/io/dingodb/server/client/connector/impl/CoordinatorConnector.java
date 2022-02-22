@@ -71,12 +71,14 @@ public class CoordinatorConnector implements Connector {
     @Override
     public Channel newChannel() {
         int times = 5;
+        int sleep = 200;
         while (!verify() && times-- > 0) {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(sleep);
                 refresh();
+                sleep += sleep;
             } catch (InterruptedException e) {
-                System.err.println("Wait coordinator connector ready interrupt.");
+                log.error("Wait coordinator connector ready, but interrupted.");
             }
         }
         return netService.newChannel(leaderChannel.get().remoteAddress());

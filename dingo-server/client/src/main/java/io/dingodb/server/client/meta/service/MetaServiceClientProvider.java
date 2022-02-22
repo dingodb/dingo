@@ -47,10 +47,12 @@ public class MetaServiceClientProvider implements MetaServiceProvider {
 
         CoordinatorConnector connector = new CoordinatorConnector(addrList);
 
+        int sleep = 200;
         do {
             connector.refresh();
             try {
-                Thread.sleep(10000);
+                Thread.sleep(sleep);
+                sleep += sleep;
             } catch (InterruptedException e) {
                 System.err.println("Wait coordinator connector ready interrupt.");
             }

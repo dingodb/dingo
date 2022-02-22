@@ -158,6 +158,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 td.addColumn(cd);
             }
         }
+        if (td.getColumns().stream().noneMatch(ColumnDefinition::isPrimary)) {
+            throw new RuntimeException("Not have primary key!");
+        }
         final MutableSchema schema = getSchema(context);
         if (schema.getTable(tableName) != null) {
             if (!create.ifNotExists) {
