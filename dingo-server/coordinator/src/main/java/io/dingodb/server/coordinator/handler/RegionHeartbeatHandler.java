@@ -73,7 +73,6 @@ public class RegionHeartbeatHandler implements MessageListener, RpcProcessor<Reg
                 Optional.ofNullable(balance(request.getRegion(), request.getRegionStats()))
                     .ifAbsentSet(() -> split(request))
                     .ifPresent(response.getValue()::add);
-
             }
         } else {
             response.setError(Errors.NOT_LEADER);
