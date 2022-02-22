@@ -1,4 +1,4 @@
-# Deploying DingoDB with Docker
+# Deploying with Docker
 
 We want your experience getting started with DingoDB to be both low effort and high reward. Here you'll find a collection of quick start guides about the basic operations about dingo such as DDL and DML using SQL. This tutorial will guide you through creating a DingoDB `Table`, insert a sample dataset, and then executing queries on that data. This will take around 10 minutes to complete
 
