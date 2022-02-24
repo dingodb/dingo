@@ -104,7 +104,7 @@ public class DingoFactory implements AvaticaFactory {
         Meta.Frame firstFrame
     ) throws SQLException {
         final ResultSetMetaData metaData = newResultSetMetaData(statement, signature);
-        return new AvaticaResultSet(
+        return new DingoResultSet(
             statement,
             state,
             signature,
