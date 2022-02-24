@@ -23,7 +23,9 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
+import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -32,7 +34,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.RelRunner;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import javax.annotation.Nonnull;
@@ -51,9 +52,12 @@ public class DingoConnection extends AvaticaConnection {
         context = new DingoParserContext();
     }
 
-    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
-        // `lookupStatement` is protected.
-        return (DingoStatement) lookupStatement(sh);
+    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws NoSuchStatementException {
+        AvaticaStatement statement = statementMap.get(sh.id);
+        if (statement == null) {
+            throw new NoSuchStatementException(sh);
+        }
+        return (DingoStatement) statement;
     }
 
     public DingoContext createContext() {

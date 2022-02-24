@@ -16,7 +16,6 @@
 
 package io.dingodb.driver;
 
-import io.dingodb.exec.base.Job;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 
@@ -35,17 +34,5 @@ public class DingoStatement extends AvaticaStatement {
             resultSetConcurrency,
             resultSetHoldability
         );
-    }
-
-    Meta.CursorFactory getCursorFactory() {
-        return getSignature().cursorFactory;
-    }
-
-    void setDingoSignature(DingoSignature signature) {
-        setSignature(signature);
-    }
-
-    Job getJob() {
-        return ((DingoSignature) getSignature()).getJob();
     }
 }

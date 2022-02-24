@@ -19,9 +19,7 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.calcite.DingoSchema;
-import io.dingodb.calcite.JobRunner;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.base.Job;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -31,27 +29,19 @@ import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.sql.parser.SqlParseException;
 
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Slf4j
 class DingoMeta extends MetaImpl {
-
-    private final Map<Integer, Statement> statementMap = new LinkedHashMap<>();
-
     public DingoMeta(DingoConnection connection) {
         super(connection);
     }
@@ -77,7 +67,7 @@ class DingoMeta extends MetaImpl {
 
     @Override
     public ExecuteResult prepareAndExecute(
-        StatementHandle sh,
+        @Nonnull StatementHandle sh,
         String sql,
         long maxRowCount,
         int maxRowsInFirstFrame,
@@ -88,6 +78,7 @@ class DingoMeta extends MetaImpl {
             DingoConnection.DingoContext context = dingoConnection.createContext();
             DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
             final DingoSignature signature = parser.parseQuery(sql, context);
+            sh.signature = signature;
             final int updateCount;
             switch (signature.statementType) {
                 case CREATE:
@@ -106,9 +97,6 @@ class DingoMeta extends MetaImpl {
                 // Buf not for remote driver. Don't know why.
                 callback.assign(signature, null, updateCount);
             }
-            DingoStatement statement = dingoConnection.getStatement(sh);
-            statementMap.put(sh.id, statement);
-            statement.setDingoSignature(signature);
             // For local driver, here `fetch` is called.
             callback.execute();
             final MetaResultSet metaResultSet = MetaResultSet.create(
@@ -151,12 +139,16 @@ class DingoMeta extends MetaImpl {
         final DingoConnection dingoConnection = (DingoConnection) connection;
         try {
             DingoStatement stmt = dingoConnection.getStatement(sh);
-            statementMap.put(sh.id, stmt);
-            Job job = stmt.getJob();
-            Enumerator<Object[]> enumerator = new JobRunner(job).createEnumerator();
-            final Iterator iterator = Linq4j.enumeratorIterator(enumerator);
-            final List rows = MetaImpl.collect(stmt.getCursorFactory(), iterator, new ArrayList<>());
-            boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
+            DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
+            if (resultSet == null) {
+                throw new MissingResultsException(sh);
+            }
+            final Iterator<Object[]> iterator = resultSet.getIterator();
+            final List rows = new ArrayList(fetchMaxRowCount);
+            for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                rows.add(Arrays.asList(iterator.next()));
+            }
+            boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -194,7 +186,7 @@ class DingoMeta extends MetaImpl {
                 .stream()
                 .map(name -> Arrays.asList("DINGO", name, "TABLE"))
                 .collect(Collectors.toSet());
-            String[] cols = new String[] {
+            String[] cols = new String[]{
                 "TABLE_SCHEM",
                 "TABLE_NAME",
                 "TABLE_TYPE",
@@ -205,7 +197,6 @@ class DingoMeta extends MetaImpl {
             }
             CursorFactory cursorFactory = CursorFactory.ARRAY;
             AvaticaStatement statement = connection.createStatement();
-            statementMap.put(statement.getId(), statement);
             return MetaResultSet.create(
                 ch.id,
                 statement.getId(),
@@ -235,14 +226,14 @@ class DingoMeta extends MetaImpl {
         Pat columnNamePattern
     ) {
         try {
-            String[] cols = new String[] {
+            String[] cols = new String[]{
                 "COLUMN_NAME",
                 "TYPE_NAME",
                 "CHAR_OCTET_LENGTH",
                 "DECIMAL_DIGITS",
                 "NULLABLE",
                 "IS_AUTOINCREMENT",
-                };
+            };
             Set<Object> metaCols = Services.META.getTableDefinition(tableNamePattern.s)
                 .getColumns()
                 .stream()
@@ -254,19 +245,18 @@ class DingoMeta extends MetaImpl {
                     !col.isNotNull(),
                     false
                 )).collect(Collectors.toSet());
-            List<ColumnMetaData> columnMetaDatas = new ArrayList<>();
+            List<ColumnMetaData> columnMetaDatum = new ArrayList<>();
             for (int i = 0; i < cols.length; i++) {
-                columnMetaDatas.add(columnMetaData(cols[i], i, String.class, true));
+                columnMetaDatum.add(columnMetaData(cols[i], i, String.class, true));
             }
             CursorFactory cursorFactory = CursorFactory.ARRAY;
             AvaticaStatement statement = connection.createStatement();
-            statementMap.put(statement.getId(), statement);
             return MetaResultSet.create(
                 ch.id,
                 statement.getId(),
                 true,
                 new Signature(
-                    columnMetaDatas,
+                    columnMetaDatum,
                     "",
                     ImmutableList.of(),
                     ImmutableMap.of(),
@@ -283,16 +273,7 @@ class DingoMeta extends MetaImpl {
 
     @Override
     public void closeStatement(StatementHandle sh) {
-        Statement statement = statementMap.remove(sh.id);
-        if (statement == null) {
-            //log.warn("Statement is null, connection id [{}], statement id [{}].", sh.connectionId, sh.id);
-        } else {
-            try {
-                statement.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        // Called in `AvaticaStatement.close` to do extra things.
     }
 
     @Override
