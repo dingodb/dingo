@@ -32,11 +32,6 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-//    from(project(':dingo-row-store-api').layout.buildDirectory) {
-//        include('libs/dingo-row-store-api-*-all.jar')
-//    }
-    into layout.projectDirectory.dir("dingo")
-
     from(project(':dingo-server:dingo-server-executor').layout.buildDirectory) {
         include('libs/dingo-server-executor-*-all.jar')
     }
@@ -49,6 +44,11 @@ task copyDepends(type: Copy) {
 
     from(project(':dingo-driver-client').layout.buildDirectory) {
         include('libs/dingo-driver-client-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(project(':dingo-test').layout.buildDirectory) {
+        include('libs/dingo-test-*-all.jar')
     }
     into layout.projectDirectory.dir("dingo")
 
