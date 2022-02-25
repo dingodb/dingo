@@ -6,5 +6,5 @@ Getting Started
    :glob:
 
    how_to_use_dingodb.md
-   deploy_standalone.md
+   play_with_dingo.md
    sql/index
