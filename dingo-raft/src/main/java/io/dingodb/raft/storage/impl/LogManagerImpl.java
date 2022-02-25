@@ -243,15 +243,6 @@ public class LogManagerImpl implements LogManager {
         stopDiskThread();
     }
 
-    private void clearMemoryLogs(final LogId id) {
-        this.writeLock.lock();
-        try {
-            this.logsInMemory.removeFromFirstWhen(entry -> entry.getId().compareTo(id) <= 0);
-        } finally {
-            this.writeLock.unlock();
-        }
-    }
-
     private static class LastLogIdClosure extends StableClosure {
 
         public LastLogIdClosure() {
@@ -316,19 +307,19 @@ public class LogManagerImpl implements LogManager {
             }
             done.setEntries(entries);
 
-            int retryTimes = 0;
+            // 1. release the lock.
+            doUnlock = false;
+            if (!wakeupAllWaiter(this.writeLock)) {
+                notifyLastLogIndexListeners();
+            }
+
+            // 2. Publish Event to Disruptor Queue.
             final EventTranslator<StableClosureEvent> translator = (event, sequence) -> {
                 event.reset();
                 event.type = EventType.OTHER;
                 event.done = done;
             };
-
-            boolean isOK = false;
-            isOK = doPublish(done, translator);
-            doUnlock = false;
-            if (!wakeupAllWaiter(this.writeLock)) {
-                notifyLastLogIndexListeners();
-            }
+            doPublish(done, translator);
         } finally {
             if (doUnlock) {
                 this.writeLock.unlock();
@@ -576,17 +567,18 @@ public class LogManagerImpl implements LogManager {
             }
             this.diskId = id;
             clearId = this.diskId.compareTo(this.appliedId) <= 0 ? this.diskId : this.appliedId;
+            if (clearId != null) {
+                this.logsInMemory.removeFromFirstWhen(entry -> entry.getId().compareTo(clearId) <= 0);
+            }
         } finally {
             this.writeLock.unlock();
-        }
-        if (clearId != null) {
-            clearMemoryLogs(clearId);
         }
     }
 
     @Override
     public void setSnapshot(final SnapshotMeta meta) {
         LOG.debug("set snapshot: {}.", meta);
+        boolean isUnLock = true;
         this.writeLock.lock();
         try {
             if (meta.getLastIncludedIndex() <= this.lastSnapshotId.getIndex()) {
@@ -615,11 +607,14 @@ public class LogManagerImpl implements LogManager {
             //            if (this.lastSnapshotId.compareTo(this.diskId) > 0) {
             //                this.diskId = this.lastSnapshotId.copy();
             //            }
-
+            long firstKeepedIndex = 0L;
             if (term == 0) {
                 // last_included_index is larger than last_index
                 // FIXME: what if last_included_index is less than first_index?
-                truncatePrefix(meta.getLastIncludedIndex() + 1);
+                firstKeepedIndex = meta.getLastIncludedIndex() + 1;
+                truncatePrefix(firstKeepedIndex);
+                isUnLock = false;
+                writeLock.unlock();
             } else if (term == meta.getLastIncludedTerm()) {
                 // Truncating log to the index of the last snapshot.
                 // We don't truncate log before the last snapshot immediately since
@@ -627,15 +622,35 @@ public class LogManagerImpl implements LogManager {
                 // followers
                 // TODO if there are still be need?
                 if (savedLastSnapshotIndex > 0) {
-                    truncatePrefix(savedLastSnapshotIndex + 1);
+                    firstKeepedIndex = savedLastSnapshotIndex + 1;
+                    truncatePrefix(firstKeepedIndex);
+                    isUnLock = false;
+                    writeLock.unlock();
                 }
             } else {
-                if (!reset(meta.getLastIncludedIndex() + 1)) {
-                    LOG.warn("Reset log manager failed, nextLogIndex={}.", meta.getLastIncludedIndex() + 1);
+                final long lastIncludeIndex = meta.getLastIncludedIndex() + 1;
+                boolean isOK = reset(lastIncludeIndex);
+                isUnLock = false;
+                writeLock.unlock();
+
+                if (isOK) {
+                    final ResetClosure c = new ResetClosure(lastIncludeIndex);
+                    doPublish(c, EventType.RESET);
+                    LOG.warn("Reset log manager, nextLogIndex={}", lastIncludeIndex);
+                } else {
+                    LOG.warn("Reset log manager failed, nextLogIndex={}.", lastIncludeIndex);
                 }
             }
+
+            if (firstKeepedIndex != 0) {
+                final TruncatePrefixClosure c = new TruncatePrefixClosure(firstKeepedIndex);
+                doPublish(c, EventType.TRUNCATE_PREFIX);
+            }
+
         } finally {
-            this.writeLock.unlock();
+            if (isUnLock) {
+                this.writeLock.unlock();
+            }
         }
 
     }
@@ -672,13 +687,21 @@ public class LogManagerImpl implements LogManager {
 
     @Override
     public void clearBufferedLogs() {
+        boolean isUnLock = true;
         this.writeLock.lock();
         try {
-            if (this.lastSnapshotId.getIndex() != 0) {
-                truncatePrefix(this.lastSnapshotId.getIndex() + 1);
+            long firstIndexKept = this.lastSnapshotId.getIndex() + 1;
+            if (firstIndexKept != 1) {
+                truncatePrefix(firstIndexKept);
+                isUnLock = false;
+                this.writeLock.unlock();
             }
+            final TruncatePrefixClosure c = new TruncatePrefixClosure(firstIndexKept);
+            doPublish(c, EventType.TRUNCATE_PREFIX);
         } finally {
-            this.writeLock.unlock();
+            if (isUnLock) {
+                this.writeLock.unlock();
+            }
         }
     }
 
@@ -934,25 +957,22 @@ public class LogManagerImpl implements LogManager {
         }
         LOG.debug("Truncate prefix, firstIndexKept is :{}", firstIndexKept);
         this.configManager.truncatePrefix(firstIndexKept);
+
+        // the push event has been extract to LogManagerImpl.
+        /*
         final TruncatePrefixClosure c = new TruncatePrefixClosure(firstIndexKept);
         doPublish(c, EventType.TRUNCATE_PREFIX);
+         */
         return true;
     }
 
     private boolean reset(final long nextLogIndex) {
-        this.writeLock.lock();
-        try {
-            this.logsInMemory.clear();
-            this.firstLogIndex = nextLogIndex;
-            this.lastLogIndex = nextLogIndex - 1;
-            this.configManager.truncatePrefix(this.firstLogIndex);
-            this.configManager.truncateSuffix(this.lastLogIndex);
-            final ResetClosure c = new ResetClosure(nextLogIndex);
-            doPublish(c, EventType.RESET);
-            return true;
-        } finally {
-            this.writeLock.unlock();
-        }
+        this.logsInMemory.clear();
+        this.firstLogIndex = nextLogIndex;
+        this.lastLogIndex = nextLogIndex - 1;
+        this.configManager.truncatePrefix(this.firstLogIndex);
+        this.configManager.truncateSuffix(this.lastLogIndex);
+        return true;
     }
 
     private void unsafeTruncateSuffix(final long lastIndexKept) {
@@ -1108,11 +1128,11 @@ public class LogManagerImpl implements LogManager {
             }
             this.appliedId = appliedId.copy();
             clearId = this.diskId.compareTo(this.appliedId) <= 0 ? this.diskId : this.appliedId;
+            if (clearId != null) {
+                this.logsInMemory.removeFromFirstWhen(entry -> entry.getId().compareTo(clearId) <= 0);
+            }
         } finally {
             this.writeLock.unlock();
-        }
-        if (clearId != null) {
-            clearMemoryLogs(clearId);
         }
     }
 
