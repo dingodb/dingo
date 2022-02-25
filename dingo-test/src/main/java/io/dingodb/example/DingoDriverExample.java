@@ -42,14 +42,13 @@ public class DingoDriverExample {
         if (args.length < 2) {
             System.out.println("Usage: java -jar io.dingodb.example.DingoDriverExample\r\n"
                 + "\t\t 172.20.3.14 create exampletest\r\n"
-                + "\t\t 172.20.3.14 insert exampletest 100000 10\r\n"
+                + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
                 + "\t\t 172.20.3.14 query  exampletest");
             return;
         }
 
         String inputConnect = args[0];
         String command = args[1];
-        Long recordCnt = 1L;
         String tableName = args[2];
 
         Statement statement = null;
@@ -69,8 +68,9 @@ public class DingoDriverExample {
             return ;
         }
 
+        Long recordCnt = 100L;
         int batchCnt = 20;
-        recordCnt = 1000L;
+        long startKey = 1L;
 
         if (args.length > 3) {
             recordCnt = Long.parseLong(args[3]);
@@ -78,6 +78,10 @@ public class DingoDriverExample {
         if (args.length > 4) {
             batchCnt = Integer.parseInt(args[4]);
         }
+        if (args.length > 5) {
+            startKey = Long.parseLong(args[5]);
+        }
+        System.out.println("RecordCnt: " + recordCnt + ", batchCnt:" + batchCnt + ", startKey:" + startKey);
 
         try {
             switch (command.toUpperCase()) {
@@ -86,7 +90,7 @@ public class DingoDriverExample {
                     break;
                 }
                 case "INSERT": {
-                    insertData(statement, tableName, recordCnt, batchCnt);
+                    insertData(statement, tableName, recordCnt, batchCnt, startKey);
                     break;
                 }
                 case "QUERY": {
@@ -133,10 +137,11 @@ public class DingoDriverExample {
     private static void insertData(final Statement statement,
                                    final String tableName,
                                    final Long recordCnt,
-                                   final int batchCnt) throws SQLException {
+                                   final int batchCnt,
+                                   final Long startKey) throws SQLException {
         String initStr = "insert into " + tableName + " values ";
         String midStr = initStr;
-        for (long i = 1; i < recordCnt + 1; i++) {
+        for (long i = startKey; i < recordCnt + 1; i++) {
             String row = "(" + i + ","
                 + padLeftZeros(String.valueOf(i), 10) + ","
                 + getRandomInt(10, 30) + ","
