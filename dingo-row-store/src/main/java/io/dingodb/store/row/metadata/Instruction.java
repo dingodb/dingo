@@ -57,7 +57,6 @@ public class Instruction implements Serializable {
     @ToString
     public static class RangeSplit implements Serializable {
         private static final long serialVersionUID = -3451109819719367744L;
-
         private String newRegionId;
     }
 

@@ -698,7 +698,10 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         Requires.requireTrue(rOptsList.size() == regionList.size());
         for (int i = 0; i < rOptsList.size(); i++) {
             final RegionEngineOptions rOpts = rOptsList.get(i);
-            if (!inConfiguration(rOpts.getServerAddress().toString(), rOpts.getInitialServerList())) {
+            boolean isOK = inConfiguration(rOpts.getServerAddress().toString(), rOpts.getInitialServerList());
+            if (!isOK) {
+                LOG.warn("Invalid serverAddress:{} not in initialServerList:{}, whole options:{}",
+                    rOpts.getServerAddress(), rOpts.getInitialServerList(), rOpts);
                 continue;
             }
             final Region region = regionList.get(i);
