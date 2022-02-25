@@ -386,6 +386,58 @@ public class QueryTest {
     }
 
     @Test
+    public void testSort() throws SQLException {
+        String sql = "select * from test order by id asc";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    TEST_ALL_DATA
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSort1() throws SQLException {
+        String sql = "select * from test order by name desc, amount";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "5, Emily, 5.5\n"
+                        + "4, Doris, 5.0\n"
+                        + "3, Cindy, 4.5\n"
+                        + "9, Cindy, 7.5\n"
+                        + "2, Betty, 4.0\n"
+                        + "7, Betty, 6.5\n"
+                        + "1, Alice, 3.5\n"
+                        + "6, Alice, 6.0\n"
+                        + "8, Alice, 7.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSortLimitOffset() throws SQLException {
+        String sql = "select * from test order by name desc, amount limit 3 offset 2";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "3, Cindy, 4.5\n"
+                        + "9, Cindy, 7.5\n"
+                        + "2, Betty, 4.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
     public void testUpdate() throws SQLException {
         String sql = "update test set amount = 100 where id = 1";
         try (Statement statement = connection.createStatement()) {

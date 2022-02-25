@@ -112,6 +112,7 @@ public final class TaskImpl implements Task {
                     while (operator.push(0, null)) {
                         log.info("Operator {} need another pushing.", operator.getId());
                     }
+                    operator.fin(0, null);
                 } catch (RuntimeException e) {
                     e.printStackTrace();
                     log.error("Operator:{} run catch Exception:{}", operator.getId(), e.toString(), e);

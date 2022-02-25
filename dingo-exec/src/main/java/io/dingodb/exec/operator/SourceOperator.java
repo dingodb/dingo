@@ -17,20 +17,25 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 
+import java.util.LinkedList;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 /**
  * Source operator has no inputs and only one output.
  */
 public abstract class SourceOperator extends SoleOutOperator {
-    protected final OperatorProfile profile = new OperatorProfile();
+    protected final List<OperatorProfile> profiles = new LinkedList<>();
 
     @Override
     public void init() {
         super.init();
+        OperatorProfile profile = new OperatorProfile();
         profile.setOperatorId(id);
+        profiles.add(profile);
     }
 
     public abstract boolean push();
@@ -42,5 +47,10 @@ public abstract class SourceOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
+        output.fin(new FinWithProfiles(profiles));
+    }
+
+    public OperatorProfile getProfile() {
+        return profiles.get(0);
     }
 }
