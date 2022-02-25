@@ -1,47 +1,53 @@
-# How to Use DingoDB?
+# How to Use DingoDB
 
 ## JDBC Driver
 
-### Connect DingoDB Using JDBC Driver
+### Start Driver Proxy
 
-Currently, dingodb supports JDBC driver and sqlline side modes. Before starting, first, compile the project to generate the corresponding jar package. In Gradle - > execute Gradle task, execute the following command:
+In DingoDB cluster, A JDBC Driver proxy should be start, it will pass the SQL query to `Coordinator` or `Executor`.
+
 ```shell
-gradle dingo-cli:build
+./bin/start-driver.sh
 ```
 
-- Start JDBC Proxy:  
-  The current JDBC mode uses the thin client mode. After receiving the SQL request, the corresponding request is routed to the back-end execution engine Executor. The driver is generated in previsous step. To start a JDBC proxy can use such command:  
-```shell
-  java -cp libs/dingo-cli-all.jar io.dingodb.cli.Tools driver --config conf/config-driver.yaml
-```
-  Configuration file, config-driver.yaml：  
-```
-  client:
-     coordinator:
-         servers: 172.20.3.200:19181,172.20.3.201:19181,172.20.3.202:19181
-     executor:
-         servers: 172.20.3.200:19191,172.20.3.201:19191,172.20.3.202:19191
-  instance.host: 172.20.3.200 
-```
+### Connect using dbeaver
 
-- Connect to DingoDB
-  
-  After starting the server, you can connect to the dingodb database in the code：
-```
+#### Setup Connection
+
+- add driver configuration
+
+![Operater Using Editor](../images/usage_dbeaver_setup_connection.png)
+
+- import driver class
+
+ ![Operater Using Editor](../images/usage_dbeaver_import_connection.png)
+
+#### Do Operation using Editor
+
+You can use dbeaver to view tables and queries.
+
+![Operater Using Editor](../images/usage_dbeaver_operation.png)
+
+### Connect using Java
+
+#### Setup Connection
+
+After starting the server, you can connect to the dingodb database:
+
+```Java
 Class.forName("io.dingodb.driver.client.DingoDriverClient");
 Connection connection = DriverManager.getConnection("jdbc:dingo:thin:url=http://172.20.3.200:8765");
 ```
-Connection string：
-```
-jdbc:dingo:thin:url=http://172.20.3.200:8765
-```
+
+```jdbc:dingo:thin:url=http://172.20.3.200:8765``` is the connection string.
 
 **The IP address should be the actual server IP address, and the default port is 8765.**
 
-### Read and Write Using JDBC
+#### Do Operation using Java
 
 - Create table
-```
+
+```java
 Statement statement = connection.createStatement();
 String sql = "create table exampleTest ("
             + "id int,"
@@ -53,17 +59,17 @@ String sql = "create table exampleTest ("
 statement.execute(sql);
 ```
 
-- Insert data
-```
+- Insert data to table
+
+```java
 Statement statement = connection.createStatement();
 String sql = "insert into exampleTest values (1, 'example001', 19, 11.0)";
 int count = statement.executeUpdate(sql);
-log.info("Insert data count = [{}]", count);
 ```
 
-### Query data
+- Query data from table
 
-```
+```java
 Statement statement = connection.createStatement();
 String sql = "select * from exampleTest";
 try (ResultSet resultSet = statement.executeQuery(sql)) {
@@ -76,49 +82,8 @@ try (ResultSet resultSet = statement.executeQuery(sql)) {
 
 ## Sqlline Mode
 
-Execute directly on the server```./bin/sqlline.sh```to start to sqlline. 
+In DingoDB install path, you can start a sqlline to build connection to the cluster.
 
-### Examples by Sqlline
-
-- Create data table  
-```sql
-CREATE TABLE table_name (column_name column_type);
+```shell
+   ./bin/sqlline.sh
 ```
-- Delete data table  
-  
-```sql
-DROP TABLE table_name ;
-```
-
-- Insert data 
-
-```sql
-INSERT INTO table_name ( field1, field2,...fieldN) VALUES( value1, value2,...valueN );
-```
-
-- Query data  
-  
-```sql
-SELECT column_name,column_name FROM table_name [WHERE Clause] [LIMIT N]
-```
-
-- Update data  
-  
-```sql
-UPDATE table_name SET field1=new-value1, field2=new-value2 [WHERE Clause]
-```
-
-- Delete data  
-  
-```sql
-DELETE FROM table_name [WHERE Clause]
-```
-
-### Aggregation Functions
-
-- avg
-- count
-- sum
-- max
-- min
-

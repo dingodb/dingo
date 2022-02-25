@@ -1,4 +1,4 @@
-# What is DingoDB?
+# What is DingoDB
 
 DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. It can execute high-frequency query and
 upsert, interactive analysis, multi-dimensional analysis in extremely low latency.
