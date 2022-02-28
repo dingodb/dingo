@@ -26,6 +26,7 @@ import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.util.QueueUtil;
 import io.dingodb.exec.util.TagUtil;
 import io.dingodb.net.Channel;
@@ -96,6 +97,7 @@ public final class ReceiveOperator extends SourceOperator {
     @Override
     public boolean push() {
         long count = 0;
+        OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
             Object[] tuple = QueueUtil.forceTake(tupleQueue);
@@ -113,9 +115,8 @@ public final class ReceiveOperator extends SourceOperator {
                 profile.setProcessedTupleCount(count);
                 Fin fin = (Fin) tuple[0];
                 if (fin instanceof FinWithProfiles) {
-                    ((FinWithProfiles) fin).getProfiles().add(profile);
+                    profiles.addAll(((FinWithProfiles) fin).getProfiles());
                 }
-                output.fin(fin);
                 break;
             }
         }

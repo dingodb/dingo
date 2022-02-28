@@ -43,6 +43,7 @@ import lombok.Setter;
     @JsonSubTypes.Type(ReduceOperator.class),
     @JsonSubTypes.Type(RootOperator.class),
     @JsonSubTypes.Type(SendOperator.class),
+    @JsonSubTypes.Type(SortOperator.class),
     @JsonSubTypes.Type(SumUpOperator.class),
     @JsonSubTypes.Type(ValuesOperator.class),
 })
