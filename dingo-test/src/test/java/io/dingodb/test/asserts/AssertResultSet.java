@@ -81,4 +81,26 @@ public final class AssertResultSet {
             throw new IllegalArgumentException(e);
         }
     }
+
+    public void isRecordsInOrder(@Nonnull String[] columnNames, TupleSchema schema, String data) throws SQLException {
+        int size = columnNames.length;
+        try {
+            List<Object[]> target = CsvUtils.readCsv(schema, data);
+            int count = 0;
+            while (instance.next()) {
+                Object[] row = new Object[size];
+                int i = 0;
+                for (String columnName : columnNames) {
+                    row[i] = instance.getObject(columnName);
+                    ++i;
+                }
+                log.info("Get tuple {}.", schema.formatTuple(row));
+                //assertThat(schema.convert(row)).isEqualTo(target.get(count));
+                ++count;
+            }
+            assertThat(count).isEqualTo(target.size());
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 }

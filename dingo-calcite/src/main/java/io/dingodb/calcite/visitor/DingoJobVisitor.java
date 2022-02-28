@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
@@ -55,6 +56,8 @@ import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.ReduceOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SendOperator;
+import io.dingodb.exec.operator.SortCollation;
+import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.partition.PartitionStrategy;
@@ -64,6 +67,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.Util;
 
 import java.util.ArrayList;
@@ -408,6 +412,28 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             ++i;
         }
         return operator.getOutputs();
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoSort rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        List<Output> outputs = new LinkedList<>();
+        for (Output input : inputs) {
+            Operator operator = new SortOperator(
+                rel.getCollation().getFieldCollations().stream()
+                    .map(c -> new SortCollation(c.getFieldIndex(), c.direction, c.nullDirection))
+                    .collect(Collectors.toList()),
+                rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
+                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
+            );
+            Task task = input.getTask();
+            operator.setId(idGenerator.get());
+            task.putOperator(operator);
+            input.setLink(operator.getInput(0));
+            operator.getSoleOutput().copyHint(input);
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
     }
 
     @Override

@@ -45,6 +45,8 @@ public final class DingoRules {
         = DingoProjectRule.ROOT.toRule(DingoProjectRule.class);
     public static final DingoProjectScanRule DINGO_PROJECT_SCAN_RULE
         = DingoProjectScanRule.Config.DEFAULT.toRule();
+    public static final DingoSortRule DINGO_SORT_RULE
+        = DingoSortRule.DEFAULT_CONFIG.toRule(DingoSortRule.class);
     public static final DingoTableModifyRule DINGO_TABLE_MODIFY_RULE
         = DingoTableModifyRule.DEFAULT_CONFIG.toRule(DingoTableModifyRule.class);
     public static final DingoTableScanRule DINGO_TABLE_SCAN_RULE
@@ -68,6 +70,7 @@ public final class DingoRules {
         DINGO_PROJECT_RULE_DISTRIBUTED,
         DINGO_PROJECT_RULE_ROOT,
         DINGO_PROJECT_SCAN_RULE,
+        DINGO_SORT_RULE,
         DINGO_TABLE_MODIFY_RULE,
         //DINGO_TABLE_SCAN_RULE,
         DINGO_TO_ENUMERABLE_RULE
