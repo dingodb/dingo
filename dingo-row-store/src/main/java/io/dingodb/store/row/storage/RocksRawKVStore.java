@@ -1218,11 +1218,11 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
                         }
                         approximateTotalBytes += it.key().length;
                         approximateTotalBytes += it.value().length;
-                        it.next();
                         ++approximateKeys;
-                    }
-                    if (endKey != null && BytesUtil.compare(it.key(), endKey) >= 0) {
-                        return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
+                        if (endKey != null && BytesUtil.compare(it.key(), endKey) >= 0) {
+                            return new ApproximateKVStats(approximateKeys, approximateTotalBytes);
+                        }
+                        it.next();
                     }
                 }
             }
@@ -1261,10 +1261,10 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
                         if (!it.isValid()) {
                             return lastKey;
                         }
-                        it.next();
                         if (++approximateKeys >= distance) {
                             return it.key();
                         }
+                        it.next();
                     }
                 }
             }
