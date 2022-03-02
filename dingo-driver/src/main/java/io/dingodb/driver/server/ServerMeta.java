@@ -18,6 +18,9 @@ package io.dingodb.driver.server;
 
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.driver.DingoFactory;
+import io.dingodb.driver.DingoMeta;
+import io.dingodb.driver.DingoStatement;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MissingResultsException;
@@ -36,7 +39,7 @@ import javax.annotation.Nonnull;
 // Bridge it to connection specified meta of local driver.
 @Slf4j
 public class ServerMeta implements Meta {
-    private final Map<String, Meta> metaMap = new LinkedHashMap<>();
+    private final Map<String, DingoMeta> metaMap = new LinkedHashMap<>();
 
     public ServerMeta() {
     }
@@ -350,6 +353,7 @@ public class ServerMeta implements Meta {
         return meta.prepareAndExecute(sh, sql, maxRowCount, callback);
     }
 
+    @SneakyThrows(SQLException.class)
     @Override
     public ExecuteResult prepareAndExecute(
         @Nonnull StatementHandle sh,
@@ -358,7 +362,8 @@ public class ServerMeta implements Meta {
         int maxRowsInFirstFrame,
         PrepareCallback callback // This callback does nothing
     ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
+        DingoMeta meta = metaMap.get(sh.connectionId);
+        DingoStatement statement = meta.getStatement(sh);
         return meta.prepareAndExecute(
             sh,
             sql,
@@ -367,22 +372,21 @@ public class ServerMeta implements Meta {
             new PrepareCallback() {
                 @Override
                 public Object getMonitor() {
-                    return callback.getMonitor();
+                    return statement;
                 }
 
                 @Override
                 public void clear() throws SQLException {
-                    callback.clear();
+                    statement.clear();
                 }
 
                 @Override
                 public void assign(Signature signature, Frame firstFrame, long updateCount) throws SQLException {
-                    callback.assign(signature, firstFrame, updateCount);
+                    statement.assign(signature, firstFrame, updateCount, sql);
                 }
 
                 @Override
-                public void execute() throws SQLException {
-                    callback.execute();
+                public void execute() {
                 }
             }
         );
