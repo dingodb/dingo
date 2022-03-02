@@ -18,7 +18,6 @@ package io.dingodb.driver;
 
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.DriverVersion;
-import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.UnregisteredDriver;
 
 public class DingoDriver extends UnregisteredDriver {
@@ -46,7 +45,7 @@ public class DingoDriver extends UnregisteredDriver {
     }
 
     @Override
-    public Meta createMeta(AvaticaConnection connection) {
+    public DingoMeta createMeta(AvaticaConnection connection) {
         return new DingoMeta((DingoConnection) connection);
     }
 }

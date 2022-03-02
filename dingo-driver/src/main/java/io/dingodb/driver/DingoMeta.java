@@ -41,9 +41,13 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Slf4j
-class DingoMeta extends MetaImpl {
+public class DingoMeta extends MetaImpl {
     public DingoMeta(DingoConnection connection) {
         super(connection);
+    }
+
+    public DingoStatement getStatement(StatementHandle sh) throws SQLException {
+        return ((DingoConnection) connection).getStatement(sh);
     }
 
     @Override
@@ -135,10 +139,9 @@ class DingoMeta extends MetaImpl {
         StatementHandle sh,
         long offset,
         int fetchMaxRowCount
-    ) throws NoSuchStatementException, MissingResultsException {
-        final DingoConnection dingoConnection = (DingoConnection) connection;
+    ) throws MissingResultsException {
         try {
-            DingoStatement stmt = dingoConnection.getStatement(sh);
+            DingoStatement stmt = getStatement(sh);
             DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
             if (resultSet == null) {
                 throw new MissingResultsException(sh);

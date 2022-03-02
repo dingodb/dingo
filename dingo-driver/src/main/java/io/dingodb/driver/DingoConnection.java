@@ -23,9 +23,10 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
+import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.NoSuchStatementException;
+import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -34,8 +35,10 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.RelRunner;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
+import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
 public class DingoConnection extends AvaticaConnection {
@@ -52,12 +55,19 @@ public class DingoConnection extends AvaticaConnection {
         context = new DingoParserContext();
     }
 
-    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws NoSuchStatementException {
-        AvaticaStatement statement = statementMap.get(sh.id);
-        if (statement == null) {
-            throw new NoSuchStatementException(sh);
-        }
-        return (DingoStatement) statement;
+    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
+        // Returns a new statement if not exists.
+        return (DingoStatement) lookupStatement(sh);
+    }
+
+    public AvaticaResultSet newResultSet(
+        AvaticaStatement statement,
+        Meta.Signature sig,
+        Meta.Frame firstFrame,
+        String sql
+    ) throws SQLException {
+        final TimeZone timeZone = getTimeZone();
+        return factory.newResultSet(statement, new QueryState(sql), sig, timeZone, firstFrame);
     }
 
     public DingoContext createContext() {
