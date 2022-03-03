@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor;
 import io.dingodb.common.util.Datum;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpFactory;
@@ -105,8 +106,30 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case NOT:
                 op = OpFactory.getUnary(DingoExprParser.NOT);
                 break;
+            case CAST:
+                switch (call.getType().getSqlTypeName()) {
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                        op = FunFactory.INS.getFun("int");
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        op = FunFactory.INS.getFun("string");
+                        break;
+                    case FLOAT:
+                    case DOUBLE:
+                        op = FunFactory.INS.getFun("double");
+                        break;
+                    case DECIMAL:
+                        op = FunFactory.INS.getFun("decimal");
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
+                }
+                break;
             default:
-                throw new UnsupportedOperationException("Unsupported RexCall: \"" + call + "\".");
+                throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
         }
         op.setExprArray(call.getOperands().stream()
             .map(o -> o.accept(this))
