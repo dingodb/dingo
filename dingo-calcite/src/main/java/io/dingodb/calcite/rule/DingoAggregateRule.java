@@ -53,7 +53,7 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
             .map(c -> AggFactory.getAgg(
                 c.getAggregation().getKind(),
                 c.getArgList(),
-                TupleSchema.fromRelDataType(rel.getRowType())
+                TupleSchema.fromRelDataType(rel.getInput().getRowType())
             ))
             .collect(Collectors.toList());
     }

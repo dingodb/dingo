@@ -418,6 +418,46 @@ public class QueryTest {
     }
 
     @Test
+    public void testAvg2() throws SQLException {
+        String sql = "select name, avg(id) as avg_id, avg(amount) as avg_amount from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "avg_id", "avg_amount"},
+                    TupleSchema.ofTypes("STRING", "LONG", "DOUBLE"),
+                    "Alice, 5, 5.5\n"
+                        + "Betty, 4, 5.25\n"
+                        + "Cindy, 6, 6.0\n"
+                        + "Doris, 4, 5.0\n"
+                        + "Emily, 5, 5.5"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testCast() throws SQLException {
+        String sql = "select id, name, cast(amount as int) as amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3\n"
+                        + "2, Betty, 4\n"
+                        + "3, Cindy, 4\n"
+                        + "4, Doris, 5\n"
+                        + "5, Emily, 5\n"
+                        + "6, Alice, 6\n"
+                        + "7, Betty, 6\n"
+                        + "8, Alice, 7\n"
+                        + "9, Cindy, 7\n"
+                );
+            }
+        }
+    }
+
+    @Test
     public void testSort() throws SQLException {
         String sql = "select * from test order by id asc";
         try (Statement statement = connection.createStatement()) {
