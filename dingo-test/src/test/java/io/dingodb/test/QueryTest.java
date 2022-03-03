@@ -386,6 +386,38 @@ public class QueryTest {
     }
 
     @Test
+    public void testAvg() throws SQLException {
+        String sql = "select avg(amount) as avg_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"avg_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "5.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testAvg1() throws SQLException {
+        String sql = "select name, avg(amount) as avg_amount from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "avg_amount"},
+                    TupleSchema.ofTypes("STRING", "DOUBLE"),
+                    "Alice, 5.5\n"
+                        + "Betty, 5.25\n"
+                        + "Cindy, 6.0\n"
+                        + "Doris, 5.0\n"
+                        + "Emily, 5.5"
+                );
+            }
+        }
+    }
+
+    @Test
     public void testSort() throws SQLException {
         String sql = "select * from test order by id asc";
         try (Statement statement = connection.createStatement()) {

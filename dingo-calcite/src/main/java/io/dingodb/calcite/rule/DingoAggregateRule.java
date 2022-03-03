@@ -28,6 +28,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.sql.SqlKind;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,6 +61,10 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         Aggregate rel = call.rel(0);
+        // AVG must be transformed to SUM/COUNT before.
+        if (rel.getAggCallList().stream().anyMatch(agg -> agg.getAggregation().getKind() == SqlKind.AVG)) {
+            return;
+        }
         RelOptCluster cluster = rel.getCluster();
         TupleMapping keyMapping = getAggKeys(rel);
         List<Agg> aggList = getAggList(rel);
