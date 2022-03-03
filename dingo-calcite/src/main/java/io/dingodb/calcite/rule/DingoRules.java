@@ -58,8 +58,8 @@ public final class DingoRules {
 
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.PROJECT_REMOVE,
+        CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         DINGO_AGGREGATE_RULE,
-        DINGO_VALUES_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
         DINGO_COALESCE_RULE,
         DINGO_FILTER_TABLE_SCAN_RULE,
@@ -73,7 +73,8 @@ public final class DingoRules {
         DINGO_SORT_RULE,
         DINGO_TABLE_MODIFY_RULE,
         //DINGO_TABLE_SCAN_RULE,
-        DINGO_TO_ENUMERABLE_RULE
+        //DINGO_TO_ENUMERABLE_RULE,
+        DINGO_VALUES_RULE
     );
 
     private DingoRules() {
