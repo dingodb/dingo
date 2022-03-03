@@ -31,8 +31,6 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.EnumerableRoot;
-import io.dingodb.exec.aggregate.CountAgg;
-import io.dingodb.exec.aggregate.SumAgg;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptNode;
@@ -321,8 +319,8 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
-        assertThat(agg.getAggList()).map(Object::getClass)
-            .contains(SumAgg.class, CountAgg.class);
+        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
+            .contains("SumAgg", "CountAgg");
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
@@ -337,8 +335,24 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
-        assertThat(agg.getAggList()).map(Object::getClass)
-            .contains(SumAgg.class, CountAgg.class);
+        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
+            .contains("SumAgg", "CountAgg");
+        assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
+    @Test
+    public void testAvg2() throws SqlParseException {
+        String sql = "select name, avg(id), avg(amount) from test group by name";
+        RelNode relNode = parse(sql);
+        AssertRelNode assertAgg = Assert.relNode(relNode)
+            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
+            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
+        DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
+        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
+            .contains("SumAgg", "CountAgg");
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
