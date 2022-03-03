@@ -24,6 +24,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.PlannerImpl;
@@ -115,7 +116,14 @@ public class DingoParser {
 
     public RelNode optimize(RelNode relNode, Convention convention) {
         RelTraitSet traitSet = planner.emptyTraitSet().replace(convention);
-        final Program program = Programs.ofRules(DingoRules.rules());
+        List<RelOptRule> rules = DingoRules.rules();
+        if (convention == EnumerableConvention.INSTANCE) {
+            rules = ImmutableList.<RelOptRule>builder()
+                .addAll(rules)
+                .add(DingoRules.DINGO_TO_ENUMERABLE_RULE)
+                .build();
+        }
+        final Program program = Programs.ofRules(rules);
         return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
     }
 }

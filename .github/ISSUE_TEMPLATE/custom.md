@@ -1,10 +1,6 @@
 ---
-name: Custom issue template
-about: Describe this issue template's purpose here.
+name: Custom Issue Template
+about: Issues not classified
 title: ''
 labels: ''
-assignees: ''
-
 ---
-
-
