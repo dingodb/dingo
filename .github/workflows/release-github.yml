@@ -1,0 +1,71 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Release-Github
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main, develop ]
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+
+env:
+  IMAGE_NAME: dingo-ubuntu
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  release:
+    # The type of runner that the job will run on
+    # if: ${{ github.ref == 'refs/heads/main' }} 
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v2
+      
+      # Build Docker Image
+      - name: Dump GitHub context
+        id: github_context_step
+        run: echo '${{ toJSON(github) }}'
+
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+            github_token: ${{secrets.GITHUB_TOKEN}}
+            workflow: build.yml
+            name: dingo.zip
+
+      - name: rename artifactory name
+        run: | 
+            cp dingo.zip ./docker
+      
+      # setup Docker buld action
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build image and push to Docker Hub and GitHub Container Registry
+        uses: docker/build-push-action@v2
+        with:
+          # relative path to the place where source code with Dockerfile is located
+          context: ./docker
+          # Note: tags has to be all lower-case
+          tags: ghcr.io/dingodb/dingo:latest
+          # build on feature branches, push only on develop branch
+          push: ${{ github.ref == 'refs/heads/develop' }}
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
