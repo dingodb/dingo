@@ -81,3 +81,6 @@ task fatJar(type: Jar) {
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }
+
+
+

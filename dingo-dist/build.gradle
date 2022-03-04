@@ -68,9 +68,9 @@ tasks.register('packageDistribution', Zip) {
 copyDepends.dependsOn([
     ':dingo-server:dingo-server-coordinator:fatJar',
     ':dingo-server:dingo-server-executor:fatJar',
-//    ':dingo-row-store-api:fatJar',
     ':dingo-cli:fatJar',
     ':dingo-driver-client:fatJar',
+    ':dingo-test:fatJar'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

@@ -475,7 +475,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         if (!isSplitOK) {
             closure.setError(Errors.TOO_SMALL_TO_SPLIT);
             closure.run(new Status(-1, "RegionEngine[%s]'s split condition is not OK!. "
-                + "Write Keys:%ld bytes(M): %ld, Expected: keys:%ld, bytes: 64M",
+                + "Write Keys:%d bytes(M): %d, Expected: keys:%d, bytes: 64M",
                 regionId,
                 approximateKeys,
                 approximateBytes,
