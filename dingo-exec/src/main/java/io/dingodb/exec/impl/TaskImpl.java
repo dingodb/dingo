@@ -61,6 +61,8 @@ public final class TaskImpl implements Task {
     @Getter
     private final List<Id> runList;
 
+    public static ExecutorService executorService = Executors.newCachedThreadPool();
+
     @JsonCreator
     public TaskImpl(
         @JsonProperty("jobId") String jobId,
@@ -102,7 +104,6 @@ public final class TaskImpl implements Task {
 
     public void run() {
         log.info("Task is starting at {}...", location);
-        ExecutorService executorService = Executors.newFixedThreadPool(runList.size());
         runList.forEach(id -> {
             final Operator operator = operators.get(id);
             assert operator instanceof SourceOperator
