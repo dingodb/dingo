@@ -1,0 +1,12 @@
+cluster:
+    name: dingo
+client:
+    ip: XXXXXX
+    options:
+        coordOptions:
+            group: COORDINATOR_RAFT
+            initCoordExchangeSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
+        cliOptions:
+            timeoutMs: 10000
+            maxRetry: 3
+            rpcProcessorThreadPoolSize: 4
