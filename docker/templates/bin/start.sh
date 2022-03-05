@@ -18,6 +18,7 @@
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 COORDINATOR_JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
 EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
+DRIVER_JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 
 ROLE=$DINGO_ROLE
 HOSTNAME=$DINGO_HOSTNAME
@@ -41,22 +42,22 @@ then
          > ${ROOT}/log/coordinator.out
 elif [[ $ROLE == "executor" ]]
 then
-    sleep 30
+    sleep 20
     /opt/dingo/bin/wait-for-it.sh coordinator1:19181 -t 0 -s -- echo "Wait Coordniator1 Start Successfully!"
     /opt/dingo/bin/wait-for-it.sh coordinator2:19181 -t 0 -s -- echo "Wait Coordniator2 Start Successfully!"
     /opt/dingo/bin/wait-for-it.sh coordinator3:19181 -t 0 -s -- echo "Wait Coordniator3 Start Successfully!"
-    java ${JAVA_OPTS} \
-         -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
-         -classpath ${EXECUTOR_JAR_PATH}  \
-         io.dingodb.server.executor.Starter \
-         --config ${ROOT}/conf/executor.yaml \
-         > ${ROOT}/log/executor.out
+    ./bin/start-executor.sh  &
+    P1=$!
+    sleep 20
+    ./bin/start-driver.sh &
+    P2=$!
+    wait $P1 $P2
 elif [[ $ROLE == "driver" ]]
 then
     sleep 60
     java ${JAVA_OPTS} \
     -Dlogback.configurationFile=file:${ROOT}/conf/logback-sqlline.xml \
-    -classpath ${JAR_PATH} \
+    -classpath ${DRIVER_JAR_PATH} \
     io.dingodb.cli.Tools driver \
     --config ${ROOT}/conf/client.yaml \
     > ${ROOT}/log/driver.out 
