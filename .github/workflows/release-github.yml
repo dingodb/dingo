@@ -5,8 +5,6 @@ name: Release-Github
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main, develop ]
   workflow_run:
     workflows: ["Build"]
     types:
@@ -64,8 +62,8 @@ jobs:
           context: ./docker
           # Note: tags has to be all lower-case
           tags: ghcr.io/dingodb/dingo:latest
-          # build on feature branches, push only on develop branch
-          push: ${{ github.ref == 'refs/heads/develop' }}
+          # build on feature branches, push only on develop/main branch
+          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}  
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
