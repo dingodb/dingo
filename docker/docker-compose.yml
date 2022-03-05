@@ -1,0 +1,84 @@
+---
+version: '2.2'
+services:
+  coordinator1:
+    image: dingodatabase/dingo:latest
+    hostname: coordinator1
+    container_name: coordinator1
+    networks:
+      - dingo_net
+    environment:
+      DINGO_ROLE: coordinator
+      DINGO_HOSTNAME: coordinator1
+
+  coordinator2:
+    image: dingodatabase/dingo:latest
+    hostname: coordinator2
+    container_name: coordinator2
+    networks:
+      - dingo_net
+    environment:
+      DINGO_ROLE: coordinator
+      DINGO_HOSTNAME: coordinator2
+
+  coordinator3:
+    image: dingodatabase/dingo:latest
+    hostname: coordinator3
+    container_name: coordinator3
+    networks:
+      - dingo_net
+    environment:
+      DINGO_ROLE: coordinator
+      DINGO_HOSTNAME: coordinator3
+
+  executor1:
+    image: dingodatabase/dingo:latest
+    hostname: executor1
+    container_name: executor1
+    ports:
+      - 8765:8765
+    networks:
+      - dingo_net
+    depends_on:
+      - coordinator1
+      - coordinator2
+      - coordinator3
+    environment:
+       DINGO_ROLE: executor
+       DINGO_HOSTNAME: executor1
+
+  executor2:
+    image: dingodatabase/dingo:latest
+    hostname: executor2
+    container_name: executor2
+    ports:
+      - 8766:8765
+    networks:
+      - dingo_net
+    depends_on:
+      - coordinator1
+      - coordinator2
+      - coordinator3
+    environment:
+       DINGO_ROLE: executor
+       DINGO_HOSTNAME: executor2
+
+  executor3:
+    image: dingodatabase/dingo:latest
+    hostname: executor3
+    container_name: executor3
+    ports:
+      - 8767:8765
+    networks:
+      - dingo_net
+    depends_on:
+      - coordinator1
+      - coordinator2
+      - coordinator3
+    environment:
+       DINGO_ROLE: executor
+       DINGO_HOSTNAME: executor3
+
+networks:
+    dingo_net:
+        driver: bridge
