@@ -22,7 +22,6 @@ import io.dingodb.net.netty.channel.ChannelIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UnlimitedChannelIdAllocator<I extends ChannelId> implements ChannelIdAllocator<I> {
@@ -39,11 +38,6 @@ public class UnlimitedChannelIdAllocator<I extends ChannelId> implements Channel
     @Override
     public I alloc() {
         return channelIdProvider.get(idAcc.getAndIncrement());
-    }
-
-    @Override
-    public I alloc(long timeout, TimeUnit unit) {
-        return alloc();
     }
 
     @Override

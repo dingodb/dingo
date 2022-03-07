@@ -18,8 +18,6 @@ package io.dingodb.common.util;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.function.Supplier;
-
 @Slf4j
 public class NoBreakFunctionWrapper {
 
@@ -39,7 +37,7 @@ public class NoBreakFunctionWrapper {
 
     public static <T, R> java.util.function.Function<T, R> wrap(
         Function<T, R> function,
-        Supplier<R> or
+        java.util.function.Supplier<R> or
     ) {
         return wrap(function, throwable -> log.error("Execute function error.", throwable), or.get());
     }
@@ -50,6 +48,32 @@ public class NoBreakFunctionWrapper {
         R or
     ) {
         return new WrappedFunction<>(function, throwableConsumer, or);
+    }
+
+    public static <T> java.util.function.Supplier<T> wrap(Supplier<T> supplier) {
+        return wrap(supplier, throwable -> log.error("Execute supplier error.", throwable));
+    }
+
+    public static <T> java.util.function.Supplier<T> wrap(
+        Supplier<T> supplier,
+        java.util.function.Consumer<Throwable> throwableConsumer
+    ) {
+        return wrap(supplier, throwableConsumer, null);
+    }
+
+    public static <T> java.util.function.Supplier<T> wrap(
+        Supplier<T> supplier,
+        java.util.function.Supplier<T> or
+    ) {
+        return wrap(supplier, throwable -> log.error("Execute supplier error.", throwable), or.get());
+    }
+
+    public static <T> java.util.function.Supplier<T> wrap(
+        Supplier<T> supplier,
+        java.util.function.Consumer<Throwable> throwableConsumer,
+        T or
+    ) {
+        return new WrappedSupplier<>(supplier, throwableConsumer, or);
     }
 
     public static <T> java.util.function.Consumer<T> wrap(Consumer<T> consumer) {
@@ -105,6 +129,13 @@ public class NoBreakFunctionWrapper {
      */
     public interface Predicate<T> {
         boolean test(T argument) throws Exception;
+    }
+
+    /**
+     * {@link java.util.function.Supplier}.
+     */
+    public interface Supplier<T> {
+        T get() throws Exception;
     }
 
     static class WrappedFunction<T, R> implements java.util.function.Function<T, R> {
@@ -177,6 +208,29 @@ public class NoBreakFunctionWrapper {
                 consumer.accept(target);
             } catch (Throwable e) {
                 throwableConsumer.accept(e);
+            }
+        }
+    }
+
+    static class WrappedSupplier<T> implements java.util.function.Supplier<T> {
+
+        private final Supplier<T> supplier;
+        private final java.util.function.Consumer<Throwable> throwableConsumer;
+        private final T or;
+
+        private WrappedSupplier(Supplier<T> supplier, java.util.function.Consumer<Throwable> throwableConsumer, T or) {
+            this.supplier = supplier;
+            this.throwableConsumer = throwableConsumer;
+            this.or = or;
+        }
+
+        @Override
+        public T get() {
+            try {
+                return supplier.get();
+            } catch (Throwable e) {
+                throwableConsumer.accept(e);
+                return or;
             }
         }
     }

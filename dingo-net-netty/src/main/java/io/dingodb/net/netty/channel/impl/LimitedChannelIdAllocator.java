@@ -22,9 +22,8 @@ import io.dingodb.net.netty.channel.ChannelIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 
 public class LimitedChannelIdAllocator<I extends ChannelId<Integer>> implements ChannelIdAllocator<I> {
@@ -32,12 +31,12 @@ public class LimitedChannelIdAllocator<I extends ChannelId<Integer>> implements 
 
     private final int limit;
 
-    private final BlockingQueue<Integer> channelIdsQueue;
+    private final Queue<I> channelIdsQueue;
     private final ChannelIdProvider<I> channelIdProvider;
 
     public LimitedChannelIdAllocator(int max, ChannelIdProvider<I> channelIdProvider) {
-        channelIdsQueue = new ArrayBlockingQueue<>(max);
-        IntStream.range(1, max + 1).forEach(i -> channelIdsQueue.add(i));
+        channelIdsQueue = new ConcurrentLinkedQueue<>();
+        IntStream.range(1, max + 1).forEach(i -> channelIdsQueue.add(channelIdProvider.get(i)));
         this.channelIdProvider = channelIdProvider;
         this.limit = max;
     }
@@ -48,30 +47,16 @@ public class LimitedChannelIdAllocator<I extends ChannelId<Integer>> implements 
 
     @Override
     public I alloc() {
-        Integer id = channelIdsQueue.poll();
+        I id = channelIdsQueue.poll();
         if (id == null) {
             return null;
         }
-        return channelIdProvider.get(id);
-    }
-
-    @Override
-    public I alloc(long timeout, TimeUnit unit) {
-        Integer id;
-        try {
-            if ((id = channelIdsQueue.poll(timeout, unit)) == null) {
-                return null;
-            }
-        } catch (InterruptedException e) {
-            logger.error("Alloc channel id interrupt.");
-            return null;
-        }
-        return channelIdProvider.get(id);
+        return id;
     }
 
     @Override
     public void release(I channelId) {
-        channelIdsQueue.offer(channelId.channelId() + limit);
+        channelIdsQueue.offer(channelId);
     }
 
 }

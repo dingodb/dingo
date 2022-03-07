@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty;
+package io.dingodb.net;
 
-public class Constant {
-    public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final Object[] API_EMPTY_ARGS = new Object[0];
+public interface NetAddressProvider {
+
+    NetAddress get();
+
 }

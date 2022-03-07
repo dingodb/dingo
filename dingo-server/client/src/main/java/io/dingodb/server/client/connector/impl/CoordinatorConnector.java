@@ -18,10 +18,12 @@ package io.dingodb.server.client.connector.impl;
 
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.error.CommonError;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetAddress;
+import io.dingodb.net.NetAddressProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.client.connector.Connector;
@@ -47,7 +49,7 @@ import static io.dingodb.server.protocol.code.RaftServiceCode.GET_ALL_LOCATION;
 import static io.dingodb.server.protocol.code.RaftServiceCode.GET_LEADER_LOCATION;
 
 @Slf4j
-public class CoordinatorConnector implements Connector {
+public class CoordinatorConnector implements Connector, NetAddressProvider {
 
     private static final ExecutorService executorService = new ThreadPoolBuilder().name("CoordinatorConnector").build();
 
@@ -70,17 +72,7 @@ public class CoordinatorConnector implements Connector {
 
     @Override
     public Channel newChannel() {
-        int times = 5;
-        int sleep = 200;
-        while (!verify() && times-- > 0) {
-            try {
-                Thread.sleep(sleep);
-                refresh();
-                sleep += sleep;
-            } catch (InterruptedException e) {
-                log.error("Wait coordinator connector ready, but interrupted.");
-            }
-        }
+        get();
         return netService.newChannel(leaderChannel.get().remoteAddress());
     }
 
@@ -94,6 +86,25 @@ public class CoordinatorConnector implements Connector {
         if (refresh.compareAndSet(false, true)) {
             executorService.submit(this::initChannels);
         }
+    }
+
+    @Override
+    public NetAddress get() {
+        int times = 5;
+        int sleep = 200;
+        while (!verify() && times-- > 0) {
+            try {
+                Thread.sleep(sleep);
+                refresh();
+                sleep += sleep;
+            } catch (InterruptedException e) {
+                log.error("Wait coordinator connector ready, but interrupted.");
+            }
+        }
+        if (!verify()) {
+            CommonError.EXEC_TIMEOUT.throwFormatError("wait connector available", Thread.currentThread().getName(), "");
+        }
+        return leaderChannel.get().remoteAddress();
     }
 
     private void initChannels() {

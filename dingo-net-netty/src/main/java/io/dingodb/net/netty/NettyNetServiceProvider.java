@@ -26,7 +26,7 @@ import java.util.ServiceLoader;
 @AutoService(NetServiceProvider.class)
 public class NettyNetServiceProvider implements NetServiceProvider {
 
-    private static final NettyNetService NET_SERVICE_INSTANCE = new NettyNetService();
+    public static final NettyNetService NET_SERVICE_INSTANCE = new NettyNetService();
 
     static {
         ServiceLoader.load(MessageHandler.Provider.class).iterator().forEachRemaining(provider -> {

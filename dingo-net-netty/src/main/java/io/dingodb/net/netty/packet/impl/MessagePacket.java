@@ -18,10 +18,8 @@ package io.dingodb.net.netty.packet.impl;
 
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.packet.AbstractPacket;
 import io.dingodb.net.netty.packet.Header;
-import io.dingodb.net.netty.packet.Packet;
 import io.dingodb.net.netty.packet.PacketMode;
 import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.packet.message.EmptyMessage;
@@ -30,7 +28,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.slf4j.Logger;
 
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.GENERIC_CHANNEL_ID;
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.nullChannelId;
@@ -96,7 +93,7 @@ public class MessagePacket extends AbstractPacket<Message> {
 
     @Override
     public byte[] toBytes() {
-        return content.toBytes();
+        return content == null ? new byte[0] : content.toBytes();
     }
 
 }

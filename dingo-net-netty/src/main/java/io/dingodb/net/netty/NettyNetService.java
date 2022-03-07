@@ -17,11 +17,13 @@
 package io.dingodb.net.netty;
 
 import io.dingodb.common.util.StackTraces;
-import io.dingodb.net.Channel;
 import io.dingodb.net.MessageListenerProvider;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.Tag;
+import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.net.netty.api.ApiRegistryImpl;
+import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
 import io.dingodb.net.netty.connection.ConnectionManager;
 import io.dingodb.net.netty.connection.impl.NetServiceLocalConnection;
 import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
@@ -71,6 +73,11 @@ public class NettyNetService implements NetService {
         portListeners.remove(port).close();
     }
 
+    @Override
+    public ApiRegistry apiRegistry() {
+        return ApiRegistryImpl.instance();
+    }
+
     private boolean isLocal(InetAddress address) {
         return     address.isLoopbackAddress()
                 || address.isLinkLocalAddress()
@@ -79,7 +86,7 @@ public class NettyNetService implements NetService {
     }
 
     @Override
-    public Channel newChannel(NetAddress netAddress) {
+    public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
         // todo if (isLocal(address.getAddress()) && portListeners.containsKey(address.getPort())) {
         //          return portLocalConnections.get(address.getPort()).openSubChannel();
         //      }

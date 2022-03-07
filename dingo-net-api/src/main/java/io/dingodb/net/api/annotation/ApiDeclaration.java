@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty;
+package io.dingodb.net.api.annotation;
 
-public class Constant {
-    public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final Object[] API_EMPTY_ARGS = new Object[0];
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+public @interface ApiDeclaration {
+
+    String name() default "";
+
 }

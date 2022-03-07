@@ -25,5 +25,6 @@ dependencies {
     api project(':dingo-net-api')
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
     implementation project(':dingo-expr:dingo-expr-parser')
+    implementation group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
 }
