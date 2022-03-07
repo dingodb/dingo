@@ -87,8 +87,7 @@ public class MetaServiceHandler implements MessageListenerProvider {
                 // todo
                 break;
             case GET_TABLE:
-                try {
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();) {
                     outputStream.write(encodeZigZagInt(ServerError.OK.getCode()));
                     getAndEncodeTableEntry(readString(buffer), outputStream);
                     channel.send(SimpleMessage.builder().content(outputStream.toByteArray()).build());
@@ -126,9 +125,8 @@ public class MetaServiceHandler implements MessageListenerProvider {
                 }
                 break;
             case GET_ALL:
-                try {
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();) {
                     Map<String, TableDefinition> tableDefinitions = metaService.getTableDefinitions();
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                     byte[] size = encodeZigZagInt(tableDefinitions.size());
                     outputStream.write(encodeZigZagInt(ServerError.OK.getCode()));
                     outputStream.write(size);

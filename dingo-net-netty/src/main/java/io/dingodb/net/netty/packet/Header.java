@@ -19,11 +19,13 @@ package io.dingodb.net.netty.packet;
 import io.dingodb.net.netty.channel.ChannelId;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 @Accessors(fluent = true)
 @Getter
 @Builder
+@ToString
 public class Header {
 
     private final PacketType type;

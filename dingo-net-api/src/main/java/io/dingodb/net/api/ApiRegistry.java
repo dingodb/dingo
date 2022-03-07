@@ -14,9 +14,24 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty;
+package io.dingodb.net.api;
 
-public class Constant {
-    public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final Object[] API_EMPTY_ARGS = new Object[0];
+import io.dingodb.net.NetAddressProvider;
+
+import java.lang.reflect.Method;
+
+public interface ApiRegistry {
+
+    <T> void register(Class<T> api, T defined);
+
+    default  <T> void register(Method method, T defined) {
+        register(method.toGenericString(), method, defined);
+    }
+
+    <T> void register(String name, Method method, T defined);
+
+    <T> T proxy(Class<T> api, NetAddressProvider addressProvider);
+
+    <T> T proxy(Class<T> api, NetAddressProvider addressProvider, T defined);
+
 }

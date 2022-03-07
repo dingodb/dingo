@@ -20,6 +20,5 @@ plugins {
 }
 
 dependencies {
-    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     api project(':dingo-common')
 }

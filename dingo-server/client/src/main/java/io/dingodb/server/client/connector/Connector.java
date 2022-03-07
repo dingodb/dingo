@@ -17,8 +17,9 @@
 package io.dingodb.server.client.connector;
 
 import io.dingodb.net.Channel;
+import io.dingodb.net.NetAddressProvider;
 
-public interface Connector {
+public interface Connector extends NetAddressProvider {
 
     Channel newChannel();
 

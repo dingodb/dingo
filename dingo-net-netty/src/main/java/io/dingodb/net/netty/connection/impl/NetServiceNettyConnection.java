@@ -16,9 +16,7 @@
 
 package io.dingodb.net.netty.connection.impl;
 
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
@@ -36,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;

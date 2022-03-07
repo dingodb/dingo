@@ -22,7 +22,10 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.meta.Location;
 import io.dingodb.meta.LocationGroup;
 import io.dingodb.meta.MetaService;
+import io.dingodb.net.NetService;
+import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.util.Requires;
+import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.coordinator.meta.TableMetaAdaptor;
 import io.dingodb.server.protocol.ServerError;
 import io.dingodb.store.row.client.FutureHelper;
@@ -34,16 +37,20 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Slf4j
-public class CoordinatorMetaService implements MetaService {
+public class CoordinatorMetaService implements MetaService, MetaServiceApi {
 
     private static final CoordinatorMetaService INSTANCE = new CoordinatorMetaService();
+    private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+
     private final ConcurrentMap<String, byte[]> tableKeyMap = Maps.newConcurrentMap();
     private final ConcurrentMap<String, TableDefinition> tableDefinitionMap = Maps.newConcurrentMap();
     private final Serializer serializer = Serializers.getDefault();
@@ -61,6 +68,7 @@ public class CoordinatorMetaService implements MetaService {
         metaAdaptor.getAllDefinition(bytes -> this.serializer.readObject(bytes, TableDefinition.class))
             .thenAcceptAsync(tableDefinitionMap::putAll);
         metaAdaptor.getAllKey().thenAcceptAsync(map -> map.forEach(this::generateTableKey));
+        netService.apiRegistry().register(MetaServiceApi.class, this);
     }
 
     @Override
@@ -123,7 +131,7 @@ public class CoordinatorMetaService implements MetaService {
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
-        return Collections.unmodifiableMap(tableDefinitionMap);
+        return new HashMap<>(tableDefinitionMap);
     }
 
     @Override

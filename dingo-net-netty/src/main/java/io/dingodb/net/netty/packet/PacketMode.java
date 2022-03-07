@@ -19,6 +19,7 @@ package io.dingodb.net.netty.packet;
 public enum PacketMode {
 
     USER_DEFINE,
-    GENERIC
+    GENERIC,
+    API
 
 }

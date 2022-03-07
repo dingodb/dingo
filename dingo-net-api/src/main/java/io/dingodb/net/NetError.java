@@ -16,11 +16,20 @@
 
 package io.dingodb.net;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.error.DingoError;
+import io.dingodb.common.error.DingoException;
 import io.dingodb.common.error.FormattingError;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.dingodb.common.codec.PrimitiveCodec.encodeZigZagInt;
+
 /**
- * Net error. 31XXX Net service error. 32XXX Application error. 39XXX Other error.
+ * Net error. 31XXX Net service error. 32XXX rpc error. 39XXX Other error.
  */
 @SuppressWarnings("checkstyle:LineLength")
 public enum NetError implements FormattingError {
@@ -50,7 +59,10 @@ public enum NetError implements FormattingError {
      */
     OPEN_CONNECTION_INTERRUPT(31003, "Open connection interrupt", "Open connection interrupt, remote [%s]"),
 
-    /*********************************   Application.   *****************************************************/
+    /*********************************   RPC.   *****************************************************/
+    EXEC(32001, "Execute error", "Exec %s error, thread: [%s], message: [%s]."),
+    EXEC_INTERRUPT(32002, "Exec interrupted error.", "Exec %s interrupted, thread: [%s], message: [%s]."),
+    EXEC_TIMEOUT(32003, "Execute timeout.", "Exec %s timeout, thread: [%s], message: [%s]."),
 
     /*********************************   Unknown.   *****************************************************/
 
@@ -58,7 +70,8 @@ public enum NetError implements FormattingError {
      * Unknown error.
      */
     UNKNOWN(39000, "Unknown.", "Unknown error, message: [%s]"),
-    WRAPPED(39001, "Wrapped application error.", "Message: [%s]");
+    IO(39001, "IO error, please check log.", "IO error, message: [%s]"),
+    ;
 
     private final int code;
     private final String info;
@@ -96,4 +109,38 @@ public enum NetError implements FormattingError {
         return DingoError.toString(this);
     }
 
+    public Message message() {
+        return SimpleMessage.builder().content(encodeZigZagInt(getCode())).build();
+    }
+
+    public static Message message(DingoException err) {
+        return SimpleMessage.builder().content(encodeZigZagInt(err.getCode())).build();
+    }
+
+    private static Map<Integer, NetError> valueOfCache;
+
+    private static void addCache(int code, NetError error) {
+        if (valueOfCache == null) {
+            valueOfCache = new HashMap<>();
+        }
+        valueOfCache.put(code, error);
+    }
+
+    public static NetError valueOf(Integer code) {
+        if (code == OK.code) {
+            return null;
+        }
+        return valueOfCache.computeIfAbsent(
+            code,
+            k -> Arrays.stream(NetError.values()).filter(c -> c.code == code).findAny().orElse(null)
+        );
+    }
+
+    public static NetError valueOf(byte[] bytes) {
+        return valueOf(PrimitiveCodec.readZigZagInt(bytes));
+    }
+
+    public static NetError valueOf(ByteBuffer buffer) {
+        return valueOf(PrimitiveCodec.readZigZagInt(buffer));
+    }
 }

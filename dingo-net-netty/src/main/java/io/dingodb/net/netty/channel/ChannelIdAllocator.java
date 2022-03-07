@@ -16,16 +16,12 @@
 
 package io.dingodb.net.netty.channel;
 
-import java.util.concurrent.TimeUnit;
-
 public interface ChannelIdAllocator<I extends ChannelId> {
 
     /**
      * Alloc a channel id.
      */
     I alloc();
-
-    I alloc(long timeout, TimeUnit unit);
 
     /**
      * Release the channel id.

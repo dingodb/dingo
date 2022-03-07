@@ -16,6 +16,8 @@
 
 package io.dingodb.net;
 
+import io.dingodb.net.api.ApiRegistry;
+
 public interface NetService extends AutoCloseable {
 
     /**
@@ -44,5 +46,15 @@ public interface NetService extends AutoCloseable {
      */
     void listenPort(int port) throws Exception;
 
+    /**
+     * Cancel listen the port.
+     * @param port port listen port
+     */
     void cancelPort(int port) throws Exception;
+
+    /**
+     * Returns api registry instance, {@link ApiRegistry}.
+     * @return api registry instance
+     */
+    ApiRegistry apiRegistry();
 }

@@ -25,7 +25,10 @@ public enum PacketType {
     DIS_CONNECT_CHANNEL,
     HANDSHAKE,
     HANDSHAKE_ERROR,
-    USER_DEFINE;
+    USER_DEFINE,
+    INVOKE,
+    RETURN,
+    ;
 
     public static boolean isPingPong(PacketType packetType) {
         return packetType == PING || packetType == PONG;
