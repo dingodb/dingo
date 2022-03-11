@@ -31,11 +31,25 @@ jobs:
       with:
         arguments: build
 
+
+    - name: Publish artifact
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
+      # If we split on '/' and take the 3rd value,
+      # we can get the release name.
+      run: |
+        NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
+        echo "New version: ${NEW_VERSION}"
+        echo "Github username: ${GITHUB_ACTOR}"
+        ./gradlew -Pversion=${NEW_VERSION} publish
+
     - name: Archive the dingo directory
       run: |
         mkdir dingo
         unzip ./dingo-dist/build/distributions/dingo.zip -d dingo
-        cp -r ./docker/templates/bin/* ./dingo/bin/  
+        cp -r ./docker/templates/bin/* ./dingo/bin/
         cp -r ./docker/templates/conf/* ./dingo/conf/
         rm -rf ./dingo/conf/logback.xml
         rm -rf ./dingo/conf/config.yaml
