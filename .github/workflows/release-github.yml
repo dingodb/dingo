@@ -17,7 +17,7 @@ env:
 jobs:
   release:
     # The type of runner that the job will run on
-    # if: ${{ github.ref == 'refs/heads/main' }} 
+    # if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -26,7 +26,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@v2
-      
+
       # Build Docker Image
       - name: Dump GitHub context
         id: github_context_step
@@ -40,21 +40,21 @@ jobs:
             name: dingo.zip
 
       - name: rename artifactory name
-        run: | 
+        run: |
             cp dingo.zip ./docker
-      
+
       # setup Docker buld action
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
-        
+
       - name: Login to Github Packages
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Build image and push to Docker Hub and GitHub Container Registry
         uses: docker/build-push-action@v2
         with:
@@ -63,7 +63,7 @@ jobs:
           # Note: tags has to be all lower-case
           tags: ghcr.io/dingodb/dingo:latest
           # build on feature branches, push only on develop/main branch
-          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}  
+          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
