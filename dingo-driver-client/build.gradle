@@ -17,7 +17,7 @@
 plugins {
     id 'java-conventions'
     id 'java-library'
-    id "com.gorylenko.gradle-git-properties" version "2.4.0"
+    id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id 'maven-publish'
 }
 
@@ -54,7 +54,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/huzx0608/dingo")
+            url = uri("https://maven.pkg.github.com/" + System.getenv("GITHUB_ACTOR") + "/dingo")
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")

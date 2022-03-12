@@ -17,7 +17,7 @@
 plugins {
     id 'java-conventions'
     id 'java-library'
-    id "com.gorylenko.gradle-git-properties" version "2.4.0"
+    id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
 dependencies {
