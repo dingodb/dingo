@@ -63,7 +63,7 @@ jobs:
           # Note: tags has to be all lower-case
           tags: ghcr.io/dingodb/dingo:latest
           # build on feature branches, push only on develop/main branch
-          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
+          push: ${{ github.repository == 'dingodb/dingo' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
