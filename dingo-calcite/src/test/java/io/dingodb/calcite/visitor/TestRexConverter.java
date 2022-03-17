@@ -16,25 +16,35 @@
 
 package io.dingodb.calcite.visitor;
 
+import com.ibm.icu.impl.Assert;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.op.FunFactory;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Slf4j
@@ -69,5 +79,59 @@ public class TestRexConverter {
         log.info("rexNode = {}", rexNode);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.toString()).isEqualTo(result);
+    }
+
+    @Test
+    public void testSubStringCase01() {
+        String inputStr = "DingoDatabase";
+        String sql = "select substring('" + inputStr + "',1,5)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            String realResult = (String) expr.compileIn(null).eval(null);
+            Assert.assrt(realResult.equals(inputStr.substring(1, 6)));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testSubStringCase02() {
+        String inputStr = "DingoDatabase";
+        String sql = "select substring('" + inputStr + "',1, 100)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            String realResult = (String) expr.compileIn(null).eval(null);
+        } catch (Exception ex) {
+            System.out.println("Catch Exception:" + ex.toString());
+        }
+    }
+
+
+    @Test
+    public void testTrimWithBoth() {
+        String sql = "select trim('  AAAA ')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            log.info("rexNode = {}", rexNode);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println("Result==>" + rtExpr.eval(null));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }

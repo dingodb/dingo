@@ -31,6 +31,12 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.EnumerableRoot;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.op.FunFactory;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.parser.DingoExprCompiler;
+import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptNode;
@@ -379,5 +385,20 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoPartition.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
+    @Test
+    public void testStringFuncSubString01() throws SqlParseException {
+        try {
+            String sql = "select trim(' caterpillar')";
+            RelNode relNode = parse(sql);
+            Op op = FunFactory.INS.getFun("trim");
+            Expr expr = DingoExprCompiler.parse("trim(' world')");
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(rtExpr.eval(null));
+        } catch (Exception sqlParseExp) {
+            sqlParseExp.printStackTrace();
+        }
+
     }
 }

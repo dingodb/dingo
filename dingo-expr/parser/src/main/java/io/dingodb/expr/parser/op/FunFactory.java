@@ -43,10 +43,9 @@ import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
 import io.dingodb.expr.runtime.op.string.RtReplaceOp;
 import io.dingodb.expr.runtime.op.string.RtToLowerCaseOp;
 import io.dingodb.expr.runtime.op.string.RtToUpperCaseOp;
-import io.dingodb.expr.runtime.op.string.RtTrimOp;
+import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -84,11 +83,12 @@ public final class FunFactory {
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
         // String
-        registerUdf("toLowerCase", RtToLowerCaseOp::new);
-        registerUdf("toUpperCase", RtToUpperCaseOp::new);
-        registerUdf("trim", RtTrimOp::new);
         registerUdf("replace", RtReplaceOp::new);
         registerUdf("substring", DingoSubStringOp::new);
+        registerUdf("trim", DingoStringTrimOp::new);
+
+        registerUdf("toLowerCase", RtToLowerCaseOp::new);
+        registerUdf("toUpperCase", RtToUpperCaseOp::new);
     }
 
     private void registerEvaluator(
