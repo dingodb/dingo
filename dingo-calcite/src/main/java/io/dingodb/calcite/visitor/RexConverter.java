@@ -128,6 +128,11 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                         throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
                 }
                 break;
+            case OTHER_FUNCTION: {
+                System.out.println("====Huzx1==>" + call.op.getName());
+                op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
         }

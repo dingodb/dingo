@@ -32,7 +32,6 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.string.SubstringEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DecimalTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DoubleTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.IntTypeEvaluatorFactory;
@@ -40,6 +39,7 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
 import io.dingodb.expr.runtime.op.string.RtReplaceOp;
 import io.dingodb.expr.runtime.op.string.RtToLowerCaseOp;
 import io.dingodb.expr.runtime.op.string.RtToUpperCaseOp;
@@ -48,6 +48,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -58,7 +59,7 @@ public final class FunFactory {
     private final Map<String, Supplier<Op>> funSuppliers;
 
     private FunFactory() {
-        funSuppliers = new HashMap<>(64);
+        funSuppliers = new TreeMap<>(String::compareToIgnoreCase);
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
         registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);
@@ -87,7 +88,7 @@ public final class FunFactory {
         registerUdf("toUpperCase", RtToUpperCaseOp::new);
         registerUdf("trim", RtTrimOp::new);
         registerUdf("replace", RtReplaceOp::new);
-        registerEvaluator("substring", SubstringEvaluatorFactory.INSTANCE);
+        registerUdf("substring", DingoSubStringOp::new);
     }
 
     private void registerEvaluator(
