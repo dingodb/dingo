@@ -19,6 +19,8 @@ package io.dingodb.calcite.visitor;
 import com.ibm.icu.impl.Assert;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.util.ExprUtil;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.Op;
@@ -40,6 +42,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.PrintWriter;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -119,19 +123,88 @@ public class TestRexConverter {
 
     @Test
     public void testTrimWithBoth() {
-        String sql = "select trim('  AAAA ')";
+        String inputStr = "' AAAAA  '";
+        String sql = "select trim(" + inputStr + ")";
         try {
             SqlNode sqlNode = parser.parse(sql);
             sqlNode = parser.validate(sqlNode);
             RelRoot relRoot = parser.convert(sqlNode);
             LogicalProject project = (LogicalProject) relRoot.rel;
             RexNode rexNode = project.getProjects().get(0);
-            log.info("rexNode = {}", rexNode);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            System.out.println("Result==>" + rtExpr.eval(null));
+            Assert.assrt(((String)(rtExpr.eval(null))).equals(inputStr.replace('\'', ' ').trim()));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
+    @Test
+    public void testTrimWithBothArgs() {
+        String sql = "select trim(BOTH 'A' from 'ABBA')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)(rtExpr.eval(null))).equals("BB"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testTrimWithLeadingArgs() {
+        String sql = "select trim(LEADING 'A' from 'ABBA')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)(rtExpr.eval(null))).equals("BBA"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testTrimWithTrailingArgs() {
+        String sql = "select trim(TRAILING 'A' from 'ABBA')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)(rtExpr.eval(null))).equals("ABB"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testLTrim() {
+        String sql = "select RTRIM(' AAAA ')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println((String)rtExpr.eval(null));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
 }
