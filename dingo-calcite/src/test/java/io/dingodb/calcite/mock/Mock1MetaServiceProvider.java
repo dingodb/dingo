@@ -31,10 +31,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @AutoService(MetaServiceProvider.class)
-public class MockMetaServiceProvider implements MetaServiceProvider {
-    public static final String SCHEMA_NAME = "MOCK";
+public class Mock1MetaServiceProvider implements MetaServiceProvider {
+    public static final String SCHEMA_NAME = "MOCK1";
 
-    public static final String TABLE_NAME = "TEST";
     public static final String TABLE_1_NAME = "TEST1";
     public static final Location LOC_0 = new Location("host1", 26535, "/path1");
     public static final Location LOC_1 = new Location("host2", 26535, "/path2");
@@ -45,7 +44,6 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
         try {
             when(metaService.getName()).thenReturn(SCHEMA_NAME);
             when(metaService.getTableDefinitions()).thenReturn(ImmutableMap.of(
-                TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
                 TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json"))
             ));
             when(metaService.getTableKey(anyString())).then(args -> {
@@ -55,7 +53,7 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        when(metaService.getPartLocations(TABLE_NAME)).thenReturn(ImmutableMap.of(
+        when(metaService.getPartLocations(TABLE_1_NAME)).thenReturn(ImmutableMap.of(
             "0", LOC_0,
             "1", LOC_1
         ));

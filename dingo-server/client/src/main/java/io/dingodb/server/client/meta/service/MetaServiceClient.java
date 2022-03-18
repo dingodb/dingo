@@ -62,6 +62,11 @@ public class MetaServiceClient implements MetaService {
     }
 
     @Override
+    public String getName() {
+        return "DINGO";
+    }
+
+    @Override
     public void init(@Nullable Map<String, Object> props) {
 
     }

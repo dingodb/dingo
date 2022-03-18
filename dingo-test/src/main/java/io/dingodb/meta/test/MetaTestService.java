@@ -44,6 +44,8 @@ import javax.annotation.Nullable;
 
 @Slf4j
 public class MetaTestService implements MetaService {
+    public static final String SCHEMA_NAME = "TEST";
+
     public static final MetaTestService INSTANCE = new MetaTestService();
     public static final String PROP_PATH = "path";
     private File path;
@@ -70,6 +72,11 @@ public class MetaTestService implements MetaService {
     @Nonnull
     private File metaFile(@Nonnull String tableName) {
         return new File(path, tableName.toLowerCase().replace(".", File.separator) + ".json");
+    }
+
+    @Override
+    public String getName() {
+        return SCHEMA_NAME;
     }
 
     @Override

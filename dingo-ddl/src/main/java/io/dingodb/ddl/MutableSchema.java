@@ -18,11 +18,13 @@ package io.dingodb.ddl;
 
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import lombok.Getter;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
 import javax.annotation.Nonnull;
 
 public abstract class MutableSchema extends AbstractSchema {
+    @Getter
     protected final MetaService metaService;
 
     protected MutableSchema(MetaService metaService) {

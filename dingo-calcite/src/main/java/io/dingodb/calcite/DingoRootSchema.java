@@ -16,33 +16,28 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.ddl.MutableSchema;
+import io.dingodb.exec.Services;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.impl.AbstractSchema;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
-public class DingoSchema extends MutableSchema {
-    DingoSchema(MetaService metaService) {
-        super(metaService);
+public class DingoRootSchema extends AbstractSchema {
+    public static final String ROOT_SCHEMA_NAME = "DINGO_ROOT";
+    public static final String DEFAULT_SCHEMA_NAME = "DINGO";
+    public static final DingoRootSchema ROOT = new DingoRootSchema();
+
+    private DingoRootSchema() {
     }
 
     @Override
     protected Map<String, Schema> getSubSchemaMap() {
-        return super.getSubSchemaMap();
-    }
-
-    @Override
-    protected Map<String, Table> getTableMap() {
-        Map<String, TableDefinition> tds = metaService.getTableDefinitions();
-        if (tds == null) {
-            return super.getTableMap(); // empty map
+        Map<String, Schema> schemaMap = new HashMap<>(Services.metaServices.size());
+        for (MetaService metaService : Services.metaServices.values()) {
+            schemaMap.put(metaService.getName(), new DingoSchema(metaService));
         }
-        Map<String, Table> tableMap = new LinkedHashMap<>();
-        tds.forEach((name, td) -> tableMap.put(name, new DingoTable(td)));
-        return tableMap;
+        return schemaMap;
     }
 }
