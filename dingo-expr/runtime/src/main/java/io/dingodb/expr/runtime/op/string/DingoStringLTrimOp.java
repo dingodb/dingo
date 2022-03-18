@@ -20,21 +20,32 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class RtToUpperCaseOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 8584547974619997612L;
+public class DingoStringLTrimOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 936730706377543505L;
 
     /**
-     * Create an RtToUpperCaseOp. RtToUpperCaseOp converts a String to upper case by {@code String::toUpperCase}.
+     * Create an DingoStringLTrimOp.
+     * DingoStringTrimOp trim the leading blanks of a String.
      *
      * @param paras the parameters of the op
      */
-    public RtToUpperCaseOp(@Nonnull RtExpr[] paras) {
+    public DingoStringLTrimOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).toUpperCase();
+        int startIndex = 0;
+        String inputStr = (String)values[0];
+        int endIndex = inputStr.length() - 1;
+
+        for (; startIndex < inputStr.length(); startIndex++) {
+            if (inputStr.charAt(startIndex) != ' ') {
+                break;
+            }
+        }
+
+        return inputStr.substring(startIndex, endIndex + 1);
     }
 }

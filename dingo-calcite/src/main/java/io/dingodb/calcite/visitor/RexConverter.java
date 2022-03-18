@@ -136,6 +136,12 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case TRIM:
                 op = FunFactory.INS.getFun("trim");
                 break;
+            case LTRIM:
+                op = FunFactory.INS.getFun("ltrim");
+                break;
+            case RTRIM:
+                op = FunFactory.INS.getFun("rtrim");
+                break;
             case OTHER_FUNCTION: {
                 System.out.println("====Huzx1==>" + call.op.getName());
                 op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
