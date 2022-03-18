@@ -192,7 +192,8 @@ public class TestRexConverter {
 
     @Test
     public void testLTrim() {
-        String sql = "select RTRIM(' AAAA ')";
+        String value = " AAAA ";
+        String sql = "select LTRIM('" + value + "')";
         try {
             SqlNode sqlNode = parser.parse(sql);
             sqlNode = parser.validate(sqlNode);
@@ -201,7 +202,165 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            System.out.println((String)rtExpr.eval(null));
+            Assert.assrt(((String)rtExpr.eval(null)).equals("AAAA "));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testRTrim() {
+        String value = " AAAA ";
+        String sql = "select rtrim('" + value + "')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals(" AAAA"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testUCase() {
+        String sql = "select ucase('aaa')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals("AAA"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testLeftString() {
+        String sql = "select left('ABC', 2)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(expr.toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testRightString() {
+        String sql = "select right('ABC', 1)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testReverseString() {
+        String sql = "select reverse('ABC')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals("CBA"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testRepeatString() {
+        String sql = "select repeat('ABC', 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            //Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidString() {
+        String sql = "select mid('ABC', 0, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            // Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testStringLocate() {
+        String sql = "select locate('C', 'ABCd')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(rtExpr.eval(null));
+            Assert.assrt((Integer)(rtExpr.eval(null)) == 2);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void testStringConcat() {
+        String sql = "select concat('A', 'B', 'C', 'd')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals("ABCd"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

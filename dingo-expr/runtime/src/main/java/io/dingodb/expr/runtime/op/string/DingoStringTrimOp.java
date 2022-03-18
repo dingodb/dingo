@@ -21,7 +21,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import javax.annotation.Nonnull;
 
 public class DingoStringTrimOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 936730706377543505L;
+    private static final long serialVersionUID = -4332118553191666565L;
 
     /**
      * Create an DingoStringTrimOp.

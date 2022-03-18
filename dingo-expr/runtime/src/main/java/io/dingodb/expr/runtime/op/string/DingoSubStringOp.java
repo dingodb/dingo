@@ -21,7 +21,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import javax.annotation.Nonnull;
 
 public class DingoSubStringOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 936730706377543505L;
+    private static final long serialVersionUID = 9195218471853466015L;
 
     /**
      * Create an DingoSubStringOp. RtTrimOp trim the leading and trailing blanks of a String by {@code String::trim}.

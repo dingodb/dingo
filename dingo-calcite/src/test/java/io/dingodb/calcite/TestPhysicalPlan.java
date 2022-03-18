@@ -387,18 +387,4 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
-    @Test
-    public void testStringFuncSubString01() throws SqlParseException {
-        try {
-            String sql = "select trim(' caterpillar')";
-            RelNode relNode = parse(sql);
-            Op op = FunFactory.INS.getFun("trim");
-            Expr expr = DingoExprCompiler.parse("trim(' world')");
-            RtExpr rtExpr = expr.compileIn(null);
-            System.out.println(rtExpr.eval(null));
-        } catch (Exception sqlParseExp) {
-            sqlParseExp.printStackTrace();
-        }
-
-    }
 }

@@ -20,32 +20,22 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class DingoStringLTrimOp extends RtStringConversionOp {
-    private static final long serialVersionUID = -8557732786466948967L;
+public class DingoStringReplaceOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 5736080205736344227L;
 
     /**
-     * Create an DingoStringLTrimOp.
-     * DingoStringTrimOp trim the leading blanks of a String.
+     * Create an RtReplaceOp. RtReplaceOp performs string replacing operation by {@code String::replace}.
      *
      * @param paras the parameters of the op
      */
-    public DingoStringLTrimOp(@Nonnull RtExpr[] paras) {
+    public DingoStringReplaceOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        int startIndex = 0;
-        String inputStr = (String)values[0];
-        int endIndex = inputStr.length() - 1;
-
-        for (; startIndex < inputStr.length(); startIndex++) {
-            if (inputStr.charAt(startIndex) != ' ') {
-                break;
-            }
-        }
-
-        return inputStr.substring(startIndex, endIndex + 1);
+        System.out.println("====> replace input values:" + values[0] + "," + values[1] + "," + values[2]);
+        return ((String) values[0]).replace((String) values[1], (String) values[2]);
     }
 }

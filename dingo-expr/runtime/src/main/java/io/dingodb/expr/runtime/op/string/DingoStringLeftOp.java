@@ -20,32 +20,22 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class DingoStringLTrimOp extends RtStringConversionOp {
-    private static final long serialVersionUID = -8557732786466948967L;
+public class DingoStringLeftOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 5242457055774200528L;
 
     /**
-     * Create an DingoStringLTrimOp.
-     * DingoStringTrimOp trim the leading blanks of a String.
+     * Create an DingoStringLeftOp. DingoStringLeftOp extract left sub string.
      *
      * @param paras the parameters of the op
      */
-    public DingoStringLTrimOp(@Nonnull RtExpr[] paras) {
+    public DingoStringLeftOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        int startIndex = 0;
-        String inputStr = (String)values[0];
-        int endIndex = inputStr.length() - 1;
-
-        for (; startIndex < inputStr.length(); startIndex++) {
-            if (inputStr.charAt(startIndex) != ' ') {
-                break;
-            }
-        }
-
-        return inputStr.substring(startIndex, endIndex + 1);
+        Integer cnt = ((Long)(values[1])).intValue();
+        return ((String) values[0]).substring(0, cnt);
     }
 }

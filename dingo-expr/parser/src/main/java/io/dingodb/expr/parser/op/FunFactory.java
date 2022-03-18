@@ -39,13 +39,20 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
+import io.dingodb.expr.runtime.op.string.DingoStringLeftOp;
+import io.dingodb.expr.runtime.op.string.DingoStringLocateOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLowerOp;
+import io.dingodb.expr.runtime.op.string.DingoStringMidOp;
 import io.dingodb.expr.runtime.op.string.DingoStringRTrimOp;
+import io.dingodb.expr.runtime.op.string.DingoStringRepeatOp;
+import io.dingodb.expr.runtime.op.string.DingoStringReplaceOp;
+import io.dingodb.expr.runtime.op.string.DingoStringReverseOp;
+import io.dingodb.expr.runtime.op.string.DingoStringRightOp;
 import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringUpperOp;
 import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
-import io.dingodb.expr.runtime.op.string.RtReplaceOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -85,13 +92,22 @@ public final class FunFactory {
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
         // String
-        registerUdf("replace", RtReplaceOp::new);
+        registerUdf("replace", DingoStringReplaceOp::new);
         registerUdf("substring", DingoSubStringOp::new);
         registerUdf("trim", DingoStringTrimOp::new);
         registerUdf("ltrim", DingoStringLTrimOp::new);
         registerUdf("rtrim", DingoStringRTrimOp::new);
         registerUdf("lower", DingoStringLowerOp::new);
+        registerUdf("lcase", DingoStringLowerOp::new);
         registerUdf("upper", DingoStringUpperOp::new);
+        registerUdf("ucase", DingoStringUpperOp::new);
+        registerUdf("left", DingoStringLeftOp::new);
+        registerUdf("right", DingoStringRightOp::new);
+        registerUdf("reverse", DingoStringReverseOp::new);
+        registerUdf("repeat", DingoStringRepeatOp::new);
+        registerUdf("mid", DingoStringMidOp::new);
+        registerUdf("locate", DingoStringLocateOp::new);
+        registerUdf("concat", DingoStringConcatOp::new);
     }
 
     private void registerEvaluator(

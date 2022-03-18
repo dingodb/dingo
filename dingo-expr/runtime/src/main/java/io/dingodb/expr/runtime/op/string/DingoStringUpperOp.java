@@ -21,7 +21,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import javax.annotation.Nonnull;
 
 public class DingoStringUpperOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 8584547974619997612L;
+    private static final long serialVersionUID = -4349256259193399655L;
 
     /**
      * Create an RtToUpperCaseOp. RtToUpperCaseOp converts a String to upper case by {@code String::toUpperCase}.

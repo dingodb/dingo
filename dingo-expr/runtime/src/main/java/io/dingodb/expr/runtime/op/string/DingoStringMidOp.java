@@ -20,22 +20,28 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class RtReplaceOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 5736080205736344227L;
+public class DingoStringMidOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 8185618697441684894L;
 
     /**
-     * Create an RtReplaceOp. RtReplaceOp performs string replacing operation by {@code String::replace}.
+     * Create an DingoStringMidOp. get the mid of string.
      *
      * @param paras the parameters of the op
      */
-    public RtReplaceOp(@Nonnull RtExpr[] paras) {
+    public DingoStringMidOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        System.out.println("====> replace input values:" + values[0] + "," + values[1] + "," + values[2]);
-        return ((String) values[0]).replace((String) values[1], (String) values[2]);
+        String inputStr = ((String)values[0]).trim();
+        int startIndex = ((Long)(values[1])).intValue();
+        int cnt = ((Long)(values[2])).intValue();
+        if (inputStr == null || inputStr.equals("") || startIndex + cnt > inputStr.length()) {
+            return inputStr;
+        } else {
+            return inputStr.substring(startIndex, startIndex + cnt);
+        }
     }
 }
