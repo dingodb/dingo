@@ -24,6 +24,7 @@ import io.dingodb.exec.util.ExprUtil;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
@@ -349,8 +350,10 @@ public class TestRexConverter {
         }
     }
 
+    @Test
     public void testStringConcat() {
-        String sql = "select concat('A', 'B', 'C', 'd')";
+        String sql = "select 'AA' || 'BB' || 'CC' ";
+        // String sql = "select concat('AA', 'BB', 'CC') ";
         try {
             SqlNode sqlNode = parser.parse(sql);
             sqlNode = parser.validate(sqlNode);
@@ -359,8 +362,30 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
+
+            // Expr expr1 = DingoExprCompiler.parse("concat('A', 'B')");
+            // System.out.println(expr1.toString());
+
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("ABCd"));
+            Assert.assrt(((String)rtExpr.eval(null)).equals("AABBCC"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testNumberFormat() {
+        String sql = "select format(100.21, 1)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            // Assert.assrt(((String)rtExpr.eval(null)).equals("100.2"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

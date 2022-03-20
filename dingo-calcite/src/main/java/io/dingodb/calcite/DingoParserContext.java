@@ -41,7 +41,7 @@ public final class DingoParserContext {
             DingoSchema.ROOT
         );
 
-        DingoFunc.DINGO_FUNC_LIST.forEach((k, v) -> {
+        DingoFunc.DINGO_FUNC_LIST.build().forEach((k, v) -> {
             rootSchema.plus().add(k, ScalarFunctionImpl.create(DingoFunc.class, v));
         });
     }

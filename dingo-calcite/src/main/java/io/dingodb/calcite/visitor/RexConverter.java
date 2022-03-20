@@ -142,8 +142,14 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case RTRIM:
                 op = FunFactory.INS.getFun("rtrim");
                 break;
+            case OTHER:
+                if (call.op.getName() == "||") {
+                    op = FunFactory.INS.getFun("concat");
+                } else {
+                    op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                }
+                break;
             case OTHER_FUNCTION: {
-                System.out.println("====Huzx1==>" + call.op.getName());
                 op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
                 break;
             }
@@ -160,6 +166,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 exprList.add(expr);
             }
         }
+
         op.setExprArray(exprList.stream().toArray(Expr[]::new));
 
         /*

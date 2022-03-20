@@ -16,6 +16,9 @@
 
 package io.dingodb.calcite.func;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +27,7 @@ public final class DingoFunc {
     private DingoFunc() {
     }
 
-    public static final Map<String, String> DINGO_FUNC_LIST = new HashMap<String, String>();
+    public static final ImmutableMap.Builder<String, String> DINGO_FUNC_LIST = new ImmutableMap.Builder<>();
 
     static {
         DINGO_FUNC_LIST.put("ltrim".toUpperCase(), "trimLeft");
@@ -37,10 +40,10 @@ public final class DingoFunc {
         DINGO_FUNC_LIST.put("repeat".toUpperCase(), "repeatString");
         DINGO_FUNC_LIST.put("mid".toUpperCase(), "midString");
         DINGO_FUNC_LIST.put("locate".toUpperCase(), "locateString");
-        DINGO_FUNC_LIST.put("concat".toUpperCase(), "concatString");
+        DINGO_FUNC_LIST.put("format".toUpperCase(), "formatNumber");
     }
 
-    public static String trimLeft(String inputStr) {
+    public static String trimLeft(final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
@@ -48,7 +51,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String trimRight(String str) {
+    public static String trimRight(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
@@ -56,7 +59,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String toLowCase(String str) {
+    public static String toLowCase(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
@@ -64,7 +67,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String toUpCase(String str) {
+    public static String toUpCase(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
@@ -72,7 +75,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String leftString(String str, int cnt) {
+    public static String leftString(final String str, int cnt) {
         if (str == null || str.equals("") || cnt > str.length()) {
             return str;
         } else {
@@ -80,7 +83,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String rightString(String str, int cnt) {
+    public static String rightString(final String str, int cnt) {
         if (str == null || str.equals("") || cnt > str.length()) {
             return str;
         } else {
@@ -88,7 +91,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String reverseString(String inputStr) {
+    public static String reverseString(final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
@@ -96,7 +99,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String repeatString(String inputStr, int times) {
+    public static String repeatString(final String inputStr, int times) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
@@ -104,7 +107,7 @@ public final class DingoFunc {
         }
     }
 
-    public static String midString(String inputStr, int startIndex, int cnt) {
+    public static String midString(final String inputStr, int startIndex, int cnt) {
         if (inputStr == null || inputStr.equals("") || startIndex + cnt > inputStr.length()) {
             return inputStr;
         } else {
@@ -112,20 +115,19 @@ public final class DingoFunc {
         }
     }
 
-    public static String concatString(String[] inputs) {
-        String result = "";
-        for (String input: inputs) {
-            result += input;
-        }
-        return result;
-    }
-
-    public static int locateString(String subString, String inputStr) {
+    public static int locateString(final String subString, final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return -1;
         } else {
             return inputStr.indexOf(subString);
         }
+    }
+
+    public static double formatNumber(final double value, int scale) {
+        NumberFormat nf = NumberFormat.getNumberInstance();
+        nf.setMaximumFractionDigits(scale);
+        nf.setMinimumFractionDigits(scale);
+        return Double.valueOf(nf.format(value));
     }
 
 }

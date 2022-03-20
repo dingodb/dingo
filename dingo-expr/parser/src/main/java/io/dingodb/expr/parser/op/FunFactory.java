@@ -39,6 +39,7 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLeftOp;
@@ -107,7 +108,11 @@ public final class FunFactory {
         registerUdf("repeat", DingoStringRepeatOp::new);
         registerUdf("mid", DingoStringMidOp::new);
         registerUdf("locate", DingoStringLocateOp::new);
+        registerUdf("||", DingoStringConcatOp::new);
         registerUdf("concat", DingoStringConcatOp::new);
+
+        // number format function
+        registerUdf("format", DingoNumberFormatOp::new);
     }
 
     private void registerEvaluator(
