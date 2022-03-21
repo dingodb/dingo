@@ -62,7 +62,7 @@ public class TestDingoJobVisitor {
     @BeforeAll
     public static void setupAll() {
         parser = new DingoParser(new DingoParserContext());
-        table = parser.getContext().getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
+        table = parser.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
         RelOptCluster cluster = parser.getCluster();
         RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
         RelDataType rowType = typeFactory.createStructType(

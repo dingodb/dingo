@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -27,6 +30,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -46,7 +50,9 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import javax.annotation.Nonnull;
 
 // Each sql parsing requires a new instance.
@@ -59,6 +65,8 @@ public class DingoParser {
     private final RelOptPlanner planner;
     @Getter
     private final SqlValidator sqlValidator;
+    @Getter
+    private final CalciteCatalogReader catalogReader;
 
     protected SqlParser.Config parserConfig = SqlParser.config();
 
@@ -69,10 +77,22 @@ public class DingoParser {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         RexBuilder rexBuilder = new RexBuilder(context.getTypeFactory());
         cluster = RelOptCluster.create(planner, rexBuilder);
+
+        Properties properties = new Properties();
+        properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
+            String.valueOf(parserConfig.caseSensitive()));
+
+        catalogReader = new CalciteCatalogReader(
+            context.getRootSchema(),
+            Collections.singletonList(DingoSchema.SCHEMA_NAME),
+            context.getTypeFactory(),
+            new CalciteConnectionConfigImpl(properties)
+        );
+
         // CatalogReader is also serving as SqlOperatorTable
         sqlValidator = SqlValidatorUtil.newValidator(
-            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), context.getCatalogReader()),
-            context.getCatalogReader(),
+            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), catalogReader),
+            catalogReader,
             context.getTypeFactory(),
             SqlValidator.Config.DEFAULT
         );
@@ -99,7 +119,7 @@ public class DingoParser {
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
             (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
             sqlValidator,
-            context.getCatalogReader(),
+            catalogReader,
             cluster,
             StandardConvertletTable.INSTANCE,
             SqlToRelConverter.config()

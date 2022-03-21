@@ -16,14 +16,13 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.func.DingoFunc;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
-import java.util.Collections;
 
 // These are static for every sql parsing.
 public final class DingoParserContext {
@@ -31,8 +30,7 @@ public final class DingoParserContext {
     private final JavaTypeFactory typeFactory;
     @Getter
     private final CalciteSchema rootSchema;
-    @Getter
-    private final CalciteCatalogReader catalogReader;
+
 
     public DingoParserContext() {
         typeFactory = new JavaTypeFactoryImpl();
@@ -42,11 +40,9 @@ public final class DingoParserContext {
             DingoSchema.SCHEMA_NAME,
             DingoSchema.ROOT
         );
-        catalogReader = new CalciteCatalogReader(
-            rootSchema,
-            Collections.singletonList(DingoSchema.SCHEMA_NAME),
-            typeFactory,
-            CalciteConnectionConfig.DEFAULT
-        );
+
+        DingoFunc.DINGO_FUNC_LIST.build().forEach((k, v) -> {
+            rootSchema.plus().add(k, ScalarFunctionImpl.create(DingoFunc.class, v));
+        });
     }
 }

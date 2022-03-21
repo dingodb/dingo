@@ -31,6 +31,12 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.EnumerableRoot;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.op.FunFactory;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.parser.DingoExprCompiler;
+import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptNode;
@@ -380,4 +386,5 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoProject.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
+
 }

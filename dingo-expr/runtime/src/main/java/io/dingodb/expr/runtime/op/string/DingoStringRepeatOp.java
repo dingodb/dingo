@@ -18,23 +18,26 @@ package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 
+import java.util.Collections;
 import javax.annotation.Nonnull;
 
-public class RtReplaceOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 5736080205736344227L;
+public class DingoStringRepeatOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 7673054922107009329L;
 
     /**
-     * Create an RtReplaceOp. RtReplaceOp performs string replacing operation by {@code String::replace}.
+     * Create an DingoStringRepeatOp. repeat the String times.
      *
      * @param paras the parameters of the op
      */
-    public RtReplaceOp(@Nonnull RtExpr[] paras) {
+    public DingoStringRepeatOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).replace((String) values[1], (String) values[2]);
+        String inputStr = ((String)values[0]).trim();
+        int times = ((Long)(values[1])).intValue();
+        return String.join("", Collections.nCopies(times, inputStr));
     }
 }

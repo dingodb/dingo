@@ -20,21 +20,26 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class RtToUpperCaseOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 8584547974619997612L;
+public class DingoStringReverseOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 2691982562867909922L;
 
     /**
-     * Create an RtToUpperCaseOp. RtToUpperCaseOp converts a String to upper case by {@code String::toUpperCase}.
+     * Create an DingoStringReverseOp. Reverse the String.
      *
      * @param paras the parameters of the op
      */
-    public RtToUpperCaseOp(@Nonnull RtExpr[] paras) {
+    public DingoStringReverseOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).toUpperCase();
+        String inputStr = ((String) values[0]).trim();
+        if (inputStr == null || inputStr.equals("")) {
+            return inputStr;
+        } else {
+            return new StringBuilder(inputStr).reverse().toString();
+        }
     }
 }

@@ -130,8 +130,8 @@ public class TestWithoutVar {
             arguments("log(E)", 1.0),
             arguments("log(1.0 / E)", -1.0),
             // string fun
-            arguments("toLowerCase('HeLlO')", "hello"),
-            arguments("toUpperCase('HeLlO')", "HELLO"),
+            arguments("lower('HeLlO')", "hello"),
+            arguments("upper('HeLlO')", "HELLO"),
             arguments("trim(' HeLlO \\n\\t')", "HeLlO"),
             arguments("replace('I love $name', '$name', 'Lucia')", "I love Lucia"),
             // time
