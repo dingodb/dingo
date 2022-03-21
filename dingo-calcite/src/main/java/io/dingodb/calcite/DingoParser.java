@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.plan.Convention;
@@ -84,7 +83,7 @@ public class DingoParser {
 
         catalogReader = new CalciteCatalogReader(
             context.getRootSchema(),
-            Collections.singletonList(DingoSchema.SCHEMA_NAME),
+            Collections.singletonList(context.getDefaultSchemaName()),
             context.getTypeFactory(),
             new CalciteConnectionConfigImpl(properties)
         );

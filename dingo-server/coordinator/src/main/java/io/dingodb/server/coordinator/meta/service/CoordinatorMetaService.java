@@ -77,6 +77,11 @@ public class CoordinatorMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
+    public String getName() {
+        return "DINGO";
+    }
+
+    @Override
     public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
         if (!isCoordinatorLeader()) {
             throw new RuntimeException("Only coordinator leader create table.");

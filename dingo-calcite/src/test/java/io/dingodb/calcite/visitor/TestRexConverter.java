@@ -19,20 +19,13 @@ package io.dingodb.calcite.visitor;
 import com.ibm.icu.impl.Assert;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.util.ExprUtil;
+import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.op.FunFactory;
-import io.dingodb.expr.parser.op.Op;
-import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,15 +34,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.PrintWriter;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Slf4j
@@ -58,7 +47,8 @@ public class TestRexConverter {
 
     @BeforeAll
     public static void setupAll() {
-        parser = new DingoParser(new DingoParserContext());
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        parser = new DingoParser(context);
     }
 
     @Nonnull
@@ -134,7 +124,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)(rtExpr.eval(null))).equals(inputStr.replace('\'', ' ').trim()));
+            Assert.assrt(((String) (rtExpr.eval(null))).equals(inputStr.replace('\'', ' ').trim()));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -151,7 +141,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)(rtExpr.eval(null))).equals("BB"));
+            Assert.assrt(((String) (rtExpr.eval(null))).equals("BB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -168,7 +158,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)(rtExpr.eval(null))).equals("BBA"));
+            Assert.assrt(((String) (rtExpr.eval(null))).equals("BBA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -185,7 +175,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)(rtExpr.eval(null))).equals("ABB"));
+            Assert.assrt(((String) (rtExpr.eval(null))).equals("ABB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -203,7 +193,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("AAAA "));
+            Assert.assrt(((String) rtExpr.eval(null)).equals("AAAA "));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -221,7 +211,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals(" AAAA"));
+            Assert.assrt(((String) rtExpr.eval(null)).equals(" AAAA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -238,7 +228,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("AAA"));
+            Assert.assrt(((String) rtExpr.eval(null)).equals("AAA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -289,7 +279,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("CBA"));
+            Assert.assrt(((String) rtExpr.eval(null)).equals("CBA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -344,7 +334,7 @@ public class TestRexConverter {
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
             System.out.println(rtExpr.eval(null));
-            Assert.assrt((Integer)(rtExpr.eval(null)) == 2);
+            Assert.assrt((Integer) (rtExpr.eval(null)) == 2);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -367,7 +357,7 @@ public class TestRexConverter {
             // System.out.println(expr1.toString());
 
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("AABBCC"));
+            Assert.assrt(((String) rtExpr.eval(null)).equals("AABBCC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

@@ -19,6 +19,7 @@ package io.dingodb.test;
 import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -30,9 +31,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,9 +56,9 @@ public class QueryTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Services.META.init(null);
+        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
-        connection = Connections.getConnection();
+        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
         sqlHelper = new SqlHelper(connection);
         sqlHelper.execUpdate("/table-test-create.sql");
         sqlHelper.execUpdate("/table-test1-create.sql");
@@ -65,7 +68,7 @@ public class QueryTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         connection.close();
-        Services.META.clear();
+        Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
     }
 
     private static void checkDatumInTable(
@@ -98,6 +101,69 @@ public class QueryTest {
     @AfterEach
     public void cleanUp() throws Exception {
         sqlHelper.clear("test");
+    }
+
+    @Test
+    public void testGetSchemas() throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ResultSet resultSet = metaData.getSchemas();
+        AssertResultSet.of(resultSet).isRecords(
+            new String[]{"TABLE_SCHEM", "TABLE_CATALOG"},
+            TupleSchema.ofTypes("STRING", "STRING"),
+            Arrays.asList(
+                new Object[]{"metadata", null},
+                new Object[]{"TEST", null}
+            )
+        );
+    }
+
+    @Test
+    public void testGetTables() throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ResultSet resultSet = metaData.getTables(null, "TEST", null, null);
+        AssertResultSet.of(resultSet).isRecords(
+            new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"},
+            TupleSchema.ofTypes("STRING", "STRING", "STRING", "STRING"),
+            Arrays.asList(
+                new Object[]{null, "TEST", "TEST", "TABLE"},
+                new Object[]{null, "TEST", "TEST1", "TABLE"}
+            )
+        );
+    }
+
+    @Test
+    public void testGetColumns() throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ResultSet resultSet = metaData.getColumns(null, "TEST", "TEST", null);
+        AssertResultSet.of(resultSet).isRecords(
+            new String[]{
+                "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
+                "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
+                "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN"
+            },
+            TupleSchema.ofTypes(
+                "STRING", "STRING", "STRING", "STRING", "INTEGER",
+                "STRING", "INTEGER", "INTEGER", "INTEGER", "INTEGER",
+                "INTEGER", "INTEGER", "STRING", "STRING", "STRING"
+            ),
+            Arrays.asList(
+                new Object[]{
+                    null, "TEST", "TEST", "ID", 4,
+                    "INTEGER NOT NULL", -1, null, 10, 0,
+                    -1, 1, "NO", "", ""
+                },
+                new Object[]{
+                    null, "TEST", "TEST", "NAME", 12,
+                    "VARCHAR(32) NOT NULL", 32, null, 10, 0,
+                    32, 2, "NO", "", ""
+                },
+                new Object[]{
+                    null, "TEST", "TEST", "AMOUNT", 8,
+                    "DOUBLE NOT NULL", -1, null, 10, 0,
+                    -1, 3, "NO", "", ""
+                }
+            )
+        );
     }
 
     @Test
@@ -165,6 +231,16 @@ public class QueryTest {
     @Test
     public void testScan() throws SQLException, IOException {
         checkDatumInTestTable(TEST_ALL_DATA);
+    }
+
+    @Test
+    public void testScan1() throws SQLException, IOException {
+        checkDatumInTable(
+            "test.test",
+            new String[]{"id", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            TEST_ALL_DATA
+        );
     }
 
     // TODO: currently the records overlap to each other for the key is empty if there is no primary key.

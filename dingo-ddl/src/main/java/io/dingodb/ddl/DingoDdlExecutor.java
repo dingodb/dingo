@@ -41,6 +41,8 @@ import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,39 +100,46 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @Nonnull
-    private static MutableSchema getSchema(@Nonnull CalcitePrepare.Context context) {
-        CalciteSchema calciteSchema = context.getMutableRootSchema();
-        assert calciteSchema != null : "No root schema.";
-        final List<String> schemaPath = context.getDefaultSchemaPath();
-        for (String p : schemaPath) {
-            calciteSchema = calciteSchema.getSubSchema(p, true);
-            assert calciteSchema != null : "Schema \"" + String.join(".", schemaPath) + "\"not available.";
+    private static Pair<MutableSchema, String> getSchemaAndTableName(
+        @Nonnull SqlIdentifier id,
+        @Nonnull CalcitePrepare.Context context
+    ) {
+        CalciteSchema rootSchema = context.getMutableRootSchema();
+        assert rootSchema != null : "No root schema.";
+        final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
+        assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
+        CalciteSchema defaultSchema = rootSchema.getSubSchema(defaultSchemaPath.get(0), false);
+        if (defaultSchema == null) {
+            defaultSchema = rootSchema;
         }
-        Schema schema = calciteSchema.schema;
+        List<String> names = new ArrayList<>(id.names);
+        Schema schema;
+        String tableName;
+        if (names.size() == 1) {
+            schema = defaultSchema.schema;
+            tableName = names.get(0);
+        } else {
+            CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), false);
+            if (subSchema != null) {
+                schema = subSchema.schema;
+                tableName = String.join(".", Util.skip(names));
+            } else {
+                schema = defaultSchema.schema;
+                tableName = String.join(".", names);
+            }
+        }
         if (!(schema instanceof MutableSchema)) {
             throw new AssertionError("Schema must be mutable.");
         }
-        return (MutableSchema) schema;
-    }
-
-    @Nonnull
-    private static String getTableName(@Nonnull SqlIdentifier id, @Nonnull CalcitePrepare.Context context) {
-        final List<String> schemaPath = context.getDefaultSchemaPath();
-        List<String> names = new ArrayList<>(id.names);
-        for (String p : schemaPath) {
-            if (names.get(0).equals(p)) {
-                names.remove(p);
-            } else {
-                break;
-            }
-        }
-        return String.join(".", names);
+        return Pair.of((MutableSchema) schema, tableName);
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlCreateTable create, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", create);
-        final String tableName = getTableName(create.name, context);
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(create.name, context);
+        final String tableName = schemaTableName.right;
         TableDefinition td = new TableDefinition(tableName);
         List<String> keyList = null;
         SqlNodeList columnList = create.columnList;
@@ -159,9 +168,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         if (td.getColumns().stream().noneMatch(ColumnDefinition::isPrimary)) {
-            throw new RuntimeException("Not have primary key!");
+            throw new RuntimeException("Primary keys are required in table definition.");
         }
-        final MutableSchema schema = getSchema(context);
+        final MutableSchema schema = schemaTableName.left;
+        assert schema != null;
         if (schema.getTable(tableName) != null) {
             if (!create.ifNotExists) {
                 // They did not specify IF NOT EXISTS, so give error.
@@ -171,15 +181,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 );
             }
         }
+        assert tableName != null;
         schema.createTable(tableName, td);
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", drop);
-        final MutableSchema schema = getSchema(context);
-        final String tableName = getTableName(drop.name, context);
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(drop.name, context);
+        final MutableSchema schema = schemaTableName.left;
+        final String tableName = schemaTableName.right;
         final boolean existed;
+        assert schema != null;
+        assert tableName != null;
         existed = schema.dropTable(tableName);
         if (!existed && !drop.ifExists) {
             throw SqlUtil.newContextException(

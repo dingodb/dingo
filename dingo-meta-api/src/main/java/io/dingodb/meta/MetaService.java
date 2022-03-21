@@ -23,6 +23,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public interface MetaService {
+    String getName();
+
     void init(@Nullable Map<String, Object> props);
 
     void clear();

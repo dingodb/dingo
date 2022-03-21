@@ -29,6 +29,6 @@ public class DingoSchemaFactory implements SchemaFactory {
     @Override
     public Schema create(SchemaPlus schemaPlus, String name, Map<String, Object> operand) {
         log.info("schemaPlus = {}, name = {}, operand = {}", schemaPlus, name, operand);
-        return DingoSchema.ROOT;
+        return DingoRootSchema.ROOT;
     }
 }

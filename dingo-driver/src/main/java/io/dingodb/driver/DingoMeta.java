@@ -17,11 +17,8 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import io.dingodb.calcite.DingoSchema;
-import io.dingodb.exec.Services;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
@@ -29,16 +26,25 @@ import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.parser.SqlParseException;
 
+import java.lang.reflect.Field;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+
+import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class DingoMeta extends MetaImpl {
@@ -176,102 +182,145 @@ public class DingoMeta extends MetaImpl {
         return null;
     }
 
+    private <E> MetaResultSet createResultSet(
+        Enumerable<E> enumerable,
+        Class<E> clazz,
+        String... names
+    ) {
+        requireNonNull(names, "names");
+        final List<ColumnMetaData> columns = new ArrayList<>(names.length);
+        final List<Field> fields = new ArrayList<>(names.length);
+        final List<String> fieldNames = new ArrayList<>(names.length);
+        for (String name : names) {
+            final int index = fields.size();
+            final String fieldName = AvaticaUtils.toCamelCase(name);
+            final Field field;
+            try {
+                field = clazz.getField(fieldName);
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            columns.add(columnMetaData(name, index, field.getType(), false));
+            fields.add(field);
+            fieldNames.add(fieldName);
+        }
+        //noinspection unchecked
+        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
+        return createResultSet(Collections.emptyMap(),
+            columns, CursorFactory.record(clazz, fields, fieldNames),
+            new Frame(0, true, iterable));
+    }
+
+    @Override
+    public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        // TODO: filter by pattern.
+        return createResultSet(
+            Linq4j.asEnumerable(rootSchema.getSubSchemaMap().values())
+                .select(schema -> new MetaSchema(catalog, schema.getName())),
+            MetaSchema.class,
+            "TABLE_SCHEM",
+            "TABLE_CATALOG");
+    }
+
     @Override
     public MetaResultSet getTables(
         ConnectionHandle ch,
         String catalog,
-        Pat schemaPattern,
+        @Nonnull Pat schemaPattern,
         Pat tableNamePattern,
         List<String> typeList
     ) {
-        try {
-            Set<Object> metaTables = DingoSchema.ROOT.getTableNames()
-                .stream()
-                .map(name -> Arrays.asList("DINGO", name, "TABLE"))
-                .collect(Collectors.toSet());
-            String[] cols = new String[]{
-                "TABLE_SCHEM",
-                "TABLE_NAME",
-                "TABLE_TYPE",
-            };
-            List<ColumnMetaData> columnMetaDatas = new ArrayList<>();
-            for (int i = 0; i < cols.length; i++) {
-                columnMetaDatas.add(columnMetaData(cols[i], i, String.class, true));
-            }
-            CursorFactory cursorFactory = CursorFactory.ARRAY;
-            AvaticaStatement statement = connection.createStatement();
-            return MetaResultSet.create(
-                ch.id,
-                statement.getId(),
-                true,
-                new Signature(
-                    columnMetaDatas,
-                    "",
-                    ImmutableList.of(),
-                    ImmutableMap.of(),
-                    cursorFactory,
-                    StatementType.SELECT
-                ),
-                new Frame(0, true, metaTables)
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        // TODO: should match by pattern
+        CalciteSchema schema = rootSchema.getSubSchema(schemaPattern.s, false);
+        if (schema == null) {
+            return createEmptyResultSet(MetaTable.class);
         }
+        return createResultSet(
+            Linq4j.asEnumerable(schema.getTableNames())
+                .select(name -> new MetaTable(
+                    catalog,
+                    schemaPattern.s,
+                    name,
+                    schema.getTable(name, true).getTable().getJdbcTableType().jdbcName
+                )),
+            MetaTable.class,
+            "TABLE_CAT",
+            "TABLE_SCHEM",
+            "TABLE_NAME",
+            "TABLE_TYPE"
+        );
     }
 
     @Override
     public MetaResultSet getColumns(
         ConnectionHandle ch,
         String catalog,
-        Pat schemaPattern,
+        @Nonnull Pat schemaPattern,
         Pat tableNamePattern,
         Pat columnNamePattern
     ) {
-        try {
-            String[] cols = new String[]{
-                "COLUMN_NAME",
-                "TYPE_NAME",
-                "CHAR_OCTET_LENGTH",
-                "DECIMAL_DIGITS",
-                "NULLABLE",
-                "IS_AUTOINCREMENT",
-            };
-            Set<Object> metaCols = Services.META.getTableDefinition(tableNamePattern.s)
-                .getColumns()
-                .stream()
-                .map(col -> Arrays.asList(
-                    col.getName(),
-                    col.getType().getName(),
-                    col.getPrecision(),
-                    col.getScale(),
-                    !col.isNotNull(),
-                    false
-                )).collect(Collectors.toSet());
-            List<ColumnMetaData> columnMetaDatum = new ArrayList<>();
-            for (int i = 0; i < cols.length; i++) {
-                columnMetaDatum.add(columnMetaData(cols[i], i, String.class, true));
-            }
-            CursorFactory cursorFactory = CursorFactory.ARRAY;
-            AvaticaStatement statement = connection.createStatement();
-            return MetaResultSet.create(
-                ch.id,
-                statement.getId(),
-                true,
-                new Signature(
-                    columnMetaDatum,
-                    "",
-                    ImmutableList.of(),
-                    ImmutableMap.of(),
-                    cursorFactory,
-                    StatementType.SELECT
-                ),
-                new Frame(0, true, metaCols)
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        // TODO: should match by pattern
+        CalciteSchema schema = rootSchema.getSubSchema(schemaPattern.s, false);
+        if (schema == null) {
+            return createEmptyResultSet(MetaColumn.class);
         }
+        CalciteSchema.TableEntry tableEntry = schema.getTable(tableNamePattern.s, false);
+        if (tableEntry == null) {
+            return createEmptyResultSet(MetaColumn.class);
+        }
+        Table table = tableEntry.getTable();
+        RelDataType rowType = table.getRowType(dingoConnection.getContext().getTypeFactory());
+        return createResultSet(
+            Linq4j.asEnumerable(rowType.getFieldList())
+                .select(field -> {
+                    final int precision =
+                        field.getType().getSqlTypeName().allowsPrec()
+                            && !(field.getType()
+                            instanceof RelDataTypeFactoryImpl.JavaType)
+                            ? field.getType().getPrecision()
+                            : -1;
+                    return new MetaColumn(
+                        catalog,
+                        schemaPattern.s,
+                        tableNamePattern.s,
+                        field.getName(),
+                        field.getType().getSqlTypeName().getJdbcOrdinal(),
+                        field.getType().getFullTypeString(),
+                        precision,
+                        field.getType().getSqlTypeName().allowsScale()
+                            ? field.getType().getScale()
+                            : null,
+                        10,
+                        field.getType().isNullable()
+                            ? DatabaseMetaData.columnNullable
+                            : DatabaseMetaData.columnNoNulls,
+                        precision,
+                        field.getIndex() + 1,
+                        field.getType().isNullable() ? "YES" : "NO");
+                }),
+            MetaColumn.class,
+            "TABLE_CAT",
+            "TABLE_SCHEM",
+            "TABLE_NAME",
+            "COLUMN_NAME",
+            "DATA_TYPE",
+            "TYPE_NAME",
+            "COLUMN_SIZE",
+            "DECIMAL_DIGITS",
+            "NUM_PREC_RADIX",
+            "NULLABLE",
+            "CHAR_OCTET_LENGTH",
+            "ORDINAL_POSITION",
+            "IS_NULLABLE",
+            "IS_AUTOINCREMENT",
+            "IS_GENERATEDCOLUMN"
+        );
     }
 
     @Override

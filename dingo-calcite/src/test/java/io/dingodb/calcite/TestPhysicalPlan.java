@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.assertion.AssertRelNode;
+import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
@@ -63,7 +64,7 @@ public class TestPhysicalPlan {
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext();
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
     }
 

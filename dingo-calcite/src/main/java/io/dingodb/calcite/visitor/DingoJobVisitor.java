@@ -34,7 +34,6 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -85,23 +84,25 @@ import static io.dingodb.common.util.Utils.sole;
 @Slf4j
 public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     private final IdGenerator idGenerator;
+    private final Location currentLocation;
     @Getter
     private final Job job;
 
-    public DingoJobVisitor(IdGenerator idGenerator) {
+    public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation) {
         this.idGenerator = idGenerator;
+        this.currentLocation = currentLocation;
         job = new JobImpl(UUID.randomUUID().toString());
     }
 
     @Nonnull
-    public static Job createJob(RelNode input) {
-        return createJob(input, false);
+    public static Job createJob(RelNode input, Location currentLocation) {
+        return createJob(input, currentLocation, false);
     }
 
     @Nonnull
-    public static Job createJob(RelNode input, boolean addRoot) {
+    public static Job createJob(RelNode input, Location currentLocation, boolean addRoot) {
         IdGenerator idGenerator = new IdGenerator();
-        DingoJobVisitor visitor = new DingoJobVisitor(idGenerator);
+        DingoJobVisitor visitor = new DingoJobVisitor(idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (addRoot) {
             if (outputs.size() == 1) {
@@ -173,10 +174,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoDistributedValues rel) {
         List<Output> outputs = new LinkedList<>();
-        String tableName = getSimpleName(rel.getTable());
-        final Map<String, Location> partLocations = Services.META.getPartLocations(tableName);
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        final TableDefinition td = metaHelper.getTableDefinition();
         final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
-        final TableDefinition td = Services.META.getTableDefinition(tableName);
         Map<String, List<Object[]>> partMap = ps.partTuples(
             rel.getValues(),
             td.getKeyMapping()
@@ -206,7 +207,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             Task task = input.getTask();
             Location target = input.getTargetLocation();
             if (target == null) {
-                target = Services.META.currentLocation();
+                target = currentLocation;
             }
             if (!target.equals(task.getLocation())) {
                 Id id = idGenerator.get();
@@ -239,11 +240,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoGetByKeys rel) {
-        String tableName = getSimpleName(rel.getTable());
-        final Map<String, Location> partLocations = Services.META.getPartLocations(tableName);
-        final TableDefinition td = Services.META.getTableDefinition(tableName);
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        final TableDefinition td = metaHelper.getTableDefinition();
+        final TableId tableId = metaHelper.getTableId();
         final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
-        final TableId tableId = new TableId(Services.META.getTableKey(tableName));
         Map<String, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
         List<Output> outputs = new LinkedList<>();
         for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
@@ -259,7 +260,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(partLocations.get(entry.getKey()));
             task.putOperator(operator);
-            operator.getSoleOutput().setHint(OutputHint.of(tableName, partId));
+            operator.getSoleOutput().setHint(OutputHint.of(metaHelper.getTableName(), partId));
             outputs.addAll(operator.getOutputs());
         }
         return outputs;
@@ -268,10 +269,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoPartition rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        String tableName = getSimpleName(rel.getTable());
         List<Output> outputs = new LinkedList<>();
-        final Map<String, Location> partLocations = Services.META.getPartLocations(tableName);
-        final TableDefinition td = Services.META.getTableDefinition(tableName);
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        final TableDefinition td = metaHelper.getTableDefinition();
         final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
         for (Output input : inputs) {
             Task task = input.getTask();
@@ -280,7 +281,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getKeyMapping()
             );
             operator.setId(idGenerator.get());
-            operator.createOutputs(tableName, partLocations);
+            operator.createOutputs(metaHelper.getTableName(), partLocations);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
             outputs.addAll(operator.getOutputs());
@@ -291,10 +292,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoPartModify rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        String tableName = getSimpleName(rel.getTable());
         List<Output> outputs = new LinkedList<>();
-        TableDefinition td = Services.META.getTableDefinition(tableName);
-        final TableId tableId = new TableId(Services.META.getTableKey(tableName));
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        TableDefinition td = metaHelper.getTableDefinition();
+        final TableId tableId = metaHelper.getTableId();
         for (Output input : inputs) {
             Task task = input.getTask();
             Operator operator;
@@ -345,11 +346,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoPartScan rel) {
-        String tableName = getSimpleName(rel.getTable());
-        TableDefinition td = Services.META.getTableDefinition(tableName);
-        Map<String, Location> parts = Services.META.getPartLocations(tableName);
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        TableDefinition td = metaHelper.getTableDefinition();
+        Map<String, Location> parts = metaHelper.getPartLocations();
+        TableId tableId = metaHelper.getTableId();
         List<Output> outputs = new ArrayList<>(parts.size());
-        TableId tableId = new TableId(Services.META.getTableKey(tableName));
         String filterStr = null;
         if (rel.getFilter() != null) {
             filterStr = RexConverter.convert(rel.getFilter()).toString();
@@ -367,7 +368,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(entry.getValue());
             task.putOperator(operator);
-            operator.getSoleOutput().setHint(OutputHint.of(tableName, partId));
+            operator.getSoleOutput().setHint(OutputHint.of(metaHelper.getTableName(), partId));
             outputs.addAll(operator.getOutputs());
         }
         return outputs;
@@ -448,7 +449,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoValues rel) {
-        Task task = job.getOrCreate(Services.META.currentLocation());
+        Task task = job.getOrCreate(currentLocation);
         ValuesOperator operator = new ValuesOperator(rel.getValues());
         operator.setId(idGenerator.get());
         task.putOperator(operator);

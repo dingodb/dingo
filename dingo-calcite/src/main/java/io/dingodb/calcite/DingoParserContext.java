@@ -23,26 +23,34 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
-
 // These are static for every sql parsing.
 public final class DingoParserContext {
     @Getter
     private final JavaTypeFactory typeFactory;
     @Getter
     private final CalciteSchema rootSchema;
-
+    @Getter
+    private final String defaultSchemaName;
 
     public DingoParserContext() {
+        this(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+    }
+
+    public DingoParserContext(String defaultSchemaName) {
+        this.defaultSchemaName = defaultSchemaName;
         typeFactory = new JavaTypeFactoryImpl();
         rootSchema = CalciteSchema.createRootSchema(
             true,
             false,
-            DingoSchema.SCHEMA_NAME,
-            DingoSchema.ROOT
+            DingoRootSchema.ROOT_SCHEMA_NAME,
+            DingoRootSchema.ROOT
         );
-
         DingoFunc.DINGO_FUNC_LIST.build().forEach((k, v) -> {
             rootSchema.plus().add(k, ScalarFunctionImpl.create(DingoFunc.class, v));
         });
+    }
+
+    public CalciteSchema getDefaultSchema() {
+        return rootSchema.getSubSchema(defaultSchemaName, true);
     }
 }

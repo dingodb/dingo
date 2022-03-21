@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -36,7 +37,7 @@ public class TestDingoParser {
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext();
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
     }
 
@@ -71,9 +72,9 @@ public class TestDingoParser {
         SqlNode sqlNode = parse("select id, name, amount from test");
         List<List<String>> fieldOrigins = parser.getFieldOrigins(sqlNode);
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
-            ImmutableList.of("DINGO", "TEST", "ID"),
-            ImmutableList.of("DINGO", "TEST", "NAME"),
-            ImmutableList.of("DINGO", "TEST", "AMOUNT")
+            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "ID"),
+            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "NAME"),
+            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "AMOUNT")
         ));
     }
 }
