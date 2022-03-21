@@ -31,12 +31,17 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 public final class RexConverter extends RexVisitorImpl<Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
+    private static final List<String> REX_CONST_LITERAL = Stream
+        .of("BOTH", "LEADING", "TRAILING")
+        .collect(Collectors.toList());
 
     private RexConverter() {
         super(true);
@@ -128,12 +133,48 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                         throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
                 }
                 break;
+            case TRIM:
+                op = FunFactory.INS.getFun("trim");
+                break;
+            case LTRIM:
+                op = FunFactory.INS.getFun("ltrim");
+                break;
+            case RTRIM:
+                op = FunFactory.INS.getFun("rtrim");
+                break;
+            case OTHER:
+                if (call.op.getName() == "||") {
+                    op = FunFactory.INS.getFun("concat");
+                } else {
+                    op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                }
+                break;
+            case OTHER_FUNCTION: {
+                op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
         }
+
+        List<Expr> exprList = new ArrayList<>();
+        for (RexNode node: call.getOperands())  {
+            Expr expr = node.accept(this);
+            if (REX_CONST_LITERAL.contains(expr.toString())) {
+                exprList.add(new Value<String>(expr.toString()));
+            } else {
+                exprList.add(expr);
+            }
+        }
+
+        op.setExprArray(exprList.stream().toArray(Expr[]::new));
+
+        /*
         op.setExprArray(call.getOperands().stream()
             .map(o -> o.accept(this))
+            .filter(x -> !x.toString().contains("BOTH"))
             .toArray(Expr[]::new));
+         */
         return op;
     }
 

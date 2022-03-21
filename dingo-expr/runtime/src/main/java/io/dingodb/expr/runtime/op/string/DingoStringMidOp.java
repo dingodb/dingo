@@ -20,21 +20,28 @@ import io.dingodb.expr.runtime.RtExpr;
 
 import javax.annotation.Nonnull;
 
-public class RtToLowerCaseOp extends RtStringConversionOp {
-    private static final long serialVersionUID = -3546267408443749483L;
+public class DingoStringMidOp extends RtStringConversionOp {
+    private static final long serialVersionUID = 8185618697441684894L;
 
     /**
-     * Create an RtToLowerCaseOp. RtToLowerCaseOp converts a String to lower case by {@code String::toLowerCase}.
+     * Create an DingoStringMidOp. get the mid of string.
      *
      * @param paras the parameters of the op
      */
-    public RtToLowerCaseOp(@Nonnull RtExpr[] paras) {
+    public DingoStringMidOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).toLowerCase();
+        String inputStr = ((String)values[0]).trim();
+        int startIndex = ((Long)(values[1])).intValue();
+        int cnt = ((Long)(values[2])).intValue();
+        if (inputStr == null || inputStr.equals("") || startIndex + cnt > inputStr.length()) {
+            return inputStr;
+        } else {
+            return inputStr.substring(startIndex, startIndex + cnt);
+        }
     }
 }
