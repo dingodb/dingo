@@ -39,12 +39,18 @@ public final class Connections {
     }
 
     public static Connection getConnection() throws SQLException {
+        return getConnection(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+    }
+
+    public static Connection getConnection(String defaultSchema) throws SQLException {
         try {
             Class.forName("io.dingodb.driver.DingoDriver");
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-        return DriverManager.getConnection("jdbc:dingo:");
+        Properties properties = new Properties();
+        properties.setProperty("defaultSchema", defaultSchema);
+        return DriverManager.getConnection("jdbc:dingo:", properties);
     }
 
     @SuppressWarnings("unused")
@@ -60,10 +66,11 @@ public final class Connections {
         Properties props = new Properties();
         String sb = "inline: {\n"
             + "  version: '1.0',\n"
-            + "  defaultSchema: '" + DingoSchema.SCHEMA_NAME + "',\n"
+            + "  defaultSchema: '" + DingoRootSchema.ROOT_SCHEMA_NAME
+            + "." + DingoRootSchema.DEFAULT_SCHEMA_NAME + "',\n"
             + "  schemas: [ {\n"
             + "    type: 'custom',\n"
-            + "    name: '" + DingoSchema.SCHEMA_NAME + "',\n"
+            + "    name: '" + DingoRootSchema.ROOT_SCHEMA_NAME + "',\n"
             + "    factory: '" + DingoSchemaFactory.class.getCanonicalName() + "',\n"
             + "    operand: {\n"
             + "    }\n"

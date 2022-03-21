@@ -60,23 +60,31 @@ public final class AssertResultSet {
         assertThat(rowCount).isEqualTo(1);
     }
 
-    public void isRecords(@Nonnull String[] columnNames, TupleSchema schema, String data) throws SQLException {
+    public void isRecords(
+        @Nonnull String[] columnNames,
+        TupleSchema schema,
+        List<Object[]> target
+    ) throws SQLException {
         int size = columnNames.length;
+        int count = 0;
+        while (instance.next()) {
+            Object[] row = new Object[size];
+            int i = 0;
+            for (String columnName : columnNames) {
+                row[i] = instance.getObject(columnName);
+                ++i;
+            }
+            log.info("Get tuple {}.", schema.formatTuple(row));
+            assertThat(schema.convert(row)).isIn(target);
+            ++count;
+        }
+        assertThat(count).isEqualTo(target.size());
+    }
+
+    public void isRecords(@Nonnull String[] columnNames, TupleSchema schema, String data) throws SQLException {
         try {
             List<Object[]> target = CsvUtils.readCsv(schema, data);
-            int count = 0;
-            while (instance.next()) {
-                Object[] row = new Object[size];
-                int i = 0;
-                for (String columnName : columnNames) {
-                    row[i] = instance.getObject(columnName);
-                    ++i;
-                }
-                log.info("Get tuple {}.", schema.formatTuple(row));
-                assertThat(schema.convert(row)).isIn(target);
-                ++count;
-            }
-            assertThat(count).isEqualTo(target.size());
+            isRecords(columnNames, schema, target);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
         }

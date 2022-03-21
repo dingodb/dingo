@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.assertion.AssertRelNode;
+import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoTableScan;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
@@ -54,7 +55,7 @@ public class TestLogicalPlan {
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext();
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
     }
 
@@ -76,6 +77,14 @@ public class TestLogicalPlan {
     @Test
     public void testFullScan() throws SqlParseException {
         String sql = "select * from test";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+    }
+
+    @Test
+    public void testFullScan1() throws SqlParseException {
+        String sql = "select * from mock.test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
@@ -230,7 +239,7 @@ public class TestLogicalPlan {
 
     @Test
     public void testTransfer() throws SqlParseException {
-        String sql = "insert into test1 select id as id1, id as id2, id as id3, name, amount from test";
+        String sql = "insert into mock1.test1 select id as id1, id as id2, id as id3, name, amount from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)

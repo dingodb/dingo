@@ -24,6 +24,7 @@ import io.dingodb.exec.impl.TaskImpl;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.util.TagUtil;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetError;
@@ -34,6 +35,8 @@ import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,10 +55,27 @@ public final class Services {
         ServiceProvider.NET_PROVIDER.provider(),
         "No channel service provider was found."
     ).get();
+    public static final Map<String, MetaService> metaServices = new HashMap<>();
+
     public static final ConcurrentMap<Object, SendOperator> rcvReadyFlag = new ConcurrentHashMap<>();
     private static final ExecutorService executorService = Executors.newWorkStealingPool();
 
+    static {
+        initMetaServices();
+    }
+
     private Services() {
+    }
+
+    public static void initMetaServices() {
+        for (MetaServiceProvider provider : ServiceProvider.META_PROVIDER) {
+            MetaService metaService = provider.get();
+            String serviceName = metaService.getName();
+            if (metaServices.containsKey(serviceName)) {
+                throw new RuntimeException("Duplicate meta service name \"" + serviceName + "\" exists.");
+            }
+            metaServices.put(metaService.getName(), metaService);
+        }
     }
 
     public static void initNetService() {

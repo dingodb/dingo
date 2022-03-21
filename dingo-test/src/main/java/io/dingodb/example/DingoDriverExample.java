@@ -32,9 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 public class DingoDriverExample {
-    private static Logger log = LoggerFactory.getLogger(DingoDriverExample.class);
-
     private static final String defaultConnectIp = "172.20.3.13";
+    private static Logger log = LoggerFactory.getLogger(DingoDriverExample.class);
     private static String connectUrl = "url=http://" + defaultConnectIp + ":8765";
     private static Connection connection;
 
@@ -62,10 +61,10 @@ public class DingoDriverExample {
             statement = connection.createStatement();
         } catch (ClassNotFoundException ex) {
             log.info("Init driver catch ClassNotFoundExeption:{}", ex.toString(), ex);
-            return ;
+            return;
         } catch (SQLException ex) {
             log.info("Init driver catch SQLException:{}", ex.toString(), ex);
-            return ;
+            return;
         }
 
         Long recordCnt = 100L;
@@ -118,7 +117,7 @@ public class DingoDriverExample {
         final Long endTime = System.currentTimeMillis();
         System.out.println("Current Command:" + command
             + ", RecordCnt:" + recordCnt
-            + ", AvgCost:" + (endTime - startTime) /  recordCnt
+            + ", AvgCost:" + (endTime - startTime) / recordCnt
             + "ms, totalCnt:" + recordCnt
             + ", batchCnt:" + batchCnt);
     }
@@ -171,7 +170,7 @@ public class DingoDriverExample {
     }
 
     private static int getRandomInt(int min, int max) {
-        return min + (int)(Math.random() * ((max - min) + 1));
+        return min + (int) (Math.random() * ((max - min) + 1));
     }
 
     private static double getRandomDouble(int min, int max) {

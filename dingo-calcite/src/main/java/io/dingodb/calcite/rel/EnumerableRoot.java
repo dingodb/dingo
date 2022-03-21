@@ -16,9 +16,12 @@
 
 package io.dingodb.calcite.rel;
 
+import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.calcite.JobRunner;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
+import io.dingodb.meta.Location;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.enumerable.PhysType;
@@ -55,8 +58,9 @@ public final class EnumerableRoot extends SingleRel implements EnumerableRel {
             pref.preferArray()
         );
         RelNode input = getInput();
-        assert input instanceof DingoRel : "The input must be DINGO.";
-        Job job = DingoJobVisitor.createJob(input, true);
+        assert input instanceof DingoRel : "The input must be DINGO_ROOT.";
+        Location currentLocation = Services.metaServices.get(DingoRootSchema.DEFAULT_SCHEMA_NAME).currentLocation();
+        Job job = DingoJobVisitor.createJob(input, currentLocation, true);
         // The result set would be treated as `Object` instead of `Object[]` if the result has only one column.
         String methodName = getRowType().getFieldCount() == 1 ? "runOneColumn" : "run";
         try {

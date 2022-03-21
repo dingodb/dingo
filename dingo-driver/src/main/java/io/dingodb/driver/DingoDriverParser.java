@@ -20,13 +20,16 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Job;
+import io.dingodb.meta.Location;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -156,7 +159,13 @@ public final class DingoDriverParser extends DingoParser {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         RelRoot relRoot = convert(sqlNode);
         RelNode relNode = optimize(relRoot.rel, DingoConventions.ROOT);
-        Job job = DingoJobVisitor.createJob(relNode, true);
+        CalciteSchema rootSchema = context.getRootSchema();
+        CalciteSchema defaultSchema = rootSchema.getSubSchema(context.getDefaultSchemaPath().get(0), true);
+        if (defaultSchema == null) {
+            throw new RuntimeException("No default schema is found.");
+        }
+        Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
+        Job job = DingoJobVisitor.createJob(relNode, currentLocation, true);
         return new DingoSignature(
             columns,
             sql,

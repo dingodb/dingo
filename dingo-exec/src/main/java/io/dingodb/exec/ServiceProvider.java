@@ -25,7 +25,7 @@ import java.util.ServiceLoader;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public final class ServiceProvider<T> {
+public final class ServiceProvider<T> implements Iterable<T> {
     public static final ServiceProvider<StoreServiceProvider> KV_STORE_PROVIDER
         = new ServiceProvider<>(StoreServiceProvider.class);
     public static final ServiceProvider<MetaServiceProvider> META_PROVIDER
@@ -56,5 +56,11 @@ public final class ServiceProvider<T> {
     @Nullable
     public T provider() {
         return provider(false);
+    }
+
+    @Nonnull
+    @Override
+    public Iterator<T> iterator() {
+        return providers(false);
     }
 }

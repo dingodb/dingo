@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.DingoRootSchema;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -52,7 +53,11 @@ public class DingoConnection extends AvaticaConnection {
         Properties info
     ) {
         super(driver, factory, url, info);
-        context = new DingoParserContext();
+        String defaultSchema = info.getProperty("defaultSchema");
+        if (defaultSchema == null) {
+            defaultSchema = DingoRootSchema.DEFAULT_SCHEMA_NAME;
+        }
+        context = new DingoParserContext(defaultSchema);
     }
 
     public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
@@ -102,7 +107,7 @@ public class DingoConnection extends AvaticaConnection {
 
         @Override
         public List<String> getDefaultSchemaPath() {
-            return ImmutableList.of();
+            return ImmutableList.of(connection.context.getDefaultSchemaName());
         }
 
         @Override
