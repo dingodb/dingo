@@ -17,6 +17,7 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoParserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -65,13 +66,14 @@ public class DingoMeta extends MetaImpl {
         return null;
     }
 
+    @Deprecated
     @Override
     public ExecuteResult prepareAndExecute(
         StatementHandle sh,
         String sql,
         long maxRowCount,
         PrepareCallback callback
-    ) throws NoSuchStatementException {
+    ) {
         return null;
     }
 
@@ -82,7 +84,7 @@ public class DingoMeta extends MetaImpl {
         long maxRowCount,
         int maxRowsInFirstFrame,
         @Nonnull PrepareCallback callback
-    ) throws NoSuchStatementException {
+    ) {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
             DingoConnection.DingoContext context = dingoConnection.createContext();
@@ -164,12 +166,13 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
+    @Deprecated
     @Override
     public ExecuteResult execute(
         StatementHandle sh,
         List<TypedValue> parameterValues,
         long maxRowCount
-    ) throws NoSuchStatementException {
+    ) {
         return null;
     }
 
@@ -178,10 +181,11 @@ public class DingoMeta extends MetaImpl {
         StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
-    ) throws NoSuchStatementException {
+    ) {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private <E> MetaResultSet createResultSet(
         Enumerable<E> enumerable,
         Class<E> clazz,
@@ -204,7 +208,6 @@ public class DingoMeta extends MetaImpl {
             fields.add(field);
             fieldNames.add(fieldName);
         }
-        //noinspection unchecked
         final Iterable<Object> iterable = (Iterable<Object>) enumerable;
         return createResultSet(Collections.emptyMap(),
             columns, CursorFactory.record(clazz, fields, fieldNames),
@@ -233,9 +236,11 @@ public class DingoMeta extends MetaImpl {
         List<String> typeList
     ) {
         DingoConnection dingoConnection = (DingoConnection) connection;
-        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        DingoParserContext context = dingoConnection.getContext();
+        CalciteSchema rootSchema = context.getRootSchema();
         // TODO: should match by pattern
-        CalciteSchema schema = rootSchema.getSubSchema(schemaPattern.s, false);
+        String schemaName = schemaPattern.s == null ? context.getDefaultSchemaName() : schemaPattern.s;
+        CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
         if (schema == null) {
             return createEmptyResultSet(MetaTable.class);
         }
@@ -243,7 +248,7 @@ public class DingoMeta extends MetaImpl {
             Linq4j.asEnumerable(schema.getTableNames())
                 .select(name -> new MetaTable(
                     catalog,
-                    schemaPattern.s,
+                    schemaName,
                     name,
                     schema.getTable(name, true).getTable().getJdbcTableType().jdbcName
                 )),
@@ -264,10 +269,12 @@ public class DingoMeta extends MetaImpl {
         Pat columnNamePattern
     ) {
         DingoConnection dingoConnection = (DingoConnection) connection;
-        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        DingoParserContext context = dingoConnection.getContext();
+        CalciteSchema rootSchema = context.getRootSchema();
         // TODO: should match by pattern
-        CalciteSchema schema = rootSchema.getSubSchema(schemaPattern.s, false);
-        if (schema == null) {
+        String schemaName = schemaPattern.s == null ? context.getDefaultSchemaName() : schemaPattern.s;
+        CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
+        if (schema == null || tableNamePattern.s == null) {
             return createEmptyResultSet(MetaColumn.class);
         }
         CalciteSchema.TableEntry tableEntry = schema.getTable(tableNamePattern.s, false);
