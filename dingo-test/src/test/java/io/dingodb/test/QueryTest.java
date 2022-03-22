@@ -132,6 +132,20 @@ public class QueryTest {
     }
 
     @Test
+    public void testGetTablesNullSchema() throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ResultSet resultSet = metaData.getTables(null, null, "%", null);
+        AssertResultSet.of(resultSet).isRecords(
+            new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"},
+            TupleSchema.ofTypes("STRING", "STRING", "STRING", "STRING"),
+            Arrays.asList(
+                new Object[]{null, "TEST", "TEST", "TABLE"},
+                new Object[]{null, "TEST", "TEST1", "TABLE"}
+            )
+        );
+    }
+
+    @Test
     public void testGetColumns() throws SQLException {
         DatabaseMetaData metaData = connection.getMetaData();
         ResultSet resultSet = metaData.getColumns(null, "TEST", "TEST", null);
