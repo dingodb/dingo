@@ -29,6 +29,9 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
 import javax.annotation.Nonnull;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 @RequiredArgsConstructor
 public class ElementSchema implements CompileContext {
@@ -116,6 +119,11 @@ public class ElementSchema implements CompileContext {
             case TypeCode.STRING:
                 if (origin instanceof NlsString) {
                     return ((NlsString) origin).getValue();
+                }
+                break;
+            case TypeCode.DATE:
+                if (origin instanceof Date) {
+                    return new SimpleDateFormat("yyyy-MM-dd").format((Date)origin).toString();
                 }
                 break;
             default:

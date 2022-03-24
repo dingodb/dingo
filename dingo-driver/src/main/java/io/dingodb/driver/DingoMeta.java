@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
@@ -157,13 +158,35 @@ public class DingoMeta extends MetaImpl {
             final Iterator<Object[]> iterator = resultSet.getIterator();
             final List rows = new ArrayList(fetchMaxRowCount);
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
-                rows.add(Arrays.asList(iterator.next()));
+                List result = Arrays.asList(iterator.next());
+                rows.add(this.convertResult(result, stmt.getSignature().columns));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private List convertResult(final List<Object> inputs, final List<ColumnMetaData>  columns) {
+        if (inputs.size() != columns.size()) {
+            log.error("Dingo Meta convert Failed. invalid columns between row:{} and column:{}",
+                inputs.size(), columns.size());
+            return inputs;
+        }
+
+        IntStream.rangeClosed(0, inputs.size() - 1)
+                 .forEach(x -> {
+                     if (columns.get(x).columnClassName.equalsIgnoreCase("java.sql.date")) {
+                         Long timeStamp = (Long) inputs.get(x);
+                         Long epochDay = timeStamp / (24 * 60 * 60 * 1000);
+                         // Long epochDay02 = new Timestamp(timeStamp).toLocalDateTime().toLocalDate().toEpochDay();
+                         inputs.set(x, epochDay);
+                         log.info("Convert column:{} type:{} to epochday:{}",
+                             columns.get(x).columnName, columns.get(x).columnClassName, epochDay);
+                     }
+                 });
+        return inputs;
     }
 
     @Deprecated
