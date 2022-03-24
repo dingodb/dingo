@@ -16,14 +16,15 @@
 
 package io.dingodb.expr.runtime;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -62,7 +63,7 @@ public class TestTypeCodesEquality {
             arguments(HashMap.class, TypeCode.MAP),
             arguments(TreeMap.class, TypeCode.MAP),
             arguments(LinkedHashMap.class, TypeCode.MAP),
-            arguments(Date.class, TypeCode.TIME)
+            arguments(Time.class, TypeCode.TIME)
         );
     }
 
@@ -70,5 +71,10 @@ public class TestTypeCodesEquality {
     @MethodSource("getParameters")
     public void testCodeEquality(Class<?> clazz, int typeCode) {
         assertEquals(TypeCodes.getTypeCode(clazz), typeCode);
+    }
+
+    @Test
+    public void testTime() {
+        assertEquals(TypeCodes.getTypeCode(Time.class), TypeCode.TIME);
     }
 }

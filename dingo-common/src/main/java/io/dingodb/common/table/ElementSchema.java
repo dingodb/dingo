@@ -28,10 +28,11 @@ import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
-import javax.annotation.Nonnull;
 import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Locale;
+import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
 public class ElementSchema implements CompileContext {
@@ -124,6 +125,16 @@ public class ElementSchema implements CompileContext {
             case TypeCode.DATE:
                 if (origin instanceof Date) {
                     return new SimpleDateFormat("yyyy-MM-dd").format((Date)origin).toString();
+                }
+                break;
+            case TypeCode.TIME:
+                if (origin instanceof Time) {
+                    return ((Time)origin).toString();
+                }
+                break;
+            case TypeCode.TIMESTAMP:
+                if (origin instanceof Timestamp) {
+                    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( ((Timestamp)origin)).toString();
                 }
                 break;
             default:
