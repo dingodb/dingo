@@ -41,7 +41,6 @@ public final class TypeMapping {
             case CHAR:
             case VARCHAR:
                 return TypeCode.STRING;
-            // todo Huzx, will add date time
             case DATE:
                 return TypeCode.DATE;
             default:
@@ -62,9 +61,8 @@ public final class TypeMapping {
                 return Schema.Type.BOOLEAN;
             case TypeCode.STRING:
                 return Schema.Type.STRING;
-            // todo Huzx, add date for avro schema
             case TypeCode.DATE:
-                return Schema.Type.BYTES;
+                return Schema.Type.LONG;
             default:
                 break;
         }

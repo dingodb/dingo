@@ -40,6 +40,10 @@ public class DingoStatement extends AvaticaStatement {
         );
     }
 
+    public Meta.Signature getSignature() {
+        return super.getSignature();
+    }
+
     public void clear() throws SQLException {
         if (openResultSet != null) {
             final AvaticaResultSet rs = openResultSet;
