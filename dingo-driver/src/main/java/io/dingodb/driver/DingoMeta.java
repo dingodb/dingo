@@ -159,7 +159,7 @@ public class DingoMeta extends MetaImpl {
             final List rows = new ArrayList(fetchMaxRowCount);
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                 List result = Arrays.asList(iterator.next());
-                rows.add(this.convertResult(result, stmt.getSignature().columns));
+                rows.add(this.convertRowsByColumnTypes(result, stmt.getSignature().columns));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             return new Meta.Frame(offset, done, rows);
@@ -168,7 +168,7 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
-    private List convertResult(final List<Object> inputs, final List<ColumnMetaData>  columns) {
+    private List convertRowsByColumnTypes(final List<Object> inputs, final List<ColumnMetaData>  columns) {
         if (inputs.size() != columns.size()) {
             log.error("Dingo Meta convert Failed. invalid columns between row:{} and column:{}",
                 inputs.size(), columns.size());

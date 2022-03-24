@@ -43,6 +43,10 @@ public final class TypeMapping {
                 return TypeCode.STRING;
             case DATE:
                 return TypeCode.DATE;
+            case TIME:
+                return TypeCode.TIME;
+            case TIMESTAMP:
+                return TypeCode.TIMESTAMP;
             default:
                 break;
         }
@@ -54,6 +58,9 @@ public final class TypeMapping {
             case TypeCode.INTEGER:
                 return Schema.Type.INT;
             case TypeCode.LONG:
+            case TypeCode.DATE:
+            case TypeCode.TIME:
+            case TypeCode.TIMESTAMP:
                 return Schema.Type.LONG;
             case TypeCode.DOUBLE:
                 return Schema.Type.DOUBLE;
@@ -61,8 +68,6 @@ public final class TypeMapping {
                 return Schema.Type.BOOLEAN;
             case TypeCode.STRING:
                 return Schema.Type.STRING;
-            case TypeCode.DATE:
-                return Schema.Type.LONG;
             default:
                 break;
         }
