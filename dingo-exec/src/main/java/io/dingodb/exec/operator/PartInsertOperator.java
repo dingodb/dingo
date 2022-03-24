@@ -27,7 +27,7 @@ import io.dingodb.common.table.TupleSchema;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("insert")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
 public final class PartInsertOperator extends PartModifyOperator {
     @JsonCreator
     public PartInsertOperator(

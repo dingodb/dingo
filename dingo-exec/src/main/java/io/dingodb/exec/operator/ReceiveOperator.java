@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.channel.ControlStatus;
+import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
@@ -29,11 +31,8 @@ import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.util.QueueUtil;
 import io.dingodb.exec.util.TagUtil;
-import io.dingodb.net.Channel;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.MessageListenerProvider;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.SimpleTag;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -42,7 +41,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import javax.annotation.Nonnull;
 
 @Slf4j
-@JsonPropertyOrder({"host", "port", "schema"})
+@JsonPropertyOrder({"host", "port", "schema", "output"})
 @JsonTypeName("receive")
 public final class ReceiveOperator extends SourceOperator {
     @JsonProperty("host")
@@ -56,6 +55,7 @@ public final class ReceiveOperator extends SourceOperator {
     private TxRxCodec codec;
     private BlockingQueue<Object[]> tupleQueue;
     private ReceiveMessageListenerProvider messageListenerProvider;
+    private ReceiveEndpoint endpoint;
 
     @JsonCreator
     public ReceiveOperator(
@@ -80,18 +80,9 @@ public final class ReceiveOperator extends SourceOperator {
             TagUtil.getTag(tag),
             messageListenerProvider
         );
-        try (Channel channel = Services.openNewSysChannel(host, port)) {
-            channel.send(SimpleMessage.builder()
-                .tag(SimpleTag.RCV_READY_TAG)
-                .content(TagUtil.toBytes(tag))
-                .build()
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("(tag = {}) Sent ready signal.", tag);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        endpoint = new ReceiveEndpoint(host, port, tag);
+        endpoint.init();
+        endpoint.sendControlMessage(ControlStatus.READY);
     }
 
     @Override
@@ -125,6 +116,16 @@ public final class ReceiveOperator extends SourceOperator {
             messageListenerProvider
         );
         return false;
+    }
+
+    @Override
+    public synchronized void fin(int pin, Fin fin) {
+        super.fin(pin, fin);
+        try {
+            endpoint.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private class ReceiveMessageListenerProvider implements MessageListenerProvider {

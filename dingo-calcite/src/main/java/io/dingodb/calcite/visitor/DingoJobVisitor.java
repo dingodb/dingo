@@ -20,7 +20,10 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoHash;
+import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -34,6 +37,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -41,10 +45,14 @@ import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.hash.HashStrategy;
+import io.dingodb.exec.hash.SimpleHashStrategy;
 import io.dingodb.exec.impl.JobImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
+import io.dingodb.exec.operator.HashJoinOperator;
+import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
 import io.dingodb.exec.operator.PartScanOperator;
@@ -60,17 +68,16 @@ import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.SimpleHashStrategy;
+import io.dingodb.exec.partition.SimplePartitionStrategy;
 import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.util.Util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +98,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation) {
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
-        job = new JobImpl(UUID.randomUUID().toString());
+        job = new JobImpl(new Id(UUID.randomUUID().toString()));
     }
 
     @Nonnull
@@ -101,7 +108,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Nonnull
     public static Job createJob(RelNode input, Location currentLocation, boolean addRoot) {
-        IdGenerator idGenerator = new IdGenerator();
+        IdGenerator idGenerator = new DingoIdGenerator();
         DingoJobVisitor visitor = new DingoJobVisitor(idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (addRoot) {
@@ -127,10 +134,32 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         );
     }
 
-    @Nonnull
-    private static String getSimpleName(@Nonnull RelOptTable table) {
-        // skip the root schema name.
-        return String.join(".", Util.skip(table.getQualifiedName()));
+    private Output exchange(@Nonnull Output input, @Nonnull Location target, TupleSchema schema) {
+        Task task = input.getTask();
+        if (target.equals(task.getLocation())) {
+            return input;
+        }
+        Id id = idGenerator.get();
+        Id receiveId = idGenerator.get();
+        SendOperator send = new SendOperator(
+            target.getHost(),
+            target.getPort(),
+            receiveId,
+            schema
+        );
+        send.setId(id);
+        input.setLink(send.getInput(0));
+        task.putOperator(send);
+        ReceiveOperator receive = new ReceiveOperator(
+            task.getHost(),
+            task.getLocation().getPort(),
+            schema
+        );
+        receive.setId(receiveId);
+        receive.getSoleOutput().copyHint(input);
+        Task rcvTask = job.getOrCreate(target, idGenerator);
+        rcvTask.putOperator(receive);
+        return receive.getSoleOutput();
     }
 
     @Override
@@ -151,24 +180,43 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoCoalesce rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        int size = inputs.size();
-        if (size <= 1) {
-            return inputs;
-        }
-        Output one = inputs.iterator().next();
-        boolean isToSumUp = one.isToSumUp();
-        Operator operator = isToSumUp ? new SumUpOperator(size) : new CoalesceOperator(size);
-        operator.setId(idGenerator.get());
-        Task task = one.getTask();
-        task.putOperator(operator);
-        int i = 0;
+        // Coalesce inputs from the same task. taskId --> list of inputs
+        Map<Id, List<Output>> inputsMap = new HashMap<>();
         for (Output input : inputs) {
-            assert input.getTask().equals(task) : "Operator linked must be in the same task.";
-            assert input.isToSumUp() == isToSumUp : "All inputs must have the same \"toSumUp\" hint.";
-            input.setLink(operator.getInput(i));
-            ++i;
+            Id taskId = input.getTaskId();
+            List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
+            list.add(input);
         }
-        return operator.getOutputs();
+        List<Output> outputs = new LinkedList<>();
+        for (Map.Entry<Id, List<Output>> entry : inputsMap.entrySet()) {
+            List<Output> list = entry.getValue();
+            int size = list.size();
+            if (size <= 1) {
+                // Need no coalescing.
+                outputs.addAll(list);
+            } else {
+                Output one = list.get(0);
+                Task task = one.getTask();
+                Operator operator = new CoalesceOperator(size);
+                operator.setId(idGenerator.get());
+                task.putOperator(operator);
+                int i = 0;
+                for (Output input : list) {
+                    input.setLink(operator.getInput(i));
+                    ++i;
+                }
+                if (one.isToSumUp()) {
+                    Operator sumUpOperator = new SumUpOperator();
+                    sumUpOperator.setId(idGenerator.get());
+                    task.putOperator(sumUpOperator);
+                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
+                    outputs.addAll(sumUpOperator.getOutputs());
+                } else {
+                    outputs.addAll(operator.getOutputs());
+                }
+            }
+        }
+        return outputs;
     }
 
     @Override
@@ -177,7 +225,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
         final Map<String, Location> partLocations = metaHelper.getPartLocations();
         final TableDefinition td = metaHelper.getTableDefinition();
-        final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
+        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
         Map<String, List<Object[]>> partMap = ps.partTuples(
             rel.getValues(),
             td.getKeyMapping()
@@ -191,7 +239,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             Location location = partLocations.get(partId);
             hint.setLocation(location);
             operator.getSoleOutput().setHint(hint);
-            Task task = job.getOrCreate(location);
+            Task task = job.getOrCreate(location, idGenerator);
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }
@@ -204,36 +252,18 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         List<Output> outputs = new LinkedList<>();
         TupleSchema schema = TupleSchema.fromRelDataType(rel.getRowType());
         for (Output input : inputs) {
-            Task task = input.getTask();
-            Location target = input.getTargetLocation();
-            if (target == null) {
-                target = currentLocation;
-            }
-            if (!target.equals(task.getLocation())) {
-                Id id = idGenerator.get();
-                Id receiveId = idGenerator.get();
-                SendOperator send = new SendOperator(
-                    target.getHost(),
-                    target.getPort(),
-                    receiveId,
-                    schema
-                );
-                send.setId(id);
-                task.putOperator(send);
-                input.setLink(send.getInput(0));
-                ReceiveOperator receive = new ReceiveOperator(
-                    task.getHost(),
-                    task.getLocation().getPort(),
-                    schema
-                );
-                receive.setId(receiveId);
-                receive.getSoleOutput().copyHint(input);
-                Task rcvTask = job.getOrCreate(target);
-                rcvTask.putOperator(receive);
-                outputs.addAll(receive.getOutputs());
-            } else {
-                outputs.add(input);
-            }
+            outputs.add(exchange(input, input.getTargetLocation(), schema));
+        }
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoExchangeRoot rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        List<Output> outputs = new LinkedList<>();
+        TupleSchema schema = TupleSchema.fromRelDataType(rel.getRowType());
+        for (Output input : inputs) {
+            outputs.add(exchange(input, currentLocation, schema));
         }
         return outputs;
     }
@@ -244,7 +274,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final Map<String, Location> partLocations = metaHelper.getPartLocations();
         final TableDefinition td = metaHelper.getTableDefinition();
         final TableId tableId = metaHelper.getTableId();
-        final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
+        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
         Map<String, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
         List<Output> outputs = new LinkedList<>();
         for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
@@ -258,9 +288,51 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(partLocations.get(entry.getKey()));
+            Task task = job.getOrCreate(partLocations.get(entry.getKey()), idGenerator);
             task.putOperator(operator);
-            operator.getSoleOutput().setHint(OutputHint.of(metaHelper.getTableName(), partId));
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoHash rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        List<Output> outputs = new LinkedList<>();
+        final Collection<Location> locations = Services.CLUSTER.getComputingLocations();
+        final HashStrategy hs = new SimpleHashStrategy();
+        for (Output input : inputs) {
+            Task task = input.getTask();
+            HashOperator operator = new HashOperator(hs, rel.getMapping());
+            operator.setId(idGenerator.get());
+            operator.createOutputs(locations);
+            task.putOperator(operator);
+            input.setLink(operator.getInput(0));
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoHashJoin rel) {
+        Collection<Output> leftInputs = dingo(rel.getLeft()).accept(this);
+        Collection<Output> rightInputs = dingo(rel.getRight()).accept(this);
+        Map<Id, Output> leftInputsMap = new HashMap<>(leftInputs.size());
+        Map<Id, Output> rightInputsMap = new HashMap<>(rightInputs.size());
+        // Only one left input in each task, because of coalescing.
+        leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
+        rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
+        List<Output> outputs = new LinkedList<>();
+        for (Map.Entry<Id, Output> entry : leftInputsMap.entrySet()) {
+            Id taskId = entry.getKey();
+            Output left = entry.getValue();
+            Output right = rightInputsMap.get(taskId);
+            Operator operator = new HashJoinOperator(rel.getLeftMapping(), rel.getRightMapping());
+            operator.setId(idGenerator.get());
+            left.setLink(operator.getInput(0));
+            right.setLink(operator.getInput(1));
+            Task task = job.getTask(taskId);
+            task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }
         return outputs;
@@ -273,7 +345,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
         final Map<String, Location> partLocations = metaHelper.getPartLocations();
         final TableDefinition td = metaHelper.getTableDefinition();
-        final PartitionStrategy ps = new SimpleHashStrategy(partLocations.size());
+        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(
@@ -281,7 +353,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getKeyMapping()
             );
             operator.setId(idGenerator.get());
-            operator.createOutputs(metaHelper.getTableName(), partLocations);
+            operator.createOutputs(partLocations);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
             outputs.addAll(operator.getOutputs());
@@ -356,7 +428,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             filterStr = RexConverter.convert(rel.getFilter()).toString();
         }
         for (Map.Entry<String, Location> entry : parts.entrySet()) {
-            final Object partId = entry.getKey();
             PartScanOperator operator = new PartScanOperator(
                 tableId,
                 entry.getKey(),
@@ -366,9 +437,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(entry.getValue());
+            Task task = job.getOrCreate(entry.getValue(), idGenerator);
             task.putOperator(operator);
-            operator.getSoleOutput().setHint(OutputHint.of(metaHelper.getTableName(), partId));
             outputs.addAll(operator.getOutputs());
         }
         return outputs;
@@ -396,22 +466,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoReduce rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        int size = inputs.size();
-        if (size <= 1) {
-            return inputs;
-        }
         Operator operator;
-        operator = new ReduceOperator(inputs.size(), rel.getKeyMapping(), rel.getAggList());
+        operator = new ReduceOperator(rel.getKeyMapping(), rel.getAggList());
         operator.setId(idGenerator.get());
-        Output one = inputs.iterator().next();
-        Task task = one.getTask();
+        Output input = sole(inputs);
+        Task task = input.getTask();
         task.putOperator(operator);
-        int i = 0;
-        for (Output input : inputs) {
-            assert input.getTask().equals(task) : "Operator linked must be in the same task.";
-            input.setLink(operator.getInput(i));
-            ++i;
-        }
+        input.setLink(operator.getInput(0));
         return operator.getOutputs();
     }
 
@@ -449,7 +510,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoValues rel) {
-        Task task = job.getOrCreate(currentLocation);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
         ValuesOperator operator = new ValuesOperator(rel.getValues());
         operator.setId(idGenerator.get());
         task.putOperator(operator);

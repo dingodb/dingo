@@ -31,7 +31,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("project")
-@JsonPropertyOrder({"projects", "schema"})
+@JsonPropertyOrder({"projects", "schema", "output"})
 public final class ProjectOperator extends SoleOutOperator {
     @JsonProperty("projects")
     private final List<String> projects;

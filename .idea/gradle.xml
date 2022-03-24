@@ -14,6 +14,7 @@
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/dingo-calcite" />
             <option value="$PROJECT_DIR$/dingo-cli" />
+            <option value="$PROJECT_DIR$/dingo-cluster-api" />
             <option value="$PROJECT_DIR$/dingo-common" />
             <option value="$PROJECT_DIR$/dingo-ddl" />
             <option value="$PROJECT_DIR$/dingo-dist" />

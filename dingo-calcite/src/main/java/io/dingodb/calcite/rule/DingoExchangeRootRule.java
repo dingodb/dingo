@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoCoalesce;
+import io.dingodb.calcite.rel.DingoExchangeRoot;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -25,8 +26,8 @@ import org.apache.calcite.rel.RelNode;
 
 import javax.annotation.Nonnull;
 
-public class DingoCoalesceRule extends RelRule<DingoCoalesceRule.Config> {
-    protected DingoCoalesceRule(Config config) {
+public class DingoExchangeRootRule extends RelRule<DingoExchangeRootRule.Config> {
+    protected DingoExchangeRootRule(Config config) {
         super(config);
     }
 
@@ -38,7 +39,12 @@ public class DingoCoalesceRule extends RelRule<DingoCoalesceRule.Config> {
             new DingoCoalesce(
                 cluster,
                 rel.getTraitSet().replace(DingoConventions.ROOT),
-                rel
+                new DingoExchangeRoot(
+                    cluster,
+                    // The changing of trait is crucial, or the rule would be recursively applied to it.
+                    rel.getTraitSet().replace(DingoConventions.PARTITIONED),
+                    rel
+                )
             )
         );
     }
@@ -46,14 +52,14 @@ public class DingoCoalesceRule extends RelRule<DingoCoalesceRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = EMPTY
             .withOperandSupplier(b0 ->
-                b0.operand(RelNode.class).trait(DingoConventions.PARTITIONED).anyInputs()
+                b0.operand(RelNode.class).trait(DingoConventions.DISTRIBUTED).anyInputs()
             )
-            .withDescription("DingoCoalesceRule")
+            .withDescription("DingoExchangeRootRule")
             .as(Config.class);
 
         @Override
-        default DingoCoalesceRule toRule() {
-            return new DingoCoalesceRule(this);
+        default DingoExchangeRootRule toRule() {
+            return new DingoExchangeRootRule(this);
         }
     }
 }

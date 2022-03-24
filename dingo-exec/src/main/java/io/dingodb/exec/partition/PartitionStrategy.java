@@ -32,7 +32,7 @@ import javax.annotation.Nonnull;
     property = "type"
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(SimpleHashStrategy.class),
+    @JsonSubTypes.Type(SimplePartitionStrategy.class),
 })
 public abstract class PartitionStrategy {
     public abstract int getPartNum();

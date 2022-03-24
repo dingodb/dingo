@@ -16,8 +16,6 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
@@ -28,16 +26,8 @@ import javax.annotation.Nonnull;
 @JsonTypeName("sumUp")
 @JsonPropertyOrder({"inputNum"})
 @Slf4j
-public class SumUpOperator extends SoleOutMultiInputOperator {
+public class SumUpOperator extends SoleOutOperator {
     private long sum;
-    private boolean[] finFlag;
-
-    @JsonCreator
-    public SumUpOperator(
-        @JsonProperty("inputNum") int inputNum
-    ) {
-        super(inputNum);
-    }
 
     @Override
     public void init() {
@@ -53,11 +43,7 @@ public class SumUpOperator extends SoleOutMultiInputOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        setFin(pin, fin);
-        if (isAllFin()) {
-            if (output.push(new Object[]{sum})) {
-                outputFin();
-            }
-        }
+        output.push(new Object[]{sum});
+        output.fin(fin);
     }
 }

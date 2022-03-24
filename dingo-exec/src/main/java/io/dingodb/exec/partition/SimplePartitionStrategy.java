@@ -27,13 +27,13 @@ import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
-public final class SimpleHashStrategy extends PartitionStrategy {
+public final class SimplePartitionStrategy extends PartitionStrategy {
     @JsonProperty("partNum")
     @Getter
     private final int partNum;
 
     @JsonCreator
-    public SimpleHashStrategy(
+    public SimplePartitionStrategy(
         @JsonProperty("partNum") int partNum
     ) {
         super();

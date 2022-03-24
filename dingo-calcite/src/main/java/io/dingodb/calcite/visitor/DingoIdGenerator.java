@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.aggregate;
+package io.dingodb.calcite.visitor;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.IdGenerator;
 
-import java.util.Arrays;
+import javax.annotation.Nonnull;
 
-@RequiredArgsConstructor
-public class AggCacheKey {
-    @Getter
-    private final Object[] tuple;
+public final class DingoIdGenerator implements IdGenerator {
+    private long currentValue = 0;
 
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(tuple);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof AggCacheKey) {
-            return Arrays.equals(this.tuple, ((AggCacheKey) obj).tuple);
-        }
-        return false;
+    @Nonnull
+    public Id get() {
+        return new Id(String.format("%04X", currentValue++));
     }
 }

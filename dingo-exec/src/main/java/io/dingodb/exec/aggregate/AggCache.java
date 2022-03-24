@@ -19,6 +19,7 @@ package io.dingodb.exec.aggregate;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.util.Utils;
+import io.dingodb.exec.tuple.TupleKey;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -30,7 +31,7 @@ import javax.annotation.Nonnull;
 public class AggCache implements Iterable<Object[]> {
     private final TupleMapping keyMapping;
     private final List<Agg> aggList;
-    private final Map<AggCacheKey, Object[]> cache;
+    private final Map<TupleKey, Object[]> cache;
 
     public AggCache(TupleMapping keyMapping, @Nonnull List<Agg> aggList) {
         this.keyMapping = keyMapping;
@@ -39,13 +40,13 @@ public class AggCache implements Iterable<Object[]> {
     }
 
     @Nonnull
-    private Object[] getVars(AggCacheKey key) {
+    private Object[] getVars(TupleKey key) {
         return cache.computeIfAbsent(key, k -> new Object[aggList.size()]);
     }
 
     public void addTuple(Object[] tuple) {
         Object[] keyTuple = keyMapping.revMap(tuple);
-        Object[] vars = getVars(new AggCacheKey(keyTuple));
+        Object[] vars = getVars(new TupleKey(keyTuple));
         for (int i = 0; i < vars.length; ++i) {
             Agg agg = aggList.get(i);
             if (vars[i] == null) {
@@ -60,7 +61,7 @@ public class AggCache implements Iterable<Object[]> {
         // Here the keys are leading elements in the tuple.
         int length = keyMapping.size();
         Object[] keyTuple = Arrays.copyOf(tuple, length);
-        Object[] vars = getVars(new AggCacheKey(keyTuple));
+        Object[] vars = getVars(new TupleKey(keyTuple));
         for (int i = 0; i < vars.length; ++i) {
             vars[i] = aggList.get(i).merge(vars[i], tuple[length + i]);
         }

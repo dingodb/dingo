@@ -25,16 +25,16 @@ import java.util.List;
 public final class DingoRules {
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
         = DingoAggregateRule.Config.DEFAULT.toRule();
-    public static final DingoCoalesceRule DINGO_COALESCE_RULE
-        = DingoCoalesceRule.Config.DEFAULT.toRule();
     public static final DingoDistributedValuesRule DINGO_DISTRIBUTED_VALUES_RULE
         = DingoDistributedValuesRule.Config.DEFAULT.toRule();
-    public static final DingoExchangeRule DINGO_EXCHANGE_ROOT_RULE
-        = DingoExchangeRule.Config.DEFAULT.toRule();
+    public static final DingoExchangeRootRule DINGO_EXCHANGE_ROOT_RULE
+        = DingoExchangeRootRule.Config.DEFAULT.toRule();
     public static final DingoFilterScanRule DINGO_FILTER_TABLE_SCAN_RULE
         = DingoFilterScanRule.Config.DEFAULT.toRule();
     public static final DingoGetByKeysRule DINGO_GET_BY_KEYS_RULE
         = DingoGetByKeysRule.Config.DEFAULT.toRule();
+    public static final DingoHashJoinRule DINGO_HASH_JOIN_RULE
+        = DingoHashJoinRule.Config.DEFAULT.toRule();
     public static final DingoPartModifyRule DINGO_PART_MODIFY_RULE
         = DingoPartModifyRule.Config.DEFAULT.toRule();
     public static final DingoPartScanRule DINGO_PART_SCAN_RULE
@@ -49,8 +49,6 @@ public final class DingoRules {
         = DingoSortRule.DEFAULT_CONFIG.toRule(DingoSortRule.class);
     public static final DingoTableModifyRule DINGO_TABLE_MODIFY_RULE
         = DingoTableModifyRule.DEFAULT_CONFIG.toRule(DingoTableModifyRule.class);
-    public static final DingoTableScanRule DINGO_TABLE_SCAN_RULE
-        = DingoTableScanRule.DEFAULT_CONFIG.toRule(DingoTableScanRule.class);
     public static final DingoToEnumerableRule DINGO_TO_ENUMERABLE_RULE
         = DingoToEnumerableRule.Config.DEFAULT.toRule();
     public static final DingoValuesRule DINGO_VALUES_RULE
@@ -61,10 +59,10 @@ public final class DingoRules {
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         DINGO_AGGREGATE_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
-        DINGO_COALESCE_RULE,
         DINGO_FILTER_TABLE_SCAN_RULE,
         DINGO_EXCHANGE_ROOT_RULE,
         DINGO_GET_BY_KEYS_RULE,
+        DINGO_HASH_JOIN_RULE,
         DINGO_PART_MODIFY_RULE,
         DINGO_PART_SCAN_RULE,
         DINGO_PROJECT_RULE_DISTRIBUTED,
@@ -72,8 +70,6 @@ public final class DingoRules {
         DINGO_PROJECT_SCAN_RULE,
         DINGO_SORT_RULE,
         DINGO_TABLE_MODIFY_RULE,
-        //DINGO_TABLE_SCAN_RULE,
-        //DINGO_TO_ENUMERABLE_RULE,
         DINGO_VALUES_RULE
     );
 

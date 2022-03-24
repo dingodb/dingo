@@ -32,9 +32,9 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonProperty("part")
     protected final Object partId;
     @JsonProperty("schema")
-    protected TupleSchema schema;
+    protected final TupleSchema schema;
     @JsonProperty("keyMapping")
-    protected TupleMapping keyMapping;
+    protected final TupleMapping keyMapping;
 
     protected Part part;
     protected long count;
@@ -45,6 +45,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         TupleSchema schema,
         TupleMapping keyMapping
     ) {
+        super();
         this.tableId = tableId;
         this.partId = partId;
         this.schema = schema;

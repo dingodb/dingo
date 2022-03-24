@@ -20,7 +20,10 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoHash;
+import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -42,7 +45,13 @@ public interface DingoRelVisitor<T> {
 
     T visit(@Nonnull DingoExchange rel);
 
+    T visit(@Nonnull DingoExchangeRoot rel);
+
     T visit(@Nonnull DingoGetByKeys rel);
+
+    T visit(@Nonnull DingoHash rel);
+
+    T visit(@Nonnull DingoHashJoin rel);
 
     T visit(@Nonnull DingoPartition rel);
 

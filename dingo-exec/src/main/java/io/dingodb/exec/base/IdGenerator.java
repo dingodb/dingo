@@ -18,11 +18,7 @@ package io.dingodb.exec.base;
 
 import javax.annotation.Nonnull;
 
-public final class IdGenerator {
-    private long currentValue = 0;
-
+public interface IdGenerator {
     @Nonnull
-    public Id get() {
-        return new Id(String.format("%04X", currentValue++));
-    }
+    Id get();
 }

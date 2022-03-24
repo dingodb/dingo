@@ -16,10 +16,13 @@
 
 package io.dingodb.calcite.assertion;
 
+import io.dingodb.common.util.Utils;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
@@ -36,17 +39,16 @@ public final class AssertJob extends Assert<Job, AssertJob> {
     }
 
     @Nonnull
-    public AssertJob task(int index, @Nonnull Consumer<AssertTask> consumer) {
-        List<Task> tasks = instance.getTasks();
-        assertThat(tasks).size().isGreaterThan(index);
-        consumer.accept(Assert.task(tasks.get(index)));
+    public AssertJob task(Id id, @Nonnull Consumer<AssertTask> consumer) {
+        Map<Id, Task> tasks = instance.getTasks();
+        consumer.accept(Assert.task(tasks.get(id)));
         return this;
     }
 
     @Nonnull
     public AssertTask soleTask() {
-        List<Task> tasks = instance.getTasks();
+        Collection<Task> tasks = instance.getTasks().values();
         assertThat(tasks).size().isEqualTo(1);
-        return Assert.task(tasks.get(0));
+        return Assert.task(Utils.sole(tasks));
     }
 }
