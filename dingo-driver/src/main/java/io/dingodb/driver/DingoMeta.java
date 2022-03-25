@@ -177,13 +177,27 @@ public class DingoMeta extends MetaImpl {
 
         IntStream.rangeClosed(0, inputs.size() - 1)
                  .forEach(x -> {
-                     if (columns.get(x).columnClassName.equalsIgnoreCase("java.sql.date")) {
-                         Long timeStamp = (Long) inputs.get(x);
-                         Long epochDay = timeStamp / (24 * 60 * 60 * 1000);
-                         // Long epochDay02 = new Timestamp(timeStamp).toLocalDateTime().toLocalDate().toEpochDay();
-                         inputs.set(x, epochDay);
-                         log.info("Convert column:{} type:{} to epochday:{}",
-                             columns.get(x).columnName, columns.get(x).columnClassName, epochDay);
+                     String columnType = columns.get(x).columnClassName;
+                     if (columnType.equalsIgnoreCase("java.sql.date")
+                         || columnType.equalsIgnoreCase("java.sql.time")
+                         || columnType.equalsIgnoreCase("java.sql.timestamp")) {
+                         Long timeStamp = 0L;
+                         try {
+                             timeStamp = (Long) inputs.get(x);
+                         } catch (Exception e) {
+                             if (e instanceof ClassCastException) {
+                                 timeStamp = ((java.util.Date) inputs.get(x)).getTime();
+                             }
+                         }
+                         Long epochTime = 0L;
+                         if (columnType.toLowerCase().contains("date")) {
+                             epochTime = timeStamp / (24 * 60 * 60 * 1000);
+                         } else {
+                             epochTime = timeStamp;
+                         }
+                         inputs.set(x, epochTime);
+                         log.info("Convert column:{} type:{} to epochTime:{}",
+                             columns.get(x).columnName, columns.get(x).columnClassName, epochTime);
                      }
                  });
         return inputs;
