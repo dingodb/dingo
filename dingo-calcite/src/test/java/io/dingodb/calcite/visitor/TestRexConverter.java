@@ -34,7 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.text.NumberFormat;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -743,4 +743,21 @@ public class TestRexConverter {
         }
     }
 
+    @Test
+    public void testNow() throws SQLException {
+        String sql = "select now()";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            // Assert.assrt(((String)rtExpr.eval(null)).equals("100.2"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 }

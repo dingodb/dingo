@@ -56,6 +56,12 @@ import io.dingodb.expr.runtime.op.string.DingoStringRightOp;
 import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringUpperOp;
 import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
+import io.dingodb.expr.runtime.op.time.DingoDateCurDateOp;
+import io.dingodb.expr.runtime.op.time.DingoDateDateDiffOp;
+import io.dingodb.expr.runtime.op.time.DingoDateDateFormatOp;
+import io.dingodb.expr.runtime.op.time.DingoDateFromUnixTimeOp;
+import io.dingodb.expr.runtime.op.time.DingoDateNowOp;
+import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -92,6 +98,12 @@ public final class FunFactory {
         registerEvaluator("tanh", TanhEvaluatorFactory.INSTANCE);
         registerEvaluator("log", LogEvaluatorFactory.INSTANCE);
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
+
+        // Time
+        registerEvaluator("current_time", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("current_date", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("current_timestamp", TimeEvaluatorFactory.INSTANCE);
+
         // Type conversion
         registerEvaluator("int", IntTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("long", LongTypeEvaluatorFactory.INSTANCE);
@@ -99,6 +111,7 @@ public final class FunFactory {
         registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
+
         // String
         registerUdf("replace", DingoStringReplaceOp::new);
         registerUdf("substring", DingoSubStringOp::new);
@@ -120,6 +133,15 @@ public final class FunFactory {
 
         // number format function
         registerUdf("format", DingoNumberFormatOp::new);
+
+        // date function
+        registerUdf("now", DingoDateNowOp::new);
+        registerUdf("curdate", DingoDateCurDateOp::new);
+        registerUdf("curtime", DingoDateCurDateOp::new);
+        registerUdf("from_unixtime", DingoDateFromUnixTimeOp::new);
+        registerUdf("unix_timestamp", DingoDateUnixTimestampOp::new);
+        registerUdf("date_format", DingoDateDateFormatOp::new);
+        registerUdf("datediff", DingoDateDateDiffOp::new);
     }
 
     private void registerEvaluator(
