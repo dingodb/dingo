@@ -115,7 +115,7 @@ public final class DingoFunc {
         }
     }
 
-    public static int locateString(final String subString, final String inputStr) {
+    public static long locateString(final String subString, final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return -1;
         } else {
