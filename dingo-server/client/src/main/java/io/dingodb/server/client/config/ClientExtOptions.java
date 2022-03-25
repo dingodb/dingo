@@ -28,4 +28,5 @@ import lombok.ToString;
 public class ClientExtOptions {
     private GroupServerOptions coordOptions;
     private ClOptions cliOptions;
+    private int capacity;
 }

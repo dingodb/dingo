@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -28,6 +29,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("sort")
+@JsonPropertyOrder({"collations", "limit", "offset", "output"})
 public class SortOperator extends SoleOutOperator {
     @JsonProperty("collations")
     private final List<SortCollation> collations;

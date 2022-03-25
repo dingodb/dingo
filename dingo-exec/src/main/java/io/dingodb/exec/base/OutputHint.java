@@ -20,26 +20,23 @@ import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.annotation.Nonnull;
-
 public class OutputHint {
-    @Getter
-    @Setter
-    private String tableName = null;
+    /**
+     * Used by PartModify.
+     */
     @Getter
     @Setter
     private Object partId = null;
+    /**
+     * Used by Exchange.
+     */
     @Getter
     @Setter
     private Location location = null;
+    /**
+     * Used by Coalesce.
+     */
     @Getter
     @Setter
     private boolean toSumUp = false;
-
-    @Nonnull
-    public static OutputHint of(String tableName, Object partId) {
-        OutputHint hint = new OutputHint();
-        hint.partId = partId;
-        return hint;
-    }
 }

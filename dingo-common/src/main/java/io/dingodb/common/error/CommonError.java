@@ -21,7 +21,7 @@ package io.dingodb.common.error;
  *
  */
 public enum CommonError implements FormattingError {
-    EXEC(1001, "Execute error", "Exec %s error, thread: [%s], message: [%s]."),
+    EXEC(1001, "Execute error", "Exec %s error, thread: [%s], message: %s."),
     EXEC_INTERRUPT(1002, "Exec interrupted error.", "Exec %s interrupted, thread: [%s], message: [%s]."),
     EXEC_TIMEOUT(1003, "Execute timeout.", "Exec %s timeout, thread: [%s], message: [%s]."),
     ;

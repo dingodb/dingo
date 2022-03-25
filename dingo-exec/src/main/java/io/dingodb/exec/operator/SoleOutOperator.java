@@ -32,7 +32,7 @@ public abstract class SoleOutOperator extends AbstractOperator {
     @JsonProperty("output")
     @JsonSerialize(as = OutputIml.class)
     @JsonDeserialize(as = OutputIml.class)
-    protected final Output output;
+    protected Output output;
 
     protected SoleOutOperator() {
         super();

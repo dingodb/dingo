@@ -62,12 +62,12 @@ public interface Connection<M> extends AutoCloseable {
     /**
      * Returns a new sub channel for current connection.
      */
-    ConnectionSubChannel<M> openSubChannel();
+    ConnectionSubChannel<M> openSubChannel(boolean keepAlive);
 
     /**
      * Returns a new sub channel for current connection.
      */
-    ConnectionSubChannel<M> openSubChannel(ChannelId targetChannelId);
+    ConnectionSubChannel<M> openSubChannel(ChannelId targetChannelId, boolean keepAlive);
 
     /**
      * Close sub channel with the specified {@code channel id}.
@@ -89,9 +89,18 @@ public interface Connection<M> extends AutoCloseable {
      */
     void receive(Packet<Message> message);
 
+    ChannelPool getChannelPool();
+
     interface Provider {
 
-        <C extends Connection<?>> C get(InetSocketAddress remoteAddress);
+        <C extends Connection<?>> C get(InetSocketAddress remoteAddress, int capacity);
+    }
 
+    interface ChannelPool {
+        io.dingodb.net.Channel poll();
+
+        void offer(io.dingodb.net.Channel channel);
+
+        void clear();
     }
 }

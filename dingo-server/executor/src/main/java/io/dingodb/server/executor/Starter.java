@@ -60,6 +60,10 @@ public class Starter {
         DingoOptions.instance().setClusterOpts(clusterOpts);
         DingoOptions.instance().setIp(opts.getIp());
         DingoOptions.instance().setExchange(opts.getExchange());
+        int capacity = opts.getOptions().getCapacity();
+        if (capacity != 0) {
+            DingoOptions.instance().setQueueCapacity(capacity);
+        }
 
         GroupServerOptions groupServerOptions = new GroupServerOptions();
         groupServerOptions.setGroup(opts.getOptions().getCoordOptions().getGroup());

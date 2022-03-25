@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -30,6 +31,7 @@ import io.dingodb.exec.fin.Fin;
 import java.util.List;
 
 @JsonTypeName("aggregate")
+@JsonPropertyOrder({"keys", "aggregates", "output"})
 public final class AggregateOperator extends SoleOutOperator {
     @JsonProperty("keys")
     private final TupleMapping keyMapping;
@@ -44,6 +46,7 @@ public final class AggregateOperator extends SoleOutOperator {
         @JsonProperty("keys") TupleMapping keyMapping,
         @JsonProperty("aggregates") List<Agg> aggList
     ) {
+        super();
         this.keyMapping = keyMapping;
         this.aggList = aggList;
     }

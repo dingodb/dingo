@@ -18,7 +18,10 @@ package io.dingodb.calcite.func;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +44,13 @@ public final class DingoFunc {
         DINGO_FUNC_LIST.put("mid".toUpperCase(), "midString");
         DINGO_FUNC_LIST.put("locate".toUpperCase(), "locateString");
         DINGO_FUNC_LIST.put("format".toUpperCase(), "formatNumber");
+        DINGO_FUNC_LIST.put("now".toUpperCase(), "now");
+        DINGO_FUNC_LIST.put("curdate".toUpperCase(), "curDate");
+        DINGO_FUNC_LIST.put("curtime".toUpperCase(), "curTime");
+        DINGO_FUNC_LIST.put("from_unixtime".toUpperCase(), "fromUnixTime");
+        DINGO_FUNC_LIST.put("unix_timestamp".toUpperCase(), "unixTimestamp");
+        DINGO_FUNC_LIST.put("date_format".toUpperCase(), "dateFormat");
+        DINGO_FUNC_LIST.put("datediff".toUpperCase(), "dateDiff");
     }
 
     public static String trimLeft(final String inputStr) {
@@ -115,7 +125,7 @@ public final class DingoFunc {
         }
     }
 
-    public static int locateString(final String subString, final String inputStr) {
+    public static long locateString(final String subString, final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return -1;
         } else {
@@ -123,11 +133,48 @@ public final class DingoFunc {
         }
     }
 
-    public static double formatNumber(final double value, int scale) {
+    public static String formatNumber(final double value, int scale) {
         NumberFormat nf = NumberFormat.getNumberInstance();
         nf.setMaximumFractionDigits(scale);
         nf.setMinimumFractionDigits(scale);
-        return Double.valueOf(nf.format(value));
+        return nf.format(value);
     }
 
+    public static Timestamp now() {
+        return new java.sql.Timestamp(System.currentTimeMillis());
+    }
+
+    public static Date curDate() {
+        return new Date(System.currentTimeMillis());
+    }
+
+    public static Long curTime() {
+        return System.currentTimeMillis();
+    }
+
+    public static Timestamp fromUnixTime(final Long timestamp) {
+        return new java.sql.Timestamp(timestamp * 1000);
+    }
+
+    public static Long unixTimestamp(final String inputStr) {
+        Date date = Date.valueOf(inputStr);
+        return date.getTime() / 1000;
+    }
+
+    // Todo this place only checks the type thing. so we just return ""
+    public static String dateFormat(final String inputStr, final String format) {
+        return "";
+    }
+
+    public static Long dateDiff(String inputStr1, String inputStr2) {
+        // Guarantee the timestamp format.
+        if (inputStr1.split(" ").length == 1) {
+            inputStr1 += " 00:00:00";
+        }
+        if (inputStr2.split(" ").length == 1) {
+            inputStr2 += " 00:00:00";
+        }
+        return (Timestamp.valueOf(inputStr1).getTime() - Timestamp.valueOf(inputStr2).getTime())
+            / (1000 * 60 * 60 * 24);
+    }
 }

@@ -99,7 +99,7 @@ public final class JobRunner {
      */
     private Task distributeTasks() {
         Task rootTask = null;
-        for (Task task : job.getTasks()) {
+        for (Task task : job.getTasks().values()) {
             if (task.getRoot() != null) {
                 rootTask = task;
                 continue;

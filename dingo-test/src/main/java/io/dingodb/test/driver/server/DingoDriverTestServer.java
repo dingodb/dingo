@@ -16,24 +16,27 @@
 
 package io.dingodb.test.driver.server;
 
-import io.dingodb.driver.server.ServerMetaFactory;
 import io.dingodb.exec.Services;
-import org.apache.calcite.avatica.server.AvaticaJsonHandler;
-import org.apache.calcite.avatica.server.HttpServer;
-import org.apache.calcite.avatica.server.Main;
+import io.dingodb.net.NetService;
+import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.driver.DriverProxyService;
+
+import java.util.ServiceLoader;
 
 public final class DingoDriverTestServer {
+
+    private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+
+    private static final int port = 8765;
+
     private DingoDriverTestServer() {
     }
 
     public static void main(String[] args) throws Exception {
         Services.META.init(null);
         Services.initNetService();
-        HttpServer server = Main.start(
-            new String[]{ServerMetaFactory.class.getCanonicalName()},
-            8765,
-            AvaticaJsonHandler::new
-        );
-        server.join();
+        netService.listenPort(port);
+        DriverProxyService driverProxyService = new DriverProxyService();
+        driverProxyService.start();
     }
 }

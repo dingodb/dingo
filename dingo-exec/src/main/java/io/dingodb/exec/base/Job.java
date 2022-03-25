@@ -19,21 +19,42 @@ package io.dingodb.exec.base;
 import io.dingodb.meta.Location;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public interface Job {
-    List<Task> getTasks();
+    Map<Id, Task> getTasks();
 
     @Nonnull
-    Task getOrCreate(Location location);
+    Task create(Id id, Location location);
+
+    default Task getTask(Id id) {
+        return getTasks().get(id);
+    }
 
     default Task getRootTask() {
-        List<Task> tasks = getTasks().stream()
+        List<Task> tasks = getTasks().values().stream()
             .filter(t -> t.getRoot() != null)
             .collect(Collectors.toList());
         assert tasks.size() == 1 : "There must be only one root task in the job.";
         return tasks.get(0);
+    }
+
+    default Task getByLocation(Location location) {
+        List<Task> tasks = getTasks().values().stream()
+            .filter(t -> t.getLocation().equals(location))
+            .collect(Collectors.toList());
+        assert tasks.size() <= 1 : "There should be at most one task at each location.";
+        return tasks.size() == 1 ? tasks.get(0) : null;
+    }
+
+    default Task getOrCreate(Location location, IdGenerator idGenerator) {
+        Task task = getByLocation(location);
+        if (task == null) {
+            task = create(idGenerator.get(), location);
+        }
+        return task;
     }
 
     default boolean isEmpty() {

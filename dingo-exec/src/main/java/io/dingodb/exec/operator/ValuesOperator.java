@@ -25,7 +25,7 @@ import lombok.Getter;
 import java.util.List;
 
 @JsonTypeName("values")
-@JsonPropertyOrder({"tuples"})
+@JsonPropertyOrder({"tuples", "output"})
 public final class ValuesOperator extends IteratorSourceOperator {
     @JsonProperty("tuples")
     @Getter
@@ -35,6 +35,7 @@ public final class ValuesOperator extends IteratorSourceOperator {
     public ValuesOperator(
         @JsonProperty("tuples") List<Object[]> tuples
     ) {
+        super();
         this.tuples = tuples;
     }
 

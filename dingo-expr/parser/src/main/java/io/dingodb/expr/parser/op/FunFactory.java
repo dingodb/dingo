@@ -39,6 +39,8 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.logical.DingoAndOp;
+import io.dingodb.expr.runtime.op.logical.DingoOrOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
@@ -54,6 +56,12 @@ import io.dingodb.expr.runtime.op.string.DingoStringRightOp;
 import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringUpperOp;
 import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
+import io.dingodb.expr.runtime.op.time.DingoDateCurDateOp;
+import io.dingodb.expr.runtime.op.time.DingoDateDateDiffOp;
+import io.dingodb.expr.runtime.op.time.DingoDateDateFormatOp;
+import io.dingodb.expr.runtime.op.time.DingoDateFromUnixTimeOp;
+import io.dingodb.expr.runtime.op.time.DingoDateNowOp;
+import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -69,6 +77,11 @@ public final class FunFactory {
 
     private FunFactory() {
         funSuppliers = new TreeMap<>(String::compareToIgnoreCase);
+
+        // relation Operator with multiple arguments
+        registerUdf("OR", DingoOrOp::new);
+        registerUdf("AND", DingoAndOp::new);
+
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
         registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);
@@ -85,6 +98,12 @@ public final class FunFactory {
         registerEvaluator("tanh", TanhEvaluatorFactory.INSTANCE);
         registerEvaluator("log", LogEvaluatorFactory.INSTANCE);
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
+
+        // Time
+        registerEvaluator("current_time", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("current_date", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("current_timestamp", TimeEvaluatorFactory.INSTANCE);
+
         // Type conversion
         registerEvaluator("int", IntTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("long", LongTypeEvaluatorFactory.INSTANCE);
@@ -92,6 +111,7 @@ public final class FunFactory {
         registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
+
         // String
         registerUdf("replace", DingoStringReplaceOp::new);
         registerUdf("substring", DingoSubStringOp::new);
@@ -113,6 +133,15 @@ public final class FunFactory {
 
         // number format function
         registerUdf("format", DingoNumberFormatOp::new);
+
+        // date function
+        registerUdf("now", DingoDateNowOp::new);
+        registerUdf("curdate", DingoDateCurDateOp::new);
+        registerUdf("curtime", DingoDateCurDateOp::new);
+        registerUdf("from_unixtime", DingoDateFromUnixTimeOp::new);
+        registerUdf("unix_timestamp", DingoDateUnixTimestampOp::new);
+        registerUdf("date_format", DingoDateDateFormatOp::new);
+        registerUdf("datediff", DingoDateDateDiffOp::new);
     }
 
     private void registerEvaluator(

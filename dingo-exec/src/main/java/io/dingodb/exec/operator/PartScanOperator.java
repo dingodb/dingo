@@ -32,7 +32,7 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import java.util.Iterator;
 
 @JsonTypeName("scan")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection"})
+@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output"})
 public final class PartScanOperator extends PartIteratorSourceOperator {
     @JsonProperty("filters")
     private final String filter;

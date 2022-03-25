@@ -21,15 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Id;
+import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.util.TagUtil;
-import io.dingodb.net.Channel;
-import io.dingodb.net.Message;
-import io.dingodb.net.SimpleMessage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -39,9 +36,6 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"host", "port", "tag", "schema"})
 @JsonTypeName("send")
 public final class SendOperator extends SinkOperator {
-    // as a flag.
-    public static final SendOperator DUMMY = new SendOperator(null, 0, null, null);
-
     @JsonProperty("host")
     private final String host;
     @JsonProperty("port")
@@ -51,9 +45,8 @@ public final class SendOperator extends SinkOperator {
     @JsonProperty("schema")
     private final TupleSchema schema;
 
-    private String tag;
-    private Channel channel;
     private TxRxCodec codec;
+    private SendEndpoint endpoint;
 
     @JsonCreator
     public SendOperator(
@@ -73,29 +66,11 @@ public final class SendOperator extends SinkOperator {
     public void init() {
         super.init();
         codec = new AvroTxRxCodec(schema);
-        tag = TagUtil.tag(getTask().getJobId(), receiveId);
         try {
-            SendOperator so = Services.rcvReadyFlag.putIfAbsent(tag, this);
-            if (so == null) {
-                // RCV_READY not received.
-                synchronized (this) {
-                    wait();
-                }
-            }
-            Services.rcvReadyFlag.remove(tag);
-            // This may block.
-            channel = Services.openNewChannel(host, port);
-            if (log.isInfoEnabled()) {
-                log.info("(tag = {}) Opened channel to {}:{}.", tag, host, port);
-            }
+            endpoint = new SendEndpoint(host, port, TagUtil.tag(getTask().getJobId(), receiveId));
+            endpoint.init();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    public void wakeUp() {
-        synchronized (this) {
-            notify();
         }
     }
 
@@ -103,13 +78,9 @@ public final class SendOperator extends SinkOperator {
     public boolean push(@Nonnull Object[] tuple) {
         try {
             if (log.isDebugEnabled()) {
-                log.debug("(tag = {}) Send tuple {}...", tag, schema.formatTuple(tuple));
+                log.debug("Send tuple ({}) to ({}, {}, {})", schema.formatTuple(tuple), host, port, receiveId);
             }
-            Message msg = SimpleMessage.builder()
-                .tag(TagUtil.getTag(tag))
-                .content(codec.encode(tuple))
-                .build();
-            channel.send(msg);
+            endpoint.send(codec.encode(tuple));
             return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -120,14 +91,10 @@ public final class SendOperator extends SinkOperator {
     public void fin(@Nonnull Fin fin) {
         try {
             if (log.isDebugEnabled()) {
-                log.debug("(tag = {}) Send FIN", tag);
+                log.debug("Send FIN to ({}, {}, {})", host, port, receiveId);
             }
-            Message msg = SimpleMessage.builder()
-                .tag(TagUtil.getTag(tag))
-                .content(codec.encodeFin(fin))
-                .build();
-            channel.send(msg);
-            channel.close();
+            endpoint.send(codec.encodeFin(fin));
+            endpoint.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
