@@ -24,7 +24,7 @@ public class DingoStringReplaceOp extends RtStringConversionOp {
     private static final long serialVersionUID = 5736080205736344227L;
 
     /**
-     * Create an RtReplaceOp. RtReplaceOp performs string replacing operation by {@code String::replace}.
+     * Create an RtReplaceOp. DingoStringReplaceOp performs string replacing operation by {@code String::replace}.
      *
      * @param paras the parameters of the op
      */
