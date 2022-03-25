@@ -341,6 +341,25 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testStringLocate01() {
+        String sql = "select locate('\\c', 'ab\\cde')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(rtExpr.eval(null));
+            Assert.assrt((Integer) (rtExpr.eval(null)) == 2);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
     public void testStringConcat() {
         String sql = "select 'AA' || 'BB' || 'CC' ";
         // String sql = "select concat('AA', 'BB', 'CC') ";

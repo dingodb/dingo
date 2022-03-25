@@ -38,9 +38,9 @@ public class DingoStringLocateOp extends RtStringConversionOp {
         String subString = (String) (values[0]);
         String inputStr = (String) (values[1]);
         if (inputStr == null || inputStr.equals("")) {
-            return -1;
+            return 0;
         } else {
-            return inputStr.indexOf(subString);
+            return new Long(inputStr.indexOf(subString) + 1);
         }
     }
 }
