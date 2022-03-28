@@ -38,10 +38,22 @@ public class DingoStringMidOp extends RtStringConversionOp {
         String inputStr = ((String)values[0]).trim();
         int startIndex = ((Long)(values[1])).intValue();
         int cnt = ((Long)(values[2])).intValue();
-        if (inputStr == null || inputStr.equals("") || startIndex + cnt > inputStr.length()) {
-            return inputStr;
+
+        /**
+         * 1. start Index is invalid, return ""
+         */
+        if (startIndex <= 0 || startIndex > inputStr.length()) {
+            return "";
+        }
+
+        /**
+         * 2. input String is null || "" || startIndex > inputStr.length()
+         */
+        if (inputStr == null || inputStr.equals("") || startIndex > inputStr.length()) {
+            return "";
         } else {
-            return inputStr.substring(startIndex, startIndex + cnt);
+            int endIndex = (startIndex + cnt - 1 > inputStr.length() ? inputStr.length() : startIndex + cnt - 1);
+            return inputStr.substring(startIndex - 1, endIndex);
         }
     }
 }
