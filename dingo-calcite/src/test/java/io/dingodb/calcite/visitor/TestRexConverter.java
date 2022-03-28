@@ -594,6 +594,24 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testMidInvalidIndex() {
+        String sql = "select mid('ABC', 10, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            // Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
     public void testStringLocate() {
         String sql = "select locate('C', 'ABCd')";
         try {
