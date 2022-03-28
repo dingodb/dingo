@@ -148,6 +148,57 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testTrimWithAllSpace() {
+        String sql = "select trim('  ')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String) (rtExpr.eval(null))).equals(""));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testTrimWithSingleChar() {
+        String sql = "select trim(' A ')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String) (rtExpr.eval(null))).equals("A"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testTrimWithNumber() {
+        String sql = "select trim(123 from 1234123)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String) (rtExpr.eval(null))).equals("4"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
     public void testTrimWithLeadingArgs() {
         String sql = "select trim(LEADING 'A' from 'ABBA')";
         try {
@@ -306,6 +357,24 @@ public class TestRexConverter {
     @Test
     public void testMidString() {
         String sql = "select mid('ABC', 0, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // RtExpr rtExpr = expr.compileIn(null);
+            // Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidInvalidIndex() {
+        String sql = "select mid('ABC', 10, 3)";
         try {
             SqlNode sqlNode = parser.parse(sql);
             sqlNode = parser.validate(sqlNode);
