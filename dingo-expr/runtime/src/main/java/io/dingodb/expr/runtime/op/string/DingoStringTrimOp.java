@@ -36,49 +36,87 @@ public class DingoStringTrimOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        if (values.length == 3) {
-            String opType = (String)values[0];
-            String deleteStr = (String)values[1];
-            String inputStr = (String)values[2];
-
-            int startIndex = 0;
-            int endIndex = inputStr.length() - 1;
-            switch (opType) {
-                case "BOTH": {
-                    for (; startIndex < inputStr.length(); startIndex++) {
-                        if (inputStr.charAt(startIndex) != deleteStr.charAt(0)) {
-                            break;
-                        }
-                    }
-                    for (; endIndex > 0; endIndex--) {
-                        if (inputStr.charAt(endIndex) != deleteStr.charAt(0)) {
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case "LEADING": {
-                    for (; startIndex < inputStr.length(); startIndex++) {
-                        if (inputStr.charAt(startIndex) != deleteStr.charAt(0)) {
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case "TRAILING": {
-                    for (; endIndex > 0; endIndex--) {
-                        if (inputStr.charAt(endIndex) != deleteStr.charAt(0)) {
-                            break;
-                        }
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-            return inputStr.substring(startIndex, endIndex + 1);
-        } else {
+        if (values.length != 3) {
             return ((String) values[0]).trim();
+        }
+
+        String opType = (String)values[0];
+        String trimStr = (String)values[1];
+        String inputStr = (String)values[2];
+
+        int startIndex = 0;
+        int endIndex = inputStr.length();
+        switch (opType) {
+            case "BOTH": {
+                startIndex = getLastIndexFromLeft(inputStr, trimStr);
+                endIndex = getLastIndexFromRight(inputStr, trimStr);
+                break;
+            }
+            case "LEADING": {
+                startIndex = getLastIndexFromLeft(inputStr, trimStr);
+                break;
+            }
+            case "TRAILING": {
+                endIndex = getLastIndexFromRight(inputStr, trimStr);
+                break;
+            }
+            default:
+                break;
+        }
+
+        if (startIndex >= endIndex) {
+            return "";
+        } else {
+            return inputStr.substring(startIndex, endIndex);
+        }
+    }
+
+    /**
+     * return the last index where trimStr not substr of inputStr.
+     * Input: 123123123, Trim:123, return: 9
+     * Input: aaaa, Trim:a, return: 4
+     *
+     * @param inputStr input string
+     * @param trimStr trim string
+     * @return index
+     */
+    private int getLastIndexFromLeft(final String inputStr, final String trimStr) {
+        int result = 0;
+        int index = 0;
+        boolean isFound = false;
+
+        while (inputStr.indexOf(trimStr, index) == index && index <= inputStr.length() - 1) {
+            result = index;
+            index += trimStr.length();
+            isFound = true;
+        }
+
+        if (isFound) {
+            return result + trimStr.length();
+        } else {
+            return 0;
+        }
+    }
+
+
+    private int getLastIndexFromRight(final String inputStr, final String trimStr) {
+        if (inputStr.length() < trimStr.length()) {
+            return inputStr.length() - 1;
+        }
+
+        int index = inputStr.length() - trimStr.length();
+        int result = inputStr.length() - 1;
+        boolean isFound = false;
+        while ((inputStr.lastIndexOf(trimStr, index)) == index && index >= 0) {
+            result = index;
+            index -= trimStr.length();
+            isFound = true;
+        }
+
+        if (isFound) {
+            return result;
+        } else {
+            return inputStr.length();
         }
     }
 }
