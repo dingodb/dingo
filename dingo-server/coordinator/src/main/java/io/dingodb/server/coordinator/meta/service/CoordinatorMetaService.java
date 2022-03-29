@@ -118,9 +118,14 @@ public class CoordinatorMetaService implements MetaService, MetaServiceApi {
         if (!isCoordinatorLeader()) {
             throw new RuntimeException("Only coordinator leader drop table.");
         }
-        CompletableFuture<Boolean> future = this.metaAdaptor.delete(tableName);
-        future.thenRun(() -> tableDefinitionMap.remove(tableName));
-        return helperGet(future);
+
+        if (tableDefinitionMap.containsKey(tableName)) {
+            CompletableFuture<Boolean> future = this.metaAdaptor.delete(tableName);
+            future.thenRun(() -> tableDefinitionMap.remove(tableName));
+            return helperGet(future);
+        }
+
+        return false;
     }
 
     @Override

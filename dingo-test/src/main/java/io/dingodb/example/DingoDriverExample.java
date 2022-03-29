@@ -34,7 +34,7 @@ import java.util.Map;
 public class DingoDriverExample {
     private static final String defaultConnectIp = "172.20.3.13";
     private static Logger log = LoggerFactory.getLogger(DingoDriverExample.class);
-    private static String connectUrl = "url=http://" + defaultConnectIp + ":8765";
+    private static String connectUrl = "url=" + defaultConnectIp + ":8765";
     private static Connection connection;
 
     public static void main(String[] args) {

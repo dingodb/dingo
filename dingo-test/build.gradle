@@ -47,6 +47,7 @@ dependencies {
     implementation project(':dingo-driver-client')
     implementation project(':dingo-exec')
     implementation project(':dingo-net-netty')
+    implementation project(':dingo-server:dingo-server-driver-proxy')
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestImplementation 'org.assertj:assertj-core:' + 'assertj'.v()
@@ -77,6 +78,11 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
 }
+
+fatJar.dependsOn([
+    ':dingo-driver-client:fatJar',
+    ':dingo-server:dingo-server-driver-proxy:jar'
+])
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
