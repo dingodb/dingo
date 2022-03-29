@@ -58,6 +58,8 @@ include 'dingo-server:protocol'
 findProject(':dingo-server:protocol')?.name = 'dingo-server-protocol'
 include 'dingo-server:client'
 findProject(':dingo-server:client')?.name = 'dingo-server-client'
+include 'dingo-server:driver-proxy'
+findProject(':dingo-server:driver-proxy')?.name = 'dingo-server-driver-proxy'
 include 'dingo-raft'
 include 'dingo-dist'
 

@@ -22,15 +22,12 @@ import io.dingodb.common.config.ClusterOptions;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.config.ExchangeOptions;
-import io.dingodb.driver.server.ServerMetaFactory;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.client.config.ClientOptions;
+import io.dingodb.server.driver.DriverProxyService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.server.AvaticaJsonHandler;
-import org.apache.calcite.avatica.server.HttpServer;
-import org.apache.calcite.avatica.server.Main;
 import sqlline.DingoSqlline;
 import sqlline.SqlLine;
 
@@ -87,14 +84,10 @@ public class Tools {
                 }
                 break;
             case "DRIVER":
-                log.info("Listen exchange port {}.", listenRandomPort());
                 Services.initNetService();
-                HttpServer server = Main.start(
-                    new String[]{ServerMetaFactory.class.getCanonicalName()},
-                    port,
-                    AvaticaJsonHandler::new
-                );
-                server.join();
+                netService.listenPort(port);
+                DriverProxyService driverProxyService = new DriverProxyService();
+                driverProxyService.start();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
@@ -121,6 +114,7 @@ public class Tools {
         DingoOptions.instance().setClusterOpts(clusterOpts);
         DingoOptions.instance().setIp(opts.getIp());
         ExchangeOptions exchangeOptions = new ExchangeOptions();
+        exchangeOptions.setPort(port);
         // port will be set later
         DingoOptions.instance().setExchange(exchangeOptions);
         DingoOptions.instance().setCoordOptions(opts.getOptions().getCoordOptions());

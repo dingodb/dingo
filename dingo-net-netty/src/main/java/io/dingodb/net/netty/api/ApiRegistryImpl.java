@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -109,6 +110,9 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
                 message = returnMessage(NetError.OK.getCode(), result);
             }
         } catch (DingoException e) {
+            message = returnMessage(e);
+        } catch (InvocationTargetException e) {
+            log.error("Invoke {} error.", name, e);
             message = returnMessage(e);
         } catch (Throwable e) {
             log.error("Invoke {} error.", name, e);

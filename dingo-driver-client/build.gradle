@@ -23,6 +23,8 @@ plugins {
 
 dependencies {
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
+    implementation project(':dingo-net-api')
+    implementation project(':dingo-net-netty')
 }
 
 task fatJar(type: Jar) {
@@ -37,18 +39,13 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.RSA"
 }
 
-jar {
-    // To build a Fat Jar we have to alter jar task's default behaviour.
-    // Following lines will iterate over runtime dependencies of this project
-    // and if a dependency is a directory (for example src/) it will add it
-    // directly. If a dependency is a zip or jar file it will unpack those
-    // files and adds its content to the final jar file.
-    from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-}
-
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }
+
+fatJar.dependsOn([
+    ':dingo-net-netty:jar'
+])
 
 publishing {
     repositories {
@@ -66,7 +63,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.dingodb'
             artifactId = 'dingo-driver-client'
-            artifacts = [ jar ]
+            artifacts = [ fatJar ]
         }
     }
 }
