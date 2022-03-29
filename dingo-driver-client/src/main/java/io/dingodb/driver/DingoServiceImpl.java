@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.driver.server;
+package io.dingodb.driver;
 
-import io.dingodb.exec.Services;
+import io.dingodb.driver.api.DriverProxyApi;
+import io.dingodb.net.NetAddressProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.driver.DriverProxyService;
+import lombok.Setter;
+import lombok.experimental.Delegate;
+import org.apache.calcite.avatica.remote.Service;
 
 import java.util.ServiceLoader;
 
-public final class DingoDriverTestServer {
+public class DingoServiceImpl implements Service {
 
-    private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+    private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
-    private static final int port = 8765;
+    @Setter
+    private RpcMetadataResponse rpcMetadata;
 
-    private DingoDriverTestServer() {
-    }
+    @Delegate
+    private final DriverProxyApi proxyApi;
 
-    public static void main(String[] args) throws Exception {
-        Services.META.init(null);
-        Services.initNetService();
-        netService.listenPort(port);
-        DriverProxyService driverProxyService = new DriverProxyService();
-        driverProxyService.start();
+    public DingoServiceImpl(NetAddressProvider netAddressProvider) {
+        proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, netAddressProvider);
     }
 }

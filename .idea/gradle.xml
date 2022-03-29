@@ -37,6 +37,7 @@
             <option value="$PROJECT_DIR$/dingo-server" />
             <option value="$PROJECT_DIR$/dingo-server/client" />
             <option value="$PROJECT_DIR$/dingo-server/coordinator" />
+            <option value="$PROJECT_DIR$/dingo-server/driver-proxy" />
             <option value="$PROJECT_DIR$/dingo-server/executor" />
             <option value="$PROJECT_DIR$/dingo-server/protocol" />
             <option value="$PROJECT_DIR$/dingo-store-api" />

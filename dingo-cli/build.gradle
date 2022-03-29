@@ -28,9 +28,11 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
     implementation project(":dingo-driver")
+    implementation project(":dingo-driver-client")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
+    implementation project(':dingo-server:dingo-server-driver-proxy')
 }
 
 task fatJar(type: Jar) {
@@ -44,6 +46,11 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
 }
+
+fatJar.dependsOn([
+    ':dingo-driver-client:fatJar',
+    ':dingo-server:dingo-server-driver-proxy:jar'
+])
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
