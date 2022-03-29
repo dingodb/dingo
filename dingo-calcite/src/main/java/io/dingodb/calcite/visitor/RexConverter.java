@@ -103,10 +103,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = OpFactory.getBinary(DingoExprParser.NE);
                 break;
             case AND:
-                op = OpFactory.getBinary(DingoExprParser.AND);
+                op = FunFactory.INS.getFun("and");
                 break;
             case OR:
-                op = OpFactory.getBinary(DingoExprParser.OR);
+                op = FunFactory.INS.getFun("or");
                 break;
             case NOT:
                 op = OpFactory.getUnary(DingoExprParser.NOT);

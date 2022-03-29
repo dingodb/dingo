@@ -324,6 +324,36 @@ public class QueryTest {
     }
 
     @Test
+    public void testScanRecordsWithNotInCause() throws SQLException {
+        String sql = "select * from test where id not in (3, 4, 5, 6, 7, 8, 9)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3.5\n"
+                        + "2, Betty, 4.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testScanWithMultiCondition() throws SQLException {
+        String sql = "select * from test where id > 1 and name = 'Alice' and amount > 6";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "8, Alice, 7.0\n"
+                );
+            }
+        }
+    }
+
+
+    @Test
     public void testFilterScan() throws SQLException {
         String sql = "select * from test where amount > 4.0";
         try (Statement statement = connection.createStatement()) {
