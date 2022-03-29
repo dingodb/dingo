@@ -39,6 +39,8 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.logical.DingoAndOp;
+import io.dingodb.expr.runtime.op.logical.DingoOrOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
@@ -69,6 +71,11 @@ public final class FunFactory {
 
     private FunFactory() {
         funSuppliers = new TreeMap<>(String::compareToIgnoreCase);
+
+        // relation Operator with multiple arguments
+        registerUdf("OR", DingoOrOp::new);
+        registerUdf("AND", DingoAndOp::new);
+
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
         registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);

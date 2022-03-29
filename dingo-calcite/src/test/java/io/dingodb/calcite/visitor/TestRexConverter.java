@@ -58,7 +58,7 @@ public class TestRexConverter {
             arguments("1 + 2*3", "1 + 2*3"),
             arguments("1*(2 + 3)", "1*(2 + 3)"),
             arguments("name = 'Alice'", "$[1] == 'Alice'"),
-            arguments("name = 'Alice' and amount > 2.0", "$[1] == 'Alice' && $[2] > 2.0")
+            arguments("name = 'Alice' and amount > 2.0", "AND($[1] == 'Alice', $[2] > 2.0)")
         );
     }
 
