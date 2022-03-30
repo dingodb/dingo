@@ -113,7 +113,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             message = returnMessage(e);
         } catch (InvocationTargetException e) {
             log.error("Invoke {} error.", name, e);
-            message = returnMessage(e);
+            message = returnMessage(e.getTargetException());
         } catch (Throwable e) {
             log.error("Invoke {} error.", name, e);
             message = returnMessage(e);

@@ -84,7 +84,7 @@ public class NettyNetService implements NetService {
 
     @Override
     public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
-        return (NetServiceConnectionSubChannel) newChannel(netAddress, true);
+        return (NetServiceConnectionSubChannel) newChannel(netAddress, false);
     }
 
     @Override
