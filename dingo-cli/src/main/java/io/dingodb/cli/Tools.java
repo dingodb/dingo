@@ -123,7 +123,6 @@ public class Tools {
         if (capacity != 0) {
             DingoOptions.instance().setQueueCapacity(capacity);
         }
-
     }
 
 }
