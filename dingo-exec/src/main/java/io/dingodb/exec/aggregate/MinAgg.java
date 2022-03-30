@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.ElementSchema;
+import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.string.MinstringEvaluatorFactory;
 
 import javax.annotation.Nonnull;
 
@@ -32,6 +34,10 @@ public class MinAgg extends UnityEvaluatorAgg {
         @Nonnull @JsonProperty("type") ElementSchema type
     ) {
         super(index, type);
-        setEvaluator(MinEvaluatorFactory.INSTANCE);
+        if (type.getTypeCode() == TypeCode.STRING) {
+            setEvaluator(MinstringEvaluatorFactory.INSTANCE);
+        } else {
+            setEvaluator(MinEvaluatorFactory.INSTANCE);
+        }
     }
 }
