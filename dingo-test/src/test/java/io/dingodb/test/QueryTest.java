@@ -17,6 +17,7 @@
 package io.dingodb.test;
 
 import io.dingodb.calcite.Connections;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.test.MetaTestService;
@@ -56,6 +57,8 @@ public class QueryTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
+        DingoOptions.instance().setIp("localhost");
+        DingoOptions.instance().setQueueCapacity(100);
         Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);

@@ -16,7 +16,9 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.util.StackTraces;
+import io.dingodb.net.Channel;
 import io.dingodb.net.MessageListenerProvider;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
@@ -32,27 +34,25 @@ import io.dingodb.net.netty.listener.PortListener;
 import io.dingodb.net.netty.listener.impl.NettyServer;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetAddress;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class NettyNetService implements NetService {
 
-    private final Map<Tag, Collection<MessageListenerProvider>> listenerProviders = new ConcurrentHashMap<>();
-
     private final Map<Integer, PortListener> portListeners;
     private final ConnectionManager<NetServiceNettyConnection> connectionManager;
-    private final Map<Integer, NetServiceLocalConnection> portLocalConnections;
+    private final NetServiceLocalConnection localConnection;
 
-    private final NetServiceConfiguration configuration = NetServiceConfiguration.instance();
+    private final int capacity;
+    private final String hostname;
 
     protected NettyNetService() {
-        connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider());
+        capacity = DingoOptions.instance().getQueueCapacity();
+        hostname = DingoOptions.instance().getIp();
+        connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider(), capacity);
         portListeners = new ConcurrentHashMap<>();
-        portLocalConnections = new HashMap<>();
+        localConnection = new NetServiceLocalConnection(capacity);
     }
 
     @Override
@@ -64,7 +64,6 @@ public class NettyNetService implements NetService {
         server.init();
         server.start();
         portListeners.put(port, server);
-        portLocalConnections.put(port, new NetServiceLocalConnection(port));
         log.info("Start listening {}.", port);
     }
 
@@ -78,19 +77,29 @@ public class NettyNetService implements NetService {
         return ApiRegistryImpl.instance();
     }
 
-    private boolean isLocal(InetAddress address) {
-        return     address.isLoopbackAddress()
-                || address.isLinkLocalAddress()
-                || address.isAnyLocalAddress()
-                || address.isSiteLocalAddress();
+    private boolean isLocal(NetAddress address) {
+        return address.port() == 0 || (portListeners.containsKey(address.port())
+            && address.address().getHostName().equals(hostname));
     }
 
     @Override
     public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
-        // todo if (isLocal(address.getAddress()) && portListeners.containsKey(address.getPort())) {
-        //          return portLocalConnections.get(address.getPort()).openSubChannel();
-        //      }
-        return connectionManager.getOrOpenConnection(netAddress.address()).openSubChannel();
+        return (NetServiceConnectionSubChannel) newChannel(netAddress, true);
+    }
+
+    @Override
+    public Channel newChannel(NetAddress netAddress, boolean keepAlive) {
+        if (keepAlive) {
+            if (isLocal(netAddress)) {
+                return new NetServiceLocalConnection(capacity).openSubChannel(true);
+            }
+            return connectionManager.getOrOpenConnection(netAddress.address()).openSubChannel(true);
+        } else {
+            if (isLocal(netAddress)) {
+                return localConnection.getChannelPool().poll();
+            }
+            return connectionManager.getOrOpenConnection(netAddress.address()).getChannelPool().poll();
+        }
     }
 
     @Override

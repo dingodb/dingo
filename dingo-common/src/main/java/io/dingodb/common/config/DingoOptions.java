@@ -33,6 +33,7 @@ public class DingoOptions {
     private ExchangeOptions exchange;
     private GroupServerOptions coordOptions;
     private ClOptions cliOptions;
+    private int queueCapacity = 100;
 
     private static final DingoOptions INSTANCE = new DingoOptions();
 

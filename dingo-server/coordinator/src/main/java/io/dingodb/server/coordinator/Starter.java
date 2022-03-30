@@ -63,6 +63,7 @@ public class Starter {
         DingoOptions.instance().setIp(svrOpts.getIp());
         DingoOptions.instance().setExchange(svrOpts.getExchange());
         DingoOptions.instance().setCliOptions(svrOpts.getOptions().getCliOptions());
+        DingoOptions.instance().setQueueCapacity(svrOpts.getOptions().getCapacity());
 
         CoordinatorServer server = new CoordinatorServer();
         server.start(svrOpts);

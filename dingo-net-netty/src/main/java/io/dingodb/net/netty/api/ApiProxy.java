@@ -84,7 +84,6 @@ public class ApiProxy<T> implements InvocationHandler {
             name = method.toGenericString();
         }
         return invoke(
-            netService.newChannel(netAddressProvider.get()),
             name,
             PreParameters.cleanNull(args, Constant.API_EMPTY_ARGS),
             method.getReturnType()
@@ -92,16 +91,16 @@ public class ApiProxy<T> implements InvocationHandler {
     }
 
     protected <T> T invoke(
-        NetServiceConnectionSubChannel channel,
         String name,
         Object[] args,
         Class<T> returnType
     ) throws Throwable {
+        NetServiceConnectionSubChannel channel = netService.newChannel(netAddressProvider.get());
         MessagePacket packet = generatePacket(channel, name, args);
         CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
         channel.registerMessageListener(callHandler(future));
-        channel.send(packet);
         try {
+            channel.send(packet);
             ByteBuffer buffer = future.get(5, TimeUnit.SECONDS);
             if (buffer.hasRemaining()) {
                 return Serializers.read(buffer, returnType);
@@ -117,6 +116,12 @@ public class ApiProxy<T> implements InvocationHandler {
             EXEC.throwFormatError("invoke api on remote server", currentThread().getName(), e.getMessage());
         } catch (TimeoutException e) {
             EXEC_TIMEOUT.throwFormatError("invoke api on remote server", currentThread().getName(), e.getMessage());
+        } finally {
+            try {
+                channel.close();
+            } catch (Exception e) {
+                log.error("Close channel error, address: [{}].", channel.remoteAddress(), e);
+            }
         }
         throw UNKNOWN.asException();
     }
@@ -146,7 +151,7 @@ public class ApiProxy<T> implements InvocationHandler {
             .type(PacketType.INVOKE)
             .mode(PacketMode.API)
             .content(msg)
-            .msgNo(1)
+            .msgNo(channel.nextSeq())
             .build();
     }
 

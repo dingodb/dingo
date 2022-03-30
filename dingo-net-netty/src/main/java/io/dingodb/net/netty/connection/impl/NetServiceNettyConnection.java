@@ -21,8 +21,11 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
 import io.dingodb.net.netty.channel.ChannelId;
+import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
+import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
+import io.dingodb.net.netty.channel.impl.SimpleChannelId;
 import io.dingodb.net.netty.connection.AbstractNettyConnection;
 import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.handler.impl.GenericMessageHandler;
@@ -35,6 +38,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -48,19 +52,29 @@ import static io.dingodb.net.netty.packet.message.HandshakeMessage.handshakePack
 public class NetServiceNettyConnection extends AbstractNettyConnection<Message> {
 
     private final ConcurrentHashMap<ChannelId, NetServiceConnectionSubChannel> subChannels = new ConcurrentHashMap<>();
+    private final ChannelPool channelPool;
 
-    public NetServiceNettyConnection(InetSocketAddress remoteAddress) {
+    public NetServiceNettyConnection(InetSocketAddress remoteAddress, int capacity) {
         super(remoteAddress);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
+        channelPool = new ChannelPool(capacity);
+        limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
     }
 
     public NetServiceNettyConnection(io.netty.channel.socket.SocketChannel nettyChannel) {
         super(nettyChannel);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
+        channelPool = null;
     }
 
-    private ChannelId generateChannelId() {
-        return Optional.ofNullable(channelIdAllocator.alloc()).orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+    private ChannelId generateChannelId(boolean keepAlive) {
+        if (keepAlive) {
+            return Optional.ofNullable(unLimitChannelIdAllocator.alloc())
+                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+        } else {
+            return Optional.ofNullable(limitChannelIdAllocator.alloc())
+                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+        }
     }
 
     @Override
@@ -100,9 +114,9 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     }
 
     @Override
-    public NetServiceConnectionSubChannel openSubChannel() {
+    public NetServiceConnectionSubChannel openSubChannel(boolean keepAlive) {
         NetServiceConnectionSubChannel channel = subChannels.computeIfAbsent(
-            generateChannelId(),
+            generateChannelId(keepAlive),
             cid -> new NetServiceConnectionSubChannel(cid, null, this)
         );
         Future<Packet<Message>> ack = GenericMessageHandler.instance().waitAck(this, channel.channelId());
@@ -131,13 +145,14 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
+        channel.setChannelPool(channelPool);
         return channel;
     }
 
     @Override
-    public ConnectionSubChannel<Message> openSubChannel(ChannelId targetChannelId) {
+    public ConnectionSubChannel<Message> openSubChannel(ChannelId targetChannelId, boolean keepAlive) {
         NetServiceConnectionSubChannel channel = subChannels.computeIfAbsent(
-            generateChannelId(),
+            generateChannelId(keepAlive),
             cid -> new NetServiceConnectionSubChannel(cid, targetChannelId, this)
         );
         if (log.isDebugEnabled()) {
@@ -159,7 +174,9 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         if (subChannel == null || subChannel.status() == Channel.Status.CLOSE) {
             return;
         }
-        subChannel.status(Channel.Status.INACTIVE);
+        if (channelPool == null) {
+            subChannel.status(Channel.Status.INACTIVE);
+        }
         subChannel.close();
     }
 
@@ -182,15 +199,58 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
 
     @Override
     public void close() {
-        subChannels.values().forEach(NetServiceConnectionSubChannel::close);
+        if (channelPool != null) {
+            for (NetServiceConnectionSubChannel channel : subChannels.values()) {
+                channel.setChannelPool(null);
+                channel.close();
+            }
+            channelPool.clear();
+        }
         super.close();
         log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
     }
 
+    @Override
+    public Connection.ChannelPool getChannelPool() {
+        return channelPool;
+    }
+
     public static class Provider implements Connection.Provider {
         @Override
-        public NetServiceNettyConnection get(InetSocketAddress remoteAddress) {
-            return new NetServiceNettyConnection(remoteAddress);
+        public NetServiceNettyConnection get(InetSocketAddress remoteAddress, int capacity) {
+            return new NetServiceNettyConnection(remoteAddress, capacity);
+        }
+    }
+
+    public class ChannelPool implements Connection.ChannelPool {
+
+        private final LinkedBlockingQueue<Channel> queue;
+
+        public ChannelPool(int capacity) {
+            this.queue = new LinkedBlockingQueue<>(capacity);
+        }
+
+        @Override
+        public Channel poll() {
+            Channel channel = queue.poll();
+            if (channel == null) {
+                channel = NetServiceNettyConnection.this.openSubChannel(false);
+            }
+            return channel;
+        }
+
+        @Override
+        public void offer(Channel channel) {
+            try {
+                queue.offer(channel, 3, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.warn("The channel queue:{} recycles the channel:{} interrupt", queue, channel, e);
+            }
+        }
+
+        @Override
+        public void clear() {
+            queue.clear();
         }
     }
 }

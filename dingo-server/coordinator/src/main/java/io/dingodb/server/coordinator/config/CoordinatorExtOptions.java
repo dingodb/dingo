@@ -28,4 +28,5 @@ import lombok.ToString;
 public class CoordinatorExtOptions {
     private StoreDBOptions storeDBOptions;
     private ClOptions cliOptions;
+    private int capacity;
 }

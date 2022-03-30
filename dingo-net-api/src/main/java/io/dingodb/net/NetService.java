@@ -28,6 +28,8 @@ public interface NetService extends AutoCloseable {
      */
     Channel newChannel(NetAddress netAddress);
 
+    Channel newChannel(NetAddress netAddress, boolean keepAlive);
+
     /**
      * Register {@link MessageListenerProvider} on the net service,  When the remote-end send a message to current
      * service, will create new {@link MessageListener} instance to listen new channel.

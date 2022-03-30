@@ -32,12 +32,10 @@ public class LimitedChannelIdAllocator<I extends ChannelId<Integer>> implements 
     private final int limit;
 
     private final Queue<I> channelIdsQueue;
-    private final ChannelIdProvider<I> channelIdProvider;
 
     public LimitedChannelIdAllocator(int max, ChannelIdProvider<I> channelIdProvider) {
         channelIdsQueue = new ConcurrentLinkedQueue<>();
         IntStream.range(1, max + 1).forEach(i -> channelIdsQueue.add(channelIdProvider.get(i)));
-        this.channelIdProvider = channelIdProvider;
         this.limit = max;
     }
 
