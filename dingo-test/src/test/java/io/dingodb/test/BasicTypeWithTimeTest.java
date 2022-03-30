@@ -31,7 +31,8 @@ import java.sql.SQLException;
 @Slf4j
 public class BasicTypeWithTimeTest {
     private static final String TEST_ALL_DATA
-        = "1, Alice, 00:00:01\n";
+        = "1, Alice, 00:00:01\n"
+        + "2, Betty, 00:01:02\n";
     private static SqlHelper sqlHelper;
 
     @BeforeAll
