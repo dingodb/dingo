@@ -37,8 +37,6 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -51,6 +49,7 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
     private Consumer<Channel> closeListener;
     private NetAddress localAddress;
     private NetAddress remoteAddress;
+    private Connection.ChannelPool channelPool;
 
     private final BlockingQueue<Packet<Message>> packetQueue = new LinkedBlockingQueue<>();
 
@@ -114,6 +113,11 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
     }
 
     @Override
+    public void setChannelPool(Connection.ChannelPool pool) {
+        this.channelPool = pool;
+    }
+
+    @Override
     public void registerMessageListener(MessageListener listener) {
         this.listener = listener;
     }
@@ -160,17 +164,27 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
 
     @Override
     public void close() {
-        if (status == Status.ACTIVE) {
-            send(MessagePacket.disconnectRemoteChannel(channelId, targetChannelId(), nextSeq()));
-        }
-        status = Status.CLOSE;
-        closeListener.accept(this);
-        connection.closeSubChannel(channelId);
-        if (log.isDebugEnabled()) {
-            log.debug(
-                "Channel [{}/{}] ---> [{}/{}] close.",
-                localAddress(), channelId, remoteAddress(), targetChannelId
-            );
+        if (channelPool != null) {
+            channelPool.offer(this);
+            listener = this::skipListener;
+            closeListener = this::skipListener;
+            if (log.isDebugEnabled()) {
+                log.debug("Channel [{}/{}] ----> [{}/{}] queue recycling",
+                    localAddress(), channelId, remoteAddress(), targetChannelId);
+            }
+        } else {
+            if (status == Status.ACTIVE) {
+                send(MessagePacket.disconnectRemoteChannel(channelId, targetChannelId(), nextSeq()));
+            }
+            status = Status.CLOSE;
+            closeListener.accept(this);
+            connection.closeSubChannel(channelId);
+            if (log.isDebugEnabled()) {
+                log.debug(
+                    "Channel [{}/{}] ---> [{}/{}] close.",
+                    localAddress(), channelId, remoteAddress(), targetChannelId
+                );
+            }
         }
     }
 
