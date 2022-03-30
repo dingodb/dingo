@@ -23,7 +23,6 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
 import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
 import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
@@ -41,10 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-<<<<<<< HEAD
 import java.util.concurrent.ThreadPoolExecutor;
-=======
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -60,17 +56,13 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
 
     private final ConcurrentHashMap<ChannelId, NetServiceConnectionSubChannel> subChannels = new ConcurrentHashMap<>();
     private final ChannelPool channelPool;
-<<<<<<< HEAD
     private ThreadPoolExecutor threadPoolExecutor;
-=======
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
 
     public NetServiceNettyConnection(InetSocketAddress remoteAddress, int capacity) {
         super(remoteAddress);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
         channelPool = new ChannelPool(capacity);
         limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
-<<<<<<< HEAD
         threadPoolExecutor = new ThreadPoolBuilder()
             .name("Netty-Connection-executor")
             .maximumThreads(Integer.MAX_VALUE)
@@ -81,15 +73,12 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
                 .group(new ThreadGroup("Netty-Connection-executor"))
                 .build())
             .build();
-=======
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
     }
 
     public NetServiceNettyConnection(io.netty.channel.socket.SocketChannel nettyChannel) {
         super(nettyChannel);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
         channelPool = null;
-<<<<<<< HEAD
         threadPoolExecutor = new ThreadPoolBuilder()
             .name("Netty-Connection-executor")
             .maximumThreads(Integer.MAX_VALUE)
@@ -100,24 +89,15 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
                 .group(new ThreadGroup("Netty-Connection-executor"))
                 .build())
             .build();
-=======
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
     }
 
     private ChannelId generateChannelId(boolean keepAlive) {
         if (keepAlive) {
             return Optional.ofNullable(unLimitChannelIdAllocator.alloc())
-<<<<<<< HEAD
                 .orElseThrow(OPEN_CHANNEL_BUSY::formatAsException);
         } else {
             return Optional.ofNullable(limitChannelIdAllocator.alloc())
                 .orElseThrow(OPEN_CHANNEL_BUSY::formatAsException);
-=======
-                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
-        } else {
-            return Optional.ofNullable(limitChannelIdAllocator.alloc())
-                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
         }
     }
 
@@ -189,12 +169,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
-<<<<<<< HEAD
         threadPoolExecutor.submit(channel);
         channel.setChannelPool(keepAlive ? null : channelPool);
-=======
-        channel.setChannelPool(channelPool);
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
         return channel;
     }
 
@@ -256,7 +232,6 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
                 channel.close();
             }
             channelPool.clear();
-<<<<<<< HEAD
         } else {
             subChannels.values().forEach(NetServiceConnectionSubChannel::close);
             super.close();
@@ -267,17 +242,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     @Override
     public Connection.ChannelPool getChannelPool() {
         return channelPool;
-=======
-        }
-        super.close();
-        log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
     }
 
-    @Override
-    public Connection.ChannelPool getChannelPool() {
-        return channelPool;
-    }
 
     public static class Provider implements Connection.Provider {
         @Override
@@ -300,11 +266,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             if (channel == null) {
                 channel = NetServiceNettyConnection.this.openSubChannel(false);
             }
-<<<<<<< HEAD
             ((NetServiceConnectionSubChannel) channel).status(Channel.Status.ACTIVE);
             threadPoolExecutor.submit((NetServiceConnectionSubChannel) channel);
-=======
->>>>>>> 8bff193 ([dingo-net] adding channel connection pools and unit tests do not open ports)
             return channel;
         }
 
