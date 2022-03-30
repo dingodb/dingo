@@ -161,12 +161,15 @@ public class ApiProxy<T> implements InvocationHandler {
                 ByteBuffer buffer = ByteBuffer.wrap(message.toBytes());
                 Integer code = PrimitiveCodec.readZigZagInt(buffer);
                 if (OK.getCode() != code) {
-                    NetError.valueOf(code).throwError();
-                    EXEC.throwFormatError(
-                        "invoke remote api",
-                        currentThread().getName(),
-                        String.format("error code [%s], %s", code, PrimitiveCodec.readString(buffer))
-                    );
+                    if (NetError.valueOf(code) != null) {
+                        NetError.valueOf(code).throwError();
+                    } else {
+                        EXEC.throwFormatError(
+                            "invoke remote api",
+                            currentThread().getName(),
+                            String.format("error code [%s], %s", code, PrimitiveCodec.readString(buffer))
+                        );
+                    }
                 }
                 future.complete(buffer);
             } catch (Exception e) {
