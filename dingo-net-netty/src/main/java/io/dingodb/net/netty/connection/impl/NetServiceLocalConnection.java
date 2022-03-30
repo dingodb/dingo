@@ -16,8 +16,7 @@
 
 package io.dingodb.net.netty.connection.impl;
 
-import io.dingodb.common.concurrent.ThreadFactoryBuilder;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -167,8 +166,7 @@ public class NetServiceLocalConnection implements Connection<Message> {
             channelPool.clear();
         } else {
             subChannels.values().forEach(NetServiceConnectionSubChannel::close);
-        }
-    }
+        }}
 
     @Override
     public io.netty.channel.Channel nettyChannel() {

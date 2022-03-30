@@ -67,7 +67,6 @@ public class Starter {
         if (capacity != 0) {
             DingoOptions.instance().setQueueCapacity(capacity);
         }
-
         CoordinatorServer server = new CoordinatorServer();
         server.start(svrOpts);
     }
