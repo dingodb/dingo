@@ -58,6 +58,10 @@ public enum NetError implements FormattingError {
      * Open channel interrupt.
      */
     OPEN_CONNECTION_INTERRUPT(31003, "Open connection interrupt", "Open connection interrupt, remote [%s]"),
+    /**
+     * Open channel busy.
+     */
+    OPEN_CHANNEL_BUSY(31004, "Open channel busy", "Open channel busy"),
 
     /*********************************   RPC.   *****************************************************/
     EXEC(32001, "Execute error", "Exec %s error, thread: [%s], message: [%s]."),
