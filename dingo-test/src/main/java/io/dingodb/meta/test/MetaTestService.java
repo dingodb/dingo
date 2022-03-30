@@ -18,6 +18,7 @@ package io.dingodb.meta.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TableId;
 import io.dingodb.exec.Services;
@@ -47,7 +48,6 @@ public class MetaTestService implements MetaService {
     private File dataPath0;
     private File dataPath1;
     private File dataPath2;
-
     @Nonnull
     private static File tempPath() {
         try {

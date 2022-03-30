@@ -64,7 +64,6 @@ public class Starter {
         if (capacity != 0) {
             DingoOptions.instance().setQueueCapacity(capacity);
         }
-
         GroupServerOptions groupServerOptions = new GroupServerOptions();
         groupServerOptions.setGroup(opts.getOptions().getCoordOptions().getGroup());
         groupServerOptions.setInitCoordExchangeSvrList(

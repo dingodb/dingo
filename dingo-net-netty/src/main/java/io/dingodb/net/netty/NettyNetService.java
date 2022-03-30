@@ -28,7 +28,6 @@ import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
 import io.dingodb.net.netty.connection.ConnectionManager;
 import io.dingodb.net.netty.connection.impl.NetServiceLocalConnection;
-import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
 import io.dingodb.net.netty.handler.impl.TagMessageHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.dingodb.net.netty.listener.impl.NettyServer;
@@ -53,7 +52,6 @@ public class NettyNetService implements NetService {
         connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider(), capacity);
         portListeners = new ConcurrentHashMap<>();
         localConnection = new NetServiceLocalConnection(capacity);
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 close();
@@ -61,6 +59,7 @@ public class NettyNetService implements NetService {
                 log.error("Close connection error", e);
             }
         }));
+
     }
 
     @Override
