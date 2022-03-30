@@ -30,4 +30,5 @@ public class ExecutorExtOptions {
     private ExecutorCoordOptions coordOptions;
     private StoreEngineOptions storeEngineOptions;
     private ClOptions cliOptions;
+    private int capacity;
 }

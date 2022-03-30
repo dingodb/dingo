@@ -16,10 +16,13 @@
 
 package io.dingodb.net.netty.connection;
 
+import io.dingodb.common.concurrent.ThreadFactoryBuilder;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
+import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.SimpleChannelId;
 import io.dingodb.net.netty.channel.impl.UnlimitedChannelIdAllocator;
 import io.dingodb.net.netty.handler.ExceptionHandler;
@@ -56,8 +59,10 @@ public abstract class AbstractNettyConnection<M> implements Connection<M> {
     protected EventLoopGroup eventLoopGroup;
 
     protected ConnectionSubChannel<M> genericSubChannel;
-    protected ChannelIdAllocator<SimpleChannelId> channelIdAllocator =
+    protected ChannelIdAllocator<SimpleChannelId> unLimitChannelIdAllocator =
         new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);
+    protected ChannelIdAllocator<SimpleChannelId> limitChannelIdAllocator =
+        new LimitedChannelIdAllocator<>(DingoOptions.instance().getQueueCapacity(), SimpleChannelId::new);
 
     public AbstractNettyConnection(SocketChannel nettyChannel) {
         this.nettyChannel = nettyChannel;
@@ -71,7 +76,10 @@ public abstract class AbstractNettyConnection<M> implements Connection<M> {
 
     @Override
     public void open() throws InterruptedException {
-        ThreadPoolExecutor executor = new ThreadPoolBuilder().name("Netty connection " + remoteAddress).build();
+        ThreadPoolExecutor executor = new ThreadPoolBuilder()
+            .name("Netty connection " + remoteAddress)
+            .threadFactory(new ThreadFactoryBuilder().name("Netty connection " + remoteAddress).daemon(true).build())
+            .build();
         bootstrap = new Bootstrap();
         eventLoopGroup = new NioEventLoopGroup(0, executor);
         bootstrap

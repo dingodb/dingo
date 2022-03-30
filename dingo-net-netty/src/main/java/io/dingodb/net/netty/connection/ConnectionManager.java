@@ -34,19 +34,21 @@ public class ConnectionManager<C extends Connection<?>>
 
     private final Map<InetSocketAddress, C> connections = new ConcurrentHashMap<>(8);
     private final Connection.Provider provider;
+    private final int capacity;
 
     private final Set<OpenConnectionListener<C>> openConnectionListeners = new CopyOnWriteArraySet<>();
     private final Set<CloseConnectionListener<C>> closeConnectionListeners = new CopyOnWriteArraySet<>();
 
-    public ConnectionManager(Connection.Provider provider) {
+    public ConnectionManager(Connection.Provider provider, int capacity) {
         this.provider = provider;
+        this.capacity = capacity;
     }
 
     public C openConnection(InetSocketAddress address) {
         if (connections.containsKey(address)) {
             throw new UnsupportedOperationException();
         }
-        C connection = provider.get(address);
+        C connection = provider.get(address, capacity);
         try {
             connection.open();
         } catch (InterruptedException e) {

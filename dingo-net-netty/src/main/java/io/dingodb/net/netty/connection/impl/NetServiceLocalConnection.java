@@ -16,11 +16,13 @@
 
 package io.dingodb.net.netty.connection.impl;
 
+import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
+import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
 import io.dingodb.net.netty.channel.impl.SimpleChannelId;
 import io.dingodb.net.netty.channel.impl.UnlimitedChannelIdAllocator;
@@ -33,43 +35,58 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import static io.dingodb.net.NetError.OPEN_CHANNEL_TIME_OUT;
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.GENERIC_CHANNEL_ID;
 
-// todo
 @Slf4j
 public class NetServiceLocalConnection implements Connection<Message> {
 
     protected final InetSocketAddress socketAddress;
     private final ConcurrentHashMap<ChannelId, NetServiceConnectionSubChannel> subChannels = new ConcurrentHashMap<>();
     protected ConnectionSubChannel<Message> genericSubChannel;
-    protected ChannelIdAllocator<SimpleChannelId> channelIdAllocator;
+    protected ChannelIdAllocator<SimpleChannelId> limitChannelIdAllocator;
+    protected ChannelIdAllocator<SimpleChannelId> unLimitChannelIdAllocator;
 
-    public NetServiceLocalConnection(int port) {
+    private final ChannelPool channelPool;
+
+    public NetServiceLocalConnection(int capacity) {
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
-        socketAddress = new InetSocketAddress("127.0.0.1", port);
-        channelIdAllocator = new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);
+        socketAddress = new InetSocketAddress("127.0.0.1", 0);
+        channelPool = new ChannelPool(capacity);
+        limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
+        unLimitChannelIdAllocator = new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);
     }
 
-    private ChannelId generateChannelId() {
-        return channelIdAllocator.alloc();
+    private ChannelId generateChannelId(boolean keepAlive) {
+        if (keepAlive) {
+            return Optional.ofNullable(unLimitChannelIdAllocator.alloc())
+                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+        } else {
+            return Optional.ofNullable(limitChannelIdAllocator.alloc())
+                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+        }
     }
 
     @Override
-    public NetServiceConnectionSubChannel openSubChannel() {
-        return openSubChannel(null);
+    public NetServiceConnectionSubChannel openSubChannel(boolean keepAlive) {
+        return openSubChannel(null, keepAlive);
     }
 
     @Override
-    public NetServiceConnectionSubChannel openSubChannel(ChannelId targetChannelId) {
+    public NetServiceConnectionSubChannel openSubChannel(ChannelId targetChannelId, boolean keepAlive) {
         NetServiceConnectionSubChannel channel = subChannels.computeIfAbsent(
-            generateChannelId(),
+            generateChannelId(keepAlive),
             cid -> new NetServiceConnectionSubChannel(cid, targetChannelId, this)
         );
         if (log.isDebugEnabled()) {
             log.debug("Open channel from [{}] channel [{}], this channel: [{}]",
                 remoteAddress(), targetChannelId, channel.channelId());
         }
+        channel.start();
+        channel.setChannelPool(channelPool);
         return channel;
     }
 
@@ -106,8 +123,8 @@ public class NetServiceLocalConnection implements Connection<Message> {
         MessagePacket sendPacket = MessagePacket.builder()
             .mode(packet.header().mode())
             .type(packet.header().type())
-            .channelId(packet.header().targetChannelId())
-            .targetChannelId(packet.header().channelId())
+            .channelId(packet.header().channelId())
+            .targetChannelId(packet.header().targetChannelId())
             .content(packet.content())
             .msgNo(packet.header().msgNo())
             .build();
@@ -126,6 +143,13 @@ public class NetServiceLocalConnection implements Connection<Message> {
 
     @Override
     public void close() throws Exception {
+        if (channelPool != null) {
+            for (NetServiceConnectionSubChannel channel : subChannels.values()) {
+                channel.setChannelPool(null);
+                channel.close();
+            }
+            channelPool.clear();
+        }
         subChannels.values().forEach(NetServiceConnectionSubChannel::close);
     }
 
@@ -154,10 +178,48 @@ public class NetServiceLocalConnection implements Connection<Message> {
         return null;
     }
 
+    @Override
+    public Connection.ChannelPool getChannelPool() {
+        return channelPool;
+    }
+
     public static class Provider implements Connection.Provider {
         @Override
-        public NetServiceLocalConnection get(InetSocketAddress remoteAddress) {
-            return new NetServiceLocalConnection(remoteAddress.getPort());
+        public NetServiceLocalConnection get(InetSocketAddress remoteAddress, int capacity) {
+            return new NetServiceLocalConnection(capacity);
         }
     }
+
+    public class ChannelPool implements Connection.ChannelPool {
+
+        private final LinkedBlockingQueue<Channel> queue;
+
+        public ChannelPool(int capacity) {
+            this.queue = new LinkedBlockingQueue<>(capacity);
+        }
+
+        @Override
+        public Channel poll() {
+            Channel channel = queue.poll();
+            if (channel == null) {
+                channel = NetServiceLocalConnection.this.openSubChannel(false);
+            }
+            return channel;
+        }
+
+        @Override
+        public void offer(Channel channel) {
+            try {
+                queue.offer(channel, 3, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.warn("The channel connection pool:{} recycles the channel:{} interrupt", queue, channel, e);
+            }
+        }
+
+        @Override
+        public void clear() {
+            queue.clear();
+        }
+    }
+
 }

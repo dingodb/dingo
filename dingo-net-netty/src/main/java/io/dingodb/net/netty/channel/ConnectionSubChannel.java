@@ -47,4 +47,6 @@ public interface ConnectionSubChannel<M> extends Channel {
 
     void start();
 
+    void setChannelPool(Connection.ChannelPool pool);
+
 }

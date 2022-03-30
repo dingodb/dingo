@@ -17,3 +17,4 @@ coordinator:
             timeoutMs: 10000
             maxRetry: 3
             rpcProcessorThreadPoolSize: 4
+        capacity: 100

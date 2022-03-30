@@ -18,6 +18,7 @@ package io.dingodb.meta.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TableId;
 import io.dingodb.exec.Services;
@@ -54,11 +55,6 @@ public class MetaTestService implements MetaService {
     private File dataPath2;
     private boolean temporary = false;
     private Map<String, TableDefinition> tableDefinitionMap;
-
-    private int instancePort0;
-    private int instancePort1;
-    private int instancePort2;
-    private int instancePort3;
 
     @Nonnull
     private static File tempPath() {
@@ -102,30 +98,6 @@ public class MetaTestService implements MetaService {
         // force reload
         tableDefinitionMap = null;
 
-        try {
-            DatagramSocket tempSocket = new DatagramSocket();
-            Services.NET.listenPort(tempSocket.getLocalPort());
-            instancePort0 = tempSocket.getLocalPort();
-            log.info("Instance 0 port: [{}]", instancePort0);
-            tempSocket.close();
-            tempSocket = new DatagramSocket();
-            Services.NET.listenPort(tempSocket.getLocalPort());
-            instancePort1 = tempSocket.getLocalPort();
-            log.info("Instance 1 port: [{}]", instancePort1);
-            tempSocket.close();
-            tempSocket = new DatagramSocket();
-            Services.NET.listenPort(tempSocket.getLocalPort());
-            instancePort2 = tempSocket.getLocalPort();
-            log.info("Instance 2 port: [{}]", instancePort2);
-            tempSocket.close();
-            tempSocket = new DatagramSocket();
-            Services.NET.listenPort(tempSocket.getLocalPort());
-            instancePort3 = tempSocket.getLocalPort();
-            log.info("Instance 3 port: [{}]", instancePort3);
-            tempSocket.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -220,26 +192,26 @@ public class MetaTestService implements MetaService {
 
     @Override
     public Location currentLocation() {
-        return new Location("localhost", instancePort0, dataPath0.getAbsolutePath());
+        return new Location("localhost", 0, dataPath0.getAbsolutePath());
     }
 
     @Override
     public Map<String, Location> getPartLocations(String name) {
         return ImmutableMap.of(
-            "0", new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
-            "1", new Location("localhost", instancePort0, dataPath1.getAbsolutePath()),
-            "2", new Location("localhost", instancePort0, dataPath2.getAbsolutePath())
+            "0", new Location("localhost", 0, dataPath0.getAbsolutePath()),
+            "1", new Location("localhost", 0, dataPath1.getAbsolutePath()),
+            "2", new Location("localhost", 0, dataPath2.getAbsolutePath())
         );
     }
 
     @Override
     public LocationGroup getLocationGroup(String name) {
         new LocationGroup(
-            new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
+            new Location("localhost", 0, dataPath0.getAbsolutePath()),
             Lists.newArrayList(
-                new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
-                new Location("localhost", instancePort0, dataPath0.getAbsolutePath()),
-                new Location("localhost", instancePort0, dataPath0.getAbsolutePath())
+                new Location("localhost", 0, dataPath0.getAbsolutePath()),
+                new Location("localhost", 0, dataPath0.getAbsolutePath()),
+                new Location("localhost", 0, dataPath0.getAbsolutePath())
             ));
         return null;
     }

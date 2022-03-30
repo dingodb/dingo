@@ -119,6 +119,7 @@ public class Tools {
         DingoOptions.instance().setExchange(exchangeOptions);
         DingoOptions.instance().setCoordOptions(opts.getOptions().getCoordOptions());
         DingoOptions.instance().setCliOptions(opts.getOptions().getCliOptions());
+        DingoOptions.instance().setQueueCapacity(opts.getOptions().getCapacity());
     }
 
 }
