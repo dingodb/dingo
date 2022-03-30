@@ -57,11 +57,508 @@ public class QueryTest {
         sqlHelper.execFile("/table-test2-create.sql");
         sqlHelper.execFile("/table-test2-data.sql");
         String sql = "select * from test2";
-        sqlHelper.queryTest(
-            sql,
-            new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
-            "5, Emily, 5.5"
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                int count = 0;
+                while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String name = resultSet.getString("name");
+                    Double amount = resultSet.getDouble("amount");
+                    log.info("id = {}, name = {}, amount = {}.", id, name, amount);
+                    ++count;
+                }
+                assertThat(count).isEqualTo(1);
+            }
+        }
+        sqlHelper.clear("test2");
+    }
+
+    @Test
+    public void testGetByKey() throws SQLException {
+        String sql = "select * from test where id = 1";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testGetByKey1() throws SQLException {
+        String sql = "select * from test where id = 1 or id = 2";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3.5\n"
+                        + "2, Betty, 4.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testGetByKey2() throws SQLException {
+        String sql = "select * from test where id in (1, 2, 3)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3.5\n"
+                        + "2, Betty, 4.0\n"
+                        + "3, Cindy, 4.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testScanRecordsWithNotInCause() throws SQLException {
+        String sql = "select * from test where id not in (3, 4, 5, 6, 7, 8, 9)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3.5\n"
+                        + "2, Betty, 4.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testScanWithMultiCondition() throws SQLException {
+        String sql = "select * from test where id > 1 and name = 'Alice' and amount > 6";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "8, Alice, 7.0\n"
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void testFilterScan() throws SQLException {
+        String sql = "select * from test where amount > 4.0";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "3, Cindy, 4.5\n"
+                        + "4, Doris, 5.0\n"
+                        + "5, Emily, 5.5\n"
+                        + "6, Alice, 6.0\n"
+                        + "7, Betty, 6.5\n"
+                        + "8, Alice, 7.0\n"
+                        + "9, Cindy, 7.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testProjectScan() throws SQLException {
+        String sql = "select name as label, amount * 10.0 as score from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"label", "score"},
+                    TupleSchema.ofTypes("STRING", "DOUBLE"),
+                    "Alice, 35\n"
+                        + "Betty, 40\n"
+                        + "Cindy, 45\n"
+                        + "Doris, 50\n"
+                        + "Emily, 55\n"
+                        + "Alice, 60\n"
+                        + "Betty, 65\n"
+                        + "Alice, 70\n"
+                        + "Cindy, 75\n"
+                );
+            }
+        }
+    }
+
+
+
+    @Test
+    public void testCount() throws SQLException {
+        String sql = "select name, count(*) from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "expr$1"},
+                    TupleSchema.ofTypes("STRING", "LONG"),
+                    "Alice, 3\n"
+                        + "Betty, 2\n"
+                        + "Cindy, 2\n"
+                        + "Doris, 1\n"
+                        + "Emily, 1\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testCount1() throws SQLException {
+        String sql = "select count(*) from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"expr$0"},
+                    TupleSchema.ofTypes("LONG"),
+                    "9\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testCount2() throws SQLException {
+        String sql = "select count(*) from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"expr$0"},
+                    TupleSchema.ofTypes("LONG"),
+                    "3\n"
+                        + "2\n"
+                        + "2\n"
+                        + "1\n"
+                        + "1\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSum() throws SQLException {
+        String sql = "select name, sum(amount) as total_amount from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "total_amount"},
+                    TupleSchema.ofTypes("STRING", "DOUBLE"),
+                    "Alice, 16.5\n"
+                        + "Betty, 10.5\n"
+                        + "Cindy, 12.0\n"
+                        + "Doris, 5.0\n"
+                        + "Emily, 5.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSum1() throws SQLException {
+        String sql = "select sum(amount) as all_sum from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"all_sum"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "49.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMin() throws SQLException {
+        String sql = "select min(amount) as min_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"min_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "3.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMax() throws SQLException {
+        String sql = "select max(amount) as max_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"max_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "7.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMaxWithString() throws SQLException {
+        String sql = "select max(name) as max_name from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"max_name"},
+                    TupleSchema.ofTypes("STRING"),
+                    "Emily\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testMinWithString() throws SQLException {
+        String sql = "select min(name) as min_name from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"min_name"},
+                    TupleSchema.ofTypes("STRING"),
+                    "Alice\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testAvg() throws SQLException {
+        String sql = "select avg(amount) as avg_amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"avg_amount"},
+                    TupleSchema.ofTypes("DOUBLE"),
+                    "5.5\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testAvg1() throws SQLException {
+        String sql = "select name, avg(amount) as avg_amount from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "avg_amount"},
+                    TupleSchema.ofTypes("STRING", "DOUBLE"),
+                    "Alice, 5.5\n"
+                        + "Betty, 5.25\n"
+                        + "Cindy, 6.0\n"
+                        + "Doris, 5.0\n"
+                        + "Emily, 5.5"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testAvg2() throws SQLException {
+        String sql = "select name, avg(id) as avg_id, avg(amount) as avg_amount from test group by name";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"name", "avg_id", "avg_amount"},
+                    TupleSchema.ofTypes("STRING", "LONG", "DOUBLE"),
+                    "Alice, 5, 5.5\n"
+                        + "Betty, 4, 5.25\n"
+                        + "Cindy, 6, 6.0\n"
+                        + "Doris, 4, 5.0\n"
+                        + "Emily, 5, 5.5"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testCast() throws SQLException {
+        String sql = "select id, name, cast(amount as int) as amount from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "1, Alice, 3\n"
+                        + "2, Betty, 4\n"
+                        + "3, Cindy, 4\n"
+                        + "4, Doris, 5\n"
+                        + "5, Emily, 5\n"
+                        + "6, Alice, 6\n"
+                        + "7, Betty, 6\n"
+                        + "8, Alice, 7\n"
+                        + "9, Cindy, 7\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSort() throws SQLException {
+        String sql = "select * from test order by id asc";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    TEST_ALL_DATA
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSort1() throws SQLException {
+        String sql = "select * from test order by name desc, amount";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "5, Emily, 5.5\n"
+                        + "4, Doris, 5.0\n"
+                        + "3, Cindy, 4.5\n"
+                        + "9, Cindy, 7.5\n"
+                        + "2, Betty, 4.0\n"
+                        + "7, Betty, 6.5\n"
+                        + "1, Alice, 3.5\n"
+                        + "6, Alice, 6.0\n"
+                        + "8, Alice, 7.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSortLimitOffset() throws SQLException {
+        String sql = "select * from test order by name desc, amount limit 3 offset 2";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecordsInOrder(
+                    new String[]{"id", "name", "amount"},
+                    TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+                    "3, Cindy, 4.5\n"
+                        + "9, Cindy, 7.5\n"
+                        + "2, Betty, 4.0\n"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testUpdate() throws SQLException {
+        String sql = "update test set amount = 100 where id = 1";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(1);
+        }
+        checkDatumInTestTable(
+            "1, Alice, 100.0\n"
+                + "2, Betty, 4.0\n"
+                + "3, Cindy, 4.5\n"
+                + "4, Doris, 5.0\n"
+                + "5, Emily, 5.5\n"
+                + "6, Alice, 6.0\n"
+                + "7, Betty, 6.5\n"
+                + "8, Alice, 7.0\n"
+                + "9, Cindy, 7.5\n"
+        );
+    }
+
+    @Test
+    public void testUpdate1() throws SQLException {
+        String sql = "update test set amount = amount + 100";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(9);
+        }
+        checkDatumInTestTable(
+            "1, Alice, 103.5\n"
+                + "2, Betty, 104.0\n"
+                + "3, Cindy, 104.5\n"
+                + "4, Doris, 105.0\n"
+                + "5, Emily, 105.5\n"
+                + "6, Alice, 106.0\n"
+                + "7, Betty, 106.5\n"
+                + "8, Alice, 107.0\n"
+                + "9, Cindy, 107.5\n"
+        );
+    }
+
+    @Test
+    public void testDelete() throws SQLException {
+        String sql = "delete from test where id = 3 or id = 4";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(2);
+        }
+        checkDatumInTestTable(
+            "1, Alice, 3.5\n"
+                + "2, Betty, 4.0\n"
+                + "5, Emily, 5.5\n"
+                + "6, Alice, 6.0\n"
+                + "7, Betty, 6.5\n"
+                + "8, Alice, 7.0\n"
+                + "9, Cindy, 7.5\n"
+        );
+    }
+
+    @Test
+    public void testDelete1() throws SQLException {
+        String sql = "delete from test where name = 'Alice'";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(3);
+        }
+        checkDatumInTestTable(
+            "2, Betty, 4.0\n"
+                + "3, Cindy, 4.5\n"
+                + "4, Doris, 5.0\n"
+                + "5, Emily, 5.5\n"
+                + "7, Betty, 6.5\n"
+                + "9, Cindy, 7.5\n"
+        );
+    }
+
+    @Test
+    public void testInsert() throws SQLException {
+        String sql = "insert into test values(10, 'Alice', 8.0), (11, 'Cindy', 8.5)";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(2);
+        }
+        checkDatumInTestTable(
+            TEST_ALL_DATA
+                + "10, Alice, 8.0\n"
+                + "11, Cindy, 8.5\n"
+        );
+    }
+
+    @Test
+    public void testTransfer() throws SQLException {
+        String sql = "insert into test1 select id, name, amount > 6.0, name, amount+1.0 from test where amount > 5.0";
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(5);
+        }
+        checkDatumInTable(
+            "test1",
+            new String[]{"id0", "id1", "id2", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN", "STRING", "DOUBLE"),
+            "5, Emily, false, Emily, 6.5\n"
+                + "6, Alice, false, Alice, 7.0\n"
+                + "7, Betty, true, Betty, 7.5\n"
+                + "8, Alice, true, Alice, 8.0\n"
+                + "9, Cindy, true, Cindy, 8.5\n"
         );
         sqlHelper.clearTable("test2");
     }
