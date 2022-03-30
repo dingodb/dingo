@@ -20,27 +20,98 @@ import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.driver.server.ServerMetaFactory;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import lombok.experimental.Delegate;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.remote.LocalService;
-import org.apache.calcite.avatica.remote.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.ServiceLoader;
 
-public class DriverProxyService implements Service, DriverProxyApi {
+public class DriverProxyService extends LocalService implements DriverProxyApi {
 
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
-    @Delegate
-    private final LocalService localService;
+    private RpcMetadataResponse serverLevelRpcMetadata;
 
     public DriverProxyService() throws Exception {
-        Class<Meta.Factory> factoryClass =
-            (Class<Meta.Factory>) Class.forName(ServerMetaFactory.class.getCanonicalName());
-        Meta.Factory factory = factoryClass.getConstructor().newInstance();
-        Meta meta = factory.create(Collections.emptyList());
-        this.localService = new LocalService(meta);
+        super(new ServerMetaFactory().create(Collections.emptyList()), NoopMetricsSystem.getInstance());
+    }
+
+    @Override
+    public void setRpcMetadata(RpcMetadataResponse serverLevelRpcMetadata) {
+        super.setRpcMetadata(serverLevelRpcMetadata);
+    }
+
+    private static <E> List<E> list(Iterable<E> iterable) {
+        if (iterable instanceof List) {
+            return (List<E>) iterable;
+        }
+        final List<E> rowList = new ArrayList<>();
+        for (E row : iterable) {
+            rowList.add(row);
+        }
+        return rowList;
+    }
+
+    @Override
+    public ResultSetResponse toResponse(Meta.MetaResultSet resultSet) {
+        if (resultSet.updateCount != -1) {
+            return new ResultSetResponse(resultSet.connectionId,
+                resultSet.statementId, resultSet.ownStatement, null, null,
+                resultSet.updateCount, serverLevelRpcMetadata);
+        }
+
+        Meta.Signature signature = resultSet.signature;
+        // TODO Revise modification of CursorFactory see:
+        // https://issues.apache.org/jira/browse/CALCITE-4567
+        Meta.CursorFactory cursorFactory = resultSet.signature.cursorFactory;
+        Meta.Frame frame = null;
+        int updateCount = -1;
+        final List<Object> list;
+
+        if (resultSet.firstFrame != null) {
+            list = list(resultSet.firstFrame.rows);
+            /*if (list.isEmpty()) {
+                cursorFactory = Meta.CursorFactory.LIST;
+            } else {
+                switch (cursorFactory.style) {
+                    case ARRAY:
+                        cursorFactory = Meta.CursorFactory.LIST;
+                        break;
+                    case MAP:
+                    case LIST:
+                        break;
+                    case RECORD:
+                        cursorFactory = Meta.CursorFactory.map(cursorFactory.fieldNames);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown cursor factory style: "
+                            + cursorFactory.style);
+                }
+            }*/
+            final boolean done = resultSet.firstFrame.done;
+
+            frame = new Meta.Frame(0, done, list);
+            updateCount = -1;
+
+            if (signature.statementType != null) {
+                if (signature.statementType.canUpdate()) {
+                    frame = null;
+                    updateCount = ((Number) ((List) list.get(0)).get(0)).intValue();
+                }
+            }
+        } else {
+            cursorFactory = Meta.CursorFactory.LIST;
+        }
+
+        if (cursorFactory != resultSet.signature.cursorFactory) {
+            signature = signature.setCursorFactory(cursorFactory);
+        }
+
+        return new ResultSetResponse(resultSet.connectionId, resultSet.statementId,
+            resultSet.ownStatement, signature, frame, updateCount, serverLevelRpcMetadata);
     }
 
     public void start() {
