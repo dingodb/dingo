@@ -30,7 +30,8 @@ import java.sql.SQLException;
 @Slf4j
 public class BasicTypeWithDateTest {
     private static final String TEST_ALL_DATA
-        = "1, Alice, 2020-01-01\n";
+        = "1, Alice, 2020-01-01\n"
+        + "2, Betty, 2020-01-02\n";
     private static SqlHelper sqlHelper;
 
     @BeforeAll

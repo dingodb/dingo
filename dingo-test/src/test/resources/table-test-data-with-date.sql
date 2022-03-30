@@ -1,2 +1,3 @@
 insert into test values
-(1, 'Alice', '2020-01-01')
+(1, 'Alice', '2020-01-01'),
+(2, 'Betty', '2020-01-02')

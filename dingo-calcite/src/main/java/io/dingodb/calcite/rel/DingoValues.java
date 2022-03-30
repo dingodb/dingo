@@ -71,7 +71,6 @@ public class DingoValues extends Values implements DingoRel {
     public List<Object[]> getValues() {
         return tuples.stream()
             .map(t -> t.stream()
-                .map(RexLiteral::getValue)
                 .map(Datum::convertCalcite)
                 .toArray(Object[]::new)
             )
