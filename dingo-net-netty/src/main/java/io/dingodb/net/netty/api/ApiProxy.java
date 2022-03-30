@@ -167,19 +167,13 @@ public class ApiProxy<T> implements InvocationHandler {
                         EXEC.throwFormatError(
                             "invoke remote api",
                             currentThread().getName(),
-                            String.format("error code [%s], %s", code, PrimitiveCodec.readString(buffer))
+                            String.format("error code [%s], %s", code, Serializers.read(buffer, String.class))
                         );
                     }
                 }
                 future.complete(buffer);
             } catch (Exception e) {
                 future.completeExceptionally(e);
-            } finally {
-                try {
-                    channel.close();
-                } catch (Exception e) {
-                    log.error("Close channel error, address: [{}].", channel.remoteAddress(), e);
-                }
             }
         };
     }

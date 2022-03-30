@@ -21,7 +21,6 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
 import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
 import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
@@ -44,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 
 import static io.dingodb.common.util.StackTraces.stack;
 import static io.dingodb.common.util.StackTraces.stackTrace;
+import static io.dingodb.net.NetError.OPEN_CHANNEL_BUSY;
 import static io.dingodb.net.NetError.OPEN_CHANNEL_TIME_OUT;
 import static io.dingodb.net.netty.channel.impl.SimpleChannelId.GENERIC_CHANNEL_ID;
 import static io.dingodb.net.netty.packet.message.HandshakeMessage.handshakePacket;
@@ -70,10 +70,10 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     private ChannelId generateChannelId(boolean keepAlive) {
         if (keepAlive) {
             return Optional.ofNullable(unLimitChannelIdAllocator.alloc())
-                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+                .orElseThrow(OPEN_CHANNEL_BUSY::formatAsException);
         } else {
             return Optional.ofNullable(limitChannelIdAllocator.alloc())
-                .orElseThrow(OPEN_CHANNEL_TIME_OUT::formatAsException);
+                .orElseThrow(OPEN_CHANNEL_BUSY::formatAsException);
         }
     }
 
@@ -145,7 +145,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
-        channel.setChannelPool(channelPool);
+        channel.setChannelPool(keepAlive ? null : channelPool);
         return channel;
     }
 
