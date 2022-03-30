@@ -23,7 +23,6 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
 import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
 import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
@@ -170,7 +169,6 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
-<<<<<<< HEAD
         threadPoolExecutor.submit(channel);
         channel.setChannelPool(keepAlive ? null : channelPool);
         return channel;
@@ -239,11 +237,6 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             super.close();
             log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
         }
-    }
-
-    @Override
-    public Connection.ChannelPool getChannelPool() {
-        return channelPool;
     }
 
     @Override
