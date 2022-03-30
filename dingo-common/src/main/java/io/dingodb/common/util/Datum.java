@@ -16,17 +16,50 @@
 
 package io.dingodb.common.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.NlsString;
 
+@Slf4j
 public final class Datum {
     private Datum() {
     }
 
     public static Object convertCalcite(Object value) {
-        if (value instanceof NlsString) {
-            return ((NlsString) value).getValue();
-        } else {
-            return value;
+        RexLiteral literal = (RexLiteral) value;
+        RelDataType type = literal.getType();
+        Object retValue  = literal.getValue();
+
+        switch (type.getSqlTypeName().getName()) {
+            case "INTEGER":
+            case "LONG": {
+                retValue = Long.valueOf(literal.getValue().toString());
+                break;
+            }
+            case "DECIMAL":
+            case "DOUBLE": {
+                retValue = Double.valueOf(literal.getValue().toString());
+                break;
+            }
+            case "CHAR":
+            case "VARCHAR": {
+                if (literal.getValue() instanceof NlsString) {
+                    retValue = ((NlsString) literal.getValue()).getValue();
+                }
+                break;
+            }
+            case "TIMESTAMP":
+            case "TIME":
+            case "DATE": {
+                retValue = ((java.util.GregorianCalendar) (literal.getValue())).getTimeInMillis();
+                break;
+            }
+            default: {
+                break;
+            }
         }
+        return retValue;
     }
+
 }

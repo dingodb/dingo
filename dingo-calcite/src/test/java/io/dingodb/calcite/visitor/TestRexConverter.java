@@ -486,7 +486,7 @@ public class TestRexConverter {
 
     @Test
     public void testMidString() {
-        String sql = "select mid('ABC', 1, 3)";
+        String sql = "select mid('ABC', 1, 2)";
         try {
             SqlNode sqlNode = parser.parse(sql);
             sqlNode = parser.validate(sqlNode);
@@ -496,7 +496,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("ABC"));
+            Assert.assrt(((String)rtExpr.eval(null)).equals("AB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

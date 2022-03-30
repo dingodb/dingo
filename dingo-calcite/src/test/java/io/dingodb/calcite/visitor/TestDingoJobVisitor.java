@@ -181,9 +181,9 @@ public class TestDingoJobVisitor {
             .getInstance();
         List<Object[]> tuples = operator.getTuples();
         assertThat(tuples).element(0).satisfies(obj -> {
-            assertThat(obj[0]).isEqualTo(BigDecimal.valueOf(1));
+            assertThat(obj[0]).isEqualTo(Long.valueOf(1));
             assertThat(obj[1]).isEqualTo("Alice");
-            assertThat(obj[2]).isEqualTo(BigDecimal.valueOf(1));
+            assertThat(obj[2]).isEqualTo(Double.valueOf(1));
         });
     }
 

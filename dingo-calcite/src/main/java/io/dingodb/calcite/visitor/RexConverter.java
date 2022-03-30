@@ -181,7 +181,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Nonnull
     @Override
     public Expr visitLiteral(@Nonnull RexLiteral literal) {
-        return Value.of(Datum.convertCalcite(literal.getValue()));
+        return Value.of(Datum.convertCalcite(literal));
     }
 
     @Nonnull

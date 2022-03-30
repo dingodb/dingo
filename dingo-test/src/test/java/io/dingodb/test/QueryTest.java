@@ -53,6 +53,66 @@ public class QueryTest {
     // TODO: currently the records overlap to each other for the key is empty if there is no primary key.
     @Test
     @Disabled
+    public void testExplainScan() throws SQLException {
+        String sql = "explain plan for select * from dingo.test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isPlan(
+                    "EnumerableRoot",
+                    "DingoCoalesce",
+                    "DingoExchange",
+                    "DingoPartScan"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSimpleValues() throws SQLException {
+        // Queries like 'select 1' is bypassed by Calcite.
+        String sql = "select 'hello'";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"EXPR$0"},
+                    TupleSchema.ofTypes("STRING"),
+                    "hello"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testSimpleMathFunc() throws SQLException {
+        String sql = "select 1 + 1 ";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isRecords(
+                    new String[]{"EXPR$0"},
+                    TupleSchema.ofTypes("INTEGER"),
+                    "2"
+                );
+            }
+        }
+    }
+
+    @Test
+    public void testScan() throws SQLException, IOException {
+        checkDatumInTestTable(TEST_ALL_DATA);
+    }
+
+    @Test
+    public void testScan1() throws SQLException, IOException {
+        checkDatumInTable(
+            "test.test",
+            new String[]{"id", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            TEST_ALL_DATA
+        );
+    }
+
+    // TODO: currently the records overlap to each other for the key is empty if there is no primary key.
+    //@Test
     public void testScan2() throws SQLException, IOException {
         sqlHelper.execFile("/table-test2-create.sql");
         sqlHelper.execFile("/table-test2-data.sql");
@@ -189,8 +249,6 @@ public class QueryTest {
             }
         }
     }
-
-
 
     @Test
     public void testCount() throws SQLException {
