@@ -18,6 +18,7 @@ package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 public class DingoSubStringOp extends RtStringConversionOp {
@@ -36,12 +37,26 @@ public class DingoSubStringOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String) values[0]).trim();
-        Integer startIndex = Integer.valueOf(values[1].toString());
-        Integer cnt = Integer.valueOf(values[2].toString());
+
+        BigDecimal decimal = new BigDecimal(values[1].toString());
+        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue() - 1;
+
+        decimal = new BigDecimal(values[2].toString());
+        Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+
+        if (cnt < 0) {
+            return "";
+        }
+
+        if (startIndex < 0) {
+            startIndex = startIndex + inputStr.length() + 1;
+        }
+
         if (startIndex + cnt > inputStr.length()) {
             System.out.println("Substring OutOfRange. Input:" + inputStr + ", startIndex:"
                 + startIndex + ", subCnt:" + cnt);
         }
+
         return inputStr.substring(startIndex, startIndex + cnt);
     }
 }

@@ -123,11 +123,11 @@ public final class DingoFunc {
         }
     }
 
-    public static double formatNumber(final double value, int scale) {
+    public static String formatNumber(final double value, int scale) {
         NumberFormat nf = NumberFormat.getNumberInstance();
         nf.setMaximumFractionDigits(scale);
         nf.setMinimumFractionDigits(scale);
-        return Double.valueOf(nf.format(value));
+        return nf.format(value);
     }
 
 }
