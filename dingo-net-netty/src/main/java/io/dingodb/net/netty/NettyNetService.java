@@ -59,7 +59,6 @@ public class NettyNetService implements NetService {
                 log.error("Close connection error", e);
             }
         }));
-
     }
 
     @Override
@@ -91,7 +90,7 @@ public class NettyNetService implements NetService {
 
     @Override
     public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
-        return (NetServiceConnectionSubChannel) newChannel(netAddress, false);
+        return (NetServiceConnectionSubChannel) newChannel(netAddress, true);
     }
 
     @Override
