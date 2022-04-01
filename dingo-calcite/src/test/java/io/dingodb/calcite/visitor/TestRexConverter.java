@@ -604,8 +604,80 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
-            // RtExpr rtExpr = expr.compileIn(null);
-            // Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals(""));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidNegativeIndex01() {
+        String sql = "select mid('ABCDEFG', -5, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(rtExpr.eval(null).equals("CDE"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidNegativeIndex02() {
+        String sql = "select mid('ABCDEFG', 1, -5)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(rtExpr.eval(null).equals(""));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidDecimalIndex01() {
+        String sql = "select mid('ABCDEFG', 2.5, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(rtExpr.eval(null).equals("CDE"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidDecimalIndex02() {
+        String sql = "select mid('ABCDEFG', 2, 3.5)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(rtExpr.eval(null).equals("BCDE"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -773,8 +845,6 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
-            // RtExpr rtExpr = expr.compileIn(null);
-            // Assert.assrt(((String)rtExpr.eval(null)).equals("100.2"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

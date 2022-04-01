@@ -43,7 +43,6 @@ public class DingoStringMidOp extends RtStringConversionOp {
 
         decimal = new BigDecimal(values[2].toString());
         Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
-
         /**
          * 1. start Index is invalid, return ""
          */
