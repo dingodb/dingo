@@ -16,6 +16,8 @@
 
 package io.dingodb.net.netty.connection.impl;
 
+import io.dingodb.common.concurrent.ThreadFactoryBuilder;
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static io.dingodb.net.NetError.OPEN_CHANNEL_TIME_OUT;
@@ -49,6 +52,7 @@ public class NetServiceLocalConnection implements Connection<Message> {
     protected ConnectionSubChannel<Message> genericSubChannel;
     protected ChannelIdAllocator<SimpleChannelId> limitChannelIdAllocator;
     protected ChannelIdAllocator<SimpleChannelId> unLimitChannelIdAllocator;
+    protected ThreadPoolExecutor threadPoolExecutor;
 
     private final ChannelPool channelPool;
 
@@ -58,6 +62,16 @@ public class NetServiceLocalConnection implements Connection<Message> {
         channelPool = new ChannelPool(capacity);
         limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
         unLimitChannelIdAllocator = new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);
+        threadPoolExecutor = new ThreadPoolBuilder()
+            .name("Local-Connection-executor")
+            .maximumThreads(Integer.MAX_VALUE)
+            .keepAliveSeconds(60L)
+            .threadFactory(new ThreadFactoryBuilder()
+                .name("Local-Connection-executor")
+                .daemon(true)
+                .group(new ThreadGroup("Local-Connection-executor"))
+                .build())
+            .build();
     }
 
     private ChannelId generateChannelId(boolean keepAlive) {
@@ -86,7 +100,8 @@ public class NetServiceLocalConnection implements Connection<Message> {
                 remoteAddress(), targetChannelId, channel.channelId());
         }
         channel.start();
-        channel.setChannelPool(channelPool);
+        threadPoolExecutor.submit(channel);
+        channel.setChannelPool(keepAlive ? null : channelPool);
         return channel;
     }
 
@@ -149,8 +164,9 @@ public class NetServiceLocalConnection implements Connection<Message> {
                 channel.close();
             }
             channelPool.clear();
+        } else {
+            subChannels.values().forEach(NetServiceConnectionSubChannel::close);
         }
-        subChannels.values().forEach(NetServiceConnectionSubChannel::close);
     }
 
     @Override
@@ -204,6 +220,8 @@ public class NetServiceLocalConnection implements Connection<Message> {
             if (channel == null) {
                 channel = NetServiceLocalConnection.this.openSubChannel(false);
             }
+            ((NetServiceConnectionSubChannel) channel).status(Channel.Status.ACTIVE);
+            threadPoolExecutor.submit((NetServiceConnectionSubChannel) channel);
             return channel;
         }
 

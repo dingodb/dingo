@@ -35,9 +35,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.Builder;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Builder
@@ -47,7 +44,6 @@ public class NettyServer implements PortListener {
     private final int port;
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
-    private final List<NetServiceNettyConnection> nettyConnections = new CopyOnWriteArrayList<>();
 
     @Override
     public int port() {
@@ -76,7 +72,6 @@ public class NettyServer implements PortListener {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 NetServiceNettyConnection connection = new NetServiceNettyConnection(ch);
-                nettyConnections.add(connection);
                 ch.pipeline()
                     .addLast(encoder)
                     .addLast(new MessageDecoder())
@@ -93,7 +88,6 @@ public class NettyServer implements PortListener {
     @Override
     public void close() {
         eventLoopGroup.shutdownGracefully();
-        nettyConnections.forEach(connectionManager::onCloseConnection);
     }
 
 }

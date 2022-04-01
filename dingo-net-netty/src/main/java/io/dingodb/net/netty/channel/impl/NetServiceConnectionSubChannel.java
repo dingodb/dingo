@@ -22,6 +22,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.Tag;
+import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.channel.AbstractConnectionSubChannel;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.connection.Connection;
@@ -51,6 +52,7 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
     private NetAddress remoteAddress;
     private Connection.ChannelPool channelPool;
 
+    private final ApiRegistryImpl apiRegistry = ApiRegistryImpl.instance();
     private final BlockingQueue<Packet<Message>> packetQueue = new LinkedBlockingQueue<>();
 
     public NetServiceConnectionSubChannel(
@@ -80,7 +82,7 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
     @Override
     public void run() {
         Packet<Message> packet = null;
-        while (status != Status.CLOSE || !packetQueue.isEmpty()) {
+        while ((status != Status.CLOSE && status != Status.WAIT) || !packetQueue.isEmpty()) {
             try {
                 if ((packet = packetQueue.poll(1, TimeUnit.SECONDS)) == null) {
                     continue;
@@ -88,12 +90,16 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
                 if (log.isDebugEnabled()) {
                     Logs.packetDbg(false, log, connection, packet);
                 }
-                if (listener != null) {
-                    listener.onMessage(packet.content(), this);
-                }
-                Tag tag = packet.content().tag();
-                if (tag != null) {
-                    TagMessageHandler.instance().handler(this, tag, packet);
+                if (packet.header().mode() == PacketMode.API && packet.header().type() == PacketType.INVOKE) {
+                    apiRegistry.invoke(this, (MessagePacket) packet);
+                } else {
+                    if (listener != null) {
+                        listener.onMessage(packet.content(), this);
+                    }
+                    Tag tag = packet.content().tag();
+                    if (tag != null) {
+                        TagMessageHandler.instance().handler(this, tag, packet);
+                    }
                 }
             } catch (InterruptedException e) {
                 CommonError.EXEC_INTERRUPT.throwFormatError("channel consume packet", Thread.currentThread(), "--");
@@ -158,13 +164,13 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
 
     @Override
     public synchronized void start() {
-        super.start();
         status = Status.ACTIVE;
     }
 
     @Override
     public void close() {
         if (channelPool != null) {
+            status = Status.WAIT;
             channelPool.offer(this);
             listener = this::skipListener;
             closeListener = this::skipListener;

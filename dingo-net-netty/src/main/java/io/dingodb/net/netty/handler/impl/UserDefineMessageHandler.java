@@ -37,19 +37,16 @@ public class UserDefineMessageHandler implements MessageHandler {
 
     private UserDefineMessageHandler() {
         MessageDispatcher.instance().registerHandler(PacketMode.USER_DEFINE, PacketType.USER_DEFINE, this);
+        MessageDispatcher.instance().registerHandler(PacketMode.API, PacketType.INVOKE, this);
+        MessageDispatcher.instance().registerHandler(PacketMode.API, PacketType.RETURN, this);
     }
 
     public static UserDefineMessageHandler instance() {
         return INSTANCE;
     }
 
-    private final ExecutorService executorService = new ThreadPoolBuilder().name("UserDefineMessageHandler").build();
-
     @Override
     public void handle(Connection<Message> connection, Packet<Message> packet) {
-        if (packet.header().type() != PacketType.USER_DEFINE) {
-            throw new IllegalStateException("Unexpected value: " + packet.header().type());
-        }
         Logs.packetDbg(false, log, connection, packet);
         connection.receive(packet);
     }
