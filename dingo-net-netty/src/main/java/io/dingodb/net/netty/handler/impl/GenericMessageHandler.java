@@ -81,7 +81,7 @@ public class GenericMessageHandler implements MessageHandler {
                 break;
             case CONNECT_CHANNEL:
                 ConnectionSubChannel<Message> channel =
-                    connection.openSubChannel(packet.header().targetChannelId(), false);
+                    connection.openSubChannel(packet.header().targetChannelId(), true);
                 channel.send(MessagePacket.ack(channel.channelId(), channel.targetChannelId(), channel.nextSeq()));
                 break;
             case DIS_CONNECT_CHANNEL:

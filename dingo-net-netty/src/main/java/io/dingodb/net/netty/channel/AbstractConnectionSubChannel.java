@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
-public abstract class AbstractConnectionSubChannel<M> extends Thread implements ConnectionSubChannel<M> {
+public abstract class AbstractConnectionSubChannel<M> implements Runnable, ConnectionSubChannel<M> {
 
     private static final ThreadGroup THREAD_GROUP = new ThreadGroup("Connection channel");
 
@@ -39,7 +39,6 @@ public abstract class AbstractConnectionSubChannel<M> extends Thread implements 
         ChannelId targetChannelId,
         Connection<M> connection
     ) {
-        super(THREAD_GROUP, String.format("%s/<%s>", connection.remoteAddress(), channelId.channelId()));
         this.channelId = channelId;
         this.targetChannelId = targetChannelId;
         this.connection = connection;
