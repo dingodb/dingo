@@ -18,6 +18,7 @@ package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 public class DingoStringRightOp extends RtStringConversionOp {
@@ -35,8 +36,14 @@ public class DingoStringRightOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        Integer cnt = ((Long)(values[1])).intValue();
         String inputStr = (String) values[0];
+        Integer cnt = new BigDecimal(String.valueOf(values[1]))
+            .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+
+        if (cnt < 0) {
+            return "";
+        }
+
         if (inputStr.length() > cnt) {
             return inputStr.substring(inputStr.length() - cnt, inputStr.length());
         }

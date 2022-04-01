@@ -20,7 +20,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 
-import java.text.NumberFormat;
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 public class DingoNumberFormatOp extends RtFun  {
@@ -32,12 +32,10 @@ public class DingoNumberFormatOp extends RtFun  {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        Double inputNumber = (Double) values[0];
-        int   inputScalar = ((Long)values[1]).intValue();
-        NumberFormat nf = NumberFormat.getNumberInstance();
-        nf.setMaximumFractionDigits(inputScalar);
-        nf.setMinimumFractionDigits(inputScalar);
-        return Double.valueOf(nf.format(inputNumber));
+        int inputScalar = new BigDecimal(String.valueOf(values[1]))
+            .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        BigDecimal decimal = new BigDecimal(String.valueOf(values[0])).setScale(inputScalar, BigDecimal.ROUND_HALF_UP);
+        return decimal.toString();
     }
 
     @Override

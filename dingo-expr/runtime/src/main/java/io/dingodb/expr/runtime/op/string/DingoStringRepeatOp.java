@@ -18,6 +18,7 @@ package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 
@@ -37,7 +38,11 @@ public class DingoStringRepeatOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String)values[0]).trim();
-        int times = ((Long)(values[1])).intValue();
+        int times = new BigDecimal(String.valueOf(values[1])).setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+
+        if (times < 0) {
+            return "";
+        }
         return String.join("", Collections.nCopies(times, inputStr));
     }
 }
