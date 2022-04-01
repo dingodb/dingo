@@ -36,6 +36,6 @@ public class DingoStringReplaceOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         System.out.println("====> replace input values:" + values[0] + "," + values[1] + "," + values[2]);
-        return ((String) values[0]).replace((String) values[1], (String) values[2]);
+        return values[0].toString().replace(values[1].toString(), values[2].toString());
     }
 }
