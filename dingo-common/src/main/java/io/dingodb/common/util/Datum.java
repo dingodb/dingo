@@ -16,10 +16,13 @@
 
 package io.dingodb.common.util;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.NlsString;
+
+import java.math.BigDecimal;
 
 @Slf4j
 public final class Datum {
@@ -39,7 +42,12 @@ public final class Datum {
             }
             case "DECIMAL":
             case "DOUBLE": {
-                retValue = Double.valueOf(literal.getValue().toString());
+                int result = ((BigDecimal)(literal.getValue())).compareTo(BigDecimal.valueOf(1000));
+                if (result < 0) {
+                    retValue = Double.valueOf(literal.getValue().toString());
+                } else {
+                    retValue = literal.getValue();
+                }
                 break;
             }
             case "CHAR":
