@@ -144,10 +144,13 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             cid -> new NetServiceConnectionSubChannel(cid, null, this)
         );
         Future<Packet<Message>> ack = GenericMessageHandler.instance().waitAck(this, channel.channelId());
-        channel.send(MessagePacket.connectRemoteChannel(channel.channelId(), channel.nextSeq()));
+        long seqNo = channel.nextSeq();
         try {
+            channel.send(MessagePacket.connectRemoteChannel(channel.channelId(), seqNo));
             channel.targetChannelId(ack.get(heartbeat, TimeUnit.SECONDS).header().targetChannelId());
         } catch (InterruptedException e) {
+            log.error("Open channel catch InterruptedException, channel id: [{}], caller: [{}]",
+                channel.channelId(), stack(2));
             closeSubChannel(channel.channelId());
             NetError.OPEN_CHANNEL_INTERRUPT.throwFormatError();
         } catch (ExecutionException e) {
@@ -156,6 +159,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
                 channel.channelId(), stack(2));
             NetError.UNKNOWN.throwFormatError(e.getMessage());
         } catch (TimeoutException e) {
+            log.error("Open channel catch TimeOutException, channel id: [{}], caller: [{}]",
+                channel.channelId(), stack(2));
             closeSubChannel(channel.channelId());
             OPEN_CHANNEL_TIME_OUT.throwFormatError();
         }

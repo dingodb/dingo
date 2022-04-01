@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import io.dingodb.calcite.JobRunner;
 import io.dingodb.exec.base.Job;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
@@ -30,6 +31,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.TimeZone;
 
+@Slf4j
 public class DingoResultSet extends AvaticaResultSet {
     private Iterator<Object[]> iterator = null;
 
@@ -54,6 +56,7 @@ public class DingoResultSet extends AvaticaResultSet {
                 setFetchSize(1);
             } catch (SQLException e) {
                 e.printStackTrace();
+                log.error("Executor Iterator catch exception:{}", e.toString(), e);
             }
         }
         return iterator;
