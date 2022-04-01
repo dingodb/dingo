@@ -65,6 +65,10 @@ public interface Channel extends AutoCloseable {
          */
         INACTIVE,
         /**
+         * Wait.
+         */
+        WAIT,
+        /**
          * Close.
          */
         CLOSE

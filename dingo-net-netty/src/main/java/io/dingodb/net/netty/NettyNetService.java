@@ -53,6 +53,14 @@ public class NettyNetService implements NetService {
         connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider(), capacity);
         portListeners = new ConcurrentHashMap<>();
         localConnection = new NetServiceLocalConnection(capacity);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                close();
+            } catch (Exception e) {
+                log.error("Close connection error", e);
+            }
+        }));
     }
 
     @Override
@@ -84,7 +92,7 @@ public class NettyNetService implements NetService {
 
     @Override
     public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
-        return (NetServiceConnectionSubChannel) newChannel(netAddress, false);
+        return (NetServiceConnectionSubChannel) newChannel(netAddress, true);
     }
 
     @Override

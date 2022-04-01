@@ -16,6 +16,8 @@
 
 package io.dingodb.net.netty.connection.impl;
 
+import io.dingodb.common.concurrent.ThreadFactoryBuilder;
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -38,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -53,18 +56,39 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
 
     private final ConcurrentHashMap<ChannelId, NetServiceConnectionSubChannel> subChannels = new ConcurrentHashMap<>();
     private final ChannelPool channelPool;
+    private ThreadPoolExecutor threadPoolExecutor;
 
     public NetServiceNettyConnection(InetSocketAddress remoteAddress, int capacity) {
         super(remoteAddress);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
         channelPool = new ChannelPool(capacity);
         limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
+        threadPoolExecutor = new ThreadPoolBuilder()
+            .name("Netty-Connection-executor")
+            .maximumThreads(Integer.MAX_VALUE)
+            .keepAliveSeconds(60L)
+            .threadFactory(new ThreadFactoryBuilder()
+                .name("Netty-Connection-executor")
+                .daemon(true)
+                .group(new ThreadGroup("Netty-Connection-executor"))
+                .build())
+            .build();
     }
 
     public NetServiceNettyConnection(io.netty.channel.socket.SocketChannel nettyChannel) {
         super(nettyChannel);
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
         channelPool = null;
+        threadPoolExecutor = new ThreadPoolBuilder()
+            .name("Netty-Connection-executor")
+            .maximumThreads(Integer.MAX_VALUE)
+            .keepAliveSeconds(60L)
+            .threadFactory(new ThreadFactoryBuilder()
+                .name("Netty-Connection-executor")
+                .daemon(true)
+                .group(new ThreadGroup("Netty-Connection-executor"))
+                .build())
+            .build();
     }
 
     private ChannelId generateChannelId(boolean keepAlive) {
@@ -145,6 +169,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
+        threadPoolExecutor.submit(channel);
         channel.setChannelPool(keepAlive ? null : channelPool);
         return channel;
     }
@@ -165,6 +190,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             );
         }
         channel.start();
+        threadPoolExecutor.submit(channel);
+        channel.setChannelPool(keepAlive ? null : channelPool);
         return channel;
     }
 
@@ -205,9 +232,11 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
                 channel.close();
             }
             channelPool.clear();
+        } else {
+            subChannels.values().forEach(NetServiceConnectionSubChannel::close);
+            super.close();
+            log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
         }
-        super.close();
-        log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
     }
 
     @Override
@@ -236,6 +265,8 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
             if (channel == null) {
                 channel = NetServiceNettyConnection.this.openSubChannel(false);
             }
+            ((NetServiceConnectionSubChannel) channel).status(Channel.Status.ACTIVE);
+            threadPoolExecutor.submit((NetServiceConnectionSubChannel) channel);
             return channel;
         }
 
