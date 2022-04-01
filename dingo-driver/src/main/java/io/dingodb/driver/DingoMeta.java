@@ -177,28 +177,31 @@ public class DingoMeta extends MetaImpl {
 
         IntStream.rangeClosed(0, inputs.size() - 1)
                  .forEach(x -> {
-                     String columnType = columns.get(x).columnClassName;
-                     if (columnType.equalsIgnoreCase("java.sql.date")
-                         || columnType.equalsIgnoreCase("java.sql.time")
-                         || columnType.equalsIgnoreCase("java.sql.timestamp")) {
-                         Long timeStamp = 0L;
-                         try {
-                             timeStamp = (Long) inputs.get(x);
-                         } catch (Exception e) {
-                             if (e instanceof ClassCastException) {
-                                 timeStamp = ((java.util.Date) inputs.get(x)).getTime();
-                             }
+                     Object valueBeforeCvt = inputs.get(x);
+                     Object valueAfterCvt = inputs.get(x);
+                     switch (columns.get(x).columnClassName.toLowerCase()) {
+                         case "java.sql.date": {
+                             Long timeStamp = (Long) inputs.get(x);
+                             Long epochDay = timeStamp / (24 * 60 * 60 * 1000);
+                             // Long epochDay02 = new Timestamp(timeStamp).toLocalDateTime().toLocalDate().toEpochDay();
+                             valueAfterCvt = epochDay;
+                             inputs.set(x, epochDay);
+                             break;
                          }
-                         Long epochTime = 0L;
-                         if (columnType.toLowerCase().contains("date")) {
-                             epochTime = timeStamp / (24 * 60 * 60 * 1000);
-                         } else {
-                             epochTime = timeStamp;
+                         case "java.lang.integer": {
+                             valueAfterCvt = Integer.valueOf(inputs.get(x).toString());
+                             inputs.set(x, valueAfterCvt);
+                             break;
                          }
-                         inputs.set(x, epochTime);
-                         log.info("Convert column:{} type:{} to epochTime:{}",
-                             columns.get(x).columnName, columns.get(x).columnClassName, epochTime);
+                         default:
+                             break;
                      }
+
+                     log.info("Convert column:{} from type:{} to type:{} value:{}",
+                         columns.get(x).columnName,
+                         valueBeforeCvt.getClass(),
+                         columns.get(x).columnClassName,
+                         valueAfterCvt.toString());
                  });
         return inputs;
     }
