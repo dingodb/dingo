@@ -20,32 +20,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
-import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.meta.Location;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("partition")
-@JsonPropertyOrder({"strategy", "keyMapping", "outputs"})
-public final class PartitionOperator extends AbstractOperator {
+@JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
+public final class PartitionOperator extends FanOutOperator {
     @JsonProperty("strategy")
     private final PartitionStrategy strategy;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
-    @JsonProperty("outputs")
-    @JsonSerialize(contentAs = OutputIml.class)
-    @JsonDeserialize(contentAs = OutputIml.class)
-    private Map<Object, Output> outputs;
+    @JsonProperty("partIndices")
+    private Map<Object, Integer> partIndices;
 
     @JsonCreator
     public PartitionOperator(
@@ -58,33 +53,24 @@ public final class PartitionOperator extends AbstractOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    protected int calcOutputIndex(int pin, @Nonnull Object[] tuple) {
         Object partId = strategy.calcPartId(tuple, keyMapping);
-        outputs.get(partId).push(tuple);
-        return true;
+        return partIndices.get(partId);
     }
 
-    @Override
-    public void fin(int pin, Fin fin) {
-        for (Output output : outputs.values()) {
-            output.fin(fin);
-        }
-    }
-
-    @Nonnull
-    @Override
-    public Collection<Output> getOutputs() {
-        return outputs.values();
-    }
-
-    public void createOutputs(String tableName, @Nonnull Map<String, Location> partLocations) {
-        outputs = new HashMap<>(partLocations.size());
-        for (Map.Entry<String, Location> partLocation : partLocations.entrySet()) {
-            OutputHint hint = OutputHint.of(tableName, partLocation.getKey());
-            hint.setLocation(partLocation.getValue());
+    public void createOutputs(@Nonnull Map<String, Location> partLocations) {
+        int size = partLocations.size();
+        outputs = new ArrayList<>(size);
+        partIndices = new HashMap<>(size);
+        for (Map.Entry<String, Location> entry : partLocations.entrySet()) {
+            Object partId = entry.getKey();
             Output output = OutputIml.of(this);
+            OutputHint hint = new OutputHint();
+            hint.setLocation(entry.getValue());
+            hint.setPartId(partId);
             output.setHint(hint);
-            outputs.put(partLocation.getKey(), output);
+            outputs.add(output);
+            partIndices.put(partId, outputs.size() - 1);
         }
     }
 }

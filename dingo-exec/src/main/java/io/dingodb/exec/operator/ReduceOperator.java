@@ -31,8 +31,8 @@ import io.dingodb.exec.fin.Fin;
 import java.util.List;
 
 @JsonTypeName("reduce")
-@JsonPropertyOrder({"inputNum", "keys", "aggregates"})
-public final class ReduceOperator extends SoleOutMultiInputOperator {
+@JsonPropertyOrder({"inputNum", "keys", "aggregates", "output"})
+public final class ReduceOperator extends SoleOutOperator {
     @JsonProperty("keys")
     private final TupleMapping keys;
     @JsonProperty("aggregates")
@@ -44,11 +44,10 @@ public final class ReduceOperator extends SoleOutMultiInputOperator {
 
     @JsonCreator
     public ReduceOperator(
-        @JsonProperty("inputNum") int inputNum,
         @JsonProperty("keys") TupleMapping keys,
         @JsonProperty("aggregates") List<Agg> aggList
     ) {
-        super(inputNum);
+        super();
         this.keys = keys;
         this.aggList = aggList;
     }
@@ -67,14 +66,11 @@ public final class ReduceOperator extends SoleOutMultiInputOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        setFin(pin, fin);
-        if (isAllFin()) {
-            for (Object[] t : cache) {
-                if (!output.push(t)) {
-                    break;
-                }
+        for (Object[] t : cache) {
+            if (!output.push(t)) {
+                break;
             }
-            outputFin();
         }
+        output.fin(fin);
     }
 }

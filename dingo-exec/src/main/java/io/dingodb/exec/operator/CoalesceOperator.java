@@ -21,17 +21,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.OperatorProfile;
 
+import java.util.LinkedList;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("coalesce")
-@JsonPropertyOrder({"inputNum"})
-public final class CoalesceOperator extends SoleOutMultiInputOperator {
+@JsonPropertyOrder({"inputNum", "output"})
+public final class CoalesceOperator extends SoleOutOperator {
+    @JsonProperty("inputNum")
+    private final int inputNum;
+
+    private final List<OperatorProfile> profiles = new LinkedList<>();
+    private boolean[] finFlag;
+
     @JsonCreator
     public CoalesceOperator(
         @JsonProperty("inputNum") int inputNum
     ) {
-        super(inputNum);
+        this.inputNum = inputNum;
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        finFlag = new boolean[inputNum];
+    }
+
+    private void setFin(int pin, Fin fin) {
+        assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
+        assert !finFlag[pin] : "Input on pin (" + pin + ") is already finished.";
+        finFlag[pin] = true;
+        if (fin instanceof FinWithProfiles) {
+            profiles.addAll(((FinWithProfiles) fin).getProfiles());
+        }
+    }
+
+    private boolean isAllFin() {
+        for (boolean b : finFlag) {
+            if (!b) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -43,7 +77,7 @@ public final class CoalesceOperator extends SoleOutMultiInputOperator {
     public synchronized void fin(int pin, Fin fin) {
         setFin(pin, fin);
         if (isAllFin()) {
-            outputFin();
+            output.fin(new FinWithProfiles(profiles));
         }
     }
 }

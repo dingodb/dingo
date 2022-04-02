@@ -16,25 +16,99 @@
 
 package io.dingodb.test;
 
-import lombok.RequiredArgsConstructor;
+import io.dingodb.calcite.Connections;
+import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.Services;
+import io.dingodb.meta.test.MetaTestService;
+import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @Slf4j
-@RequiredArgsConstructor
-public final class SqlHelper {
+public class SqlHelper {
     private final Connection connection;
 
+    public SqlHelper() throws SQLException {
+        DingoOptions.instance().setIp("localhost");
+        DingoOptions.instance().setQueueCapacity(100);
+        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
+        Services.initNetService();
+        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
+    }
+
+    public SqlHelper(Connection connection) {
+        this.connection = connection;
+    }
+
+    public void cleanUp() throws SQLException {
+        connection.close();
+        Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
+    }
+
+    public DatabaseMetaData metaData() throws SQLException {
+        return connection.getMetaData();
+    }
+
+    public void queryTest(
+        String sql,
+        String[] columns,
+        TupleSchema schema,
+        String data
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet)
+                    .columnLabels(columns)
+                    .isRecords(schema, data);
+            }
+        }
+    }
+
+    public void queryTestOrder(
+        String sql,
+        String[] columns,
+        TupleSchema schema,
+        String data
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet)
+                    .columnLabels(columns)
+                    .isRecordsInOrder(schema, data);
+            }
+        }
+    }
+
+    public void explainTest(String sql, String... data) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet).isPlan(data);
+            }
+        }
+    }
+
+    public void updateTest(String sql, int affectedRows) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            int count = statement.executeUpdate(sql);
+            assertThat(count).isEqualTo(affectedRows);
+        }
+    }
+
     @SuppressWarnings("UnusedReturnValue")
-    public int execUpdate(@Nonnull String sqlFile) throws IOException, SQLException {
+    public int execFile(@Nonnull String sqlFile) throws IOException, SQLException {
         int result = -1;
         String[] sqlList = IOUtils.toString(
             Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)),
@@ -50,7 +124,7 @@ public final class SqlHelper {
         return result;
     }
 
-    public void clear(String tableName) throws SQLException {
+    public void clearTable(String tableName) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("delete from " + tableName);
         }

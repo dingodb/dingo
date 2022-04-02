@@ -17,12 +17,12 @@
 package io.dingodb.exec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.channel.EndpointManager;
 import io.dingodb.exec.impl.TaskImpl;
-import io.dingodb.exec.operator.SendOperator;
-import io.dingodb.exec.util.TagUtil;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
@@ -38,26 +38,27 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Slf4j
 public final class Services {
-    public static final StoreService KV_STORE = Optional.ofNullable(ServiceProvider.KV_STORE_PROVIDER.provider())
+    public static final StoreService KV_STORE = Optional.ofNullable(ServiceProviders.KV_STORE_PROVIDER.provider())
         .map(StoreServiceProvider::get).orNull();
     public static final MetaService META = Objects.requireNonNull(
-        ServiceProvider.META_PROVIDER.provider(),
+        ServiceProviders.META_PROVIDER.provider(),
         "No meta service provider was found."
     ).get();
     public static final NetService NET = Objects.requireNonNull(
-        ServiceProvider.NET_PROVIDER.provider(),
+        ServiceProviders.NET_PROVIDER.provider(),
         "No channel service provider was found."
+    ).get();
+    public static final ClusterService CLUSTER = Objects.requireNonNull(
+        ServiceProviders.CLUSTER_PROVIDER.provider(),
+        "No cluster service provider was found."
     ).get();
     public static final Map<String, MetaService> metaServices = new HashMap<>();
 
-    public static final ConcurrentMap<Object, SendOperator> rcvReadyFlag = new ConcurrentHashMap<>();
     private static final ExecutorService executorService = Executors.newWorkStealingPool();
 
     static {
@@ -68,7 +69,7 @@ public final class Services {
     }
 
     public static void initMetaServices() {
-        for (MetaServiceProvider provider : ServiceProvider.META_PROVIDER) {
+        for (MetaServiceProvider provider : ServiceProviders.META_PROVIDER) {
             MetaService metaService = provider.get();
             String serviceName = metaService.getName();
             if (metaServices.containsKey(serviceName)) {
@@ -79,15 +80,8 @@ public final class Services {
     }
 
     public static void initNetService() {
-        NET.registerMessageListenerProvider(SimpleTag.RCV_READY_TAG, () -> ((message, channel) -> {
-            String tag = TagUtil.fromBytes(message.toBytes());
-            if (log.isDebugEnabled()) {
-                log.debug("Received RCV_READY of tag {}.", tag);
-            }
-            SendOperator so = Services.rcvReadyFlag.put(tag, SendOperator.DUMMY);
-            if (so != null) {
-                so.wakeUp();
-            }
+        NET.registerMessageListenerProvider(SimpleTag.CTRL_TAG, () -> ((message, channel) -> {
+            EndpointManager.INSTANCE.onControlMessage(message);
         }));
         NET.registerMessageListenerProvider(SimpleTag.TASK_TAG, () -> (message, channel) -> {
             String taskStr = new String(message.toBytes(), StandardCharsets.UTF_8);

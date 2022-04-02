@@ -18,7 +18,8 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoAggregate;
-import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoCoalesce;
+import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
@@ -27,6 +28,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.sql.SqlKind;
 
@@ -66,22 +68,27 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
             return;
         }
         RelOptCluster cluster = rel.getCluster();
+        RelTraitSet rootTraits = rel.getTraitSet().replace(DingoConventions.ROOT);
         TupleMapping keyMapping = getAggKeys(rel);
         List<Agg> aggList = getAggList(rel);
         call.transformTo(
             new DingoReduce(
                 cluster,
-                rel.getTraitSet().replace(DingoConventions.ROOT),
-                new DingoExchange(
+                rootTraits,
+                new DingoCoalesce(
                     cluster,
-                    rel.getTraitSet().replace(DingoConventions.PARTITIONED),
-                    new DingoAggregate(
+                    rootTraits,
+                    new DingoExchangeRoot(
                         cluster,
-                        rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
-                        convert(rel.getInput(), DingoConventions.DISTRIBUTED),
-                        keyMapping,
-                        aggList,
-                        rel.getRowType()
+                        rel.getTraitSet().replace(DingoConventions.PARTITIONED),
+                        new DingoAggregate(
+                            cluster,
+                            rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                            convert(rel.getInput(), DingoConventions.DISTRIBUTED),
+                            keyMapping,
+                            aggList,
+                            rel.getRowType()
+                        )
                     )
                 ),
                 keyMapping,

@@ -18,7 +18,7 @@ package io.dingodb.exec.impl;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.base.IdGenerator;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.ValuesOperator;
@@ -29,21 +29,19 @@ import org.mockito.Mockito;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTaskImpl {
-    private static final IdGenerator idGenerator = new IdGenerator();
-
     @Test
     public void testValues() {
-        Task task = new TaskImpl("", Mockito.mock(Location.class));
+        Task task = new TaskImpl(Id.NULL, Id.NULL, Mockito.mock(Location.class));
         ValuesOperator values = new ValuesOperator(
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
             )
         );
-        values.setId(idGenerator.get());
+        values.setId(new Id("0"));
         task.putOperator(values);
         RootOperator root = new RootOperator(TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"));
-        root.setId(idGenerator.get());
+        root.setId(new Id("1"));
         task.putOperator(root);
         values.getOutputs().get(0).setLink(root.getInput(0));
         task.init();

@@ -33,7 +33,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("update")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates"})
+@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates", "output"})
 public final class PartUpdateOperator extends PartModifyOperator {
     @JsonProperty("mapping")
     private final TupleMapping mapping;

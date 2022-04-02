@@ -25,7 +25,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public interface Task {
-    String getJobId();
+    Id getId();
+
+    Id getJobId();
 
     Location getLocation();
 

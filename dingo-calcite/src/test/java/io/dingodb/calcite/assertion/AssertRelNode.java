@@ -24,11 +24,13 @@ import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("UnusedReturnValue")
 public final class AssertRelNode extends Assert<RelOptNode, AssertRelNode> {
     AssertRelNode(RelOptNode obj) {
         super(obj);
     }
 
+    @SuppressWarnings("unused")
     public AssertRelNode typeName(String typeName) {
         assertThat(instance).hasFieldOrPropertyWithValue("relTypeName", typeName);
         return this;
@@ -44,5 +46,11 @@ public final class AssertRelNode extends Assert<RelOptNode, AssertRelNode> {
         List<? extends RelOptNode> inputs = instance.getInputs();
         assertThat(inputs).size().isEqualTo(1);
         return new AssertRelNode(inputs.get(0));
+    }
+
+    public AssertRelNode inputNum(int num) {
+        List<? extends RelOptNode> inputs = instance.getInputs();
+        assertThat(inputs).size().isEqualTo(num);
+        return this;
     }
 }

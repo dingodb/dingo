@@ -28,7 +28,7 @@ public final class TagUtil {
     }
 
     @Nonnull
-    public static String tag(String jobId, Id id) {
+    public static String tag(Id jobId, Id id) {
         return jobId + ":" + id;
     }
 

@@ -20,9 +20,10 @@ plugins {
 }
 
 dependencies {
-    api project(':dingo-store-api')
+    api project(':dingo-cluster-api')
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
+    api project(':dingo-store-api')
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
     implementation project(':dingo-expr:dingo-expr-parser')
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
