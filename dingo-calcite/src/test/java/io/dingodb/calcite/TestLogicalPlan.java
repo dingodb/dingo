@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableModify;
@@ -144,6 +145,15 @@ public class TestLogicalPlan {
     }
 
     @Test
+    public void testDistinct() throws SqlParseException {
+        String sql = "select distinct name from test";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(DingoTableScan.class);
+    }
+
+    @Test
     public void testInsertValues() throws SqlParseException {
         String sql = "insert into test values(1, 'Alice', 1.0)";
         RelRoot relRoot = parse(sql);
@@ -244,5 +254,14 @@ public class TestLogicalPlan {
         Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+    }
+
+    @Test
+    public void testJoin() throws SqlParseException {
+        String sql = "select * from test join test1 on test.name = test1.id1";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE)
+            .inputNum(2);
     }
 }

@@ -21,6 +21,7 @@ import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
@@ -31,9 +32,9 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     @JsonProperty("part")
     protected final Object partId;
     @JsonProperty("schema")
-    protected TupleSchema schema;
+    protected final TupleSchema schema;
     @JsonProperty("keyMapping")
-    protected TupleMapping keyMapping;
+    protected final TupleMapping keyMapping;
 
     protected Part part;
 
@@ -47,6 +48,9 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
         this.partId = partId;
         this.schema = schema;
         this.keyMapping = keyMapping;
+        OutputHint hint = new OutputHint();
+        hint.setPartId(partId);
+        output.setHint(hint);
     }
 
     @Override

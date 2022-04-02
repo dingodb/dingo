@@ -44,6 +44,10 @@ public interface Output {
         return getOperator().getTask();
     }
 
+    default Id getTaskId() {
+        return getTask().getId();
+    }
+
     default Location getLocation() {
         return getTask().getLocation();
     }

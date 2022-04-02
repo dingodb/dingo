@@ -24,6 +24,7 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
     implementation project(":dingo-common")
+    implementation project(":dingo-cluster-api")
     implementation project(":dingo-meta-api")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-server:dingo-server-protocol")

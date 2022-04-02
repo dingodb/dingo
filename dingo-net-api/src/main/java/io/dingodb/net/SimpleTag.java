@@ -34,8 +34,8 @@ public class SimpleTag implements Tag {
     public static final Tag TASK_TAG = SimpleTag.builder()
         .tag("DINGO_TASK".getBytes(StandardCharsets.UTF_8))
         .build();
-    public static final Tag RCV_READY_TAG = SimpleTag.builder()
-        .tag("DINGO_RCV_READY".getBytes(StandardCharsets.UTF_8))
+    public static final Tag CTRL_TAG = SimpleTag.builder()
+        .tag("DINGO_CTRL".getBytes(StandardCharsets.UTF_8))
         .build();
 
     private byte[] tag;

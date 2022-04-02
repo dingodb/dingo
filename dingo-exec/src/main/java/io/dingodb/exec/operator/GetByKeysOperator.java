@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @JsonTypeName("get")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "selection"})
+@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "selection", "output"})
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
     @JsonProperty("keys")
     private final List<Object[]> keyTuples;

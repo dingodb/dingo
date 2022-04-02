@@ -46,9 +46,13 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"jobId", "location", "operators", "runList"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    @JsonProperty("id")
+    @Getter
+    private final Id id;
     @JsonProperty("jobId")
     @Getter
-    private final String jobId;
+    private final Id jobId;
     @JsonProperty("location")
     @Getter
     private final Location location;
@@ -61,13 +65,13 @@ public final class TaskImpl implements Task {
     @Getter
     private final List<Id> runList;
 
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
-
     @JsonCreator
     public TaskImpl(
-        @JsonProperty("jobId") String jobId,
+        @JsonProperty("id") Id id,
+        @JsonProperty("jobId") Id jobId,
         @JsonProperty("location") Location location
     ) {
+        this.id = id;
         this.jobId = jobId;
         this.location = location;
         this.operators = new HashMap<>();
@@ -116,7 +120,7 @@ public final class TaskImpl implements Task {
                     operator.fin(0, null);
                 } catch (RuntimeException e) {
                     e.printStackTrace();
-                    log.error("Operator:{} run catch Exception:{}", operator.getId(), e.toString(), e);
+                    log.error("Operator:{} run catch Exception:{}", operator.getId(), e);
                 }
             });
         });

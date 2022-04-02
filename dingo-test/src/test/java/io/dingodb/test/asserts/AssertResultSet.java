@@ -22,6 +22,7 @@ import io.dingodb.common.util.CsvUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +44,8 @@ public final class AssertResultSet {
         return new AssertResultSet(obj);
     }
 
-    public void isPlan(String... name) throws SQLException {
+    @SuppressWarnings("UnusedReturnValue")
+    public AssertResultSet isPlan(String... name) throws SQLException {
         assertThat(instance.getMetaData().getColumnCount()).isEqualTo(1);
         assertThat(instance.getMetaData().getColumnName(1)).isEqualTo("PLAN");
         int rowCount = 0;
@@ -58,55 +60,67 @@ public final class AssertResultSet {
             ++rowCount;
         }
         assertThat(rowCount).isEqualTo(1);
+        return this;
     }
 
-    public void isRecords(
-        @Nonnull String[] columnNames,
-        TupleSchema schema,
-        List<Object[]> target
-    ) throws SQLException {
-        int size = columnNames.length;
+    public AssertResultSet columnLabels(@Nonnull String[] labels) throws SQLException {
+        ResultSetMetaData metaData = instance.getMetaData();
+        for (int i = 0; i < labels.length; ++i) {
+            assertThat(metaData.getColumnLabel(i + 1)).isEqualToIgnoringCase(labels[i]);
+        }
+        assertThat(metaData.getColumnCount()).isEqualTo(labels.length);
+        return this;
+    }
+
+    public AssertResultSet isRecords(List<Object[]> target) throws SQLException {
+        ResultSetMetaData metaData = instance.getMetaData();
+        int size = metaData.getColumnCount();
         int count = 0;
         while (instance.next()) {
             Object[] row = new Object[size];
-            int i = 0;
-            for (String columnName : columnNames) {
-                row[i] = instance.getObject(columnName);
-                ++i;
+            for (int i = 0; i < size; ++i) {
+                row[i] = instance.getObject(i + 1);
             }
-            log.info("Get tuple {}.", schema.formatTuple(row));
-            assertThat(schema.convert(row)).isIn(target);
+            log.info("Get tuple {}.", row);
+            assertThat(row).isIn(target);
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
+        return this;
     }
 
-    public void isRecords(@Nonnull String[] columnNames, TupleSchema schema, String data) throws SQLException {
+    @SuppressWarnings("UnusedReturnValue")
+    public AssertResultSet isRecords(TupleSchema schema, String data) throws SQLException {
         try {
             List<Object[]> target = CsvUtils.readCsv(schema, data);
-            isRecords(columnNames, schema, target);
+            return isRecords(target);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
         }
     }
 
-    public void isRecordsInOrder(@Nonnull String[] columnNames, TupleSchema schema, String data) throws SQLException {
-        int size = columnNames.length;
+    public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
+        ResultSetMetaData metaData = instance.getMetaData();
+        int size = metaData.getColumnCount();
+        int count = 0;
+        while (instance.next()) {
+            Object[] row = new Object[size];
+            for (int i = 0; i < size; ++i) {
+                row[i] = instance.getObject(i + 1);
+            }
+            log.info("Get tuple {}.", row);
+            assertThat(row).isEqualTo(target.get(count));
+            ++count;
+        }
+        assertThat(count).isEqualTo(target.size());
+        return this;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public AssertResultSet isRecordsInOrder(TupleSchema schema, String data) throws SQLException {
         try {
             List<Object[]> target = CsvUtils.readCsv(schema, data);
-            int count = 0;
-            while (instance.next()) {
-                Object[] row = new Object[size];
-                int i = 0;
-                for (String columnName : columnNames) {
-                    row[i] = instance.getObject(columnName);
-                    ++i;
-                }
-                log.info("Get tuple {}.", schema.formatTuple(row));
-                //assertThat(schema.convert(row)).isEqualTo(target.get(count));
-                ++count;
-            }
-            assertThat(count).isEqualTo(target.size());
+            return isRecordsInOrder(target);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
         }

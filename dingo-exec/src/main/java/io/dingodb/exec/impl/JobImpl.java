@@ -23,14 +23,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.meta.Location;
 import lombok.Getter;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"tasks"})
@@ -39,17 +40,17 @@ public final class JobImpl implements Job {
     public static final Parser PARSER = Parser.JSON;
 
     @JsonProperty("jobId")
-    private final String jobId;
+    private final Id jobId;
     @JsonProperty("tasks")
     @JsonSerialize(contentAs = TaskImpl.class)
     @JsonDeserialize(contentAs = TaskImpl.class)
     @Getter
-    private final List<Task> tasks;
+    private final Map<Id, Task> tasks;
 
     @JsonCreator
-    public JobImpl(@JsonProperty("jobId") String jobId) {
+    public JobImpl(@JsonProperty("jobId") Id jobId) {
         this.jobId = jobId;
-        this.tasks = new LinkedList<>();
+        this.tasks = new HashMap<>();
     }
 
     public static JobImpl fromString(String str) throws JsonProcessingException {
@@ -58,14 +59,12 @@ public final class JobImpl implements Job {
 
     @Nonnull
     @Override
-    public Task getOrCreate(Location location) {
-        for (Task task : tasks) {
-            if (task.getLocation().equals(location)) {
-                return task;
-            }
+    public Task create(Id id, Location location) {
+        if (tasks.containsKey(id)) {
+            throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(jobId, location);
-        tasks.add(task);
+        Task task = new TaskImpl(id, jobId, location);
+        tasks.put(id, task);
         return task;
     }
 

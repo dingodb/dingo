@@ -31,6 +31,7 @@ import org.apache.calcite.util.NlsString;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import javax.annotation.Nonnull;
 
@@ -93,6 +94,22 @@ public class ElementSchema implements CompileContext {
                 return Double.parseDouble(str);
             case TypeCode.BOOLEAN:
                 return Boolean.parseBoolean(str);
+            case TypeCode.DATE:
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    return sdf.parse(str);
+                } catch (ParseException e) {
+                    throw new RuntimeException("Failed to parse \"" + str + "\" to date.");
+                }
+            case TypeCode.TIME:
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                    return sdf.parse(str);
+                } catch (ParseException e) {
+                    throw new RuntimeException("Failed to parse \"" + str + "\" to time.");
+                }
+            case TypeCode.TIMESTAMP:
+                return Timestamp.valueOf(str);
             case TypeCode.STRING:
             default:
                 break;
@@ -124,17 +141,17 @@ public class ElementSchema implements CompileContext {
                 break;
             case TypeCode.DATE:
                 if (origin instanceof Date) {
-                    return new SimpleDateFormat("yyyy-MM-dd").format((Date)origin).toString();
+                    return new SimpleDateFormat("yyyy-MM-dd").format((Date) origin).toString();
                 }
                 break;
             case TypeCode.TIME:
                 if (origin instanceof Time) {
-                    return ((Time)origin).toString();
+                    return ((Time) origin).toString();
                 }
                 break;
             case TypeCode.TIMESTAMP:
                 if (origin instanceof Timestamp) {
-                    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( ((Timestamp)origin)).toString();
+                    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(((Timestamp) origin)).toString();
                 }
                 break;
             default:

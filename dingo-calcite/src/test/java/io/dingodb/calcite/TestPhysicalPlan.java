@@ -23,7 +23,9 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -32,12 +34,6 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.EnumerableRoot;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.op.FunFactory;
-import io.dingodb.expr.parser.op.Op;
-import io.dingodb.expr.parser.parser.DingoExprCompiler;
-import io.dingodb.expr.runtime.CompileContext;
-import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptNode;
@@ -91,7 +87,7 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         DingoPartScan scan = (DingoPartScan) r;
@@ -106,7 +102,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         DingoPartScan scan = (DingoPartScan) r;
@@ -121,7 +117,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         DingoPartScan scan = (DingoPartScan) r;
@@ -136,7 +132,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         DingoPartScan scan = (DingoPartScan) r;
@@ -151,7 +147,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         assertThat((((DingoGetByKeys) r).getKeyTuples()))
@@ -165,7 +161,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         assertThat((((DingoGetByKeys) r).getKeyTuples()))
@@ -179,7 +175,7 @@ public class TestPhysicalPlan {
         RelOptNode r = Assert.relNode(relNode)
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
         assertThat((((DingoGetByKeys) r).getKeyTuples()))
@@ -197,7 +193,8 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
@@ -208,7 +205,8 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
@@ -221,7 +219,8 @@ public class TestPhysicalPlan {
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
@@ -232,7 +231,7 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED);
     }
@@ -243,7 +242,7 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED);
@@ -257,7 +256,7 @@ public class TestPhysicalPlan {
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE).singleInput();
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
         DingoSort dingoSort = (DingoSort) assertSort.getInstance();
         List<RelFieldCollation> collations = dingoSort.getCollation().getFieldCollations();
@@ -282,7 +281,7 @@ public class TestPhysicalPlan {
             .singleInput();
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
         DingoSort dingoSort = (DingoSort) assertSort.getInstance();
         List<RelFieldCollation> collations = dingoSort.getCollation().getFieldCollations();
@@ -302,7 +301,7 @@ public class TestPhysicalPlan {
             .singleInput();
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
         DingoSort dingoSort = (DingoSort) assertSort.getInstance();
         List<RelFieldCollation> collations = dingoSort.getCollation().getFieldCollations();
@@ -323,7 +322,8 @@ public class TestPhysicalPlan {
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
         assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
@@ -339,7 +339,8 @@ public class TestPhysicalPlan {
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
         assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
@@ -355,7 +356,8 @@ public class TestPhysicalPlan {
             .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
         assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
@@ -369,7 +371,7 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED);
     }
@@ -380,7 +382,7 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchange.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoExchange.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartition.class).convention(DingoConventions.DISTRIBUTED)
@@ -388,4 +390,15 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
+    @Test
+    public void testJoin() throws SqlParseException {
+        String sql = "select * from test join test1 on test.name = test1.id1";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
+            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)
+            .inputNum(2);
+    }
 }

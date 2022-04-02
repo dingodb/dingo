@@ -22,8 +22,10 @@ import lombok.EqualsAndHashCode;
 
 import javax.annotation.Nonnull;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(of = {"value"})
 public final class Id implements Comparable<Id> {
+    public static Id NULL = new Id("");
+
     @JsonValue
     private final String value;
 

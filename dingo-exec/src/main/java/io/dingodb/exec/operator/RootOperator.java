@@ -44,6 +44,7 @@ public final class RootOperator extends SinkOperator {
     public RootOperator(
         @JsonProperty("schema") TupleSchema schema
     ) {
+        super();
         this.schema = schema;
     }
 
