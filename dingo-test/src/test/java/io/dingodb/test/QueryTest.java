@@ -62,7 +62,6 @@ public class QueryTest {
             new String[]{"id", "name", "amount"},
             TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
             "5, Emily, 5.5"
-
         );
         sqlHelper.clearTable("test2");
     }

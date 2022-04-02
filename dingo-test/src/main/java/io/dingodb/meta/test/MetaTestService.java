@@ -18,7 +18,6 @@ package io.dingodb.meta.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TableId;
 import io.dingodb.exec.Services;
