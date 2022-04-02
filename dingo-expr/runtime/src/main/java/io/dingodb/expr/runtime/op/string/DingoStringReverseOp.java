@@ -35,7 +35,7 @@ public class DingoStringReverseOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String inputStr = ((String) values[0]).trim();
+        String inputStr = ((String) values[0]);
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
