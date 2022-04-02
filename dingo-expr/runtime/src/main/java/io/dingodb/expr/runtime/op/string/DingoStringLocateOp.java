@@ -37,10 +37,16 @@ public class DingoStringLocateOp extends RtStringConversionOp {
     protected Object fun(@Nonnull Object[] values) {
         String subString = (String) (values[0]);
         String inputStr = (String) (values[1]);
-        if (inputStr == null || inputStr.equals("")) {
-            return 0;
-        } else {
-            return new Long(inputStr.indexOf(subString) + 1);
+
+        if (subString.equals("")) {
+            return Long.valueOf(1);
         }
+
+        if (inputStr == null || inputStr.equals("")) {
+            return Long.valueOf(0);
+        }
+
+        return new Long(inputStr.indexOf(subString) + 1);
+
     }
 }

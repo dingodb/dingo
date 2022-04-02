@@ -605,7 +605,7 @@ public class TestRexConverter {
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
             System.out.println(rtExpr.eval(null));
-            Assert.assrt((Integer) (rtExpr.eval(null)) == 2);
+            Assert.assrt(Long.valueOf(rtExpr.eval(null).toString()) == 3);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -624,7 +624,45 @@ public class TestRexConverter {
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
             System.out.println(rtExpr.eval(null));
-            Assert.assrt((Integer) (rtExpr.eval(null)) == 2);
+            Assert.assrt(Long.valueOf(rtExpr.eval(null).toString()) == 3);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testStringLocate02() {
+        String sql = "select locate('', '')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(rtExpr.eval(null));
+            Assert.assrt(Long.valueOf(rtExpr.eval(null).toString()) == 1);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testStringLocate03() {
+        String sql = "select locate('abc', '')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            System.out.println(rtExpr.eval(null));
+            Assert.assrt(Long.valueOf(rtExpr.eval(null).toString()) == 0);
         } catch (Exception ex) {
             ex.printStackTrace();
         }

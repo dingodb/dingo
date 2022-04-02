@@ -49,7 +49,7 @@ fragment
 HEX             : [0-9a-fA-F] ;
 
 fragment
-NUM             : '0' | [1-9] [0-9]* ;
+NUM             : '0' | [0-9] [0-9]* ;
 
 fragment
 EXP             : [Ee] [+\-]? NUM ;

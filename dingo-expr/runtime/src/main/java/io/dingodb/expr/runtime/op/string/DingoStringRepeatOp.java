@@ -37,7 +37,7 @@ public class DingoStringRepeatOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String inputStr = ((String)values[0]).trim();
+        String inputStr = ((String)values[0]);
         int times = new BigDecimal(String.valueOf(values[1])).setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
         if (times < 0) {
