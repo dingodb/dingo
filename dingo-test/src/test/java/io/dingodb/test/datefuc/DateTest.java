@@ -22,7 +22,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
-import io.dingodb.test.asserts.AssertResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,7 +32,6 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
