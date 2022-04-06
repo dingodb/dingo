@@ -24,6 +24,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @JsonTypeName("get")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "selection", "output"})
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
@@ -67,15 +69,11 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
                 break;
             }
         } else if (keyTuples.size() != 0) {
-            if (keyTuples.size() < 3) {
-                iterator = keyTuples.stream()
-                    .map(part::getByKey)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList())
-                    .iterator();
-            } else {
-                iterator = part.getByMultiKey(keyTuples).iterator();
-            }
+            iterator = keyTuples.stream()
+                .map(part::getByKey)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                .iterator();
         }
         if (iterator != null) {
             if (selection != null) {
