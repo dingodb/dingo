@@ -180,12 +180,24 @@ public class DingoMeta extends MetaImpl {
                      Object valueBeforeCvt = inputs.get(x);
                      Object valueAfterCvt = inputs.get(x);
                      switch (columns.get(x).columnClassName.toLowerCase()) {
-                         case "java.sql.date": {
-                             Long timeStamp = (Long) inputs.get(x);
-                             Long epochDay = timeStamp / (24 * 60 * 60 * 1000);
-                             // Long epochDay02 = new Timestamp(timeStamp).toLocalDateTime().toLocalDate().toEpochDay();
-                             valueAfterCvt = epochDay;
-                             inputs.set(x, epochDay);
+                         case "java.sql.date":
+                         case "java.sql.time":
+                         case "java.sql.timestamp": {
+                             Long timeStamp = 0L;
+                             try {
+                                 timeStamp = (Long) inputs.get(x);
+                             } catch (Exception e) {
+                                 if (e instanceof ClassCastException) {
+                                     timeStamp = ((java.util.Date) inputs.get(x)).getTime();
+                                 }
+                             }
+                             Long epochTime = 0L;
+                             if (columns.get(x).columnClassName.toLowerCase().contains("date")) {
+                                 epochTime = timeStamp / (24 * 60 * 60 * 1000);
+                             } else {
+                                 epochTime = timeStamp;
+                             }
+                             inputs.set(x, epochTime);
                              break;
                          }
                          case "java.lang.integer": {
