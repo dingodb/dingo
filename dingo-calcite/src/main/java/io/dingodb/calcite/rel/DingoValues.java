@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.util.Datum;
 import org.apache.calcite.plan.RelOptCluster;
@@ -70,15 +71,41 @@ public class DingoValues extends Values implements DingoRel {
 
     public List<Object[]> getValues() {
         return tuples.stream()
-            .map(t -> t.stream()
-                .map(Datum::convertCalcite)
-                .toArray(Object[]::new)
-            )
-            .collect(Collectors.toList());
+            .map(row -> IntStream.rangeClosed(0, row.size() - 1)
+                    .mapToObj(x -> {
+                        Object result = Datum.convertCalcite(row.get(x));
+                        if (result == null) {
+                            result = replaceColumnByDefaultValue(x);
+                        }
+                        return result;
+                    }).toArray(Object[]::new)
+            ).collect(Collectors.toList());
     }
 
     @Override
     public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    private Object replaceColumnByDefaultValue(int index) {
+        final DingoTable xTable = this.getTable().unwrap(DingoTable.class);
+        Object result = null;
+        if (xTable.getTableDefinition().getColumn(index).getDefaultValue() != null) {
+            result = xTable.getTableDefinition().getColumn(index).getDefaultValue();
+        } else {
+            switch (xTable.getTableDefinition().getColumn(index).getType().getName()) {
+                case "INTEGER":
+                case "LONG":
+                case "DECIMAL":
+                case "DOUBLE": {
+                    result = 0;
+                    break;
+                }
+                default: {
+                    result = "";
+                }
+            }
+        }
+        return result;
     }
 }

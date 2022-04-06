@@ -93,9 +93,11 @@ public class ColumnDefinition {
         @JsonProperty("default") Object defaultValue
     ) {
         SqlTypeName type = SqlTypeName.get(typeName.toUpperCase());
+        /*
         if (defaultValue != null) {
             notNull = true;
         }
+         */
         if (type != null) {
             return builder()
                 .name(name)
@@ -121,15 +123,15 @@ public class ColumnDefinition {
     }
 
     public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
+        RelDataType result = typeFactory.createSqlType(type);
         if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
             if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
-                return typeFactory.createSqlType(type, precision, scale);
+                result = typeFactory.createSqlType(type, precision, scale);
             } else {
-                return typeFactory.createSqlType(type, precision);
+                result = typeFactory.createSqlType(type, precision);
             }
-        } else {
-            return typeFactory.createSqlType(type);
         }
+        return typeFactory.createTypeWithNullability(result, !this.notNull);
     }
 
     public int getTypeCode() {

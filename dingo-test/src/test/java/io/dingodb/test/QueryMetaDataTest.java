@@ -121,8 +121,8 @@ public class QueryMetaDataTest {
                 },
                 new Object[]{
                     null, "TEST", "TEST", "AMOUNT", 8,
-                    "DOUBLE NOT NULL", -1, null, 10, 0,
-                    -1, 3, "NO", "", ""
+                    "DOUBLE", -1, null, 10, 1,
+                    -1, 3, "YES", "", ""
                 }
             ));
     }

@@ -51,7 +51,7 @@ public class TestDingoParser {
         SqlNode sqlNode = parse("select id, name, amount from test");
         RelDataType type = parser.getValidatedNodeType(sqlNode);
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
-        assertThat(type).isEqualTo(
+        assertThat(type.toString()).isEqualTo(
             typeFactory.createStructType(
                 ImmutableList.of(
                     typeFactory.createSqlType(SqlTypeName.INTEGER),
@@ -63,7 +63,7 @@ public class TestDingoParser {
                     "NAME",
                     "AMOUNT"
                 )
-            )
+            ).toString()
         );
     }
 
