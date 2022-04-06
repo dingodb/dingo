@@ -129,6 +129,9 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                     case DECIMAL:
                         op = FunFactory.INS.getFun("decimal");
                         break;
+                    case BOOLEAN:
+                        op = FunFactory.INS.getFun("boolean");
+                        break;
                     default:
                         throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
                 }
