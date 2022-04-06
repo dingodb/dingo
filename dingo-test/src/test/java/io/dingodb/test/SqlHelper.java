@@ -124,6 +124,16 @@ public class SqlHelper {
         return result;
     }
 
+    public int execSqlCmd(@Nonnull String sqlCmd) throws IOException, SQLException {
+        int result = -1;
+        try (Statement statement = connection.createStatement()) {
+            if (!sqlCmd.trim().isEmpty()) {
+                result = statement.executeUpdate(sqlCmd);
+            }
+        }
+        return result;
+    }
+
     public void clearTable(String tableName) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("delete from " + tableName);

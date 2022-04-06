@@ -34,6 +34,10 @@ public final class Datum {
         RelDataType type = literal.getType();
         Object retValue  = literal.getValue();
 
+        if (retValue == null) {
+            return null;
+        }
+
         switch (type.getSqlTypeName().getName()) {
             case "INTEGER":
             case "LONG": {
@@ -42,7 +46,7 @@ public final class Datum {
             }
             case "DECIMAL":
             case "DOUBLE": {
-                int result = ((BigDecimal)(literal.getValue())).compareTo(BigDecimal.valueOf(1000));
+                int result = ((BigDecimal) (literal.getValue())).compareTo(BigDecimal.valueOf(1000));
                 if (result < 0) {
                     retValue = Double.valueOf(literal.getValue().toString());
                 } else {
