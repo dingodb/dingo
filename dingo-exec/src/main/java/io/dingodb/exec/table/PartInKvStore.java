@@ -133,6 +133,12 @@ public final class PartInKvStore implements Part {
         List<Object[]> tuples = new ArrayList<>(keyList.size());
         try {
             List<byte[]> valueList = block.multiGet(keyList);
+            if (keyList.size() != valueList.size()) {
+                log.error("Get KeyValues from Store => keyCnt:{} mismatch valueCnt:{}",
+                    keyList.size(),
+                    valueList.size()
+                );
+            }
             ListIterator<Object[]> keyIt = keyTuples.listIterator();
             for (byte[] value : valueList) {
                 if (value == null) {
@@ -142,6 +148,7 @@ public final class PartInKvStore implements Part {
                 tuples.add(codec.mapKeyAndDecodeValue(keyIt.next(), value));
             }
         } catch (IOException e) {
+            log.error("Get KeyValues from Store => Catch Exception:{} when read data", e.getMessage(), e);
             e.printStackTrace();
         }
         return tuples;
