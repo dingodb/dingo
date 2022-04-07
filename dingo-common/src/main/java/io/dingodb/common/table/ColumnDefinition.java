@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import javax.annotation.Nonnull;
@@ -93,11 +94,6 @@ public class ColumnDefinition {
         @JsonProperty("default") Object defaultValue
     ) {
         SqlTypeName type = SqlTypeName.get(typeName.toUpperCase());
-        /*
-        if (defaultValue != null) {
-            notNull = true;
-        }
-         */
         if (type != null) {
             return builder()
                 .name(name)
@@ -139,6 +135,16 @@ public class ColumnDefinition {
     }
 
     public ElementSchema getElementType() {
-        return new ElementSchema(getTypeCode());
+        return new ElementSchema(getTypeCode(), !notNull);
+    }
+
+    public ColumnStrategy getColumnStrategy() {
+        if (defaultValue != null) {
+            return ColumnStrategy.DEFAULT;
+        } else if (notNull) {
+            return ColumnStrategy.NOT_NULLABLE;
+        } else {
+            return ColumnStrategy.NULLABLE;
+        }
     }
 }

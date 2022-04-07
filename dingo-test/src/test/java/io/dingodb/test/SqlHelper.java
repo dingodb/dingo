@@ -124,6 +124,7 @@ public class SqlHelper {
         return result;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public int execSqlCmd(@Nonnull String sqlCmd) throws IOException, SQLException {
         int result = -1;
         try (Statement statement = connection.createStatement()) {

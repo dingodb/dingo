@@ -157,11 +157,11 @@ public class TestLogicalPlan {
     public void testInsertValues() throws SqlParseException {
         String sql = "insert into test values(1, 'Alice', 1.0)";
         RelRoot relRoot = parse(sql);
-        LogicalValues values = (LogicalValues)
-            Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
-                .prop("operation", TableModify.Operation.INSERT)
-                .singleInput().isA(LogicalValues.class).convention(Convention.NONE)
-                .getInstance();
+        LogicalValues values = (LogicalValues) Assert.relNode(relRoot.rel)
+            .isA(LogicalTableModify.class).convention(Convention.NONE)
+            .prop("operation", TableModify.Operation.INSERT)
+            .singleInput().isA(LogicalValues.class).convention(Convention.NONE)
+            .getInstance();
         List<? extends List<RexLiteral>> tuples = values.getTuples();
         assertThat(tuples).size().isEqualTo(1);
         List<RexLiteral> tuple = tuples.get(0);
@@ -263,5 +263,14 @@ public class TestLogicalPlan {
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalJoin.class).convention(Convention.NONE)
             .inputNum(2);
+    }
+
+    @Test
+    public void testDefaultValue() throws Exception {
+        String sql = "insert into test(id) values (1)";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalValues.class).convention(Convention.NONE);
     }
 }

@@ -41,7 +41,8 @@ public class TestTableDefinition {
         Schema schema = tableDefinition.getAvroSchemaOfKey();
         assertThat(schema.getFullName()).isEqualTo(TupleSchema.class.getCanonicalName());
         assertThat(schema.getFields().get(0).name()).isEqualTo("_0");
-        assertThat(schema.getFields().get(0).schema().getType()).isEqualTo(Schema.Type.INT);
+        Schema colSchema = schema.getFields().get(0).schema();
+        assertThat(colSchema.getType()).isEqualTo(Schema.Type.INT);
     }
 
     @Test
@@ -49,10 +50,15 @@ public class TestTableDefinition {
         Schema schema = tableDefinition.getAvroSchemaOfValue();
         assertThat(schema.getFullName()).isEqualTo(TupleSchema.class.getCanonicalName());
         assertThat(schema.getFields().get(0).name()).isEqualTo("_0");
-        assertThat(schema.getFields().get(0).schema().getType()).isEqualTo(Schema.Type.STRING);
+        Schema colSchema = schema.getFields().get(0).schema();
+        assertThat(colSchema.getType()).isEqualTo(Schema.Type.STRING);
         assertThat(schema.getFields().get(0).defaultVal()).isNull();
         assertThat(schema.getFields().get(1).name()).isEqualTo("_1");
-        assertThat(schema.getFields().get(1).schema().getType()).isEqualTo(Schema.Type.DOUBLE);
+        colSchema = schema.getFields().get(1).schema();
+        assertThat(colSchema.getType()).isEqualTo(Schema.Type.UNION);
+        assertThat(colSchema.getTypes())
+            .map(Schema::getType)
+            .containsExactly(Schema.Type.DOUBLE, Schema.Type.NULL);
         assertThat(schema.getFields().get(1).defaultVal()).isNull();
     }
 

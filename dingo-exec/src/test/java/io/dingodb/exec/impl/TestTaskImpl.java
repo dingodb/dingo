@@ -36,7 +36,8 @@ public class TestTaskImpl {
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
-            )
+            ),
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE")
         );
         values.setId(new Id("0"));
         task.putOperator(values);
