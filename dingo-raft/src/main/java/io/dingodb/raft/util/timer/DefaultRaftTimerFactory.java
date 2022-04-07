@@ -38,6 +38,7 @@ public class DefaultRaftTimerFactory implements RaftTimerFactory {
     private static final String GLOBAL_STEP_DOWN_TIMER_WORKERS = "jraft.timer.global_step_down_timer_workers";
     private static final String GLOBAL_SNAPSHOT_TIMER_WORKERS = "jraft.timer.global_snapshot_timer_workers";
     private static final String GLOBAL_SCHEDULER_WORKERS = "jraft.timer.global_scheduler_workers";
+    private static final String GLOBAL_UNFREEZING_SNAPSHOT_TIMER_WORKERS = "jraft.timer.global_unfreezing_snapshot_timer_workers";
 
     private static final TimerSharedRef ELECTION_TIMER_REF = new TimerSharedRef(
                                                                                SystemPropertyUtil.getInt(
@@ -65,6 +66,11 @@ public class DefaultRaftTimerFactory implements RaftTimerFactory {
                                                                                    Utils.cpus() * 3 > 20 ? 20 : Utils
                                                                                        .cpus() * 3),
                                                                                "JRaft-Node-ScheduleThreadPool");
+    private static final TimerSharedRef UNFREEZING_SNAPSHOT_TIMER_REF = new TimerSharedRef(
+                                                                                SystemPropertyUtil.getInt(
+                                                                                    GLOBAL_UNFREEZING_SNAPSHOT_TIMER_WORKERS,
+                                                                                    Utils.cpus()),
+                                                                                "JRaft-Global-UnfreezingSnapshotTimer");
 
     @Override
     public Timer getElectionTimer(final boolean shared, final String name) {
@@ -84,6 +90,11 @@ public class DefaultRaftTimerFactory implements RaftTimerFactory {
     @Override
     public Timer getSnapshotTimer(final boolean shared, final String name) {
         return shared ? SNAPSHOT_TIMER_REF.getRef() : createTimer(name);
+    }
+
+    @Override
+    public Timer getUnfreezingSnapshotTimer(final boolean shared, final String name) {
+        return shared ? UNFREEZING_SNAPSHOT_TIMER_REF.getRef() : createTimer(name);
     }
 
     @Override

@@ -37,7 +37,7 @@ public final class Constants {
     public static final boolean THREAD_AFFINITY_ENABLED
         = SystemPropertyUtil.getBoolean("dingo.thread.affinity.enabled", false);
 
-    public static final String DEFAULT_REGION_ID = "0"; // zhangjie
+    public static final String DEFAULT_REGION_ID = "0";
 
     private Constants() {
     }

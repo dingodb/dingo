@@ -16,6 +16,7 @@ dependencies {
     testImplementation group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: 'jmh'.v()
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: 'junit'.v()
     testRuntimeOnly group:'org.junit.jupiter', name: 'junit-jupiter-engine', version: 'junit'.v()
+    implementation project(":dingo-net-api")
 }
 
 test {

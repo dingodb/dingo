@@ -54,4 +54,5 @@ public class StoreDBOptions {
     private boolean openStatisticsCollector           = true;
     private long    statisticsCallbackIntervalSeconds = 0;
     private String  dataPath;
+    private int     countInGroup                      = 10000;
 }

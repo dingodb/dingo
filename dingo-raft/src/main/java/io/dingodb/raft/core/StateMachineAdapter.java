@@ -22,6 +22,7 @@ import io.dingodb.raft.Status;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.LeaderChangeContext;
 import io.dingodb.raft.error.RaftException;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import org.slf4j.Logger;
@@ -38,6 +39,12 @@ public abstract class StateMachineAdapter implements StateMachine {
 
     @Override
     public void onSnapshotSave(final SnapshotWriter writer, final Closure done) {
+        error("onSnapshotSave");
+        runClosure(done, "onSnapshotSave");
+    }
+
+    @Override
+    public void onSnapshotSave(final SnapshotWriter writer, final Closure done, ReportTarget reportTarget) {
         error("onSnapshotSave");
         runClosure(done, "onSnapshotSave");
     }
@@ -78,6 +85,19 @@ public abstract class StateMachineAdapter implements StateMachine {
     @Override
     public void onStartFollowing(final LeaderChangeContext ctx) {
         LOG.info("onStartFollowing: {}.", ctx);
+    }
+
+    @Override
+    public void onReportFreezeSnapshotResult(final boolean freezeResult, final String errMsg,
+                                             ReportTarget reportTarget) {
+        LOG.info("StateMachineAdapter onReportFreezeSnapshotResult, freezeResult: {}, errMsg: {}" +
+                ", reportTarget: {}.", freezeResult, errMsg, reportTarget);
+    }
+
+    @Override
+    public String getRegionId() {
+        LOG.info("StateMachineAdapter getRegionId.");
+        return  "";
     }
 
     @SuppressWarnings("SameParameterValue")
