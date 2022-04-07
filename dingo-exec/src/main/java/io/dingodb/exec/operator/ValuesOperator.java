@@ -20,9 +20,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.table.TupleSchema;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @JsonTypeName("values")
 @JsonPropertyOrder({"tuples", "output"})
@@ -30,13 +32,21 @@ public final class ValuesOperator extends IteratorSourceOperator {
     @JsonProperty("tuples")
     @Getter
     private final List<Object[]> tuples;
+    @JsonProperty("schema")
+    @Getter
+    private final TupleSchema schema;
 
     @JsonCreator
     public ValuesOperator(
-        @JsonProperty("tuples") List<Object[]> tuples
+        @JsonProperty("tuples") List<Object[]> tuples,
+        @JsonProperty("schema") TupleSchema schema
     ) {
         super();
-        this.tuples = tuples;
+        // Convert to recover the real type lost in JSON serialization/deserialization.
+        this.tuples = tuples.stream()
+            .map(schema::convert)
+            .collect(Collectors.toList());
+        this.schema = schema;
     }
 
     @Override

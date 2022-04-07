@@ -42,7 +42,7 @@ public abstract class FanOutOperator extends AbstractOperator {
     }
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         for (Output output : outputs) {
             output.fin(fin);
         }

@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor;
 
-import io.dingodb.common.util.Datum;
+import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.op.FunFactory;
@@ -184,7 +184,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Nonnull
     @Override
     public Expr visitLiteral(@Nonnull RexLiteral literal) {
-        return Value.of(Datum.convertCalcite(literal));
+        return Value.of(DingoValues.getValueOf(literal));
     }
 
     @Nonnull

@@ -38,7 +38,6 @@ public class BasicTypeWithTimeStampTest {
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create-with-timestamp.sql");
-        sqlHelper.execFile("/table-test-data-with-timestamp.sql");
     }
 
     @AfterAll
@@ -48,6 +47,7 @@ public class BasicTypeWithTimeStampTest {
 
     @BeforeEach
     public void setup() throws Exception {
+        sqlHelper.execFile("/table-test-data-with-timestamp.sql");
     }
 
     @AfterEach

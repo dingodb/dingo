@@ -47,7 +47,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -181,9 +180,9 @@ public class TestDingoJobVisitor {
             .getInstance();
         List<Object[]> tuples = operator.getTuples();
         assertThat(tuples).element(0).satisfies(obj -> {
-            assertThat(obj[0]).isEqualTo(Long.valueOf(1));
+            assertThat(obj[0]).isEqualTo(1);
             assertThat(obj[1]).isEqualTo("Alice");
-            assertThat(obj[2]).isEqualTo(Double.valueOf(1));
+            assertThat(obj[2]).isEqualTo(1.0);
         });
     }
 

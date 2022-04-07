@@ -74,13 +74,13 @@ public class SortOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(int pin, Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         cache.add(tuple);
         return collations.size() > 0 || limit <= 0 || cache.size() < offset + limit;
     }
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         if (comparator != null) {
             cache.sort(comparator);
         }

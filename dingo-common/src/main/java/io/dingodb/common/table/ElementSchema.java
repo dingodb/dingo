@@ -22,40 +22,53 @@ import io.dingodb.common.util.TypeMapping;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import javax.annotation.Nonnull;
 
-@RequiredArgsConstructor
 public class ElementSchema implements CompileContext {
+    private static final String NULL = "NULL";
+
     private final int type;
+    private final boolean nullable;
     @Getter
     @Setter
     private Integer id;
 
+    public ElementSchema(int type, boolean nullable) {
+        this.type = type;
+        this.nullable = nullable;
+    }
+
+    public ElementSchema(int type) {
+        this(type, false);
+    }
+
     @Nonnull
     @JsonCreator
-    public static ElementSchema fromString(String value) {
-        return new ElementSchema(TypeCode.codeOf(value));
+    public static ElementSchema fromString(@Nonnull String value) {
+        String[] v = value.split("\\|", 2);
+        return new ElementSchema(TypeCode.codeOf(v[0]), v.length > 1 && v[1].equals(NULL));
     }
 
     @Nonnull
     public static ElementSchema fromRelDataType(@Nonnull RelDataType relDataType) {
-        return new ElementSchema(TypeMapping.formSqlTypeName(relDataType.getSqlTypeName()));
+        return new ElementSchema(
+            TypeMapping.formSqlTypeName(relDataType.getSqlTypeName()),
+            relDataType.isNullable()
+        );
     }
 
     @Nonnull
     public static ElementSchema copy(@Nonnull ElementSchema obj) {
-        return new ElementSchema(obj.getTypeCode());
+        return new ElementSchema(obj.type, obj.nullable);
     }
 
     @Override
@@ -71,12 +84,19 @@ public class ElementSchema implements CompileContext {
     @JsonValue
     @Override
     public String toString() {
-        return TypeCode.nameOf(type);
+        String name = TypeCode.nameOf(type);
+        return nullable ? name + "|" + NULL : name;
     }
 
     @Nonnull
     private Schema getAvroSchema() {
-        return Schema.create(TypeMapping.toAvroSchemaType(type));
+        Schema.Type t = TypeMapping.toAvroSchemaType(type);
+        if (nullable) {
+            // Allow avro to encode `null`.
+            return Schema.createUnion(Schema.create(t), Schema.create(Schema.Type.NULL));
+        } else {
+            return Schema.create(t);
+        }
     }
 
     public Schema.Field getAvroSchemaField(String name) {
@@ -129,6 +149,15 @@ public class ElementSchema implements CompileContext {
                     return ((Number) origin).longValue();
                 }
                 break;
+            case TypeCode.DATE:
+            case TypeCode.TIME:
+            case TypeCode.TIMESTAMP:
+                if (origin instanceof Number) { // from serialized milliseconds
+                    return ((Number) origin).longValue();
+                } else if (origin instanceof Calendar) { // from RexLiteral
+                    return ((Calendar) origin).getTimeInMillis();
+                }
+                break;
             case TypeCode.DOUBLE:
                 if (origin instanceof Number) {
                     return ((Number) origin).doubleValue();
@@ -137,21 +166,6 @@ public class ElementSchema implements CompileContext {
             case TypeCode.STRING:
                 if (origin instanceof NlsString) {
                     return ((NlsString) origin).getValue();
-                }
-                break;
-            case TypeCode.DATE:
-                if (origin instanceof Date) {
-                    return new SimpleDateFormat("yyyy-MM-dd").format((Date) origin).toString();
-                }
-                break;
-            case TypeCode.TIME:
-                if (origin instanceof Time) {
-                    return ((Time) origin).toString();
-                }
-                break;
-            case TypeCode.TIMESTAMP:
-                if (origin instanceof Timestamp) {
-                    return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(((Timestamp) origin)).toString();
                 }
                 break;
             default:

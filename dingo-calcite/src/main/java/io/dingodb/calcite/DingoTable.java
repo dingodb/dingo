@@ -30,6 +30,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.annotation.Nonnull;
 
@@ -71,5 +72,13 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             // Only the primary keys are unique keys.
             ImmutableList.of(ImmutableBitSet.of(tableDefinition.getKeyMapping().getMappings()))
         );
+    }
+
+    @Override
+    public <C> @Nullable C unwrap(@Nonnull Class<C> clazz) {
+        if (clazz.isInstance(DingoInitializerExpressionFactory.INSTANCE)) {
+            return clazz.cast(DingoInitializerExpressionFactory.INSTANCE);
+        }
+        return super.unwrap(clazz);
     }
 }

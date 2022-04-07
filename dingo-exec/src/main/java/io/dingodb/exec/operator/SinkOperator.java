@@ -37,7 +37,7 @@ public abstract class SinkOperator extends AbstractOperator {
     protected abstract void fin(Fin fin);
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         fin(fin);
     }
 

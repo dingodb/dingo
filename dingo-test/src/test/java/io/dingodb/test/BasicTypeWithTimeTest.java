@@ -39,7 +39,6 @@ public class BasicTypeWithTimeTest {
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create-with-time.sql");
-        sqlHelper.execFile("/table-test-data-with-time.sql");
     }
 
     @AfterAll
@@ -57,6 +56,7 @@ public class BasicTypeWithTimeTest {
 
     @Test
     public void testScan() throws SQLException, IOException {
+        sqlHelper.execFile("/table-test-data-with-time.sql");
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
             TupleSchema.ofTypes("INTEGER", "STRING", "TIME"),

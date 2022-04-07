@@ -28,6 +28,7 @@ import lombok.Setter;
 import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.schema.ColumnStrategy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -179,6 +180,10 @@ public class TableDefinition {
                 .map(ColumnDefinition::getElementType)
                 .toArray(ElementSchema[]::new)
         );
+    }
+
+    public ColumnStrategy getColumnStrategy(int index) {
+        return columns.get(index).getColumnStrategy();
     }
 
     public String toJson() throws JsonProcessingException {
