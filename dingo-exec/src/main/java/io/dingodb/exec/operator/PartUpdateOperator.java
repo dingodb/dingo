@@ -66,11 +66,17 @@ public final class PartUpdateOperator extends PartModifyOperator {
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         TupleEvalContext etx = new TupleEvalContext(Arrays.copyOf(tuple, tuple.length));
         try {
+            boolean update = false;
             for (int i = 0; i < mapping.size(); ++i) {
-                tuple[mapping.get(i)] = exprs[i].eval(etx);
+                if (!tuple[mapping.get(i)].equals(exprs[i].eval(etx))) {
+                    tuple[mapping.get(i)] = exprs[i].eval(etx);
+                    update = true;
+                }
             }
-            part.upsert(tuple);
-            count++;
+            if (update) {
+                part.upsert(tuple);
+                count++;
+            }
         } catch (FailGetEvaluator e) {
             e.printStackTrace();
         }
