@@ -17,6 +17,7 @@
 package io.dingodb.store.row.storage;
 
 import com.google.protobuf.ByteString;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Status;
@@ -52,11 +53,11 @@ public abstract class AbstractKVStoreSnapshotFile implements KVStoreSnapshotFile
 
     @Override
     public void save(final SnapshotWriter writer, final Region region, final Closure done,
-                     final ExecutorService executor) {
+                     final ExecutorService executor, final ReportTarget reportTarget) {
         final String writerPath = writer.getPath();
         final String snapshotPath = Paths.get(writerPath, SNAPSHOT_DIR).toString();
         try {
-            doSnapshotSave(snapshotPath, region, executor).whenComplete((metaBuilder, throwable) -> {
+            doSnapshotSave(snapshotPath, region, executor, reportTarget).whenComplete((metaBuilder, throwable) -> {
                 if (throwable == null) {
                     executor.execute(() -> compressSnapshot(writer, metaBuilder, done));
                 } else {
@@ -102,8 +103,10 @@ public abstract class AbstractKVStoreSnapshotFile implements KVStoreSnapshotFile
         }
     }
 
-    abstract CompletableFuture<LocalFileMeta.Builder> doSnapshotSave(final String snapshotPath, final Region region,
-                                                                     final ExecutorService executor) throws Exception;
+    abstract CompletableFuture<LocalFileMeta.Builder> doSnapshotSave(final String snapshotPath,
+                                                                     final Region region,
+                                                                     final ExecutorService executor,
+                                                                     final ReportTarget reportTarget) throws Exception;
 
     abstract void doSnapshotLoad(final String snapshotPath, final LocalFileMeta meta, final Region region)
                                                                                                     throws Exception;

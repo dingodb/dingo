@@ -167,6 +167,11 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
      */
     private boolean sharedSnapshotTimer = false;
 
+    private int serverExchangePort = 19191;
+
+    // Default: 15min
+    private int unfreezingSnapshotIntervalSecs = 15 * 60;
+
     /**
      * Custom service factory.
      */
@@ -413,6 +418,22 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         this.raftLogStorageOptions = raftLogStorageOptions;
     }
 
+    public void setServerExchangePort(int port) {
+        this.serverExchangePort = port;
+    }
+
+    public int getServerExchangePort() {
+        return this.serverExchangePort;
+    }
+
+    public void setUnfreezingSnapshotIntervalSecs(int unfreezingSnapshotIntervalSecs) {
+        this.unfreezingSnapshotIntervalSecs = unfreezingSnapshotIntervalSecs;
+    }
+
+    public int getUnfreezingSnapshotIntervalSecs() {
+        return this.unfreezingSnapshotIntervalSecs;
+    }
+
     @Override
     public NodeOptions copy() {
         final NodeOptions nodeOptions = new NodeOptions();
@@ -435,6 +456,8 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         nodeOptions.setSharedStepDownTimer(this.sharedStepDownTimer);
         nodeOptions.setSharedSnapshotTimer(this.sharedSnapshotTimer);
         nodeOptions.setRaftLogStorageOptions(this.raftLogStorageOptions);
+        nodeOptions.setServerExchangePort(this.serverExchangePort);
+        nodeOptions.setUnfreezingSnapshotIntervalSecs(this.unfreezingSnapshotIntervalSecs);
         return nodeOptions;
     }
 
@@ -452,6 +475,9 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
                + ", sharedElectionTimer=" + sharedElectionTimer + ", sharedVoteTimer=" + sharedVoteTimer
                + ", sharedStepDownTimer=" + sharedStepDownTimer + ", sharedSnapshotTimer=" + sharedSnapshotTimer
                + ", serviceFactory=" + serviceFactory + ", raftOptions=" + raftOptions
-               + ", raftLogStorageOptions:" + this.raftLogStorageOptions + "} " + super.toString();
+               + ", raftLogStorageOptions:" + this.raftLogStorageOptions
+            + ", serverExchangePort:" + this.serverExchangePort
+            + ", unfreezingSnapshotIntervalSecs:" + this.unfreezingSnapshotIntervalSecs
+            + "} " + super.toString();
     }
 }

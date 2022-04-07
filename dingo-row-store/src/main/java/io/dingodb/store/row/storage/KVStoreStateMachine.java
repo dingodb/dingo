@@ -24,6 +24,7 @@ import io.dingodb.raft.Status;
 import io.dingodb.raft.core.StateMachineAdapter;
 import io.dingodb.raft.entity.LeaderChangeContext;
 import io.dingodb.raft.error.RaftError;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import io.dingodb.raft.util.BytesUtil;
@@ -31,11 +32,14 @@ import io.dingodb.raft.util.RecycleUtil;
 import io.dingodb.raft.util.internal.ThrowUtil;
 import io.dingodb.store.row.StateListener;
 import io.dingodb.store.row.StoreEngine;
+import io.dingodb.store.row.client.StoreRpcClient;
 import io.dingodb.store.row.errors.Errors;
 import io.dingodb.store.row.errors.IllegalRowStoreOperationException;
 import io.dingodb.store.row.errors.StoreCodecException;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.metrics.KVMetrics;
+import io.dingodb.store.row.rpc.ApiStatus;
+import io.dingodb.store.row.rpc.ReportToLeaderApi;
 import io.dingodb.store.row.serialization.Serializer;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.util.StackTraceUtil;
@@ -242,8 +246,11 @@ public class KVStoreStateMachine extends StateMachineAdapter {
     }
 
     @Override
-    public void onSnapshotSave(final SnapshotWriter writer, final Closure done) {
-        this.storeSnapshotFile.save(writer, this.region.copy(), done, this.storeEngine.getSnapshotExecutor());
+    public void onSnapshotSave(final SnapshotWriter writer, final Closure done, ReportTarget reportTarget) {
+        if (reportTarget != null) {
+            reportTarget.setRegionId(this.getRegionId());
+        }
+        this.storeSnapshotFile.save(writer, this.region.copy(), done, this.storeEngine.getSnapshotExecutor(), reportTarget);
     }
 
     @Override
@@ -313,6 +320,22 @@ public class KVStoreStateMachine extends StateMachineAdapter {
     }
 
     @Override
+    public void onReportFreezeSnapshotResult(final boolean freezeResult, final String errMsg,
+                                             ReportTarget reportTarget) {
+        LOG.info("StateMachineAdapter onReportFreezeSnapshotResult, freezeResult: {}, errMsg: {}" +
+            ", reportTarget: {}.", freezeResult, errMsg, reportTarget);
+        reportTarget.setRegionId(this.getRegionId());
+        StoreRpcClient client = new StoreRpcClient();
+        ReportToLeaderApi api = client.getReportToLeadeApi(reportTarget.getIp(), reportTarget.getPort());
+        ApiStatus status = api.freezeSnapshotResult(reportTarget.getRegionId(), freezeResult, errMsg);
+        if (status != ApiStatus.OK) {
+            LOG.error("KVStoreStateMachine onReportFreezeSnapshotResult, regionId: {}, leaderIp: {}, " +
+                    "exchangePort: {}, api status: {}.", reportTarget.getRegionId(), reportTarget.getIp(),
+                reportTarget.getPort(), status.name());
+        }
+    }
+
+    @Override
     public void onStopFollowing(final LeaderChangeContext ctx) {
         super.onStopFollowing(ctx);
         // Because of the raft state machine must be a sequential commit, in order to prevent the user
@@ -334,6 +357,7 @@ public class KVStoreStateMachine extends StateMachineAdapter {
         return this.leaderTerm.get() > 0;
     }
 
+    @Override
     public String getRegionId() {
         return this.region.getId();
     }

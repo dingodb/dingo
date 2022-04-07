@@ -87,13 +87,13 @@ import io.dingodb.raft.util.JRaftSignalHandler;
 import io.dingodb.raft.util.LogExceptionHandler;
 import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.OnlyForTest;
+import io.dingodb.raft.util.Pair;
 import io.dingodb.raft.util.Platform;
 import io.dingodb.raft.util.RepeatedTimer;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.RpcFactoryHelper;
 import io.dingodb.raft.util.SignalHelper;
 import io.dingodb.raft.util.SystemPropertyUtil;
-import io.dingodb.raft.util.ThreadHelper;
 import io.dingodb.raft.util.ThreadId;
 import io.dingodb.raft.util.Utils;
 import io.dingodb.raft.util.concurrent.LongHeldDetectingReadWriteLock;
@@ -105,6 +105,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -114,6 +115,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -122,6 +124,7 @@ import java.util.stream.Collectors;
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class NodeImpl implements Node, RaftServerService {
     private static final Logger LOG = LoggerFactory.getLogger(NodeImpl.class);
+    //private static boolean RUN_ONCE = true;
 
     static {
         try {
@@ -184,6 +187,7 @@ public class NodeImpl implements Node, RaftServerService {
     private RepeatedTimer voteTimer;
     private RepeatedTimer stepDownTimer;
     private RepeatedTimer snapshotTimer;
+    private RepeatedTimer unfreezingSnapshotTimer;
     private ScheduledFuture<?> transferTimer;
     private ThreadId wakingCandidate;
     /* Disruptor to run node service */
@@ -203,6 +207,11 @@ public class NodeImpl implements Node, RaftServerService {
     private volatile int targetPriority;
     /* The number of elections time out for current node */
     private volatile int electionTimeoutCounter;
+
+    private final AtomicInteger replyCount = new AtomicInteger(0);
+    private List<Pair<String, String>> snapshotMd5List = Collections.synchronizedList(new ArrayList<>());
+    private final AtomicInteger peerCount = new AtomicInteger(0);
+    private final AtomicBoolean isComparing = new AtomicBoolean(false);
 
     private static class NodeReadWriteLock extends LongHeldDetectingReadWriteLock {
 
@@ -622,6 +631,36 @@ public class NodeImpl implements Node, RaftServerService {
         }
     }
 
+    private void handleUnfreezingSnapshotTimeout() {
+        LOG.info("NodeImpl handleUnfreezingSnapshotTimeout, hashCode: {}, state: {}.",
+            this.hashCode(), this.state.name());
+        int temp = replyCount.get();
+        if (temp > 0) {
+            LOG.error("NodeImpl handleUnfreezingSnapshotTimeout, replyCout: {}, expect 0.", temp);
+            replyCount.set(0);
+        }
+        temp = snapshotMd5List.size();
+        if (temp > 0) {
+            LOG.error("NodeImpl handleUnfreezingSnapshotTimeout, snapshotMd5List size: {}, expect 0.", temp);
+            snapshotMd5List.clear();
+        }
+        temp = peerCount.get();
+        if (temp > 0) {
+            LOG.error("NodeImpl handleUnfreezingSnapshotTimeout, peerCount: {}, expect 0.", temp);
+            peerCount.set(0);
+        }
+        if (isComparing.get()) {
+            LOG.error("NodeImpl handleUnfreezingSnapshotTimeout, isCompare: true, expect false.");
+            isComparing.set(false);
+        }
+
+        if (this.snapshotExecutor != null) {
+            this.snapshotExecutor.unfreezingSnapshotByTimer();
+        } else {
+            LOG.error("snapshotExecutor is null!");
+        }
+    }
+
     /**
      * Whether to allow for launching election or not by comparing node's priority with target
      * priority. And at the same time, if next leader is not elected until next election
@@ -954,6 +993,16 @@ public class NodeImpl implements Node, RaftServerService {
                 } else {
                     return timeoutMs;
                 }
+            }
+        };
+        name = "JRaft-UnfreezingSnapshotTimer-" + suffix;
+        this.unfreezingSnapshotTimer = new RepeatedTimer(name,
+            this.options.getUnfreezingSnapshotIntervalSecs() * 1000,
+            TIMER_FACTORY.getUnfreezingSnapshotTimer(false, name)) {
+
+            @Override
+            protected void onTrigger() {
+                handleUnfreezingSnapshotTimeout();
             }
         };
 
@@ -2296,6 +2345,25 @@ public class NodeImpl implements Node, RaftServerService {
         }
     }
 
+    private class SendMsgDone implements Closure {
+        private final long    term;
+
+        public SendMsgDone(final long term) {
+            super();
+            this.term = term;
+        }
+
+        @Override
+        public void run(final Status status) {
+            if (status.isOk()) {
+                // onConfigurationChangeDone(this.term);
+                LOG.info("SendMsgDone, status: {}.", status);
+            } else {
+                LOG.error("Fail to run SendMsgDone, status: {}.", status);
+            }
+        }
+    }
+
     private void unsafeApplyConfiguration(final Configuration newConf, final Configuration oldConf,
                                           final boolean leaderStart) {
         Requires.requireTrue(this.confCtx.isBusy(), "ConfigurationContext is not busy");
@@ -2816,6 +2884,10 @@ public class NodeImpl implements Node, RaftServerService {
         if (this.snapshotTimer != null) {
             this.snapshotTimer.stop();
             timers.add(this.snapshotTimer);
+        }
+        if (this.unfreezingSnapshotTimer != null) {
+            this.unfreezingSnapshotTimer.stop();
+            timers.add(this.unfreezingSnapshotTimer);
         }
         return timers;
     }
@@ -3398,6 +3470,180 @@ public class NodeImpl implements Node, RaftServerService {
     }
 
     @Override
+    public void startCompare() {
+        isComparing.set(true);
+        sendFreezeSnapshotMsg();
+    }
+
+    private void sendFreezeSnapshotMsg() {
+        final LogEntry entry = new LogEntry(EnumOutter.EntryType.ENTRY_TYPE_MSG);
+        entry.getId().setTerm(this.currTerm);
+        LOG.info("NodeImpl sendFreezeSnapshotMsg, log id: {}, leaderId: {}.", entry.getId(), this.leaderId);
+        entry.setMsgSubType(LogEntry.SUB_TYPE_FREEZE_SNAPSHOT);
+
+        final SendMsgDone sendMsgDone = new SendMsgDone(this.currTerm);
+        if (!this.ballotBox.appendPendingTask(this.conf.getConf(),
+            this.conf.isStable() ? null : this.conf.getOldConf(), sendMsgDone)) {
+            Utils.runClosureInThread(sendMsgDone, new Status(RaftError.EINTERNAL, "Fail to append task."));
+            return;
+        }
+
+        final List<LogEntry> entries = new ArrayList<>();
+        entries.add(entry);
+
+        this.logManager.appendEntries(entries, new LeaderStableClosure(entries));
+    }
+
+    private void sendSnapshotByIndexMsg() {
+        final LogEntry entry = new LogEntry(EnumOutter.EntryType.ENTRY_TYPE_MSG);
+        entry.getId().setTerm(this.currTerm);
+        LOG.info("NodeImpl sendSnapshotByIndexMsg, log id: {}, leaderId: {}.", entry.getId(), this.leaderId);
+        entry.setMsgSubType(LogEntry.SUB_TYPE_SNAPSHOT_BY_INDEX);
+
+        final SendMsgDone sendMsgDone = new SendMsgDone(this.currTerm);
+        if (!this.ballotBox.appendPendingTask(this.conf.getConf(),
+            this.conf.isStable() ? null : this.conf.getOldConf(), sendMsgDone)) {
+            Utils.runClosureInThread(sendMsgDone, new Status(RaftError.EINTERNAL, "Fail to append task."));
+            return;
+        }
+
+        final List<LogEntry> entries = new ArrayList<>();
+        entries.add(entry);
+
+        this.logManager.appendEntries(entries, new LeaderStableClosure(entries));
+    }
+
+    @Override
+    public void freezeSnapshotReply(final int peerCount, final boolean freezeResult, final String errMsg) {
+        if (peerCount < 3 || !freezeResult) {
+            LOG.error("NodeImpl freezeSnapshotReply, peerCount: {}, freezeResult: {}, errMsg: {}.",
+                peerCount, freezeResult, errMsg);
+        }
+        if (this.peerCount.get() == 0) {
+            this.peerCount.set(peerCount);
+        } else {
+            if (this.peerCount.get() != peerCount) {
+                LOG.error("NodeImpl freezeSnapshotReply, peer count changes, this peerCount: {}, " +
+                    "peerCount: {}", this.peerCount.get(), peerCount);
+            }
+        }
+        int replycount = this.replyCount.incrementAndGet();
+        if (replycount == peerCount) {
+            LOG.info("NodeImpl freezeSnapshotReply, all node replied, peerCount: {}.", peerCount);
+            this.replyCount.set(0);
+            this.peerCount.set(0);
+            sendSnapshotByIndexMsg();
+        } else {
+            LOG.info("NodeImpl freezeSnapshotReply, reply count: {}, peerCount: {}.", replycount, peerCount);
+        }
+    }
+
+    @Override
+    public void snapshotMd5Reply(final int peerCount, final long kVcount, final String md5Str,
+                                 final long lastAppliedIndex) {
+        LOG.info("NodeImpl snapshotMd5Reply, peerCount: {}, kVcount: {}, md5Str: {}, lastAppliedIndex: {}.",
+            peerCount, kVcount, md5Str, lastAppliedIndex);
+        if (peerCount < 3) {
+            LOG.error("NodeImpl snapshotMd5Reply, peerCount: {}.", peerCount);
+        }
+        int replycount = this.replyCount.incrementAndGet();
+        if (this.peerCount.get() == 0) {
+            this.peerCount.set(peerCount);
+        } else {
+            if (this.peerCount.get() != peerCount) {
+                LOG.error("NodeImpl snapshotMd5Reply, peer count changes, this peerCount: {}, " +
+                    "peerCount: {}", this.peerCount.get(), peerCount);
+            }
+        }
+        if (replycount <= peerCount) {
+            LOG.info("NodeImpl snapshotMd5Reply, reply count: {}, peerCount: {}.", replycount, peerCount);
+            snapshotMd5List.add(new Pair(lastAppliedIndex + "|" + kVcount, md5Str));
+        }
+    }
+
+    @Override
+    public boolean isComparing() {
+        return isComparing.get();
+    }
+
+    @Override
+    public Pair<Integer, String> getCompareResult() {
+        LOG.info("NodeImpl getCompareResult, peerCount: {}.", this.peerCount.get());
+        if (this.peerCount.get() == 0 || this.peerCount.get() != snapshotMd5List.size()) {
+            return new Pair<>(-3, "comparing, peerCount: " + this.peerCount.get() + ", snapshotMd5List size: "
+                + snapshotMd5List.size());
+        }
+
+        if (!isComparing.get()) {
+            return new Pair(-2, "internal error, isComparing is false.");
+        }
+
+        if (snapshotMd5List.size() < 3) {
+            return new Pair(-2, "internal error, snapshotMd5List size: " + snapshotMd5List.size());
+        }
+        Pair<String, String> first = snapshotMd5List.get(0);
+        for (int i = 1; i < snapshotMd5List.size(); i++) {
+            if (!snapshotMd5List.get(i).equals(first)) {
+                String errMsg = "NodeImpl getCompareResult, region data is DIFFERENT, first element: " + first +
+                    ", comparing element: " + snapshotMd5List.get(i);
+                LOG.error(errMsg);
+                return new Pair(-1, errMsg);
+            }
+        }
+
+        String msg = "NodeImpl getCompareResult, region is the SAME: " + first;
+        LOG.info(msg);
+        this.replyCount.set(0);
+        snapshotMd5List.clear();
+        this.isComparing.set(false);
+        return new Pair(0, msg);
+    }
+
+    public void snapshotByAppliedIndex() {
+        if (this.snapshotExecutor != null) {
+            this.snapshotExecutor.doSnapshotByAppliedIndex();
+        } else {
+            LOG.error("snapshotExecutor is null");
+        }
+    }
+
+    public void doFreezeSnapshot() {
+        LOG.info("NodeImpl doFreezeSnapshot.");
+        boolean needFreezing = true;
+        String errMsg = "";
+        /*this.writeLock.lock();
+        try {
+            if (needFreezing) {
+                if (this.state.compareTo(State.STATE_TRANSFERRING) > 0) {
+                    needFreezing = false;
+                    errMsg = "Node " + getNodeId() + " process doFreezeSnapshot while state=" + this.state + ", currTerm=" + this.currTerm + ".";
+                    LOG.warn(errMsg);
+                }
+            }
+        } finally {
+            this.writeLock.unlock();
+        }*/
+        if (this.snapshotExecutor != null) {
+            this.snapshotExecutor.freezeSnapshot(needFreezing, errMsg);
+        } else {
+            LOG.error("snapshotExecutor is null!");
+        }
+    }
+
+    public void restartUnfreezingSnapshotTimer() {
+        this.writeLock.lock();
+        try {
+            if (this.unfreezingSnapshotTimer != null) {
+                this.unfreezingSnapshotTimer.restart();
+            }
+            LOG.info("unfreezingSnapshotTimer restart, timout ms: {}.",
+                this.unfreezingSnapshotTimer.getTimeoutMs());
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
     public void describe(final Describer.Printer out) {
         // node
         final String _nodeId;
@@ -3442,6 +3688,9 @@ public class NodeImpl implements Node, RaftServerService {
 
         out.println("snapshotTimer: ");
         this.snapshotTimer.describe(out);
+
+        out.println("unfreezingSnapshotTimer: ");
+        this.unfreezingSnapshotTimer.describe(out);
 
         // logManager
         out.println("logManager: ");

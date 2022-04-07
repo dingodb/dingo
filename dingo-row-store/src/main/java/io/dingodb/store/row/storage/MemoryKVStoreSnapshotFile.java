@@ -16,6 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.util.Bits;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metadata.Region;
@@ -48,8 +49,10 @@ public class MemoryKVStoreSnapshotFile extends AbstractKVStoreSnapshotFile {
     }
 
     @Override
-    CompletableFuture<LocalFileMeta.Builder> doSnapshotSave(final String snapshotPath, final Region region,
-                                                            final ExecutorService executor) throws Exception {
+    CompletableFuture<LocalFileMeta.Builder> doSnapshotSave(final String snapshotPath,
+                                                            final Region region,
+                                                            final ExecutorService executor,
+                                                            final ReportTarget reportTarget) throws Exception {
         this.kvStore.doSnapshotSave(this, snapshotPath, region);
         return CompletableFuture.completedFuture(writeMetadata(region));
     }

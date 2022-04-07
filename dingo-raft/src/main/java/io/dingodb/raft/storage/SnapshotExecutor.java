@@ -39,6 +39,12 @@ public interface SnapshotExecutor extends Lifecycle<SnapshotExecutorOptions>, De
      */
     void doSnapshot(final Closure done);
 
+    void doSnapshotByAppliedIndex();
+
+    void freezeSnapshot(final boolean isFreezing, final String errMsg);
+
+    void unfreezingSnapshotByTimer();
+
     /**
      * Install snapshot according to the very RPC from leader
      * After the installing succeeds (StateMachine is reset with the snapshot)

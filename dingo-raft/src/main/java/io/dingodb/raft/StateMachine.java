@@ -19,6 +19,7 @@ package io.dingodb.raft;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.LeaderChangeContext;
 import io.dingodb.raft.error.RaftException;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 
@@ -57,6 +58,8 @@ public interface StateMachine {
      * @param done   callback
      */
     void onSnapshotSave(final SnapshotWriter writer, final Closure done);
+
+    void onSnapshotSave(final SnapshotWriter writer, final Closure done, ReportTarget reportTarget);
 
     /**
      * User defined snapshot load function
@@ -130,4 +133,8 @@ public interface StateMachine {
      * @param ctx context of leader change
      */
     void onStartFollowing(final LeaderChangeContext ctx);
+
+    void onReportFreezeSnapshotResult(final boolean freezeResult, final String errMsg, ReportTarget reportTarget);
+
+    String getRegionId();
 }
