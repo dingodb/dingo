@@ -113,4 +113,8 @@ public interface FSMCaller extends Lifecycle<FSMCallerOptions>, Describer {
      *         while waiting
      */
     void join() throws InterruptedException;
+
+    void doSnapshotSaveByAppliedIndex(SaveSnapshotClosure done);
+
+    void reportFreezeSnapshotResult(boolean freezeResult, String errMsg);
 }

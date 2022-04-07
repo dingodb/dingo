@@ -17,19 +17,24 @@
 package io.dingodb.store.row.storage;
 
 import com.codahale.metrics.Timer;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.util.Bits;
 import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.raft.util.DebugStatistics;
 import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.Md5;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.StorageOptionsFactory;
 import io.dingodb.raft.util.SystemPropertyUtil;
 import io.dingodb.raft.util.concurrent.AdjustableSemaphore;
 import io.dingodb.store.row.ApproximateKVStats;
+import io.dingodb.store.row.client.StoreRpcClient;
 import io.dingodb.store.row.errors.StorageException;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.store.row.options.StoreDBOptions;
 import io.dingodb.store.row.rocks.support.RocksStatisticsCollector;
+import io.dingodb.store.row.rpc.ApiStatus;
+import io.dingodb.store.row.rpc.ReportToLeaderApi;
 import io.dingodb.store.row.serialization.Serializer;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.util.ByteArray;
@@ -53,14 +58,11 @@ import org.rocksdb.EnvOptions;
 import org.rocksdb.Holder;
 import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;
-import org.rocksdb.Range;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RestoreOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.SizeApproximationFlag;
-import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 import org.rocksdb.SstFileWriter;
 import org.rocksdb.Statistics;
@@ -1317,8 +1319,13 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
         return Requires.requireNonNull(this.opts, "opts").isAsyncSnapshot();
     }
 
-    CompletableFuture<Void> createSstFiles(final EnumMap<SstColumnFamily, File> sstFileTable, final byte[] startKey,
-                                           final byte[] endKey, final ExecutorService executor) {
+    CompletableFuture<Void> createSstFiles(final EnumMap<SstColumnFamily, File> sstFileTable,
+                                           final byte[] startKey,
+                                           final byte[] endKey,
+                                           final ExecutorService executor,
+                                           final ReportTarget reportTarget) {
+        LOG.info("zhangejie: RocksRawKVStore createSstFiles, startKey: {}, endKey: {}, countInGroup: {}.",
+            BytesUtil.toHex(startKey), BytesUtil.toHex(endKey), opts.getCountInGroup());
         final Snapshot snapshot;
         final CompletableFuture<Void> sstFuture = new CompletableFuture<>();
         final Lock readLock = this.readWriteLock.readLock();
@@ -1326,7 +1333,7 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
         try {
             snapshot = this.db.getSnapshot();
             if (!isAsyncSnapshot()) {
-                doCreateSstFiles(snapshot, sstFileTable, startKey, endKey, sstFuture);
+                doCreateSstFiles(snapshot, sstFileTable, startKey, endKey, sstFuture, reportTarget);
                 return sstFuture;
             }
         } finally {
@@ -1334,12 +1341,18 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
         }
 
         // async snapshot
-        executor.execute(() -> doCreateSstFiles(snapshot, sstFileTable, startKey, endKey, sstFuture));
+        executor.execute(() -> doCreateSstFiles(snapshot, sstFileTable, startKey, endKey, sstFuture, reportTarget));
         return sstFuture;
     }
 
-    void doCreateSstFiles(final Snapshot snapshot, final EnumMap<SstColumnFamily, File> sstFileTable,
-                          final byte[] startKey, final byte[] endKey, final CompletableFuture<Void> future) {
+    void doCreateSstFiles(final Snapshot snapshot,
+                          final EnumMap<SstColumnFamily, File> sstFileTable,
+                          final byte[] startKey,
+                          final byte[] endKey,
+                          final CompletableFuture<Void> future,
+                          final ReportTarget reportTarget) {
+        LOG.info("RocksRawKVStore doCreateSstFiles.");
+        long totalKvCount = 0;
         final Timer.Context timeCtx = getTimeContext("CREATE_SST_FILE");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -1349,14 +1362,17 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
                 future.completeExceptionally(new StorageException("KV store has shutdown."));
                 return;
             }
+            StringBuilder md5Result = new StringBuilder();
             try (final ReadOptions readOptions = new ReadOptions();
                     final EnvOptions envOptions = new EnvOptions();
                     final Options options = new Options().setMergeOperator(new StringAppendOperator())) {
                 readOptions.setSnapshot(snapshot);
+                StringBuilder sb = new StringBuilder();
                 for (final Map.Entry<SstColumnFamily, File> entry : sstFileTable.entrySet()) {
                     final SstColumnFamily sstColumnFamily = entry.getKey();
                     final File sstFile = entry.getValue();
                     final ColumnFamilyHandle columnFamilyHandle = findColumnFamilyHandle(sstColumnFamily);
+
                     try (final RocksIterator it = this.db.newIterator(columnFamilyHandle, readOptions);
                             final SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options)) {
                         if (startKey == null) {
@@ -1376,12 +1392,37 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
                             }
                             sstFileWriter.put(key, it.value());
                             ++count;
+                            if (reportTarget != null) {
+                                /*LOG.info("KV show | {} | {} | {}",BytesUtil.toHex(it.key()),
+                                BytesUtil.toHex(it.value()), sstFile.getAbsolutePath());*/
+                                sb.append(new String(it.key()));
+                                sb.append("#");
+                                sb.append(new String(it.value()));
+                                sb.append("|");
+                                if (count % opts.getCountInGroup() == 0) {
+                                    final String md5 = Md5.parseStrToMd5U16(sb.toString());
+                                    md5Result.append(md5);
+                                    md5Result.append("|");
+                                    LOG.info("KV group type A: {}, path: {}.", count, sstFile.getAbsolutePath());
+                                    sb.setLength(0);
+                                }
+                            }
                             it.next();
                         }
                         if (count == 0) {
                             sstFileWriter.close();
                         } else {
                             sstFileWriter.finish();
+                        }
+                        if (reportTarget != null) {
+                            if (sb.length()>0 && !"null".equals(sb.toString()) && !"".equals(sb.toString())) {
+                                final String md5 = Md5.parseStrToMd5U16(sb.toString());
+                                md5Result.append(md5);
+                                md5Result.append("|");
+                                LOG.info("KV group type B: {}, path: {}.", count, sstFile.getAbsolutePath());
+                            }
+                            totalKvCount += count;
+                            sb.setLength(0);
                         }
                         LOG.info("Finish sst file {} with {} keys.", sstFile, count);
                     } catch (final RocksDBException e) {
@@ -1396,6 +1437,19 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
                 snapshot.close();
                 // The pointer to the snapshot is released by the database instance.
                 this.db.releaseSnapshot(snapshot);
+
+                if (reportTarget != null) {
+                    LOG.info("totalKvCount:{}, md5result: [{}].", totalKvCount, md5Result);
+                    StoreRpcClient client = new StoreRpcClient();
+                    ReportToLeaderApi api = client.getReportToLeadeApi(reportTarget.getIp(), reportTarget.getPort());
+                    ApiStatus status = api.snapshotMd5Result(reportTarget.getRegionId(),
+                        totalKvCount, md5Result.toString(), reportTarget.getLastAppliedIndex());
+                    if (status != ApiStatus.OK) {
+                        LOG.error("RocksRawKVStore doCreateSstFiles, regionId: {}, leaderIp: {}, " +
+                            "exchangePort: {}, api status: {}.", reportTarget.getRegionId(), reportTarget.getIp(),
+                            reportTarget.getPort(), status.name());
+                    }
+                }
             }
         } finally {
             readLock.unlock();
@@ -1529,7 +1583,11 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
     }
 
     CompletableFuture<Void> writeSstSnapshot(
-        final String snapshotPath, final Region region, final ExecutorService executor) {
+        final String snapshotPath,
+        final Region region,
+        final ExecutorService executor,
+        final ReportTarget reportTarget) {
+
         final Timer.Context timeCtx = getTimeContext("WRITE_SST_SNAPSHOT");
         final Lock readLock = this.readWriteLock.readLock();
         readLock.lock();
@@ -1542,7 +1600,7 @@ public class RocksRawKVStore extends BatchRawKVStore<StoreDBOptions> implements 
             final EnumMap<SstColumnFamily, File> sstFileTable = getSstFileTable(tempPath);
             final CompletableFuture<Void> snapshotFuture = new CompletableFuture<>();
             final CompletableFuture<Void> sstFuture = createSstFiles(sstFileTable, region.getStartKey(),
-                region.getEndKey(), executor);
+                region.getEndKey(), executor, reportTarget);
             sstFuture.whenComplete((aVoid, throwable) -> {
                 if (throwable == null) {
                     try {

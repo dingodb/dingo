@@ -41,7 +41,9 @@ import io.dingodb.store.row.metadata.RegionEpoch;
 import io.dingodb.store.row.metadata.Store;
 import io.dingodb.store.row.metrics.KVMetrics;
 import io.dingodb.store.row.options.*;
+import io.dingodb.store.row.rpc.CompareRegionService;
 import io.dingodb.store.row.rpc.ExtSerializerSupports;
+import io.dingodb.store.row.rpc.ReportToLeaderService;
 import io.dingodb.store.row.serialization.Serializers;
 import io.dingodb.store.row.storage.BatchRawKVStore;
 import io.dingodb.store.row.storage.KVClosureAdapter;
@@ -211,6 +213,8 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             LOG.error("Fail to init all [RegionEngine].");
             return false;
         }
+        ReportToLeaderService.instance().init(this);
+        CompareRegionService.instance().init(this);
         this.startTime = System.currentTimeMillis();
         LOG.info("[StoreEngine] start successfully: {}.", this);
         return this.started = true;

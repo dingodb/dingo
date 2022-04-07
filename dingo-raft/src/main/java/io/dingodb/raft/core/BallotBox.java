@@ -98,6 +98,9 @@ public class BallotBox implements Lifecycle<BallotBoxOptions>, Describer {
             }
 
             if (lastLogIndex >= this.pendingIndex + this.pendingMetaQueue.size()) {
+                LOG.error("commitAt, err, lastLogIndex: {}, v: {}, pending index: {}, queue size: {}."
+                    , lastLogIndex, this.pendingIndex + this.pendingMetaQueue.size(), this.pendingIndex,
+                    this.pendingMetaQueue.size());
                 throw new ArrayIndexOutOfBoundsException();
             }
 

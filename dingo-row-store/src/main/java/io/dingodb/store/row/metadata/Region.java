@@ -68,4 +68,8 @@ public class Region implements Copiable<Region>, Serializable {
         return "Region{" + "id=" + id + ", startKey=" + BytesUtil.toHex(startKey) + ", endKey="
             + BytesUtil.toHex(endKey) + ", regionEpoch=" + regionEpoch + ", peers=" + peers + '}';
     }
+
+    public int getPeerCount() {
+        return peers.size();
+    }
 }

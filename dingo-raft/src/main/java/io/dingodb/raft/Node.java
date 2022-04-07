@@ -30,6 +30,7 @@ import io.dingodb.raft.error.LogNotFoundException;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RaftOptions;
 import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.Pair;
 
 import java.util.List;
 
@@ -326,4 +327,14 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
      * @since 1.3.8
      */
     State getNodeState();
+
+    void startCompare();
+
+    void freezeSnapshotReply(final int peerCount, final boolean freezeResult, final String errMsg);
+
+    void snapshotMd5Reply(final int peerCount, final long kVcount, final String md5Str, final long lastAppliedIndex);
+
+    boolean isComparing();
+
+    Pair<Integer, String> getCompareResult();
 }
