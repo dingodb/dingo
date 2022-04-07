@@ -54,7 +54,7 @@ public final class Connections {
     }
 
     @SuppressWarnings("unused")
-    public static Connection getCalciteConnection() throws SQLException {
+    public static Connection getCalciteConnection(String defaultSchema) throws SQLException {
         try {
             Class.forName("org.apache.calcite.jdbc.Driver");
         } catch (ClassNotFoundException e) {
@@ -66,11 +66,10 @@ public final class Connections {
         Properties props = new Properties();
         String sb = "inline: {\n"
             + "  version: '1.0',\n"
-            + "  defaultSchema: '" + DingoRootSchema.ROOT_SCHEMA_NAME
-            + "." + DingoRootSchema.DEFAULT_SCHEMA_NAME + "',\n"
+            + "  defaultSchema: '" + defaultSchema + "',\n"
             + "  schemas: [ {\n"
             + "    type: 'custom',\n"
-            + "    name: '" + DingoRootSchema.ROOT_SCHEMA_NAME + "',\n"
+            + "    name: '" + defaultSchema + "',\n"
             + "    factory: '" + DingoSchemaFactory.class.getCanonicalName() + "',\n"
             + "    operand: {\n"
             + "    }\n"

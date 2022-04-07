@@ -232,7 +232,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         );
         for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
             Object partId = entry.getKey();
-            ValuesOperator operator = new ValuesOperator(entry.getValue());
+            ValuesOperator operator = new ValuesOperator(
+                entry.getValue(),
+                TupleSchema.fromRelDataType(rel.getRowType())
+            );
             operator.setId(idGenerator.get());
             OutputHint hint = new OutputHint();
             hint.setPartId(partId);
@@ -511,7 +514,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoValues rel) {
         Task task = job.getOrCreate(currentLocation, idGenerator);
-        ValuesOperator operator = new ValuesOperator(rel.getValues());
+        ValuesOperator operator = new ValuesOperator(
+            rel.getValues(),
+            TupleSchema.fromRelDataType(rel.getRowType())
+        );
         operator.setId(idGenerator.get());
         task.putOperator(operator);
         return operator.getOutputs();

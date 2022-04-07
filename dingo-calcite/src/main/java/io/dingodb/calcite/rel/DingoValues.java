@@ -17,9 +17,8 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.util.Datum;
+import io.dingodb.common.table.ElementSchema;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Values;
@@ -32,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class DingoValues extends Values implements DingoRel {
     public DingoValues(
@@ -69,43 +69,21 @@ public class DingoValues extends Values implements DingoRel {
         );
     }
 
+    @Nullable
+    public static Object getValueOf(@Nonnull RexLiteral literal) {
+        return ElementSchema.fromRelDataType(literal.getType()).convert(literal.getValue());
+    }
+
     public List<Object[]> getValues() {
         return tuples.stream()
-            .map(row -> IntStream.rangeClosed(0, row.size() - 1)
-                    .mapToObj(x -> {
-                        Object result = Datum.convertCalcite(row.get(x));
-                        if (result == null) {
-                            result = replaceColumnByDefaultValue(x);
-                        }
-                        return result;
-                    }).toArray(Object[]::new)
+            .map(row -> row.stream()
+                .map(DingoValues::getValueOf)
+                .toArray(Object[]::new)
             ).collect(Collectors.toList());
     }
 
     @Override
     public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    private Object replaceColumnByDefaultValue(int index) {
-        final DingoTable xTable = this.getTable().unwrap(DingoTable.class);
-        Object result = null;
-        if (xTable.getTableDefinition().getColumn(index).getDefaultValue() != null) {
-            result = xTable.getTableDefinition().getColumn(index).getDefaultValue();
-        } else {
-            switch (xTable.getTableDefinition().getColumn(index).getType().getName()) {
-                case "INTEGER":
-                case "LONG":
-                case "DECIMAL":
-                case "DOUBLE": {
-                    result = 0;
-                    break;
-                }
-                default: {
-                    result = "";
-                }
-            }
-        }
-        return result;
     }
 }

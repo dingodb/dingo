@@ -119,7 +119,7 @@ public final class ReceiveOperator extends SourceOperator {
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public void fin(int pin, Fin fin) {
         super.fin(pin, fin);
         try {
             endpoint.close();

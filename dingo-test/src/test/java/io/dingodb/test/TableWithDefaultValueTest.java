@@ -21,26 +21,18 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Slf4j
 public class TableWithDefaultValueTest {
-
-    private static java.sql.Connection connection;
     private static SqlHelper sqlHelper;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        io.dingodb.exec.Services.metaServices.get(io.dingodb.meta.test.MetaTestService.SCHEMA_NAME).init(null);
-        io.dingodb.exec.Services.initNetService();
-        connection = io.dingodb.calcite.Connections.getConnection(io.dingodb.meta.test.MetaTestService.SCHEMA_NAME);
-        sqlHelper = new SqlHelper(connection);
+        sqlHelper = new SqlHelper();
     }
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
-        connection.close();
-        io.dingodb.exec.Services.metaServices.get(io.dingodb.meta.test.MetaTestService.SCHEMA_NAME).clear();
+        sqlHelper.cleanUp();
     }
 
 
@@ -55,10 +47,7 @@ public class TableWithDefaultValueTest {
             + ")\n";
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-        try (java.sql.Statement statement = connection.createStatement()) {
-            int cnt = statement.executeUpdate(sql);
-            assertThat(cnt).isEqualTo(1);
-        }
+        sqlHelper.updateTest(sql, 1);
         sqlHelper.clearTable(tableName);
     }
 
@@ -73,29 +62,22 @@ public class TableWithDefaultValueTest {
             + ")";
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-        try (java.sql.Statement statement = connection.createStatement()) {
-            int cnt = statement.executeUpdate(sql);
-            assertThat(cnt).isEqualTo(1);
-        }
+        sqlHelper.updateTest(sql, 1);
         sqlHelper.clearTable(tableName);
     }
 
-    // @Test
+    @Test
     public void testCase02() throws Exception {
         String tableName = "test02";
         final String sqlCmd = "create table " + tableName + " (\n"
             + "    id int,\n"
             + "    name varchar(32) not null,\n"
-            + "    amount double not null default 1.1,\n"
+            + "    amount double default 1.1,\n"
             + "    primary key(id)\n"
             + ")\n";
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-        try (java.sql.Statement statement = connection.createStatement()) {
-            int cnt = statement.executeUpdate(sql);
-            assertThat(cnt).isEqualTo(1);
-        }
+        sqlHelper.updateTest(sql, 1);
         sqlHelper.clearTable(tableName);
     }
-
 }

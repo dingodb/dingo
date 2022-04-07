@@ -71,12 +71,12 @@ public final class ProjectOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(int pin, Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         return output.push(doProject(tuple, exprs));
     }
 
     @Override
-    public void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin) {
         output.fin(fin);
     }
 }

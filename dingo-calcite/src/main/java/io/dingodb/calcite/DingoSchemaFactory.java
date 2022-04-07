@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.exec.Services;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
@@ -29,6 +30,6 @@ public class DingoSchemaFactory implements SchemaFactory {
     @Override
     public Schema create(SchemaPlus schemaPlus, String name, Map<String, Object> operand) {
         log.info("schemaPlus = {}, name = {}, operand = {}", schemaPlus, name, operand);
-        return DingoRootSchema.ROOT;
+        return new DingoSchema(Services.metaServices.get(name));
     }
 }
