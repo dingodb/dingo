@@ -16,6 +16,7 @@
 
 package io.dingodb.store.row.storage;
 
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.store.row.metadata.Region;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
@@ -33,7 +34,8 @@ public interface KVStoreSnapshotFile {
      * @param done     callback
      * @param executor the executor to compress snapshot
      */
-    void save(final SnapshotWriter writer, final Region region, final Closure done, final ExecutorService executor);
+    void save(final SnapshotWriter writer, final Region region, final Closure done, final ExecutorService executor,
+              final ReportTarget reportTarget);
 
     /**
      * Load snapshot for the specified region.

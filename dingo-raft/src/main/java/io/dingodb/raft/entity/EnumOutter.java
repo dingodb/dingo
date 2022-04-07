@@ -35,6 +35,10 @@ public final class EnumOutter {
      * <code>ENTRY_TYPE_CONFIGURATION = 3;</code>
      */
     ENTRY_TYPE_CONFIGURATION(3),
+    /**
+     * <code>ENTRY_TYPE_MSG = 4;</code>
+     */
+    ENTRY_TYPE_MSG(4),
     ;
 
     /**
@@ -53,6 +57,10 @@ public final class EnumOutter {
      * <code>ENTRY_TYPE_CONFIGURATION = 3;</code>
      */
     public static final int ENTRY_TYPE_CONFIGURATION_VALUE = 3;
+    /**
+     * <code>ENTRY_TYPE_MSG = 4;</code>
+     */
+    public static final int ENTRY_TYPE_MSG_VALUE = 4;
 
 
     public final int getNumber() {
@@ -79,6 +87,7 @@ public final class EnumOutter {
         case 1: return ENTRY_TYPE_NO_OP;
         case 2: return ENTRY_TYPE_DATA;
         case 3: return ENTRY_TYPE_CONFIGURATION;
+        case 4: return ENTRY_TYPE_MSG;
         default: return null;
       }
     }
@@ -269,14 +278,15 @@ public final class EnumOutter {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\nenum.proto\022\004raft*l\n\tEntryType\022\026\n\022ENTRY" +
-      "_TYPE_UNKNOWN\020\000\022\024\n\020ENTRY_TYPE_NO_OP\020\001\022\023\n" +
-      "\017ENTRY_TYPE_DATA\020\002\022\034\n\030ENTRY_TYPE_CONFIGU" +
-      "RATION\020\003*\227\001\n\tErrorType\022\023\n\017ERROR_TYPE_NON" +
-      "E\020\000\022\022\n\016ERROR_TYPE_LOG\020\001\022\025\n\021ERROR_TYPE_ST" +
-      "ABLE\020\002\022\027\n\023ERROR_TYPE_SNAPSHOT\020\003\022\034\n\030ERROR" +
-      "_TYPE_STATE_MACHINE\020\004\022\023\n\017ERROR_TYPE_META" +
-      "\020\005B$\n\026io.dingodb.raft.entityB\nEnumOutter"
+      "\n\nenum.proto\022\004raft*\200\001\n\tEntryType\022\026\n\022ENTR" +
+      "Y_TYPE_UNKNOWN\020\000\022\024\n\020ENTRY_TYPE_NO_OP\020\001\022\023" +
+      "\n\017ENTRY_TYPE_DATA\020\002\022\034\n\030ENTRY_TYPE_CONFIG" +
+      "URATION\020\003\022\022\n\016ENTRY_TYPE_MSG\020\004*\227\001\n\tErrorT" +
+      "ype\022\023\n\017ERROR_TYPE_NONE\020\000\022\022\n\016ERROR_TYPE_L" +
+      "OG\020\001\022\025\n\021ERROR_TYPE_STABLE\020\002\022\027\n\023ERROR_TYP" +
+      "E_SNAPSHOT\020\003\022\034\n\030ERROR_TYPE_STATE_MACHINE" +
+      "\020\004\022\023\n\017ERROR_TYPE_META\020\005B$\n\026io.dingodb.ra" +
+      "ft.entityB\nEnumOutter"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

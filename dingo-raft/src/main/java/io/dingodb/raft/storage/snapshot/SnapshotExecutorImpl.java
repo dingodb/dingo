@@ -59,6 +59,8 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
     private long lastSnapshotIndex;
     private long term;
     private volatile boolean savingSnapshot;
+    private volatile boolean freezingSnapshot;
+    private volatile boolean needFreezeSnapshot;
     private volatile boolean loadingSnapshot;
     private volatile boolean stopped;
     private SnapshotStorage snapshotStorage;
@@ -301,6 +303,11 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
                 return;
             }
 
+            if (this.freezingSnapshot) {
+                Utils.runClosureInThread(done, new Status(RaftError.EBUSY, "Is freezing snapshot."));
+                return;
+            }
+
             if (this.fsmCaller.getLastAppliedIndex() == this.lastSnapshotIndex) {
                 // There might be false positive as the getLastAppliedIndex() is being
                 // updated. But it's fine since we will do next snapshot saving in a
@@ -345,10 +352,106 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
                 this.lock.unlock();
             }
         }
+    }
 
+    @Override
+    public void doSnapshotByAppliedIndex() {
+        final long distance = this.fsmCaller.getLastAppliedIndex() - this.lastSnapshotIndex;
+        LOG.info("SnapshotExecutorImpl doSnapshotByAppliedIndex, distance: {},lastAppliedIndex: {}," +
+            ", lastSnapshotIndex: {}.", distance, this.fsmCaller.getLastAppliedIndex(), this.lastSnapshotIndex);
+        boolean doUnlock = true;
+        this.lock.lock();
+        try {
+            if (this.stopped) {
+                LOG.error("Is stopped.");
+                return;
+            }
+            if (this.downloadingSnapshot.get() != null) {
+                LOG.error("Is loading another snapshot.");
+                return;
+            }
+
+            if (this.savingSnapshot) {
+                LOG.error("Is saving another snapshot.");
+                return;
+            }
+
+            if (!this.freezingSnapshot) {
+                LOG.error("Is not in freezing snapshot, do snapshot by applied index must be in freezing " +
+                    "snapshot state.");
+                return;
+            }
+
+            if (this.fsmCaller.getLastAppliedIndex() == this.lastSnapshotIndex) {
+                doUnlock = false;
+                this.lock.unlock();
+                this.logManager.clearBufferedLogs();
+                LOG.error("getLastAppliedIndex() equals this.lastSnapshotIndex.");
+                return;
+            }
+
+            final SnapshotWriter writer = this.snapshotStorage.create();
+            if (writer == null) {
+                LOG.error("Fail to create writer.");
+                reportError(RaftError.EIO.getNumber(), "Fail to create snapshot writer.");
+                return;
+            }
+            this.savingSnapshot = true;
+            final SaveSnapshotDone saveSnapshotDone = new SaveSnapshotDone(writer, null, null);
+            this.fsmCaller.doSnapshotSaveByAppliedIndex(saveSnapshotDone);
+            this.runningJobs.incrementAndGet();
+        } finally {
+            if (doUnlock) {
+                this.lock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void freezeSnapshot(final boolean needFreezing, final String errMsg) {
+        LOG.info("SnapshotExecutorImpl freezeSnapshot, needFreezing: {}, errMsg: {}", needFreezing, errMsg);
+        boolean doUnlock = true;
+        boolean freezing = false;
+        this.lock.lock();
+        try {
+            if (needFreezing) {
+                if (this.savingSnapshot) {
+                    this.needFreezeSnapshot = true;
+                } else {
+                    this.freezingSnapshot = true;
+                    freezing = true;
+                }
+            }
+        } finally {
+            if (doUnlock) {
+                this.lock.unlock();
+            }
+        }
+
+        if (!needFreezing) {
+            this.fsmCaller.reportFreezeSnapshotResult(false, errMsg);
+            return;
+        }
+        if (freezing) {
+            this.fsmCaller.reportFreezeSnapshotResult(true, "");
+        }
+        return;
+    }
+
+    @Override
+    public void unfreezingSnapshotByTimer() {
+        LOG.info("SnapshotExecutorImpl unfreezingSnapshotByTimer.");
+        this.lock.lock();
+        if (this.freezingSnapshot) {
+            LOG.warn("SnapshotExecutorImpl unfreezingSnapshotByTimer, freezingSnapshot is true," +
+                "unfreezing by timer!");
+            this.freezingSnapshot = false;
+        }
+        this.lock.unlock();
     }
 
     int onSnapshotSaveDone(final Status st, final SnapshotMeta meta, final SnapshotWriter writer) {
+        LOG.info("onSnapshotSaveDone, status: {}.", st.toString());
         int ret;
         this.lock.lock();
         try {
@@ -385,6 +488,8 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
             LOG.error("Fail to close writer", e);
             ret = RaftError.EIO.getNumber();
         }
+
+        boolean freezing = false;
         boolean doUnlock = true;
         this.lock.lock();
         try {
@@ -401,12 +506,24 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
                 reportError(RaftError.EIO.getNumber(), "Fail to save snapshot.");
             }
             this.savingSnapshot = false;
+            if (this.freezingSnapshot) {
+                // unlock node snapshot
+                this.freezingSnapshot = false;
+            }
+            if (this.needFreezeSnapshot) {
+                this.freezingSnapshot = true;
+                freezing = true;
+                this.needFreezeSnapshot = false;
+            }
             this.runningJobs.countDown();
             return ret;
 
         } finally {
             if (doUnlock) {
                 this.lock.unlock();
+            }
+            if (freezing) {
+                this.fsmCaller.reportFreezeSnapshotResult(true, "");
             }
         }
     }
@@ -701,6 +818,8 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
         final long _lastSnapshotIndex;
         final long _term;
         final boolean _savingSnapshot;
+        final boolean _freezingSnapshot;
+        final boolean _needFreezeSnapshot;
         final boolean _loadingSnapshot;
         final boolean _stopped;
         this.lock.lock();
@@ -709,6 +828,8 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
             _lastSnapshotIndex = this.lastSnapshotIndex;
             _term = this.term;
             _savingSnapshot = this.savingSnapshot;
+            _freezingSnapshot = this.freezingSnapshot;
+            _needFreezeSnapshot = this.needFreezeSnapshot;
             _loadingSnapshot = this.loadingSnapshot;
             _stopped = this.stopped;
         } finally {
@@ -722,6 +843,10 @@ public class SnapshotExecutorImpl implements SnapshotExecutor {
             .println(_term);
         out.print("  savingSnapshot: ") //
             .println(_savingSnapshot);
+        out.print("  freezingSnapshot: ") //
+            .println(_freezingSnapshot);
+        out.print("  needFreezeSnapshot: ") //
+            .println(_needFreezeSnapshot);
         out.print("  loadingSnapshot: ") //
             .println(_loadingSnapshot);
         out.print("  stopped: ") //

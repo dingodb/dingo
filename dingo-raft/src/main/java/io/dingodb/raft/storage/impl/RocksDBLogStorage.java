@@ -575,7 +575,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     @Override
     public boolean appendEntry(final LogEntry entry) {
-        if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION) {
+        if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION || entry.getType() == EntryType.ENTRY_TYPE_MSG) {
             return executeBatch(batch -> addConfBatch(entry, batch));
         } else {
             this.readLock.lock();
@@ -621,7 +621,8 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             final WriteContext writeCtx = newWriteContext();
             for (int i = 0; i < entriesCount; i++) {
                 final LogEntry entry = entries.get(i);
-                if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION) {
+                if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION
+                    || entry.getType() == EntryType.ENTRY_TYPE_MSG ) {
                     addConfBatch(entry, batch);
                 } else {
                     writeCtx.startJob();

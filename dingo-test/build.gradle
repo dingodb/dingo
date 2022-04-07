@@ -48,6 +48,7 @@ dependencies {
     implementation project(':dingo-exec')
     implementation project(':dingo-net-netty')
     implementation project(':dingo-server:dingo-server-driver-proxy')
+    implementation project(':dingo-row-store')
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestImplementation 'org.assertj:assertj-core:' + 'assertj'.v()

@@ -42,6 +42,7 @@ import io.dingodb.raft.entity.RaftOutter;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.error.RaftException;
 import io.dingodb.raft.option.FSMCallerOptions;
+import io.dingodb.raft.rpc.ReportTarget;
 import io.dingodb.raft.storage.LogManager;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
@@ -153,12 +154,14 @@ public class FSMCallerImpl implements FSMCaller {
     private NodeMetrics nodeMetrics;
     private final CopyOnWriteArrayList<LastAppliedLogIndexListener> lastAppliedLogIndexListeners
         = new CopyOnWriteArrayList<>();
+    private final AtomicLong snapshotAppliedIndex;
 
     public FSMCallerImpl() {
         super();
         this.currTask = TaskType.IDLE;
         this.lastAppliedIndex = new AtomicLong(0);
         this.applyingIndex = new AtomicLong(0);
+        this.snapshotAppliedIndex = new AtomicLong(0);
     }
 
     @Override
@@ -386,7 +389,7 @@ public class FSMCallerImpl implements FSMCaller {
                     case SNAPSHOT_SAVE:
                         this.currTask = TaskType.SNAPSHOT_SAVE;
                         if (passByStatus(task.done)) {
-                            doSnapshotSave((SaveSnapshotClosure) task.done);
+                            doSnapshotSave((SaveSnapshotClosure) task.done, null);
                         }
                         break;
                     case SNAPSHOT_LOAD:
@@ -481,9 +484,11 @@ public class FSMCallerImpl implements FSMCaller {
             onTaskCommitted(taskClosures);
 
             Requires.requireTrue(firstClosureIndex >= 0, "Invalid firstClosureIndex");
-            final IteratorImpl iterImpl =
+            IteratorImpl iterImpl =
                 new IteratorImpl(this.fsm, this.logManager, closures, firstClosureIndex,
                 lastAppliedIndex, committedIndex, this.applyingIndex);
+
+            boolean doSnapshotByIndex = false;
             while (iterImpl.isGood()) {
                 final LogEntry logEntry = iterImpl.entry();
                 if (logEntry.getType() != EnumOutter.EntryType.ENTRY_TYPE_DATA) {
@@ -492,12 +497,43 @@ public class FSMCallerImpl implements FSMCaller {
                             // Joint stage is not supposed to be noticeable by end users.
                             this.fsm.onConfigurationCommitted(new Configuration(iterImpl.entry().getPeers()));
                         }
+                    } else if (logEntry.getType() == EnumOutter.EntryType.ENTRY_TYPE_MSG) {
+                        LOG.info("FSMCallerImpl doCommitted, data has remainning: {}, remaining: {}" +
+                                ", position: {}.",
+                            logEntry.getData().hasRemaining(),
+                            logEntry.getData().remaining(),
+                            logEntry.getData().position());
+
+                        int subType = logEntry.getMsgSubType();
+                        if (subType == LogEntry.SUB_TYPE_FREEZE_SNAPSHOT) {
+                            LOG.info("FSMCallerImpl doCommitted, sub type: {}",
+                                LogEntry.subTypeToString(subType));
+                            node.doFreezeSnapshot();
+                        } else if (subType == LogEntry.SUB_TYPE_SNAPSHOT_BY_INDEX) {
+                                LOG.info("FSMCallerImpl doCommitted, sub type: {}",
+                                    LogEntry.subTypeToString(subType));
+                                doSnapshotByIndex = true;
+                        } else {
+                            LOG.error("FSMCallerImpl doCommitted, unexpected sub type: {}",
+                                LogEntry.subTypeToString(subType));
+                        }
                     }
+
                     if (iterImpl.done() != null) {
                         // For other entries, we have nothing to do besides flush the
                         // pending tasks and run this closure to notify the caller that the
                         // entries before this one were successfully committed and applied.
                         iterImpl.done().run(Status.OK());
+                        /*if (logEntry.getType() == EnumOutter.EntryType.ENTRY_TYPE_MSG) {
+                            LOG.info("FSMCallerImpl doCommitted type msg status OK, type: {}, sub type: {}",
+                                logEntry.getType().name(), LogEntry.subTypeToString(logEntry.getMsgSubType()));
+                        }*/
+                    }
+                    if (doSnapshotByIndex) {
+                        long currIndex = iterImpl.getIndex();
+                        iterImpl = new IteratorImpl(this.fsm, this.logManager, closures, firstClosureIndex,
+                            currIndex + 1, currIndex, this.applyingIndex);
+                        break;
                     }
                     iterImpl.next();
                     continue;
@@ -518,6 +554,12 @@ public class FSMCallerImpl implements FSMCaller {
             this.lastAppliedTerm = lastTerm;
             this.logManager.setAppliedId(lastAppliedId);
             notifyLastAppliedIndexUpdated(lastIndex);
+            if (doSnapshotByIndex) {
+                this.snapshotAppliedIndex.set(lastIndex);
+                LOG.info("FSMCallerImpl doSnapshotByAppliedIndex, lastAppliedTerm: {}, lastAppliedIndex: {}.",
+                    this.lastAppliedTerm, this.lastAppliedIndex);
+                node.snapshotByAppliedIndex();
+            }
         } finally {
             this.nodeMetrics.recordLatency("fsm-commit", Utils.monotonicMs() - startMs);
         }
@@ -547,7 +589,7 @@ public class FSMCallerImpl implements FSMCaller {
         iter.next();
     }
 
-    private void doSnapshotSave(final SaveSnapshotClosure done) {
+    private void doSnapshotSave(final SaveSnapshotClosure done, ReportTarget reportTarget) {
         Requires.requireNonNull(done, "SaveSnapshotClosure is null");
         final long lastAppliedIndex = this.lastAppliedIndex.get();
         final RaftOutter.SnapshotMeta.Builder metaBuilder = RaftOutter.SnapshotMeta.newBuilder() //
@@ -579,7 +621,14 @@ public class FSMCallerImpl implements FSMCaller {
             done.run(new Status(RaftError.EINVAL, "snapshot_storage create SnapshotWriter failed"));
             return;
         }
-        this.fsm.onSnapshotSave(writer, done);
+        if (reportTarget != null) {
+            reportTarget.setLastAppliedIndex(lastAppliedIndex);
+            if (lastAppliedIndex != this.snapshotAppliedIndex.get()) {
+                LOG.warn("FSMCallerImpl doSnapshotSave, snapshot index not match," +
+                    "snapshotAppliedIndex: {}, lastAppliedIndex: {}.", this.snapshotAppliedIndex, lastAppliedIndex);
+            }
+        }
+        this.fsm.onSnapshotSave(writer, done, reportTarget);
     }
 
     @Override
@@ -719,6 +768,33 @@ public class FSMCallerImpl implements FSMCaller {
             }
         }
         return true;
+    }
+
+    @Override
+    public void doSnapshotSaveByAppliedIndex(SaveSnapshotClosure done) {
+        LOG.info("FSMCallerImpl doSnapshotSaveByAppliedIndex, lastAppliedTerm: {}, lastAppliedIndex: {}.",
+            this.lastAppliedTerm, this.lastAppliedIndex);
+
+        if (!passByStatus(done)) {
+            LOG.error("FSMCallerImpl doSnapshotSaveByAppliedIndex, status not OK, lastAppliedTerm: {}, lastAppliedIndex: {}.",
+                this.lastAppliedTerm, this.lastAppliedIndex);
+            return;
+        }
+
+        ReportTarget reportTarget = new ReportTarget();
+        reportTarget.setIp(node.getLeaderId().getIp());
+        reportTarget.setPort(node.getOptions().getServerExchangePort());
+        doSnapshotSave(done, reportTarget);
+    }
+
+    @Override
+    public void reportFreezeSnapshotResult(final boolean freezeResult, final String errMsg) {
+        LOG.info("reportFreezeSnapshotResult, freezeResult: {}, errMsg: {}.", freezeResult, errMsg);
+        ReportTarget reportTarget = new ReportTarget();
+        reportTarget.setIp(node.getLeaderId().getIp());
+        reportTarget.setPort(node.getOptions().getServerExchangePort());
+        this.fsm.onReportFreezeSnapshotResult(freezeResult, errMsg, reportTarget);
+        this.node.restartUnfreezingSnapshotTimer();
     }
 
     @Override

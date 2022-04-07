@@ -30,6 +30,11 @@ import java.util.List;
 public class LogEntry implements Checksum {
     public static final ByteBuffer EMPTY_DATA = ByteBuffer.wrap(new byte[0]);
 
+    public static final int SUB_TYPE_NOT_SET = 0;
+    public static final int SUB_TYPE_UNKNOW = 1;
+    public static final int SUB_TYPE_SNAPSHOT_BY_INDEX = 2;
+    public static final int SUB_TYPE_FREEZE_SNAPSHOT = 3;
+
     /** entry type */
     private EnumOutter.EntryType   type;
     /** log id with index/term */
@@ -196,11 +201,37 @@ public class LogEntry implements Checksum {
         this.data = data;
     }
 
+    public void setMsgSubType(int subType) {
+        this.data = ByteBuffer.wrap(new byte[4]);
+        this.data.putInt(subType);
+        this.data.position(0);
+    }
+
+    public int getMsgSubType() {
+        if (this.data == null) {
+            return SUB_TYPE_NOT_SET;
+        }
+
+        if (this.data.remaining() != 4) {
+            return SUB_TYPE_UNKNOW;
+        }
+        return this.data.getInt(0);
+    }
+
     @Override
     public String toString() {
-        return "LogEntry [type=" + this.type + ", id=" + this.id + ", peers=" + this.peers + ", oldPeers="
-               + this.oldPeers + ", learners=" + this.learners + ", oldLearners=" + this.oldLearners + ", data="
-               + (this.data != null ? this.data.remaining() : 0) + "]";
+        StringBuilder sb = new StringBuilder();
+        sb.append("LogEntry [type=" + this.type + ", id=" + this.id + ", peers=" + this.peers + ", oldPeers="
+            + this.oldPeers + ", learners=" + this.learners + ", oldLearners=" + this.oldLearners + ", data=");
+        if (this.type == EnumOutter.EntryType.ENTRY_TYPE_MSG) {
+            sb.append(" subType: ");
+            sb.append(subTypeToString(getMsgSubType()));
+        } else {
+            sb.append(" remining: ");
+            sb.append(this.data != null ? this.data.remaining() : 0);
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     @Override
@@ -274,4 +305,16 @@ public class LogEntry implements Checksum {
         return this.type == other.type;
     }
 
+    public static String subTypeToString(int subType) {
+        switch (subType) {
+            case SUB_TYPE_NOT_SET:
+                return "SUB_TYPE_NOT_SET";
+            case SUB_TYPE_SNAPSHOT_BY_INDEX:
+                return "SUB_TYPE_SNAPSHOT_BY_INDEX";
+            case SUB_TYPE_FREEZE_SNAPSHOT:
+                return "SUB_TYPE_FREEZE_SNAPSHOT";
+            default:
+                return "SUB_TYPE_UNKNOW";
+        }
+    }
 }
