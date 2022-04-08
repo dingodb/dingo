@@ -18,19 +18,25 @@ package io.dingodb.server.client.cluster.service;
 
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.meta.Location;
+import io.dingodb.net.NetService;
+import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.api.ClusterServiceApi;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.ServiceLoader;
 
 @Slf4j
 public class ClusterServiceClient implements ClusterService {
-    public static ClusterServiceClient INSTANCE = new ClusterServiceClient();
+    private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
-    private ClusterServiceClient() {
-    }
+    @Delegate
+    private ClusterServiceApi clusterServiceApi;
 
-    @Override
-    public List<Location> getComputingLocations() {
-        return null;
+    public ClusterServiceClient(CoordinatorConnector connector) {
+        clusterServiceApi = netService.apiRegistry().proxy(ClusterServiceApi.class, connector);
     }
 }

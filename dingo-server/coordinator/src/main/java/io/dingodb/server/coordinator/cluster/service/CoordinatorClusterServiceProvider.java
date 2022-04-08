@@ -24,6 +24,6 @@ import io.dingodb.cluster.ClusterServiceProvider;
 public class CoordinatorClusterServiceProvider implements ClusterServiceProvider {
     @Override
     public ClusterService get() {
-        return CoordinatorClusterService.INSTANCE;
+        return CoordinatorClusterService.instance();
     }
 }

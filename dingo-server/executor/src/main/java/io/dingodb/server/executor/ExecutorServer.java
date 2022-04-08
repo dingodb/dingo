@@ -22,6 +22,7 @@ import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.option.CliOptions;
 import io.dingodb.raft.util.Endpoint;
+import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.executor.config.ExecutorExtOptions;
 import io.dingodb.server.executor.config.ExecutorOptions;
 import io.dingodb.store.api.StoreService;
@@ -65,6 +66,9 @@ public class ExecutorServer {
 
         StoreService storeService = loadStoreService();
         storeService.getInstance("/tmp");
+
+        LogLevelApi logLevel = new LogLevelApi() {};
+        logLevel.init();
 
         // todo refactor
         storeHeartBeatSender();
