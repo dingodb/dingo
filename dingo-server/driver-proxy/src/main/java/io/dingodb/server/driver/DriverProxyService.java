@@ -64,6 +64,7 @@ public class DriverProxyService extends LocalService implements DriverProxyApi {
         }
 
         Meta.Signature signature = resultSet.signature;
+
         // TODO Revise modification of CursorFactory see:
         // https://issues.apache.org/jira/browse/CALCITE-4567
         Meta.CursorFactory cursorFactory = resultSet.signature.cursorFactory;
@@ -73,26 +74,7 @@ public class DriverProxyService extends LocalService implements DriverProxyApi {
 
         if (resultSet.firstFrame != null) {
             list = list(resultSet.firstFrame.rows);
-            /*if (list.isEmpty()) {
-                cursorFactory = Meta.CursorFactory.LIST;
-            } else {
-                switch (cursorFactory.style) {
-                    case ARRAY:
-                        cursorFactory = Meta.CursorFactory.LIST;
-                        break;
-                    case MAP:
-                    case LIST:
-                        break;
-                    case RECORD:
-                        cursorFactory = Meta.CursorFactory.map(cursorFactory.fieldNames);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown cursor factory style: "
-                            + cursorFactory.style);
-                }
-            }*/
             final boolean done = resultSet.firstFrame.done;
-
             frame = new Meta.Frame(0, done, list);
             updateCount = -1;
 

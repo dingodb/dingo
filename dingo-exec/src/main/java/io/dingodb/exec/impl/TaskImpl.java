@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SourceOperator;
@@ -113,14 +115,26 @@ public final class TaskImpl implements Task {
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
             executorService.execute(() -> {
+                boolean isStatusOK = true;
+                String  statusErrMsg = "OK";
                 try {
                     while (operator.push(0, null)) {
                         log.info("Operator {} need another pushing.", operator.getId());
                     }
                     operator.fin(0, null);
                 } catch (RuntimeException e) {
-                    e.printStackTrace();
-                    log.error("Operator:{} run catch Exception:{}", operator.getId(), e);
+                    isStatusOK = false;
+                    statusErrMsg = e.toString();
+                    log.error("Run Task:{} catch operator:{} run Exception:{}",
+                            getId().toString(), operator.getId(), e);
+                } finally {
+                    if (!isStatusOK) {
+                        TaskStatus taskStatus = new TaskStatus();
+                        taskStatus.setStatus(isStatusOK);
+                        taskStatus.setTaskId(operator.getTask().getId().toString());
+                        taskStatus.setErrorMsg(statusErrMsg);
+                        operator.fin(0, FinWithException.of(taskStatus));
+                    }
                 }
             });
         });

@@ -17,8 +17,10 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,6 +29,7 @@ import javax.annotation.Nonnull;
 /**
  * Source operator has no inputs and only one output.
  */
+@Slf4j
 public abstract class SourceOperator extends SoleOutOperator {
     protected final List<OperatorProfile> profiles = new LinkedList<>();
 
@@ -47,7 +50,11 @@ public abstract class SourceOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        output.fin(new FinWithProfiles(profiles));
+        if (fin != null && fin instanceof FinWithException) {
+            output.fin(fin);
+        } else {
+            output.fin(new FinWithProfiles(profiles));
+        }
     }
 
     public OperatorProfile getProfile() {

@@ -19,6 +19,7 @@ package io.dingodb.exec.codec;
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 
 import java.io.ByteArrayInputStream;
@@ -27,8 +28,9 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 
 public final class AvroTxRxCodec implements TxRxCodec {
-    public static final int FIN_FLAG = 0;
-    public static final int TUPLE_FLAG = 1;
+    public static final int TUPLE_FLAG = 0;
+    public static final int NORMAL_FIN_FLAG = 1;
+    public static final int ABNORMAL_FIN_FLAG = 2;
 
     private final AvroCodec avroCodec;
 
@@ -48,7 +50,11 @@ public final class AvroTxRxCodec implements TxRxCodec {
     @Nonnull
     public byte[] encodeFin(@Nonnull Fin fin) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        os.write(FIN_FLAG);
+        if (fin instanceof FinWithProfiles) {
+            os.write(NORMAL_FIN_FLAG);
+        } else {
+            os.write(ABNORMAL_FIN_FLAG);
+        }
         fin.writeStream(os);
         return os.toByteArray();
     }
@@ -60,8 +66,10 @@ public final class AvroTxRxCodec implements TxRxCodec {
         switch (flag) {
             case TUPLE_FLAG:
                 return avroCodec.decode(is);
-            case FIN_FLAG:
+            case NORMAL_FIN_FLAG:
                 return new Object[]{FinWithProfiles.deserialize(is)};
+            case ABNORMAL_FIN_FLAG:
+                return new Object[]{FinWithException.deserialize(is)};
             default:
         }
         throw new IllegalStateException("Unexpected data message flag \"" + flag + "\".");
