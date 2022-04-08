@@ -17,6 +17,8 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.common.table.ElementSchema;
+import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.op.FunFactory;
@@ -51,13 +53,18 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return rexNode.accept(INSTANCE);
     }
 
-    public static String toString(@Nonnull RexNode rexNode) {
-        return rexNode.accept(INSTANCE).toString();
+    @Nonnull
+    public static RtExprWithType toRtExprWithType(@Nonnull RexNode rexNode) {
+        return new RtExprWithType(
+            convert(rexNode).toString(),
+            ElementSchema.fromRelDataType(rexNode.getType())
+        );
     }
 
-    public static List<String> toString(@Nonnull List<RexNode> rexNodes) {
+    @Nonnull
+    public static List<RtExprWithType> toRtExprWithType(@Nonnull List<RexNode> rexNodes) {
         return rexNodes.stream()
-            .map(RexConverter::toString)
+            .map(RexConverter::toRtExprWithType)
             .collect(Collectors.toList());
     }
 
@@ -161,7 +168,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         }
 
         List<Expr> exprList = new ArrayList<>();
-        for (RexNode node: call.getOperands())  {
+        for (RexNode node : call.getOperands()) {
             Expr expr = node.accept(this);
             if (REX_CONST_LITERAL.contains(expr.toString())) {
                 exprList.add(new Value<String>(expr.toString()));

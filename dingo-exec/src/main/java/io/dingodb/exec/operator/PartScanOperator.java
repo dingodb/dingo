@@ -24,22 +24,18 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.util.ExprUtil;
-import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import java.util.Iterator;
 
 @JsonTypeName("scan")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output"})
 public final class PartScanOperator extends PartIteratorSourceOperator {
-    @JsonProperty("filters")
-    private final String filter;
+    @JsonProperty("filter")
+    private final RtExprWithType filter;
     @JsonProperty("selection")
     private final TupleMapping selection;
-
-    private RtExpr filterExpr;
 
     @JsonCreator
     public PartScanOperator(
@@ -47,7 +43,7 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") TupleSchema schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("filter") String filter,
+        @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
         super(tableId, partId, schema, keyMapping);
@@ -60,15 +56,8 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
         super.init();
         Iterator<Object[]> iterator = part.getIterator();
         if (filter != null) {
-            filterExpr = ExprUtil.compileExpr(filter, schema);
-            iterator = Iterators.filter(iterator, tuple -> {
-                try {
-                    return (boolean) filterExpr.eval(new TupleEvalContext(tuple));
-                } catch (FailGetEvaluator e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            });
+            filter.compileIn(schema);
+            iterator = Iterators.filter(iterator, tuple -> (boolean) filter.eval(new TupleEvalContext(tuple)));
         }
         if (selection != null) {
             iterator = Iterators.transform(iterator, selection::revMap);

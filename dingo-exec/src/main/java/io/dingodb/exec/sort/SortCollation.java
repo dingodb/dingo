@@ -14,18 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.sort;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.apache.calcite.rel.RelFieldCollation;
+
+import java.util.Comparator;
 
 @Data
 public class SortCollation {
     @JsonProperty("index")
     private final int index;
     @JsonProperty("direction")
-    private final RelFieldCollation.Direction direction;
+    private final SortDirection direction;
     @JsonProperty("nullDirection")
-    private final RelFieldCollation.NullDirection nullDirection;
+    private final SortNullDirection nullDirection;
+
+    @SuppressWarnings("unchecked")
+    public Comparator<Object[]> makeComparator() {
+        Comparator<Comparable<Object>> c = direction == SortDirection.DESCENDING
+            ? Comparator.reverseOrder()
+            : Comparator.naturalOrder();
+        if (nullDirection != SortNullDirection.UNSPECIFIED) {
+            c = (nullDirection == SortNullDirection.FIRST)
+                ? Comparator.nullsFirst(c)
+                : Comparator.nullsLast(c);
+        }
+        return Comparator.comparing((Object[] tuple) -> (Comparable<Object>) tuple[index], c);
+    }
 }

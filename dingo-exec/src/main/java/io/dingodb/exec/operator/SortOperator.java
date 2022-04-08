@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
-import org.apache.calcite.rel.RelFieldCollation;
+import io.dingodb.exec.sort.SortCollation;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -52,25 +52,14 @@ public class SortOperator extends SoleOutOperator {
         this.collations = collations;
         this.cache = new LinkedList<>();
         if (!collations.isEmpty()) {
-            Comparator<Object[]> c = makeComparator(collations.get(0));
+            Comparator<Object[]> c = collations.get(0).makeComparator();
             for (int i = 1; i < collations.size(); ++i) {
-                c = c.thenComparing(makeComparator(collations.get(i)));
+                c = c.thenComparing(collations.get(i).makeComparator());
             }
             comparator = c;
         } else {
             comparator = null;
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Comparator<Object[]> makeComparator(@Nonnull SortCollation collation) {
-        Comparator<Comparable<Object>> c = collation.getDirection().isDescending()
-            ? Comparator.reverseOrder()
-            : Comparator.naturalOrder();
-        c = (collation.getNullDirection() == RelFieldCollation.NullDirection.FIRST)
-            ? Comparator.nullsFirst(c)
-            : Comparator.nullsLast(c);
-        return Comparator.comparing((Object[] tuple) -> (Comparable<Object>) tuple[collation.getIndex()], c);
     }
 
     @Override
