@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 
@@ -75,6 +76,11 @@ public final class CoalesceOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
+        if (fin instanceof FinWithException) {
+            output.fin(fin);
+            return;
+        }
+
         setFin(pin, fin);
         if (isAllFin()) {
             output.fin(new FinWithProfiles(profiles));

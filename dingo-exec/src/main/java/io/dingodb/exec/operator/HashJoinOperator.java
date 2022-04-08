@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.tuple.TupleKey;
 
 import java.util.Arrays;
@@ -89,6 +90,11 @@ public class HashJoinOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
+        if (fin instanceof FinWithException) {
+            output.fin(fin);
+            return;
+        }
+
         if (pin == 0) { // left
             output.fin(fin);
         } else if (pin == 1) { //right

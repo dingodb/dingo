@@ -25,11 +25,13 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+@Slf4j
 @JsonTypeName("update")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates", "output"})
 public final class PartUpdateOperator extends PartModifyOperator {
