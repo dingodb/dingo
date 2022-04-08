@@ -23,10 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.util.ExprUtil;
-import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,9 +36,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @JsonProperty("mapping")
     private final TupleMapping mapping;
     @JsonProperty("updates")
-    private final List<String> updates;
-
-    private RtExpr[] exprs;
+    private final List<RtExprWithType> updates;
 
     @JsonCreator
     public PartUpdateOperator(
@@ -49,7 +45,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
         @JsonProperty("schema") TupleSchema schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
-        @JsonProperty("updates") List<String> updates
+        @JsonProperty("updates") List<RtExprWithType> updates
     ) {
         super(tableId, partId, schema, keyMapping);
         this.mapping = mapping;
@@ -59,26 +55,24 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public void init() {
         super.init();
-        exprs = ExprUtil.compileExprList(updates, schema);
+        updates.forEach(expr -> expr.compileIn(schema));
     }
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         TupleEvalContext etx = new TupleEvalContext(Arrays.copyOf(tuple, tuple.length));
-        try {
-            boolean update = false;
-            for (int i = 0; i < mapping.size(); ++i) {
-                if (!tuple[mapping.get(i)].equals(exprs[i].eval(etx))) {
-                    tuple[mapping.get(i)] = exprs[i].eval(etx);
-                    update = true;
-                }
+        boolean update = false;
+        for (int i = 0; i < mapping.size(); ++i) {
+            Object newValue = updates.get(i).eval(etx);
+            int index = mapping.get(i);
+            if (!tuple[index].equals(newValue)) {
+                tuple[index] = newValue;
+                update = true;
             }
-            if (update) {
-                part.upsert(tuple);
-                count++;
-            }
-        } catch (FailGetEvaluator e) {
-            e.printStackTrace();
+        }
+        if (update) {
+            part.upsert(tuple);
+            count++;
         }
         return true;
     }

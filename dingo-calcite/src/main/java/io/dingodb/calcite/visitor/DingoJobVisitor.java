@@ -45,6 +45,7 @@ import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.hash.HashStrategy;
 import io.dingodb.exec.hash.SimpleHashStrategy;
 import io.dingodb.exec.impl.JobImpl;
@@ -63,15 +64,18 @@ import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.ReduceOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SendOperator;
-import io.dingodb.exec.operator.SortCollation;
 import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.SimplePartitionStrategy;
+import io.dingodb.exec.sort.SortCollation;
+import io.dingodb.exec.sort.SortDirection;
+import io.dingodb.exec.sort.SortNullDirection;
 import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexLiteral;
 
@@ -132,6 +136,32 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         throw new IllegalStateException(
             "RelNode of type \"" + rel.getClass().getSimpleName() + "\" should not appear in a physical plan."
         );
+    }
+
+    @Nonnull
+    private static SortCollation toSortCollation(@Nonnull RelFieldCollation collation) {
+        SortDirection d;
+        switch (collation.direction) {
+            case DESCENDING:
+            case STRICTLY_DESCENDING:
+                d = SortDirection.DESCENDING;
+                break;
+            default:
+                d = SortDirection.ASCENDING;
+                break;
+        }
+        SortNullDirection n;
+        switch (collation.nullDirection) {
+            case FIRST:
+                n = SortNullDirection.FIRST;
+                break;
+            case LAST:
+                n = SortNullDirection.LAST;
+                break;
+            default:
+                n = SortNullDirection.UNSPECIFIED;
+        }
+        return new SortCollation(collation.getFieldIndex(), d, n);
     }
 
     private Output exchange(@Nonnull Output input, @Nonnull Location target, TupleSchema schema) {
@@ -391,7 +421,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                         td.getKeyMapping(),
                         TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
                         rel.getSourceExpressionList().stream()
-                            .map(RexConverter::toString)
+                            .map(RexConverter::toRtExprWithType)
                             .collect(Collectors.toList())
                     );
                     break;
@@ -426,9 +456,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Map<String, Location> parts = metaHelper.getPartLocations();
         TableId tableId = metaHelper.getTableId();
         List<Output> outputs = new ArrayList<>(parts.size());
-        String filterStr = null;
+        RtExprWithType filter = null;
         if (rel.getFilter() != null) {
-            filterStr = RexConverter.convert(rel.getFilter()).toString();
+            filter = RexConverter.toRtExprWithType(rel.getFilter());
         }
         for (Map.Entry<String, Location> entry : parts.entrySet()) {
             PartScanOperator operator = new PartScanOperator(
@@ -436,7 +466,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 entry.getKey(),
                 td.getTupleSchema(),
                 td.getKeyMapping(),
-                filterStr,
+                filter,
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -453,7 +483,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         List<Output> outputs = new ArrayList<>(inputs.size());
         for (Output input : inputs) {
             Operator operator = new ProjectOperator(
-                RexConverter.toString(rel.getProjects()),
+                RexConverter.toRtExprWithType(rel.getProjects()),
                 TupleSchema.fromRelDataType(rel.getInput().getRowType())
             );
             Task task = input.getTask();
@@ -486,7 +516,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         for (Output input : inputs) {
             Operator operator = new SortOperator(
                 rel.getCollation().getFieldCollations().stream()
-                    .map(c -> new SortCollation(c.getFieldIndex(), c.direction, c.nullDirection))
+                    .map(DingoJobVisitor::toSortCollation)
                     .collect(Collectors.toList()),
                 rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
                 rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
