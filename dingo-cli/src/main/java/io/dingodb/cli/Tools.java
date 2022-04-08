@@ -23,8 +23,10 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.DingoOptions;
 import io.dingodb.common.config.ExchangeOptions;
 import io.dingodb.exec.Services;
+import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.client.config.ClientOptions;
 import io.dingodb.server.driver.DriverProxyService;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,18 @@ public class Tools {
 
     @Parameter(names = "--port", description = "Coordinator port.", order = 6)
     private Integer port = 8765;
+
+    @Parameter(names = "--class", description = "Log class name.", order = 7)
+    private String className;
+
+    @Parameter(names = "--level", description = "Log level.", order = 8)
+    private String level;
+
+    @Parameter(names = "--serverHost", description = "Server host.", order = 9)
+    private String serverHost;
+
+    @Parameter(names = "--serverPort", description = "Server port.", order = 10)
+    private Integer serverPort;
 
     public static void main(String[] args) throws Exception {
         Tools tools = new Tools();
@@ -88,6 +102,20 @@ public class Tools {
                 netService.listenPort(port);
                 DriverProxyService driverProxyService = new DriverProxyService();
                 driverProxyService.start();
+                break;
+            case "LEVEL":
+                if (className == null || level == null || serverHost == null || serverPort <= 0) {
+                    log.error("Class:{} || Level:{} || serverHost:{} || serverPort:{} Parameters cannot be null",
+                        className, level, serverHost, serverHost);
+                    break;
+                }
+                LogLevelApi proxy = netService.apiRegistry()
+                    .proxy(LogLevelApi.class, () -> new NetAddress(serverHost, serverPort));
+                try {
+                    proxy.setLevel(className, level);
+                } catch (ClassNotFoundException e) {
+                    log.error("Class:{} not found, ", className, e);
+                }
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);

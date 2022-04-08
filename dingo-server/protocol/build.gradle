@@ -20,6 +20,7 @@ plugins {
 }
 
 dependencies {
+    api group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
     implementation project(":dingo-meta-api")
