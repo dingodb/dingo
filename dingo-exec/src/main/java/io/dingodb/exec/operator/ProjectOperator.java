@@ -21,28 +21,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.util.ExprUtil;
-import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("project")
 @JsonPropertyOrder({"projects", "schema", "output"})
 public final class ProjectOperator extends SoleOutOperator {
     @JsonProperty("projects")
-    private final List<String> projects;
+    private final List<RtExprWithType> projects;
     @JsonProperty("schema")
     private final TupleSchema schema;
 
-    private RtExpr[] exprs;
-
     @JsonCreator
     public ProjectOperator(
-        @JsonProperty("projects") List<String> projects,
+        @JsonProperty("projects") List<RtExprWithType> projects,
         @JsonProperty("schema") TupleSchema schema
     ) {
         super();
@@ -50,29 +45,19 @@ public final class ProjectOperator extends SoleOutOperator {
         this.schema = schema;
     }
 
-    @Nonnull
-    public static Object[] doProject(Object[] tuple, @Nonnull RtExpr[] projectExpr) {
-        Object[] newTuple = new Object[projectExpr.length];
-        for (int i = 0; i < newTuple.length; ++i) {
-            try {
-                newTuple[i] = projectExpr[i].eval(new TupleEvalContext(tuple));
-            } catch (FailGetEvaluator e) {
-                e.printStackTrace();
-                newTuple[i] = null;
-            }
-        }
-        return newTuple;
-    }
-
     @Override
     public void init() {
         super.init();
-        exprs = ExprUtil.compileExprList(projects, schema);
+        projects.forEach(expr -> expr.compileIn(schema));
     }
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
-        return output.push(doProject(tuple, exprs));
+        Object[] newTuple = new Object[projects.size()];
+        for (int i = 0; i < newTuple.length; ++i) {
+            newTuple[i] = projects.get(i).eval(new TupleEvalContext(tuple));
+        }
+        return output.push(newTuple);
     }
 
     @Override

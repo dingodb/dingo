@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.exec.sort;
 
-dependencies {
-    api project(':dingo-cluster-api')
-    api project(':dingo-meta-api')
-    api project(':dingo-net-api')
-    api project(':dingo-store-api')
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
-    implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
-    implementation project(':dingo-expr:dingo-expr-parser')
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public enum SortDirection {
+    @JsonProperty("asc")
+    ASCENDING,
+    @JsonProperty("desc")
+    DESCENDING,
 }

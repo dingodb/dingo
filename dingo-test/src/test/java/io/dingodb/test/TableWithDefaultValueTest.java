@@ -80,4 +80,21 @@ public class TableWithDefaultValueTest {
         sqlHelper.updateTest(sql, 1);
         sqlHelper.clearTable(tableName);
     }
+
+    @Test
+    public void testCase03() throws Exception {
+        String tableName = "test03";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    score int default 100,\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+        sql = "update " + tableName + " set score = score - 10";
+        sqlHelper.updateTest(sql, 1);
+        sqlHelper.clearTable(tableName);
+    }
 }
