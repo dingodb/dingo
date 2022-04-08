@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.util.QueueUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
@@ -34,6 +36,9 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
     public static final Object[] FIN = new Object[0];
+
+    @Getter
+    private Fin errorFin;
 
     @JsonProperty("schema")
     private final TupleSchema schema;
@@ -68,6 +73,11 @@ public final class RootOperator extends SinkOperator {
         if (log.isDebugEnabled()) {
             log.debug("Received FIN. {}", fin.detail());
         }
+
+        if (fin instanceof FinWithException) {
+            errorFin = fin;
+            log.warn("Receive FinWith Exception:{}", fin.detail());
+        }
         QueueUtil.forcePut(tupleQueue, FIN);
     }
 
@@ -75,4 +85,5 @@ public final class RootOperator extends SinkOperator {
     public Object[] popValue() {
         return QueueUtil.forceTake(tupleQueue);
     }
+
 }

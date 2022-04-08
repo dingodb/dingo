@@ -27,6 +27,7 @@ import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.util.QueueUtil;
@@ -56,6 +57,7 @@ public final class ReceiveOperator extends SourceOperator {
     private BlockingQueue<Object[]> tupleQueue;
     private ReceiveMessageListenerProvider messageListenerProvider;
     private ReceiveEndpoint endpoint;
+    private Fin finObj;
 
     @JsonCreator
     public ReceiveOperator(
@@ -107,6 +109,8 @@ public final class ReceiveOperator extends SourceOperator {
                 Fin fin = (Fin) tuple[0];
                 if (fin instanceof FinWithProfiles) {
                     profiles.addAll(((FinWithProfiles) fin).getProfiles());
+                } else if (fin instanceof FinWithException) {
+                    finObj = fin;
                 }
                 break;
             }
@@ -120,11 +124,21 @@ public final class ReceiveOperator extends SourceOperator {
 
     @Override
     public void fin(int pin, Fin fin) {
-        super.fin(pin, fin);
+        /**
+         * when the upstream operator(`sender`) has failed,
+         * then the current operator('receiver`) should failed too
+         * so the `Fin` should use FinWithException
+         */
+        if (finObj != null && finObj instanceof FinWithException) {
+            super.fin(pin, finObj);
+        } else {
+            super.fin(pin, fin);
+        }
+
         try {
             endpoint.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Fin pin:{} catch exception:{}", pin, e.toString(), e);
         }
     }
 

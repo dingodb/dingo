@@ -18,6 +18,8 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.common.error.DingoException;
+import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -120,8 +122,10 @@ public class DingoMeta extends MetaImpl {
                 null,
                 updateCount
             );
+            checkJobHasFailed(signature);
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (SQLException | SqlParseException e) {
+            log.error("Catch execute exception:{}", e.toString(), e);
             throw new RuntimeException(e);
         }
     }
@@ -162,9 +166,30 @@ public class DingoMeta extends MetaImpl {
                 rows.add(this.convertRowsByColumnTypes(result, stmt.getSignature().columns));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
+
+            DingoSignature signature = (DingoSignature)stmt.getSignature();
+            checkJobHasFailed(signature);
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Fetch catch exception:{}", e.toString(), e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private void checkJobHasFailed(DingoSignature signature) throws SQLException {
+        /**
+         * when the operation is `Create` or `Drop`, then the signature.getJob is null.
+         */
+        if (signature.getJob() != null) {
+            RootOperator rootOperator = signature.getJob().getRootTask().getRoot();
+            if (rootOperator.getErrorFin() != null) {
+                String errorMsg = (rootOperator.getErrorFin()).detail();
+                log.warn("Check Job:{} operator:{} has failed, ErrorMsg: {}",
+                        rootOperator.getTask().getJobId().toString(),
+                        rootOperator.getId().toString(),
+                        errorMsg);
+                throw new SQLException(errorMsg);
+            }
         }
     }
 

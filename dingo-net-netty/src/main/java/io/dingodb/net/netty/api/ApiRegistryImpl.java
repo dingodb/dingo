@@ -114,7 +114,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             log.error("Invoke channel:{}, name:{} catch exception:{}",
                 channel.toString(), message.toString(), e);
         } catch (InvocationTargetException e) {
-            message = returnMessage(e);
+            message = returnMessage(e.getCause());
             log.error("Invoke channel:{}, name:{} catch InvokeTargetException:{}",
                 channel.toString(), name, message.toString(), e);
         } catch (Throwable e) {
