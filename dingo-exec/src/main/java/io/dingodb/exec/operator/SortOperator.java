@@ -91,7 +91,7 @@ public class SortOperator extends SoleOutOperator {
                 ++o;
                 continue;
             }
-            if (limit > 0 && c >= limit) {
+            if (limit >= 0 && c >= limit) {
                 break;
             }
             if (!output.push(tuple)) {
