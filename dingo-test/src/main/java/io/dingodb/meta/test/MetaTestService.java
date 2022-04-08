@@ -135,13 +135,12 @@ public class MetaTestService implements MetaService {
 
     @Override
     public LocationGroup getLocationGroup(String name) {
-        new LocationGroup(
+        return new LocationGroup(
             new Location("localhost", 0, dataPath0.getAbsolutePath()),
             Lists.newArrayList(
                 new Location("localhost", 0, dataPath0.getAbsolutePath()),
                 new Location("localhost", 0, dataPath0.getAbsolutePath()),
                 new Location("localhost", 0, dataPath0.getAbsolutePath())
             ));
-        return null;
     }
 }

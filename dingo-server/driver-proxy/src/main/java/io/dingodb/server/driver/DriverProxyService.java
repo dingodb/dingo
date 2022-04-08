@@ -20,6 +20,7 @@ import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.driver.server.ServerMetaFactory;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.api.LogLevelApi;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.remote.LocalService;
@@ -98,6 +99,8 @@ public class DriverProxyService extends LocalService implements DriverProxyApi {
 
     public void start() {
         netService.apiRegistry().register(DriverProxyApi.class, this);
+        LogLevelApi logLevel = new LogLevelApi() {};
+        logLevel.init();
     }
 
     public void stop() {

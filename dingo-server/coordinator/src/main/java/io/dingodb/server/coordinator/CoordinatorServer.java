@@ -27,6 +27,8 @@ import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.util.Endpoint;
+import io.dingodb.server.api.LogLevelApi;
+import io.dingodb.server.coordinator.cluster.service.CoordinatorClusterService;
 import io.dingodb.server.coordinator.config.CoordinatorOptions;
 import io.dingodb.server.coordinator.context.CoordinatorContext;
 import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
@@ -48,7 +50,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
 import javax.annotation.Nonnull;
@@ -88,6 +89,8 @@ public class CoordinatorServer {
         final TableMetaAdaptor tableMetaAdaptor = createTableMetaAdaptor(keyValueStore, scheduleMetaAdaptor);
         final CoordinatorMetaService metaService = createMetaService();
         final RowStoreMetaAdaptor rowStoreMetaAdaptor = createRowStoreMetaAdaptor(scheduleMetaAdaptor);
+        final LogLevelApi logLevel = new LogLevelApi() {};
+        final CoordinatorClusterService clusterService = createClusterService();
 
         context
             .coordOpts(svrOpts)
@@ -108,6 +111,8 @@ public class CoordinatorServer {
         final NodeOptions nodeOptions = initNodeOptions(stateMachine);
         node.init(nodeOptions);
         keyValueStore.init();
+        logLevel.init();
+        clusterService.init(context);
     }
 
     @Nonnull
@@ -180,6 +185,10 @@ public class CoordinatorServer {
 
     private CoordinatorMetaService createMetaService() {
         return CoordinatorMetaService.instance();
+    }
+
+    private CoordinatorClusterService createClusterService() {
+        return CoordinatorClusterService.instance();
     }
 
     private RocksRawKVStore createRocksDB() {

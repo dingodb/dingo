@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.server.api;
 
-dependencies {
-    implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
-    implementation project(':dingo-net-api')
-    implementation project(':dingo-driver')
-    implementation project(':dingo-driver-client')
-    implementation project(":dingo-server:dingo-server-protocol")
+import io.dingodb.meta.Location;
+import io.dingodb.net.api.annotation.ApiDeclaration;
+
+import java.util.List;
+
+public interface ClusterServiceApi {
+
+    @ApiDeclaration
+    List<Location> getComputingLocations();
 }
