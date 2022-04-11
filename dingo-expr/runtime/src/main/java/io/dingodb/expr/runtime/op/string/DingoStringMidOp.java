@@ -44,11 +44,10 @@ public class DingoStringMidOp extends RtStringConversionOp {
         decimal = new BigDecimal(values[2].toString());
         Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
-
         /**
-         * 1. start Index is invalid, return ""
+         * 1. input String is null || "" || cnt < 0 return ""
          */
-        if (startIndex > inputStr.length() || cnt < 0) {
+        if (inputStr == null || inputStr.equals("") || cnt < 0) {
             return "";
         }
 
@@ -56,14 +55,8 @@ public class DingoStringMidOp extends RtStringConversionOp {
             startIndex = startIndex + inputStr.length() + 1;
         }
 
-        /**
-         * 2. input String is null || "" || startIndex > inputStr.length()
-         */
-        if (inputStr == null || inputStr.equals("") || startIndex > inputStr.length()) {
-            return "";
-        } else {
-            int endIndex = (startIndex + cnt - 1 > inputStr.length() ? inputStr.length() : startIndex + cnt - 1);
-            return inputStr.substring(startIndex - 1, endIndex);
-        }
+        int endIndex = startIndex - 1 + cnt;
+        return inputStr.substring(startIndex - 1, endIndex);
+
     }
 }

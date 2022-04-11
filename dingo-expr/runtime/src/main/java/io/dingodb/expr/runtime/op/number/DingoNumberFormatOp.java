@@ -34,6 +34,10 @@ public class DingoNumberFormatOp extends RtFun  {
     protected Object fun(@Nonnull Object[] values) {
         int inputScalar = new BigDecimal(String.valueOf(values[1]))
             .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        if (inputScalar < 0) {
+            inputScalar = 0;
+        }
+
         BigDecimal decimal = new BigDecimal(String.valueOf(values[0])).setScale(inputScalar, BigDecimal.ROUND_HALF_UP);
         return decimal.toString();
     }
