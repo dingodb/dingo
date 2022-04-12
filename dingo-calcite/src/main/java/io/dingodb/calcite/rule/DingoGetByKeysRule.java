@@ -65,13 +65,13 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td);
         Set<Object[]> keyTuples = rexNode.accept(visitor);
-        if (checkKeyTuples(keyTuples)) {
+        if (!visitor.isOperandHasNotPrimaryKey() && checkKeyTuples(keyTuples)) {
             call.transformTo(new DingoGetByKeys(
-                rel.getCluster(),
-                rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
-                rel.getTable(),
-                keyTuples,
-                rel.getSelection()
+                    rel.getCluster(),
+                    rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                    rel.getTable(),
+                    keyTuples,
+                    rel.getSelection()
             ));
         }
     }

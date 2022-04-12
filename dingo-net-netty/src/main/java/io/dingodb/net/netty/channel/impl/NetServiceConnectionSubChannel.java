@@ -108,7 +108,7 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
             }
         }
         if (log.isDebugEnabled()) {
-            log.info("Channel {}, {} finish", status, Thread.currentThread().getName());
+            log.debug("Channel {}, {} finish", status, Thread.currentThread().getName());
         }
     }
 
