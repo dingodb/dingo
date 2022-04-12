@@ -55,7 +55,7 @@ public class DingoStringMidOp extends RtStringConversionOp {
             startIndex = startIndex + inputStr.length() + 1;
         }
 
-        int endIndex = startIndex - 1 + cnt;
+        int endIndex = (startIndex + cnt - 1 > inputStr.length() ? inputStr.length() : startIndex + cnt - 1);
         return inputStr.substring(startIndex - 1, endIndex);
 
     }
