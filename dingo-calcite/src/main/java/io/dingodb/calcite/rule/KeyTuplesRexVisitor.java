@@ -41,6 +41,7 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
     private final TupleSchema keySchema;
     // reverse indices mapping from column index to key index.
     private final TupleMapping revKeyMapping;
+    private boolean operandHasNonPrimaryKey = false;
 
     public KeyTuplesRexVisitor(@Nonnull TableDefinition tableDefinition) {
         super(true);
@@ -183,6 +184,8 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
             int i = revKeyMapping.get(index);
             if (i >= 0) {
                 tuple[i] = keySchema.get(i).convert(value);
+            } else {
+                this.operandHasNonPrimaryKey = true;
             }
         }
         return tuple;
@@ -198,5 +201,13 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
     @Nonnull
     private Set<Object[]> getOneEmpty() {
         return getOneWithEntry(-1, null);
+    }
+
+    /**
+     * to check the input operands has non primary columns.
+     * @return true: all input operands is in primary; else false
+     */
+    public boolean isOperandHasNotPrimaryKey() {
+        return operandHasNonPrimaryKey;
     }
 }
