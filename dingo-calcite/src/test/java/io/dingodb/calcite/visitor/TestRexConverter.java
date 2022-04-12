@@ -521,7 +521,7 @@ public class TestRexConverter {
     }
 
     @Test
-    public void testMidInvalidIndex() {
+    public void testMidInvalidIndex01() {
         String sql = "select mid('ABC', 10, 3)";
         try {
             SqlNode sqlNode = parser.parse(sql);
@@ -531,6 +531,25 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
+            // String index out of range
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testMidInvalidIndex02() {
+        String sql = "select mid('ABC', 2, 3)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(((String)rtExpr.eval(null)).equals("BC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
