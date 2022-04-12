@@ -16,7 +16,6 @@
 
 package io.dingodb.net.netty.utils;
 
-import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.packet.Packet;
 import org.slf4j.Logger;
