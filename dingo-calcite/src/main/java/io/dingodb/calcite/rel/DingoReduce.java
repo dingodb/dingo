@@ -17,34 +17,38 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.exec.aggregate.Agg;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
 public final class DingoReduce extends SingleRel implements DingoRel {
     @Getter
-    private final TupleMapping keyMapping;
+    private final ImmutableBitSet groupSet;
     @Getter
-    private final List<Agg> aggList;
+    private final List<AggregateCall> aggregateCallList;
+    @Getter
+    private final RelDataType originalInputType;
 
     public DingoReduce(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
-        TupleMapping keyMapping,
-        List<Agg> aggList
+        ImmutableBitSet groupSet,
+        List<AggregateCall> aggregateCallList,
+        RelDataType originalInputType
     ) {
         super(cluster, traits, input);
-        this.keyMapping = keyMapping;
-        this.aggList = aggList;
+        this.groupSet = groupSet;
+        this.aggregateCallList = aggregateCallList;
+        this.originalInputType = originalInputType;
     }
 
     @Override
@@ -59,8 +63,9 @@ public final class DingoReduce extends SingleRel implements DingoRel {
             getCluster(),
             traitSet,
             sole(inputs),
-            this.getKeyMapping(),
-            getAggList()
+            groupSet,
+            aggregateCallList,
+            originalInputType
         );
     }
 

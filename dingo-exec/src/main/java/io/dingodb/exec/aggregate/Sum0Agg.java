@@ -16,20 +16,25 @@
 
 package io.dingodb.exec.aggregate;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.table.ElementSchema;
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "fun"
-)
-@JsonSubTypes({
-    @JsonSubTypes.Type(CountAgg.class),
-    @JsonSubTypes.Type(CountAllAgg.class),
-    @JsonSubTypes.Type(MaxAgg.class),
-    @JsonSubTypes.Type(MinAgg.class),
-    @JsonSubTypes.Type(Sum0Agg.class),
-    @JsonSubTypes.Type(SumAgg.class),
-})
-public abstract class AbstractAgg implements Agg {
+import javax.annotation.Nonnull;
+
+@JsonTypeName("sum0")
+public class Sum0Agg extends SumAgg {
+    @JsonCreator
+    public Sum0Agg(
+        @JsonProperty("index") int index,
+        @Nonnull @JsonProperty("type") ElementSchema type
+    ) {
+        super(index, type);
+    }
+
+    @Override
+    public Object getValue(Object var) {
+        return var != null ? var : 0L;
+    }
 }

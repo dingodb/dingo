@@ -38,6 +38,7 @@ import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -77,7 +78,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.util.ImmutableBitSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -164,6 +167,28 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return new SortCollation(collation.getFieldIndex(), d, n);
     }
 
+    @Nonnull
+    private static TupleMapping getAggKeys(@Nonnull ImmutableBitSet groupSet) {
+        return TupleMapping.of(
+            groupSet.asList().stream()
+                .mapToInt(Integer::intValue)
+                .toArray()
+        );
+    }
+
+    private static List<Agg> getAggList(
+        @Nonnull List<AggregateCall> aggregateCallList,
+        TupleSchema schema
+    ) {
+        return aggregateCallList.stream()
+            .map(c -> AggFactory.getAgg(
+                c.getAggregation().getKind(),
+                c.getArgList(),
+                schema
+            ))
+            .collect(Collectors.toList());
+    }
+
     private Output exchange(@Nonnull Output input, @Nonnull Location target, TupleSchema schema) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
@@ -197,7 +222,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         for (Output input : inputs) {
-            Operator operator = new AggregateOperator(rel.getKeys(), rel.getAggList());
+            Operator operator = new AggregateOperator(
+                getAggKeys(rel.getGroupSet()),
+                getAggList(
+                    rel.getAggCallList(),
+                    TupleSchema.fromRelDataType(rel.getInput().getRowType())
+                )
+            );
             Task task = input.getTask();
             operator.setId(idGenerator.get());
             task.putOperator(operator);
@@ -500,7 +531,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoReduce rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         Operator operator;
-        operator = new ReduceOperator(rel.getKeyMapping(), rel.getAggList());
+        operator = new ReduceOperator(
+            getAggKeys(rel.getGroupSet()),
+            getAggList(
+                rel.getAggregateCallList(),
+                TupleSchema.fromRelDataType(rel.getOriginalInputType())
+            )
+        );
         operator.setId(idGenerator.get());
         Output input = sole(inputs);
         Task task = input.getTask();

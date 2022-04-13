@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.aggregate;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 public interface Agg {
     /**
      * Called when the first tuple arrived.
@@ -23,9 +26,9 @@ public interface Agg {
      * @param tuple the tuple
      * @return the aggregating context, may be a compound type
      */
-    Object first(Object[] tuple);
+    Object first(@Nonnull Object[] tuple);
 
-    Object add(Object var, Object[] tuple);
+    Object add(@Nonnull Object var, @Nonnull Object[] tuple);
 
     /**
      * Called to merge two aggregating context.
@@ -34,7 +37,7 @@ public interface Agg {
      * @param var2 the 2nd aggregating context, may be null
      * @return the merged aggregating context
      */
-    Object merge(Object var1, Object var2);
+    Object merge(@Nullable Object var1, @Nullable Object var2);
 
     /**
      * Called to get the output value from aggregating context.
@@ -42,5 +45,5 @@ public interface Agg {
      * @param var the aggregating context, may be null
      * @return the output value
      */
-    Object getValue(Object var);
+    Object getValue(@Nullable Object var);
 }

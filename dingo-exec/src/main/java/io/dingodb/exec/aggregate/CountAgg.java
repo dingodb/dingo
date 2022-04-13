@@ -16,22 +16,23 @@
 
 package io.dingodb.exec.aggregate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 @JsonTypeName("count")
-public class CountAgg extends AbstractAgg {
-    @Override
-    public Object first(Object[] tuple) {
-        return 1L;
+public class CountAgg extends UnityAgg {
+    @JsonCreator
+    public CountAgg(
+        @JsonProperty("index") Integer index
+    ) {
+        super(index);
     }
 
-    @Override
-    public Object add(Object var, Object[] tuple) {
-        return (long) var + 1L;
-    }
-
-    @Override
-    public Object merge(Object var1, Object var2) {
+    static Object countMerge(@Nullable Object var1, @Nullable Object var2) {
         if (var1 != null) {
             if (var2 != null) {
                 return (long) var1 + (long) var2;
@@ -42,7 +43,27 @@ public class CountAgg extends AbstractAgg {
     }
 
     @Override
-    public Object getValue(Object var) {
+    public Object first(@Nonnull Object[] tuple) {
+        Object value = tuple[index];
+        return value != null ? 1L : null;
+    }
+
+    @Override
+    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
+        Object value = tuple[index];
+        if (value != null) {
+            return (long) var + 1L;
+        }
+        return var;
+    }
+
+    @Override
+    public Object merge(@Nullable Object var1, @Nullable Object var2) {
+        return countMerge(var1, var2);
+    }
+
+    @Override
+    public Object getValue(@Nullable Object var) {
         return var != null ? var : 0L;
     }
 }

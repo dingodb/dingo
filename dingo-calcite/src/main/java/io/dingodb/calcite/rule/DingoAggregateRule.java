@@ -21,9 +21,6 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoReduce;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.exec.aggregate.Agg;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -32,32 +29,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.sql.SqlKind;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
     protected DingoAggregateRule(Config config) {
         super(config);
-    }
-
-    @Nonnull
-    private static TupleMapping getAggKeys(@Nonnull Aggregate rel) {
-        return TupleMapping.of(
-            rel.getGroupSet().asList().stream()
-                .mapToInt(Integer::intValue)
-                .toArray()
-        );
-    }
-
-    private static List<Agg> getAggList(@Nonnull Aggregate rel) {
-        return rel.getAggCallList().stream()
-            .map(c -> AggFactory.getAgg(
-                c.getAggregation().getKind(),
-                c.getArgList(),
-                TupleSchema.fromRelDataType(rel.getInput().getRowType())
-            ))
-            .collect(Collectors.toList());
     }
 
     @Override
@@ -69,8 +45,6 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
         }
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet rootTraits = rel.getTraitSet().replace(DingoConventions.ROOT);
-        TupleMapping keyMapping = getAggKeys(rel);
-        List<Agg> aggList = getAggList(rel);
         call.transformTo(
             new DingoReduce(
                 cluster,
@@ -84,15 +58,17 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
                         new DingoAggregate(
                             cluster,
                             rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                            rel.getHints(),
                             convert(rel.getInput(), DingoConventions.DISTRIBUTED),
-                            keyMapping,
-                            aggList,
-                            rel.getRowType()
+                            rel.getGroupSet(),
+                            rel.getGroupSets(),
+                            rel.getAggCallList()
                         )
                     )
                 ),
-                keyMapping,
-                aggList
+                rel.getGroupSet(),
+                rel.getAggCallList(),
+                rel.getInput().getRowType()
             )
         );
     }

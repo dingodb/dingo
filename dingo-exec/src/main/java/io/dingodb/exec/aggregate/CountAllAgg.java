@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime;
+package io.dingodb.exec.aggregate;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@RequiredArgsConstructor
-@Getter
-public class RtConst implements RtExpr {
-    public static final RtConst TAU = new RtConst(6.283185307179586476925);
-    public static final RtConst E = new RtConst(2.7182818284590452354);
-
-    private static final long serialVersionUID = -5457707032677852803L;
-
-    private final Object value;
-
-    @Nullable
+@JsonTypeName("countAll")
+public class CountAllAgg extends AbstractAgg {
     @Override
-    public Object eval(EvalContext etx) {
-        return value;
+    public Object first(@Nonnull Object[] tuple) {
+        return 1L;
     }
 
     @Override
-    public int typeCode() {
-        return TypeCodes.getTypeCode(value);
+    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
+        return (long) var + 1L;
+    }
+
+    @Override
+    public Object merge(@Nullable Object var1, @Nullable Object var2) {
+        return CountAgg.countMerge(var1, var2);
+    }
+
+    @Override
+    public Object getValue(Object var) {
+        return var != null ? var : 0L;
     }
 }

@@ -17,55 +17,42 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.exec.aggregate.Agg;
-import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class DingoAggregate extends SingleRel implements DingoRel {
-    @Getter
-    private final TupleMapping keys;
-    @Getter
-    private final List<Agg> aggList;
-    private final RelDataType outputRowType;
-
+public final class DingoAggregate extends Aggregate implements DingoRel {
     public DingoAggregate(
         RelOptCluster cluster,
         RelTraitSet traitSet,
+        List<RelHint> hints,
         RelNode input,
-        TupleMapping keys,
-        List<Agg> aggList,
-        RelDataType outputRowType
+        ImmutableBitSet groupSet,
+        @Nullable List<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
     ) {
-        super(cluster, traitSet, input);
-        this.keys = keys;
-        this.aggList = aggList;
-        this.outputRowType = outputRowType;
+        super(cluster, traitSet, hints, input, groupSet, groupSets, aggCalls);
     }
 
-    @Override
-    protected RelDataType deriveRowType() {
-        return outputRowType;
-    }
 
     @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoAggregate(
-            getCluster(),
-            traitSet,
-            sole(inputs),
-            getKeys(),
-            getAggList(),
-            getRowType()
-        );
+    public DingoAggregate copy(
+        RelTraitSet traitSet,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        @Nullable List<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
+    ) {
+        return new DingoAggregate(getCluster(), traitSet, getHints(), input, groupSet, groupSets, aggCalls);
     }
 
     @Override

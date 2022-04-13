@@ -205,6 +205,7 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
 
     /**
      * to check the input operands has non primary columns.
+     *
      * @return true: all input operands is in primary; else false
      */
     public boolean isOperandHasNotPrimaryKey() {

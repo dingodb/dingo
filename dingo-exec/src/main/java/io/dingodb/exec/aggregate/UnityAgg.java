@@ -16,20 +16,13 @@
 
 package io.dingodb.exec.aggregate;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "fun"
-)
-@JsonSubTypes({
-    @JsonSubTypes.Type(CountAgg.class),
-    @JsonSubTypes.Type(CountAllAgg.class),
-    @JsonSubTypes.Type(MaxAgg.class),
-    @JsonSubTypes.Type(MinAgg.class),
-    @JsonSubTypes.Type(Sum0Agg.class),
-    @JsonSubTypes.Type(SumAgg.class),
-})
-public abstract class AbstractAgg implements Agg {
+public abstract class UnityAgg extends AbstractAgg {
+    @JsonProperty("index")
+    protected final int index;
+
+    protected UnityAgg(int index) {
+        this.index = index;
+    }
 }
