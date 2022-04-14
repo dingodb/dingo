@@ -42,6 +42,7 @@ import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.logical.DingoAndOp;
 import io.dingodb.expr.runtime.op.logical.DingoOrOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
+import io.dingodb.expr.runtime.op.sql.RtSqlCaseOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLeftOp;
@@ -111,6 +112,9 @@ public final class FunFactory {
         registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
+
+        // SQL
+        registerUdf("case", RtSqlCaseOp::new);
 
         // String
         registerUdf("replace", DingoStringReplaceOp::new);

@@ -191,4 +191,15 @@ public class QueryAggTest {
                 + "Emily, 5, 5.5"
         );
     }
+
+    @Test
+    public void testSumAvg() throws Exception {
+        String sql = "select sum(amount), avg(amount), count(amount) from test";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"expr$0", "expr$1", "expr$2"},
+            TupleSchema.ofTypes("DOUBLE", "DOUBLE", "LONG"),
+            "49.5, 5.5, 9"
+        );
+    }
 }

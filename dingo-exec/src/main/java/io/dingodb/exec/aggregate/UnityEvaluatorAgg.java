@@ -24,17 +24,16 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-public abstract class UnityEvaluatorAgg extends AbstractAgg {
-    @JsonProperty("index")
-    protected final int index;
+public abstract class UnityEvaluatorAgg extends UnityAgg {
     @JsonProperty("type")
     protected final ElementSchema type;
 
     private Evaluator evaluator;
 
-    protected UnityEvaluatorAgg(int index, ElementSchema type) {
-        this.index = index;
+    protected UnityEvaluatorAgg(Integer index, @Nonnull ElementSchema type) {
+        super(index);
         this.type = type;
     }
 
@@ -61,16 +60,16 @@ public abstract class UnityEvaluatorAgg extends AbstractAgg {
     }
 
     @Override
-    public Object add(Object var, @Nonnull Object[] tuple) {
+    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
         Object value = tuple[index];
-        if (var == null) {
-            return value;
+        if (value != null) {
+            return eval(var, value);
         }
-        return eval(var, value);
+        return var;
     }
 
     @Override
-    public Object merge(Object var1, Object var2) {
+    public Object merge(@Nullable Object var1, @Nullable Object var2) {
         if (var1 != null) {
             if (var2 != null) {
                 return eval(var1, var2);

@@ -29,6 +29,7 @@ public interface RtExpr extends Serializable {
      * @return the result
      * @throws FailGetEvaluator if there is no appropriate Evaluator
      */
+    @Nullable
     Object eval(@Nullable EvalContext etx) throws FailGetEvaluator;
 
     /**

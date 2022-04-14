@@ -109,7 +109,7 @@ public class TestRexConverter {
             String realResult = (String) expr.compileIn(null).eval(null);
             Assert.assrt(realResult.equals(inputStr));
         } catch (Exception ex) {
-            System.out.println("Catch Exception:" + ex.toString());
+            System.out.println("Catch Exception:" + ex);
         }
     }
 
@@ -127,7 +127,7 @@ public class TestRexConverter {
             String realResult = (String) expr.compileIn(null).eval(null);
             Assert.assrt(realResult.equals("ing"));
         } catch (Exception ex) {
-            System.out.println("Catch Exception:" + ex.toString());
+            System.out.println("Catch Exception:" + ex);
         }
     }
 
@@ -145,7 +145,7 @@ public class TestRexConverter {
             String realResult = (String) expr.compileIn(null).eval(null);
             Assert.assrt(realResult.equals(""));
         } catch (Exception ex) {
-            System.out.println("Catch Exception:" + ex.toString());
+            System.out.println("Catch Exception:" + ex);
         }
     }
 
@@ -163,7 +163,7 @@ public class TestRexConverter {
             String realResult = (String) expr.compileIn(null).eval(null);
             Assert.assrt(realResult.equals("base"));
         } catch (Exception ex) {
-            System.out.println("Catch Exception:" + ex.toString());
+            System.out.println("Catch Exception:" + ex);
         }
     }
 
@@ -181,7 +181,7 @@ public class TestRexConverter {
             String realResult = (String) expr.compileIn(null).eval(null);
             Assert.assrt(realResult.equals("abcde"));
         } catch (Exception ex) {
-            System.out.println("Catch Exception:" + ex.toString());
+            System.out.println("Catch Exception:" + ex);
         }
     }
 
@@ -197,7 +197,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals(inputStr.replace('\'', ' ').trim()));
+            Assert.assrt(rtExpr.eval(null).equals(inputStr.replace('\'', ' ').trim()));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -214,7 +214,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals("BB"));
+            Assert.assrt(rtExpr.eval(null).equals("BB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -231,7 +231,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals(""));
+            Assert.assrt(rtExpr.eval(null).equals(""));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -248,7 +248,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals("A"));
+            Assert.assrt(rtExpr.eval(null).equals("A"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -265,7 +265,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals("4"));
+            Assert.assrt(rtExpr.eval(null).equals("4"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -282,7 +282,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals("BBA"));
+            Assert.assrt(rtExpr.eval(null).equals("BBA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -299,7 +299,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) (rtExpr.eval(null))).equals("ABB"));
+            Assert.assrt(rtExpr.eval(null).equals("ABB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -317,7 +317,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) rtExpr.eval(null)).equals("AAAA "));
+            Assert.assrt(rtExpr.eval(null).equals("AAAA "));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -335,7 +335,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) rtExpr.eval(null)).equals(" AAAA"));
+            Assert.assrt(rtExpr.eval(null).equals(" AAAA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -352,7 +352,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) rtExpr.eval(null)).equals("AAA"));
+            Assert.assrt(rtExpr.eval(null).equals("AAA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -369,7 +369,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            System.out.println(expr.toString());
+            System.out.println(expr);
             Assert.assrt(rtExpr.eval(null).equals("AB"));
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -387,7 +387,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            System.out.println(expr.toString());
+            System.out.println(expr);
             Assert.assrt(rtExpr.eval(null).equals("ABCDE"));
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -405,7 +405,7 @@ public class TestRexConverter {
             RexNode rexNode = project.getProjects().get(0);
             Expr expr = RexConverter.convert(rexNode);
             RtExpr rtExpr = expr.compileIn(null);
-            System.out.println(expr.toString());
+            System.out.println(expr);
             Assert.assrt(rtExpr.eval(null).equals(""));
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -460,7 +460,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) rtExpr.eval(null)).equals("CBA"));
+            Assert.assrt(rtExpr.eval(null).equals("CBA"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -478,7 +478,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABCABC"));
+            Assert.assrt(rtExpr.eval(null).equals("ABCABCABC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -496,7 +496,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("ABCABC"));
+            Assert.assrt(rtExpr.eval(null).equals("ABCABC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -514,7 +514,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("AB"));
+            Assert.assrt(rtExpr.eval(null).equals("AB"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -720,7 +720,7 @@ public class TestRexConverter {
             // System.out.println(expr1.toString());
 
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String) rtExpr.eval(null)).equals("AABBCC"));
+            Assert.assrt(rtExpr.eval(null).equals("AABBCC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

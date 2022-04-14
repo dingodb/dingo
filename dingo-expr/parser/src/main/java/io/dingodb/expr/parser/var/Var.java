@@ -21,7 +21,6 @@ import io.dingodb.expr.parser.exception.ElementNotExists;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.var.RtVar;
 import lombok.RequiredArgsConstructor;
 
 import javax.annotation.Nonnull;
@@ -33,11 +32,8 @@ public class Var implements Expr {
 
     @Nonnull
     static RtExpr createVar(@Nonnull CompileContext ctx) {
-        Object id = ctx.getId();
-        if (id != null) {
-            return new RtVar(id, ctx.getTypeCode());
-        }
-        return new VarStub(ctx);
+        RtExpr rtExpr = ctx.createVar();
+        return rtExpr != null ? rtExpr : new VarStub(ctx);
     }
 
     @Nonnull
