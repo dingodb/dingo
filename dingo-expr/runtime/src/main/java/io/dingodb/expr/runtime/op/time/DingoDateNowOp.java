@@ -19,7 +19,9 @@ package io.dingodb.expr.runtime.op.time;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 
+import java.time.format.DateTimeFormatter;
 import javax.annotation.Nonnull;
 
 /**
@@ -36,11 +38,13 @@ public class DingoDateNowOp extends RtFun {
 
     @Override
     public int typeCode() {
-        return TypeCode.TIMESTAMP;
+        return TypeCode.STRING;
     }
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return new java.sql.Timestamp(System.currentTimeMillis());
+        String formatStr = DateFormatUtil.defaultDatetimeFormat();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+        return new java.sql.Timestamp(System.currentTimeMillis()).toLocalDateTime().format(formatter);
     }
 }
