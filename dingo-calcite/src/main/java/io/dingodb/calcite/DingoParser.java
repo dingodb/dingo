@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -27,6 +28,7 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -35,6 +37,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -55,6 +59,7 @@ import java.util.Properties;
 import javax.annotation.Nonnull;
 
 // Each sql parsing requires a new instance.
+@Slf4j
 public class DingoParser {
     @Getter
     private final DingoParserContext context;
@@ -99,7 +104,12 @@ public class DingoParser {
 
     public SqlNode parse(String sql) throws SqlParseException {
         SqlParser parser = SqlParser.create(sql, parserConfig);
-        return parser.parseQuery();
+        SqlNode sqlNode = parser.parseQuery();
+        if (log.isDebugEnabled()) {
+            log.debug("==DINGO==>:[Input Query]: {}", sql);
+            log.debug("==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
+        }
+        return sqlNode;
     }
 
     public SqlNode validate(SqlNode sqlNode) {
@@ -126,7 +136,16 @@ public class DingoParser {
                 .withExpand(false)
                 .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
         );
-        return sqlToRelConverter.convertQuery(sqlNode, false, true);
+        RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, false, true);
+        if (log.isDebugEnabled()) {
+            String relRootString = RelOptUtil.dumpPlan(
+                "[Physical plan before optimization]",
+                relRoot.rel,
+                SqlExplainFormat.TEXT,
+                SqlExplainLevel.ALL_ATTRIBUTES);
+            log.debug("==DINGO==>:[SqlNode Converted RelRoot] {}", relRootString);
+        }
+        return relRoot;
     }
 
     public RelNode optimize(RelNode relNode) {
@@ -143,6 +162,15 @@ public class DingoParser {
                 .build();
         }
         final Program program = Programs.ofRules(rules);
-        return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+        RelNode optimizedRelNode = program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+        if (log.isDebugEnabled()) {
+            String relNodeString = RelOptUtil.dumpPlan(
+                "[Physical plan after optimization]",
+                optimizedRelNode,
+                SqlExplainFormat.TEXT,
+                SqlExplainLevel.ALL_ATTRIBUTES);
+            log.debug("==DINGO==>:[Optimized RelNode] {}", relNodeString);
+        }
+        return optimizedRelNode;
     }
 }

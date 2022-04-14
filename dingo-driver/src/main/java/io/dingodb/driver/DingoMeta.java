@@ -234,11 +234,13 @@ public class DingoMeta extends MetaImpl {
                              break;
                      }
 
-                     log.info("Convert column:{} from type:{} to type:{} value:{}",
-                         columns.get(x).columnName,
-                         valueBeforeCvt.getClass(),
-                         columns.get(x).columnClassName,
-                         valueAfterCvt.toString());
+                     if (log.isDebugEnabled()) {
+                         log.debug("Convert column:{} from type:{} to type:{} value:{}",
+                             columns.get(x).columnName,
+                             valueBeforeCvt.getClass(),
+                             columns.get(x).columnClassName,
+                             valueAfterCvt.toString());
+                     }
                  });
         return inputs;
     }
