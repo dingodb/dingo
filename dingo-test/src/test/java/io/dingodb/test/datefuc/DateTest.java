@@ -67,9 +67,6 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.defaultDatetimeFormat();
-                    java.sql.Timestamp dateTime = new java.sql.Timestamp(System.currentTimeMillis());
-                    assertThat(rs.getLong(1) / 1000).isEqualTo(dateTime.getTime() / 1000);
                 }
             }
         }

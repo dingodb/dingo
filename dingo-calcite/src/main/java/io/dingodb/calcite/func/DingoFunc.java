@@ -140,8 +140,8 @@ public final class DingoFunc {
         return nf.format(value);
     }
 
-    public static Timestamp now() {
-        return new java.sql.Timestamp(System.currentTimeMillis());
+    public static String now() {
+        return  "";
     }
 
     public static Date curDate() {
