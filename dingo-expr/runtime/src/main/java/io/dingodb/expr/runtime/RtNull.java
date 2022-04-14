@@ -16,29 +16,26 @@
 
 package io.dingodb.expr.runtime;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import javax.annotation.Nullable;
 
-@RequiredArgsConstructor
-@Getter
-public class RtConst implements RtExpr {
-    public static final RtConst TAU = new RtConst(6.283185307179586476925);
-    public static final RtConst E = new RtConst(2.7182818284590452354);
+public final class RtNull implements RtExpr {
+    private static final long serialVersionUID = 1563157485672910844L;
 
-    private static final long serialVersionUID = -5457707032677852803L;
+    public static final RtNull INSTANCE = new RtNull();
 
-    private final Object value;
+    private RtNull() {
+    }
 
     @Nullable
     @Override
-    public Object eval(EvalContext etx) {
-        return value;
+    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+        return null;
     }
 
     @Override
     public int typeCode() {
-        return TypeCodes.getTypeCode(value);
+        return TypeCodes.getTypeCode((Object) null);
     }
 }

@@ -16,6 +16,8 @@
 
 package io.dingodb.expr.runtime;
 
+import io.dingodb.expr.runtime.var.RtVar;
+
 public interface CompileContext {
     /**
      * Get the variable id of this context if it stands for a variable, or {@code null}.
@@ -40,4 +42,9 @@ public interface CompileContext {
      * @return the child context
      */
     CompileContext getChild(Object index);
+
+    default RtExpr createVar() {
+        Object id = getId();
+        return id != null ? new RtVar(id, getTypeCode()) : null;
+    }
 }

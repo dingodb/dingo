@@ -93,7 +93,7 @@ public class TupleSchema implements CompileContext {
     }
 
     @Override
-    public CompileContext getChild(Object index) {
+    public CompileContext getChild(@Nonnull Object index) {
         return elementSchemas[(int) index];
     }
 

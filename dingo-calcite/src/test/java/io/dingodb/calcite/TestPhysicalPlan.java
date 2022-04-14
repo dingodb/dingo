@@ -33,14 +33,15 @@ import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.calcite.rel.EnumerableRoot;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
@@ -77,16 +78,16 @@ public class TestPhysicalPlan {
     public void testSimple() throws SqlParseException {
         String sql = "select 1";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoValues.class).convention(DingoConventions.ROOT);
+        Assert.relNode(relNode)
+            .isA(DingoValues.class).convention(DingoConventions.ROOT);
     }
 
     @Test
     public void testFullScan() throws SqlParseException {
         String sql = "select * from test";
         RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+        RelOptNode r = Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -100,8 +101,7 @@ public class TestPhysicalPlan {
         String sql = "select * from test where name = 'Alice' and amount > 3.0";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -115,8 +115,7 @@ public class TestPhysicalPlan {
         String sql = "select name, amount from test";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -130,8 +129,7 @@ public class TestPhysicalPlan {
         String sql = "select * from test1 where id0 = 1";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -145,8 +143,7 @@ public class TestPhysicalPlan {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and id2 = true";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -159,8 +156,7 @@ public class TestPhysicalPlan {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and not id2";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -173,8 +169,7 @@ public class TestPhysicalPlan {
         String sql = "select * from test1 where (id0 = 1 or id0 = 2) and (id1 = 'A' or id1 = 'B') and id2";
         RelNode relNode = parse(sql);
         RelOptNode r = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
@@ -191,8 +186,8 @@ public class TestPhysicalPlan {
     public void testAggregate() throws SqlParseException {
         String sql = "select count(*) from test";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
@@ -203,8 +198,8 @@ public class TestPhysicalPlan {
     public void testAggregateGroup() throws SqlParseException {
         String sql = "select name, count(*) from test group by name";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
@@ -216,8 +211,7 @@ public class TestPhysicalPlan {
         String sql = "select count(*) from test group by name";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
@@ -229,8 +223,8 @@ public class TestPhysicalPlan {
     public void testInsertValues() throws SqlParseException {
         String sql = "insert into test values(1, 'Alice', 1.0)";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED);
@@ -240,8 +234,8 @@ public class TestPhysicalPlan {
     public void testUpdate() throws SqlParseException {
         String sql = "update test set amount = amount + 2.0 where id = 1";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoProject.class).convention(DingoConventions.DISTRIBUTED)
@@ -252,8 +246,7 @@ public class TestPhysicalPlan {
     public void testSort() throws SqlParseException {
         String sql = "select * from test order by name, amount desc";
         RelNode relNode = parse(sql);
-        AssertRelNode assertSort = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE).singleInput();
+        AssertRelNode assertSort = Assert.relNode(relNode);
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
@@ -276,9 +269,7 @@ public class TestPhysicalPlan {
     public void testOffsetLimit() throws SqlParseException {
         String sql = "select * from test limit 3 offset 2";
         RelNode relNode = parse(sql);
-        AssertRelNode assertSort = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput();
+        AssertRelNode assertSort = Assert.relNode(relNode);
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
@@ -296,9 +287,7 @@ public class TestPhysicalPlan {
     public void testSortLimit() throws SqlParseException {
         String sql = "select * from test order by name limit 3";
         RelNode relNode = parse(sql);
-        AssertRelNode assertSort = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput();
+        AssertRelNode assertSort = Assert.relNode(relNode);
         assertSort.isA(DingoSort.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
@@ -315,19 +304,37 @@ public class TestPhysicalPlan {
     }
 
     @Test
+    public void testSum() throws SqlParseException {
+        String sql = "select sum(amount) from test";
+        RelNode relNode = parse(sql);
+        AssertRelNode assertAgg = Assert.relNode(relNode)
+            .isA(DingoReduce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
+        DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
+        assertThat(agg.getAggCallList())
+            .map(AggregateCall::getAggregation)
+            .map(SqlAggFunction::getKind)
+            .containsExactly(SqlKind.SUM);
+        assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
+    @Test
     public void testAvg() throws SqlParseException {
         String sql = "select avg(amount) from test";
         RelNode relNode = parse(sql);
         AssertRelNode assertAgg = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
-        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
-            .contains("SumAgg", "CountAgg");
+        assertThat(agg.getAggCallList())
+            .map(AggregateCall::getAggregation)
+            .map(SqlAggFunction::getKind)
+            .containsExactly(SqlKind.SUM, SqlKind.COUNT);
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
@@ -336,15 +343,16 @@ public class TestPhysicalPlan {
         String sql = "select name, avg(amount) from test group by name";
         RelNode relNode = parse(sql);
         AssertRelNode assertAgg = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
-        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
-            .contains("SumAgg", "CountAgg");
+        assertThat(agg.getAggCallList())
+            .map(AggregateCall::getAggregation)
+            .map(SqlAggFunction::getKind)
+            .containsExactly(SqlKind.SUM, SqlKind.COUNT);
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
@@ -353,15 +361,16 @@ public class TestPhysicalPlan {
         String sql = "select name, avg(id), avg(amount) from test group by name";
         RelNode relNode = parse(sql);
         AssertRelNode assertAgg = Assert.relNode(relNode)
-            .isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
         DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
-        assertThat(agg.getAggList()).map(Object::getClass).map(Class::getSimpleName)
-            .contains("SumAgg", "CountAgg");
+        assertThat(agg.getAggCallList())
+            .map(AggregateCall::getAggregation)
+            .map(SqlAggFunction::getKind)
+            .containsExactly(SqlKind.SUM, SqlKind.COUNT, SqlKind.SUM, SqlKind.COUNT);
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
@@ -369,8 +378,8 @@ public class TestPhysicalPlan {
     public void testDelete() throws SqlParseException {
         String sql = "delete from test where id = 3";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED);
@@ -380,8 +389,8 @@ public class TestPhysicalPlan {
     public void testTransfer() throws SqlParseException {
         String sql = "insert into test1 select id as id1, id as id2, id as id3, name, amount from test";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoExchange.class).convention(DingoConventions.DISTRIBUTED)
@@ -394,11 +403,29 @@ public class TestPhysicalPlan {
     public void testJoin() throws SqlParseException {
         String sql = "select * from test join test1 on test.name = test1.id1";
         RelNode relNode = parse(sql);
-        Assert.relNode(relNode).isA(EnumerableRoot.class).convention(EnumerableConvention.INSTANCE)
-            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
+        Assert.relNode(relNode)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)
             .inputNum(2);
+    }
+
+    @Test
+    public void testSumAvg() throws Exception {
+        String sql = "select sum(amount), avg(amount) from test";
+        RelNode relNode = parse(sql);
+        AssertRelNode assertAgg = Assert.relNode(relNode)
+            .isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoReduce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED);
+        DingoAggregate agg = (DingoAggregate) assertAgg.getInstance();
+        assertThat(agg.getAggCallList())
+            .map(AggregateCall::getAggregation)
+            .map(SqlAggFunction::getKind)
+            .containsExactly(SqlKind.SUM0, SqlKind.COUNT, SqlKind.SUM);
+        assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 }

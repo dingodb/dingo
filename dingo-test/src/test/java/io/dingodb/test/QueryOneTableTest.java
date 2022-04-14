@@ -194,4 +194,46 @@ public class QueryOneTableTest {
                 + "9, Cindy, 7\n"
         );
     }
+
+    @Test
+    public void testCaseFun() throws SQLException {
+        String sql = "select id, name, case when amount >= 6.0 then 'Y' else 'N' end as flag from test";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"id", "name", "flag"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            "1, Alice, N\n"
+                + "2, Betty, N\n"
+                + "3, Cindy, N\n"
+                + "4, Doris, N\n"
+                + "5, Emily, N\n"
+                + "6, Alice, Y\n"
+                + "7, Betty, Y\n"
+                + "8, Alice, Y\n"
+                + "9, Cindy, Y\n"
+        );
+    }
+
+    @Test
+    public void testCaseFun1() throws SQLException {
+        String sql = "select id, name, case"
+            + " when amount >= 7.0 then 'A' "
+            + " when amount >= 6.0 then 'Y'"
+            + " else 'N'"
+            + " end as flag from test";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"id", "name", "flag"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            "1, Alice, N\n"
+                + "2, Betty, N\n"
+                + "3, Cindy, N\n"
+                + "4, Doris, N\n"
+                + "5, Emily, N\n"
+                + "6, Alice, Y\n"
+                + "7, Betty, Y\n"
+                + "8, Alice, A\n"
+                + "9, Cindy, A\n"
+        );
+    }
 }

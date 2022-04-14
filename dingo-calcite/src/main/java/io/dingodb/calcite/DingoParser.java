@@ -130,7 +130,7 @@ public class DingoParser {
     }
 
     public RelNode optimize(RelNode relNode) {
-        return optimize(relNode, EnumerableConvention.INSTANCE);
+        return optimize(relNode, DingoConventions.ROOT);
     }
 
     public RelNode optimize(RelNode relNode, Convention convention) {

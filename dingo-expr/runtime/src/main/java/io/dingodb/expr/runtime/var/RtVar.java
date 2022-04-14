@@ -29,6 +29,7 @@ public final class RtVar implements RtExpr {
     private final Object id;
     private final int typeCode;
 
+    @Nullable
     @Override
     public Object eval(@Nullable EvalContext etx) {
         return Objects.requireNonNull(etx).get(id);

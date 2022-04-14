@@ -88,7 +88,7 @@ public class Value<T> implements Expr {
     @Override
     public String toString() {
         if (value instanceof String) {
-            return "'" + StringEscapeUtils.escapeJson((String)value) + "'";
+            return "'" + StringEscapeUtils.escapeJson((String) value) + "'";
         }
         return value.toString();
     }

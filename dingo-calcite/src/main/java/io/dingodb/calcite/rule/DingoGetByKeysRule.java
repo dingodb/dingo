@@ -67,11 +67,11 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         Set<Object[]> keyTuples = rexNode.accept(visitor);
         if (!visitor.isOperandHasNotPrimaryKey() && checkKeyTuples(keyTuples)) {
             call.transformTo(new DingoGetByKeys(
-                    rel.getCluster(),
-                    rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
-                    rel.getTable(),
-                    keyTuples,
-                    rel.getSelection()
+                rel.getCluster(),
+                rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                rel.getTable(),
+                keyTuples,
+                rel.getSelection()
             ));
         }
     }

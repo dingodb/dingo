@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime;
+package io.dingodb.expr.parser.value;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.RtNull;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@RequiredArgsConstructor
-@Getter
-public class RtConst implements RtExpr {
-    public static final RtConst TAU = new RtConst(6.283185307179586476925);
-    public static final RtConst E = new RtConst(2.7182818284590452354);
+public final class Null implements Expr {
+    public static final Null INSTANCE = new Null();
 
-    private static final long serialVersionUID = -5457707032677852803L;
-
-    private final Object value;
-
-    @Nullable
-    @Override
-    public Object eval(EvalContext etx) {
-        return value;
+    private Null() {
     }
 
+    @Nonnull
     @Override
-    public int typeCode() {
-        return TypeCodes.getTypeCode(value);
+    public RtExpr compileIn(@Nullable CompileContext ctx) throws DingoExprCompileException {
+        return RtNull.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public String toString() {
+        return "NULL";
     }
 }

@@ -23,6 +23,7 @@ import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpFactory;
+import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
 
@@ -85,6 +86,10 @@ public final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor
     @Nonnull
     @Override
     public Expr visitVar(@Nonnull DingoExprParser.VarContext ctx) {
+        String name = ctx.ID().getText();
+        if (name.equals("null") || name.equals("NULL")) {
+            return Null.INSTANCE;
+        }
         return new Var(ctx.ID().getText());
     }
 

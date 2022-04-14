@@ -25,6 +25,7 @@ import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpFactory;
+import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
 import org.apache.calcite.rex.RexCall;
@@ -118,6 +119,9 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case NOT:
                 op = OpFactory.getUnary(DingoExprParser.NOT);
                 break;
+            case CASE:
+                op = FunFactory.INS.getFun("case");
+                break;
             case CAST:
                 switch (call.getType().getSqlTypeName()) {
                     case TINYINT:
@@ -177,7 +181,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             }
         }
 
-        op.setExprArray(exprList.stream().toArray(Expr[]::new));
+        op.setExprArray(exprList.toArray(new Expr[0]));
 
         /*
         op.setExprArray(call.getOperands().stream()
@@ -191,7 +195,9 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Nonnull
     @Override
     public Expr visitLiteral(@Nonnull RexLiteral literal) {
-        return Value.of(DingoValues.getValueOf(literal));
+        Object value = DingoValues.getValueOf(literal);
+        // `null` is implemented by Var in dingo-expr.
+        return value != null ? Value.of(value) : Null.INSTANCE;
     }
 
     @Nonnull
