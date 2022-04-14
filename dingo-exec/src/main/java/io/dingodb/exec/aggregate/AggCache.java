@@ -22,6 +22,7 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.exec.tuple.TupleKey;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +79,9 @@ public class AggCache implements Iterable<Object[]> {
 
     @Override
     public Iterator<Object[]> iterator() {
+        if (cache.isEmpty() && keyMapping.size() == 0) {
+            return Collections.singleton(aggList.stream().map(agg -> agg.getValue(null)).toArray()).iterator();
+        }
         return Iterators.transform(
             cache.entrySet().iterator(),
             e -> Utils.combine(e.getKey().getTuple(), calValue(e.getValue()))

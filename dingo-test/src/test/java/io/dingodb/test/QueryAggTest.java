@@ -35,6 +35,7 @@ public class QueryAggTest {
         sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
+        sqlHelper.execFile("/table-test1-create.sql");
     }
 
     @AfterAll
@@ -88,6 +89,17 @@ public class QueryAggTest {
                 + "2\n"
                 + "1\n"
                 + "1\n"
+        );
+    }
+
+    @Test
+    public void testCount3() throws SQLException {
+        String sql = "select count(*) from test1";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"expr$0"},
+            TupleSchema.ofTypes("LONG"),
+            "0\n"
         );
     }
 
