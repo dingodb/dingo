@@ -27,14 +27,28 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
 
+import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
 public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
     protected DingoAggregateRule(Config config) {
         super(config);
     }
+
+
+    /**
+     * when the Operand is aggregate and contains distinct, we will skip it.
+     */
+    public static Predicate<AggregateCall> isAggregateHasDistinct = agg -> {
+        SqlKind kind = agg.getAggregation().getKind();
+        if (agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM)) {
+            return true;
+        }
+        return false;
+    };
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
@@ -43,8 +57,21 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
         if (rel.getAggCallList().stream().anyMatch(agg -> agg.getAggregation().getKind() == SqlKind.AVG)) {
             return;
         }
+
+        /**
+         * After apply `CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES`, the sql: `select count(distinct a) from t`
+         * will be transformed to two rules:
+         * 1. aggregate with distinct(AggregateCall List is empty)
+         * 2. aggregate with count(AggregateCall List contains COUNT, SUM, AVG...)
+         * So, In this case, the origin aggregate and distinct should be ignored.
+         */
+        if (rel.getAggCallList().stream().anyMatch(isAggregateHasDistinct)) {
+            return;
+        }
+
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet rootTraits = rel.getTraitSet().replace(DingoConventions.ROOT);
+
         call.transformTo(
             new DingoReduce(
                 cluster,

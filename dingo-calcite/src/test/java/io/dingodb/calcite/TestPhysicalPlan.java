@@ -194,6 +194,34 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
 
+
+    @Test
+    public void testDistinct() throws SqlParseException {
+        String sql = "select distinct name from test";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoReduce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
+            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
+    @Test
+    public void testDistinctCnt() throws SqlParseException {
+        String sql = "select count(distinct name) from test";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoReduce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
+            .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
     @Test
     public void testAggregateGroup() throws SqlParseException {
         String sql = "select name, count(*) from test group by name";

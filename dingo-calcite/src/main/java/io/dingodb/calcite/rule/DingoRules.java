@@ -25,6 +25,8 @@ import java.util.List;
 public final class DingoRules {
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
         = DingoAggregateRule.Config.DEFAULT.toRule();
+    public static final DingoAggregate2AggRootRule DINGO_AGGREGATE_SINGLE_RULE
+        = DingoAggregate2AggRootRule.Config.DEFAULT.toRule();
     public static final DingoDistributedValuesRule DINGO_DISTRIBUTED_VALUES_RULE
         = DingoDistributedValuesRule.Config.DEFAULT.toRule();
     public static final DingoExchangeRootRule DINGO_EXCHANGE_ROOT_RULE
@@ -57,8 +59,10 @@ public final class DingoRules {
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.PROJECT_REMOVE,
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+        CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.PROJECT_VALUES_MERGE,
         DINGO_AGGREGATE_RULE,
+        DINGO_AGGREGATE_SINGLE_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
         DINGO_FILTER_TABLE_SCAN_RULE,
         DINGO_EXCHANGE_ROOT_RULE,

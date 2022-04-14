@@ -9,6 +9,12 @@ on:
     workflows: ["Build"]
     types:
       - completed
+    on:
+      branches:
+        - develop
+        - main
+      pull_requests:
+        - merged
 
 env:
   IMAGE_NAME: dingo-ubuntu
@@ -17,7 +23,7 @@ env:
 jobs:
   release:
     # The type of runner that the job will run on
-    # if: ${{ github.ref == 'refs/heads/main' }}
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -63,7 +69,7 @@ jobs:
           # Note: tags has to be all lower-case
           tags: ghcr.io/dingodb/dingo:latest
           # build on feature branches, push only on develop/main branch
-          push: ${{ github.repository == 'dingodb/dingo' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') }}
+          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
