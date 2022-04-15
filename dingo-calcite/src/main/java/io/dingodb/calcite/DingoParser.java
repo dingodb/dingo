@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,7 +45,9 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -52,6 +55,7 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
+import org.apache.calcite.util.ImmutableBeans;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,7 +76,13 @@ public class DingoParser {
     @Getter
     private final CalciteCatalogReader catalogReader;
 
-    protected SqlParser.Config parserConfig = SqlParser.config();
+    protected SqlParser.Config parserConfig = SqlParser.config()
+        .withLex(Lex.MYSQL)
+        .withCaseSensitive(false)
+        .withConformance(SqlConformanceEnum.MYSQL_5);
+
+    protected SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
+        .withSqlConformance(parserConfig.conformance());
 
     public DingoParser(@Nonnull DingoParserContext context) {
         this.context = context;
@@ -98,7 +108,7 @@ public class DingoParser {
             SqlOperatorTables.chain(SqlStdOperatorTable.instance(), catalogReader),
             catalogReader,
             context.getTypeFactory(),
-            SqlValidator.Config.DEFAULT
+            validatorConfig
         );
     }
 
@@ -125,17 +135,21 @@ public class DingoParser {
     }
 
     public RelRoot convert(@Nonnull SqlNode sqlNode) {
+
+        SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
+            .withTrimUnusedFields(true)
+            .withExpand(false)
+            .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN);
+
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
             (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
             sqlValidator,
             catalogReader,
             cluster,
             StandardConvertletTable.INSTANCE,
-            SqlToRelConverter.config()
-                .withTrimUnusedFields(true)
-                .withExpand(false)
-                .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
+            convertConfig
         );
+
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, false, true);
         if (log.isDebugEnabled()) {
             String relRootString = RelOptUtil.dumpPlan(

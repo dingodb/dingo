@@ -37,10 +37,9 @@ import static org.mockito.Mockito.when;
 
 @AutoService(MetaServiceProvider.class)
 public class MockMetaServiceProvider implements MetaServiceProvider {
-    public static final String SCHEMA_NAME = "MOCK";
-
-    public static final String TABLE_NAME = "TEST";
-    public static final String TABLE_1_NAME = "TEST1";
+    public static final String SCHEMA_NAME = "MOCK".toLowerCase();
+    public static final String TABLE_NAME = "TEST".toLowerCase();
+    public static final String TABLE_1_NAME = "TEST1".toLowerCase();
     public static final Location LOC_0 = new Location("host1", 26535);
     public static final Location LOC_1 = new Location("host2", 26535);
 

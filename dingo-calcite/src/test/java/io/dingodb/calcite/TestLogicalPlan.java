@@ -129,7 +129,8 @@ public class TestLogicalPlan {
     public void testAggregateGroup() throws SqlParseException {
         String sql = "select name, sum(amount) from test group by name";
         RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalAggregate.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
     }
@@ -249,7 +250,7 @@ public class TestLogicalPlan {
 
     @Test
     public void testTransfer() throws SqlParseException {
-        String sql = "insert into mock1.test1 select id as id1, id as id2, id as id3, name, amount from test";
+        String sql = "insert into mock.test1 select id as id1, id as id2, id as id3, name, amount from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
