@@ -336,16 +336,31 @@ public class DateTest {
         }
     }
 
-    // Result like: -332
+    // Result like: 1
     @Test
     public void testDateDiff() throws SQLException {
-        String sql = "select datediff('2007-1-31 23:59:59','2007-12-30')";
+        String sql = "select datediff('2007-12-29','2007-12-30')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    assertThat(rs.getString(1)).isEqualTo("-332");
+                    assertThat(rs.getString(1)).isEqualTo("1");
+                }
+            }
+        }
+    }
+
+    // Result like: 1
+    @Test
+    public void testDateDiffOtherFormat() throws SQLException {
+        String sql = "select datediff('20071229','2007-12-30')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1");
                 }
             }
         }
