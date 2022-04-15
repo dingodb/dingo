@@ -42,6 +42,11 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-store-raft').layout.buildDirectory) {
+        include('libs/dingo-store-raft-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
     from(project(':dingo-driver-client').layout.buildDirectory) {
         include('libs/dingo-driver-client-*-all.jar')
     }
@@ -70,6 +75,7 @@ copyDepends.dependsOn([
     ':dingo-server:dingo-server-executor:fatJar',
     ':dingo-cli:fatJar',
     ':dingo-driver-client:fatJar',
+    ':dingo-store-raft:fatJar',
     ':dingo-test:fatJar'
 ])
 

@@ -17,11 +17,13 @@
 package io.dingodb.test;
 
 import io.dingodb.calcite.Connections;
-import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.asserts.AssertResultSet;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
@@ -39,11 +41,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class SqlHelper {
+    @Getter
     private final Connection connection;
 
-    public SqlHelper() throws SQLException {
-        DingoOptions.instance().setIp("localhost");
-        DingoOptions.instance().setQueueCapacity(100);
+    public SqlHelper() throws Exception {
+        if (DingoConfiguration.instance() == null) {
+            System.out.println(StackTraces.lineNumber());
+            DingoConfiguration.parse(SqlHelper.class.getResource("/config.yaml").getPath());
+            System.out.println(StackTraces.lineNumber());
+        }
         Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);

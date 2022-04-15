@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
@@ -31,7 +32,6 @@ import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SourceOperator;
-import io.dingodb.meta.Location;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

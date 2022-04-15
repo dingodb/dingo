@@ -130,7 +130,11 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
 
     @Override
     public void closeListener(Consumer<Channel> listener) {
-        this.closeListener = listener;
+        if (listener == null) {
+            this.closeListener = this::skipListener;
+        } else {
+            this.closeListener = listener;
+        }
     }
 
     public NetServiceConnectionSubChannel status(Status status) {

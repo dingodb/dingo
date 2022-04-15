@@ -76,7 +76,7 @@ public class NettyServer implements PortListener {
                     .addLast(encoder)
                     .addLast(new MessageDecoder())
                     .addLast(new ConnectionHandshakeHandler(connection))
-                    .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.heartbeat(), 0, 0, SECONDS))
+                    .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.getHeartbeat(), 0, 0, SECONDS))
                     .addLast(new InboundMessageHandler(connection))
                     .addLast(new ExceptionHandler(connection));
                 connectionManager.onOpenConnection(connection);

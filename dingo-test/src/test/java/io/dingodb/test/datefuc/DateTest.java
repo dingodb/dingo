@@ -16,7 +16,6 @@
 
 package io.dingodb.test.datefuc;
 
-import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
@@ -45,10 +44,7 @@ public class DateTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
-        Services.initNetService();
-        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
-        sqlHelper = new SqlHelper(connection);
+        connection = (sqlHelper = new SqlHelper()).getConnection();
         sqlHelper.execFile("/table-test3-create.sql");
         sqlHelper.execFile("/table-test3-data.sql");
     }

@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.api;
 
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.net.Message;
@@ -29,7 +30,6 @@ import io.dingodb.net.netty.channel.ConnectionSubChannel;
 import io.dingodb.net.netty.packet.PacketMode;
 import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.packet.impl.MessagePacket;
-import io.dingodb.net.netty.utils.Serializers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
@@ -72,6 +72,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             }
             definedMap.put(name, defined);
             declarationMap.put(name, method);
+            log.info("Register api: {}, method: {}, defined: {}", api.getName(), name, defined.getClass().getName());
         }
     }
 
@@ -79,6 +80,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     public <T> void register(String name, Method method, T defined) {
         definedMap.put(name, defined);
         declarationMap.put(name, method);
+        log.info("Register function: {}, defined: {}", name, defined.getClass().getName());
     }
 
     @Override
@@ -100,11 +102,14 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         ByteBuffer buffer = ByteBuffer.wrap(packet.content().toBytes());
         String name = PrimitiveCodec.readString(buffer);
         Method method = declarationMap.get(name);
-        Object[] args = deserializeArgs(buffer, method.getParameterTypes());
         Object result = null;
         Message message = NetError.OK.message();
 
         try {
+            if (method == null) {
+                NetError.API_NOT_FOUND.throwFormatError(name);
+            }
+            Object[] args = deserializeArgs(buffer, method.getParameterTypes());
             result = invoke(definedMap.get(name), method, args);
             if (result != null) {
                 message = returnMessage(NetError.OK.getCode(), result);
@@ -138,10 +143,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
                 break;
             }
             Integer len = PrimitiveCodec.readZigZagInt(buffer);
-            args[parameterIndex] = Serializers.read(
-                ByteBuffer.wrap(buffer.array(), buffer.position(), len),
-                parameterTypes[parameterIndex]
-            );
+            args[parameterIndex] = ProtostuffCodec.read(ByteBuffer.wrap(buffer.array(), buffer.position(), len));
             buffer.position(buffer.position() + len);
         }
         return args;
@@ -161,7 +163,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     public Message returnMessage(Integer code, Object returnValue) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             outputStream.write(PrimitiveCodec.encodeZigZagInt(code));
-            outputStream.write(Serializers.write(returnValue));
+            outputStream.write(ProtostuffCodec.write(returnValue));
             outputStream.flush();
             return SimpleMessage.builder().content(outputStream.toByteArray()).build();
         } catch (IOException e) {

@@ -16,188 +16,191 @@
 
 package io.dingodb.common.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
-import java.beans.BeanInfo;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.io.FileInputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import static io.dingodb.expr.json.runtime.Parser.YAML;
 
+@Getter
+@Setter
+@ToString
 @Slf4j
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class DingoConfiguration {
 
-    private static final DingoConfiguration INSTANCE = new DingoConfiguration();
-    private final Map<String, Object> configs = new HashMap<>();
+    private static DingoConfiguration INSTANCE;
 
-    private DingoConfiguration() {
+    public static synchronized void parse(final String configPath) throws Exception {
+        INSTANCE = YAML.parse(new FileInputStream(configPath), DingoConfiguration.class);
     }
 
     public static DingoConfiguration instance() {
         return INSTANCE;
     }
 
-    public void set(String name, Object value) {
-        configs.put(name, value);
+    private ClusterConfiguration cluster;
+    private CommonId serverId;
+
+    @Delegate
+    private ExchangeConfiguration exchange;
+
+    private Map<String, Object> server;
+    private Map<String, Object> store;
+    private Map<String, Object> net;
+    private Map<String, Object> client;
+
+    @JsonIgnore
+    private Object serverConfiguration;
+    @JsonIgnore
+    private Object storeConfiguration;
+    @JsonIgnore
+    private Object netConfiguration;
+    @JsonIgnore
+    private Object clientConfiguration;
+
+    public static String host() {
+        return INSTANCE == null ? null : INSTANCE.getHost();
     }
 
-    public Object get(String name) {
-        if (name == null || name.isEmpty()) {
-            return new HashMap<>(configs);
-        }
-        Object value;
-        if ((value = configs.get(name)) != null) {
-            return value;
-        }
-        String[] names = name.split("\\.");
-        Map<String, Object> configs = this.configs;
-        for (String s : names) {
-            value = configs.get(s);
-            if (!(value instanceof Map)) {
-                break;
-            }
-            configs = (Map<String, Object>) value;
-        }
-        this.configs.put(name, value);
-        return value;
+    public static int port() {
+        return INSTANCE == null ? 0 : INSTANCE.getPort();
     }
 
-    public Boolean exist(String name) {
-        return get(name) != null;
+    public static CommonId serverId() {
+        return INSTANCE.serverId;
     }
 
-    public void setBool(String name, Boolean value) {
-        set(name, value);
+    public static Location location() {
+        return new Location(host(), port());
     }
 
-    public Boolean getBool(String name) {
-        return Boolean.valueOf(getString(name));
-    }
-
-    public Boolean getBool(String name, boolean defaultValue) {
-        return Boolean.valueOf(getString(name));
-    }
-
-    public void setString(String name, String value) {
-        set(name, value);
-    }
-
-    public String getString(String name) {
-        return getString(name, null);
-    }
-
-    public String getString(String name, String defaultValue) {
-        try {
-            return get(name).toString();
-        } catch (NullPointerException e) {
-            return defaultValue;
+    public void setServer(Class<?> cls) throws Exception {
+        serverConfiguration = mapToBean(server, cls);
+        if (serverConfiguration == null) {
+            serverConfiguration = newInstance(cls);
         }
     }
 
-    public void setInt(String name, int value) {
-        set(name, value);
-    }
-
-    public Integer getInt(String name) {
-        return getInt(name, null);
-    }
-
-    public Integer getInt(String name, Integer defaultValue) {
-        try {
-            return Integer.parseInt(getString(name));
-        } catch (NumberFormatException e) {
-            return defaultValue;
+    public void setStore(Class<?> cls) throws Exception {
+        storeConfiguration = mapToBean(store, cls);
+        if (storeConfiguration == null) {
+            storeConfiguration = newInstance(cls);
         }
     }
 
-    public Long getLong(String name, Long defaultValue) {
-        try {
-            return Long.parseLong(getString(name));
-        } catch (NumberFormatException e) {
-            return defaultValue;
+    public void setNet(Class<?> cls) throws Exception {
+        netConfiguration = mapToBean(net, cls);
+        if (netConfiguration == null) {
+            netConfiguration = newInstance(cls);
         }
     }
 
-    public <T> List<T> getList(String name) {
-        Object o = get(name);
-        if (o instanceof String) {
-            o = Arrays.asList(((String) o).split(","));
-        }
-        return (List<T>) o;
-    }
-
-    public Properties toProperties() {
-        Properties properties = new Properties();
-        properties.putAll(configs);
-        return properties;
-    }
-
-    public <T> T getAndConvert(String name, Class<T> cls, Supplier<T> defaultValueSupplier) {
-        try {
-            T result = mapToBean((Map<String, Object>) get(name), cls);
-            if (result == null) {
-                return defaultValueSupplier.get();
-            }
-            return result;
-        } catch (Exception e) {
-            log.error("Get configuration and convert error, name: {}, class: {}", name, cls.getName(), e);
-            return defaultValueSupplier.get();
+    public void setClient(Class<?> cls) throws Exception {
+        clientConfiguration = mapToBean(client, cls);
+        if (clientConfiguration == null) {
+            clientConfiguration = newInstance(cls);
         }
     }
 
-    public <T> T getAndConvert(String name, Class<T> cls) {
-        return getAndConvert(name, cls, () -> null);
+    public <T> T getServer() {
+        return (T) serverConfiguration;
     }
 
-    public <T> T mapToBean(Map<String, Object> map, Class<T> cls) throws Exception {
+    public <T> T getNet() {
+        return (T) netConfiguration;
+    }
+
+    public <T> T getStore() {
+        return (T) storeConfiguration;
+    }
+
+    public <T> T getClient() {
+        return (T) clientConfiguration;
+    }
+
+    public static <T> T mapToBean(Map<String, Object> map, Class<T> cls) throws Exception {
         if (map == null) {
             return null;
         }
 
-        T obj = cls.newInstance();
+        T obj = newInstance(cls);
 
-        BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
-        PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
-        for (PropertyDescriptor property : propertyDescriptors) {
+        Field[] fields = cls.getDeclaredFields();
+        for (Field field : fields) {
             try {
                 Object value;
-                if ((value = map.get(property.getName())) == null) {
+                if ((value = map.get(field.getName())) == null) {
                     continue;
                 }
-                if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
-                    value = mapToBean((Map<String, Object>) value, property.getPropertyType());
+                if (value instanceof Map && !field.getType().equals(Map.class)) {
+                    value = mapToBean((Map<String, Object>) value, field.getType());
                 }
-                if (!property.getPropertyType().equals(value.getClass())) {
-                    value = tryConvertValue(value, property.getPropertyType());
+                if (!field.getType().equals(value.getClass())) {
+                    value = tryConvertValue(value, field.getType());
                 }
-                Method setter = property.getWriteMethod();
-                if (setter != null) {
-                    setter.invoke(obj, value);
-                } else {
-                    Field field = cls.getDeclaredField(property.getName());
-                    field.setAccessible(true);
-                    field.set(obj, value);
-                }
+                field.setAccessible(true);
+                field.set(obj, value);
             } catch (Exception e) {
-                log.error("parse property name: {}. class name: {}, exception: {}",
-                    property.getName(), cls.getName(), e);
+                log.error("parse property name: {}. class name: {};", field.getName(), cls.getName(), e);
+                throw e;
             }
         }
+        //BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
+        //PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
+        //for (PropertyDescriptor property : propertyDescriptors) {
+        //    try {
+        //        Object value;
+        //        if ((value = map.get(property.getName())) == null) {
+        //            continue;
+        //        }
+        //        if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
+        //            value = mapToBean((Map<String, Object>) value, property.getPropertyType());
+        //        }
+        //        if (!property.getPropertyType().equals(value.getClass())) {
+        //            value = tryConvertValue(value, property.getPropertyType());
+        //        }
+        //        Method setter = property.getWriteMethod();
+        //        if (setter != null) {
+        //            setter.invoke(obj, value);
+        //        } else {
+        //            Field field = cls.getDeclaredField(property.getName());
+        //            field.setAccessible(true);
+        //            field.set(obj, value);
+        //        }
+        //    } catch (Exception e) {
+        //        log.error("parse property name: {}. class name: {};", property.getName(), cls.getName(), e);
+        //        throw e;
+        //    }
+        //}
 
         return obj;
     }
 
-    private Object tryConvertValue(Object obj, Class<?> type) {
+    @Nonnull
+    private static <T> T newInstance(Class<T> cls)
+        throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        Constructor<T> constructor = cls.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        T obj = constructor.newInstance();
+        return obj;
+    }
+
+    private static Object tryConvertValue(Object obj, Class<?> type) {
         String str = obj.toString();
         if (type.equals(String.class)) {
             return str;
@@ -231,7 +234,4 @@ public class DingoConfiguration {
         return obj;
     }
 
-    public static void configParse(final String configPath) throws Exception {
-        YAML.parse(new FileInputStream(configPath), Map.class).forEach((k, v) -> INSTANCE.set(k.toString(), v));
-    }
 }

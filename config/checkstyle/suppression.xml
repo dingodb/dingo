@@ -22,5 +22,6 @@
 <suppressions>
 
     <suppress files=".*\.java" checks="MissingJavadocMethod"/>
+    <suppress files=".*\.java" checks="NoFinalizer"/>
 
 </suppressions>

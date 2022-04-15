@@ -16,26 +16,59 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.common.config.DingoConfiguration;
+import lombok.Getter;
+
+@Getter
 public class NetServiceConfiguration {
 
-    public static final NetServiceConfiguration INSTANCE = new NetServiceConfiguration();
     public static final int DEFAULT_HEARTBEAT = 10;
     public static final int MIN_HEARTBEAT = 2;
+    public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors();
     public static final String HEARTBEAT = "heartbeat";
 
-    private NetServiceConfiguration() {
+    public static final NetServiceConfiguration INSTANCE;
+
+    static {
+        try {
+            DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
+            if (dingoConfiguration == null) {
+                INSTANCE = new NetServiceConfiguration();
+            } else {
+                dingoConfiguration.setNet(NetServiceConfiguration.class);
+                INSTANCE = dingoConfiguration.getNet();
+                if (INSTANCE.host == null) {
+                    INSTANCE.host = dingoConfiguration.getHost();
+                }
+            }
+            if (INSTANCE.heartbeat == null || INSTANCE.heartbeat < MIN_HEARTBEAT) {
+                INSTANCE.heartbeat = DEFAULT_HEARTBEAT;
+            }
+            if (INSTANCE.queueCapacity == null || INSTANCE.queueCapacity < MIN_QUEUE_CAPACITY) {
+                INSTANCE.queueCapacity = MIN_QUEUE_CAPACITY;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static NetServiceConfiguration instance() {
         return INSTANCE;
     }
 
-    public Integer heartbeat() {
-        Integer heartbeat = 0;
-        if (heartbeat <= MIN_HEARTBEAT) {
-            return DEFAULT_HEARTBEAT;
-        }
-        return heartbeat;
+    private Integer heartbeat;
+    private Integer queueCapacity;
+    private String host;
+
+    public static Integer heartbeat() {
+        return INSTANCE.heartbeat;
     }
 
+    public static Integer queueCapacity() {
+        return INSTANCE.queueCapacity;
+    }
+
+    public static String host() {
+        return INSTANCE.host;
+    }
 }

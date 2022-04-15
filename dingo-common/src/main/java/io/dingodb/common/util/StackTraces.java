@@ -30,7 +30,7 @@ public class StackTraces {
     }
 
     public static String methodName() {
-        return methodName(1);
+        return methodName(CURRENT_STACK + 1);
     }
 
     public static String methodName(int stack) {
@@ -38,7 +38,7 @@ public class StackTraces {
     }
 
     public static int lineNumber() {
-        return lineNumber(1);
+        return lineNumber(CURRENT_STACK + 1);
     }
 
     public static int lineNumber(int stack) {
@@ -46,7 +46,7 @@ public class StackTraces {
     }
 
     public static Class clazz() throws ClassNotFoundException {
-        return clazz(1);
+        return clazz(CURRENT_STACK + 1);
     }
 
     public static Class clazz(int stack) throws ClassNotFoundException {
@@ -54,7 +54,7 @@ public class StackTraces {
     }
 
     public static String className() {
-        return className(1);
+        return className(CURRENT_STACK + 1);
     }
 
     public static String className(int stack) {
@@ -62,7 +62,7 @@ public class StackTraces {
     }
 
     public static String fileName() {
-        return fileName(1);
+        return fileName(CURRENT_STACK + 1);
     }
 
     public static String fileName(int stack) {
@@ -70,7 +70,7 @@ public class StackTraces {
     }
 
     public static String packageName() {
-        return packageName(1);
+        return packageName(CURRENT_STACK + 1);
     }
 
     public static String packageName(int stack) {
@@ -79,7 +79,7 @@ public class StackTraces {
     }
 
     public static String stack() {
-        return stack(2);
+        return stack(CURRENT_STACK + 1);
     }
 
     public static String stack(int stack) {

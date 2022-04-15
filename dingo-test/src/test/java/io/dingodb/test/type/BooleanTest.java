@@ -16,7 +16,6 @@
 
 package io.dingodb.test.type;
 
-import io.dingodb.calcite.Connections;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.test.MetaTestService;
@@ -35,10 +34,7 @@ public class BooleanTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
-        Services.initNetService();
-        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
-        sqlHelper = new SqlHelper(connection);
+        connection = (sqlHelper = new SqlHelper()).getConnection();
         sqlHelper.execFile("/table-test4-support-boolean-creation.sql");
         sqlHelper.execFile("/table-test4-support-boolean-insert.sql");
     }

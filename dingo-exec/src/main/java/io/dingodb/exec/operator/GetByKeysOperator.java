@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.collect.Iterators;
-import io.dingodb.common.table.TableId;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
 
     @JsonCreator
     public GetByKeysOperator(
-        @JsonProperty("table") TableId tableId,
+        @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") TupleSchema schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,

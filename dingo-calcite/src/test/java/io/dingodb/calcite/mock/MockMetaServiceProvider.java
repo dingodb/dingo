@@ -17,15 +17,20 @@
 package io.dingodb.calcite.mock;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.meta.Location;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
+import io.dingodb.meta.Part;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.TreeMap;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -36,8 +41,8 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
 
     public static final String TABLE_NAME = "TEST";
     public static final String TABLE_1_NAME = "TEST1";
-    public static final Location LOC_0 = new Location("host1", 26535, "/path1");
-    public static final Location LOC_1 = new Location("host2", 26535, "/path2");
+    public static final Location LOC_0 = new Location("host1", 26535);
+    public static final Location LOC_1 = new Location("host2", 26535);
 
     @Override
     public MetaService get() {
@@ -48,17 +53,17 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
                 TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
                 TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json"))
             ));
-            when(metaService.getTableKey(anyString())).then(args -> {
-                String tableName = args.getArgument(0);
-                return tableName.getBytes(StandardCharsets.UTF_8);
-            });
+            when(metaService.getTableId(anyString())).thenReturn(CommonId.prefix((byte) 0));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        when(metaService.getPartLocations(TABLE_NAME)).thenReturn(ImmutableMap.of(
-            "0", LOC_0,
-            "1", LOC_1
-        ));
+        TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
+        byte[] key0 = {};
+        byte[] keyA = {4};
+        rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
+        rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
+        when(metaService.getParts(TABLE_NAME)).thenReturn(rangeSegments);
+        when(metaService.getDistributes(TABLE_NAME)).thenReturn(ImmutableList.of(LOC_0, LOC_1));
         when(metaService.currentLocation()).thenReturn(LOC_0);
         return metaService;
     }

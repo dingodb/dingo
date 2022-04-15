@@ -19,9 +19,10 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.calcite.JobRunner;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.Location;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
-import io.dingodb.meta.Location;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.enumerable.PhysType;
@@ -38,6 +39,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@Slf4j
 public final class EnumerableRoot extends SingleRel implements EnumerableRel {
     public EnumerableRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
@@ -72,7 +74,7 @@ public final class EnumerableRoot extends SingleRel implements EnumerableRel {
                 )
             );
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            log.error("Not found method [{}] in job runner.", methodName, e);
         }
         return null;
     }

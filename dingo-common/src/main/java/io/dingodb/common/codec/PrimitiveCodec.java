@@ -45,6 +45,15 @@ public class PrimitiveCodec {
         }
     }
 
+    public static byte[] encodeInt(int value) {
+        byte[] result = new byte[4];
+        result[0] = (byte) (value >> 24);
+        result[1] = (byte) (value >> 16);
+        result[2] = (byte) (value >> 8);
+        result[3] = (byte) (value);
+        return result;
+    }
+
     /**
      * Encode {@code value} using VarInt.
      */
@@ -97,10 +106,20 @@ public class PrimitiveCodec {
         return outputStream.toByteArray();
     }
 
+    public static Integer readInt(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+    }
+
     /**
      * Read int from {@code bytes}, and use VarInt load.
      */
     public static Integer readVarInt(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
         int position = 0;
         int b = Byte.MAX_VALUE + 1;
         int result = 0;

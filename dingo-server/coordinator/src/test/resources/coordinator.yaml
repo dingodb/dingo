@@ -1,0 +1,11 @@
+cluster:
+    name: dingo
+exchange:
+    host: localhost
+    port: 0
+server:
+    dataPath: dingo/test/meta
+    raft:
+        group: COORDINATOR_RAFT
+        port: 9181
+        initRaftSvrList: localhost:9181

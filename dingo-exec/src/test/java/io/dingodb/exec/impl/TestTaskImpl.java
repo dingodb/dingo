@@ -17,12 +17,12 @@
 package io.dingodb.exec.impl;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.ValuesOperator;
-import io.dingodb.meta.Location;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

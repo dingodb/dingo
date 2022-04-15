@@ -55,8 +55,7 @@ public class DingoResultSet extends AvaticaResultSet {
             try {
                 setFetchSize(1);
             } catch (SQLException e) {
-                e.printStackTrace();
-                log.error("Executor Iterator catch exception:{}", e.toString(), e);
+                log.error("Executor Iterator catch exception:{}", e.getMessage(), e);
             }
         }
         return iterator;
