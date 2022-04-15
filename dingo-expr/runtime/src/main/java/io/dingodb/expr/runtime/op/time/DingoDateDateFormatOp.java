@@ -21,7 +21,7 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javax.annotation.Nonnull;
 
@@ -39,15 +39,21 @@ public class DingoDateDateFormatOp extends RtFun {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String originDateTime = (String)values[0];
-
+        String formatStr = DateFormatUtil.defaultDateFormat();
+        if (values.length == 2) {
+            formatStr = (String)values[1];
+        }
+        LocalDateTime originLocalDateTime =
+            LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(originDateTime),
+                DateFormatUtil.getDatetimeFormatter());
         // Process format
-        String formatStr = (String)values[1];
-        formatStr = DateFormatUtil.replaceStr(formatStr);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+        if (formatStr.equals(DateFormatUtil.defaultTimeFormat())) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+            return originLocalDateTime.format(formatter);
+        } else {
+            return DateFormatUtil.processFormatStr(originLocalDateTime, formatStr);
+        }
 
-        originDateTime = DateFormatUtil.completeToTimestamp(originDateTime);
-
-        return Timestamp.valueOf(originDateTime).toLocalDateTime().format(formatter);
     }
 
 }
