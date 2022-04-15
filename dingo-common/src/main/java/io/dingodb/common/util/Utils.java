@@ -18,6 +18,7 @@ package io.dingodb.common.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
 public final class Utils {
@@ -51,14 +52,10 @@ public final class Utils {
         return res;
     }
 
-    public static char oddEvenHashAlphabetOrNumber(long value) {
-        char[] alphabet = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-                           'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-        char[] number = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
-        if ((value & 1L) == 0) {
-            return number[(int) (value % number.length)];
-        } else {
-            return alphabet[(int) (value % alphabet.length)];
+
+    public static void emptyWhile(Supplier<Boolean> predicate) {
+        while (predicate.get()) {
         }
     }
+
 }

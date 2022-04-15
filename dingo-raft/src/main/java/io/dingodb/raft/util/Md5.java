@@ -16,9 +16,12 @@
 
 package io.dingodb.raft.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+@Slf4j
 public class Md5 {
     /**
      * @param str
@@ -40,7 +43,7 @@ public class Md5 {
             }
             retStr = stringBuffer.toString();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            log.error("Not found MD5.", e);
         }
         return retStr;
     }

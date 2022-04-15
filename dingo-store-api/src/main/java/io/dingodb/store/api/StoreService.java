@@ -16,8 +16,14 @@
 
 package io.dingodb.store.api;
 
+import io.dingodb.common.CommonId;
+
 import javax.annotation.Nonnull;
 
 public interface StoreService {
-    StoreInstance getInstance(@Nonnull String path);
+    String name();
+
+    StoreInstance getInstance(@Nonnull CommonId id);
+
+    void deleteInstance(CommonId id);
 }

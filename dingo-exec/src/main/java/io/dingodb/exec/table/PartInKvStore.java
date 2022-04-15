@@ -16,12 +16,11 @@
 
 package io.dingodb.exec.table;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.store.api.KeyValue;
-import io.dingodb.store.api.PartitionOper;
+import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,44 +34,38 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
+
 @Slf4j
 public final class PartInKvStore implements Part {
-    private final PartitionOper block;
+    private final StoreInstance store;
     @Getter
     private final KeyValueCodec codec;
 
-    public PartInKvStore(PartitionOper block, TupleSchema schema, TupleMapping keyMapping) {
-        this.block = block;
+    public PartInKvStore(StoreInstance store, TupleSchema schema, TupleMapping keyMapping) {
+        this.store = store;
         this.codec = new KeyValueCodec(schema, keyMapping);
     }
 
     @Override
     @Nonnull
     public Iterator<Object[]> getIterator() {
-        return Iterators.transform(block.getIterator(), new Function<KeyValue, Object[]>() {
-            @Nullable
-            @Override
-            public Object[] apply(KeyValue keyValue) {
-                try {
-                    return codec.decode(keyValue);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            }
-        });
+        return Iterators.transform(
+            store.keyValueScan(),
+            wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+        );
     }
 
     @Override
     public boolean insert(@Nonnull Object[] tuple) {
         try {
-            KeyValue keyValue = codec.encode(tuple);
-            if (!block.contains(keyValue.getKey())) {
-                block.put(keyValue);
+            KeyValue row = codec.encode(tuple);
+            if (!store.exist(row.getPrimaryKey())) {
+                store.upsertKeyValue(row);
                 return true;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Insert: encode error.", e);
         }
         return false;
     }
@@ -80,23 +73,20 @@ public final class PartInKvStore implements Part {
     @Override
     public void upsert(@Nonnull Object[] tuple) {
         try {
-            KeyValue keyValue = codec.encode(tuple);
-            block.put(keyValue);
+            KeyValue row = codec.encode(tuple);
+            store.upsertKeyValue(row);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Upsert: encode error.", e);
         }
     }
 
     @Override
     public boolean remove(@Nonnull Object[] tuple) {
         try {
-            KeyValue keyValue = codec.encode(tuple);
-            if (block.contains(keyValue.getKey())) {
-                block.delete(keyValue.getKey());
-                return true;
-            }
+            KeyValue row = codec.encode(tuple);
+            return store.delete(row.getPrimaryKey());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Remove: encode error.", e);
         }
         return false;
     }
@@ -106,12 +96,12 @@ public final class PartInKvStore implements Part {
     public Object[] getByKey(@Nonnull Object[] keyTuple) {
         try {
             byte[] key = codec.encodeKey(keyTuple);
-            byte[] value = block.get(key);
+            byte[] value = store.getValueByPrimaryKey(key);
             if (value != null) {
                 return codec.mapKeyAndDecodeValue(keyTuple, value);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("GetByKey: codec error.", e);
         }
         return null;
     }
@@ -120,19 +110,12 @@ public final class PartInKvStore implements Part {
     @Nonnull
     public List<Object[]> getByMultiKey(@Nonnull final List<Object[]> keyTuples) {
         List<byte[]> keyList = keyTuples.stream()
-            .map(k -> {
-                try {
-                    return codec.encodeKey(k);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            })
+            .map(wrap(codec::encodeKey, e -> log.error("GetByMultiKey: encode key error.", e)))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
         List<Object[]> tuples = new ArrayList<>(keyList.size());
         try {
-            List<byte[]> valueList = block.multiGet(keyList);
+            List<KeyValue> valueList = store.getKeyValueByPrimaryKeys(keyList);
             if (keyList.size() != valueList.size()) {
                 log.error("Get KeyValues from Store => keyCnt:{} mismatch valueCnt:{}",
                     keyList.size(),
@@ -140,16 +123,15 @@ public final class PartInKvStore implements Part {
                 );
             }
             ListIterator<Object[]> keyIt = keyTuples.listIterator();
-            for (byte[] value : valueList) {
-                if (value == null) {
+            for (KeyValue row : valueList) {
+                if (row == null) {
                     keyIt.next();
                     continue;
                 }
-                tuples.add(codec.mapKeyAndDecodeValue(keyIt.next(), value));
+                tuples.add(codec.mapKeyAndDecodeValue(keyIt.next(), row.getValue()));
             }
         } catch (IOException e) {
             log.error("Get KeyValues from Store => Catch Exception:{} when read data", e.getMessage(), e);
-            e.printStackTrace();
         }
         return tuples;
     }

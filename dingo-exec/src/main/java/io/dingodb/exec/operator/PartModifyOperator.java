@@ -17,7 +17,9 @@
 package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dingodb.common.table.TableId;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
@@ -28,7 +30,9 @@ import io.dingodb.store.api.StoreInstance;
 
 public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonProperty("table")
-    protected final TableId tableId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    protected final CommonId tableId;
     @JsonProperty("part")
     protected final Object partId;
     @JsonProperty("schema")
@@ -40,7 +44,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     protected long count;
 
     protected PartModifyOperator(
-        TableId tableId,
+        CommonId tableId,
         Object partId,
         TupleSchema schema,
         TupleMapping keyMapping
@@ -55,9 +59,9 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(task.getLocation().getPath());
+        StoreInstance store = Services.KV_STORE.getInstance(tableId);
         part = new PartInKvStore(
-            store.getKvBlock(tableId, partId),
+            store,
             schema,
             keyMapping
         );

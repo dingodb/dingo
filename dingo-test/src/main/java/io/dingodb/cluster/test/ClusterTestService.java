@@ -18,7 +18,7 @@ package io.dingodb.cluster.test;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.cluster.ClusterService;
-import io.dingodb.meta.Location;
+import io.dingodb.common.Location;
 
 import java.util.List;
 
@@ -28,9 +28,9 @@ public class ClusterTestService implements ClusterService {
     @Override
     public List<Location> getComputingLocations() {
         return ImmutableList.of(
-            new Location("localhost", 0, ""),
-            new Location("localhost", 0, ""),
-            new Location("localhost", 0, "")
+            new Location("localhost", 0),
+            new Location("localhost", 0),
+            new Location("localhost", 0)
         );
     }
 }

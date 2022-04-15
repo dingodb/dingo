@@ -70,9 +70,7 @@ public final class SendOperator extends SinkOperator {
             endpoint = new SendEndpoint(host, port, TagUtil.tag(getTask().getJobId(), receiveId));
             endpoint.init();
         } catch (Exception e) {
-            log.error("SendOperator host:{}, port:{} catch exception:{}",
-                host, port, e.toString(), e);
-            e.printStackTrace();
+            log.error("Send operator init error, host:{}, port:{}", host, port, e);
         }
     }
 
@@ -98,7 +96,7 @@ public final class SendOperator extends SinkOperator {
             endpoint.send(codec.encodeFin(fin));
             endpoint.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Send FIN to ({}, {}, {}) error", host, port, receiveId, e);
         }
     }
 }

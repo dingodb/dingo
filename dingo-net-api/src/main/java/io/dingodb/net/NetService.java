@@ -41,6 +41,10 @@ public interface NetService extends AutoCloseable {
      */
     void unregisterMessageListenerProvider(Tag tag, MessageListenerProvider listenerProvider);
 
+    void registerTagMessageListener(Tag tag, MessageListener listener);
+
+    void unregisterTagMessageListener(Tag tag, MessageListener listener);
+
     /**
      * Listen the port, When receive message, notify the registered listener.
      *

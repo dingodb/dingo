@@ -17,7 +17,7 @@
 package io.dingodb.server.client.cluster.service;
 
 import io.dingodb.cluster.ClusterService;
-import io.dingodb.meta.Location;
+import io.dingodb.common.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.ClusterServiceApi;
@@ -35,6 +35,10 @@ public class ClusterServiceClient implements ClusterService {
 
     @Delegate
     private ClusterServiceApi clusterServiceApi;
+
+    public ClusterServiceClient() {
+        this(CoordinatorConnector.defaultConnector());
+    }
 
     public ClusterServiceClient(CoordinatorConnector connector) {
         clusterServiceApi = netService.apiRegistry().proxy(ClusterServiceApi.class, connector);

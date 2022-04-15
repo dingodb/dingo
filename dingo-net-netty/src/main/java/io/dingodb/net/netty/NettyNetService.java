@@ -16,9 +16,10 @@
 
 package io.dingodb.net.netty;
 
-import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.Channel;
+import io.dingodb.net.MessageListener;
 import io.dingodb.net.MessageListenerProvider;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
@@ -48,8 +49,8 @@ public class NettyNetService implements NetService {
     private final String hostname;
 
     protected NettyNetService() {
-        capacity = DingoOptions.instance().getQueueCapacity();
-        hostname = DingoOptions.instance().getIp();
+        capacity = NetServiceConfiguration.queueCapacity();
+        hostname = NetServiceConfiguration.host();
         connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider(), capacity);
         portListeners = new ConcurrentHashMap<>();
         localConnection = new NetServiceLocalConnection(capacity);
@@ -126,6 +127,24 @@ public class NettyNetService implements NetService {
             listenerProvider.getClass().getName(),
             StackTraces.stack(2));
         TagMessageHandler.INSTANCE.removeTagListenerProvider(tag, listenerProvider);
+    }
+
+    @Override
+    public void registerTagMessageListener(Tag tag, MessageListener listener) {
+        log.info("Register message listener, tag: [{}], listener class: [{}], caller: [{}]",
+            new String(tag.toBytes()),
+            listener.getClass().getName(),
+            StackTraces.stack(2));
+        TagMessageHandler.INSTANCE.addTagListener(tag, listener);
+    }
+
+    @Override
+    public void unregisterTagMessageListener(Tag tag, MessageListener listener) {
+        log.info("Unregister message listener, tag: [{}], listener class: [{}], caller: [{}]",
+            new String(tag.toBytes()),
+            listener.getClass().getName(),
+            StackTraces.stack(2));
+        TagMessageHandler.INSTANCE.removeTagListener(tag, listener);
     }
 
     @Override

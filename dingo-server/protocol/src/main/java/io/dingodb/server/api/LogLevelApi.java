@@ -28,10 +28,7 @@ import javax.annotation.Nonnull;
 
 public interface LogLevelApi {
 
-    default void init() {
-        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        netService.apiRegistry().register(LogLevelApi.class, this);
-    }
+    LogLevelApi INSTANCE = new LogLevelApi() {};
 
     @ApiDeclaration
     default void setLevel(@Nonnull String className, @Nonnull String level) throws ClassNotFoundException {

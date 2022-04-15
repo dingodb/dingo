@@ -36,7 +36,7 @@ public class DriverProxyService extends LocalService implements DriverProxyApi {
 
     private RpcMetadataResponse serverLevelRpcMetadata;
 
-    public DriverProxyService() throws Exception {
+    public DriverProxyService() {
         super(new ServerMetaFactory().create(Collections.emptyList()), NoopMetricsSystem.getInstance());
     }
 
@@ -99,8 +99,7 @@ public class DriverProxyService extends LocalService implements DriverProxyApi {
 
     public void start() {
         netService.apiRegistry().register(DriverProxyApi.class, this);
-        LogLevelApi logLevel = new LogLevelApi() {};
-        logLevel.init();
+        netService.apiRegistry().register(LogLevelApi.class, LogLevelApi.INSTANCE);
     }
 
     public void stop() {

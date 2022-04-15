@@ -16,7 +16,8 @@
 
 package io.dingodb.cluster;
 
-import io.dingodb.meta.Location;
+
+import io.dingodb.common.Location;
 
 import java.util.List;
 

@@ -16,7 +16,7 @@
 
 package io.dingodb.exec.base;
 
-import io.dingodb.meta.Location;
+import io.dingodb.common.Location;
 import lombok.Getter;
 import lombok.Setter;
 

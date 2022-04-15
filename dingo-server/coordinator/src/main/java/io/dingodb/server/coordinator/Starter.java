@@ -18,17 +18,15 @@ package io.dingodb.server.coordinator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.common.config.ClOptions;
-import io.dingodb.common.config.ClusterOptions;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.config.DingoOptions;
-import io.dingodb.common.config.ExchangeOptions;
-import io.dingodb.server.coordinator.config.CoordinatorExtOptions;
-import io.dingodb.server.coordinator.config.CoordinatorOptions;
-import io.dingodb.server.coordinator.config.CoordinatorRaftOptions;
-import io.dingodb.server.coordinator.config.CoordinatorSchedule;
-import io.dingodb.store.row.options.StoreDBOptions;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
+import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.type.SqlTypeName;
+
+import java.util.Arrays;
 
 @Slf4j
 public class Starter {
@@ -52,23 +50,9 @@ public class Starter {
             return;
         }
 
-        DingoConfiguration.configParse(this.config);
-        CoordinatorOptions svrOpts = DingoConfiguration.instance().getAndConvert("coordinator",
-            CoordinatorOptions.class, CoordinatorOptions::new);
-
-        ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
-            ClusterOptions.class, ClusterOptions::new);
-
-        DingoOptions.instance().setClusterOpts(clusterOpts);
-        DingoOptions.instance().setIp(svrOpts.getIp());
-        DingoOptions.instance().setExchange(svrOpts.getExchange());
-        DingoOptions.instance().setCliOptions(svrOpts.getOptions().getCliOptions());
-        int capacity = svrOpts.getOptions().getCapacity();
-        if (capacity != 0) {
-            DingoOptions.instance().setQueueCapacity(capacity);
-        }
-
+        DingoConfiguration.parse(this.config);
         CoordinatorServer server = new CoordinatorServer();
-        server.start(svrOpts);
+        server.start(CoordinatorConfiguration.instance());
+
     }
 }

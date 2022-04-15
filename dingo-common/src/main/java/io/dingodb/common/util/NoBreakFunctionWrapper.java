@@ -17,6 +17,7 @@
 package io.dingodb.common.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Slf4j
 public class NoBreakFunctionWrapper {
@@ -24,7 +25,23 @@ public class NoBreakFunctionWrapper {
     private NoBreakFunctionWrapper() {
     }
 
+    public static java.util.function.Consumer<Throwable> throwException() {
+        return e -> {
+            throw new RuntimeException(e);
+        };
+    }
+
+    public static java.util.function.Consumer<Throwable> throwException(String message) {
+        return e -> {
+            throw new RuntimeException(message, e);
+        };
+    }
+
     public static <T, R> java.util.function.Function<T, R> wrap(Function<T, R> function) {
+        return wrap(function, log);
+    }
+
+    public static <T, R> java.util.function.Function<T, R> wrap(Function<T, R> function, Logger log) {
         return wrap(function, throwable -> log.error("Execute function error.", throwable));
     }
 
@@ -51,6 +68,10 @@ public class NoBreakFunctionWrapper {
     }
 
     public static <T> java.util.function.Supplier<T> wrap(Supplier<T> supplier) {
+        return wrap(supplier, log);
+    }
+
+    public static <T> java.util.function.Supplier<T> wrap(Supplier<T> supplier, Logger log) {
         return wrap(supplier, throwable -> log.error("Execute supplier error.", throwable));
     }
 
@@ -77,6 +98,10 @@ public class NoBreakFunctionWrapper {
     }
 
     public static <T> java.util.function.Consumer<T> wrap(Consumer<T> consumer) {
+        return wrap(consumer, log);
+    }
+
+    public static <T> java.util.function.Consumer<T> wrap(Consumer<T> consumer, Logger log) {
         return wrap(consumer, throwable -> log.error("Execute consumer error.", throwable));
     }
 
@@ -88,6 +113,10 @@ public class NoBreakFunctionWrapper {
     }
 
     public static <T> java.util.function.Predicate<T> wrap(Predicate<T> predicate) {
+        return wrap(predicate, log);
+    }
+
+    public static <T> java.util.function.Predicate<T> wrap(Predicate<T> predicate, Logger log) {
         return wrap(predicate, throwable -> log.error("Execute predicate error.", throwable));
     }
 

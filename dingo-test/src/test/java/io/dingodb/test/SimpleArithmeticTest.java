@@ -16,7 +16,6 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.Connections;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.test.MetaTestService;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +41,7 @@ public class SimpleArithmeticTest {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
-        Services.initNetService();
-        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
-        sqlHelper = new SqlHelper(connection);
+        connection = (sqlHelper = new SqlHelper()).getConnection();
     }
 
     @AfterAll

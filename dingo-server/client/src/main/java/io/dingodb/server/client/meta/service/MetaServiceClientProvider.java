@@ -17,10 +17,10 @@
 package io.dingodb.server.client.meta.service;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.common.config.DingoOptions;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.NetAddress;
+import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,35 +32,7 @@ import java.util.stream.Collectors;
 @AutoService(MetaServiceProvider.class)
 public class MetaServiceClientProvider implements MetaServiceProvider {
 
-    private static final MetaServiceClient META_SERVICE_CLIENT;
-
-    static {
-        int times = DingoOptions.instance().getCliOptions().getMaxRetry();
-        final String coordSrvList = DingoOptions.instance().getCoordOptions().getInitCoordExchangeSvrList();
-        log.info("Meta service provider, coordSrvList: {}", coordSrvList);
-        List<String> servers = Arrays.asList(coordSrvList.split(","));
-
-        List<NetAddress> addrList = servers.stream()
-            .map(s -> s.split(":"))
-            .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
-            .collect(Collectors.toList());
-
-        CoordinatorConnector connector = new CoordinatorConnector(addrList);
-
-        int sleep = 200;
-        do {
-            connector.refresh();
-            try {
-                Thread.sleep(sleep);
-                sleep += sleep;
-            } catch (InterruptedException e) {
-                System.err.println("Wait coordinator connector ready interrupt.");
-            }
-        }
-        while (!connector.verify() && times-- > 0);
-        META_SERVICE_CLIENT = new MetaServiceClient(connector);
-    }
-
+    private static final MetaServiceClient META_SERVICE_CLIENT = new MetaServiceClient();
 
     @Override
     public MetaService get() {

@@ -80,10 +80,10 @@ public final class Services {
     }
 
     public static void initNetService() {
-        NET.registerMessageListenerProvider(SimpleTag.CTRL_TAG, () -> ((message, channel) -> {
+        NET.registerTagMessageListener(SimpleTag.CTRL_TAG, (message, channel) -> {
             EndpointManager.INSTANCE.onControlMessage(message);
-        }));
-        NET.registerMessageListenerProvider(SimpleTag.TASK_TAG, () -> (message, channel) -> {
+        });
+        NET.registerTagMessageListener(SimpleTag.TASK_TAG, (message, channel) -> {
             String taskStr = new String(message.toBytes(), StandardCharsets.UTF_8);
             if (log.isInfoEnabled()) {
                 log.info("Received task: {}", taskStr);

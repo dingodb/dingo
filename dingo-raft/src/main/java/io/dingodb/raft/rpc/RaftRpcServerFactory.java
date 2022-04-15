@@ -21,6 +21,7 @@ import io.dingodb.raft.rpc.impl.cli.AddLearnersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.AddPeerRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.ChangePeersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.GetLeaderRequestProcessor;
+import io.dingodb.raft.rpc.impl.cli.GetLocationProcessor;
 import io.dingodb.raft.rpc.impl.cli.GetPeersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.RemoveLearnersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.RemovePeerRequestProcessor;
@@ -111,6 +112,7 @@ public class RaftRpcServerFactory {
         rpcServer.registerProcessor(new AddLearnersRequestProcessor(cliExecutor));
         rpcServer.registerProcessor(new RemoveLearnersRequestProcessor(cliExecutor));
         rpcServer.registerProcessor(new ResetLearnersRequestProcessor(cliExecutor));
+        rpcServer.registerProcessor(new GetLocationProcessor());
     }
 
     /**

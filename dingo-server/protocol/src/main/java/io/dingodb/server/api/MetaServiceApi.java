@@ -16,12 +16,17 @@
 
 package io.dingodb.server.api;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.meta.Location;
-import io.dingodb.meta.LocationGroup;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.meta.Part;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
+import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import javax.annotation.Nonnull;
 
 public interface MetaServiceApi {
@@ -36,18 +41,23 @@ public interface MetaServiceApi {
     byte[] getTableKey(@Nonnull String tableName);
 
     @ApiDeclaration
+    CommonId getTableId(@Nonnull String tableName);
+
+    @ApiDeclaration
     byte[] getIndexId(@Nonnull String tableName);
 
     @ApiDeclaration
     Map<String, TableDefinition> getTableDefinitions();
 
     @ApiDeclaration
-    TableDefinition getTableDefinition(String name);
+    default TableDefinition getTableDefinition(String name) {
+        return getTableDefinitions().get(name);
+    }
 
     @ApiDeclaration
-    Map<String, Location> getPartLocations(String name);
+    NavigableMap<ComparableByteArray, Part> getParts(String name);
 
     @ApiDeclaration
-    LocationGroup getLocationGroup(String name);
+    List<Location> getDistributes(String name);
 
 }

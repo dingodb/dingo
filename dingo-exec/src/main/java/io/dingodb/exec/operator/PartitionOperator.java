@@ -21,22 +21,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.meta.Location;
+import io.dingodb.meta.Part;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("partition")
 @JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
 public final class PartitionOperator extends FanOutOperator {
     @JsonProperty("strategy")
-    private final PartitionStrategy strategy;
+    private final PartitionStrategy<ComparableByteArray> strategy;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
     @JsonProperty("partIndices")
@@ -44,7 +47,7 @@ public final class PartitionOperator extends FanOutOperator {
 
     @JsonCreator
     public PartitionOperator(
-        @JsonProperty("strategy") PartitionStrategy strategy,
+        @JsonProperty("strategy") PartitionStrategy<ComparableByteArray> strategy,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         super();
@@ -58,15 +61,15 @@ public final class PartitionOperator extends FanOutOperator {
         return partIndices.get(partId);
     }
 
-    public void createOutputs(@Nonnull Map<String, Location> partLocations) {
+    public void createOutputs(@Nonnull NavigableMap<ComparableByteArray, Part> partLocations) {
         int size = partLocations.size();
         outputs = new ArrayList<>(size);
         partIndices = new HashMap<>(size);
-        for (Map.Entry<String, Location> entry : partLocations.entrySet()) {
+        for (Map.Entry<ComparableByteArray, Part> entry : partLocations.entrySet()) {
             Object partId = entry.getKey();
             Output output = OutputIml.of(this);
             OutputHint hint = new OutputHint();
-            hint.setLocation(entry.getValue());
+            hint.setLocation(entry.getValue().getLeader());
             hint.setPartId(partId);
             output.setHint(hint);
             outputs.add(output);

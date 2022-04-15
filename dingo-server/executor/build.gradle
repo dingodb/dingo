@@ -30,12 +30,14 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-api")
+    implementation project(":dingo-store-api")
     implementation project(":dingo-net-netty")
+    implementation project(":dingo-driver-client")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
-    implementation project(":dingo-raft")
-    implementation project(":dingo-row-store")
-    implementation project(":dingo-row-store-api")
+    implementation project(":dingo-server:dingo-server-driver-proxy")
+
+    implementation project(":dingo-store-raft")
 }
 
 task fatJar(type: Jar) {
@@ -52,10 +54,6 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
 }
-
-fatJar.dependsOn([
-    ':dingo-row-store-api:jar'
-])
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")

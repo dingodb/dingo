@@ -16,37 +16,90 @@
 
 package io.dingodb.server.executor;
 
-import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.raft.option.CliOptions;
-import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.executor.config.ExecutorExtOptions;
-import io.dingodb.server.executor.config.ExecutorOptions;
+import io.dingodb.server.api.ServerApi;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.executor.api.DriverProxyApi;
+import io.dingodb.server.executor.api.TableStoreApi;
+import io.dingodb.server.executor.config.ExecutorConfiguration;
+import io.dingodb.server.protocol.meta.Executor;
+import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
-import io.dingodb.store.row.RowStoreInstance;
-import io.dingodb.store.row.options.DingoRowStoreOptions;
-import io.dingodb.store.row.options.HeartbeatOptions;
-import io.dingodb.store.row.options.PlacementDriverOptions;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 
 @Slf4j
 public class ExecutorServer {
 
-    private final NetService netService;
+    private NetService netService;
+    private StoreService storeService;
+    private CoordinatorConnector coordinatorConnector;
+    private CommonId id;
 
-    private ExecutorOptions svrOpts;
+    private TableStoreApi tableStoreApi;
+    private DriverProxyApi driverProxyApi;
+    private ServerApi serverApi;
 
     public ExecutorServer() {
         this.netService = loadNetService();
+        this.storeService = loadStoreService();
+        this.coordinatorConnector = CoordinatorConnector.defaultConnector();
+        this.serverApi = netService.apiRegistry().proxy(ServerApi.class, coordinatorConnector);
+    }
+
+    public void start() throws Exception {
+        log.info("Starting executor......");
+        initId();
+        DingoConfiguration.instance().setServerId(this.id);
+        netService.listenPort(DingoConfiguration.port());
+        initAllApi();
+        initStore();
+        log.info("Starting executor success.");
+    }
+
+    private void initId() throws IOException {
+        String dataPath = ExecutorConfiguration.dataPath();
+        Path path = Paths.get(dataPath);
+        Path idPath = Paths.get(dataPath, "id");
+        log.info("Get server id, path: {}", idPath);
+        if (Files.isDirectory(path) && Files.exists(idPath)) {
+            this.id = CommonId.decode(Files.readAllBytes(idPath));
+            log.info("Executor start, id: {}", id);
+        } else {
+            Files.createDirectories(path);
+            this.id = serverApi.registerExecutor(Executor.builder()
+                .host(DingoConfiguration.host())
+                .port(DingoConfiguration.port())
+                .processors(Runtime.getRuntime().availableProcessors())
+                .memory(Runtime.getRuntime().maxMemory())
+                .build());
+            Files.write(idPath, this.id.encode());
+            log.info("New executor, id: {}", id);
+        }
+    }
+
+    private void initStore() {
+        List<Part> parts = serverApi.storeMap(this.id);
+        log.info("Init store, parts: {}", parts);
+        parts.forEach(tableStoreApi::newTablePart);
+    }
+
+    private void initAllApi() {
+        tableStoreApi = new TableStoreApi(netService, storeService);
+        driverProxyApi = new DriverProxyApi(netService);
+        netService.apiRegistry().register(LogLevelApi.class, LogLevelApi.INSTANCE);
     }
 
     private NetService loadNetService() {
@@ -55,70 +108,8 @@ public class ExecutorServer {
         return netService;
     }
 
-    public void start(final ExecutorOptions opts) throws Exception {
-        this.svrOpts = opts;
-        log.info("Executor all configuration: {}.", this.svrOpts);
-        log.info("instance configuration: {}.", DingoOptions.instance());
-
-        netService.listenPort(svrOpts.getExchange().getPort());
-        DingoRowStoreOptions rowStoreOpts = buildRowStoreOptions();
-        RowStoreInstance.setRowStoreOptions(rowStoreOpts);
-
-        StoreService storeService = loadStoreService();
-        storeService.getInstance("/tmp");
-
-        LogLevelApi logLevel = new LogLevelApi() {};
-        logLevel.init();
-
-        // todo refactor
-        storeHeartBeatSender();
-    }
-
-    private DingoRowStoreOptions buildRowStoreOptions() {
-        DingoRowStoreOptions rowStoreOpts = new DingoRowStoreOptions();
-        ExecutorExtOptions extOpts = svrOpts.getOptions();
-
-        rowStoreOpts.setClusterName(DingoOptions.instance().getClusterOpts().getName());
-        rowStoreOpts.setInitialServerList(svrOpts.getRaft().getInitExecRaftSvrList());
-        rowStoreOpts.setFailoverRetries(extOpts.getCliOptions().getMaxRetry());
-        rowStoreOpts.setFutureTimeoutMillis(extOpts.getCliOptions().getTimeoutMs());
-
-        PlacementDriverOptions driverOptions = new PlacementDriverOptions();
-        driverOptions.setFake(false);
-        driverOptions.setPdGroupId(extOpts.getCoordOptions().getGroup());
-        driverOptions.setInitialPdServerList(extOpts.getCoordOptions().getInitCoordRaftSvrList());
-        CliOptions cliOptions = new CliOptions();
-        cliOptions.setMaxRetry(extOpts.getCliOptions().getMaxRetry());
-        cliOptions.setTimeoutMs(extOpts.getCliOptions().getTimeoutMs());
-        driverOptions.setCliOptions(cliOptions);
-        rowStoreOpts.setPlacementDriverOptions(driverOptions);
-
-        Endpoint endpoint = new Endpoint(svrOpts.getIp(), svrOpts.getRaft().getPort());
-        extOpts.getStoreEngineOptions().setServerAddress(endpoint);
-
-        rowStoreOpts.setStoreEngineOptions(extOpts.getStoreEngineOptions());
-        return rowStoreOpts;
-    }
-
-    private void storeHeartBeatSender() {
-        HeartbeatOptions heartbeatOpts =
-            svrOpts.getOptions().getStoreEngineOptions().getHeartbeatOptions();
-        if (heartbeatOpts == null) {
-            heartbeatOpts = new HeartbeatOptions();
-        }
-        StoreHeartbeatSender sender = new StoreHeartbeatSender(RowStoreInstance.kvStore().getStoreEngine());
-        sender.init(heartbeatOpts);
-    }
-
     private StoreService loadStoreService() {
-        String store = "";
-        List<StoreServiceProvider> storeServiceProviders = new ArrayList<>();
-        ServiceLoader.load(StoreServiceProvider.class).forEach(storeServiceProviders::add);
-        if (storeServiceProviders.size() == 1) {
-            return Optional.ofNullable(storeServiceProviders.get(0)).map(StoreServiceProvider::get).orElse(null);
-        }
-        return storeServiceProviders.stream().filter(provider -> store.equals(provider.getClass().getName())).findAny()
-            .map(StoreServiceProvider::get).orElse(null);
+        return ServiceLoader.load(StoreServiceProvider.class).iterator().next().get();
     }
 
 }
