@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,9 +60,9 @@ public class TestDingoParser {
                     typeFactory.createSqlType(SqlTypeName.DOUBLE)
                 ),
                 ImmutableList.of(
-                    "ID",
-                    "NAME",
-                    "AMOUNT"
+                    "id",
+                    "name",
+                    "amount"
                 )
             ).toString()
         );
@@ -71,10 +72,12 @@ public class TestDingoParser {
     public void testGetFieldOrigins() throws SqlParseException {
         SqlNode sqlNode = parse("select id, name, amount from test");
         List<List<String>> fieldOrigins = parser.getFieldOrigins(sqlNode);
+        String tableName = "TEST".toLowerCase();
+        String schemaName = "MOCK".toLowerCase();
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
-            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "ID"),
-            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "NAME"),
-            ImmutableList.of("DINGO_ROOT", "MOCK", "TEST", "AMOUNT")
+            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "ID"),
+            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "NAME"),
+            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "AMOUNT")
         ));
     }
 }
