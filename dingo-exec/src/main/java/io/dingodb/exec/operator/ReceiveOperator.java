@@ -32,14 +32,14 @@ import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.util.QueueUtil;
 import io.dingodb.exec.util.TagUtil;
+import io.dingodb.net.Channel;
+import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
-import io.dingodb.net.MessageListenerProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonPropertyOrder({"host", "port", "schema", "output"})
@@ -55,7 +55,7 @@ public final class ReceiveOperator extends SourceOperator {
     private String tag;
     private TxRxCodec codec;
     private BlockingQueue<Object[]> tupleQueue;
-    private ReceiveMessageListenerProvider messageListenerProvider;
+    private ReceiveMessageListener messageListener;
     private ReceiveEndpoint endpoint;
     private Fin finObj;
 
@@ -76,11 +76,11 @@ public final class ReceiveOperator extends SourceOperator {
         super.init();
         codec = new AvroTxRxCodec(schema);
         tupleQueue = new LinkedBlockingDeque<>();
-        messageListenerProvider = new ReceiveMessageListenerProvider();
+        messageListener = new ReceiveMessageListener();
         tag = TagUtil.tag(getTask().getJobId(), getId());
-        Services.NET.registerMessageListenerProvider(
+        Services.NET.registerTagMessageListener(
             TagUtil.getTag(tag),
-            messageListenerProvider
+            messageListener
         );
         endpoint = new ReceiveEndpoint(host, port, tag);
         endpoint.init();
@@ -115,9 +115,9 @@ public final class ReceiveOperator extends SourceOperator {
                 break;
             }
         }
-        Services.NET.unregisterMessageListenerProvider(
+        Services.NET.unregisterTagMessageListener(
             TagUtil.getTag(tag),
-            messageListenerProvider
+            messageListener
         );
         return false;
     }
@@ -142,26 +142,23 @@ public final class ReceiveOperator extends SourceOperator {
         }
     }
 
-    private class ReceiveMessageListenerProvider implements MessageListenerProvider {
-        @Nonnull
+    private class ReceiveMessageListener implements MessageListener {
         @Override
-        public MessageListener get() {
-            return (message, channel) -> {
-                try {
-                    byte[] content = message.toBytes();
-                    Object[] tuple = codec.decode(content);
-                    if (log.isDebugEnabled()) {
-                        if (!(tuple[0] instanceof Fin)) {
-                            log.debug("(tag = {}) Received tuple {}.", tag, schema.formatTuple(tuple));
-                        } else {
-                            log.debug("(tag = {}) Received FIN.", tag);
-                        }
+        public void onMessage(Message message, Channel channel) {
+            try {
+                byte[] content = message.toBytes();
+                Object[] tuple = codec.decode(content);
+                if (log.isDebugEnabled()) {
+                    if (!(tuple[0] instanceof Fin)) {
+                        log.debug("(tag = {}) Received tuple {}.", tag, schema.formatTuple(tuple));
+                    } else {
+                        log.debug("(tag = {}) Received FIN.", tag);
                     }
-                    QueueUtil.forcePut(tupleQueue, tuple);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
-            };
+                QueueUtil.forcePut(tupleQueue, tuple);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

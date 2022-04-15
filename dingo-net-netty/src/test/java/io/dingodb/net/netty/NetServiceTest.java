@@ -42,10 +42,10 @@ public class NetServiceTest {
         NettyNetService netService = (NettyNetService) loader.iterator().next().get();
 
         netService.listenPort(19199);
-        netService.registerMessageListenerProvider(
-            tag, () -> (msg, ch) -> assertThat(new String(msg.toBytes())).isEqualTo(hello));
-        netService.registerMessageListenerProvider(
-            tag, () -> (msg, ch) -> System.out.println(
+        netService.registerTagMessageListener(
+            tag, (msg, ch) -> assertThat(new String(msg.toBytes())).isEqualTo(hello));
+        netService.registerTagMessageListener(
+            tag, (msg, ch) -> System.out.println(
                 String.format("%s %s %s",
                     new String(msg.toBytes()), ((ConnectionSubChannel) ch).channelId(), StackTraces.stack(2)))
         );
@@ -68,8 +68,7 @@ public class NetServiceTest {
         netService.listenPort(26536);
 
         Thread.sleep(5000);
-        netService
-            .registerMessageListenerProvider(tag, () -> (msg, ch) -> System.out.println(new String(msg.toBytes())));
+        netService.registerTagMessageListener(tag, (msg, ch) -> System.out.println(new String(msg.toBytes())));
         for (int i = 0; i < 100; i++) {
             Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(26535).build());
             Message helloMsg = SimpleMessage.builder().tag(tag).content(hello.getBytes()).build();
@@ -91,8 +90,7 @@ public class NetServiceTest {
 
         Thread.sleep(5000);
 
-        netService
-            .registerMessageListenerProvider(tag, () -> (msg, ch) -> System.out.println(new String(msg.toBytes())));
+        netService.registerTagMessageListener(tag, (msg, ch) -> System.out.println(new String(msg.toBytes())));
         for (int i = 0; i < 100; i++) {
             Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(26536).build());
             Message helloMsg = SimpleMessage.builder().tag(tag).content(hello.getBytes()).build();

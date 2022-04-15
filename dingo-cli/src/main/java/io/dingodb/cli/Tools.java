@@ -18,16 +18,12 @@ package io.dingodb.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.common.config.ClusterOptions;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.config.DingoOptions;
-import io.dingodb.common.config.ExchangeOptions;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.client.config.ClientOptions;
 import io.dingodb.server.driver.DriverProxyService;
 import lombok.extern.slf4j.Slf4j;
 import sqlline.DingoSqlline;
@@ -38,8 +34,6 @@ import java.util.ServiceLoader;
 
 @Slf4j
 public class Tools {
-
-    private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
     @Parameter(names = "--help", help = true, order = 0)
     private boolean help;
@@ -77,19 +71,12 @@ public class Tools {
             commander.usage();
             return;
         }
-        DingoConfiguration.configParse(this.config);
-        ClientOptions clientOpts = DingoConfiguration.instance().getAndConvert("client",
-            ClientOptions.class, ClientOptions::new);
-        ClusterOptions clusterOpts = DingoConfiguration.instance().getAndConvert("cluster",
-            ClusterOptions.class, ClusterOptions::new);
-        initDingoOptions(clientOpts, clusterOpts);
-
-        log.info("tools configuration: {}.", clientOpts);
-        log.info("instance configuration: {}.", DingoOptions.instance());
+        DingoConfiguration.parse(this.config);
+        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
         switch (cmd.toUpperCase()) {
             case "SQLLINE":
-                log.info("Listen exchange port {}.", listenRandomPort());
+                log.info("Listen exchange port {}.", listenRandomPort(netService));
                 DingoSqlline sqlline = new DingoSqlline();
                 sqlline.connect();
                 SqlLine.Status status = sqlline.begin(new String[0], null, true);
@@ -100,6 +87,7 @@ public class Tools {
             case "DRIVER":
                 Services.initNetService();
                 netService.listenPort(port);
+                DingoConfiguration.instance().setPort(port);
                 DriverProxyService driverProxyService = new DriverProxyService();
                 driverProxyService.start();
                 break;
@@ -122,13 +110,13 @@ public class Tools {
         }
     }
 
-    private int listenRandomPort()  {
+    private int listenRandomPort(NetService netService)  {
         int times = 3;
         while (times-- > 0) {
             try {
                 DatagramSocket datagramSocket = new DatagramSocket();
                 netService.listenPort(datagramSocket.getLocalPort());
-                DingoOptions.instance().getExchange().setPort(datagramSocket.getLocalPort());
+                DingoConfiguration.instance().getExchange().setPort(datagramSocket.getLocalPort());
                 datagramSocket.close();
                 return datagramSocket.getLocalPort();
             } catch (Exception e) {
@@ -136,21 +124,6 @@ public class Tools {
             }
         }
         throw new RuntimeException("Listen port failed.");
-    }
-
-    private void initDingoOptions(final ClientOptions opts, final ClusterOptions clusterOpts) {
-        DingoOptions.instance().setClusterOpts(clusterOpts);
-        DingoOptions.instance().setIp(opts.getIp());
-        ExchangeOptions exchangeOptions = new ExchangeOptions();
-        exchangeOptions.setPort(port);
-        // port will be set later
-        DingoOptions.instance().setExchange(exchangeOptions);
-        DingoOptions.instance().setCoordOptions(opts.getOptions().getCoordOptions());
-        DingoOptions.instance().setCliOptions(opts.getOptions().getCliOptions());
-        int capacity = opts.getOptions().getCapacity();
-        if (capacity != 0) {
-            DingoOptions.instance().setQueueCapacity(capacity);
-        }
     }
 
 }

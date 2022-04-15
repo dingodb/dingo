@@ -25,7 +25,7 @@ import java.sql.SQLException;
 public class QueryWithMultiCondition {
 
     @Test
-    public void testCaseWithOutPrimaryKeys() throws IOException, SQLException {
+    public void testCaseWithOutPrimaryKeys() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
@@ -40,7 +40,7 @@ public class QueryWithMultiCondition {
     }
 
     @Test
-    public void testCaseHasPartPrimaryKey() throws IOException, SQLException {
+    public void testCaseHasPartPrimaryKey() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
@@ -55,7 +55,7 @@ public class QueryWithMultiCondition {
     }
 
     @Test
-    public void testCaseHasAllPrimaryKey() throws IOException, SQLException {
+    public void testCaseHasAllPrimaryKey() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-with-multi-key-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
@@ -70,7 +70,7 @@ public class QueryWithMultiCondition {
     }
 
     @Test
-    public void testCaseHasAllKeyAndOthers() throws IOException, SQLException {
+    public void testCaseHasAllKeyAndOthers() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-with-multi-key-create.sql");
         sqlHelper.execFile("/table-test-data.sql");

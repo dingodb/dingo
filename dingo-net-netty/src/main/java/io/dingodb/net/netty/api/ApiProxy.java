@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.api;
 
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.net.Message;
@@ -83,27 +84,19 @@ public class ApiProxy<T> implements InvocationHandler {
         if (name.isEmpty()) {
             name = method.toGenericString();
         }
-        return invoke(
-            name,
-            PreParameters.cleanNull(args, Constant.API_EMPTY_ARGS),
-            method.getReturnType()
-        );
+        return invoke(name, PreParameters.cleanNull(args, Constant.API_EMPTY_ARGS));
     }
 
-    protected <T> T invoke(
-        String name,
-        Object[] args,
-        Class<T> returnType
-    ) throws Throwable {
+    protected <T> T invoke(String name, Object[] args) throws Throwable {
         NetServiceConnectionSubChannel channel = netService.newChannel(netAddressProvider.get());
         MessagePacket packet = generatePacket(channel, name, args);
         CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
         channel.registerMessageListener(callHandler(future));
         try {
             channel.send(packet);
-            ByteBuffer buffer = future.get(5, TimeUnit.SECONDS);
+            ByteBuffer buffer = future.get(30, TimeUnit.SECONDS);
             if (buffer.hasRemaining()) {
-                return Serializers.read(buffer, returnType);
+                return ProtostuffCodec.read(buffer);
             } else {
                 return null;
             }
@@ -137,7 +130,7 @@ public class ApiProxy<T> implements InvocationHandler {
             for (int i = 0; i < args.length; i++) {
                 if (args[i] != null) {
                     outputStream.write(PrimitiveCodec.encodeZigZagInt(i));
-                    byte[] bytes = Serializers.write(args[i]);
+                    byte[] bytes = ProtostuffCodec.write(args[i]);
                     outputStream.write(PrimitiveCodec.encodeZigZagInt(bytes.length));
                     outputStream.write(bytes);
                 }
@@ -167,7 +160,7 @@ public class ApiProxy<T> implements InvocationHandler {
                         EXEC.throwFormatError(
                             "invoke remote api",
                             currentThread().getName(),
-                            String.format("error code [%s], %s", code, Serializers.read(buffer, String.class))
+                            String.format("error code [%s], %s", code, ProtostuffCodec.read(buffer))
                         );
                     }
                 }

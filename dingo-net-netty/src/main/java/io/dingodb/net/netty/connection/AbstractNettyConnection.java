@@ -18,7 +18,7 @@ package io.dingodb.net.netty.connection;
 
 import io.dingodb.common.concurrent.ThreadFactoryBuilder;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
-import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
@@ -53,7 +53,7 @@ public abstract class AbstractNettyConnection<M> implements Connection<M> {
     protected InetSocketAddress localAddress;
     protected InetSocketAddress remoteAddress;
 
-    protected Integer heartbeat = NetServiceConfiguration.INSTANCE.heartbeat();
+    protected Integer heartbeat = NetServiceConfiguration.INSTANCE.getHeartbeat();
 
     protected Bootstrap bootstrap;
     protected EventLoopGroup eventLoopGroup;
@@ -62,7 +62,7 @@ public abstract class AbstractNettyConnection<M> implements Connection<M> {
     protected ChannelIdAllocator<SimpleChannelId> unLimitChannelIdAllocator =
         new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);
     protected ChannelIdAllocator<SimpleChannelId> limitChannelIdAllocator =
-        new LimitedChannelIdAllocator<>(DingoOptions.instance().getQueueCapacity(), SimpleChannelId::new);
+        new LimitedChannelIdAllocator<>(NetServiceConfiguration.queueCapacity(), SimpleChannelId::new);
 
     public AbstractNettyConnection(SocketChannel nettyChannel) {
         this.nettyChannel = nettyChannel;

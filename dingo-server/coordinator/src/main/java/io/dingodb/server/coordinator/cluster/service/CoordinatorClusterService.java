@@ -17,28 +17,22 @@
 package io.dingodb.server.coordinator.cluster.service;
 
 import io.dingodb.cluster.ClusterService;
-import io.dingodb.meta.Location;
+import io.dingodb.common.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.api.ClusterServiceApi;
-import io.dingodb.server.coordinator.GeneralId;
-import io.dingodb.server.coordinator.context.CoordinatorContext;
-import io.dingodb.server.coordinator.meta.ScheduleMetaAdaptor;
-import io.dingodb.server.coordinator.resource.ResourceView;
-import io.dingodb.server.coordinator.resource.impl.ExecutorView;
+import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
+import io.dingodb.server.protocol.meta.Executor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class CoordinatorClusterService implements ClusterService, ClusterServiceApi {
     private static final CoordinatorClusterService INSTANCE = new CoordinatorClusterService();
-    private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-    private ScheduleMetaAdaptor scheduleMetaAdaptor;
 
     private CoordinatorClusterService() {
     }
@@ -47,23 +41,10 @@ public class CoordinatorClusterService implements ClusterService, ClusterService
         return INSTANCE;
     }
 
-    public void init(CoordinatorContext context) {
-        this.scheduleMetaAdaptor = context.scheduleMetaAdaptor();
-        netService.apiRegistry().register(ClusterServiceApi.class, this);
-    }
-
     @Override
     public List<Location> getComputingLocations() {
-        List<Location> result = new ArrayList<>();
-        Map<GeneralId, ? extends ResourceView> map = scheduleMetaAdaptor.namespaceView().resourceViews();
-        for (Map.Entry<GeneralId, ? extends ResourceView> entry : map.entrySet()) {
-            if (entry.getValue() instanceof ExecutorView) {
-                ExecutorView executorView = (ExecutorView) entry.getValue();
-                Endpoint endpoint = executorView.stats().getLocation();
-                Location location = new Location(endpoint.getIp(), endpoint.getPort(), "");
-                result.add(location);
-            }
-        }
-        return result;
+        return MetaAdaptorRegistry.getMetaAdaptor(Executor.class).getAll().stream()
+            .map(executor -> new Location(executor.getHost(), executor.getPort()))
+            .collect(Collectors.toList());
     }
 }

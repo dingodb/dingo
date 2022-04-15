@@ -35,7 +35,8 @@ dependencies {
     implementation project(":dingo-meta-api")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-raft")
-    implementation project(":dingo-row-store")
+    implementation project(":dingo-raft-kv")
+    implementation project(":dingo-store-api")
 }
 
 task fatJar(type: Jar) {

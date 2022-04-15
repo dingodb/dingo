@@ -35,7 +35,7 @@ public class QueryMetaDataTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
-    public static void setupAll() throws SQLException, IOException {
+    public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test1-create.sql");

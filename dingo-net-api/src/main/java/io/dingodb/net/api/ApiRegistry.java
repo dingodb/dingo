@@ -24,7 +24,7 @@ public interface ApiRegistry {
 
     <T> void register(Class<T> api, T defined);
 
-    default  <T> void register(Method method, T defined) {
+    default <T> void register(Method method, T defined) {
         register(method.toGenericString(), method, defined);
     }
 

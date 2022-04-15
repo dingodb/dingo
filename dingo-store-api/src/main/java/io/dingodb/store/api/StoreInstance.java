@@ -16,12 +16,131 @@
 
 package io.dingodb.store.api;
 
-import io.dingodb.common.table.TableId;
+import java.util.Iterator;
+import java.util.List;
 
 public interface StoreInstance {
-    PartitionOper getKvBlock(TableId tableId, Object partId, boolean isMain);
 
-    default PartitionOper getKvBlock(TableId tableId, Object partId) {
-        return getKvBlock(tableId, partId, true);
+    default void assignPart(Part part) {
+        throw new UnsupportedOperationException();
     }
+
+    default void reassignPart(Part part) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void unassignPart(Part part) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deletePart(Part part) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean exist(byte[] primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean existAny(List<byte[]> primaryKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean upsert(Row row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean upsert(List<Row> rows) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean upsertKeyValue(KeyValue row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean upsertKeyValue(List<KeyValue> rows) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean update(Row row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean delete(byte[] primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean delete(List<byte[]> primaryKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deleteByPrefixPrimaryKey(byte[] prefix) {
+        byte[] end = new byte[prefix.length];
+        System.arraycopy(prefix, 0, end, 0, prefix.length);
+        ++end[end.length - 1];
+        delete(prefix, end);
+    }
+
+    default Row getByPrimaryKey(byte[] primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<Row> getByPrimaryKeys(List<byte[]> primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default byte[] getValueByPrimaryKey(byte[] primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
+        return new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
+    }
+
+    default List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<Row> scan() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<Row> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> keyValueScan() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> keyValueScan(byte[] key) {
+        byte[] stop = new byte[key.length];
+        System.arraycopy(key, 0, stop, 0, key.length);
+        stop[stop.length - 1]++;
+        return keyValueScan(key, stop);
+    }
+
+    default Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<byte[]> columnScan(int columnIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<byte[]> columnScan(int columnIndex, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
 }

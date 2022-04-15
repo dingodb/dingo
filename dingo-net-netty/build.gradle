@@ -25,7 +25,5 @@ dependencies {
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
-    compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()}

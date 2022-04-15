@@ -16,9 +16,15 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
+import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -39,6 +45,8 @@ public interface MetaService {
 
     byte[] getTableKey(@Nonnull String tableName);
 
+    CommonId getTableId(@Nonnull String tableName);
+
     byte[] getIndexId(@Nonnull String tableName);
 
     Map<String, TableDefinition> getTableDefinitions();
@@ -47,9 +55,9 @@ public interface MetaService {
         return getTableDefinitions().get(name);
     }
 
-    Map<String, Location> getPartLocations(String name);
+    NavigableMap<ComparableByteArray, Part> getParts(String name);
 
-    LocationGroup getLocationGroup(String name);
+    List<Location> getDistributes(String name);
 
     Location currentLocation();
 }

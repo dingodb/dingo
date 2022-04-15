@@ -48,13 +48,12 @@ dependencies {
     implementation project(':dingo-exec')
     implementation project(':dingo-net-netty')
     implementation project(':dingo-server:dingo-server-driver-proxy')
-    implementation project(':dingo-row-store')
+    implementation project(':dingo-store-memory')
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestImplementation 'org.assertj:assertj-core:' + 'assertj'.v()
     intTestImplementation 'org.junit.jupiter:junit-jupiter-api:' + 'junit5'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
-    runtimeOnly project(':dingo-row-rocksdb-api')
     testImplementation project(':dingo-calcite')
     testRuntimeOnly project(':dingo-driver')
 }
@@ -82,6 +81,7 @@ task fatJar(type: Jar) {
 
 fatJar.dependsOn([
     ':dingo-driver-client:fatJar',
+    ':dingo-driver:build',
     ':dingo-server:dingo-server-driver-proxy:jar'
 ])
 

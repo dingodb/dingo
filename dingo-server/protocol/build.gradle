@@ -24,4 +24,5 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
     implementation project(":dingo-meta-api")
+    implementation project(":dingo-store-api")
 }

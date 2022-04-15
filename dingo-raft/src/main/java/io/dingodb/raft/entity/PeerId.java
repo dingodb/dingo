@@ -16,12 +16,15 @@
 
 package io.dingodb.raft.entity;
 
+import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.raft.core.ElectionPriority;
 import io.dingodb.raft.util.AsciiStringUtil;
 import io.dingodb.raft.util.Copiable;
 import io.dingodb.raft.util.CrcUtil;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.raft.util.Utils;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +36,9 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
     private static final long serialVersionUID = 8083529734784884641L;
 
     private static final Logger LOG = LoggerFactory.getLogger(PeerId.class);
+
+    @Getter
+    private final Location location = new Location(DingoConfiguration.host(), DingoConfiguration.port());
 
     /** Peer address. */
     private Endpoint endpoint = new Endpoint(Utils.IP_ANY, 0);

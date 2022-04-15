@@ -1,13 +1,7 @@
 cluster:
     name: dingo
+exchange:
+    host: node1
+    port: 8765
 client:
-    ip: 172.20.3.95 # your ip
-    options:
-        coordOptions:
-            group: COORDINATOR_RAFT
-            initCoordExchangeSvrList: 172.20.3.94:19181,172.20.3.95:19181,172.20.3.96:19181
-        cliOptions:
-            timeoutMs: 10000
-            maxRetry: 3
-            rpcProcessorThreadPoolSize: 4
-        capacity: 100
+    coordinatorExchangeSvrList: node1:19181,node2:19181,node3:19181

@@ -33,10 +33,12 @@ import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TableId;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.base.Id;
@@ -69,11 +71,11 @@ import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.SimplePartitionStrategy;
+import io.dingodb.exec.partition.RangeStrategy;
 import io.dingodb.exec.sort.SortCollation;
 import io.dingodb.exec.sort.SortDirection;
 import io.dingodb.exec.sort.SortNullDirection;
-import io.dingodb.meta.Location;
+import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -88,6 +90,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -284,23 +287,22 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoDistributedValues rel) {
         List<Output> outputs = new LinkedList<>();
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        final NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
         final TableDefinition td = metaHelper.getTableDefinition();
-        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
-        Map<String, List<Object[]>> partMap = ps.partTuples(
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
             rel.getValues(),
             td.getKeyMapping()
         );
-        for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
-            Object partId = entry.getKey();
+        for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             ValuesOperator operator = new ValuesOperator(
                 entry.getValue(),
                 TupleSchema.fromRelDataType(rel.getRowType())
             );
             operator.setId(idGenerator.get());
             OutputHint hint = new OutputHint();
-            hint.setPartId(partId);
-            Location location = partLocations.get(partId);
+            hint.setPartId(entry.getKey());
+            Location location = parts.get(entry.getKey()).getLeader();
             hint.setLocation(location);
             operator.getSoleOutput().setHint(hint);
             Task task = job.getOrCreate(location, idGenerator);
@@ -335,24 +337,23 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoGetByKeys rel) {
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        final NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
         final TableDefinition td = metaHelper.getTableDefinition();
-        final TableId tableId = metaHelper.getTableId();
-        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
-        Map<String, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
+        final CommonId tableId = metaHelper.getTableId();
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
         List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<String, List<Object[]>> entry : partMap.entrySet()) {
-            final Object partId = entry.getKey();
+        for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysOperator operator = new GetByKeysOperator(
                 tableId,
-                partId,
+                entry.getKey(),
                 td.getTupleSchema(),
                 td.getKeyMapping(),
                 entry.getValue(),
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(partLocations.get(entry.getKey()), idGenerator);
+            Task task = job.getOrCreate(parts.get(entry.getKey()).getLeader(), idGenerator);
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }
@@ -407,9 +408,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        final Map<String, Location> partLocations = metaHelper.getPartLocations();
+        NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
         final TableDefinition td = metaHelper.getTableDefinition();
-        final PartitionStrategy ps = new SimplePartitionStrategy(partLocations.size());
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(
@@ -417,7 +418,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getKeyMapping()
             );
             operator.setId(idGenerator.get());
-            operator.createOutputs(partLocations);
+            operator.createOutputs(parts);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
             outputs.addAll(operator.getOutputs());
@@ -431,7 +432,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         List<Output> outputs = new LinkedList<>();
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
         TableDefinition td = metaHelper.getTableDefinition();
-        final TableId tableId = metaHelper.getTableId();
+        final CommonId tableId = metaHelper.getTableId();
         for (Output input : inputs) {
             Task task = input.getTask();
             Operator operator;
@@ -484,24 +485,25 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoPartScan rel) {
         MetaHelper metaHelper = new MetaHelper(rel.getTable());
         TableDefinition td = metaHelper.getTableDefinition();
-        Map<String, Location> parts = metaHelper.getPartLocations();
-        TableId tableId = metaHelper.getTableId();
-        List<Output> outputs = new ArrayList<>(parts.size());
         RtExprWithType filter = null;
+        List<Location> distributes = metaHelper.getDistributes();
+        CommonId tableId = metaHelper.getTableId();
+        List<Output> outputs = new ArrayList<>(distributes.size());
+        String filterStr = null;
         if (rel.getFilter() != null) {
             filter = RexConverter.toRtExprWithType(rel.getFilter());
         }
-        for (Map.Entry<String, Location> entry : parts.entrySet()) {
+        for (int i = 0; i < distributes.size(); i++) {
             PartScanOperator operator = new PartScanOperator(
                 tableId,
-                entry.getKey(),
+                i,
                 td.getTupleSchema(),
                 td.getKeyMapping(),
                 filter,
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(entry.getValue(), idGenerator);
+            Task task = job.getOrCreate(distributes.get(i), idGenerator);
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }

@@ -16,16 +16,19 @@
 
 package io.dingodb.calcite.visitor;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TableId;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.Services;
-import io.dingodb.meta.Location;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.Part;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
 
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -46,11 +49,15 @@ class MetaHelper {
         return metaService.getTableDefinition(tableName);
     }
 
-    Map<String, Location> getPartLocations() {
-        return metaService.getPartLocations(tableName);
+    NavigableMap<ComparableByteArray, Part> getParts() {
+        return metaService.getParts(tableName);
     }
 
-    TableId getTableId() {
-        return new TableId(metaService.getTableKey(tableName));
+    List<Location> getDistributes() {
+        return metaService.getDistributes(tableName);
+    }
+
+    CommonId getTableId() {
+        return metaService.getTableId(tableName);
     }
 }

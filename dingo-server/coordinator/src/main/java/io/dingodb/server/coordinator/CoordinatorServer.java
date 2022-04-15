@@ -16,199 +16,119 @@
 
 package io.dingodb.server.coordinator;
 
-import io.dingodb.common.config.DingoOptions;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.util.Files;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
-import io.dingodb.raft.RaftServiceFactory;
-import io.dingodb.raft.StateMachine;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.kv.storage.MemoryRawKVStore;
+import io.dingodb.raft.kv.storage.RawKVStore;
+import io.dingodb.raft.kv.storage.RocksRawKVStore;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.rpc.RaftRpcServerFactory;
+import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.coordinator.cluster.service.CoordinatorClusterService;
-import io.dingodb.server.coordinator.config.CoordinatorOptions;
-import io.dingodb.server.coordinator.context.CoordinatorContext;
-import io.dingodb.server.coordinator.meta.RowStoreMetaAdaptor;
-import io.dingodb.server.coordinator.meta.ScheduleMetaAdaptor;
-import io.dingodb.server.coordinator.meta.TableMetaAdaptor;
-import io.dingodb.server.coordinator.meta.impl.RowStoreMetaAdaptorImpl;
-import io.dingodb.server.coordinator.meta.impl.ScheduleMetaAdaptorImpl;
-import io.dingodb.server.coordinator.meta.impl.TableMetaAdaptorImpl;
-import io.dingodb.server.coordinator.meta.service.CoordinatorMetaService;
-import io.dingodb.server.coordinator.service.LeaderFollowerServiceProvider;
-import io.dingodb.server.coordinator.service.impl.CoordinatorLeaderFollowerServiceProvider;
+import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
+import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
-import io.dingodb.server.coordinator.store.AsyncKeyValueStore;
-import io.dingodb.server.coordinator.store.RaftAsyncKeyValueStore;
-import io.dingodb.store.row.storage.RawKVStore;
-import io.dingodb.store.row.storage.RocksRawKVStore;
-import io.dingodb.store.row.util.Strings;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
+import io.dingodb.server.coordinator.store.MetaStore;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
-import javax.annotation.Nonnull;
 
-import static io.dingodb.server.coordinator.config.Constants.COORDINATOR;
+import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
+import static io.dingodb.server.coordinator.config.Constants.RAFT;
 
+@Slf4j
 public class CoordinatorServer {
 
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(CoordinatorServer.class);
-    private CoordinatorContext context;
-    private CoordinatorOptions svrOpts;
+    private CoordinatorConfiguration configuration;
     private Node node;
+    private CoordinatorStateMachine stateMachine;
+    private NetService netService;
 
     public CoordinatorServer() {
     }
 
-    public CoordinatorContext context() {
-        return context;
-    }
+    public void start(CoordinatorConfiguration configuration) throws Exception {
+        this.configuration = configuration;
+        log.info("Coordinator configuration: {}.", this.configuration);
+        log.info("Dingo configuration: {}.", DingoConfiguration.instance());
 
-    public void start(final CoordinatorOptions opts) throws Exception {
-        this.svrOpts = opts;
-        log.info("Coordinator all configuration: {}.", this.svrOpts);
-        log.info("instance configuration: {}.", DingoOptions.instance());
+        Files.createDirectories(Paths.get(configuration.getDataPath()));
 
-        this.context = new CoordinatorContext();
+        RawKVStore memoryStore = new MemoryRawKVStore();
+        RawKVStore rocksStore = new RocksRawKVStore(configuration.getDataPath(), configuration.getRocks());
 
-        final String raftId = svrOpts.getRaft().getGroup();
-        final Endpoint endpoint = new Endpoint(svrOpts.getIp(), svrOpts.getRaft().getPort());
-
-        final RocksRawKVStore rawKVStore = createRocksDB();
-
-        final CoordinatorStateMachine stateMachine = createStateMachine(raftId, rawKVStore, context);
-        final Node node = RaftServiceFactory.createRaftNode(raftId, new PeerId(endpoint, 0));
-        final AsyncKeyValueStore keyValueStore = createStore(rawKVStore, node);
-        final ScheduleMetaAdaptor scheduleMetaAdaptor = createScheduleMetaAdaptor(keyValueStore);
-        final TableMetaAdaptor tableMetaAdaptor = createTableMetaAdaptor(keyValueStore, scheduleMetaAdaptor);
-        final CoordinatorMetaService metaService = createMetaService();
-        final RowStoreMetaAdaptor rowStoreMetaAdaptor = createRowStoreMetaAdaptor(scheduleMetaAdaptor);
-        final LogLevelApi logLevel = new LogLevelApi() {};
-        final CoordinatorClusterService clusterService = createClusterService();
-
-        context
-            .coordOpts(svrOpts)
-            .endpoint(endpoint)
-            .netService(createNetService())
-            .rocksKVStore(rawKVStore)
-            .stateMachine(stateMachine)
-            .keyValueStore(keyValueStore)
-            .node(node)
-            .scheduleMetaAdaptor(scheduleMetaAdaptor)
-            .serviceProvider(createServiceProvider())
-            .tableMetaAdaptor(tableMetaAdaptor)
-            .rowStoreMetaAdaptor(rowStoreMetaAdaptor)
-            .metaService(metaService);
-
+        Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
+        RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(endpoint);
+        rpcServer.init(null);
         NodeManager.getInstance().addAddress(endpoint);
-        stateMachine.init();
-        final NodeOptions nodeOptions = initNodeOptions(stateMachine);
+
+        Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, 0));
+        MetaStore metaStore = new MetaStore(node, rocksStore);
+        CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
+        NodeOptions nodeOptions = getNodeOptions();
+        nodeOptions.setFsm(stateMachine);
         node.init(nodeOptions);
-        keyValueStore.init();
-        logLevel.init();
-        clusterService.init(context);
+
+        netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+        netService.listenPort(DingoConfiguration.port());
+        netService.apiRegistry().register(LogLevelApi.class, LogLevelApi.INSTANCE);
+
+        DingoMetaService.init();
     }
 
-    @Nonnull
-    private RowStoreMetaAdaptorImpl createRowStoreMetaAdaptor(ScheduleMetaAdaptor scheduleMetaAdaptor) {
-        return new RowStoreMetaAdaptorImpl(scheduleMetaAdaptor);
-    }
 
-    private LeaderFollowerServiceProvider createServiceProvider() {
-        return new CoordinatorLeaderFollowerServiceProvider();
-    }
-
-    private CoordinatorStateMachine createStateMachine(
-        String coordinatorRaftId,
-        RocksRawKVStore rawKVStore,
-        CoordinatorContext context
-    ) {
-        return new CoordinatorStateMachine(coordinatorRaftId, rawKVStore, context);
-    }
-
-    private AsyncKeyValueStore createStore(RawKVStore rawKVStore, Node node) {
-        return new RaftAsyncKeyValueStore(rawKVStore, node);
-    }
-
-    private ScheduleMetaAdaptor createScheduleMetaAdaptor(AsyncKeyValueStore keyValueStore) {
-        return new ScheduleMetaAdaptorImpl(keyValueStore);
-    }
-
-    private NetService createNetService() {
-        return ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-    }
-
-    private NodeOptions initNodeOptions(StateMachine stateMachine) {
-        final Configuration initialConf = new Configuration();
-        String svrList = svrOpts.getRaft().getInitCoordRaftSvrList();
-        if (!initialConf.parse(svrList)) {
-            throw new RuntimeException("configuration parse error, initCoordSrvList: " + svrList);
+    private NodeOptions getNodeOptions() {
+        NodeOptions nodeOptions = configuration.getRaft().getNode();
+        if (nodeOptions == null) {
+            configuration.getRaft().setNode(nodeOptions = new NodeOptions());
         }
-
-        NodeOptions nodeOpts = new NodeOptions();
-        nodeOpts.setInitialConf(initialConf);
-        nodeOpts.setFsm(stateMachine);
-
-        final String dbPath = svrOpts.getOptions().getStoreDBOptions().getDataPath();
-        if (Strings.isBlank(nodeOpts.getLogUri())) {
-            final String logUri = Paths.get(dbPath, COORDINATOR, "log").toString();
-            try {
-                FileUtils.forceMkdir(new File(logUri));
-                log.info("data path created: {}", logUri);
-            } catch (final Throwable t) {
-                throw new RuntimeException("Fail to make dir for dbPath: " + logUri);
+        if (nodeOptions.getInitialConf() == null || nodeOptions.getInitialConf().isEmpty()) {
+            Configuration initialConf = new Configuration();
+            String svrList = configuration.getRaft().getInitRaftSvrList();
+            if (!initialConf.parse(svrList)) {
+                throw new RuntimeException("Raft configuration parse error, initRaftSvrList: " + svrList);
             }
-            nodeOpts.setLogUri(logUri);
-        }
-        if (Strings.isBlank(nodeOpts.getRaftMetaUri())) {
-            final String meteUri = Paths.get(dbPath, COORDINATOR, "meta").toString();
-            nodeOpts.setRaftMetaUri(meteUri);
-        }
-        if (Strings.isBlank(nodeOpts.getSnapshotUri())) {
-            final String snapshotUri = Paths.get(dbPath, COORDINATOR, "snapshot").toString();
-            nodeOpts.setSnapshotUri(snapshotUri);
-        }
-        return nodeOpts;
-    }
-
-    private TableMetaAdaptorImpl createTableMetaAdaptor(
-        AsyncKeyValueStore keyValueStore,
-        ScheduleMetaAdaptor metaStore) {
-        return new TableMetaAdaptorImpl(keyValueStore, metaStore);
-    }
-
-    private CoordinatorMetaService createMetaService() {
-        return CoordinatorMetaService.instance();
-    }
-
-    private CoordinatorClusterService createClusterService() {
-        return CoordinatorClusterService.instance();
-    }
-
-    private RocksRawKVStore createRocksDB() {
-        final String dbPath = svrOpts.getOptions().getStoreDBOptions().getDataPath();
-        final String dataPath = Paths.get(dbPath, COORDINATOR, "db").toString();
-        svrOpts.getOptions().getStoreDBOptions().setDataPath(dbPath);
-
-        try {
-            FileUtils.forceMkdir(new File(dataPath));
-            log.info("data path created: {}", dataPath);
-        } catch (final Throwable t) {
-            throw new RuntimeException("Fail to make dir for dbPath: " + dataPath);
+            nodeOptions.setInitialConf(initialConf);
         }
 
-        RocksRawKVStore rocksRawKVStore = new RocksRawKVStore();
-        if (!rocksRawKVStore.init(svrOpts.getOptions().getStoreDBOptions())) {
-            throw new RuntimeException("Fail to init RocksRawKVStore.");
+        String dataPath = configuration.getDataPath();
+        if (nodeOptions.getLogUri() == null || nodeOptions.getLogUri().isEmpty()) {
+            Path logPath = Paths.get(dataPath, RAFT, "log");
+            try {
+                Files.createDirectories(logPath);
+            } catch (final Throwable t) {
+                throw new RuntimeException("Fail to make dir for log: " + logPath);
+            }
+            nodeOptions.setLogUri(logPath.toString());
         }
-
-        return rocksRawKVStore;
+        if (nodeOptions.getRaftMetaUri() == null || nodeOptions.getRaftMetaUri().isEmpty()) {
+            Path metaPath = Paths.get(dataPath, RAFT, "meta");
+            try {
+                Files.createDirectories(metaPath);
+            } catch (final Throwable t) {
+                throw new RuntimeException("Fail to make dir for meta: " + metaPath);
+            }
+            nodeOptions.setRaftMetaUri(metaPath.toString());
+        }
+        if (nodeOptions.getSnapshotUri() == null || nodeOptions.getSnapshotUri().isEmpty()) {
+            Path snapshotPath = Paths.get(dataPath, RAFT, "snapshot");
+            try {
+                Files.createDirectories(snapshotPath);
+            } catch (final Throwable t) {
+                throw new RuntimeException("Fail to make dir for snapshot: " + snapshotPath);
+            }
+            nodeOptions.setSnapshotUri(snapshotPath.toString());
+        }
+        return nodeOptions;
     }
 
 }

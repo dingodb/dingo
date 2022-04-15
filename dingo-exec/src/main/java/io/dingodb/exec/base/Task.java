@@ -16,8 +16,8 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.Location;
 import io.dingodb.exec.operator.RootOperator;
-import io.dingodb.meta.Location;
 
 import java.util.List;
 import java.util.Map;

@@ -32,9 +32,7 @@
             <option value="$PROJECT_DIR$/dingo-net-api" />
             <option value="$PROJECT_DIR$/dingo-net-netty" />
             <option value="$PROJECT_DIR$/dingo-raft" />
-            <option value="$PROJECT_DIR$/dingo-row-rocksdb-api" />
-            <option value="$PROJECT_DIR$/dingo-row-store" />
-            <option value="$PROJECT_DIR$/dingo-row-store-api" />
+            <option value="$PROJECT_DIR$/dingo-raft-kv" />
             <option value="$PROJECT_DIR$/dingo-server" />
             <option value="$PROJECT_DIR$/dingo-server/client" />
             <option value="$PROJECT_DIR$/dingo-server/coordinator" />
@@ -42,6 +40,9 @@
             <option value="$PROJECT_DIR$/dingo-server/executor" />
             <option value="$PROJECT_DIR$/dingo-server/protocol" />
             <option value="$PROJECT_DIR$/dingo-store-api" />
+            <option value="$PROJECT_DIR$/dingo-store-memory" />
+            <option value="$PROJECT_DIR$/dingo-store-raft" />
+            <option value="$PROJECT_DIR$/dingo-store-rocksdb" />
             <option value="$PROJECT_DIR$/dingo-test" />
             <option value="$PROJECT_DIR$/dingo-web" />
           </set>

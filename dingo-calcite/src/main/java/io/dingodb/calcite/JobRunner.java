@@ -17,11 +17,11 @@
 package io.dingodb.calcite;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.Location;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.impl.JobImpl;
-import io.dingodb.meta.Location;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.SimpleMessage;
@@ -115,7 +115,7 @@ public final class JobRunner {
                     channel.send(msg);
                     channel.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Error to distribute tasks.", e);
                     throw new RuntimeException("Error to distribute tasks.", e);
                 }
             }

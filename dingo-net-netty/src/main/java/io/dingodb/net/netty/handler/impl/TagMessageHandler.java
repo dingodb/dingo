@@ -18,6 +18,7 @@ package io.dingodb.net.netty.handler.impl;
 
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Message;
+import io.dingodb.net.MessageListener;
 import io.dingodb.net.MessageListenerProvider;
 import io.dingodb.net.Tag;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
@@ -45,6 +46,8 @@ public class TagMessageHandler {
 
     private final Map<Tag, Collection<MessageListenerProvider>> listenerProviders = new ConcurrentHashMap<>();
 
+    private final Map<Tag, Collection<MessageListener>> listeners = new ConcurrentHashMap<>();
+
     public void addTagListenerProvider(Tag tag, MessageListenerProvider listenerProvider) {
         Collection<MessageListenerProvider> providers =
             listenerProviders.compute(tag, (t, ps) -> ps == null ? new CopyOnWriteArraySet<>() : ps);
@@ -55,9 +58,19 @@ public class TagMessageHandler {
         Optional.ofNullable(listenerProviders.get(tag)).ifPresent(ps -> ps.remove(listenerProvider));
     }
 
+    public void addTagListener(Tag tag, MessageListener listener) {
+        Collection<MessageListener> listeners =
+            this.listeners.compute(tag, (t, ps) -> ps == null ? new CopyOnWriteArraySet<>() : ps);
+        listeners.add(listener);
+    }
+
+    public void removeTagListener(Tag tag, MessageListener listener) {
+        Optional.ofNullable(listeners.get(tag)).ifPresent(ps -> ps.remove(listener));
+    }
+
     public void handler(NetServiceConnectionSubChannel channel, Tag tag, Packet<Message> packet) {
-        Collection<MessageListenerProvider> providers = listenerProviders.get(packet.content().tag());
-        if (providers == null || providers.isEmpty()) {
+        Collection<MessageListener> listeners = this.listeners.get(packet.content().tag());
+        if (listeners == null || listeners.isEmpty()) {
             Logs.packetWarn(
                 false,
                 log,
@@ -67,8 +80,23 @@ public class TagMessageHandler {
             );
             return;
         }
+        listeners.forEach(listener -> onTagMessage(channel, packet, channel.connection(), listener));
+    }
 
-        providers.forEach(provider -> onTagMessage(channel, packet, channel.connection(), provider));
+    private void onTagMessage(
+        NetServiceConnectionSubChannel channel,
+        Packet<Message> packet,
+        Connection<Message> connection,
+        MessageListener listener
+    ) {
+        try {
+            Optional.ofNullable(listener)
+                .ifPresent(listenerT -> listenerT.onMessage(packet.content(), channel))
+                .ifPresent(() -> Logs.packetDbg(false, log, connection, packet))
+                .ifAbsent(() -> Logs.packetWarn(false, log, connection, packet, listener.getClass() + " return null"));
+        } catch (Exception e) {
+            Logs.packetErr(false , log, connection, packet, "listener on message error, " + e.getMessage(), e);
+        }
     }
 
     private void onTagMessage(

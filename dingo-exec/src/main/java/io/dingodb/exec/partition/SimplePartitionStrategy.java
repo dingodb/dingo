@@ -27,7 +27,7 @@ import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
-public final class SimplePartitionStrategy extends PartitionStrategy {
+public final class SimplePartitionStrategy extends PartitionStrategy<String> {
     @JsonProperty("partNum")
     @Getter
     private final int partNum;

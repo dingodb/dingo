@@ -18,6 +18,6 @@ package io.dingodb.server.coordinator.config;
 
 public class Constants {
 
-    public static final String COORDINATOR = "coordinator";
+    public static final String RAFT = "raft";
 
 }

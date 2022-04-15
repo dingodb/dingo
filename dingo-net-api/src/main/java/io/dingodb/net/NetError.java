@@ -67,6 +67,7 @@ public enum NetError implements FormattingError {
     EXEC(32001, "Execute error", "Exec %s error, thread: [%s], message: [%s]."),
     EXEC_INTERRUPT(32002, "Exec interrupted error.", "Exec %s interrupted, thread: [%s], message: [%s]."),
     EXEC_TIMEOUT(32003, "Execute timeout.", "Exec %s timeout, thread: [%s], message: [%s]."),
+    API_NOT_FOUND(32004, "Api not found.", "Api %s not found."),
 
     /*********************************   Unknown.   *****************************************************/
 

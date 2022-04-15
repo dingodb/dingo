@@ -16,10 +16,26 @@
 
 package io.dingodb.store.api;
 
-import lombok.Data;
+public class KeyValue extends Row {
 
-@Data
-public class KeyValue {
-    private final byte[] key;
-    private final byte[] value;
+    public KeyValue(byte[] primaryKey, byte[] raw) {
+        super(primaryKey, new int[0], new int[0], new byte[][] {raw});
+    }
+
+    public void setKey(byte[] key) {
+        primaryKey = key;
+    }
+
+    public void setValue(byte[] value) {
+        columns[0] = value;
+    }
+
+    public byte[] getKey() {
+        return primaryKey;
+    }
+
+    public byte[] getValue() {
+        return columns[0];
+    }
+
 }

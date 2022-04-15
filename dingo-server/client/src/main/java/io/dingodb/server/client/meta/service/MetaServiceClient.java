@@ -16,48 +16,43 @@
 
 package io.dingodb.server.client.meta.service;
 
-import io.dingodb.common.config.DingoOptions;
-import io.dingodb.meta.Location;
+import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.config.ExchangeConfiguration;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-import io.dingodb.server.protocol.proto.TableEntry;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 @Slf4j
 public class MetaServiceClient implements MetaService {
 
-    public static final Location CURRENT_LOCATION = new Location(
-        DingoOptions.instance().getIp(),
-        DingoOptions.instance().getExchange().getPort(),
-        ""
-    );
+    public static final Location CURRENT_LOCATION = new Location(DingoConfiguration.host(), DingoConfiguration.port());
 
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
-    private final Map<String, TableEntry> tableEntries = new ConcurrentHashMap<>();
     private final CoordinatorConnector connector;
 
     @Delegate
     private final MetaServiceApi metaServiceApi;
 
+    public MetaServiceClient() {
+        this(CoordinatorConnector.defaultConnector());
+    }
+
     public MetaServiceClient(CoordinatorConnector connector) {
         this.connector = connector;
-        //Channel tableListenerChannel = connector.newChannel();
-        //tableListenerChannel.registerMessageListener((msg, ch) -> {
-        //    ch.registerMessageListener(this::onTableMessage);
-        //    ch.send(MetaServiceCode.LISTENER_TABLE.message());
-        //    ch.send(MetaServiceCode.REFRESH_TABLES.message());
-        //});
-        //tableListenerChannel.send(BaseCode.PING.message(META_SERVICE));
         metaServiceApi = netService.apiRegistry().proxy(MetaServiceApi.class, connector);
     }
 
