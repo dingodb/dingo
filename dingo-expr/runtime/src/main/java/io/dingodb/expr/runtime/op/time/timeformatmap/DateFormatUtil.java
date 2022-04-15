@@ -138,6 +138,7 @@ public class DateFormatUtil implements Serializable {
             }
         }
         // Process the slash seperated type date.
+
         if (targetDateTime.contains((SLASH))) {
             targetDateTime = targetDateTime.replace(SLASH, DASH);
         }
@@ -147,6 +148,8 @@ public class DateFormatUtil implements Serializable {
         }
         // Process the dash type date.
         if (targetDateTime.contains(DASH)) {
+
+
             if (targetDateTime.split(":").length < 2) {
                 targetDateTime += " 00:00:00";
             }
