@@ -19,9 +19,12 @@ package io.dingodb.expr.runtime.op.time;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.Period;
 import javax.annotation.Nonnull;
+
 
 public class DingoDateDateDiffOp extends RtFun {
 
@@ -36,15 +39,15 @@ public class DingoDateDateDiffOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String date1 = (String)values[0];
-        String date2 = (String)values[1];
-        // Guarantee the timestamp format.
-        if (date1.split(" ").length == 1) {
-            date1 += " 00:00:00";
-        }
-        if (date2.split(" ").length == 1) {
-            date2 += " 00:00:00";
-        }
-        return (Timestamp.valueOf(date1).getTime() - Timestamp.valueOf(date2).getTime()) / (1000 * 60 * 60 * 24);
+        String date0 = (String)values[0];
+        String date1 = (String)values[1];
+
+        LocalDateTime fromDateTime = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date0),
+            DateFormatUtil.getDatetimeFormatter());
+        LocalDateTime toDateTime = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date1),
+            DateFormatUtil.getDatetimeFormatter());
+        Period p = Period.between(fromDateTime.toLocalDate(), toDateTime.toLocalDate());
+        return p.getDays();
+
     }
 }
