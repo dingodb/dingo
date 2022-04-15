@@ -32,6 +32,7 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,10 +82,10 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.defaultDateFormat();
+                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = new java.sql.Timestamp(System.currentTimeMillis())
-                        .toLocalDateTime().format(formatter);
+                    String dateTime = LocalDateTime.now().format(formatter);
+                    System.out.println(dateTime);
                     assertThat(rs.getString(1)).isEqualTo(dateTime);
                 }
             }
@@ -100,7 +101,7 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.defaultDateFormat();
+                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
                     String dateTime = new java.sql.Timestamp(System.currentTimeMillis())
                         .toLocalDateTime().format(formatter);
@@ -119,10 +120,10 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.defaultDateFormat();
+                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = new java.sql.Timestamp(System.currentTimeMillis())
-                        .toLocalDateTime().format(formatter);
+                    String dateTime = LocalDateTime.now().format(formatter);
+                    System.out.println(dateTime);
                     assertThat(rs.getString(1)).isEqualTo(dateTime);
                 }
             }
@@ -196,16 +197,140 @@ public class DateTest {
         }
     }
 
-    // Result like: 1 1 1999
+    //
+    // YYYY-MM-DD Input
     @Test
-    public void testDateFormat() throws SQLException {
-        String sql = "select date_format('1999-01-01', '%d %m %Y')";
+    public void testDateFormatYYYYdMMdDD() throws SQLException {
+        String sql = "select date_format('1999-01-01', '%Y-%m-%d')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    assertThat(rs.getString(1)).isEqualTo("01 01 1999");
+                    assertThat(rs.getString(1)).isEqualTo("1999-01-01");
+                }
+            }
+        }
+    }
+
+
+
+    // YYYY/MM/DD Input
+    @Test
+    public void testDateFormatYYYYsMMsDDInput() throws SQLException {
+        String sql = "select date_format('1999/01/01', '%Y/%m/%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999/01/01");
+                }
+            }
+        }
+    }
+
+    // YYYY-MM-DD HH:mm:ss
+    @Test
+    public void testDateFormatYYYYsMMsDDeHHcmmcssInput() throws SQLException {
+        String sql = "select date_format('1999/01/01 01:01:01', '%Y/%m/%d %T')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999/01/01 01:01:01");
+                }
+            }
+        }
+    }
+
+    // YYYY.MM.DD
+    @Test
+    public void testDateFormatYYYYpMMpDDInput() throws SQLException {
+        String sql = "select date_format('1999.01.01', '%Y.%m.%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999.01.01");
+                }
+            }
+        }
+    }
+
+    // YYYY.MM.DD HH:mm:ss
+    @Test
+    public void testDateFormatYYYYpMMpDDeHHcmmcssInput() throws SQLException {
+        String sql = "select date_format('1999.01.01 01:01:01', '%Y.%m.%d %T')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999.01.01 01:01:01");
+                }
+            }
+        }
+    }
+
+
+    // YYYY-MM-DD Input
+    @Test
+    public void testDateFormatYYYYdMMdDDInput() throws SQLException {
+        String sql = "select date_format('1999-01-01', '%Y/%m/%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999/01/01");
+                }
+            }
+        }
+    }
+
+    // YYYY-MM-DD HH:mm:ss
+    @Test
+    public void testDateFormatYYYYdMMdDDeHHcmmcss() throws SQLException {
+        String sql = "select date_format('1999-01-01', '%Y-%m-%d %T')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999-01-01 00:00:00");
+                }
+            }
+        }
+    }
+
+    // YYYYMMDDHHmmss Input
+    @Test
+    public void testDateFormatYYYYmmDDHHmmssInput() throws SQLException {
+        String sql = "select date_format('19990101010101', '%Y%m%d %T')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("19990101 01:01:01");
+                }
+            }
+        }
+    }
+
+    // YYYYMMDD input
+    @Test
+    public void testDateFormatYYYYdMMdDDInput1() throws SQLException {
+        String sql = "select date_format('1999-01-01', '%Y year %m month %d day')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999 year 01 month 01 day");
                 }
             }
         }
