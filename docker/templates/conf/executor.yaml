@@ -1,38 +1,14 @@
 cluster:
     name: dingo
-executor:
-    ip: XXXXXX
-    exchange:
-        port: 19191
+exchange:
+    host: XXXXXX
+    port: 19191
+server:
+    coordinatorExchangeSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
+    dataPath: /opt/dingo/executor/meta
+store:
+    dbPath: /opt/dingo/executor/raftDb
     raft:
+        raftPath: /opt/dingo/executor/raftLog
         port: 9191
-        initExecRaftSvrList: executor1:9191,executor2:9191,executor3:9191 
-    options:
-        coordOptions:
-            group: COORDINATOR_RAFT
-            initCoordRaftSvrList: coordinator3:9181,coordinator2:9181,coordinator1:9181
-            initCoordExchangeSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
-        storeEngineOptions:
-            kvRpcCoreThreads: 8
-            storeDBOptions:
-                dataPath: /opt/dingo/db
-                asyncSnapshot: true
-            raftStoreOptions:
-                dataPath: /opt/dingo/raft
-                raftLogStorageOptions:
-                    dbKeepLogFileNum: 8
-                    dbMaxTotalWalSize: 2147483648
-                    dbMaxBackGroupCompactions: 16
-                    dbMaxBackGroupFlushes: 8
-                    dbRecycleLogFileNum: 8
-                    dbMaxBackGroupJobs: 16
-            leastKeysOnSplit: 100000
-            snapshotCoreThreads: 10
-            commonNodeOptions:
-                electionTimeoutMs: 10000
-                snapshotIntervalSecs: 1800
-                snapshotLogIndexMargin: 10000
-        cliOptions:
-            timeoutMs: 10000
-            maxRetry: 3
-            rpcProcessorThreadPoolSize: 4
+    collectStatsInterval: 5
