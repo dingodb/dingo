@@ -21,8 +21,10 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.ZoneId;
 import javax.annotation.Nonnull;
 
 
@@ -42,12 +44,12 @@ public class DingoDateDateDiffOp extends RtFun {
         String date0 = (String)values[0];
         String date1 = (String)values[1];
 
-        LocalDateTime fromDateTime = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date0),
-            DateFormatUtil.getDatetimeFormatter());
-        LocalDateTime toDateTime = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date1),
-            DateFormatUtil.getDatetimeFormatter());
-        Period p = Period.between(fromDateTime.toLocalDate(), toDateTime.toLocalDate());
-        return p.getDays();
+        LocalDate fromDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date1),
+            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
+        LocalDate toDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date0),
+            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
 
+        return (toDate.atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond()
+            - fromDate.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()) /  (24 * 60 * 60);
     }
 }

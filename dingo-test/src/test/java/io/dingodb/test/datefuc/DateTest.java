@@ -332,6 +332,37 @@ public class DateTest {
         }
     }
 
+    // YYYYMMDD hh:mm:ss Input
+    // YYYYMMDD input
+    @Test
+    public void testDateFormatYYYYdMMdDDInput2() throws SQLException {
+        String sql = "select date_format('1999-01-01 10:37:26', '%Y year %m month %d day and %s seconds')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1999 year 01 month 01 day and 26 seconds");
+                }
+            }
+        }
+    }
+
+    // select date_format('2022-04-13 10:37:26', 'Year:%Y Month:%m Day:%d')
+    @Test
+    public void testDateFormatYYYYdMMdDDInput3() throws SQLException {
+        String sql = "select date_format('2022-04-13 10:37:26', 'Year:%Y Month:%m Day:%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("Year:2022 Month:04 Day:13");
+                }
+            }
+        }
+    }
+
     // Result like: 1
     @Test
     public void testDateDiff() throws SQLException {
@@ -341,7 +372,22 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    assertThat(rs.getString(1)).isEqualTo("1");
+                    assertThat(rs.getString(1)).isEqualTo("-1");
+                }
+            }
+        }
+    }
+
+    //select datediff('2022-04-13 15:17:58', '2022-05-31 00:01:01') as diffDate;
+    @Test
+    public void testDateDiff1() throws SQLException {
+        String sql = "select datediff('2022-04-13 15:17:58', '2022-05-31 00:01:01') as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-48");
                 }
             }
         }
@@ -356,7 +402,7 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    assertThat(rs.getString(1)).isEqualTo("1");
+                    assertThat(rs.getString(1)).isEqualTo("-1");
                 }
             }
         }
