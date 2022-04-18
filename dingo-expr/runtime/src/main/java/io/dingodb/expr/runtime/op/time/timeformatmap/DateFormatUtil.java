@@ -54,6 +54,8 @@ public class DateFormatUtil implements Serializable {
         formatMap.put("%i", "mm");
         // %S => s
         formatMap.put("%S", "ss");
+        // %s => ss
+        formatMap.put("%s", "ss");
         // %T => h:m:s
         formatMap.put("%T", "HH:mm:ss");
     }
@@ -98,6 +100,10 @@ public class DateFormatUtil implements Serializable {
                     case "%s":
                         int second = originLocalTime.getSecond();
                         targetStr = targetStr.replace("%s", second >= 10 ? String.valueOf(second) : "0" + second);
+                        break;
+                    case "%S":
+                        second = originLocalTime.getSecond();
+                        targetStr = targetStr.replace("%S", second >= 10 ? String.valueOf(second) : "0" + second);
                         break;
                     case "%T":
                         hour = originLocalTime.getHour();
