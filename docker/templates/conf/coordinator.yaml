@@ -1,19 +1,10 @@
 cluster:
     name: dingo
-coordinator:
-    ip: XXXXXX
-    exchange:
-        port: 19181
-    schedule:
-        autoBalanceSplit: true
+exchange:
+    host: XXXXXX
+    port: 19181
+server:
+    dataPath: /opt/dingo/coordinator
     raft:
-        group: COORDINATOR_RAFT
         port: 9181
-        initCoordRaftSvrList: coordinator3:9181,coordinator2:9181,coordinator1:9181
-    options:
-        storeDBOptions:
-            dataPath: /opt/dingo/meta
-        cliOptions:
-            timeoutMs: 10000
-            maxRetry: 3
-            rpcProcessorThreadPoolSize: 4
+        initRaftSvrList: coordinator3:9181,coordinator2:9181,coordinator1:9181

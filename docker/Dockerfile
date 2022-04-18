@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y openjdk-8-jdk vim unzip netcat net-tool
 
 COPY ./dingo.zip /opt
 
-RUN unzip /opt/dingo.zip -d /opt/ && mkdir /opt/dingo/log && mkdir /opt/dingo/meta && mkdir /opt/dingo/raft && mkdir /opt/dingo/db && chmod +x /opt/dingo/bin/*
+RUN unzip /opt/dingo.zip -d /opt/ && mkdir /opt/dingo/log && mkdir /opt/dingo/coordinator && mkdir /opt/dingo/executor && mkdir /opt/dingo/executor/meta && mkdir /opt/dingo/executor/raftDb && mkdir /opt/dingo/executor/raftLog && chmod +x /opt/dingo/bin/*
 
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 
