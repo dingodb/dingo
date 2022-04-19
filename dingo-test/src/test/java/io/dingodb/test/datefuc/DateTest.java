@@ -31,7 +31,9 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,8 +188,7 @@ public class DateTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    Date date = Date.valueOf("2003-12-31");
-                    assertThat(rs.getLong(1)).isEqualTo(date.getTime() / 1000);
+                    assertThat(rs.getLong(1)).isEqualTo(1072800000);
                 }
             }
         }
@@ -448,8 +449,9 @@ public class DateTest {
         sqlHelper.queryTestOrder(
             sql,
             new String[]{"new_datetime_column"},
-            TupleSchema.ofTypes("TIMESTAMP"),
-            "2015-11-13 16:08:01"
+            TupleSchema.ofTypes("STRING"),
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(1447430881000L), ZoneId.systemDefault())
+                .format(DateFormatUtil.getDatetimeFormatter())
         );
     }
 

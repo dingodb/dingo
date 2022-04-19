@@ -63,4 +63,4 @@ include 'dingo-dist'
 include 'dingo-raft-kv'
 include 'dingo-store-raft'
 include 'dingo-store-memory'
-
+include 'dingo-func-api'

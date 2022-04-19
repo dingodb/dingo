@@ -17,11 +17,14 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.func.DingoFunc;
+import io.dingodb.func.DingoFuncProvider;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+
+import java.util.ServiceLoader;
 
 // These are static for every sql parsing.
 public final class DingoParserContext {
@@ -45,6 +48,8 @@ public final class DingoParserContext {
             DingoRootSchema.ROOT_SCHEMA_NAME,
             DingoRootSchema.ROOT
         );
+        ServiceLoader.load(DingoFuncProvider.class).iterator().forEachRemaining(
+            f -> f.methods().forEach(m -> rootSchema.plus().add(f.name().toUpperCase(), ScalarFunctionImpl.create(m))));
         DingoFunc.DINGO_FUNC_LIST.build().forEach((k, v) -> {
             rootSchema.plus().add(k, ScalarFunctionImpl.create(DingoFunc.class, v));
         });
