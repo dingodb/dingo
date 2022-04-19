@@ -39,7 +39,7 @@ public class DingoSubStringOp extends RtStringConversionOp {
         String inputStr = ((String) values[0]);
 
         BigDecimal decimal = new BigDecimal(values[1].toString());
-        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue() - 1;
+        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
         decimal = new BigDecimal(values[2].toString());
         Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
@@ -52,9 +52,14 @@ public class DingoSubStringOp extends RtStringConversionOp {
             startIndex = startIndex + inputStr.length() + 1;
         }
 
+        startIndex = startIndex - 1;
+
         if (startIndex + cnt > inputStr.length()) {
             System.out.println("Substring OutOfRange. Input:" + inputStr + ", startIndex:"
                 + startIndex + ", subCnt:" + cnt);
+            if (startIndex == inputStr.length()) {
+                startIndex = startIndex + 1;
+            }
             return inputStr.substring(startIndex, inputStr.length());
         }
 

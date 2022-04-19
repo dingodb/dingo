@@ -24,6 +24,7 @@ dependencies {
     api project(':dingo-exec')
     implementation project(':dingo-ddl')
     implementation project(':dingo-expr:dingo-expr-parser')
+    implementation project(':dingo-func-api')
     testAnnotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()

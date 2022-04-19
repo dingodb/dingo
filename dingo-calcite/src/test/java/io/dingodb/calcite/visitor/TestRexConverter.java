@@ -186,6 +186,42 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testSubStringCase07() {
+        String inputStr = "abc";
+        String sql = "select substring('" + inputStr + "', 4, 1)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            // String index out of range
+            String realResult = (String) expr.compileIn(null).eval(null);
+        } catch (Exception ex) {
+            System.out.println("Catch Exception:" + ex);
+        }
+    }
+
+    @Test
+    public void testSubStringCase08() {
+        String inputStr = "abc";
+        String sql = "select substring('" + inputStr + "', 0, 1)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            // String index out of range
+            String realResult = (String) expr.compileIn(null).eval(null);
+        } catch (Exception ex) {
+            System.out.println("Catch Exception:" + ex);
+        }
+    }
+
+    @Test
     public void testTrimWithBoth() {
         String inputStr = "' AAAAA  '";
         String sql = "select trim(" + inputStr + ")";
@@ -503,7 +539,7 @@ public class TestRexConverter {
     }
 
     @Test
-    public void testMidString() {
+    public void testMidString01() {
         String sql = "select mid('ABC', 1, 2)";
         try {
             SqlNode sqlNode = parser.parse(sql);
@@ -521,6 +557,24 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testMidString02() {
+        String sql = "select mid('ABC', 4, 1)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            // String index out of range
+            String realResult = (String) expr.compileIn(null).eval(null);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
     public void testMidInvalidIndex01() {
         String sql = "select mid('ABC', 10, 3)";
         try {
@@ -532,6 +586,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             // String index out of range
+            String realResult = (String) expr.compileIn(null).eval(null);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -829,6 +884,114 @@ public class TestRexConverter {
             System.out.println(expr.toString());
             // RtExpr rtExpr = expr.compileIn(null);
             // Assert.assrt(((String)rtExpr.eval(null)).equals("100.2"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void formatUnixTime() throws SQLException {
+        String sql = "select from_unixtime(1649838034)";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(rtExpr.eval(null).equals("2022-04-13 16:20:34"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void unixTimestamp01() throws SQLException {
+        String sql = "select unix_timestamp('20220414')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649865600"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void unixTimestamp02() throws SQLException {
+        String sql = "select unix_timestamp('2022-04-14')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649865600"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void unixTimestamp03() throws SQLException {
+        String sql = "select unix_timestamp('20220414180215')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649930535"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void unixTimestamp04() throws SQLException {
+        String sql = "select unix_timestamp('2022/04/14 18:02:15')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649930535"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void unixTimestamp05() throws SQLException {
+        String sql = "select unix_timestamp('2022.04.15 16:27:50')";
+        try {
+            SqlNode sqlNode = parser.parse(sql);
+            sqlNode = parser.validate(sqlNode);
+            RelRoot relRoot = parser.convert(sqlNode);
+            LogicalProject project = (LogicalProject) relRoot.rel;
+            RexNode rexNode = project.getProjects().get(0);
+            Expr expr = RexConverter.convert(rexNode);
+            System.out.println(expr.toString());
+            RtExpr rtExpr = expr.compileIn(null);
+            Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1650011270"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

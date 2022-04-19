@@ -21,10 +21,11 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public final class DingoFunc {
     private DingoFunc() {
@@ -48,7 +49,6 @@ public final class DingoFunc {
         DINGO_FUNC_LIST.put("curdate".toUpperCase(), "curDate");
         DINGO_FUNC_LIST.put("curtime".toUpperCase(), "curTime");
         DINGO_FUNC_LIST.put("from_unixtime".toUpperCase(), "fromUnixTime");
-        DINGO_FUNC_LIST.put("unix_timestamp".toUpperCase(), "unixTimestamp");
         DINGO_FUNC_LIST.put("date_format".toUpperCase(), "dateFormat");
         DINGO_FUNC_LIST.put("datediff".toUpperCase(), "dateDiff");
     }
@@ -152,13 +152,11 @@ public final class DingoFunc {
         return System.currentTimeMillis();
     }
 
-    public static Timestamp fromUnixTime(final Long timestamp) {
-        return new java.sql.Timestamp(timestamp * 1000);
-    }
-
-    public static Long unixTimestamp(final String inputStr) {
-        Date date = Date.valueOf(inputStr);
-        return date.getTime() / 1000;
+    public static String fromUnixTime(final Long timestamp) {
+        Long relTimestamp = timestamp * 1000;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(relTimestamp), ZoneId.systemDefault());
+        return formatter.format(dateTime);
     }
 
     // Todo this place only checks the type thing. so we just return ""
