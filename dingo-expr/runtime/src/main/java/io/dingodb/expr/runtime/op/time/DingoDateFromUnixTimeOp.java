@@ -21,6 +21,10 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import javax.annotation.Nonnull;
 
 public class DingoDateFromUnixTimeOp extends RtFun {
@@ -35,14 +39,27 @@ public class DingoDateFromUnixTimeOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        // Ignore format
-        // Todo format need be used in DingoMeta to format the date.
         Long timestamp = 0L;
-        try {
-            timestamp = (Long) values[0];
-        } catch (Exception e) {
-            timestamp = ((Integer) values[0]).longValue();
+
+        String timeStr = String.valueOf(values[0]);
+        if (timeStr.length() < 13) {
+            timestamp = Long.valueOf(timeStr) * 1000;
+        } else if (timeStr.length() == 13) {
+            timestamp = Long.valueOf(timeStr);
         }
-        return new java.sql.Timestamp(timestamp * 1000);
+
+        if (timestamp < 0) {
+            throw new IllegalArgumentException("incorrect value of unix_timestamp for from_unixtime function");
+        }
+
+        DateTimeFormatter formatter = DateFormatUtil.getDatetimeFormatter();
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+
+        if (values.length == 2) {
+            String formatStr = String.valueOf(values[1]);
+            formatter = DateTimeFormatter.ofPattern(formatStr);
+        }
+
+        return formatter.format(dateTime);
     }
 }

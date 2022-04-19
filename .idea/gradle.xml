@@ -28,6 +28,7 @@
             <option value="$PROJECT_DIR$/dingo-expr/json-schema" />
             <option value="$PROJECT_DIR$/dingo-expr/parser" />
             <option value="$PROJECT_DIR$/dingo-expr/runtime" />
+            <option value="$PROJECT_DIR$/dingo-func-api" />
             <option value="$PROJECT_DIR$/dingo-meta-api" />
             <option value="$PROJECT_DIR$/dingo-net-api" />
             <option value="$PROJECT_DIR$/dingo-net-netty" />

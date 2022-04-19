@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.func;
 
-dependencies {
-    annotationProcessor project(':dingo-expr:dingo-expr-annotations')
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly project(':dingo-expr:dingo-expr-annotations')
-    compileOnly project(':dingo-func-api')
+import java.lang.reflect.Method;
+import java.util.List;
+
+public interface DingoFuncProvider {
+
+    String name();
+
+    List<Method> methods();
 }

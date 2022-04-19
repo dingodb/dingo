@@ -16,18 +16,43 @@
 
 package io.dingodb.expr.runtime.op.time;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+
 
 public class DingoDateUnixTimestampOp extends RtFun {
 
     public DingoDateUnixTimestampOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
+
+    static final List<String> FORMAT_LIST = Stream.of(
+        "yyyyMMdd",
+        "yyyy-MM-dd",
+        "yyyy/MM/dd",
+        "yyyyMMddHHmmss",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy/MM/dd HH:mm:ss",
+        "yyyy.MM.dd",
+        "yyyy.MM.dd HH:mm:ss"
+    ).collect(Collectors.toList());
 
     @Override
     public int typeCode() {
@@ -36,7 +61,85 @@ public class DingoDateUnixTimestampOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        Date date = Date.valueOf((String)values[0]);
-        return date.getTime() / 1000;
+        Object value = values[0];
+        if (value instanceof Long) {
+            return unixTimestamp((Long) value) / 1000;
+        }
+        if (value instanceof String) {
+            return unixTimestamp((String) value) / 1000;
+        }
+
+        throw new IllegalArgumentException();
     }
+
+    public static Long unixTimestamp(final String input) {
+        int length = input.length();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("");
+        // Does not include hours, minutes and seconds
+        if (length < 14) {
+            if (input.contains("-")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(1));
+            } else if (input.contains("/")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(2));
+            } else if (input.contains(".")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(6));
+            } else {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(0));
+            }
+
+            LocalDate date = LocalDate.parse(input, formatter);
+            return date.atStartOfDay().toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
+        } else {
+            // Include hours, minutes and seconds
+            if (input.contains("-")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(4));
+            } else if (input.contains("/")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(5));
+            } else if (input.contains(".")) {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(7));
+            } else {
+                formatter = DateTimeFormatter.ofPattern(FORMAT_LIST.get(3));
+            }
+
+            LocalDateTime dateTime = LocalDateTime.parse(input, formatter);
+            return dateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
+        }
+    }
+
+    public static Long unixTimestamp(final Long input) {
+        return input;
+    }
+
+    public static Long unixTimestamp(final Date input) {
+        return input.getTime();
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoDateUnixTimestampOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "unix_timestamp";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", String.class));
+                methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", Long.class));
+                methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", Date.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
 }
