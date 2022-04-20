@@ -23,13 +23,17 @@ import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
 import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.RocksRawKVStore;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
 import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.storage.LogStore;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
@@ -37,7 +41,9 @@ import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.server.coordinator.store.MetaStore;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
@@ -49,8 +55,6 @@ import static io.dingodb.server.coordinator.config.Constants.RAFT;
 public class CoordinatorServer {
 
     private CoordinatorConfiguration configuration;
-    private Node node;
-    private CoordinatorStateMachine stateMachine;
     private NetService netService;
 
     public CoordinatorServer() {
@@ -61,10 +65,30 @@ public class CoordinatorServer {
         log.info("Coordinator configuration: {}.", this.configuration);
         log.info("Dingo configuration: {}.", DingoConfiguration.instance());
 
-        Files.createDirectories(Paths.get(configuration.getDataPath()));
-
-        RawKVStore memoryStore = new MemoryRawKVStore();
-        RawKVStore rocksStore = new RocksRawKVStore(configuration.getDataPath(), configuration.getRocks());
+        if (configuration.getLogDataPath() == null || configuration.getLogDataPath().isEmpty()) {
+            configuration.setLogDataPath(Paths.get(configuration.getDataPath(),  "log").toString());
+            configuration.setDataPath(Paths.get(configuration.getDataPath(),"db").toString());
+        }
+        try {
+            FileUtils.forceMkdir(new File(configuration.getDataPath()));
+        } catch (final Throwable t) {
+            log.error("Fail to make dir for dataPath {}.", configuration.getDataPath());
+        }
+        try {
+            FileUtils.forceMkdir(new File(configuration.getLogDataPath()));
+        } catch (final Throwable t) {
+            log.error("Fail to make dir for logDataPath {}.", configuration.getLogDataPath());
+        }
+        final RawKVStore memoryStore = new MemoryRawKVStore();
+        final RawKVStore rocksStore = new RocksRawKVStore(configuration.getDataPath(), configuration.getRocks());
+        final LogStore logStore = new RocksDBLogStore();
+        RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
+        logStoreOptions.setDataPath(configuration.getLogDataPath());
+        logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
+        logStoreOptions.setRaftLogStorageOptions(configuration.getRaftLogStorageOptions());
+        if (logStore.init(logStoreOptions)) {
+            log.error("Fail to init [RocksDBLogStore]");
+        }
 
         Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(endpoint);
@@ -76,6 +100,7 @@ public class CoordinatorServer {
         CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
         NodeOptions nodeOptions = getNodeOptions();
         nodeOptions.setFsm(stateMachine);
+        nodeOptions.setLogStorage(nodeOptions.getServiceFactory().createLogStorage("coordinator", logStore));
         node.init(nodeOptions);
 
         netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
@@ -101,15 +126,6 @@ public class CoordinatorServer {
         }
 
         String dataPath = configuration.getDataPath();
-        if (nodeOptions.getLogUri() == null || nodeOptions.getLogUri().isEmpty()) {
-            Path logPath = Paths.get(dataPath, RAFT, "log");
-            try {
-                Files.createDirectories(logPath);
-            } catch (final Throwable t) {
-                throw new RuntimeException("Fail to make dir for log: " + logPath);
-            }
-            nodeOptions.setLogUri(logPath.toString());
-        }
         if (nodeOptions.getRaftMetaUri() == null || nodeOptions.getRaftMetaUri().isEmpty()) {
             Path metaPath = Paths.get(dataPath, RAFT, "meta");
             try {

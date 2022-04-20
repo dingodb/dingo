@@ -20,8 +20,14 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.ExchangeConfiguration;
 import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.option.RaftLogStorageOptions;
+import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.rpc.RpcServer;
+import io.dingodb.raft.storage.LogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.util.Endpoint;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -65,9 +71,16 @@ public class TestRaftRawKVStore {
         try {
             FileUtils.forceMkdir(new File(logUri));
         } catch (final Throwable t) {
-            throw new RuntimeException("Fail to make dir for dbPath: " + logUri);
+            throw new RuntimeException("Fail to make dir for logDbPath: " + logUri);
         }
-        nodeOpts.setLogUri(logUri);
+        final RocksDBLogStore logStore = new RocksDBLogStore();
+        RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
+        logStoreOptions.setDataPath(logUri);
+        logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
+        logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
+        logStore.init(logStoreOptions);
+        LogStorage logStorage = new RocksDBLogStorage("test", logStore);
+        nodeOpts.setLogStorage(logStorage);
         String meteUri = Paths.get(DB_PATH, "meta").toString();
         nodeOpts.setRaftMetaUri(meteUri);
         String snapshotUri = Paths.get(DB_PATH, "snapshot").toString();

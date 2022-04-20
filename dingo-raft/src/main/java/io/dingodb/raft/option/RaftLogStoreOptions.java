@@ -16,13 +16,18 @@
 
 package io.dingodb.raft.option;
 
-import io.dingodb.raft.conf.ConfigurationManager;
 import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
-public class LogStorageOptions {
-    private ConfigurationManager configurationManager;
+@ToString
+public class RaftLogStoreOptions {
+    private String dataPath;
+    private boolean sync = true;
+    private boolean openStatistics = false;
+    private LogEntryCodecFactory logEntryCodecFactory;
+    private RaftLogStorageOptions raftLogStorageOptions;
 }

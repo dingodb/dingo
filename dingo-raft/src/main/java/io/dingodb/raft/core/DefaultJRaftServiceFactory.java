@@ -21,10 +21,12 @@ import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
 import io.dingodb.raft.option.RaftOptions;
 import io.dingodb.raft.storage.LogStorage;
+import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.RaftMetaStorage;
 import io.dingodb.raft.storage.SnapshotStorage;
 import io.dingodb.raft.storage.impl.LocalRaftMetaStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.storage.snapshot.local.LocalSnapshotStorage;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.SPI;
@@ -38,9 +40,11 @@ public class DefaultJRaftServiceFactory implements JRaftServiceFactory {
     }
 
     @Override
-    public LogStorage createLogStorage(final String uri, final RaftOptions raftOptions) {
-        Requires.requireTrue(StringUtils.isNotBlank(uri), "Blank log storage uri.");
-        return new RocksDBLogStorage(uri, raftOptions);
+    public LogStorage createLogStorage(String regionId, LogStore logStore) {
+        Requires.requireTrue(StringUtils.isNotBlank(regionId), "Blank log storage regionId.");
+        Requires.requireTrue(logStore != null, "Null logStore.");
+        Requires.requireTrue(logStore instanceof RocksDBLogStore, "LogStore type error.");
+        return new RocksDBLogStorage(regionId, (RocksDBLogStore) logStore);
     }
 
     @Override
