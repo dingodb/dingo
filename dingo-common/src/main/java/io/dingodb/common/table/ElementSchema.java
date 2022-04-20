@@ -27,6 +27,7 @@ import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -141,7 +142,12 @@ public class ElementSchema implements CompileContext {
         switch (type) {
             case TypeCode.INTEGER:
                 if (origin instanceof Number) {
-                    return ((Number) origin).intValue();
+                    /**
+                     * Func: such as `right(a, 2.1)` will return replace `2.1` with `2`
+                     * the input `Integer` will be rounded up to `2`
+                     */
+                    return new BigDecimal(String.valueOf(origin))
+                        .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
                 }
                 break;
             case TypeCode.LONG:

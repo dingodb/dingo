@@ -87,4 +87,15 @@ public class SimpleArithmeticTest {
         }
     }
 
+    @Test
+    public void testSubStringCase0() throws SQLException {
+        String sql = "select substring('', 1, 3)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                while (rs.next()) {
+                    assertEquals(rs.getString(1), "");
+                }
+            }
+        }
+    }
 }
