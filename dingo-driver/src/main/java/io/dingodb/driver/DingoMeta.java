@@ -18,7 +18,6 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.common.error.DingoException;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -167,7 +166,7 @@ public class DingoMeta extends MetaImpl {
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
 
-            DingoSignature signature = (DingoSignature)stmt.getSignature();
+            DingoSignature signature = (DingoSignature) stmt.getSignature();
             checkJobHasFailed(signature);
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
@@ -185,15 +184,15 @@ public class DingoMeta extends MetaImpl {
             if (rootOperator.getErrorFin() != null) {
                 String errorMsg = (rootOperator.getErrorFin()).detail();
                 log.warn("Check Job:{} operator:{} has failed, ErrorMsg: {}",
-                        rootOperator.getTask().getJobId().toString(),
-                        rootOperator.getId().toString(),
-                        errorMsg);
+                    rootOperator.getTask().getJobId().toString(),
+                    rootOperator.getId().toString(),
+                    errorMsg);
                 throw new SQLException(errorMsg);
             }
         }
     }
 
-    private List convertRowsByColumnTypes(final List<Object> inputs, final List<ColumnMetaData>  columns) {
+    private List convertRowsByColumnTypes(final List<Object> inputs, final List<ColumnMetaData> columns) {
         if (inputs.size() != columns.size()) {
             log.error("Dingo Meta convert Failed. invalid columns between row:{} and column:{}",
                 inputs.size(), columns.size());

@@ -113,7 +113,15 @@ public final class DataParser extends Parser {
         throw new IllegalArgumentException("Unsupported json node type \"" + type + "\".");
     }
 
-    private static void parseAccordingSchema(Object[] tuple, JsonNode jsonNode, @Nonnull RtSchema rtSchema) {
+    private static void parseAccordingSchema(
+        Object[] tuple,
+        @Nonnull JsonNode jsonNode,
+        @Nonnull RtSchema rtSchema
+    ) {
+        if (jsonNode.isNull()) {
+            tuple[rtSchema.getIndex()] = null;
+            return;
+        }
         switch (rtSchema.getTypeCode()) {
             case TypeCode.TUPLE:
                 RtSchemaTuple schemaTuple = (RtSchemaTuple) rtSchema;

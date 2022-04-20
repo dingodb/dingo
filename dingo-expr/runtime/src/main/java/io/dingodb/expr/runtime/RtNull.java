@@ -16,8 +16,6 @@
 
 package io.dingodb.expr.runtime;
 
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-
 import javax.annotation.Nullable;
 
 public final class RtNull implements RtExpr {
@@ -30,7 +28,7 @@ public final class RtNull implements RtExpr {
 
     @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+    public Object eval(@Nullable EvalContext etx) {
         return null;
     }
 
