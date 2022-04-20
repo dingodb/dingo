@@ -29,9 +29,7 @@ import io.dingodb.expr.runtime.evaluator.relational.GtEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.relational.LeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.relational.LtEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.relational.NeEvaluatorFactory;
-import io.dingodb.expr.runtime.op.logical.RtAndOp;
 import io.dingodb.expr.runtime.op.logical.RtNotOp;
-import io.dingodb.expr.runtime.op.logical.RtOrOp;
 import io.dingodb.expr.runtime.op.string.RtContainsOp;
 import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
 import io.dingodb.expr.runtime.op.string.RtMatchesOp;
@@ -94,9 +92,9 @@ public final class OpFactory {
             case DingoExprParser.NE:
                 return new OpWithEvaluator(OpType.NE, NeEvaluatorFactory.INSTANCE);
             case DingoExprParser.AND:
-                return new RtOpWrapper(OpType.AND, RtAndOp::new);
+                return AndOp.op();
             case DingoExprParser.OR:
-                return new RtOpWrapper(OpType.OR, RtOrOp::new);
+                return OrOp.op();
             case DingoExprParser.STARTS_WITH:
                 return new RtOpWrapper(OpType.STARTS_WITH, RtStartsWithOp::new);
             case DingoExprParser.ENDS_WITH:

@@ -30,14 +30,20 @@ public abstract class RtFun extends RtOp {
         super(paras);
     }
 
-    protected abstract Object fun(@Nonnull Object[] values);
+    protected abstract Object fun(@Nonnull Object[] values) throws FailGetEvaluator;
 
+    @Nullable
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
-        Object[] values = new Object[paras.length];
-        for (int i = 0; i < paras.length; ++i) {
-            values[i] = paras[i].eval(etx);
+        Object[] paraValues = new Object[paras.length];
+        int i = 0;
+        for (RtExpr para : paras) {
+            Object v = para.eval(etx);
+            if (v == null) {
+                return null;
+            }
+            paraValues[i++] = v;
         }
-        return fun(values);
+        return fun(paraValues);
     }
 }

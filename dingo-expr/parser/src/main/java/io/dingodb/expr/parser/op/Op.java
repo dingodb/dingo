@@ -21,6 +21,7 @@ import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import lombok.Getter;
@@ -67,8 +68,11 @@ public abstract class Op implements Expr {
     }
 
     @Nonnull
-    protected final RtExpr evalConst(RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         try {
+            if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
+                return RtNull.INSTANCE;
+            }
             RtOp rtOp = createRtOp(rtExprArray);
             if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
                 return new RtConst(rtOp.eval(null));
@@ -83,7 +87,7 @@ public abstract class Op implements Expr {
     @Override
     public RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
-        return evalConst(rtExprArray);
+        return evalNullConst(rtExprArray);
     }
 
     protected abstract RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator;

@@ -16,13 +16,16 @@
 
 package io.dingodb.expr.runtime.op.sql;
 
+import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import io.dingodb.expr.runtime.op.RtOp;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-public final class RtSqlCaseOp extends RtFun {
+public final class RtSqlCaseOp extends RtOp {
     private static final long serialVersionUID = 262253285071682317L;
 
     public RtSqlCaseOp(@Nonnull RtExpr[] paras) {
@@ -34,15 +37,18 @@ public final class RtSqlCaseOp extends RtFun {
         return TypeCode.OBJECT;
     }
 
+    @Nullable
     @Override
-    protected Object fun(@Nonnull Object[] values) {
-        int size = values.length;
+    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+        int size = paras.length;
         for (int i = 0; i < size - 1; i += 2) {
-            if ((boolean) values[i]) {
-                return values[i + 1];
+            RtExpr para = paras[i];
+            Object v = para.eval(etx);
+            if ((boolean) v) {
+                return paras[i + 1].eval(etx);
             }
         }
         // There will be a `null` if you missed `ELSE` in SQL.
-        return values[size - 1];
+        return paras[size - 1].eval(etx);
     }
 }

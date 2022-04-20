@@ -39,10 +39,7 @@ import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.logical.DingoAndOp;
-import io.dingodb.expr.runtime.op.logical.DingoOrOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
-import io.dingodb.expr.runtime.op.sql.RtSqlCaseOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLeftOp;
@@ -78,9 +75,10 @@ public final class FunFactory {
     private FunFactory() {
         funSuppliers = new TreeMap<>(String::compareToIgnoreCase);
 
-        // relation Operator with multiple arguments
-        registerUdf("OR", DingoOrOp::new);
-        registerUdf("AND", DingoAndOp::new);
+        // Logical functions are special for short-circuit processing.
+        funSuppliers.put("OR", OrOp::fun);
+        funSuppliers.put("AND", AndOp::fun);
+        funSuppliers.put("CASE", CaseOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
@@ -113,9 +111,6 @@ public final class FunFactory {
         registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
-
-        // SQL
-        registerUdf("case", RtSqlCaseOp::new);
 
         // String
         registerUdf("replace", DingoStringReplaceOp::new);

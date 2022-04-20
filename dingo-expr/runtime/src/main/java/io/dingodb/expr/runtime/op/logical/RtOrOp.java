@@ -37,6 +37,15 @@ public class RtOrOp extends RtLogicalOp {
 
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
-        return (boolean) paras[0].eval(etx) || (boolean) paras[1].eval(etx);
+        for (RtExpr para : paras) {
+            Object v = para.eval(etx);
+            if (v == null) {
+                return null;
+            }
+            if ((boolean) v) {
+                return true;
+            }
+        }
+        return false;
     }
 }

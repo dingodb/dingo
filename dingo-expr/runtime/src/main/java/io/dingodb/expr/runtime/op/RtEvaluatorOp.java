@@ -16,15 +16,13 @@
 
 package io.dingodb.expr.runtime.op;
 
-import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-public class RtEvaluatorOp extends RtOp {
+public class RtEvaluatorOp extends RtFun {
     private static final long serialVersionUID = -2145574267641248415L;
     @Nonnull
     private final Evaluator evaluator;
@@ -41,13 +39,8 @@ public class RtEvaluatorOp extends RtOp {
     }
 
     @Override
-    public final Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
-        Object[] paraValues = new Object[paras.length];
-        int i = 0;
-        for (RtExpr para : paras) {
-            paraValues[i++] = para.eval(etx);
-        }
-        return evaluator.eval(paraValues);
+    protected Object fun(@Nonnull Object[] values) throws FailGetEvaluator {
+        return evaluator.eval(values);
     }
 
     @Override
