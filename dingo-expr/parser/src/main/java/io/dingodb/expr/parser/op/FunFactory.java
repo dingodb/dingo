@@ -40,6 +40,7 @@ import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
+import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLeftOp;
@@ -113,6 +114,7 @@ public final class FunFactory {
         registerEvaluator("time", TimeEvaluatorFactory.INSTANCE);
 
         // String
+        registerUdf("char_length", DingoCharLengthOp::new);
         registerUdf("replace", DingoStringReplaceOp::new);
         registerUdf("substring", DingoSubStringOp::new);
         registerUdf("trim", DingoStringTrimOp::new);

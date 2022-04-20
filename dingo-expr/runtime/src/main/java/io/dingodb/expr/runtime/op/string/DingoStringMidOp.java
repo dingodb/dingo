@@ -37,6 +37,9 @@ public class DingoStringMidOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String)values[0]);
+        if (inputStr == null || inputStr.length() == 0) {
+            return "";
+        }
 
         BigDecimal decimal = new BigDecimal(values[1].toString());
         Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
