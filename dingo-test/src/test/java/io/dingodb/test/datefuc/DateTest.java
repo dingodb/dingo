@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -35,6 +34,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DateTest {
     private static Connection connection;
     private static SqlHelper sqlHelper;
-
+    // precision for minute
+    private static final Long GLOBAL_TIME_PRECISION = 1000 * 60L;
 
     @BeforeAll
     public static void setupAll() throws Exception {
@@ -137,9 +138,10 @@ public class DateTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(new java.sql.Time(rs.getLong(1)));
-                    assertThat(rs.getLong(1) / 1000)
-                        .isEqualTo(System.currentTimeMillis() / 1000);
+                    Long time = rs.getLong(1);
+                    System.out.println(new java.sql.Time(time));
+                    assertThat(time / GLOBAL_TIME_PRECISION)
+                        .isEqualTo(System.currentTimeMillis() / GLOBAL_TIME_PRECISION);
                 }
             }
         }
@@ -152,9 +154,10 @@ public class DateTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(rs.getLong(1));
-                    assertThat(rs.getLong(1) / 1000)
-                        .isEqualTo(System.currentTimeMillis() / 1000);
+                    Long result = rs.getLong(1);
+                    System.out.println(result);
+                    assertThat(result / GLOBAL_TIME_PRECISION)
+                        .isEqualTo(System.currentTimeMillis() / GLOBAL_TIME_PRECISION);
                 }
             }
         }
@@ -168,9 +171,10 @@ public class DateTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(new java.sql.Date(rs.getLong(1)) + " " + new java.sql.Time(rs.getLong(1)));
-                    String formatStr = DateFormatUtil.defaultDatetimeFormat();
-                    assertThat(rs.getLong(1) / 1000).isEqualTo(System.currentTimeMillis() / 1000);
+                    Long time = rs.getLong(1);
+                    System.out.println(new Date(time));
+                    assertThat(time / GLOBAL_TIME_PRECISION)
+                        .isEqualTo(System.currentTimeMillis() / GLOBAL_TIME_PRECISION);
                 }
             }
         }
@@ -183,9 +187,10 @@ public class DateTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(new java.sql.Date(rs.getLong(1)) + " " + new java.sql.Time(rs.getLong(1)));
-                    String formatStr = DateFormatUtil.defaultDatetimeFormat();
-                    assertThat(rs.getLong(1) / 1000).isEqualTo(System.currentTimeMillis() / 1000);
+                    Long time = rs.getLong(1);
+                    System.out.println(new Date(time));
+                    assertThat(time / GLOBAL_TIME_PRECISION)
+                        .isEqualTo(System.currentTimeMillis() / GLOBAL_TIME_PRECISION);
                 }
             }
         }
