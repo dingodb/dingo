@@ -74,6 +74,24 @@ public class DateTest {
     // Result like: 2022-03-30
     @Test
     public void testCurDate() throws SQLException {
+        String sql = "select current_date";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+                    String dateTime = LocalDateTime.now().format(formatter);
+                    System.out.println(dateTime);
+                    assertThat(rs.getString(1)).isEqualTo(dateTime);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testCurrentDate01() throws SQLException {
         String sql = "select curdate()";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
@@ -90,24 +108,7 @@ public class DateTest {
         }
     }
 
-    // Result like: 2022-03-30
-    @Test
-    public void testCurTime() throws SQLException {
-        String sql = "select curtime()";
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
-                while (rs.next()) {
-                    System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = new java.sql.Timestamp(System.currentTimeMillis())
-                        .toLocalDateTime().format(formatter);
-                    assertThat(rs.getString(1)).isEqualTo(dateTime);
-                }
-            }
-        }
-    }
+
 
     // Result like: 2022-03-30
     @Test
@@ -144,10 +145,40 @@ public class DateTest {
         }
     }
 
+    @Test
+    public void testCurTime() throws SQLException {
+        String sql = "select curtime()";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getLong(1));
+                    assertThat(rs.getLong(1) / 1000)
+                        .isEqualTo(System.currentTimeMillis() / 1000);
+                }
+            }
+        }
+    }
+
     // Result like: 2022-03-30 16:49:57
     @Test
     public void testCurrentTimestamp() throws SQLException {
         String sql = "select current_timestamp";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(new java.sql.Date(rs.getLong(1)) + " " + new java.sql.Time(rs.getLong(1)));
+                    String formatStr = DateFormatUtil.defaultDatetimeFormat();
+                    assertThat(rs.getLong(1) / 1000).isEqualTo(System.currentTimeMillis() / 1000);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testCurrentTimestamp01() throws SQLException {
+        String sql = "select current_timestamp()";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
