@@ -19,6 +19,7 @@ package io.dingodb.calcite.func;
 import com.google.common.collect.ImmutableMap;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -44,9 +45,16 @@ public final class DingoFunc {
         DINGO_FUNC_LIST.put("mid".toUpperCase(), "midString");
         DINGO_FUNC_LIST.put("locate".toUpperCase(), "locateString");
         DINGO_FUNC_LIST.put("format".toUpperCase(), "formatNumber");
-        DINGO_FUNC_LIST.put("now".toUpperCase(), "now");
+
         DINGO_FUNC_LIST.put("curdate".toUpperCase(), "curDate");
+        DINGO_FUNC_LIST.put("current_date".toUpperCase(), "curDate");
+
         DINGO_FUNC_LIST.put("curtime".toUpperCase(), "curTime");
+        DINGO_FUNC_LIST.put("current_time".toUpperCase(), "curTime");
+
+        DINGO_FUNC_LIST.put("current_timestamp".toUpperCase(), "curTimestamp");
+        DINGO_FUNC_LIST.put("now".toUpperCase(), "now");
+
         DINGO_FUNC_LIST.put("from_unixtime".toUpperCase(), "fromUnixTime");
         DINGO_FUNC_LIST.put("unix_timestamp".toUpperCase(), "unixTimestamp");
         DINGO_FUNC_LIST.put("date_format".toUpperCase(), "dateFormat");
@@ -148,8 +156,12 @@ public final class DingoFunc {
         return new Date(System.currentTimeMillis());
     }
 
-    public static Long curTime() {
-        return System.currentTimeMillis();
+    public static Time curTime() {
+        return new Time(System.currentTimeMillis());
+    }
+
+    public static Long curTimestamp() {
+        return 0L;
     }
 
     public static Timestamp fromUnixTime(final Long timestamp) {

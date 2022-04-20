@@ -176,8 +176,8 @@ final class TypeEvaluators {
 
     @Nonnull
     @Evaluators.Base(TimeEvaluator.class)
-    static Date time() {
-        return new Date();
+    static java.sql.Date time() {
+        return new java.sql.Date(System.currentTimeMillis());
     }
 
     @Nonnull

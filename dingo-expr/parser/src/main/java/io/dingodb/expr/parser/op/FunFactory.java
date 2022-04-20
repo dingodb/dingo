@@ -57,7 +57,6 @@ import io.dingodb.expr.runtime.op.string.DingoStringRightOp;
 import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringUpperOp;
 import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
-import io.dingodb.expr.runtime.op.time.DingoDateCurDateOp;
 import io.dingodb.expr.runtime.op.time.DingoDateDateDiffOp;
 import io.dingodb.expr.runtime.op.time.DingoDateDateFormatOp;
 import io.dingodb.expr.runtime.op.time.DingoDateFromUnixTimeOp;
@@ -101,8 +100,10 @@ public final class FunFactory {
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
 
         // Time
-        registerEvaluator("current_time", TimeEvaluatorFactory.INSTANCE);
         registerEvaluator("current_date", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("curdate", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("current_time", TimeEvaluatorFactory.INSTANCE);
+        registerEvaluator("curtime", TimeEvaluatorFactory.INSTANCE);
         registerEvaluator("current_timestamp", TimeEvaluatorFactory.INSTANCE);
 
         // Type conversion
@@ -140,8 +141,6 @@ public final class FunFactory {
 
         // date function
         registerUdf("now", DingoDateNowOp::new);
-        registerUdf("curdate", DingoDateCurDateOp::new);
-        registerUdf("curtime", DingoDateCurDateOp::new);
         registerUdf("from_unixtime", DingoDateFromUnixTimeOp::new);
         registerUdf("unix_timestamp", DingoDateUnixTimestampOp::new);
         registerUdf("date_format", DingoDateDateFormatOp::new);
