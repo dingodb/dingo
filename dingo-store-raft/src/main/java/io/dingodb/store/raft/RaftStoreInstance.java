@@ -20,18 +20,24 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
 import io.dingodb.common.util.PreParameters;
+import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.RaftRawKVOperation;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.RocksRawKVStore;
 import io.dingodb.raft.kv.storage.SeekableIterator;
+import io.dingodb.raft.option.RaftLogStoreOptions;
+import io.dingodb.raft.storage.LogStore;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -50,6 +56,7 @@ public class RaftStoreInstance implements StoreInstance {
     private final CommonId id;
     @Getter
     private final RawKVStore store;
+    private final LogStore logStore;
     private final Path path;
     private final Map<CommonId, RaftStoreInstancePart> parts;
     private final NavigableMap<byte[], Part> startKeyPartMap;
@@ -61,11 +68,32 @@ public class RaftStoreInstance implements StoreInstance {
             this.id = id;
             this.path = Paths.get(StoreConfiguration.dbPath(), id.toString());
             Files.createDirectories(path);
-            this.store = new RocksRawKVStore(path.toString(), StoreConfiguration.rocks());
+            String dbPath = Paths.get(path.toString(), "db").toString();
+            String logPath = Paths.get(path.toString(), "log").toString();
+            try {
+                FileUtils.forceMkdir(new File(dbPath));
+            } catch (final Throwable t) {
+                log.error("Fail to make dir for dataPath {}.", dbPath);
+            }
+            try {
+                FileUtils.forceMkdir(new File(logPath));
+            } catch (final Throwable t) {
+                log.error("Fail to make dir for dataPath {}.", logPath);
+            }
+            this.store = new RocksRawKVStore(dbPath, StoreConfiguration.rocks());
+            this.logStore = new RocksDBLogStore();
+            RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
+            logStoreOptions.setDataPath(logPath);
+            logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory
+                .newInstance().createLogEntryCodecFactory());
+            if (!this.logStore.init(logStoreOptions)) {
+                log.error("Fail to init [RocksDBLogStore]");
+                throw new RuntimeException("Fail to init [RocksDBLogStore]");
+            }
             this.startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
             this.parts = new ConcurrentHashMap<>();
             this.waitParts = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
-            waitStoreParts = new CopyOnWriteArrayList<>();
+            this.waitStoreParts = new CopyOnWriteArrayList<>();
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
             throw new RuntimeException();
@@ -86,7 +114,7 @@ public class RaftStoreInstance implements StoreInstance {
         part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
         part.setEnd(PreParameters.cleanNull(part.getEnd(), () -> new byte[] {Byte.MAX_VALUE}));
         try {
-            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, store);
+            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, store, logStore);
             storeInstancePart.getStateMachine().listenAvailable(() -> onPartAvailable(storeInstancePart));
             parts.put(part.getId(), storeInstancePart);
         } catch (Exception e) {

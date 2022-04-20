@@ -16,7 +16,11 @@
 
 package io.dingodb.raft.storage.impl;
 
-import com.lmax.disruptor.*;
+import com.lmax.disruptor.BlockingWaitStrategy;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslator;
+import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import io.dingodb.raft.FSMCaller;
@@ -164,15 +168,13 @@ public class LogManagerImpl implements LogManager {
                 LOG.error("Fail to init log manager, log storage is null");
                 return false;
             }
-            this.raftOptions = opts.getRaftOptions();
             this.nodeMetrics = opts.getNodeMetrics();
             this.logStorage = opts.getLogStorage();
             this.configManager = opts.getConfigurationManager();
+            this.raftOptions = opts.getRaftOptions();
 
             LogStorageOptions lsOpts = new LogStorageOptions();
             lsOpts.setConfigurationManager(this.configManager);
-            lsOpts.setLogEntryCodecFactory(opts.getLogEntryCodecFactory());
-            lsOpts.setRaftLogStorageOptions(opts.getRaftLogStorageOptions());
 
             if (!this.logStorage.init(lsOpts)) {
                 LOG.error("Fail to init logStorage");
@@ -285,6 +287,7 @@ public class LogManagerImpl implements LogManager {
             }
             for (int i = 0; i < entries.size(); i++) {
                 final LogEntry entry = entries.get(i);
+                LOG.debug("AppendEntry Index = {}, Term = {}", entry.getId().getIndex(), entry.getId().getTerm());
                 // Set checksum after checkAndResolveConflict
                 if (this.raftOptions.isEnableLogEntryChecksum()) {
                     entry.setChecksum(entry.checksum());
@@ -356,7 +359,8 @@ public class LogManagerImpl implements LogManager {
                 try {
                     listener.onLastLogIndexChanged(this.lastLogIndex);
                 } catch (final Exception e) {
-                    LOG.error("Fail to notify LastLogIndexListener, listener={}, index={}", listener, this.lastLogIndex);
+                    LOG.error("Fail to notify LastLogIndexListener, listener={}, index={}",
+                        listener, this.lastLogIndex);
                 }
             }
         }
@@ -503,8 +507,8 @@ public class LogManagerImpl implements LogManager {
                             LOG.debug("Truncating storage to firstIndexKept={}.", tpc.firstIndexKept);
                             ret = LogManagerImpl.this.logStorage.truncatePrefix(tpc.firstIndexKept);
                         } finally {
-                            LogManagerImpl.this.nodeMetrics.recordLatency("truncate-log-prefix", Utils.monotonicMs()
-                                                                                                 - startMs);
+                            LogManagerImpl.this.nodeMetrics.recordLatency("truncate-log-prefix",
+                                Utils.monotonicMs() - startMs);
                         }
                         break;
                     case TRUNCATE_SUFFIX:
@@ -516,11 +520,12 @@ public class LogManagerImpl implements LogManager {
                             if (ret) {
                                 this.lastId.setIndex(tsc.lastIndexKept);
                                 this.lastId.setTerm(tsc.lastTermKept);
-                                Requires.requireTrue(this.lastId.getIndex() == 0 || this.lastId.getTerm() != 0);
+                                Requires.requireTrue(this.lastId.getIndex() == 0
+                                    || this.lastId.getTerm() != 0);
                             }
                         } finally {
-                            LogManagerImpl.this.nodeMetrics.recordLatency("truncate-log-suffix", Utils.monotonicMs()
-                                                                                                 - startMs);
+                            LogManagerImpl.this.nodeMetrics.recordLatency("truncate-log-suffix",
+                                Utils.monotonicMs() - startMs);
                         }
                         break;
                     case RESET:
@@ -1016,7 +1021,8 @@ public class LogManagerImpl implements LogManager {
             final LogEntry lastLogEntry = ArrayDeque.peekLast(entries);
             if (lastLogEntry.getId().getIndex() <= appliedIndex) {
                 LOG.warn(
-                    "Received entries of which the lastLog={} is not greater than appliedIndex={}, return immediately with nothing changed.",
+                    "Received entries of which the lastLog={} is not greater "
+                        + "than appliedIndex={}, return immediately with nothing changed.",
                     lastLogEntry.getId().getIndex(), appliedIndex);
                 // Replicate old logs before appliedIndex should be considered successfully, response OK.
                 Utils.runClosureInThread(done);
@@ -1043,8 +1049,7 @@ public class LogManagerImpl implements LogManager {
                         unsafeTruncateSuffix(entries.get(conflictingIndex).getId().getIndex() - 1);
                     }
                     this.lastLogIndex = lastLogEntry.getId().getIndex();
-                } // else this is a duplicated AppendEntriesRequest, we have
-                  // nothing to do besides releasing all the entries
+                }
                 if (conflictingIndex > 0) {
                     // Remove duplication
                     entries.subList(0, conflictingIndex).clear();

@@ -19,10 +19,7 @@ package io.dingodb.raft.option;
 import io.dingodb.raft.FSMCaller;
 import io.dingodb.raft.conf.ConfigurationManager;
 import io.dingodb.raft.core.NodeMetrics;
-import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
-import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
 import io.dingodb.raft.storage.LogStorage;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,15 +27,9 @@ import lombok.Setter;
 @Setter
 public class LogManagerOptions {
     private LogStorage logStorage;
+    private RaftOptions raftOptions;
     private ConfigurationManager configurationManager;
     private FSMCaller fsmCaller;
     private int disruptorBufferSize  = 1024;
-    private RaftOptions raftOptions;
     private NodeMetrics nodeMetrics;
-    private RaftLogStorageOptions raftLogStorageOptions;
-    private LogEntryCodecFactory logEntryCodecFactory = LogEntryV2CodecFactory.getInstance();
-
-    public LogEntryCodecFactory getLogEntryCodecFactory() {
-        return this.logEntryCodecFactory;
-    }
 }

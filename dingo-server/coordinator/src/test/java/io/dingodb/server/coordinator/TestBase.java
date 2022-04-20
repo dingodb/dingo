@@ -22,10 +22,16 @@ import io.dingodb.common.util.Files;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
 import io.dingodb.raft.conf.Configuration;
+import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
 import io.dingodb.raft.kv.storage.RocksRawKVStore;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.option.RaftLogStorageOptions;
+import io.dingodb.raft.option.RaftLogStoreOptions;
+import io.dingodb.raft.storage.LogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.fake.FakeTableStoreApi;
@@ -37,7 +43,9 @@ import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Executor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
@@ -113,8 +121,14 @@ public class TestBase {
 
         Path path = Paths.get(dbPath, RAFT, "log");
         Files.createDirectories(path);
-        nodeOptions.setLogUri(path.toString());
-
+        final RocksDBLogStore logStore = new RocksDBLogStore();
+        RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
+        logStoreOptions.setDataPath(path.toString());
+        logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
+        logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
+        logStore.init(logStoreOptions);
+        LogStorage logStorage = new RocksDBLogStorage("coordinatortest", logStore);
+        nodeOptions.setLogStorage(logStorage);
         path = Paths.get(dbPath, RAFT, "meta");
         Files.createDirectories(path);
         nodeOptions.setRaftMetaUri(path.toString());

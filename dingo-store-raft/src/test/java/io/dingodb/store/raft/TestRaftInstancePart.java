@@ -20,16 +20,24 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Files;
+import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
+import io.dingodb.raft.option.RaftLogStorageOptions;
+import io.dingodb.raft.option.RaftLogStoreOptions;
+import io.dingodb.raft.storage.LogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -49,11 +57,22 @@ public class TestRaftInstancePart {
     public static void beforeAll() throws Exception {
         DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/TestStoreInstanceSegment.yaml").getPath());
         location = DingoConfiguration.location();
-        Part part = Part.builder()
+        final Part part = Part.builder()
             .id(CommonId.prefix((byte) 'T'))
             .replicates(singletonList(location))
             .build();
-        storeInstancePart = new RaftStoreInstancePart(part, store);
+        final RocksDBLogStore logStore = new RocksDBLogStore();
+        RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
+        logStoreOptions.setDataPath("dingo/TestRaftStoreInstance/raft/log");
+        try {
+            FileUtils.forceMkdir(new File(logStoreOptions.getDataPath()));
+        } catch (final Throwable t) {
+            throw new RuntimeException("Fail to make dir for logDbPath: " + logStoreOptions.getDataPath());
+        }
+        logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
+        logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
+        logStore.init(logStoreOptions);
+        storeInstancePart = new RaftStoreInstancePart(part, store, logStore);
         LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
     }
 

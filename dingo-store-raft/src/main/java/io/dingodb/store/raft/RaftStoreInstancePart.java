@@ -27,6 +27,10 @@ import io.dingodb.raft.kv.storage.RaftRawKVStore;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.storage.LogStorage;
+import io.dingodb.raft.storage.LogStore;
+import io.dingodb.raft.storage.impl.RocksDBLogStorage;
+import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreInstance;
@@ -53,20 +57,17 @@ public final class RaftStoreInstancePart implements StoreInstance {
     private PartStateMachine stateMachine;
 
     private Path metaPath;
-    private Path logPath;
     private Path snapshotPath;
 
-    public RaftStoreInstancePart(Part part, RawKVStore store) throws Exception {
+    public RaftStoreInstancePart(Part part, RawKVStore store, LogStore logStore) throws Exception {
         this.id = part.getId();
         this.store = store;
         this.part = part;
         this.metaPath = Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString(), "meta");
-        this.logPath = Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString(), "log");
         this.snapshotPath = Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString(), "snapshot");
         this.configuration = new Configuration(part.getReplicates().stream()
             .map(location -> new PeerId(location.getHost(), StoreConfiguration.raft().getPort()))
             .collect(Collectors.toList()));
-        Files.createDirectories(logPath);
         Files.createDirectories(metaPath);
         Files.createDirectories(snapshotPath);
         NodeOptions nodeOptions = StoreConfiguration.raft().getNode();
@@ -75,8 +76,9 @@ public final class RaftStoreInstancePart implements StoreInstance {
         } else {
             nodeOptions = nodeOptions.copy();
         }
+        LogStorage logStorage = new RocksDBLogStorage(id.toString(), (RocksDBLogStore) logStore);
+        nodeOptions.setLogStorage(logStorage);
         nodeOptions.setInitialConf(configuration);
-        nodeOptions.setLogUri(logPath.toString());
         nodeOptions.setRaftMetaUri(metaPath.toString());
         nodeOptions.setSnapshotUri(snapshotPath.toString());
         Location location = new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort());
