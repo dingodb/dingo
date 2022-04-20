@@ -1,9 +1,16 @@
 FROM ubuntu:18.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai \
+    DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y openjdk-8-jdk vim unzip netcat net-tools && unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+RUN apt-get update  \
+    && apt-get install -y openjdk-8-jdk vim unzip netcat net-tools tzdata \
+    && unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY \
+    && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY ./dingo.zip /opt
 
