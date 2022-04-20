@@ -59,7 +59,11 @@ public class TestRexConverter {
             arguments("1 + 2*3", "1 + 2*3"),
             arguments("1*(2 + 3)", "1*(2 + 3)"),
             arguments("name = 'Alice'", "$[1] == 'Alice'"),
-            arguments("name = 'Alice' and amount > 2.0", "AND($[1] == 'Alice', $[2] > 2.0)")
+            arguments("name = 'Alice' and amount > 2.0", "AND($[1] == 'Alice', $[2] > 2.0)"),
+            arguments(
+                "name = 'Betty' and name = 'Alice' and amount < 1.0",
+                "AND($[1] == 'Betty', $[1] == 'Alice', $[2] < 1.0)"
+            )
         );
     }
 
@@ -604,7 +608,7 @@ public class TestRexConverter {
             Expr expr = RexConverter.convert(rexNode);
             System.out.println(expr.toString());
             RtExpr rtExpr = expr.compileIn(null);
-            Assert.assrt(((String)rtExpr.eval(null)).equals("BC"));
+            Assert.assrt(((String) rtExpr.eval(null)).equals("BC"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

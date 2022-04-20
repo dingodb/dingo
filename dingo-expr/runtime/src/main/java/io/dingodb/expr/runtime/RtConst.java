@@ -26,6 +26,8 @@ import javax.annotation.Nullable;
 public class RtConst implements RtExpr {
     public static final RtConst TAU = new RtConst(6.283185307179586476925);
     public static final RtConst E = new RtConst(2.7182818284590452354);
+    public static final RtConst TRUE = new RtConst(true);
+    public static final RtConst FALSE = new RtConst(false);
 
     private static final long serialVersionUID = -5457707032677852803L;
 

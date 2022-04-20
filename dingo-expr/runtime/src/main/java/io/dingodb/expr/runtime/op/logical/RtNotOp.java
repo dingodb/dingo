@@ -35,8 +35,10 @@ public class RtNotOp extends RtLogicalOp {
         super(paras);
     }
 
+    @Nullable
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
-        return !(boolean) paras[0].eval(etx);
+        Object v = paras[0].eval(etx);
+        return (v != null) ? !(boolean) v : null;
     }
 }

@@ -52,7 +52,7 @@ public final class IndexOp extends OpWithEvaluator {
             }
             throw new InvalidIndex(rtExprArray[1]);
         }
-        return evalConst(rtExprArray);
+        return evalNullConst(rtExprArray);
     }
 
     @Override
