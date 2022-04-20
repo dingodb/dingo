@@ -1585,6 +1585,7 @@ public class Replicator implements ThreadId.OnError {
      * @return send result.
      */
     private boolean sendEntries(final long nextSendingIndex) {
+        LOG.debug("Send Entries to : " + this.options.getPeerId().getEndpoint() + " with Index : " + nextSendingIndex);
         final RpcRequests.AppendEntriesRequest.Builder rb = RpcRequests.AppendEntriesRequest.newBuilder();
         if (!fillCommonFields(rb, nextSendingIndex - 1, false)) {
             // unlock id in installSnapshot

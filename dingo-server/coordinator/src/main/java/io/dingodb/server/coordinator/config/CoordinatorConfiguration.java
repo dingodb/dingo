@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.config;
 
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.raft.kv.config.RocksConfigration;
+import io.dingodb.raft.option.RaftLogStorageOptions;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -47,7 +48,9 @@ public class CoordinatorConfiguration {
     }
 
     private String dataPath;
+    private String logDataPath;
 
+    private RaftLogStorageOptions raftLogStorageOptions  = new RaftLogStorageOptions();
     private RaftConfiguration raft;
     private RocksConfigration rocks = new RocksConfigration();
     private ScheduleConfiguration schedule = new ScheduleConfiguration();

@@ -21,14 +21,21 @@ import io.dingodb.raft.JRaftServiceFactory;
 import io.dingodb.raft.StateMachine;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.ElectionPriority;
+import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.SnapshotThrottle;
 import io.dingodb.raft.util.Copiable;
 import io.dingodb.raft.util.JRaftServiceLoader;
 import io.dingodb.raft.util.Utils;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
+@Getter
+@Setter
+@ToString
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
-    public static final JRaftServiceFactory defaultServiceFactory = JRaftServiceLoader.load(JRaftServiceFactory.class) //
+    public static final JRaftServiceFactory defaultServiceFactory = JRaftServiceLoader.load(JRaftServiceFactory.class)
                                                                        .first();
 
     // A follower would become a candidate if it doesn't receive any message
@@ -89,7 +96,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     private StateMachine fsm;
 
     // Describe a specific LogStorage in format ${type}://${parameters}
-    private String logUri;
+    private LogStorage logStorage;
 
     // Describe a specific RaftMetaStorage in format ${type}://${parameters}
     private String raftMetaUri;
@@ -115,11 +122,6 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
      * Whether use global timer pool, if true, the {@code timerPoolSize} will be invalid.
      */
     private boolean sharedTimerPool = false;
-
-    /**
-     * storage options about raft on rocksdb.
-     */
-    private RaftLogStorageOptions raftLogStorageOptions  = new RaftLogStorageOptions();
 
     /**
      * Timer manager thread pool size.
@@ -177,78 +179,14 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
      */
     private JRaftServiceFactory serviceFactory = defaultServiceFactory;
 
-    public JRaftServiceFactory getServiceFactory() {
-        return this.serviceFactory;
-    }
-
-    public void setServiceFactory(final JRaftServiceFactory serviceFactory) {
-        this.serviceFactory = serviceFactory;
-    }
-
-    public SnapshotThrottle getSnapshotThrottle() {
-        return this.snapshotThrottle;
-    }
-
-    public void setSnapshotThrottle(final SnapshotThrottle snapshotThrottle) {
-        this.snapshotThrottle = snapshotThrottle;
-    }
-
-    public void setEnableMetrics(final boolean enableMetrics) {
-        this.enableMetrics = enableMetrics;
-    }
-
     /**
-     * Raft options
+     * Raft options.
      */
     private RaftOptions raftOptions = new RaftOptions();
 
-    public int getCliRpcThreadPoolSize() {
-        return this.cliRpcThreadPoolSize;
-    }
-
-    public void setCliRpcThreadPoolSize(final int cliRpcThreadPoolSize) {
-        this.cliRpcThreadPoolSize = cliRpcThreadPoolSize;
-    }
-
-    public boolean isEnableMetrics() {
-        return this.enableMetrics;
-    }
-
-    public int getRaftRpcThreadPoolSize() {
-        return this.raftRpcThreadPoolSize;
-    }
-
-    public void setRaftRpcThreadPoolSize(final int raftRpcThreadPoolSize) {
-        this.raftRpcThreadPoolSize = raftRpcThreadPoolSize;
-    }
-
-    public boolean isSharedTimerPool() {
-        return sharedTimerPool;
-    }
-
-    public void setSharedTimerPool(boolean sharedTimerPool) {
-        this.sharedTimerPool = sharedTimerPool;
-    }
-
-    public int getTimerPoolSize() {
-        return this.timerPoolSize;
-    }
-
-    public void setTimerPoolSize(final int timerPoolSize) {
-        this.timerPoolSize = timerPoolSize;
-    }
-
-    public RaftOptions getRaftOptions() {
-        return this.raftOptions;
-    }
-
-    public void setRaftOptions(final RaftOptions raftOptions) {
-        this.raftOptions = raftOptions;
-    }
-
     public void validate() {
-        if (StringUtils.isBlank(this.logUri)) {
-            throw new IllegalArgumentException("Blank logUri");
+        if (this.logStorage == null) {
+            throw new IllegalArgumentException("Null logStorage");
         }
         if (StringUtils.isBlank(this.raftMetaUri)) {
             throw new IllegalArgumentException("Blank raftMetaUri");
@@ -258,38 +196,10 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         }
     }
 
-    public int getElectionPriority() {
-        return electionPriority;
-    }
-
-    public void setElectionPriority(int electionPriority) {
-        this.electionPriority = electionPriority;
-    }
-
-    public int getDecayPriorityGap() {
-        return decayPriorityGap;
-    }
-
-    public void setDecayPriorityGap(int decayPriorityGap) {
-        this.decayPriorityGap = decayPriorityGap;
-    }
-
-    public int getElectionTimeoutMs() {
-        return this.electionTimeoutMs;
-    }
-
-    public void setElectionTimeoutMs(final int electionTimeoutMs) {
-        this.electionTimeoutMs = electionTimeoutMs;
-    }
-
-    public int getLeaderLeaseTimeRatio() {
-        return this.leaderLeaseTimeRatio;
-    }
-
     public void setLeaderLeaseTimeRatio(final int leaderLeaseTimeRatio) {
         if (leaderLeaseTimeRatio <= 0 || leaderLeaseTimeRatio > 100) {
             throw new IllegalArgumentException("leaderLeaseTimeRatio: " + leaderLeaseTimeRatio
-                                               + " (expected: 0 < leaderLeaseTimeRatio <= 100)");
+                + " (expected: 0 < leaderLeaseTimeRatio <= 100)");
         }
         this.leaderLeaseTimeRatio = leaderLeaseTimeRatio;
     }
@@ -298,145 +208,10 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         return this.electionTimeoutMs * this.leaderLeaseTimeRatio / 100;
     }
 
-    public int getSnapshotIntervalSecs() {
-        return this.snapshotIntervalSecs;
-    }
-
-    public void setSnapshotIntervalSecs(final int snapshotIntervalSecs) {
-        this.snapshotIntervalSecs = snapshotIntervalSecs;
-    }
-
-    public int getSnapshotLogIndexMargin() {
-        return snapshotLogIndexMargin;
-    }
-
-    public void setSnapshotLogIndexMargin(int snapshotLogIndexMargin) {
-        this.snapshotLogIndexMargin = snapshotLogIndexMargin;
-    }
-
-    public int getCatchupMargin() {
-        return this.catchupMargin;
-    }
-
-    public void setCatchupMargin(final int catchupMargin) {
-        this.catchupMargin = catchupMargin;
-    }
-
-    public Configuration getInitialConf() {
-        return this.initialConf;
-    }
-
-    public void setInitialConf(final Configuration initialConf) {
-        this.initialConf = initialConf;
-    }
-
-    public StateMachine getFsm() {
-        return this.fsm;
-    }
-
-    public void setFsm(final StateMachine fsm) {
-        this.fsm = fsm;
-    }
-
-    public String getLogUri() {
-        return this.logUri;
-    }
-
-    public void setLogUri(final String logUri) {
-        this.logUri = logUri;
-    }
-
-    public String getRaftMetaUri() {
-        return this.raftMetaUri;
-    }
-
-    public void setRaftMetaUri(final String raftMetaUri) {
-        this.raftMetaUri = raftMetaUri;
-    }
-
-    public String getSnapshotUri() {
-        return this.snapshotUri;
-    }
-
-    public void setSnapshotUri(final String snapshotUri) {
-        this.snapshotUri = snapshotUri;
-    }
-
-    public boolean isFilterBeforeCopyRemote() {
-        return this.filterBeforeCopyRemote;
-    }
-
-    public void setFilterBeforeCopyRemote(final boolean filterBeforeCopyRemote) {
-        this.filterBeforeCopyRemote = filterBeforeCopyRemote;
-    }
-
-    public boolean isDisableCli() {
-        return this.disableCli;
-    }
-
-    public void setDisableCli(final boolean disableCli) {
-        this.disableCli = disableCli;
-    }
-
-    public boolean isSharedElectionTimer() {
-        return sharedElectionTimer;
-    }
-
-    public void setSharedElectionTimer(boolean sharedElectionTimer) {
-        this.sharedElectionTimer = sharedElectionTimer;
-    }
-
-    public boolean isSharedVoteTimer() {
-        return sharedVoteTimer;
-    }
-
-    public void setSharedVoteTimer(boolean sharedVoteTimer) {
-        this.sharedVoteTimer = sharedVoteTimer;
-    }
-
-    public boolean isSharedStepDownTimer() {
-        return sharedStepDownTimer;
-    }
-
-    public void setSharedStepDownTimer(boolean sharedStepDownTimer) {
-        this.sharedStepDownTimer = sharedStepDownTimer;
-    }
-
-    public boolean isSharedSnapshotTimer() {
-        return sharedSnapshotTimer;
-    }
-
-    public void setSharedSnapshotTimer(boolean sharedSnapshotTimer) {
-        this.sharedSnapshotTimer = sharedSnapshotTimer;
-    }
-
-    public RaftLogStorageOptions getRaftLogStorageOptions() {
-        return raftLogStorageOptions;
-    }
-
-    public void setRaftLogStorageOptions(RaftLogStorageOptions raftLogStorageOptions) {
-        this.raftLogStorageOptions = raftLogStorageOptions;
-    }
-
-    public void setServerExchangePort(int port) {
-        this.serverExchangePort = port;
-    }
-
-    public int getServerExchangePort() {
-        return this.serverExchangePort;
-    }
-
-    public void setUnfreezingSnapshotIntervalSecs(int unfreezingSnapshotIntervalSecs) {
-        this.unfreezingSnapshotIntervalSecs = unfreezingSnapshotIntervalSecs;
-    }
-
-    public int getUnfreezingSnapshotIntervalSecs() {
-        return this.unfreezingSnapshotIntervalSecs;
-    }
-
     @Override
     public NodeOptions copy() {
         final NodeOptions nodeOptions = new NodeOptions();
+        nodeOptions.setLogStorage(this.getLogStorage());
         nodeOptions.setElectionTimeoutMs(this.electionTimeoutMs);
         nodeOptions.setElectionPriority(this.electionPriority);
         nodeOptions.setDecayPriorityGap(this.decayPriorityGap);
@@ -455,29 +230,8 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
         nodeOptions.setSharedVoteTimer(this.sharedVoteTimer);
         nodeOptions.setSharedStepDownTimer(this.sharedStepDownTimer);
         nodeOptions.setSharedSnapshotTimer(this.sharedSnapshotTimer);
-        nodeOptions.setRaftLogStorageOptions(this.raftLogStorageOptions);
         nodeOptions.setServerExchangePort(this.serverExchangePort);
         nodeOptions.setUnfreezingSnapshotIntervalSecs(this.unfreezingSnapshotIntervalSecs);
         return nodeOptions;
-    }
-
-    @Override
-    public String toString() {
-        return "NodeOptions{" + "electionTimeoutMs=" + electionTimeoutMs + ", electionPriority=" + electionPriority
-               + ", decayPriorityGap=" + decayPriorityGap + ", leaderLeaseTimeRatio=" + leaderLeaseTimeRatio
-               + ", snapshotIntervalSecs=" + snapshotIntervalSecs + ", snapshotLogIndexMargin="
-               + snapshotLogIndexMargin + ", catchupMargin=" + catchupMargin + ", initialConf=" + initialConf
-               + ", fsm=" + fsm + ", logUri='" + logUri + '\'' + ", raftMetaUri='" + raftMetaUri + '\''
-               + ", snapshotUri='" + snapshotUri + '\'' + ", filterBeforeCopyRemote=" + filterBeforeCopyRemote
-               + ", disableCli=" + disableCli + ", sharedTimerPool=" + sharedTimerPool + ", timerPoolSize="
-               + timerPoolSize + ", cliRpcThreadPoolSize=" + cliRpcThreadPoolSize + ", raftRpcThreadPoolSize="
-               + raftRpcThreadPoolSize + ", enableMetrics=" + enableMetrics + ", snapshotThrottle=" + snapshotThrottle
-               + ", sharedElectionTimer=" + sharedElectionTimer + ", sharedVoteTimer=" + sharedVoteTimer
-               + ", sharedStepDownTimer=" + sharedStepDownTimer + ", sharedSnapshotTimer=" + sharedSnapshotTimer
-               + ", serviceFactory=" + serviceFactory + ", raftOptions=" + raftOptions
-               + ", raftLogStorageOptions:" + this.raftLogStorageOptions
-            + ", serverExchangePort:" + this.serverExchangePort
-            + ", unfreezingSnapshotIntervalSecs:" + this.unfreezingSnapshotIntervalSecs
-            + "} " + super.toString();
     }
 }

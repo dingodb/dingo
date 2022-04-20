@@ -53,13 +53,10 @@ public class RocksRawKVStore implements RawKVStore {
         RocksDB.loadLibrary();
     }
 
-    private final String dataPath;
-
     private RocksDB db;
     private WriteOptions writeOptions;
 
     public RocksRawKVStore(String dataPath, RocksConfigration rocksConfigration) throws RocksDBException {
-        this.dataPath = dataPath;
         this.writeOptions = new WriteOptions();
         Options options = rocksConfigration.toRocksDBOptions();
         this.db = RocksDB.open(options, dataPath);

@@ -67,11 +67,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class FSMCallerImpl implements FSMCaller {
     private static final Logger LOG = LoggerFactory.getLogger(FSMCallerImpl.class);
 
-    /**
+    /*
      * Task type
      * @author boyan (boyan@alibaba-inc.com)
      *
-     * 2018-Apr-03 11:12:25 AM
+     * 2018-Apr-03 11:12:25 AM.
      */
     private enum TaskType {
         IDLE, //
@@ -308,7 +308,7 @@ public class FSMCallerImpl implements FSMCaller {
         });
     }
 
-    /**
+    /*
      * Closure runs with an error.
      * @author boyan (boyan@alibaba-inc.com)
      *
@@ -429,6 +429,8 @@ public class FSMCallerImpl implements FSMCaller {
                         this.currTask = TaskType.FLUSH;
                         shutdown = task.shutdownLatch;
                         break;
+                    default:
+                        break;
                 }
             } finally {
                 this.nodeMetrics.recordLatency(task.type.metricName(), Utils.monotonicMs() - startMs);
@@ -498,8 +500,8 @@ public class FSMCallerImpl implements FSMCaller {
                             this.fsm.onConfigurationCommitted(new Configuration(iterImpl.entry().getPeers()));
                         }
                     } else if (logEntry.getType() == EnumOutter.EntryType.ENTRY_TYPE_MSG) {
-                        LOG.info("FSMCallerImpl doCommitted, data has remainning: {}, remaining: {}" +
-                                ", position: {}.",
+                        LOG.info("FSMCallerImpl doCommitted, data has remainning: {}, remaining: {}"
+                                + ", position: {}.",
                             logEntry.getData().hasRemaining(),
                             logEntry.getData().remaining(),
                             logEntry.getData().position());
@@ -510,9 +512,9 @@ public class FSMCallerImpl implements FSMCaller {
                                 LogEntry.subTypeToString(subType));
                             node.doFreezeSnapshot();
                         } else if (subType == LogEntry.SUB_TYPE_SNAPSHOT_BY_INDEX) {
-                                LOG.info("FSMCallerImpl doCommitted, sub type: {}",
-                                    LogEntry.subTypeToString(subType));
-                                doSnapshotByIndex = true;
+                            LOG.info("FSMCallerImpl doCommitted, sub type: {}",
+                                LogEntry.subTypeToString(subType));
+                            doSnapshotByIndex = true;
                         } else {
                             LOG.error("FSMCallerImpl doCommitted, unexpected sub type: {}",
                                 LogEntry.subTypeToString(subType));
@@ -566,8 +568,7 @@ public class FSMCallerImpl implements FSMCaller {
     }
 
     private void onTaskCommitted(final List<TaskClosure> closures) {
-        for (int i = 0, size = closures.size(); i < size; i++) {
-            final TaskClosure done = closures.get(i);
+        for (TaskClosure done : closures) {
             done.onCommitted();
         }
     }
@@ -624,8 +625,8 @@ public class FSMCallerImpl implements FSMCaller {
         if (reportTarget != null) {
             reportTarget.setLastAppliedIndex(lastAppliedIndex);
             if (lastAppliedIndex != this.snapshotAppliedIndex.get()) {
-                LOG.warn("FSMCallerImpl doSnapshotSave, snapshot index not match," +
-                    "snapshotAppliedIndex: {}, lastAppliedIndex: {}.", this.snapshotAppliedIndex, lastAppliedIndex);
+                LOG.warn("FSMCallerImpl doSnapshotSave, snapshot index not match,"
+                    + "snapshotAppliedIndex: {}, lastAppliedIndex: {}.", this.snapshotAppliedIndex, lastAppliedIndex);
             }
         }
         this.fsm.onSnapshotSave(writer, done, reportTarget);
@@ -740,17 +741,17 @@ public class FSMCallerImpl implements FSMCaller {
         this.fsm.onStopFollowing(ctx);
     }
 
-    private void setError(final RaftException e) {
+    private void setError(final RaftException exception) {
         if (this.error.getType() != EnumOutter.ErrorType.ERROR_TYPE_NONE) {
             // already report
             return;
         }
-        this.error = e;
+        this.error = exception;
         if (this.fsm != null) {
-            this.fsm.onError(e);
+            this.fsm.onError(exception);
         }
         if (this.node != null) {
-            this.node.onError(e);
+            this.node.onError(exception);
         }
     }
 
@@ -776,7 +777,8 @@ public class FSMCallerImpl implements FSMCaller {
             this.lastAppliedTerm, this.lastAppliedIndex);
 
         if (!passByStatus(done)) {
-            LOG.error("FSMCallerImpl doSnapshotSaveByAppliedIndex, status not OK, lastAppliedTerm: {}, lastAppliedIndex: {}.",
+            LOG.error("FSMCallerImpl doSnapshotSaveByAppliedIndex, status not OK, "
+                    + "lastAppliedTerm: {}, lastAppliedIndex: {}.",
                 this.lastAppliedTerm, this.lastAppliedIndex);
             return;
         }
