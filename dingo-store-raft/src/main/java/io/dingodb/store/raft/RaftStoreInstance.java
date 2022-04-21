@@ -153,6 +153,10 @@ public class RaftStoreInstance implements StoreInstance {
         }
     }
 
+    public RaftStoreInstancePart getPart(CommonId id) {
+        return parts.get(id);
+    }
+
     public Part getPart(byte[] primaryKey) {
         Map.Entry<byte[], Part> entry = startKeyPartMap.floorEntry(primaryKey);
         if (entry == null || ByteArrayUtils.compare(primaryKey, entry.getValue().getEnd()) > 0) {

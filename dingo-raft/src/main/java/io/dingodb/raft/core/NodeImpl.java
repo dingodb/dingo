@@ -121,6 +121,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 
+import static io.dingodb.raft.option.ApplyTaskMode.Blocking;
+
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class NodeImpl implements Node, RaftServerService {
     private static final Logger LOG = LoggerFactory.getLogger(NodeImpl.class);
@@ -140,9 +142,6 @@ public class NodeImpl implements Node, RaftServerService {
     }
 
     public static final RaftTimerFactory TIMER_FACTORY = JRaftUtils.raftTimerFactory();
-
-    // Max retry times when applying tasks.
-    private static final int MAX_APPLY_RETRY_TIMES = 3;
 
     public static final AtomicInteger GLOBAL_NUM_NODES = new AtomicInteger(0);
 
@@ -382,7 +381,7 @@ public class NodeImpl implements Node, RaftServerService {
         private void addNewLearners() {
             final Set<PeerId> addingLearners = new HashSet<>(this.newLearners);
             addingLearners.removeAll(this.oldLearners);
-            LOG.info("Adding learners: {}.", this.addingPeers);
+            LOG.info("Adding learners: {}.", addingLearners);
             for (final PeerId newLearner : addingLearners) {
                 if (!this.node.replicatorGroup.addReplicator(newLearner, ReplicatorType.Learner)) {
                     LOG.error("Node {} start the learner replicator failed, peer={}.", this.node.getNodeId(),
@@ -1626,7 +1625,6 @@ public class NodeImpl implements Node, RaftServerService {
 
         final LogEntry entry = new LogEntry();
         entry.setData(task.getData());
-        int retryTimes = 0;
         try {
             final EventTranslator<LogEntryAndClosure> translator = (event, sequence) -> {
                 event.reset();
@@ -1634,24 +1632,8 @@ public class NodeImpl implements Node, RaftServerService {
                 event.entry = entry;
                 event.expectedTerm = task.getExpectedTerm();
             };
+            // Blocking
             this.applyQueue.publishEvent(translator);
-            /*
-            while (true) {
-                if (this.applyQueue.tryPublishEvent(translator)) {
-                    break;
-                } else {
-                    retryTimes++;
-                    if (retryTimes > MAX_APPLY_RETRY_TIMES) {
-                        Utils.runClosureInThread(task.getDone(),
-                            new Status(RaftError.EBUSY, "Node is busy, has too many tasks."));
-                        LOG.warn("Node {} applyQueue is overload.", getNodeId());
-                        this.metrics.recordTimes("apply-task-overload-times", 1);
-                        return;
-                    }
-                    ThreadHelper.onSpinWait();
-                }
-            }
-             */
         } catch (final Exception e) {
             LOG.error("Fail to apply task.", e);
             Utils.runClosureInThread(task.getDone(), new Status(RaftError.EPERM, "Node is down."));
@@ -1911,6 +1893,7 @@ public class NodeImpl implements Node, RaftServerService {
         final long startMs = Utils.monotonicMs();
         this.writeLock.lock();
         final int entriesCount = request.getEntriesCount();
+        boolean success = false;
         try {
             if (!this.state.isActive()) {
                 LOG.warn("Node {} is not in active state, currTerm={}.", getNodeId(), this.currTerm);
@@ -1998,6 +1981,15 @@ public class NodeImpl implements Node, RaftServerService {
                 return respBuilder.build();
             }
 
+            // fast checking if log manager is overloaded
+            if (!this.logManager.hasAvailableCapacityToAppendEntries(1)) {
+                LOG.warn("Node {} received AppendEntriesRequest but log manager is busy.", getNodeId());
+                return RpcFactoryHelper //
+                    .responseFactory() //
+                    .newResponse(RpcRequests.AppendEntriesResponse.getDefaultInstance(), RaftError.EBUSY,
+                        "Node %s:%s log manager is busy.", this.groupId, this.serverId);
+            }
+
             // Parse request
             long index = prevLogIndex;
             final List<LogEntry> entries = new ArrayList<>(entriesCount);
@@ -2045,8 +2037,16 @@ public class NodeImpl implements Node, RaftServerService {
             if (doUnlock) {
                 this.writeLock.unlock();
             }
-            this.metrics.recordLatency("handle-append-entries", Utils.monotonicMs() - startMs);
-            this.metrics.recordSize("handle-append-entries-count", entriesCount);
+            final long processLatency = Utils.monotonicMs() - startMs;
+            if (entriesCount == 0) {
+                this.metrics.recordLatency("handle-heartbeat-requests", processLatency);
+            } else {
+                this.metrics.recordLatency("handle-append-entries", processLatency);
+            }
+            if (success) {
+                // Don't stats heartbeat requests.
+                this.metrics.recordSize("handle-append-entries-count", entriesCount);
+            }
         }
     }
 

@@ -86,7 +86,7 @@ public class CoordinatorServer {
         logStoreOptions.setDataPath(configuration.getLogDataPath());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStoreOptions.setRaftLogStorageOptions(configuration.getRaftLogStorageOptions());
-        if (logStore.init(logStoreOptions)) {
+        if (!logStore.init(logStoreOptions)) {
             log.error("Fail to init [RocksDBLogStore]");
         }
 

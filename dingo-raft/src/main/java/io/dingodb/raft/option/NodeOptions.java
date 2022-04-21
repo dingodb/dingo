@@ -180,6 +180,11 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     private JRaftServiceFactory serviceFactory = defaultServiceFactory;
 
     /**
+     * Apply task in blocking or non-blocking mode, ApplyTaskMode.NonBlocking by default.
+     */
+    private ApplyTaskMode                   applyTaskMode          = ApplyTaskMode.NonBlocking;
+
+    /**
      * Raft options.
      */
     private RaftOptions raftOptions = new RaftOptions();

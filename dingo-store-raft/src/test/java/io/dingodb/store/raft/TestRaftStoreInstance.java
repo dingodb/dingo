@@ -89,7 +89,9 @@ public class TestRaftStoreInstance {
             .replicates(singletonList(location))
             .build();
         storeInstance.assignPart(part);
-        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        while (!storeInstance.getPart(id).getStateMachine().isAvailable()) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        }
         assertThat(storeInstance.getValueByPrimaryKey(new byte[] {2})).isEqualTo(new byte[] {2});
         storeInstance.unassignPart(part);
         Assertions.assertThatThrownBy(() -> storeInstance.getValueByPrimaryKey(new byte[] {2}))
@@ -106,7 +108,9 @@ public class TestRaftStoreInstance {
             .replicates(singletonList(location))
             .build();
         storeInstance.assignPart(part);
-        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        while (!storeInstance.getPart(id).getStateMachine().isAvailable()) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        }
         assertThat(storeInstance.getKeyValueByPrimaryKeys(Arrays.asList(new byte[] {1}, new byte[] {3})))
             .hasSize(2)
             .contains(
