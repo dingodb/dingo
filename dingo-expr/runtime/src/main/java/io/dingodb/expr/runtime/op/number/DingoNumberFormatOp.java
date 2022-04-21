@@ -16,11 +16,19 @@
 
 package io.dingodb.expr.runtime.op.number;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoNumberFormatOp extends RtFun  {
@@ -45,5 +53,36 @@ public class DingoNumberFormatOp extends RtFun  {
     @Override
     public int typeCode() {
         return TypeCode.DOUBLE;
+    }
+
+    public static String formatNumber(final double value, int scale) {
+        NumberFormat nf = NumberFormat.getNumberInstance();
+        nf.setMaximumFractionDigits(scale);
+        nf.setMinimumFractionDigits(scale);
+        return nf.format(value);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoNumberFormatOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "format";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoNumberFormatOp.class.getMethod("formatNumber", double.class, int.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

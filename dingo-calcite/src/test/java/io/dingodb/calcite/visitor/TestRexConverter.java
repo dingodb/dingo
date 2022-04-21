@@ -571,6 +571,20 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testMidOneParam() throws Exception {
+        String sql = "select mid('ABCDEFG', 1)";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel;
+        RexNode rexNode = project.getProjects().get(0);
+        Expr expr = RexConverter.convert(rexNode);
+        System.out.println(expr.toString());
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).equals("ABCDEFG"));
+    }
+
+    @Test
     public void testStringLocate() throws Exception {
         String sql = "select locate('C', 'ABCd')";
         SqlNode sqlNode = parser.parse(sql);

@@ -45,14 +45,16 @@ public class DingoDateUnixTimestampOp extends RtFun {
 
     static final List<String> FORMAT_LIST = Stream.of(
         "yyyyMMdd",
-        "yyyy-MM-dd",
-        "yyyy/MM/dd",
+        "yyyy-M-d",
+        "yyyy/M/d",
         "yyyyMMddHHmmss",
-        "yyyy-MM-dd HH:mm:ss",
-        "yyyy/MM/dd HH:mm:ss",
-        "yyyy.MM.dd",
-        "yyyy.MM.dd HH:mm:ss"
+        "yyyy-M-d HH:mm:ss",
+        "yyyy/M/d HH:mm:ss",
+        "yyyy.M.d",
+        "yyyy.M.d HH:mm:ss"
     ).collect(Collectors.toList());
+
+    static final ZoneOffset ZONEOFFSET = ZoneOffset.ofHours(8);
 
     @Override
     public int typeCode() {
@@ -61,9 +63,13 @@ public class DingoDateUnixTimestampOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
+        if (values.length < 1) {
+            return unixTimestamp() / 1000;
+        }
+
         Object value = values[0];
         if (value instanceof Long) {
-            return unixTimestamp((Long) value) / 1000;
+            return unixTimestamp((Long) value);
         }
         if (value instanceof String) {
             return unixTimestamp((String) value) / 1000;
@@ -89,7 +95,7 @@ public class DingoDateUnixTimestampOp extends RtFun {
             }
 
             LocalDate date = LocalDate.parse(input, formatter);
-            return date.atStartOfDay().toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
+            return date.atStartOfDay().toInstant(ZONEOFFSET).toEpochMilli();
         } else {
             // Include hours, minutes and seconds
             if (input.contains("-")) {
@@ -103,7 +109,7 @@ public class DingoDateUnixTimestampOp extends RtFun {
             }
 
             LocalDateTime dateTime = LocalDateTime.parse(input, formatter);
-            return dateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
+            return dateTime.toInstant(ZONEOFFSET).toEpochMilli();
         }
     }
 
@@ -113,6 +119,10 @@ public class DingoDateUnixTimestampOp extends RtFun {
 
     public static Long unixTimestamp(final Date input) {
         return input.getTime();
+    }
+
+    public static Long unixTimestamp() {
+        return LocalDateTime.now().toInstant(ZONEOFFSET).toEpochMilli();
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -131,6 +141,7 @@ public class DingoDateUnixTimestampOp extends RtFun {
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
+                methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp"));
                 methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", String.class));
                 methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", Long.class));
                 methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", Date.class));
