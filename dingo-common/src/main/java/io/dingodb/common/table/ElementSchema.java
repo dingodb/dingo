@@ -106,6 +106,10 @@ public class ElementSchema implements CompileContext {
     }
 
     public Object parse(String str) {
+        if (str == null || str.equalsIgnoreCase("NULL")) {
+            return null;
+        }
+
         switch (type) {
             case TypeCode.INTEGER:
                 return Integer.parseInt(str);

@@ -203,45 +203,54 @@ public class DingoMeta extends MetaImpl {
                  .forEach(x -> {
                      Object valueBeforeCvt = inputs.get(x);
                      Object valueAfterCvt = inputs.get(x);
-                     switch (columns.get(x).columnClassName.toLowerCase()) {
-                         case "java.sql.date":
-                         case "java.sql.time":
-                         case "java.sql.timestamp": {
-                             Long timeStamp = 0L;
-                             try {
-                                 timeStamp = (Long) inputs.get(x);
-                             } catch (Exception e) {
-                                 if (e instanceof ClassCastException) {
-                                     timeStamp = ((java.util.Date) inputs.get(x)).getTime();
-                                 }
-                             }
-                             Long epochTime = 0L;
-                             if (columns.get(x).columnClassName.toLowerCase().contains("date")) {
-                                 epochTime = timeStamp / (24 * 60 * 60 * 1000);
-                             } else {
-                                 epochTime = timeStamp;
-                             }
-                             inputs.set(x, epochTime);
-                             break;
-                         }
-                         case "java.lang.integer": {
-                             valueAfterCvt = Integer.valueOf(inputs.get(x).toString());
-                             inputs.set(x, valueAfterCvt);
-                             break;
-                         }
-                         default:
-                             break;
-                     }
-
+                     String columnClassName = columns.get(x).columnClassName.toLowerCase();
+                     valueAfterCvt = getValueAfterCvt(columnClassName, valueBeforeCvt, valueAfterCvt);
+                     inputs.set(x, valueAfterCvt);
                      if (log.isDebugEnabled()) {
                          log.debug("Convert column:{} from type:{} to type:{} value:{}",
                              columns.get(x).columnName,
-                             valueBeforeCvt.getClass(),
+                             valueBeforeCvt != null ? valueBeforeCvt.getClass() : "null",
                              columns.get(x).columnClassName,
-                             valueAfterCvt.toString());
+                             valueAfterCvt != null ? valueAfterCvt.toString() : "null");
                      }
                  });
         return inputs;
+    }
+
+    private Object getValueAfterCvt(final String columnClassName, final Object input, Object defaultValue) {
+        Object valueAfterCvt = defaultValue;
+        if (input == null) {
+            return valueAfterCvt;
+        }
+        switch (columnClassName) {
+            case "java.sql.date":
+            case "java.sql.time":
+            case "java.sql.timestamp": {
+                Long timeStamp = 0L;
+                try {
+                    timeStamp = (Long)input;
+                } catch (Exception e) {
+                    if (e instanceof ClassCastException) {
+                        timeStamp = ((java.util.Date)input).getTime();
+                    }
+                }
+                Long epochTime = 0L;
+                if (columnClassName.contains("date")) {
+                    epochTime = timeStamp / (24 * 60 * 60 * 1000);
+                } else {
+                    epochTime = timeStamp;
+                }
+                valueAfterCvt = epochTime;
+                break;
+            }
+            case "java.lang.integer": {
+                valueAfterCvt = Integer.valueOf(input.toString());
+                break;
+            }
+            default:
+                break;
+        }
+        return valueAfterCvt;
     }
 
     @Deprecated
