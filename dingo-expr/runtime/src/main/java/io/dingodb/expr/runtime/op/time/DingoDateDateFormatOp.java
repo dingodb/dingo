@@ -16,13 +16,20 @@
 
 package io.dingodb.expr.runtime.op.time;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoDateDateFormatOp extends RtFun {
@@ -56,4 +63,32 @@ public class DingoDateDateFormatOp extends RtFun {
 
     }
 
+    // Todo this place only checks the type thing. so we just return ""
+    public static String dateFormat(final String inputStr, final String format) {
+        return "";
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoDateDateFormatOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "date_format";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoDateDateFormatOp.class.getMethod("dateFormat", String.class, String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 }

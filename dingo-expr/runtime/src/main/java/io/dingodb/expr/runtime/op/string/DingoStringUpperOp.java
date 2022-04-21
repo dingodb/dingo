@@ -16,8 +16,15 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoStringUpperOp extends RtStringConversionOp {
@@ -36,5 +43,37 @@ public class DingoStringUpperOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         return ((String) values[0]).toUpperCase();
+    }
+
+    public static String toUpCase(final String str) {
+        if (str == null || str.equals("")) {
+            return str;
+        } else {
+            return str.toUpperCase();
+        }
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringUpperOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "ucase";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringUpperOp.class.getMethod("toUpCase", String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

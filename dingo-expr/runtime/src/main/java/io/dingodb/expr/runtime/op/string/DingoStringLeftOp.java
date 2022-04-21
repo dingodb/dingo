@@ -16,9 +16,16 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoStringLeftOp extends RtStringConversionOp {
@@ -45,5 +52,37 @@ public class DingoStringLeftOp extends RtStringConversionOp {
         }
 
         return cnt > str.length() ? str : str.substring(0, cnt);
+    }
+
+    public static String leftString(final String str, int cnt) {
+        if (str == null || str.equals("") || cnt > str.length()) {
+            return str;
+        } else {
+            return str.substring(0, cnt);
+        }
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringLeftOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "left";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringLeftOp.class.getMethod("leftString", String.class, int.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

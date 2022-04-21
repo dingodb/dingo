@@ -16,8 +16,15 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoStringReverseOp extends RtStringConversionOp {
@@ -40,6 +47,38 @@ public class DingoStringReverseOp extends RtStringConversionOp {
             return inputStr;
         } else {
             return new StringBuilder(inputStr).reverse().toString();
+        }
+    }
+
+    public static String reverseString(final String inputStr) {
+        if (inputStr == null || inputStr.equals("")) {
+            return inputStr;
+        } else {
+            return new StringBuilder(inputStr).reverse().toString();
+        }
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringReverseOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "reverse";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringReverseOp.class.getMethod("reverseString", String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

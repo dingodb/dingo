@@ -16,8 +16,15 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoStringLTrimOp extends RtStringConversionOp {
@@ -47,5 +54,37 @@ public class DingoStringLTrimOp extends RtStringConversionOp {
         }
 
         return inputStr.substring(startIndex, endIndex + 1);
+    }
+
+    public static String trimLeft(final String inputStr) {
+        if (inputStr == null || inputStr.equals("")) {
+            return inputStr;
+        } else {
+            return inputStr.replaceAll("^[　 ]+", "");
+        }
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringLTrimOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "ltrim";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringLTrimOp.class.getMethod("trimLeft", String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
