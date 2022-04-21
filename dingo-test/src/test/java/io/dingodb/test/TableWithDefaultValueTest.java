@@ -16,6 +16,7 @@
 
 package io.dingodb.test;
 
+import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,6 +64,19 @@ public class TableWithDefaultValueTest {
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            "100, lala, NULL");
+
+        sql = "select id, name from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name"},
+            TupleSchema.ofTypes("INTEGER", "STRING"),
+            "100, lala");
+
         sqlHelper.clearTable(tableName);
     }
 
@@ -78,6 +92,19 @@ public class TableWithDefaultValueTest {
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
+
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "amount"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            "100, lala, 1.1");
+
+        sql = "select id, name from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name"},
+            TupleSchema.ofTypes("INTEGER", "STRING"),
+            "100, lala");
         sqlHelper.clearTable(tableName);
     }
 
@@ -95,6 +122,64 @@ public class TableWithDefaultValueTest {
         sqlHelper.updateTest(sql, 1);
         sql = "update " + tableName + " set score = score - 10";
         sqlHelper.updateTest(sql, 1);
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "score"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER"),
+            "100, lala, 90");
+
+        sql = "select score from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"score"},
+            TupleSchema.ofTypes("INTEGER"),
+            "90");
         sqlHelper.clearTable(tableName);
+    }
+
+    @Test
+    public void testCase04() throws Exception {
+        String tableName = "test04";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int not null,\n"
+            + "    name varchar(32) not null,\n"
+            + "    age int,\n"
+            + "    amount double, \n"
+            + "    address varchar(32),\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "amount", "address"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            "100, lala, NULL, NULL, NULL");
+        sqlHelper.clearTable(tableName);
+    }
+
+    @Test
+    public void testCase05() throws Exception {
+        // FIXME: null value when default value is empty
+        /*
+        String tableName = "test04";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    birth date default current_date,\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "birth"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DATE"),
+            "100, lala, 2022-04-20");
+        sqlHelper.clearTable(tableName);
+       */
     }
 }
