@@ -247,6 +247,9 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         this.dbStore.getWriteLock().lock();
         try {
             onShutdown();
+        } catch (Exception e) {
+            LOG.error("Fail to delete LogData on LogStorage RegionId = {}",
+                new String(this.regionId, StandardCharsets.UTF_8));
         } finally {
             this.dbStore.getWriteLock().unlock();
         }
@@ -255,19 +258,25 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     @Override
     public long getFirstLogIndex() {
         this.dbStore.getReadLock().lock();
-        RocksIterator it = null;
         try {
-            if (this.hasLoadFirstLogIndex) {
-                return this.firstLogIndex;
-            }
-            checkState();
-            it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
-                this.dbStore.getTotalOrderReadOptions());
+            return getFirstLogIndexNoLock();
+        } finally {
+            this.dbStore.getReadLock().unlock();
+        }
+    }
+
+    private long getFirstLogIndexNoLock() {
+        if (this.hasLoadFirstLogIndex) {
+            return this.firstLogIndex;
+        }
+        checkState();
+        try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
+            this.dbStore.getTotalOrderReadOptions())) {
             it.seekToFirst();
             while (it.isValid()) {
                 byte[] key = it.key();
                 byte[] pre = new byte[key.length - 8];
-                System.arraycopy(key, 0 , pre, 0, key.length - 8);
+                System.arraycopy(key, 0, pre, 0, key.length - 8);
                 if (Arrays.equals(pre, regionId)) {
                     final long ret = Bits.getLong(key, key.length - 8);
                     saveFirstLogIndex(ret);
@@ -277,17 +286,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 it.next();
             }
             return 1L;
-        } finally {
-            if (it != null) {
-                it.close();
-            }
-            this.dbStore.getReadLock().unlock();
         }
     }
 
     @Override
     public long getLastLogIndex() {
         this.dbStore.getReadLock().lock();
+        try {
+            return getLastLogIndexNoLock();
+        } finally {
+            this.dbStore.getReadLock().unlock();
+        }
+    }
+
+    private long getLastLogIndexNoLock() {
         checkState();
         try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
             this.dbStore.getTotalOrderReadOptions())) {
@@ -313,8 +325,6 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 return Bits.getLong(key, key.length - 8);
             }
             return 0L;
-        } finally {
-            this.dbStore.getReadLock().unlock();
         }
     }
 
@@ -584,7 +594,8 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     /**
      * Called after closing db.
      */
-    protected void onShutdown() {
+    protected void onShutdown() throws Exception {
+        this.dbStore.getDb().deleteRange(getKeyBytes(getFirstLogIndexNoLock()), getKeyBytes(getLastLogIndexNoLock()));
     }
 
     /**
