@@ -20,6 +20,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.raft.kv.Constants;
 import io.dingodb.raft.kv.config.RocksConfigration;
+import io.dingodb.raft.util.BytesUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.EnvOptions;
 import org.rocksdb.Options;
@@ -194,7 +195,8 @@ public class RocksRawKVStore implements RawKVStore {
 
     @Nonnull
     private Checksum snapshotSaveSync(String path, byte[] startKey, byte[] endKey) throws Exception {
-
+        log.info("RocksRawKVStore snapshotSaveSync, path: {}, startKey: {}, endKey: {}.",
+            path, BytesUtil.toHex(startKey), BytesUtil.toHex(endKey));
         Path sstPath = Paths.get(path, Constants.SNAPSHOT_SST);
         Files.createDirectories(Paths.get(path));
         try (
