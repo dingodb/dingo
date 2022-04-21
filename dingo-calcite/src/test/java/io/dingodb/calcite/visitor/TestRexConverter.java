@@ -39,6 +39,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -743,8 +745,16 @@ public class TestRexConverter {
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
-        // RtExpr rtExpr = expr.compileIn(null);
-        // Assert.assrt(((String)rtExpr.eval(null)).equals("100.2"));
+        RtExpr rtExpr = expr.compileIn(null);
+        String result = ((String)rtExpr.eval(null));
+        System.out.println(result);
+        LocalDateTime localDateTime = LocalDateTime.parse(result, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime nowTime = LocalDateTime.now();
+        Assert.assrt(localDateTime.getYear() == nowTime.getYear());
+        Assert.assrt(localDateTime.getMonth() == nowTime.getMonth());
+        Assert.assrt(localDateTime.getDayOfMonth() == nowTime.getDayOfMonth());
+        Assert.assrt(localDateTime.getHour() == nowTime.getHour());
+        Assert.assrt(localDateTime.getMinute() == nowTime.getMinute());
     }
 
     @Test
@@ -757,8 +767,8 @@ public class TestRexConverter {
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
-        // RtExpr rtExpr = expr.compileIn(null);
-        // Assert.assrt(rtExpr.eval(null).equals("2022-04-13 16:20:34"));
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).equals("2022-04-13 16:20:34"));
     }
 
     @Test
