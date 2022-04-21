@@ -108,6 +108,14 @@ public interface LogManager extends Lifecycle<LogManagerOptions>, Describer {
     void join() throws InterruptedException;
 
     /**
+     * Given specified <tt>requiredCapacity</tt> determines if that amount of space
+     * is available to append these entries. Returns true when available.
+     * @param requiredCapacity
+     * @return Returns true when available.
+     */
+    boolean hasAvailableCapacityToAppendEntries(final int requiredCapacity);
+
+    /**
      * Append log entry vector and wait until it's stable (NOT COMMITTED!)
      *
      * @param entries log entries

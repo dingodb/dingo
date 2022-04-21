@@ -27,6 +27,7 @@ import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.util.Bits;
 import io.dingodb.raft.util.BytesUtil;
 import io.dingodb.raft.util.Describer;
+import io.dingodb.raft.util.OnlyForTest;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.Utils;
 import org.rocksdb.RocksDB;
@@ -199,7 +200,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 this.dbStore.getWriteOptions(), firstLogIndexKey, vs);
             return true;
         } catch (final RocksDBException e) {
-            LOG.error("Fail to save first log index {}.", firstLogIndex, e);
+            LOG.error("Fail to save first log index {}, {}.", firstLogIndex, e);
             return false;
         } finally {
             this.dbStore.getReadLock().unlock();
@@ -335,22 +336,28 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             if (this.hasLoadFirstLogIndex && index < this.firstLogIndex) {
                 return null;
             }
-            final byte[] keyBytes = getKeyBytes(index);
-            final byte[] bs = onDataGet(index, getValueFromRocksDB(keyBytes));
-            if (bs != null) {
-                final LogEntry entry = this.dbStore.getLogEntryDecoder().decode(bs);
-                if (entry != null) {
-                    return entry;
-                } else {
-                    LOG.error("Bad log entry format for index={}, the log data is: {}.", index, BytesUtil.toHex(bs));
-                    // invalid data remove? TODO
-                    return null;
-                }
-            }
+            return getEntryFromDB(index);
         } catch (final RocksDBException | IOException e) {
-            LOG.error("Fail to get log entry at index {}.", index, e);
+            LOG.error("Fail to get log entry at index {}, {}.", index, e);
         } finally {
             this.dbStore.getReadLock().unlock();
+        }
+        return null;
+    }
+
+    @OnlyForTest
+    LogEntry getEntryFromDB(final long index) throws IOException, RocksDBException {
+        final byte[] keyBytes = getKeyBytes(index);
+        final byte[] bs = onDataGet(index, getValueFromRocksDB(keyBytes));
+        if (bs != null) {
+            final LogEntry entry = this.dbStore.getLogEntryDecoder().decode(bs);
+            if (entry != null) {
+                return entry;
+            } else {
+                LOG.error("Bad log entry format for index={}, the log data is: {}.", index, BytesUtil.toHex(bs));
+                // invalid data remove? TODO
+                return null;
+            }
         }
         return null;
     }
@@ -395,7 +402,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION || entry.getType() == EntryType.ENTRY_TYPE_MSG) {
             return executeBatch(batch -> addConfBatch(entry, batch));
         } else {
-            this.dbStore.getWriteLock().lock();
+            this.dbStore.getReadLock().lock();
             try {
                 if (this.dbStore.getDb() == null) {
                     LOG.warn("DB not initialized or destroyed.");
@@ -420,7 +427,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 Thread.currentThread().interrupt();
                 return false;
             } finally {
-                this.dbStore.getWriteLock().unlock();
+                this.dbStore.getReadLock().unlock();
             }
         }
     }
@@ -478,31 +485,34 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     private void truncatePrefixInBackground(final long startIndex, final long firstIndexKept) {
         // delete logs in background.
         Utils.runInThread(() -> {
+            long startMs = Utils.monotonicMs();
             this.dbStore.getReadLock().lock();
             try {
                 if (this.dbStore.getDb() == null) {
+                    LOG.warn(
+                        "DB is null while truncating prefixed logs, the range is: [{}, {})",
+                        startIndex, firstIndexKept);
                     return;
                 }
-                final long startMS = System.nanoTime();
                 onTruncatePrefix(startIndex, firstIndexKept);
+                // Note https://github.com/facebook/rocksdb/wiki/Delete-A-Range-Of-Keys
+                final byte[] startKey = getKeyBytes(startIndex);
+                final byte[] endKey = getKeyBytes(firstIndexKept);
+
+                // deleteRange to delete all keys in range.
                 this.dbStore.getDb().deleteRange(this.dbStore.getDefaultHandle(),
-                    getKeyBytes(startIndex), getKeyBytes(firstIndexKept));
+                    startKey, endKey);
                 this.dbStore.getDb().deleteRange(this.dbStore.getConfHandle(),
-                    getKeyBytes(startIndex), getKeyBytes(firstIndexKept));
-                Long times = doCompactByTimes(this.dbStore.getPath());
-                long endMS = System.nanoTime();
-                LOG.debug("truncate Prefix: dbPath:{}, startIndex:{}, endIndex:{}, diff:{}, cost:{}, compactFlag:{}",
-                    this.dbStore.getPath(),
-                    startIndex,
-                    firstIndexKept,
-                    (firstIndexKept - startIndex),
-                    (endMS - startMS) / 1000 / 1000,
-                    times
-                );
+                    startKey, endKey);
+                // deleteFilesInRanges to speedup reclaiming disk space on write-heavy load.
+                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getDefaultHandle(), Arrays.asList(startKey, endKey), false);
+                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getConfHandle(), Arrays.asList(startKey, endKey), false);
             } catch (final RocksDBException | IOException e) {
-                LOG.error("Fail to truncatePrefix {}.", firstIndexKept, e);
+                LOG.error("Fail to truncatePrefix, firstIndexKept={}.", firstIndexKept, e);
             } finally {
                 this.dbStore.getReadLock().unlock();
+                LOG.info("Truncated prefix logs from log index {} to {}, cost {} ms.",
+                    startIndex, firstIndexKept, Utils.monotonicMs() - startMs);
             }
         });
     }
@@ -523,21 +533,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                     this.dbStore.getWriteOptions(), getKeyBytes(lastIndexKept + 1),
                     getKeyBytes(getLastLogIndex() + 1));
 
-                Long times = doCompactByTimes(this.dbStore.getPath());
+                //Long times = doCompactByTimes(this.dbStore.getPath());
                 Long endMS = System.nanoTime();
                 LOG.debug("truncate Suffix: dbPath:{}, last startIndex:{}, "
-                        + "endIndex:{} diff:{}, cost:{}, compactFlag:{}",
+                        + "endIndex:{} diff:{}, cost:{}.",
                     this.dbStore.getPath(),
                     lastIndexKept,
                     lastIndex,
                     (lastIndex - lastIndexKept),
-                    (endMS - startMS) / 1000 / 1000,
-                    times
+                    (endMS - startMS) / 1000 / 1000
                 );
             }
             return true;
         } catch (final RocksDBException | IOException e) {
-            LOG.error("Fail to truncateSuffix {}.", lastIndexKept, e);
+            LOG.error("Fail to truncateSuffix {}, {}.", lastIndexKept, e);
         } finally {
             this.dbStore.getReadLock().unlock();
         }
@@ -571,17 +580,22 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         if (nextLogIndex <= 0) {
             throw new IllegalArgumentException("Invalid next log index.");
         }
-        LogEntry entry = getEntry(nextLogIndex);
-        onReset(nextLogIndex);
-        if (entry == null) {
-            entry = new LogEntry();
-            entry.setType(EntryType.ENTRY_TYPE_NO_OP);
-            entry.setId(new LogId(nextLogIndex, 0));
-            LOG.warn("Entry not found for nextLogIndex {} when reset.", nextLogIndex);
+        this.dbStore.getWriteLock().lock();
+        try {
+            LogEntry entry = getEntry(nextLogIndex);
+            onReset(nextLogIndex);
+            if (entry == null) {
+                entry = new LogEntry();
+                entry.setType(EntryType.ENTRY_TYPE_NO_OP);
+                entry.setId(new LogId(nextLogIndex, 0));
+                LOG.warn("Entry not found for nextLogIndex {} when reset.", nextLogIndex);
+            }
+            return appendEntry(entry);
+        } finally {
+            this.dbStore.getWriteLock().unlock();
         }
-        return appendEntry(entry);
     }
-
+    
     // Hooks for {@link RocksDBSegmentLogStorage}
 
     /**

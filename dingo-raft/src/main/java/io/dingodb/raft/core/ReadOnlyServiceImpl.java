@@ -30,6 +30,7 @@ import io.dingodb.raft.Status;
 import io.dingodb.raft.closure.ReadIndexClosure;
 import io.dingodb.raft.entity.ReadIndexState;
 import io.dingodb.raft.entity.ReadIndexStatus;
+import io.dingodb.raft.error.OverloadException;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.error.RaftException;
 import io.dingodb.raft.option.RaftOptions;
@@ -61,26 +62,27 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppliedLogIndexListener {
-    private static final int MAX_ADD_REQUEST_RETRY_TIMES = 3;
+
     /** Disruptor to run readonly service. */
-    private Disruptor<ReadIndexEvent> readIndexDisruptor;
-    private RingBuffer<ReadIndexEvent> readIndexQueue;
-    private RaftOptions raftOptions;
-    private NodeImpl node;
-    private final Lock lock = new ReentrantLock();
-    private FSMCaller fsmCaller;
-    private volatile CountDownLatch shutdownLatch;
+    private Disruptor<ReadIndexEvent>                  readIndexDisruptor;
+    private RingBuffer<ReadIndexEvent>                 readIndexQueue;
+    private RaftOptions                                raftOptions;
+    private NodeImpl                                   node;
+    private final Lock                                 lock                = new ReentrantLock();
+    private FSMCaller                                  fsmCaller;
+    private volatile CountDownLatch                    shutdownLatch;
 
-    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService                   scheduledExecutorService;
 
-    private NodeMetrics nodeMetrics;
+    private NodeMetrics                                nodeMetrics;
 
-    private volatile RaftException error;
+    private volatile RaftException                     error;
 
     // <logIndex, statusList>
     private final TreeMap<Long, List<ReadIndexStatus>> pendingNotifyStatus = new TreeMap<>();
 
-    private static final Logger LOG = LoggerFactory.getLogger(ReadOnlyServiceImpl.class);
+    private static final Logger                        LOG                 = LoggerFactory
+        .getLogger(ReadOnlyServiceImpl.class);
 
     private static class ReadIndexEvent {
         Bytes requestContext;
@@ -186,10 +188,16 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
                         doUnlock = false;
                         notifyFail(new Status(-1, "Fail to run ReadIndex task, the gap of current node's apply index between leader's commit index over maxReadIndexLag"));
                     } else  {
-                        // Not applied, add it to pending-notify cache.
-                        ReadOnlyServiceImpl.this.pendingNotifyStatus
-                            .computeIfAbsent(readIndexStatus.getIndex(), k -> new ArrayList<>(10)) //
-                            .add(readIndexStatus);
+                        if (readIndexStatus.isOverMaxReadIndexLag(ReadOnlyServiceImpl.this.fsmCaller.getLastAppliedIndex(), ReadOnlyServiceImpl.this.raftOptions.getMaxReadIndexLag())) {
+                            ReadOnlyServiceImpl.this.lock.unlock();
+                            doUnlock = false;
+                            notifyFail(new Status(-1, "Fail to run ReadIndex task, the gap of current node's apply index between leader's commit index over maxReadIndexLag"));
+                        } else  {
+                            // Not applied, add it to pending-notify cache.
+                            ReadOnlyServiceImpl.this.pendingNotifyStatus
+                                .computeIfAbsent(readIndexStatus.getIndex(), k -> new ArrayList<>(10)) //
+                                .add(readIndexStatus);
+                        }
                     }
                 }
             } finally {
@@ -320,21 +328,23 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
                 event.requestContext = new Bytes(reqCtx);
                 event.startTime = Utils.monotonicMs();
             };
-            int retryTimes = 0;
-            while (true) {
-                if (this.readIndexQueue.tryPublishEvent(translator)) {
+            switch(this.node.getOptions().getApplyTaskMode()) {
+                case Blocking:
+                    this.readIndexQueue.publishEvent(translator);
                     break;
-                } else {
-                    retryTimes++;
-                    if (retryTimes > MAX_ADD_REQUEST_RETRY_TIMES) {
+                case NonBlocking:
+                default:
+                    if (!this.readIndexQueue.tryPublishEvent(translator)) {
+                        final String errorMsg = "Node is busy, has too many read-index requests, queue is full and bufferSize="+ this.readIndexQueue.getBufferSize();
                         Utils.runClosureInThread(closure,
-                            new Status(RaftError.EBUSY, "Node is busy, has too many read-only requests."));
+                            new Status(RaftError.EBUSY, errorMsg));
                         this.nodeMetrics.recordTimes("read-index-overload-times", 1);
                         LOG.warn("Node {} ReadOnlyServiceImpl readIndexQueue is overload.", this.node.getNodeId());
-                        return;
+                        if(closure == null) {
+                            throw new OverloadException(errorMsg);
+                        }
                     }
-                    ThreadHelper.onSpinWait();
-                }
+                    break;
             }
         } catch (final Exception e) {
             Utils.runClosureInThread(closure, new Status(RaftError.EPERM, "Node is down."));
@@ -406,7 +416,7 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
 
     @OnlyForTest
     RaftOptions getRaftOptions() {
-        return raftOptions;
+        return this.raftOptions;
     }
 
     private void reportError(final ReadIndexStatus status, final Status st) {
