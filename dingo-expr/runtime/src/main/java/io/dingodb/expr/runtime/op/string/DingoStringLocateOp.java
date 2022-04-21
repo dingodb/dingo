@@ -16,8 +16,15 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoStringLocateOp extends RtStringConversionOp {
@@ -48,5 +55,37 @@ public class DingoStringLocateOp extends RtStringConversionOp {
 
         return new Long(inputStr.indexOf(subString) + 1);
 
+    }
+
+    public static long locateString(final String subString, final String inputStr) {
+        if (inputStr == null || inputStr.equals("")) {
+            return -1;
+        } else {
+            return inputStr.indexOf(subString);
+        }
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringLocateOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "locate";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringLocateOp.class.getMethod("locateString", String.class, String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

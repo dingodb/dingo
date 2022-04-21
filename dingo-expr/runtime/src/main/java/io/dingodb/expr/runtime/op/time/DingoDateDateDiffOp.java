@@ -16,15 +16,22 @@
 
 package io.dingodb.expr.runtime.op.time;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 
@@ -51,5 +58,41 @@ public class DingoDateDateDiffOp extends RtFun {
 
         return (toDate.atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond()
             - fromDate.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()) /  (24 * 60 * 60);
+    }
+
+    public static Long dateDiff(String inputStr1, String inputStr2) {
+        // Guarantee the timestamp format.
+        if (inputStr1.split(" ").length == 1) {
+            inputStr1 += " 00:00:00";
+        }
+        if (inputStr2.split(" ").length == 1) {
+            inputStr2 += " 00:00:00";
+        }
+        return (Timestamp.valueOf(inputStr1).getTime() - Timestamp.valueOf(inputStr2).getTime())
+            / (1000 * 60 * 60 * 24);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoDateDateDiffOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "datediff";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoDateDateDiffOp.class.getMethod("dateDiff", String.class, String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

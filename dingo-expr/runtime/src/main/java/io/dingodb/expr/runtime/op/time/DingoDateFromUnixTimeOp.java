@@ -16,15 +16,22 @@
 
 package io.dingodb.expr.runtime.op.time;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.func.DingoFuncProvider;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 public class DingoDateFromUnixTimeOp extends RtFun {
@@ -61,5 +68,36 @@ public class DingoDateFromUnixTimeOp extends RtFun {
         }
 
         return formatter.format(dateTime);
+    }
+
+    public static String fromUnixTime(final Long timestamp) {
+        Long relTimestamp = timestamp * 1000;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(relTimestamp), ZoneId.systemDefault());
+        return formatter.format(dateTime);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoDateFromUnixTimeOp::new;
+        }
+
+        @Override
+        public String name() {
+            return "from_unixtime";
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoDateFromUnixTimeOp.class.getMethod("fromUnixTime", Long.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
