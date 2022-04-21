@@ -30,6 +30,7 @@ import io.dingodb.raft.storage.impl.RocksDBLogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.util.Endpoint;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,14 +54,19 @@ public class TestRaftRawKVStore {
 
     @BeforeAll
     public static void beforeAll() throws Exception {
+        FileUtils.forceDeleteOnExit(new File(DB_PATH));
         Endpoint endpoint = new Endpoint("localhost", 9181);
-        //RpcServer rpcServer = createRaftRpcServer(endpoint);
-        //System.out.println(rpcServer.init(null));
         store = new RaftRawKVStore(
             "TEST", STORE, createNodeOptions(), new Location(endpoint.getIp(), endpoint.getPort())
         );
         store.init(null);
     }
+
+    @AfterAll
+    public static void afterAll() throws Exception {
+        FileUtils.forceDeleteOnExit(new File(DB_PATH));
+    }
+
 
     private static NodeOptions createNodeOptions() {
         final Configuration initialConf = new Configuration();
