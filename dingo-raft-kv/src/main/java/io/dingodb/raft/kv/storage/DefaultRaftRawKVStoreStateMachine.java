@@ -68,9 +68,6 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
             while (it.hasNext()) {
                 try {
                     RaftRawKVOperation operation = RaftRawKVOperation.decode(it.getData()).toBatchOp();
-                    if (operation.getOp() == RaftRawKVOperation.Op.SYNC) {
-                        continue;
-                    }
                     closures.add(it.done());
                     if (mergedOperation == null) {
                         if (operation.isBatch()) {
