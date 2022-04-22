@@ -20,8 +20,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 public interface DingoFuncProvider {
-
-    String name();
+    List<String> name();
 
     List<Method> methods();
 }
