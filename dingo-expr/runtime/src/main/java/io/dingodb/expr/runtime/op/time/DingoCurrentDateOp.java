@@ -21,74 +21,61 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
+import java.sql.Date;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-public class DingoDateDateFormatOp extends RtFun {
+@Slf4j
+public class DingoCurrentDateOp extends RtFun {
 
-    public DingoDateDateFormatOp(@Nonnull RtExpr[] paras) {
+    public DingoCurrentDateOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Override
     public int typeCode() {
-        return TypeCode.STRING;
+        return TypeCode.DATE;
     }
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String originDateTime = (String)values[0];
-        String formatStr = DateFormatUtil.defaultDateFormat();
-        if (values.length == 2) {
-            formatStr = (String)values[1];
-        }
-        LocalDateTime originLocalDateTime =
-            LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(originDateTime),
-                DateFormatUtil.getDatetimeFormatter());
-        // Process format
-        if (formatStr.equals(DateFormatUtil.defaultTimeFormat())) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-            return originLocalDateTime.format(formatter);
-        } else {
-            return DateFormatUtil.processFormatStr(originLocalDateTime, formatStr);
-        }
-
+        return getCurrentDate();
     }
 
-    // Todo this place only checks the type thing. so we just return ""
-    public static String dateFormat(final String inputStr, final String format) {
-        return "";
+    public static java.sql.Date getCurrentDate() {
+        return new Date(System.currentTimeMillis());
     }
 
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
         public Function<RtExpr[], RtOp> supplier() {
-            return DingoDateDateFormatOp::new;
+            return DingoCurrentDateOp::new;
         }
 
         @Override
-        public String name() {
-            return "date_format";
+        public List<String> name() {
+            return Arrays.asList("current_date", "curdate");
         }
 
         @Override
         public List<Method> methods() {
+            List<Method> methods = new ArrayList<>();
             try {
-                List<Method> methods = new ArrayList<>();
-                methods.add(DingoDateDateFormatOp.class.getMethod("dateFormat", String.class, String.class));
-                return methods;
+                methods.add(DingoCurrentDateOp.class.getMethod("getCurrentDate"));
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
+            return methods;
         }
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op.time.timeformatmap;
+package io.dingodb.expr.runtime.op.time.utils;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

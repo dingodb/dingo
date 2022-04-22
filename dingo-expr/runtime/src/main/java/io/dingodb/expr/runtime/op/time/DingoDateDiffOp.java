@@ -14,73 +14,76 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op.string;
+package io.dingodb.expr.runtime.op.time;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-public class DingoStringRepeatOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 7673054922107009329L;
+@Slf4j
+public class DingoDateDiffOp extends RtFun {
 
-    /**
-     * Create an DingoStringRepeatOp. repeat the String times.
-     *
-     * @param paras the parameters of the op
-     */
-    public DingoStringRepeatOp(@Nonnull RtExpr[] paras) {
+    public DingoDateDiffOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String inputStr = ((String)values[0]);
-        int times = new BigDecimal(String.valueOf(values[1])).setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
-
-        if (times < 0) {
-            return "";
-        }
-        return String.join("", Collections.nCopies(times, inputStr));
+    public int typeCode() {
+        return TypeCode.LONG;
     }
 
-    public static String repeatString(final String inputStr, int times) {
-        if (inputStr == null || inputStr.equals("")) {
-            return inputStr;
-        } else {
-            return String.join("", Collections.nCopies(times, inputStr));
-        }
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        String date0 = (String)values[0];
+        String date1 = (String)values[1];
+        return dateDiff(date0, date1);
+    }
+
+    public static Long dateDiff(String inputStr1, String inputStr2) {
+        LocalDate fromDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(inputStr1),
+            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
+        LocalDate toDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(inputStr2),
+            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
+
+        return (fromDate.atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond()
+            - toDate.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()) /  (24 * 60 * 60);
     }
 
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
         public Function<RtExpr[], RtOp> supplier() {
-            return DingoStringRepeatOp::new;
+            return DingoDateDiffOp::new;
         }
 
         @Override
         public List<String> name() {
-            return Arrays.asList("repeat");
+            return Arrays.asList("datediff");
         }
 
         @Override
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DingoStringRepeatOp.class.getMethod("repeatString", String.class, int.class));
+                methods.add(DingoDateDiffOp.class.getMethod("dateDiff", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

@@ -23,6 +23,7 @@ import io.dingodb.func.DingoFuncProvider;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -61,8 +62,8 @@ public class DingoStringUpperOp extends RtStringConversionOp {
         }
 
         @Override
-        public String name() {
-            return "ucase";
+        public List<String> name() {
+            return Arrays.asList("ucase");
         }
 
         @Override

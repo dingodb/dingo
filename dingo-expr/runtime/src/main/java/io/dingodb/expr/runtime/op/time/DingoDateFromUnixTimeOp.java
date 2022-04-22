@@ -21,8 +21,9 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
@@ -30,10 +31,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoDateFromUnixTimeOp extends RtFun {
     public DingoDateFromUnixTimeOp(@Nonnull RtExpr[] paras) {
         super(paras);
@@ -46,34 +49,31 @@ public class DingoDateFromUnixTimeOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        Long timestamp = 0L;
-
         String timeStr = String.valueOf(values[0]);
-        if (timeStr.length() < 13) {
-            timestamp = Long.valueOf(timeStr) * 1000;
-        } else if (timeStr.length() == 13) {
-            timestamp = Long.valueOf(timeStr);
-        }
-
-        if (timestamp < 0) {
+        if (timeStr == null || timeStr.length() < 9) {
             throw new IllegalArgumentException("incorrect value of unix_timestamp for from_unixtime function");
         }
 
-        DateTimeFormatter formatter = DateFormatUtil.getDatetimeFormatter();
-        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+        Long unixTime = 0L;
+        if (timeStr.length() < 13) {
+            unixTime = Long.valueOf(timeStr) * 1000;
+        } else if (timeStr.length() == 13) {
+            unixTime = Long.valueOf(timeStr);
+        }
 
         if (values.length == 2) {
             String formatStr = String.valueOf(values[1]);
-            formatter = DateTimeFormatter.ofPattern(formatStr);
+            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+            return formatter.format(dateTime);
+        } else {
+            return fromUnixTime(unixTime);
         }
-
-        return formatter.format(dateTime);
     }
 
     public static String fromUnixTime(final Long timestamp) {
-        Long relTimestamp = timestamp * 1000;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(relTimestamp), ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateFormatUtil.getDatetimeFormatter();
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
         return formatter.format(dateTime);
     }
 
@@ -85,8 +85,8 @@ public class DingoDateFromUnixTimeOp extends RtFun {
         }
 
         @Override
-        public String name() {
-            return "from_unixtime";
+        public List<String> name() {
+            return Arrays.asList("from_unixtime");
         }
 
         @Override
@@ -96,6 +96,7 @@ public class DingoDateFromUnixTimeOp extends RtFun {
                 methods.add(DingoDateFromUnixTimeOp.class.getMethod("fromUnixTime", Long.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
