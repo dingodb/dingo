@@ -48,8 +48,12 @@ public final class DingoParserContext {
             DingoRootSchema.ROOT_SCHEMA_NAME,
             DingoRootSchema.ROOT
         );
-        ServiceLoader.load(DingoFuncProvider.class).iterator().forEachRemaining(
-            f -> f.methods().forEach(m -> rootSchema.plus().add(f.name().toUpperCase(), ScalarFunctionImpl.create(m))));
+
+        // Register all the functions
+        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
+            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
+        });
+
         DingoFunc.DINGO_FUNC_LIST.build().forEach((k, v) -> {
             rootSchema.plus().add(k, ScalarFunctionImpl.create(DingoFunc.class, v));
         });

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.common.util.CsvUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -125,4 +126,40 @@ public final class AssertResultSet {
             throw new IllegalArgumentException(e);
         }
     }
+
+    public AssertResultSet isRecordsWithTime(List<Object[]> target) throws SQLException {
+        ResultSetMetaData metaData = instance.getMetaData();
+        int size = metaData.getColumnCount();
+        int count = 0;
+
+        while (instance.next()) {
+            Object[] expectedRow = target.get(count);
+            Object[] row = new Object[size];
+            for (int i = 0; i < size; ++i) {
+                row[i] = instance.getObject(i + 1);
+
+                /**
+                 * in order to compare time in test cases, we change HH:mm:ss to HH
+                 */
+                if (row[i] instanceof java.sql.Time) {
+                    String timeStr = row[i].toString().substring(0, row[i].toString().length() - 6);
+                    String expected = expectedRow[i].toString();
+                    Assertions.assertEquals(timeStr, expected.substring(0, expected.length() - 6));
+                } else if (row[i] instanceof java.sql.Timestamp) {
+                    String srcStr = row[i].toString();
+                    String srcResult = srcStr.substring(0, srcStr.lastIndexOf(":"));
+                    String destStr = expectedRow[i].toString();
+                    String destResult = destStr.substring(0, destStr.lastIndexOf(":"));
+                    Assertions.assertEquals(destResult, srcResult);
+                } else {
+                    Assertions.assertEquals(row[i], expectedRow[i]);
+                }
+            }
+            count++;
+        }
+
+        assertThat(count).isEqualTo(target.size());
+        return this;
+    }
+
 }
