@@ -72,7 +72,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Nonnull
     @Override
     public Expr visitCall(@Nonnull RexCall call) {
-        Op op;
+        Op op = null;
         switch (call.getKind()) {
             case PLUS_PREFIX:
                 op = OpFactory.getUnary(DingoExprParser.ADD);
@@ -142,6 +142,15 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                         break;
                     case BOOLEAN:
                         op = FunFactory.INS.getFun("boolean");
+                        break;
+                    case DATE:
+                        op = FunFactory.INS.getFun("date");
+                        break;
+                    case TIME:
+                        op = FunFactory.INS.getFun("time");
+                        break;
+                    case TIMESTAMP:
+                        op = FunFactory.INS.getFun("timestamp");
                         break;
                     default:
                         throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");

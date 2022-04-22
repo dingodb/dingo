@@ -130,7 +130,7 @@ public class DingoMeta extends MetaImpl {
             );
             checkJobHasFailed(signature);
             return new ExecuteResult(ImmutableList.of(metaResultSet));
-        } catch (SQLException | SqlParseException e) {
+        } catch (Exception e) {
             log.error("Catch execute exception:{}", e.toString(), e);
             throw new RuntimeException(e);
         }
