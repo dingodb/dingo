@@ -20,6 +20,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.raft.kv.Constants;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -236,7 +237,7 @@ public class MemoryRawKVStore implements RawKVStore {
                 defaultDB.put(key, new ByteArrayEntry(key, value));
             }
             channel.close();
-            Files.deleteIfExists(snapshotPath);
+            FileUtils.forceDeleteOnExit(new File(snapshotPath.toString()));
             return true;
         } catch (Throwable e) {
             throw new RuntimeException(e);

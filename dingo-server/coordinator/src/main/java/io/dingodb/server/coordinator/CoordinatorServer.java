@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
@@ -100,7 +101,8 @@ public class CoordinatorServer {
         CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
         NodeOptions nodeOptions = getNodeOptions();
         nodeOptions.setFsm(stateMachine);
-        nodeOptions.setLogStorage(nodeOptions.getServiceFactory().createLogStorage("coordinator", logStore));
+        nodeOptions.setLogStorage(nodeOptions.getServiceFactory()
+            .createLogStorage("coordinator".getBytes(StandardCharsets.UTF_8), logStore));
         node.init(nodeOptions);
 
         netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
