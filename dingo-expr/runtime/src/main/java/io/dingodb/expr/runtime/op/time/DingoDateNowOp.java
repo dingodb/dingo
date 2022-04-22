@@ -19,15 +19,24 @@ package io.dingodb.expr.runtime.op.time;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
-import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 /**
  * Create an DingoDteNowOp to process date.
  */
 
+@Slf4j
 public class DingoDateNowOp extends RtFun {
 
     public static final long serialVersionUID = -1436327540637259764L;
@@ -43,8 +52,41 @@ public class DingoDateNowOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
+        return getLocalTime();
+    }
+
+    public static String getLocalTime() {
         String formatStr = DateFormatUtil.defaultDatetimeFormat();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
         return new java.sql.Timestamp(System.currentTimeMillis()).toLocalDateTime().format(formatter);
     }
+
+    /**
+     * the now function is equal to current_timestamp.
+     * then disable now function.
+     */
+    // @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoDateNowOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("now");
+        }
+
+        @Override
+        public List<Method> methods() {
+            List<Method> methods = new ArrayList<>();
+            try {
+                methods.add(DingoDateNowOp.class.getMethod("getLocalTime"));
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+            return methods;
+        }
+    }
+
 }

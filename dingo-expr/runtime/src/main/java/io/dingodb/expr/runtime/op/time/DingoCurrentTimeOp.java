@@ -14,79 +14,67 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op.string;
+package io.dingodb.expr.runtime.op.time;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-public class DingoStringRightOp extends RtStringConversionOp {
-    private static final long serialVersionUID = 1043463700086782931L;
+@Slf4j
+public class DingoCurrentTimeOp extends RtFun {
 
-    /**
-     * Create an DingoStringRightOp. DingoStringRightOp extract right sub string.
-     *
-     * @param paras the parameters of the op
-     */
-    public DingoStringRightOp(@Nonnull RtExpr[] paras) {
+    public DingoCurrentTimeOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String inputStr = (String) values[0];
-        Integer cnt = new BigDecimal(String.valueOf(values[1]))
-            .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
-
-        if (cnt < 0) {
-            return "";
-        }
-
-        if (inputStr.length() > cnt) {
-            return inputStr.substring(inputStr.length() - cnt, inputStr.length());
-        }
-        return inputStr;
+    public int typeCode() {
+        return TypeCode.TIME;
     }
 
-    public static String rightString(final String str, int cnt) {
-        if (str == null || str.equals("") || cnt > str.length()) {
-            return str;
-        } else {
-            return str.substring(str.length() - cnt, str.length());
-        }
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        return getCurrentTime();
+    }
+
+    public static Time getCurrentTime() {
+        return new Time(System.currentTimeMillis());
     }
 
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
         public Function<RtExpr[], RtOp> supplier() {
-            return DingoStringRightOp::new;
+            return DingoCurrentTimeOp::new;
         }
 
         @Override
         public List<String> name() {
-            return Arrays.asList("right");
+            return Arrays.asList("current_time", "curtime");
         }
 
         @Override
         public List<Method> methods() {
+            List<Method> methods = new ArrayList<>();
             try {
-                List<Method> methods = new ArrayList<>();
-                methods.add(DingoStringRightOp.class.getMethod("rightString", String.class, int.class));
-                return methods;
+                methods.add(DingoCurrentTimeOp.class.getMethod("getCurrentTime"));
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
+            return methods;
         }
     }
 }

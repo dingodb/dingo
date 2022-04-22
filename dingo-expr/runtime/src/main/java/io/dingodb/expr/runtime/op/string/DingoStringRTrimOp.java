@@ -23,6 +23,7 @@ import io.dingodb.func.DingoFuncProvider;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -71,8 +72,8 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
         }
 
         @Override
-        public String name() {
-            return "rtrim";
+        public List<String> name() {
+            return Arrays.asList("rtrim");
         }
 
         @Override
