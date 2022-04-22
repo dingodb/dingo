@@ -34,6 +34,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -94,6 +95,23 @@ public class SqlHelper {
                 AssertResultSet.of(resultSet)
                     .columnLabels(columns)
                     .isRecordsInOrder(schema, data);
+            }
+        }
+    }
+
+
+    // compare time in hours
+    public void queryTestWithTime(
+        String sql,
+        String[] columns,
+        TupleSchema schema,
+        List<Object[]> data
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet)
+                    .columnLabels(columns)
+                    .isRecordsWithTime(data);
             }
         }
     }

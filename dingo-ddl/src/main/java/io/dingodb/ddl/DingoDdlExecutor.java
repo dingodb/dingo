@@ -26,6 +26,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -84,6 +85,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             SqlNode expr = scd.expression;
             if (expr instanceof SqlLiteral) {
                 defaultValue = ((SqlLiteral) expr).getValue();
+            }
+            // case like: current_date(SqlIdentifier) or current_date()(SqlIdentifier)
+            if (expr instanceof SqlIdentifier || expr instanceof SqlBasicCall) {
+                defaultValue = expr;
             }
         }
         String name = scd.name.getSimple();
