@@ -38,12 +38,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,8 +61,9 @@ public class TestRaftInstancePart {
     public static void beforeAll() throws Exception {
         DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/TestStoreInstanceSegment.yaml").getPath());
         location = DingoConfiguration.location();
+        CommonId id = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, encodeInt(0), encodeInt(0));
         final Part part = Part.builder()
-            .id(CommonId.prefix((byte) 'T'))
+            .id(id)
             .replicates(singletonList(location))
             .build();
         final RocksDBLogStore logStore = new RocksDBLogStore();
@@ -78,8 +83,8 @@ public class TestRaftInstancePart {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(Paths.get(StoreConfiguration.dbPath()));
-        Files.deleteIfExists(Paths.get(StoreConfiguration.raft().getRaftPath()));
+        FileUtils.forceDeleteOnExit(new File(Paths.get(StoreConfiguration.dbPath()).toString()));
+        FileUtils.forceDeleteOnExit(new File(Paths.get(StoreConfiguration.raft().getRaftPath()).toString()));
     }
 
     @BeforeEach

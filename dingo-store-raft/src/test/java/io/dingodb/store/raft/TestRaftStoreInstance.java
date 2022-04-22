@@ -25,6 +25,7 @@ import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +62,7 @@ public class TestRaftStoreInstance {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(Paths.get("dingo"));
+        FileUtils.forceDeleteOnExit(new File(Paths.get("dingo").toString()));
     }
 
     @BeforeEach

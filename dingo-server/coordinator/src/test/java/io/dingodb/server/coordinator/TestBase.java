@@ -46,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
@@ -100,7 +101,7 @@ public class TestBase {
 
     //@AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(Paths.get(configuration.getDataPath()));
+        FileUtils.forceDeleteOnExit(new File(Paths.get(configuration.getDataPath()).toString()));
     }
 
     private static void initMetaAdaptors(MetaStore metaStore) {
@@ -127,7 +128,7 @@ public class TestBase {
         logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
-        LogStorage logStorage = new RocksDBLogStorage("coordinatortest", logStore);
+        LogStorage logStorage = new RocksDBLogStorage("coordinatortest".getBytes(StandardCharsets.UTF_8), logStore);
         nodeOptions.setLogStorage(logStorage);
         path = Paths.get(dbPath, RAFT, "meta");
         Files.createDirectories(path);

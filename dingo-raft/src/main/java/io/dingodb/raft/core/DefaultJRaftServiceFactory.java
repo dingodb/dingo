@@ -40,8 +40,8 @@ public class DefaultJRaftServiceFactory implements JRaftServiceFactory {
     }
 
     @Override
-    public LogStorage createLogStorage(String regionId, LogStore logStore) {
-        Requires.requireTrue(StringUtils.isNotBlank(regionId), "Blank log storage regionId.");
+    public LogStorage createLogStorage(byte[] regionId, LogStore logStore) {
+        Requires.requireTrue(regionId != null || regionId.length != 0, "Blank log storage regionId.");
         Requires.requireTrue(logStore != null, "Null logStore.");
         Requires.requireTrue(logStore instanceof RocksDBLogStore, "LogStore type error.");
         return new RocksDBLogStorage(regionId, (RocksDBLogStore) logStore);

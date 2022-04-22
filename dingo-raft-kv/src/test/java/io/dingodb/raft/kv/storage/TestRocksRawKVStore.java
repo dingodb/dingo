@@ -18,11 +18,15 @@ package io.dingodb.raft.kv.storage;
 
 import io.dingodb.common.util.Files;
 import io.dingodb.raft.kv.config.RocksConfigration;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -32,16 +36,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRocksRawKVStore {
 
-    private static final RocksRawKVStore store;
+    private static RocksRawKVStore store;
 
-    static {
-        try {
-            Path path = Paths.get("dingo/raft-kv/test/rocks");
-            Files.createDirectories(path);
-            store = new RocksRawKVStore(path.toString(), new RocksConfigration());
-        } catch (RocksDBException e) {
-            throw new RuntimeException(e);
-        }
+    @BeforeAll
+    public static void beforeAll() throws Exception {
+        Path path = Paths.get("dingo/raft-kv/test/rocks");
+        Files.createDirectories(path);
+        store = new RocksRawKVStore(path.toString(), new RocksConfigration());
     }
 
     public TestRocksRawKVStore() throws Exception {
@@ -59,6 +60,11 @@ public class TestRocksRawKVStore {
     @AfterEach
     public void afterEach() {
         store.delete(new byte[] {1}, new byte[] {Byte.MAX_VALUE});
+    }
+
+    @AfterAll
+    public static void afterAll() throws Exception {
+        FileUtils.forceDeleteOnExit(new File("dingo"));
     }
 
     @Test
@@ -118,7 +124,7 @@ public class TestRocksRawKVStore {
         assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {4}, new byte[] {4}));
         assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {5}, new byte[] {5}));
         assertThat(iterator.hasNext()).isFalse();
-
+        FileUtils.forceDeleteOnExit(new File(path));
     }
 
 }

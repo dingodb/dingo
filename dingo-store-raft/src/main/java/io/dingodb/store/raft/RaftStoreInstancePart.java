@@ -76,7 +76,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
         } else {
             nodeOptions = nodeOptions.copy();
         }
-        LogStorage logStorage = new RocksDBLogStorage(id.toString(), (RocksDBLogStore) logStore);
+        LogStorage logStorage = new RocksDBLogStorage(id.seqContent(), (RocksDBLogStore) logStore);
         nodeOptions.setLogStorage(logStorage);
         nodeOptions.setInitialConf(configuration);
         nodeOptions.setRaftMetaUri(metaPath.toString());

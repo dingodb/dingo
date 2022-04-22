@@ -26,15 +26,15 @@ import io.dingodb.raft.storage.SnapshotStorage;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface JRaftServiceFactory {
-    /**
+    /*
      * Creates a raft log storage.
      * @param regionId Region Id Str.
      * @param logStore the log store to.
      * @return storage to store raft log entires.
      */
-    LogStorage createLogStorage(final String regionId, LogStore logStore);
+    LogStorage createLogStorage(final byte[] regionId, LogStore logStore);
 
-    /**
+    /*
      * Creates a raft snapshot storage
      * @param uri  The snapshot storage uri from {@link NodeOptions#getSnapshotUri()}
      * @param raftOptions  the raft options.
@@ -42,7 +42,7 @@ public interface JRaftServiceFactory {
      */
     SnapshotStorage createSnapshotStorage(final String uri, final RaftOptions raftOptions);
 
-    /**
+    /*
      * Creates a raft meta storage.
      * @param uri  The meta storage uri from {@link NodeOptions#getRaftMetaUri()}
      * @param raftOptions  the raft options.
@@ -50,7 +50,7 @@ public interface JRaftServiceFactory {
      */
     RaftMetaStorage createRaftMetaStorage(final String uri, final RaftOptions raftOptions);
 
-    /**
+    /*
      * Creates a log entry codec factory.
      * @return a codec factory to create encoder/decoder for raft log entry.
      */
