@@ -24,6 +24,7 @@ import io.dingodb.func.DingoFuncProvider;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -70,8 +71,8 @@ public class DingoStringLeftOp extends RtStringConversionOp {
         }
 
         @Override
-        public String name() {
-            return "left";
+        public List<String> name() {
+            return Arrays.asList("left");
         }
 
         @Override

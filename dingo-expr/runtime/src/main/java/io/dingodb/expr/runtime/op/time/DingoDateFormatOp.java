@@ -21,76 +21,74 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
+public class DingoDateFormatOp extends RtFun {
 
-public class DingoDateDateDiffOp extends RtFun {
-
-    public DingoDateDateDiffOp(@Nonnull RtExpr[] paras) {
+    public DingoDateFormatOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Override
     public int typeCode() {
-        return TypeCode.LONG;
+        return TypeCode.STRING;
     }
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String date0 = (String)values[0];
-        String date1 = (String)values[1];
-
-        LocalDate fromDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date1),
-            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
-        LocalDate toDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(date0),
-            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
-
-        return (toDate.atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond()
-            - fromDate.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()) /  (24 * 60 * 60);
+        String originDateTime = (String)values[0];
+        String formatStr = DateFormatUtil.defaultDateFormat();
+        if (values.length == 2) {
+            formatStr = (String)values[1];
+        }
+        return dateFormat(originDateTime, formatStr);
     }
 
-    public static Long dateDiff(String inputStr1, String inputStr2) {
-        // Guarantee the timestamp format.
-        if (inputStr1.split(" ").length == 1) {
-            inputStr1 += " 00:00:00";
+    // Todo this place only checks the type thing. so we just return ""
+    public static String dateFormat(final String dateTime, final String formatStr) {
+        LocalDateTime originLocalDateTime =
+            LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(dateTime),
+                DateFormatUtil.getDatetimeFormatter());
+        if (formatStr.equals(DateFormatUtil.defaultTimeFormat())) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+            return originLocalDateTime.format(formatter);
+        } else {
+            return DateFormatUtil.processFormatStr(originLocalDateTime, formatStr);
         }
-        if (inputStr2.split(" ").length == 1) {
-            inputStr2 += " 00:00:00";
-        }
-        return (Timestamp.valueOf(inputStr1).getTime() - Timestamp.valueOf(inputStr2).getTime())
-            / (1000 * 60 * 60 * 24);
     }
 
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
         public Function<RtExpr[], RtOp> supplier() {
-            return DingoDateDateDiffOp::new;
+            return DingoDateFormatOp::new;
         }
 
         @Override
-        public String name() {
-            return "datediff";
+        public List<String> name() {
+            return Arrays.asList("date_format");
         }
 
         @Override
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DingoDateDateDiffOp.class.getMethod("dateDiff", String.class, String.class));
+                methods.add(DingoDateFormatOp.class.getMethod("dateFormat", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

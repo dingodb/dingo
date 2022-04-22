@@ -20,14 +20,17 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringMidOp extends RtStringConversionOp {
     private static final long serialVersionUID = 8185618697441684894L;
 
@@ -95,8 +98,8 @@ public class DingoStringMidOp extends RtStringConversionOp {
         }
 
         @Override
-        public String name() {
-            return "mid";
+        public List<String> name() {
+            return Arrays.asList("mid");
         }
 
         @Override

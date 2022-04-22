@@ -18,7 +18,7 @@ package io.dingodb.test.datefuc;
 
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
-import io.dingodb.expr.runtime.op.time.timeformatmap.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;

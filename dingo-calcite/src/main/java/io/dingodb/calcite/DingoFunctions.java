@@ -75,21 +75,4 @@ public class DingoFunctions {
         private Method method;
     }
 
-    // TODO: will be deleted
-    public static void main(String[] args) {
-        List<NameMethodMapping> result = DingoFunctions.getInstance().getDingoFunctions();
-        for (NameMethodMapping value: result) {
-            try {
-                Method method = value.getMethod();
-                System.out.println(method.getName());
-                if ((method.getGenericParameterTypes().length == 0)
-                    && method.getReturnType().getTypeName().equals("java.lang.Long")) {
-                    Long timestamp = (Long)(method.invoke(null));
-                    System.out.println(timestamp);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }

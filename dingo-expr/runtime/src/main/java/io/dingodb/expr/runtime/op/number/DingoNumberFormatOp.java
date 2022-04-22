@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -70,8 +71,8 @@ public class DingoNumberFormatOp extends RtFun  {
         }
 
         @Override
-        public String name() {
-            return "format";
+        public List<String> name() {
+            return Arrays.asList("format");
         }
 
         @Override

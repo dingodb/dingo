@@ -23,6 +23,7 @@ import io.dingodb.func.DingoFuncProvider;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -66,8 +67,8 @@ public class DingoStringReverseOp extends RtStringConversionOp {
         }
 
         @Override
-        public String name() {
-            return "reverse";
+        public List<String> name() {
+            return Arrays.asList("reverse");
         }
 
         @Override

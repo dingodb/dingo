@@ -22,6 +22,7 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.sql.Date;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,6 +39,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 
+@Slf4j
 public class DingoDateUnixTimestampOp extends RtFun {
 
     public DingoDateUnixTimestampOp(@Nonnull RtExpr[] paras) {
@@ -133,8 +136,8 @@ public class DingoDateUnixTimestampOp extends RtFun {
         }
 
         @Override
-        public String name() {
-            return "unix_timestamp";
+        public List<String> name() {
+            return Arrays.asList("unix_timestamp");
         }
 
         @Override
@@ -147,10 +150,10 @@ public class DingoDateUnixTimestampOp extends RtFun {
                 methods.add(DingoDateUnixTimestampOp.class.getMethod("unixTimestamp", Date.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
     }
-
 
 }
