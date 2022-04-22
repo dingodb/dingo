@@ -16,10 +16,12 @@
 
 package io.dingodb.raft.kv.storage;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.zip.Checksum;
 
@@ -87,6 +89,7 @@ public class TestMemoryRawKVStore {
         assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {5}, new byte[] {5}));
         assertThat(iterator.hasNext()).isFalse();
 
+        FileUtils.forceDeleteOnExit(new File("dingo"));
     }
 
 }
