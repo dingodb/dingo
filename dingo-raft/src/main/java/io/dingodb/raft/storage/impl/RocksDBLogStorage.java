@@ -110,16 +110,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
      * First log index and last log index key in configuration column family.
      */
     private final byte[] firstLogIndexKey;
+    private final byte[] firstLogIndexTail = Utils.getBytes("/meta/firstLogIndex");
 
     private volatile long firstLogIndex = 1;
     private static HashMap<String, Long> manualCompactMap = new HashMap<>();
 
     private volatile boolean hasLoadFirstLogIndex;
 
-    public RocksDBLogStorage(String regionId, RocksDBLogStore dbStore) {
+    public RocksDBLogStorage(byte[] regionId, RocksDBLogStore dbStore) {
         super();
-        this.regionId = Utils.getBytes(regionId);
-        this.firstLogIndexKey = Utils.getBytes(regionId + "/meta/firstLogIndex");
+        this.regionId = regionId;
+        byte[] firstLogIndexKey = new byte[regionId.length + firstLogIndexTail.length];
+        System.arraycopy(regionId, 0, firstLogIndexKey, 0, regionId.length);
+        System.arraycopy(firstLogIndexTail, 0, firstLogIndexKey, regionId.length, firstLogIndexTail.length);
+        this.firstLogIndexKey = firstLogIndexKey;
         this.dbStore = dbStore;
     }
 
@@ -138,42 +142,45 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         this.dbStore.getWriteLock().lock();
         try (final RocksIterator it = this.dbStore.getDb()
             .newIterator(this.dbStore.getConfHandle(), this.dbStore.getTotalOrderReadOptions())) {
-            it.seekToFirst();
+            it.seek(regionId);
             while (it.isValid()) {
                 final byte[] ks = it.key();
                 final byte[] bs = it.value();
-
+                if (ks.length < regionId.length) {
+                    break;
+                }
+                byte[] pre = new byte[regionId.length];
+                System.arraycopy(ks, 0, pre, 0, regionId.length);
+                if (!Arrays.equals(pre, regionId)) {
+                    break;
+                }
                 // LogEntry index
                 if (ks.length == regionId.length + 8) {
-                    byte[] pre = new byte[ks.length - 8];
-                    System.arraycopy(ks, 0 , pre, 0, ks.length - 8);
-                    if (Arrays.equals(pre, regionId)) {
-                        final LogEntry entry = this.dbStore.getLogEntryDecoder().decode(bs);
-                        if (entry != null) {
-                            if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION) {
-                                final ConfigurationEntry confEntry = new ConfigurationEntry();
-                                confEntry.setId(new LogId(entry.getId().getIndex(), entry.getId().getTerm()));
-                                confEntry.setConf(new Configuration(entry.getPeers(), entry.getLearners()));
-                                if (entry.getOldPeers() != null) {
-                                    confEntry.setOldConf(new Configuration(entry.getOldPeers(),
-                                        entry.getOldLearners()));
-                                }
-                                if (confManager != null) {
-                                    confManager.add(confEntry);
-                                }
+                    final LogEntry entry = this.dbStore.getLogEntryDecoder().decode(bs);
+                    if (entry != null) {
+                        if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION) {
+                            final ConfigurationEntry confEntry = new ConfigurationEntry();
+                            confEntry.setId(new LogId(entry.getId().getIndex(), entry.getId().getTerm()));
+                            confEntry.setConf(new Configuration(entry.getPeers(), entry.getLearners()));
+                            if (entry.getOldPeers() != null) {
+                                confEntry.setOldConf(new Configuration(entry.getOldPeers(),
+                                    entry.getOldLearners()));
                             }
-                        } else {
-                            LOG.warn("Fail to decode conf entry at index {}, the log data is: {}.", Bits.getLong(ks, 0),
-                                BytesUtil.toHex(bs));
+                            if (confManager != null) {
+                                confManager.add(confEntry);
+                            }
                         }
+                    } else {
+                        LOG.warn("Fail to decode conf entry at index {}, the log data is: {}.", Bits.getLong(ks, 0),
+                            BytesUtil.toHex(bs));
                     }
                 } else {
                     if (Arrays.equals(firstLogIndexKey, ks)) {
                         setFirstLogIndex(Bits.getLong(bs, 0));
                         truncatePrefixInBackground(0L, this.firstLogIndex);
                     } else {
-                        LOG.warn("Unknown entry in configuration storage key={}, value={}.", BytesUtil.toHex(ks),
-                            BytesUtil.toHex(bs));
+                        LOG.warn("Unknown entry in configuration storage key={}, value={}.",
+                            BytesUtil.toHex(ks), BytesUtil.toHex(bs));
                     }
                 }
                 it.next();
@@ -273,18 +280,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         checkState();
         try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
             this.dbStore.getTotalOrderReadOptions())) {
-            it.seekToFirst();
-            while (it.isValid()) {
+            it.seek(regionId);
+            if (it.isValid()) {
                 byte[] key = it.key();
-                byte[] pre = new byte[key.length - 8];
-                System.arraycopy(key, 0, pre, 0, key.length - 8);
+                if (key.length < regionId.length) {
+                    return 1L;
+                }
+                byte[] pre = new byte[regionId.length];
+                System.arraycopy(key, 0, pre, 0, regionId.length);
                 if (Arrays.equals(pre, regionId)) {
-                    final long ret = Bits.getLong(key, key.length - 8);
+                    final long ret = Bits.getLong(key, regionId.length);
                     saveFirstLogIndex(ret);
                     setFirstLogIndex(ret);
                     return ret;
                 }
-                it.next();
             }
             return 1L;
         }
@@ -304,26 +313,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         checkState();
         try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
             this.dbStore.getTotalOrderReadOptions())) {
-            it.seekForPrev(getKeyBytes(this.firstLogIndex));
-            byte[] key = null;
+            byte[] maxIndex = new byte[regionId.length + 8];
+            System.arraycopy(regionId, 0, maxIndex, 0, regionId.length);
+            Bits.putLong(maxIndex, regionId.length, Long.MAX_VALUE);
+            it.seekForPrev(maxIndex);
             if (it.isValid()) {
-                key = it.key();
-                it.next();
-            }
-            while (it.isValid()) {
-                key = it.key();
-                byte[] pre = new byte[key.length - 8];
-                System.arraycopy(key, 0 , pre, 0, key.length - 8);
-                if (Arrays.equals(pre, regionId)) {
-                    it.next();
-                } else {
-                    it.prev();
-                    key = it.key();
-                    return Bits.getLong(key, key.length - 8);
+                byte[] key = it.key();
+                if (key.length < regionId.length) {
+                    return 0L;
                 }
-            }
-            if (key != null) {
-                return Bits.getLong(key, key.length - 8);
+                byte[] pre = new byte[regionId.length];
+                System.arraycopy(key, 0 , pre, 0, regionId.length);
+                if (Arrays.equals(pre, regionId)) {
+                    return Bits.getLong(key, regionId.length);
+                }
             }
             return 0L;
         }
@@ -505,8 +508,10 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 this.dbStore.getDb().deleteRange(this.dbStore.getConfHandle(),
                     startKey, endKey);
                 // deleteFilesInRanges to speedup reclaiming disk space on write-heavy load.
-                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getDefaultHandle(), Arrays.asList(startKey, endKey), false);
-                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getConfHandle(), Arrays.asList(startKey, endKey), false);
+                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getDefaultHandle(),
+                    Arrays.asList(startKey, endKey), false);
+                this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getConfHandle(),
+                    Arrays.asList(startKey, endKey), false);
             } catch (final RocksDBException | IOException e) {
                 LOG.error("Fail to truncatePrefix, firstIndexKept={}.", firstIndexKept, e);
             } finally {
@@ -595,7 +600,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             this.dbStore.getWriteLock().unlock();
         }
     }
-    
+
     // Hooks for {@link RocksDBSegmentLogStorage}
 
     /**
