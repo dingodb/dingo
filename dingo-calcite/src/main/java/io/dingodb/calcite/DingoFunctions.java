@@ -55,17 +55,14 @@ public class DingoFunctions {
         return dingoUserFunctions;
     }
 
-    public Method getDingoFunction(String name) {
-
-        /**
-         * return the first function name default.
-         */
+    public List<Method> getDingoFunction(String name) {
+        List<Method> methods = new ArrayList<>();
         for (NameMethodMapping value: dingoUserFunctions) {
             if (value.getName().equalsIgnoreCase(name)) {
-                return value.getMethod();
+                methods.add(value.getMethod());
             }
         }
-        return null;
+        return methods;
     }
 
     @AllArgsConstructor
