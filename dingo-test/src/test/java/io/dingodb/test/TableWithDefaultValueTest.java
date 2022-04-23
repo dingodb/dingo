@@ -22,6 +22,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,6 +30,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class TableWithDefaultValueTest {
@@ -276,5 +280,33 @@ public class TableWithDefaultValueTest {
                 expectedResult);
             sqlHelper.clearTable(tableName);
         }
+    }
+
+    @Test
+    public void testCase08() throws Exception {
+        String tableName = "testCase08";
+        try {
+            final String sqlCmd = "create table " + tableName + " (\n"
+                + "    id int,\n"
+                + "    name varchar(32) not null,\n"
+                + "    address varchar(32) default lcase('ABC'), \n"
+                + "    primary key(id)\n"
+                + ")\n";
+            sqlHelper.execSqlCmd(sqlCmd);
+            String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+            sqlHelper.updateTest(sql, 1);
+
+            String expectRecord = "100, lala, abc";
+            sql = "select * from " + tableName;
+            sqlHelper.queryTest(sql,
+                new String[]{"id", "name", "address"},
+                TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+                expectRecord);
+        } catch (SQLException ex) {
+            assertTrue(ex.getMessage().contains("cannot be cast"));
+        } finally {
+            sqlHelper.clearTable(tableName);
+        }
+
     }
 }
