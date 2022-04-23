@@ -24,6 +24,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
@@ -34,8 +36,10 @@ import org.apache.calcite.util.TimestampString;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 
 @Slf4j
@@ -72,10 +76,13 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
     private Object getDefaultValueWhenUsingFunc(final Object inputValue, RelDataType type) {
         String methodName = "";
+        Object[] args = null;
+
         if (inputValue instanceof SqlIdentifier) {
             methodName = ((SqlIdentifier) inputValue).getSimple();
         } else if (inputValue instanceof SqlBasicCall) {
             methodName = ((SqlBasicCall) inputValue).getOperator().getName();
+            args = Arrays.stream(((SqlBasicCall) inputValue).getOperands()).toArray();
         }
 
         if (methodName.length() == 0) {
@@ -83,7 +90,8 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         }
 
         Object defaultValue = inputValue;
-        Method method = DingoFunctions.getInstance().getDingoFunction(methodName);
+        List<Method> methods = DingoFunctions.getInstance().getDingoFunction(methodName);
+        Method method = getMatchMethod(methods, args);
         if (method != null) {
             try {
                 defaultValue = method.invoke(null);
@@ -131,5 +139,28 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             }
         }
         return defaultValue;
+    }
+
+    private Method getMatchMethod(final List<Method> methods,
+                                  final Object[] args) throws IllegalArgumentException {
+        boolean isMatch = false;
+        Method foundMethod = null;
+        for (Method method : methods) {
+            // just like current_date
+            if ((args == null || args.length == 0) && method.getParameterCount() == 0) {
+                isMatch = true;
+                foundMethod = method;
+                break;
+            }
+
+            if (method.getGenericParameterTypes().length != args.length) {
+                continue;
+            }
+
+            // Nowly, we only support function without paramerter
+            // check if the parameter type is match
+        }
+
+        return isMatch ? foundMethod : null;
     }
 }
