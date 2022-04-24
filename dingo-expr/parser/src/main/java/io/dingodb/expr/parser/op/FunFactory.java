@@ -55,6 +55,10 @@ import io.dingodb.expr.runtime.op.string.DingoStringRightOp;
 import io.dingodb.expr.runtime.op.string.DingoStringTrimOp;
 import io.dingodb.expr.runtime.op.string.DingoStringUpperOp;
 import io.dingodb.expr.runtime.op.string.DingoSubStringOp;
+import io.dingodb.expr.runtime.op.string.RtContainsOp;
+import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
+import io.dingodb.expr.runtime.op.string.RtMatchesOp;
+import io.dingodb.expr.runtime.op.string.RtStartsWithOp;
 import io.dingodb.expr.runtime.op.time.DingoCurrentDateOp;
 import io.dingodb.expr.runtime.op.time.DingoCurrentTimeOp;
 import io.dingodb.expr.runtime.op.time.DingoCurrentTimeStampOp;
@@ -135,6 +139,10 @@ public final class FunFactory {
         registerUdf("locate", DingoStringLocateOp::new);
         registerUdf("||", DingoStringConcatOp::new);
         registerUdf("concat", DingoStringConcatOp::new);
+        registerUdf("startswith", RtStartsWithOp::new);
+        registerUdf("endswith", RtEndsWithOp::new);
+        registerUdf("contains", RtContainsOp::new);
+        registerUdf("matches", RtMatchesOp::new);
 
         // number format function
         registerUdf("format", DingoNumberFormatOp::new);

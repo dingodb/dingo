@@ -16,10 +16,20 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringReplaceOp extends RtStringConversionOp {
     private static final long serialVersionUID = 5736080205736344227L;
 
@@ -35,6 +45,40 @@ public class DingoStringReplaceOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return values[0].toString().replace(values[1].toString(), values[2].toString());
+        return replaceStr((String) values[0], (String) values[1], (String) values[2]);
+    }
+
+    public static String replaceStr(final String inputStr, final String str1, final String str2) {
+        if (inputStr == null || inputStr.equals("")) {
+            return inputStr;
+        }
+
+        return inputStr.replace(str1, str2);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringReplaceOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("replace");
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringReplaceOp.class.getMethod("replaceStr", String.class, String.class,
+                    String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

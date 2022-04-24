@@ -22,16 +22,17 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoNumberFormatOp extends RtFun  {
     private static final long serialVersionUID = 4805636716328583550L;
 
@@ -48,7 +49,7 @@ public class DingoNumberFormatOp extends RtFun  {
         }
 
         BigDecimal decimal = new BigDecimal(String.valueOf(values[0])).setScale(inputScalar, BigDecimal.ROUND_HALF_UP);
-        return decimal.toString();
+        return formatNumber(decimal.doubleValue(), inputScalar);
     }
 
     @Override
@@ -57,10 +58,12 @@ public class DingoNumberFormatOp extends RtFun  {
     }
 
     public static String formatNumber(final double value, int scale) {
-        NumberFormat nf = NumberFormat.getNumberInstance();
-        nf.setMaximumFractionDigits(scale);
-        nf.setMinimumFractionDigits(scale);
-        return nf.format(value);
+        if (scale < 0) {
+            scale = 0;
+        }
+
+        BigDecimal decimal = new BigDecimal(value).setScale(scale, BigDecimal.ROUND_HALF_UP);
+        return decimal.toString();
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -82,6 +85,7 @@ public class DingoNumberFormatOp extends RtFun  {
                 methods.add(DingoNumberFormatOp.class.getMethod("formatNumber", double.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

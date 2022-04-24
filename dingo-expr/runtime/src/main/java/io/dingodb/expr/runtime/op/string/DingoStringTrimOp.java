@@ -16,10 +16,20 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringTrimOp extends RtStringConversionOp {
     private static final long serialVersionUID = -4332118553191666565L;
 
@@ -44,6 +54,59 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         String trimStr = (String)values[1];
         String inputStr = (String)values[2];
 
+        return trimStr(opType, trimStr, inputStr);
+    }
+
+    /**
+     * return the last index where trimStr not substr of inputStr.
+     * Input: 123123123, Trim:123, return: 9
+     * Input: aaaa, Trim:a, return: 4
+     *
+     * @param inputStr input string
+     * @param trimStr trim string
+     * @return index
+     */
+    private static int getLastIndexFromLeft(final String inputStr, final String trimStr) {
+        int result = 0;
+        int index = 0;
+        boolean isFound = false;
+
+        while (inputStr.indexOf(trimStr, index) == index && index <= inputStr.length() - 1) {
+            result = index;
+            index += trimStr.length();
+            isFound = true;
+        }
+
+        if (isFound) {
+            return result + trimStr.length();
+        } else {
+            return 0;
+        }
+    }
+
+
+    private static int getLastIndexFromRight(final String inputStr, final String trimStr) {
+        if (inputStr.length() < trimStr.length()) {
+            return inputStr.length() - 1;
+        }
+
+        int index = inputStr.length() - trimStr.length();
+        int result = inputStr.length() - 1;
+        boolean isFound = false;
+        while ((inputStr.lastIndexOf(trimStr, index)) == index && index >= 0) {
+            result = index;
+            index -= trimStr.length();
+            isFound = true;
+        }
+
+        if (isFound) {
+            return result;
+        } else {
+            return inputStr.length();
+        }
+    }
+
+    public static String trimStr(final String opType, final String trimStr, final String inputStr) {
         int startIndex = 0;
         int endIndex = inputStr.length();
         switch (opType) {
@@ -71,52 +134,29 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         }
     }
 
-    /**
-     * return the last index where trimStr not substr of inputStr.
-     * Input: 123123123, Trim:123, return: 9
-     * Input: aaaa, Trim:a, return: 4
-     *
-     * @param inputStr input string
-     * @param trimStr trim string
-     * @return index
-     */
-    private int getLastIndexFromLeft(final String inputStr, final String trimStr) {
-        int result = 0;
-        int index = 0;
-        boolean isFound = false;
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
 
-        while (inputStr.indexOf(trimStr, index) == index && index <= inputStr.length() - 1) {
-            result = index;
-            index += trimStr.length();
-            isFound = true;
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringTrimOp::new;
         }
 
-        if (isFound) {
-            return result + trimStr.length();
-        } else {
-            return 0;
-        }
-    }
-
-
-    private int getLastIndexFromRight(final String inputStr, final String trimStr) {
-        if (inputStr.length() < trimStr.length()) {
-            return inputStr.length() - 1;
+        @Override
+        public List<String> name() {
+            return Arrays.asList("trim");
         }
 
-        int index = inputStr.length() - trimStr.length();
-        int result = inputStr.length() - 1;
-        boolean isFound = false;
-        while ((inputStr.lastIndexOf(trimStr, index)) == index && index >= 0) {
-            result = index;
-            index -= trimStr.length();
-            isFound = true;
-        }
-
-        if (isFound) {
-            return result;
-        } else {
-            return inputStr.length();
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringTrimOp.class.getMethod("trimStr", String.class, String.class,
+                    String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
         }
     }
 }

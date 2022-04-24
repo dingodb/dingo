@@ -16,10 +16,20 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public final class RtMatchesOp extends RtStringRelationOp {
     private static final long serialVersionUID = -1607737046817938281L;
 
@@ -35,6 +45,35 @@ public final class RtMatchesOp extends RtStringRelationOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).matches((String) values[1]);
+        return matchesStr((String) values[0], (String) values[1]);
+    }
+
+    public static boolean matchesStr(final String str1, final String str2) {
+        return str1.matches(str2);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return RtMatchesOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("matches");
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(RtMatchesOp.class.getMethod("matchesStr", String.class, String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

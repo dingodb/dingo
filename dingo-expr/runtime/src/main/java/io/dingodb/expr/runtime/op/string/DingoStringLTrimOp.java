@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringLTrimOp extends RtStringConversionOp {
     private static final long serialVersionUID = -8557732786466948967L;
 
@@ -44,24 +46,23 @@ public class DingoStringLTrimOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        int startIndex = 0;
         String inputStr = (String)values[0];
-        int endIndex = inputStr.length() - 1;
-
-        for (; startIndex < inputStr.length(); startIndex++) {
-            if (inputStr.charAt(startIndex) != ' ') {
-                break;
-            }
-        }
-
-        return inputStr.substring(startIndex, endIndex + 1);
+        return trimLeft(inputStr);
     }
 
     public static String trimLeft(final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
-            return inputStr.replaceAll("^[　 ]+", "");
+            int startIndex = 0;
+            int endIndex = inputStr.length() - 1;
+            for (; startIndex < inputStr.length(); startIndex++) {
+                if (inputStr.charAt(startIndex) != ' ') {
+                    break;
+                }
+            }
+
+            return inputStr.substring(startIndex, endIndex + 1);
         }
     }
 
@@ -84,6 +85,7 @@ public class DingoStringLTrimOp extends RtStringConversionOp {
                 methods.add(DingoStringLTrimOp.class.getMethod("trimLeft", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

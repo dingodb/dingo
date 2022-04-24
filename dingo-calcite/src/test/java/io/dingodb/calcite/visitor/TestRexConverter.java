@@ -21,7 +21,6 @@ import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
@@ -35,9 +34,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;

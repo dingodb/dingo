@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringLeftOp extends RtStringConversionOp {
     private static final long serialVersionUID = 5242457055774200528L;
 
@@ -48,19 +50,15 @@ public class DingoStringLeftOp extends RtStringConversionOp {
         Integer cnt = new BigDecimal(String.valueOf(values[1]))
             .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
-        if (cnt < 0) {
+        return leftString(str, cnt);
+    }
+
+    public static String leftString(final String str, int cnt) {
+        if (str == null || str.equals("") || cnt < 0) {
             return "";
         }
 
         return cnt > str.length() ? str : str.substring(0, cnt);
-    }
-
-    public static String leftString(final String str, int cnt) {
-        if (str == null || str.equals("") || cnt > str.length()) {
-            return str;
-        } else {
-            return str.substring(0, cnt);
-        }
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -82,6 +80,7 @@ public class DingoStringLeftOp extends RtStringConversionOp {
                 methods.add(DingoStringLeftOp.class.getMethod("leftString", String.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

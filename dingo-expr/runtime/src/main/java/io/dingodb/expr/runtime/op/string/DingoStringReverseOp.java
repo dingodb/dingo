@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringReverseOp extends RtStringConversionOp {
     private static final long serialVersionUID = 2691982562867909922L;
 
@@ -44,11 +46,7 @@ public class DingoStringReverseOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String) values[0]);
-        if (inputStr == null || inputStr.equals("")) {
-            return inputStr;
-        } else {
-            return new StringBuilder(inputStr).reverse().toString();
-        }
+        return reverseString(inputStr);
     }
 
     public static String reverseString(final String inputStr) {
@@ -78,6 +76,7 @@ public class DingoStringReverseOp extends RtStringConversionOp {
                 methods.add(DingoStringReverseOp.class.getMethod("reverseString", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
