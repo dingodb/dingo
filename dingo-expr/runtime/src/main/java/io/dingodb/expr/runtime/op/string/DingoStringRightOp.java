@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringRightOp extends RtStringConversionOp {
     private static final long serialVersionUID = 1043463700086782931L;
 
@@ -44,26 +46,24 @@ public class DingoStringRightOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String inputStr = (String) values[0];
+        String str = (String) values[0];
         Integer cnt = new BigDecimal(String.valueOf(values[1]))
             .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
+        return rightString(str, cnt);
+    }
+
+    public static String rightString(final String str, int cnt) {
         if (cnt < 0) {
             return "";
         }
 
-        if (inputStr.length() > cnt) {
-            return inputStr.substring(inputStr.length() - cnt, inputStr.length());
+        int length = str.length();
+        if (length > cnt) {
+            return str.substring(length - cnt, length);
         }
-        return inputStr;
-    }
 
-    public static String rightString(final String str, int cnt) {
-        if (str == null || str.equals("") || cnt > str.length()) {
-            return str;
-        } else {
-            return str.substring(str.length() - cnt, str.length());
-        }
+        return str;
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -85,6 +85,7 @@ public class DingoStringRightOp extends RtStringConversionOp {
                 methods.add(DingoStringRightOp.class.getMethod("rightString", String.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
