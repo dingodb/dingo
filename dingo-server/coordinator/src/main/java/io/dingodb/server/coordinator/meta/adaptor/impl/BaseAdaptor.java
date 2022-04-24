@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
@@ -77,11 +78,17 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
 
     @Override
     public M get(CommonId id) {
+        if (id == null) {
+            return null;
+        }
         return metaMap.get(id);
     }
 
     @Override
     public List<M> getByDomain(byte[] domain) {
+        if (domain == null) {
+            return Collections.emptyList();
+        }
         CommonId prefix = metaId();
         prefix = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
         ++domain[domain.length - 1];

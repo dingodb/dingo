@@ -23,7 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.Accessors;
 
 public class ByteArrayUtils {
 
@@ -47,8 +46,6 @@ public class ByteArrayUtils {
     }
 
     public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final byte[] MAX_BYTES = new byte[] {Byte.MAX_VALUE};
-    public static final byte[] MIN_BYTES = new byte[] {Byte.MIN_VALUE};
 
     public static int compare(byte[] bytes1, byte[] bytes2) {
         int n = Math.min(bytes1.length, bytes2.length);
@@ -56,9 +53,13 @@ public class ByteArrayUtils {
             if (bytes1[i] == bytes2[i]) {
                 continue;
             }
-            return bytes1[i] - bytes2[i];
+            return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
         }
         return bytes1.length - bytes2.length;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(compare(EMPTY_BYTES, new byte[] {1}));
     }
 
 }

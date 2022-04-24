@@ -44,6 +44,8 @@ public class Table implements Meta {
     private CommonId schema;
     private int type;
     private int partitionPolicy;
+    private long partMaxSize;
+    private long partMaxCount;
     private int version;
 
 }

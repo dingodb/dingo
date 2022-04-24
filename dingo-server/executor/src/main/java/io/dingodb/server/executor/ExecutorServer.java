@@ -93,7 +93,7 @@ public class ExecutorServer {
     private void initStore() {
         List<Part> parts = serverApi.storeMap(this.id);
         log.info("Init store, parts: {}", parts);
-        parts.forEach(tableStoreApi::newTablePart);
+        parts.forEach(tableStoreApi::assignTablePart);
     }
 
     private void initAllApi() {

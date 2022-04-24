@@ -50,7 +50,7 @@ public class MetaStore implements StoreInstance {
         this.readIndexRunner = new ReadIndexRunner(node, this::readInStore);
     }
 
-    public synchronized int generateCommonIdSeq(byte[] key) {
+    public synchronized int generateSeq(byte[] key) {
         byte[] realKey = new byte[key.length + SEQ_PREFIX.length];
         System.arraycopy(SEQ_PREFIX, 0, realKey, 0, SEQ_PREFIX.length);
         System.arraycopy(key, 0, realKey, SEQ_PREFIX.length, key.length);

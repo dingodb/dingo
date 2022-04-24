@@ -26,7 +26,7 @@ import lombok.ToString;
 public class ScheduleConfiguration {
 
     private boolean autoSplit = false;
-    private Integer defaultAutoMaxSize = 10000;
-    private Integer defaultAutoMaxCount = 1024 * 1024 * 64;
+    private long defaultAutoMaxSize = 1024 * 1024 * 64;
+    private long defaultAutoMaxCount = 100_000;
 
 }

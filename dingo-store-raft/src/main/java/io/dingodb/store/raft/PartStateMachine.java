@@ -21,6 +21,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Node;
+import io.dingodb.raft.Status;
 import io.dingodb.raft.entity.LocalFileMetaOutter;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.DefaultRaftRawKVStoreStateMachine;
@@ -39,10 +40,12 @@ import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.Opt;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
@@ -55,8 +58,8 @@ import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
 
     public static final String TIMER_THREAD_NAME = "ServiceStats-timer";
-    public static final Integer STATS_STEP = 10000;
 
+    public final Integer approximateCount = StoreConfiguration.approximateCount();
     private final CommonId id;
 
     private final Node node;
@@ -68,7 +71,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
 
     private volatile boolean available = false;
     private volatile boolean enable = true;
-    private Runnable availableListener;
+    private List<Runnable> availableListener = new CopyOnWriteArrayList<>();
 
     public PartStateMachine(CommonId id, RaftRawKVStore store, Part part) {
         super(id.toString(), store);
@@ -90,14 +93,31 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     }
 
     public void listenAvailable(Runnable listener) {
-        this.availableListener = listener;
+        this.availableListener.add(listener);
     }
 
     public void resetPart(Part part) {
         this.part = part;
-        if (node.isLeader() && !part.getLeader().equals(DingoConfiguration.location())) {
+        if (node.isLeader() && part.getLeader() != null && !part.getLeader().equals(DingoConfiguration.location())) {
             // todo need raft net-api
             //node.transferLeadershipTo();
+        }
+    }
+
+    @Override
+    protected void onApplyOperation(RaftRawKVOperation operation) {
+        switch (operation.getOp()) {
+            case PUT:
+                break;
+            case PUT_LIST:
+                break;
+            case DELETE:
+                break;
+            case DELETE_LIST:
+                break;
+            case DELETE_RANGE:
+                break;
+            default:
         }
     }
 
@@ -131,7 +151,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         }
         if (StoreConfiguration.collectStatsInterval() < 0) {
             available = true;
-            executorService.submit(availableListener);
+            availableListener.forEach(executorService::submit);
             return;
         }
         if (timer == null) {
@@ -146,6 +166,13 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
             .proxy(ReportApi.class, CoordinatorConnector.defaultConnector());
         this.timer.start();
         this.timer.newTimeout(this::sendStats, 0, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void onLeaderStop(Status status) {
+        if (this.timer != null) {
+            this.timer.stop();
+        }
     }
 
     //todo refactor send stats ?
@@ -166,27 +193,32 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
                     startKey = entry.getKey();
                 }
                 endKey = entry.getKey();
-                if (count >= STATS_STEP) {
+                if (count >= approximateCount) {
                     approximateStats.add(new ApproximateStats(startKey, entry.getKey(), count, size));
                     count = 0;
                     size = 0;
                     startKey = null;
                 }
             }
-            approximateStats.add(new ApproximateStats(startKey, endKey, count, size));
+            if (count > 0) {
+                approximateStats.add(new ApproximateStats(startKey, endKey, count, size));
+            }
             TablePartStats stats = TablePartStats.builder()
                 .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, id.domain(), id.seqContent()))
                 .leader(DingoConfiguration.instance().getServerId())
                 .tablePart(id)
+                .table(part.getInstanceId())
                 .approximateStats(approximateStats)
                 .build();
             if (available != (available = reportApi.report(stats))) {
-                executorService.submit(this.availableListener);
+                availableListener.forEach(executorService::submit);
             }
         } catch (Exception e) {
             log.error("Report stats error, id: {}", id, e);
         } finally {
-            this.timer.newTimeout(this::sendStats, StoreConfiguration.collectStatsInterval(), TimeUnit.SECONDS);
+            if (node.isLeader()) {
+                this.timer.newTimeout(this::sendStats, StoreConfiguration.collectStatsInterval(), TimeUnit.SECONDS);
+            }
         }
 
     }

@@ -46,8 +46,6 @@ public class TablePartStats implements Stats {
     private long readPerSecond;
     private long writeBytesPerSecond;
     private long readBytesPerSecond;
-    private long approximateSize;
-    private long approximateKeys;
     private List<ApproximateStats> approximateStats;
     private List<CommonId> alive;
 

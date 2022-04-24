@@ -121,6 +121,11 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         );
     }
 
+    public PhaseCommitAck sync() {
+        write(RaftRawKVOperation.SYNC_OP).join();
+        return new PhaseCommitAck().complete();
+    }
+
     public CompletableFuture<byte[]> get(byte[] key) {
         return read(RaftRawKVOperation.get(key));
     }

@@ -109,6 +109,9 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
     }
 
     private int apply(RaftRawKVOperation operation, List<Closure> closures) {
+        if (log.isDebugEnabled()) {
+            log.debug("Apply operation: {}", operation);
+        }
         Object result = store.executeLocal(operation);
         executorService.submit(() -> onApplyOperation(operation));
         closures.forEach(closure -> Optional.ofNullable(closure)

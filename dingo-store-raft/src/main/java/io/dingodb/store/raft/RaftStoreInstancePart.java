@@ -56,15 +56,17 @@ public final class RaftStoreInstancePart implements StoreInstance {
     private RaftRawKVStore raftStore;
     private PartStateMachine stateMachine;
 
+    private Path path;
     private Path metaPath;
     private Path snapshotPath;
 
-    public RaftStoreInstancePart(Part part, RawKVStore store, LogStore logStore) throws Exception {
+    public RaftStoreInstancePart(Part part, Path path, RawKVStore store, LogStore logStore) throws Exception {
         this.id = part.getId();
         this.store = store;
         this.part = part;
-        this.metaPath = Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString(), "meta");
-        this.snapshotPath = Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString(), "snapshot");
+        this.path = path;
+        this.metaPath = Paths.get(path.toString(), "meta");
+        this.snapshotPath = Paths.get(path.toString(), "snapshot");
         this.configuration = new Configuration(part.getReplicates().stream()
             .map(location -> new PeerId(location.getHost(), StoreConfiguration.raft().getPort()))
             .collect(Collectors.toList()));
@@ -86,7 +88,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
         this.stateMachine = new PartStateMachine(id, raftStore, part);
         nodeOptions.setFsm(stateMachine);
         this.raftStore.init(null);
-        log.info("Start raft store instance part, id: {}", id);
+        log.info("Start raft store instance part, id: {}, part: {}", id, part);
     }
 
     public void resetPart(Part part) {
@@ -103,7 +105,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");
         }
-        return raftStore.iterator().join();
+        return raftStore.scan(part.getStart(), part.getEnd()).join();
     }
 
     @Override

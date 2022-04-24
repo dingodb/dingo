@@ -17,6 +17,7 @@
 package io.dingodb.server.coordinator.state;
 
 import com.google.protobuf.ByteString;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -44,9 +45,10 @@ import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import io.dingodb.server.coordinator.api.CoordinatorServerApi;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseStatsAdaptor;
-import io.dingodb.server.coordinator.schedule.Scheduler;
+import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.Tags;
+import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -56,7 +58,12 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.zip.Checksum;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
+import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
+import static java.util.Collections.singletonList;
 
 @Slf4j
 public class CoordinatorStateMachine implements StateMachine {
@@ -174,6 +181,10 @@ public class CoordinatorStateMachine implements StateMachine {
         throw new UnsupportedOperationException();
     }
 
+    public boolean isLeader() {
+        return node.isLeader();
+    }
+
     @Override
     public void onLeaderStart(final long term) {
         log.info("onLeaderStart: term={}.", term);
@@ -189,7 +200,7 @@ public class CoordinatorStateMachine implements StateMachine {
                 .forEachRemaining(creator -> creator.create(metaStore));
             ServiceLoader.load(BaseStatsAdaptor.Creator.class).iterator()
                 .forEachRemaining(creator -> creator.create(metaStore));
-            Scheduler.instance().init();
+            ClusterScheduler.instance().init();
         });
     }
 
