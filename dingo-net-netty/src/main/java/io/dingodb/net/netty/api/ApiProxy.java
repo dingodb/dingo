@@ -27,6 +27,7 @@ import io.dingodb.net.NetError;
 import io.dingodb.net.SimpleMessage;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.netty.Constant;
+import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.NettyNetService;
 import io.dingodb.net.netty.NettyNetServiceProvider;
 import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
@@ -61,6 +62,8 @@ public class ApiProxy<T> implements InvocationHandler {
     private final NetAddressProvider netAddressProvider;
     private final T defined;
 
+    private int timeout = NetServiceConfiguration.apiTimeout();
+
     public ApiProxy(NetAddressProvider netAddressProvider) {
         this.netAddressProvider = netAddressProvider;
         this.defined = null;
@@ -94,7 +97,7 @@ public class ApiProxy<T> implements InvocationHandler {
         channel.registerMessageListener(callHandler(future));
         try {
             channel.send(packet);
-            ByteBuffer buffer = future.get(30, TimeUnit.SECONDS);
+            ByteBuffer buffer = future.get(timeout, TimeUnit.SECONDS);
             if (buffer.hasRemaining()) {
                 return ProtostuffCodec.read(buffer);
             } else {

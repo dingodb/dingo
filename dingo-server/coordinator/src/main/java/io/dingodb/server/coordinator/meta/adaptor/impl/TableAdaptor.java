@@ -22,7 +22,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.schedule.Scheduler;
+import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Table;
@@ -75,7 +75,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             META_ID.type(),
             META_ID.identifier(),
             table.getSchema().seqContent(),
-            metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
         tableIdMap.put(table.getName(), id);
         return id;
@@ -102,7 +102,6 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .schema(table.getSchema())
             .table(table.getId())
             .start(EMPTY_BYTES)
-            .end(new byte[] {Byte.MAX_VALUE})
             .build();
         tablePart.setId(tablePartAdaptor.newId(tablePart));
         keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
@@ -113,10 +112,34 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         columns.forEach(columnAdaptor::save);
         tablePartAdaptor.save(tablePart);
         try {
-            Scheduler.instance().onCreateTable(tablePart);
+            ClusterScheduler.instance().getTableScheduler(table.getId()).assignPart(tablePart);
         } catch (Exception e) {
             throw new RuntimeException("Table meta save success, but schedule failed.", e);
         }
+    }
+
+    public TablePart newPart(CommonId tableId, byte[] start, byte[] end) {
+        Table table = get(tableId);
+        TablePart tablePart = TablePart.builder()
+            .version(0)
+            .schema(table.getSchema())
+            .table(table.getId())
+            .start(start)
+            .end(end)
+            .build();
+        tablePart.setId(tablePartAdaptor.newId(tablePart));
+        metaStore.upsertKeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart));
+        tablePartAdaptor.save(tablePart);
+        return tablePart;
+    }
+
+    public TablePart updatePart(CommonId tablePartId, byte[] start, byte[] end) {
+        TablePart tablePart = tablePartAdaptor.get(tablePartId);
+        tablePart.setStart(start);
+        tablePart.setEnd(end);
+        metaStore.upsertKeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart));
+        tablePartAdaptor.save(tablePart);
+        return tablePart;
     }
 
     @Override
@@ -131,7 +154,8 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         metaStore.delete(keys);
         metaMap.remove(id);
         columnAdaptor.deleteByDomain(id.domain());
-        Scheduler.instance().onDeleteTable(id, tableParts);
+        ClusterScheduler.instance().getTableScheduler(id).deleteTable(tableParts);
+        ClusterScheduler.instance().deleteTableScheduler(id);
     }
 
     public Boolean delete(String tableName) {

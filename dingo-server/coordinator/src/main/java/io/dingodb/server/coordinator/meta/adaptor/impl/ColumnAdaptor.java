@@ -42,11 +42,11 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
 
     @Override
     protected CommonId newId(Column column) {
+        byte[] tableSeq = column.getTable().seqContent();
         return new CommonId(
             META_ID.type(),
-            META_ID.identifier(),
-            column.getTable().seqContent(),
-            metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            META_ID.identifier(), tableSeq,
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), tableSeq).encode())
         );
     }
 

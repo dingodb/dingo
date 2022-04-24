@@ -18,38 +18,45 @@ package io.dingodb.raft.kv.storage;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.dingodb.raft.kv.storage.ThreePhaseAck.Phase.FIRST;
-import static io.dingodb.raft.kv.storage.ThreePhaseAck.Phase.LOG;
-import static io.dingodb.raft.kv.storage.ThreePhaseAck.Phase.MAJOR;
-import static io.dingodb.raft.kv.storage.ThreePhaseAck.Phase.NONE;
+import static io.dingodb.raft.kv.storage.PhaseCommitAck.Phase.ALL;
+import static io.dingodb.raft.kv.storage.PhaseCommitAck.Phase.FIRST;
+import static io.dingodb.raft.kv.storage.PhaseCommitAck.Phase.LOG;
+import static io.dingodb.raft.kv.storage.PhaseCommitAck.Phase.MAJOR;
+import static io.dingodb.raft.kv.storage.PhaseCommitAck.Phase.NONE;
 
-public class ThreePhaseAck {
+public class PhaseCommitAck {
 
     public enum Phase {
         NONE,
         LOG,
         FIRST,
-        MAJOR
+        MAJOR,
+        ALL
     }
 
     private final AtomicBoolean log = new AtomicBoolean(false);
     private final AtomicBoolean first = new AtomicBoolean(false);
     private final AtomicBoolean major = new AtomicBoolean(false);
+    private final AtomicBoolean all = new AtomicBoolean(false);
 
-    public void complete() {
+    public PhaseCommitAck complete() {
         if (log.compareAndSet(false, true)) {
-            return;
+            return this;
         }
         if (first.compareAndSet(false, true)) {
-            return;
+            return this;
         }
         if (major.compareAndSet(false, true)) {
-            return;
+            return this;
         }
-        return;
+        all.compareAndSet(false, true);
+        return this;
     }
 
     public Phase current() {
+        if (all.compareAndSet(true, true)) {
+            return ALL;
+        }
         if (major.compareAndSet(true, true)) {
             return MAJOR;
         }
@@ -72,6 +79,10 @@ public class ThreePhaseAck {
 
     public boolean major() {
         return major.compareAndSet(true, true);
+    }
+
+    public boolean all() {
+        return all.compareAndSet(true, true);
     }
 
 }

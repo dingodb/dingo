@@ -16,12 +16,13 @@
 
 package io.dingodb.raft.kv.storage;
 
-import org.apache.commons.io.FileUtils;
+import io.dingodb.common.util.Files;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.zip.Checksum;
 
@@ -75,7 +76,8 @@ public class TestMemoryRawKVStore {
 
     @Test
     public void testSnapshot() throws Exception {
-        String path = "dingo/snapshot";
+        Path snapshot = Paths.get(getClass().getName());
+        String path = snapshot.toString();
         Checksum checksum = store.snapshotSave(path).get();
         store.defaultDB().clear();
         assertThat(store.defaultDB()).hasSize(0);
@@ -89,7 +91,7 @@ public class TestMemoryRawKVStore {
         assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {5}, new byte[] {5}));
         assertThat(iterator.hasNext()).isFalse();
 
-        FileUtils.forceDeleteOnExit(new File("dingo"));
+        Files.deleteIfExists(snapshot);
     }
 
 }

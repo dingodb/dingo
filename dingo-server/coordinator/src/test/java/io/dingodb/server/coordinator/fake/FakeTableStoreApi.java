@@ -27,6 +27,8 @@ import io.dingodb.server.api.TableStoreApi;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.store.api.Part;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.ServiceLoader;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -57,15 +59,20 @@ public class FakeTableStoreApi implements TableStoreApi {
     }
 
     @Override
-    public void newTablePart(Part part) {
+    public void assignTablePart(Part part) {
         TablePartStats stats = TablePartStats.builder()
             .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domain(), part.getId().seqContent()))
             .leader(DingoConfiguration.instance().getServerId())
             .tablePart(part.getId())
-            .approximateKeys(1)
-            .approximateSize(1)
+            .table(part.getInstanceId())
+            .approximateStats(Collections.emptyList())
             .build();
         reportApi.report(stats);
+    }
+
+    @Override
+    public void reassignTablePart(Part part) {
+
     }
 
     @Override

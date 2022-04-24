@@ -16,7 +16,6 @@
 
 package io.dingodb.store.raft.config;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.raft.kv.config.RocksConfigration;
 import io.dingodb.raft.option.RaftLogStorageOptions;
@@ -52,6 +51,7 @@ public class StoreConfiguration {
 
     private String dbPath;
     private int collectStatsInterval = -1;
+    private int approximateCount = 10_000;
     private RocksConfigration rocks = new RocksConfigration();
     private RaftLogStorageOptions raftLogStorageOptions;
     private RaftConfiguration raft;
@@ -70,5 +70,9 @@ public class StoreConfiguration {
 
     public static RaftConfiguration raft() {
         return INSTANCE.raft;
+    }
+
+    public static int approximateCount() {
+        return INSTANCE.approximateCount;
     }
 }
