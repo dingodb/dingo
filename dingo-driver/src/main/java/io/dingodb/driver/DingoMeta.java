@@ -35,10 +35,17 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.util.TimestampString;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -223,24 +230,37 @@ public class DingoMeta extends MetaImpl {
             return valueAfterCvt;
         }
         switch (columnClassName) {
-            case "java.sql.date":
-            case "java.sql.time":
+            case "java.sql.date": {
+                Long timeStamp = 0L;
+                if (input instanceof Number) {
+                    timeStamp = ((Number) input).longValue();
+                } else if (input instanceof java.sql.Date) {
+                    timeStamp = ((java.sql.Date) input).getTime();
+                }
+                Long epochTime = timeStamp / (24 * 60 * 60 * 1000);
+                valueAfterCvt = epochTime;
+                break;
+            }
+            case "java.sql.time": {
+                Long timeStamp = 0L;
+                if (input instanceof Number) {
+                    timeStamp = ((Number) input).longValue();
+                } else if (input instanceof java.sql.Time) {
+                    // current_time will return a java.sql.Time object
+                    timeStamp = ((java.sql.Time) input).getTime();
+                }
+                timeStamp %= (24 * 60 * 60 * 1000);
+                valueAfterCvt = timeStamp;
+                break;
+            }
             case "java.sql.timestamp": {
                 Long timeStamp = 0L;
-                try {
-                    timeStamp = (Long)input;
-                } catch (Exception e) {
-                    if (e instanceof ClassCastException) {
-                        timeStamp = ((java.util.Date)input).getTime();
-                    }
+                if (input instanceof Number) {
+                    timeStamp = ((Number) input).longValue();
+                } else if (input instanceof java.sql.Timestamp) {
+                    timeStamp = ((java.sql.Timestamp) input).getTime();
                 }
-                Long epochTime = 0L;
-                if (columnClassName.contains("date")) {
-                    epochTime = timeStamp / (24 * 60 * 60 * 1000);
-                } else {
-                    epochTime = timeStamp;
-                }
-                valueAfterCvt = epochTime;
+                valueAfterCvt = timeStamp;
                 break;
             }
             case "java.lang.integer": {

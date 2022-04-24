@@ -29,6 +29,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -50,7 +51,9 @@ public class DingoCurrentTimeStampOp extends RtFun {
     }
 
     public static Timestamp getCurrentTimeStamp() {
-        return new Timestamp(System.currentTimeMillis());
+        Long millis = System.currentTimeMillis();
+        millis += TimeZone.getDefault().getRawOffset();
+        return new Timestamp(millis);
     }
 
     @AutoService(DingoFuncProvider.class)

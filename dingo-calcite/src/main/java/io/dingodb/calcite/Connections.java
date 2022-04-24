@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
 public final class Connections {
@@ -50,6 +51,8 @@ public final class Connections {
         }
         Properties properties = new Properties();
         properties.setProperty("defaultSchema", defaultSchema);
+        TimeZone timeZone = TimeZone.getDefault();
+        properties.setProperty("timeZone", timeZone.getID());
         return DriverManager.getConnection("jdbc:dingo:", properties);
     }
 

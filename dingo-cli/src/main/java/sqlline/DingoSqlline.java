@@ -31,6 +31,9 @@ public class DingoSqlline {
 
     public DingoSqlline() {
         this.sqlLine = new SqlLine();
+        SqlLineOpts opts = this.sqlLine.getOpts();
+        opts.setTimestampFormat("yyyy-MM-dd HH:mm:ss");
+        this.sqlLine.setOpts(opts);
         databaseConnections = sqlLine.getDatabaseConnections();
     }
 
