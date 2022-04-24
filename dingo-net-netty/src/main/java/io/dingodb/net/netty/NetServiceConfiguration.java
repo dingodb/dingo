@@ -59,6 +59,7 @@ public class NetServiceConfiguration {
     private Integer heartbeat;
     private Integer queueCapacity;
     private String host;
+    private Integer apiTimeout;
 
     public static Integer heartbeat() {
         return INSTANCE.heartbeat;
@@ -70,5 +71,9 @@ public class NetServiceConfiguration {
 
     public static String host() {
         return INSTANCE.host;
+    }
+
+    public static Integer apiTimeout() {
+        return INSTANCE.apiTimeout == null ? 30 : INSTANCE.apiTimeout;
     }
 }

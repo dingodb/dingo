@@ -21,11 +21,11 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRaftStoreInstance {
 
+    public static final Path TEST_PATH = Paths.get(TestRaftStoreInstance.class.getName());
+
     private static RawKVStore store;
     private static CommonId id = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, encodeInt(0), encodeInt(0));
     private static Location location;
@@ -54,15 +56,16 @@ public class TestRaftStoreInstance {
 
     @BeforeAll
     public static void beforeAll() throws Exception {
-        DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/TestRaftStoreInstance.yaml").getPath());
+        afterAll();
+        DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/config.yaml").getPath());
         location = new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort());
-        storeInstance = new RaftStoreInstance(id);
+        storeInstance = new RaftStoreInstance(TEST_PATH, id);
         store = storeInstance.getStore();
     }
 
     @AfterAll
     public static void afterAll() throws Exception {
-        FileUtils.forceDeleteOnExit(new File(Paths.get("dingo").toString()));
+        Files.deleteIfExists(TEST_PATH);
     }
 
     @BeforeEach
@@ -78,21 +81,21 @@ public class TestRaftStoreInstance {
     public void afterEach() {
         store.iterator()
             .forEachRemaining(keyValue -> store.delete(keyValue.getKey()));
-        Files.deleteIfExists(Paths.get(StoreConfiguration.raft().getRaftPath()));
     }
 
     @Test
     public void testGetValueByPrimaryKey() {
-        CommonId id = new CommonId(ID_TYPE.service, TABLE_IDENTIFIER.part, encodeInt(0), encodeInt(0));
+        CommonId id = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(0), encodeInt(StackTraces.lineNumber())
+        );
         Part part = Part.builder()
             .id(id)
-            .start(ByteArrayUtils.MIN_BYTES)
-            .end(ByteArrayUtils.MAX_BYTES)
+            .start(ByteArrayUtils.EMPTY_BYTES)
             .replicates(singletonList(location))
             .build();
         storeInstance.assignPart(part);
-        while (!storeInstance.getPart(id).getStateMachine().isAvailable()) {
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        while (storeInstance.getPart(part.getStart()) == null) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
         }
         assertThat(storeInstance.getValueByPrimaryKey(new byte[] {2})).isEqualTo(new byte[] {2});
         storeInstance.unassignPart(part);
@@ -102,16 +105,17 @@ public class TestRaftStoreInstance {
 
     @Test
     public void testGetKeyValueByPrimaryKeys() {
-        CommonId id = new CommonId(ID_TYPE.service, TABLE_IDENTIFIER.part, encodeInt(0), encodeInt(0));
+        CommonId id = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(0), encodeInt(StackTraces.lineNumber())
+        );
         Part part = Part.builder()
             .id(id)
-            .start(ByteArrayUtils.MIN_BYTES)
-            .end(ByteArrayUtils.MAX_BYTES)
+            .start(ByteArrayUtils.EMPTY_BYTES)
             .replicates(singletonList(location))
             .build();
         storeInstance.assignPart(part);
-        while (!storeInstance.getPart(id).getStateMachine().isAvailable()) {
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        while (storeInstance.getPart(part.getStart()) == null) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
         }
         assertThat(storeInstance.getKeyValueByPrimaryKeys(Arrays.asList(new byte[] {1}, new byte[] {3})))
             .hasSize(2)
@@ -123,6 +127,36 @@ public class TestRaftStoreInstance {
         Assertions.assertThatThrownBy(
             () -> storeInstance.getKeyValueByPrimaryKeys(Arrays.asList(new byte[] {1}, new byte[] {3}))
         ).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void testReassign() {
+        CommonId id = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(0), encodeInt(StackTraces.lineNumber())
+        );
+        Part part = Part.builder()
+            .id(id)
+            .start(ByteArrayUtils.EMPTY_BYTES)
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.assignPart(part);
+        while (storeInstance.getPart(part.getStart()) == null) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        }
+        assertThat(storeInstance.getValueByPrimaryKey(new byte[] {2})).isEqualTo(new byte[] {2});
+        part = Part.builder()
+            .id(id)
+            .start(ByteArrayUtils.EMPTY_BYTES)
+            .end(new byte[] {3})
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.reassignPart(part);
+        assertThat(storeInstance.getValueByPrimaryKey(new byte[] {2})).isEqualTo(new byte[] {2});
+        Assertions.assertThatThrownBy(() -> storeInstance.getValueByPrimaryKey(new byte[] {3}))
+            .isInstanceOf(IllegalArgumentException.class);
+        storeInstance.unassignPart(part);
+        Assertions.assertThatThrownBy(() -> storeInstance.getValueByPrimaryKey(new byte[] {2}))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
 }

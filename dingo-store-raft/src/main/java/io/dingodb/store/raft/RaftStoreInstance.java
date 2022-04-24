@@ -19,10 +19,10 @@ package io.dingodb.store.raft;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
-import io.dingodb.raft.kv.storage.RaftRawKVOperation;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.RocksRawKVStore;
 import io.dingodb.raft.kv.storage.SeekableIterator;
@@ -35,11 +35,10 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +48,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.common.util.ByteArrayUtils.compare;
 
 @Slf4j
 public class RaftStoreInstance implements StoreInstance {
@@ -56,34 +56,26 @@ public class RaftStoreInstance implements StoreInstance {
     private final CommonId id;
     @Getter
     private final RawKVStore store;
-    private final LogStore logStore;
+    private final LogStore<RaftLogStoreOptions> logStore;
     private final Path path;
+    private final Path dbPath;
+    private final Path logPath;
     private final Map<CommonId, RaftStoreInstancePart> parts;
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final List<RaftStoreInstancePart> waitStoreParts;
 
-    public RaftStoreInstance(CommonId id)  {
+    public RaftStoreInstance(Path path, CommonId id)  {
         try {
             this.id = id;
-            this.path = Paths.get(StoreConfiguration.dbPath(), id.toString());
+            this.path = path;
             Files.createDirectories(path);
-            String dbPath = Paths.get(path.toString(), "db").toString();
-            String logPath = Paths.get(path.toString(), "log").toString();
-            try {
-                FileUtils.forceMkdir(new File(dbPath));
-            } catch (final Throwable t) {
-                log.error("Fail to make dir for dataPath {}.", dbPath);
-            }
-            try {
-                FileUtils.forceMkdir(new File(logPath));
-            } catch (final Throwable t) {
-                log.error("Fail to make dir for dataPath {}.", logPath);
-            }
-            this.store = new RocksRawKVStore(dbPath, StoreConfiguration.rocks());
+            Files.createDirectories(dbPath = Paths.get(path.toString(), "db"));
+            Files.createDirectories(logPath = Paths.get(path.toString(), "log"));
+            this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.rocks());
             this.logStore = new RocksDBLogStore();
             RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
-            logStoreOptions.setDataPath(logPath);
+            logStoreOptions.setDataPath(logPath.toString());
             logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory
                 .newInstance().createLogEntryCodecFactory());
             if (!this.logStore.init(logStoreOptions)) {
@@ -96,7 +88,7 @@ public class RaftStoreInstance implements StoreInstance {
             this.waitStoreParts = new CopyOnWriteArrayList<>();
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
-            throw new RuntimeException();
+            throw new RuntimeException(e);
         }
     }
 
@@ -112,11 +104,17 @@ public class RaftStoreInstance implements StoreInstance {
     @Override
     public void assignPart(Part part) {
         part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
-        part.setEnd(PreParameters.cleanNull(part.getEnd(), () -> new byte[] {Byte.MAX_VALUE}));
         try {
-            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, store, logStore);
+            Path partPath = Optional.ofNullable(StoreConfiguration.raft().getRaftPath())
+                .filter(String::isEmpty)
+                .ifAbsentSet(path::toString)
+                .map(p -> Paths.get(p, part.getId().toString()))
+                .ifPresent(Files::createDirectories)
+                .get();
+            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, partPath, store, logStore);
             storeInstancePart.getStateMachine().listenAvailable(() -> onPartAvailable(storeInstancePart));
             parts.put(part.getId(), storeInstancePart);
+            waitStoreParts.add(storeInstancePart);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -127,7 +125,10 @@ public class RaftStoreInstance implements StoreInstance {
         RaftStoreInstancePart storeInstancePart = parts.get(part.getId());
         storeInstancePart.resetPart(part);
         storeInstancePart.getStateMachine().setEnable(false);
-        storeInstancePart.getRaftStore().getReadIndexRunner().readIndex(RaftRawKVOperation.SYNC_OP);
+        if (startKeyPartMap.containsKey(part.getStart())) {
+            storeInstancePart.getRaftStore().sync();
+            startKeyPartMap.put(part.getStart(), part);
+        }
         storeInstancePart.getStateMachine().setEnable(true);
 
     }
@@ -135,7 +136,6 @@ public class RaftStoreInstance implements StoreInstance {
     @Override
     public void unassignPart(Part part) {
         part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
-        part.setEnd(PreParameters.cleanNull(part.getEnd(), () -> new byte[] {Byte.MAX_VALUE}));
         parts.remove(part.getId()).clear();
         startKeyPartMap.remove(part.getStart());
     }
@@ -150,6 +150,8 @@ public class RaftStoreInstance implements StoreInstance {
     public void onPartAvailable(RaftStoreInstancePart part) {
         if (part.getStateMachine().isAvailable()) {
             startKeyPartMap.put(part.getPart().getStart(), part.getPart());
+        } else {
+            startKeyPartMap.remove(part.getPart().getStart());
         }
     }
 
@@ -158,18 +160,19 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     public Part getPart(byte[] primaryKey) {
-        Map.Entry<byte[], Part> entry = startKeyPartMap.floorEntry(primaryKey);
-        if (entry == null || ByteArrayUtils.compare(primaryKey, entry.getValue().getEnd()) > 0) {
-            return null;
-        }
-        return entry.getValue();
+        return Optional.ofNullable(startKeyPartMap.floorEntry(primaryKey))
+            .map(Map.Entry::getValue)
+            .filter(part -> part.getEnd() == null || compare(primaryKey, part.getEnd()) < 0)
+            .orNull();
     }
 
     @Override
     public boolean exist(byte[] primaryKey) {
         Part part;
         if ((part = getPart(primaryKey)) == null) {
-            throw new IllegalArgumentException("The primary key not in current instance.");
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
         }
         return parts.get(part.getId()).exist(primaryKey);
     }
@@ -179,7 +182,9 @@ public class RaftStoreInstance implements StoreInstance {
         Part part = null;
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
-                throw new IllegalArgumentException("The primary key list not in current instance.");
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+                );
             }
             if (part != getPart(primaryKey)) {
                 throw new IllegalArgumentException("The primary key list not in same part.");
@@ -201,7 +206,9 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean upsertKeyValue(KeyValue row) {
         Part part = getPart(row.getPrimaryKey());
         if (part == null) {
-            throw new IllegalArgumentException("The primary key not in current instance.");
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(row.getKey()) + " not in current instance."
+            );
         }
         return parts.get(part.getId()).upsertKeyValue(row);
     }
@@ -210,7 +217,9 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
         Part part = getPart(primaryKey);
         if (part == null) {
-            throw new IllegalArgumentException("The primary key not in current instance.");
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
         }
         return parts.get(part.getId()).upsertKeyValue(primaryKey, row);
     }
@@ -221,7 +230,9 @@ public class RaftStoreInstance implements StoreInstance {
         for (KeyValue row: rows) {
 
             if (part == null && (part = getPart(row.getPrimaryKey())) == null) {
-                throw new IllegalArgumentException("The primary key list not in current instance.");
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(row.getPrimaryKey()) + " not in current instance."
+                );
             }
             if (part != getPart(row.getPrimaryKey())) {
                 throw new IllegalArgumentException("The primary key list not in same part.");
@@ -234,7 +245,9 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean delete(byte[] primaryKey) {
         Part part = getPart(primaryKey);
         if (part == null) {
-            throw new IllegalArgumentException("The primary key not in current instance.");
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
         }
         return parts.get(part.getId()).delete(primaryKey);
     }
@@ -244,7 +257,9 @@ public class RaftStoreInstance implements StoreInstance {
         Part part = null;
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
-                throw new IllegalArgumentException("The primary key list not in current instance.");
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+                );
             }
             if (part != getPart(primaryKey)) {
                 throw new IllegalArgumentException("The primary key list not in same part.");
@@ -266,7 +281,9 @@ public class RaftStoreInstance implements StoreInstance {
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
         Part part = getPart(primaryKey);
         if (part == null) {
-            throw new IllegalArgumentException("The primary key not in current instance.");
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
         }
         return parts.get(part.getId()).getValueByPrimaryKey(primaryKey);
     }
@@ -276,7 +293,9 @@ public class RaftStoreInstance implements StoreInstance {
         Part part = null;
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
-                throw new IllegalArgumentException("The primary key list not in current instance.");
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+                );
             }
             if (part != getPart(primaryKey)) {
                 throw new IllegalArgumentException("The primary key list not in same part.");

@@ -47,15 +47,6 @@ public class MetaTestService implements MetaService {
     public static final MetaTestService INSTANCE = new MetaTestService();
     private final Map<String, TableDefinition> tableDefinitionMap = new LinkedHashMap<>();
 
-    @Nonnull
-    private static File tempPath() {
-        try {
-            return Files.createTempDirectory("dingo_file_").toFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public String getName() {
         return SCHEMA_NAME;
@@ -124,7 +115,7 @@ public class MetaTestService implements MetaService {
     @Override
     public NavigableMap<ComparableByteArray, Part> getParts(String name) {
         TreeMap<ComparableByteArray, Part> result = new TreeMap<>();
-        result.put(new ComparableByteArray(ByteArrayUtils.MIN_BYTES), new Part(
+        result.put(new ComparableByteArray(ByteArrayUtils.EMPTY_BYTES), new Part(
             ByteArrayUtils.EMPTY_BYTES,
             new Location("localhost", 0),
             Arrays.asList(new Location("localhost", 0))

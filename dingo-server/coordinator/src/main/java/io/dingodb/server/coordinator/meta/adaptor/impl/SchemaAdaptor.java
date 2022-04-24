@@ -50,7 +50,7 @@ public class SchemaAdaptor extends BaseAdaptor<Schema> {
             META_ID.type(),
             META_ID.identifier(),
             parent,
-            metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 

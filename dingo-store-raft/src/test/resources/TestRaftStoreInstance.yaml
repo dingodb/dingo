@@ -1,8 +1,0 @@
-exchange:
-    host: localhost
-    port: 19999
-store:
-    dbPath: dingo/TestRaftStoreInstance/db
-    raft:
-        raftPath: dingo/TestRaftStoreInstance/raft
-        port: 19999

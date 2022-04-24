@@ -43,6 +43,9 @@ public class SplitTask implements Meta {
     }
 
     private CommonId id;
+    private CommonId oldPart;
+    private CommonId newPart;
+    private byte[] splitKey;
     private Step step;
     private long createTime;
     private long updateTime;

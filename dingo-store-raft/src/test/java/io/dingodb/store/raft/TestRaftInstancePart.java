@@ -24,21 +24,16 @@ import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
 import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftLogStoreOptions;
-import io.dingodb.raft.storage.LogStorage;
-import io.dingodb.raft.storage.impl.RocksDBLogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.Part;
-import io.dingodb.store.raft.config.StoreConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -53,13 +48,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRaftInstancePart {
 
+    public static final Path TEST_PATH = Paths.get(TestRaftInstancePart.class.getName());
+
     private static RaftStoreInstancePart storeInstancePart;
     private static MemoryRawKVStore store = new MemoryRawKVStore();
     private static Location location;
 
     @BeforeAll
     public static void beforeAll() throws Exception {
-        DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/TestStoreInstanceSegment.yaml").getPath());
+        afterAll();
+        DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/config.yaml").getPath());
         location = DingoConfiguration.location();
         CommonId id = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, encodeInt(0), encodeInt(0));
         final Part part = Part.builder()
@@ -68,23 +66,24 @@ public class TestRaftInstancePart {
             .build();
         final RocksDBLogStore logStore = new RocksDBLogStore();
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
-        logStoreOptions.setDataPath("dingo/TestRaftStoreInstance/raft/log");
-        try {
-            FileUtils.forceMkdir(new File(logStoreOptions.getDataPath()));
-        } catch (final Throwable t) {
-            throw new RuntimeException("Fail to make dir for logDbPath: " + logStoreOptions.getDataPath());
-        }
+        Path raftLogPath = Paths.get(TEST_PATH.toString(), "raft", "log");
+        Files.createDirectories(raftLogPath);
+        logStoreOptions.setDataPath(raftLogPath.toString());
+        Files.createDirectories(raftLogPath);
         logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
-        storeInstancePart = new RaftStoreInstancePart(part, store, logStore);
-        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        storeInstancePart = new RaftStoreInstancePart(
+            part, Paths.get(TEST_PATH.toString(), id.toString()), store, logStore
+        );
+        while (!storeInstancePart.getStateMachine().isAvailable()) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        }
     }
 
     @AfterAll
     public static void afterAll() throws Exception {
-        FileUtils.forceDeleteOnExit(new File(Paths.get(StoreConfiguration.dbPath()).toString()));
-        FileUtils.forceDeleteOnExit(new File(Paths.get(StoreConfiguration.raft().getRaftPath()).toString()));
+        Files.deleteIfExists(TEST_PATH);
     }
 
     @BeforeEach

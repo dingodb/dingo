@@ -95,7 +95,7 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
             META_ID.type(),
             META_ID.identifier(),
             replica.getPart().seqContent(),
-            metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
