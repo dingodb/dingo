@@ -30,8 +30,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
@@ -196,14 +196,17 @@ public class TableWithDefaultValueTest {
             String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
             sqlHelper.updateTest(sql, 1);
             sql = "select * from " + tableName;
+
             LocalDate nowDate = LocalDate.now();
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String expectResult = nowDate.format(dateTimeFormatter);
-            String expectRecord = "100, lala, " + expectResult;
-            sqlHelper.queryTest(sql,
+            String expectDateResult = nowDate.format(dateTimeFormatter);
+
+            List<Object[]> expectedResult = new ArrayList<>();
+            expectedResult.add(new Object[] {100, "lala", expectDateResult});
+            sqlHelper.queryTestWithTime(sql,
                 new String[]{"id", "name", "birth"},
                 TupleSchema.ofTypes("INTEGER", "STRING", "DATE"),
-                expectRecord);
+                expectedResult);
             sqlHelper.clearTable(tableName);
         }
     }
@@ -237,6 +240,7 @@ public class TableWithDefaultValueTest {
             LocalTime localTime = LocalTime.now();
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
             String formatTime = localTime.format(timeFormatter);
+            System.out.println("=====Current time is: " + formatTime);
             List<Object[]> expectedResult = new ArrayList<>();
             expectedResult.add(new Object[] {100, "lala", formatTime});
             sqlHelper.queryTestWithTime(sql,
@@ -272,6 +276,7 @@ public class TableWithDefaultValueTest {
             LocalDateTime localDateTime = LocalDateTime.now();
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             String formatTime = localDateTime.format(dateTimeFormatter);
+            System.out.println("=====Current time is: " + formatTime);
             List<Object[]> expectedResult = new ArrayList<>();
             expectedResult.add(new Object[] {100, "lala", formatTime});
             sqlHelper.queryTestWithTime(sql,
