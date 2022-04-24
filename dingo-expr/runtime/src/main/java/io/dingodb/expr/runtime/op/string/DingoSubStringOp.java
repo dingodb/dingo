@@ -16,11 +16,21 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoSubStringOp extends RtStringConversionOp {
     private static final long serialVersionUID = 9195218471853466015L;
 
@@ -37,9 +47,6 @@ public class DingoSubStringOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String) values[0]);
-        if (inputStr == null || inputStr.isEmpty()) {
-            return "";
-        }
 
         BigDecimal decimal = new BigDecimal(values[1].toString());
         Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
@@ -47,19 +54,25 @@ public class DingoSubStringOp extends RtStringConversionOp {
         decimal = new BigDecimal(values[2].toString());
         Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
+        return subStr(inputStr, startIndex, cnt);
+    }
+
+    public static String subStr(final String inputStr, final int index, final int cnt) {
+        if (inputStr == null || inputStr.isEmpty()) {
+            return "";
+        }
+
         if (cnt < 0) {
             return "";
         }
 
+        int startIndex = index;
         if (startIndex < 0) {
             startIndex = startIndex + inputStr.length() + 1;
         }
-
         startIndex = startIndex - 1;
 
         if (startIndex + cnt > inputStr.length()) {
-            System.out.println("Substring OutOfRange. Input:" + inputStr + ", startIndex:"
-                + startIndex + ", subCnt:" + cnt);
             if (startIndex == inputStr.length()) {
                 startIndex = startIndex + 1;
             }
@@ -67,5 +80,30 @@ public class DingoSubStringOp extends RtStringConversionOp {
         }
 
         return inputStr.substring(startIndex, startIndex + cnt);
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoSubStringOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("substring");
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoSubStringOp.class.getMethod("subStr", String.class, int.class, int.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

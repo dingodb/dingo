@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringRTrimOp extends RtStringConversionOp {
     private static final long serialVersionUID = -7445709112049015539L;
 
@@ -44,23 +46,22 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String inputStr = (String)values[0];
-        int startIndex = 0;
-        int endIndex = inputStr.length() - 1;
-
-        for (; endIndex > 0; endIndex--) {
-            if (inputStr.charAt(endIndex) != ' ') {
-                break;
-            }
-        }
-        return inputStr.substring(startIndex, endIndex + 1);
+        String str = (String)values[0];
+        return trimRight(str);
     }
 
     public static String trimRight(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
-            return str.replaceAll("[　 ]+$", "");
+            int startIndex = 0;
+            int endIndex = str.length() - 1;
+            for (; endIndex > 0; endIndex--) {
+                if (str.charAt(endIndex) != ' ') {
+                    break;
+                }
+            }
+            return str.substring(startIndex, endIndex + 1);
         }
     }
 
@@ -83,6 +84,7 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
                 methods.add(DingoStringRTrimOp.class.getMethod("trimRight", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

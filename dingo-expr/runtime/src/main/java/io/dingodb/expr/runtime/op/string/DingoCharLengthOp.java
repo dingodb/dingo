@@ -16,10 +16,20 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoCharLengthOp extends RtStringConversionOp {
     private static final long serialVersionUID = 5454356467741754567L;
 
@@ -38,6 +48,35 @@ public class DingoCharLengthOp extends RtStringConversionOp {
         if (values[0] == null) {
             return 0;
         }
-        return ((String) values[0]).length();
+        return charLength((String) values[0]);
+    }
+
+    public static int charLength(String str) {
+        return str.length();
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoCharLengthOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("char_length");
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoCharLengthOp.class.getMethod("charLength", String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

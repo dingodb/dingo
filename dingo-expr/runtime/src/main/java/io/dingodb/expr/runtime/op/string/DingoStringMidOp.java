@@ -47,20 +47,21 @@ public class DingoStringMidOp extends RtStringConversionOp {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String inputStr = ((String)values[0]);
-        if (inputStr == null || inputStr.length() == 0) {
-            return "";
-        }
 
         BigDecimal decimal = new BigDecimal(values[1].toString());
         Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
-        Integer cnt = inputStr.length();
-        if (values.length == 3) {
-            decimal = new BigDecimal(values[2].toString());
-            cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        if (values.length == 2) {
+            return midString(inputStr, startIndex);
         }
 
-        if (cnt < 0) {
+        decimal = new BigDecimal(values[2].toString());
+        Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        return midString(inputStr, startIndex, cnt);
+    }
+
+    public static String midString(final String inputStr, int startIndex) {
+        if (inputStr == null || inputStr.length() == 0) {
             return "";
         }
 
@@ -68,26 +69,28 @@ public class DingoStringMidOp extends RtStringConversionOp {
             startIndex = startIndex + inputStr.length() + 1;
         }
 
-        if (values.length == 2) {
-            return midString(inputStr, startIndex - 1);
+        if (startIndex - 1 == inputStr.length()) {
+            startIndex = startIndex + 2;
+        }
+
+        return inputStr.substring(startIndex - 1);
+    }
+
+    public static String midString(final String inputStr, int startIndex, int cnt) {
+        if (inputStr == null || inputStr.length() == 0 || cnt < 0) {
+            return "";
+        }
+
+        if (startIndex < 0) {
+            startIndex = startIndex + inputStr.length() + 1;
         }
 
         int endIndex = (startIndex + cnt - 1 > inputStr.length() ? inputStr.length() : startIndex + cnt - 1);
         if (startIndex - 1 == inputStr.length()) {
             startIndex = startIndex + 2;
         }
-        return midString(inputStr, startIndex - 1, endIndex);
-    }
 
-    public static String midString(final String inputStr, int startIndex) {
-        if (startIndex == inputStr.length()) {
-            startIndex = startIndex + 1;
-        }
-        return inputStr.substring(startIndex);
-    }
-
-    public static String midString(final String inputStr, int startIndex, int cnt) {
-        return inputStr.substring(startIndex, cnt);
+        return inputStr.substring(startIndex - 1, endIndex);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -110,6 +113,7 @@ public class DingoStringMidOp extends RtStringConversionOp {
                 methods.add(DingoStringMidOp.class.getMethod("midString", String.class, int.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

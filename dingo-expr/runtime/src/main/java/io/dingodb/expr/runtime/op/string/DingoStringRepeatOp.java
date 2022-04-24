@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringRepeatOp extends RtStringConversionOp {
     private static final long serialVersionUID = 7673054922107009329L;
 
@@ -48,13 +50,14 @@ public class DingoStringRepeatOp extends RtStringConversionOp {
         String inputStr = ((String)values[0]);
         int times = new BigDecimal(String.valueOf(values[1])).setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
-        if (times < 0) {
-            return "";
-        }
-        return String.join("", Collections.nCopies(times, inputStr));
+        return repeatString(inputStr, times);
     }
 
     public static String repeatString(final String inputStr, int times) {
+        if (times < 0) {
+            return "";
+        }
+
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
@@ -81,6 +84,7 @@ public class DingoStringRepeatOp extends RtStringConversionOp {
                 methods.add(DingoStringRepeatOp.class.getMethod("repeatString", String.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }

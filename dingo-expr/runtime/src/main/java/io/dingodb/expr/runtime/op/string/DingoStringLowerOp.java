@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringLowerOp extends RtStringConversionOp {
     private static final long serialVersionUID = -3546267408443749483L;
 
@@ -43,7 +45,7 @@ public class DingoStringLowerOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return ((String) values[0]).toLowerCase();
+        return toLowCase((String) values[0]);
     }
 
     public static String toLowCase(final String str) {
@@ -73,6 +75,7 @@ public class DingoStringLowerOp extends RtStringConversionOp {
                 methods.add(DingoStringLowerOp.class.getMethod("toLowCase", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
