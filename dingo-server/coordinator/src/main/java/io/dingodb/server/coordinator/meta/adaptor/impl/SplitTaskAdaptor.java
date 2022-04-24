@@ -16,14 +16,14 @@
 
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.SplitTask;
 import io.dingodb.server.coordinator.store.MetaStore;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
-import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.TASK_IDENTIFIER;
 
 public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
@@ -32,6 +32,7 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
 
     public SplitTaskAdaptor(MetaStore metaStore) {
         super(metaStore);
+        MetaAdaptorRegistry.register(SplitTask.class, this);
     }
 
     @Override
@@ -44,8 +45,10 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            encodeInt(metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())),
-            encodeInt(1)
+            encodeInt(1),
+            metaStore.generateSeq(
+                CommonId.prefix(META_ID.type(), META_ID.identifier(), task.getOldPart().seqContent()).encode()
+            )
         );
     }
 
@@ -53,11 +56,31 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
     protected void doSave(SplitTask task) {
         if (task.getStep() == SplitTask.Step.FINISH) {
             CommonId oldId = task.getId();
-            task.setId(new CommonId(oldId.type(), oldId.identifier(), oldId.domain(), 0));
+            task.setId(new CommonId(oldId.type(), oldId.identifier(), encodeInt(0), oldId.seqContent()));
             metaStore.upsertKeyValue(task.getId().encode(), encodeMeta(task));
             metaStore.delete(oldId.encode());
         } else {
             super.doSave(task);
+        }
+    }
+
+    public SplitTask newTask(CommonId part) {
+        long time = System.currentTimeMillis();
+        SplitTask splitTask = new SplitTask();
+        splitTask.setOldPart(part);
+        splitTask.setId(newId(splitTask));
+        splitTask.setCreateTime(time);
+        splitTask.setUpdateTime(time);
+        splitTask.setStep(SplitTask.Step.START);
+        save(splitTask);
+        return splitTask;
+    }
+
+    @AutoService(BaseAdaptor.Creator.class)
+    public static class Creator implements BaseAdaptor.Creator<SplitTask, SplitTaskAdaptor> {
+        @Override
+        public SplitTaskAdaptor create(MetaStore metaStore) {
+            return new SplitTaskAdaptor(metaStore);
         }
     }
 }

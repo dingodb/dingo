@@ -124,7 +124,7 @@ public class MetaTestService implements MetaService {
     @Override
     public NavigableMap<ComparableByteArray, Part> getParts(String name) {
         TreeMap<ComparableByteArray, Part> result = new TreeMap<>();
-        result.put(new ComparableByteArray(ByteArrayUtils.MIN_BYTES), new Part(
+        result.put(new ComparableByteArray(ByteArrayUtils.EMPTY_BYTES), new Part(
             ByteArrayUtils.EMPTY_BYTES,
             new Location("localhost", 0),
             Arrays.asList(new Location("localhost", 0))

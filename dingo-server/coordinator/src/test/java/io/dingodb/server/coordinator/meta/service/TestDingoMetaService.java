@@ -20,18 +20,29 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.server.coordinator.TestBase;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoMetaService extends TestBase {
 
+    public static final Path DATA_PATH = Paths.get(TestDingoMetaService.class.getName());
+
     private static TableDefinition definition;
 
-    //@BeforeAll
+    @BeforeAll
     public static void beforeAll() throws Exception {
-        TestBase.beforeAll();
+        afterAll();
+        TestBase.beforeAll(DATA_PATH);
         definition = new TableDefinition("TestTableAdaptor_testCreate");
         definition.setColumns(Arrays.asList(
             ColumnDefinition.builder().name("col1").type(SqlTypeName.INTEGER).build(),
@@ -40,16 +51,25 @@ public class TestDingoMetaService extends TestBase {
         ));
     }
 
-    //@Test
+    @AfterAll
+    public static void afterAll() throws Exception {
+        TestBase.afterAll(DATA_PATH);
+    }
+
+    @AfterEach
+    public void afterEach() {
+        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+    }
+
+    @Test
     public void test00Create() {
         DingoMetaService.instance().createTable(definition.getName(), definition);
         assertThat(DingoMetaService.instance().getTableDefinition(definition.getName()))
             .isEqualTo(definition);
     }
 
-    //@Test
+    @Test
     public void test01GetParts() {
-        System.out.println(DingoMetaService.instance().getParts(definition.getName()));
         assertThat(DingoMetaService.instance().getParts(definition.getName()))
             .hasSizeGreaterThanOrEqualTo(1);
         assertThat(DingoMetaService.instance().getDistributes(definition.getName()))

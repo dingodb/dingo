@@ -29,7 +29,10 @@ public interface TableStoreApi {
     void deleteTable(CommonId id);
 
     @ApiDeclaration
-    void newTablePart(Part part);
+    void assignTablePart(Part part);
+
+    @ApiDeclaration
+    void reassignTablePart(Part part);
 
     @ApiDeclaration
     void removeTablePart(Part part);

@@ -27,7 +27,6 @@ import io.dingodb.store.api.StoreService;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import org.rocksdb.RocksDB;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -37,6 +36,8 @@ import javax.annotation.Nonnull;
 public class RaftStoreService implements StoreService {
     public static final RaftStoreService INSTANCE = new RaftStoreService();
 
+    private final Path path = Paths.get(StoreConfiguration.dbPath());
+
     static {
         RocksDB.loadLibrary();
     }
@@ -44,7 +45,7 @@ public class RaftStoreService implements StoreService {
     private final Map<CommonId, RaftStoreInstance> storeInstanceMap = new ConcurrentHashMap<>();
 
     private RaftStoreService() {
-        Files.createDirectories(Paths.get(StoreConfiguration.dbPath()));
+        Files.createDirectories(path);
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(
             new Endpoint(DingoConfiguration.host(), StoreConfiguration.raft().getPort()));
         rpcServer.init(null);
@@ -58,8 +59,9 @@ public class RaftStoreService implements StoreService {
 
     @Override
     public StoreInstance getInstance(@Nonnull CommonId id) {
-        Files.createDirectories(Paths.get(StoreConfiguration.dbPath(), id.toString()));
-        return storeInstanceMap.compute(id, (l, i) -> i == null ? new RaftStoreInstance(id) : i);
+        Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
+        Files.createDirectories(instancePath);
+        return storeInstanceMap.compute(id, (l, i) -> i == null ? new RaftStoreInstance(instancePath, id) : i);
     }
 
     @Override

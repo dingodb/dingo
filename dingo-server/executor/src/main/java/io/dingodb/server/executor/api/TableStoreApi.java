@@ -41,8 +41,13 @@ public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
     }
 
     @Override
-    public void newTablePart(Part part) {
+    public void assignTablePart(Part part) {
         storeService.getInstance(part.getInstanceId()).assignPart(part);
+    }
+
+    @Override
+    public void reassignTablePart(Part part) {
+        storeService.getInstance(part.getInstanceId()).reassignPart(part);
     }
 
     @Override

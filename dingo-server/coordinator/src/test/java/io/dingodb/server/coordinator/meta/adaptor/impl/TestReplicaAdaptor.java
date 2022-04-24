@@ -20,6 +20,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.server.coordinator.TestBase;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.protocol.meta.Replica;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -29,17 +35,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestReplicaAdaptor extends TestBase {
 
-    //@BeforeAll
+    public static final Path DATA_PATH = Paths.get(TestReplicaAdaptor.class.getName());
+
+    @BeforeAll
     public static void beforeAll() throws Exception {
-        TestBase.beforeAll();
+        afterAll();
+        TestBase.beforeAll(DATA_PATH);
     }
 
-    //@AfterAll
+    @AfterAll
     public static void afterAll() throws Exception {
-        TestBase.afterAll();
+        TestBase.afterAll(DATA_PATH);
     }
 
-    //@Test
+    @Test
     public void testGetByExecutor() {
         ReplicaAdaptor adaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
         CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(1), encodeInt(1));

@@ -19,14 +19,8 @@ package io.dingodb.server.coordinator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
-import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.type.SqlTypeName;
-
-import java.util.Arrays;
 
 @Slf4j
 public class Starter {

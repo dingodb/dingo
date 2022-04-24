@@ -48,7 +48,6 @@ public class CoordinatorConfiguration {
     }
 
     private String dataPath;
-    private String logDataPath;
 
     private RaftLogStorageOptions raftLogStorageOptions  = new RaftLogStorageOptions();
     private RaftConfiguration raft;

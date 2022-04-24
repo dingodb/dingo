@@ -17,14 +17,12 @@
 package io.dingodb.raft.kv.storage;
 
 import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.config.ExchangeConfiguration;
+import io.dingodb.common.util.Files;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftLogStoreOptions;
-import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
@@ -41,31 +39,35 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
-import static io.dingodb.raft.rpc.RaftRpcServerFactory.createRaftRpcServer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRaftRawKVStore {
 
     public static final String SRV_LIST = "localhost:9181";
-    public static final String DB_PATH = "dingo/raft-kv/test/raft";
+    public static final String DB_PATH = TestRaftRawKVStore.class.getName();
 
     private static RaftRawKVStore store;
     private static MemoryRawKVStore STORE = new MemoryRawKVStore();
 
     @BeforeAll
     public static void beforeAll() throws Exception {
-        FileUtils.forceDeleteOnExit(new File("dingo"));
+        afterAll();
         Endpoint endpoint = new Endpoint("localhost", 9181);
         store = new RaftRawKVStore(
             "TEST", STORE, createNodeOptions(), new Location(endpoint.getIp(), endpoint.getPort())
         );
         store.init(null);
+        while (!store.getNode().isLeader()) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        }
     }
 
     @AfterAll
     public static void afterAll() throws Exception {
-        FileUtils.forceDeleteOnExit(new File("dingo"));
+        Files.deleteIfExists(Paths.get(DB_PATH));
     }
 
 

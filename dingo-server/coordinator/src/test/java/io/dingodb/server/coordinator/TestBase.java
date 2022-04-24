@@ -38,7 +38,7 @@ import io.dingodb.server.coordinator.fake.FakeTableStoreApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseStatsAdaptor;
-import io.dingodb.server.coordinator.schedule.Scheduler;
+import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Executor;
@@ -71,26 +71,26 @@ public class TestBase {
 
     protected static AtomicBoolean using = new AtomicBoolean(false);
 
-    //@BeforeAll
-    public static void beforeAll() throws Exception {
+    public static void beforeAll(Path dataPath) throws Exception {
         if (!using.compareAndSet(false, true)) {
             LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(3));
             return;
         }
         DingoConfiguration.parse(TestBase.class.getResource("/coordinator.yaml").getPath());
         configuration = CoordinatorConfiguration.instance();
-        Files.createDirectories(Paths.get(configuration.getDataPath()));
-        store = new RocksRawKVStore(configuration.getDataPath(), configuration.getRocks());
+        Files.createDirectories(dataPath);
+        store = new RocksRawKVStore(dataPath.toString(), configuration.getRocks());
         Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
         node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, 0));
         metaStore = new MetaStore(node, store);
-        nodeOptions = nodeOptions();
+        nodeOptions = nodeOptions(dataPath.toString());
         stateMachine = new CoordinatorStateMachine(node, new MemoryRawKVStore(), store, metaStore);
         nodeOptions.setFsm(stateMachine);
         NodeManager.getInstance().addAddress(endpoint);
         node.init(nodeOptions);
-        initMetaAdaptors(metaStore);
-        Scheduler.instance().init();
+        while (!stateMachine.isLeader() || MetaAdaptorRegistry.getMetaAdaptor(Executor.class) == null) {
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        }
         executorId = MetaAdaptorRegistry.getMetaAdaptor(Executor.class).save(Executor.builder()
             .host(DingoConfiguration.host())
             .port(DingoConfiguration.port())
@@ -99,28 +99,18 @@ public class TestBase {
         new FakeTableStoreApi();
     }
 
-    //@AfterAll
-    public static void afterAll() throws Exception {
-        FileUtils.forceDeleteOnExit(new File(Paths.get(configuration.getDataPath()).toString()));
+    public static void afterAll(Path dataPath) throws Exception {
+        Files.deleteIfExists(dataPath);
     }
 
-    private static void initMetaAdaptors(MetaStore metaStore) {
-        ServiceLoader.load(BaseAdaptor.Creator.class).iterator()
-            .forEachRemaining(creator -> creator.create(metaStore));
-        ServiceLoader.load(BaseStatsAdaptor.Creator.class).iterator()
-            .forEachRemaining(creator -> creator.create(metaStore));
-    }
-
-    private static NodeOptions nodeOptions() {
+    private static NodeOptions nodeOptions(String dataPath) {
         NodeOptions nodeOptions = new NodeOptions();
         configuration.getRaft().setNode(nodeOptions);
         Configuration initialConf = new Configuration();
         initialConf.parse(configuration.getRaft().getInitRaftSvrList());
         nodeOptions.setInitialConf(initialConf);
 
-        String dbPath = configuration.getDataPath();
-
-        Path path = Paths.get(dbPath, RAFT, "log");
+        Path path = Paths.get(dataPath, RAFT, "log");
         Files.createDirectories(path);
         final RocksDBLogStore logStore = new RocksDBLogStore();
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
@@ -130,11 +120,11 @@ public class TestBase {
         logStore.init(logStoreOptions);
         LogStorage logStorage = new RocksDBLogStorage("coordinatortest".getBytes(StandardCharsets.UTF_8), logStore);
         nodeOptions.setLogStorage(logStorage);
-        path = Paths.get(dbPath, RAFT, "meta");
+        path = Paths.get(dataPath, RAFT, "meta");
         Files.createDirectories(path);
         nodeOptions.setRaftMetaUri(path.toString());
 
-        path = Paths.get(dbPath, RAFT, "snapshot");
+        path = Paths.get(dataPath, RAFT, "snapshot");
         Files.createDirectories(path);
         nodeOptions.setSnapshotUri(path.toString());
 

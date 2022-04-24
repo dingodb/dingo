@@ -24,7 +24,12 @@ import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,7 +38,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTableAdaptor extends TestBase {
 
-    //@Test
+    public static final Path DATA_PATH = Paths.get(TestTableAdaptor.class.getName());
+
+    @BeforeAll
+    public static void beforeAll() throws Exception {
+        afterAll();
+        TestBase.beforeAll(DATA_PATH);
+    }
+
+    @AfterAll
+    public static void afterAll() throws Exception {
+        TestBase.afterAll(DATA_PATH);
+    }
+
+    @Test
     public void test01Create() {
         TableDefinition definition = new TableDefinition("TestTableAdaptor_testCreate");
         definition.setColumns(Arrays.asList(

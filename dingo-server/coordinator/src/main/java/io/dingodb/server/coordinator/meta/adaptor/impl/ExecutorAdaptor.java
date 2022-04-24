@@ -45,7 +45,7 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
             META_ID.type(),
             META_ID.identifier(),
             ZERO_DOMAIN,
-            metaStore.generateCommonIdSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
