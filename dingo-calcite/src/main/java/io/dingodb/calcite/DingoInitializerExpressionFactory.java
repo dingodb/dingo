@@ -35,11 +35,15 @@ import org.apache.calcite.util.TimestampString;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 
 @Slf4j
@@ -121,14 +125,19 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             }
             case TIME: {
                 if (inputValue instanceof java.sql.Time) {
-                    TimeString timeString = new TimeString(inputValue.toString());
+                    Long unixTime = ((java.sql.Time) inputValue).getTime();
+                    unixTime -= TimeZone.getDefault().getRawOffset();
+                    Time time = new Time(unixTime);
+                    TimeString timeString = new TimeString(time.toString());
                     defaultValue = timeString;
                 }
                 break;
             }
             case TIMESTAMP: {
                 if (inputValue instanceof java.sql.Timestamp) {
-                    TimestampString timeString = new TimestampString(inputValue.toString());
+                    Timestamp timeStamp = (Timestamp) inputValue;
+                    Long realTime = timeStamp.getTime();
+                    TimestampString timeString = TimestampString.fromMillisSinceEpoch(realTime);
                     defaultValue = timeString;
                 }
                 break;

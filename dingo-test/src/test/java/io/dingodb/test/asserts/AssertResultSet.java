@@ -150,7 +150,11 @@ public final class AssertResultSet {
                     String srcResult = srcStr.substring(0, srcStr.lastIndexOf(":"));
                     String destStr = expectedRow[i].toString();
                     String destResult = destStr.substring(0, destStr.lastIndexOf(":"));
-                    Assertions.assertEquals(destResult, srcResult);
+                    Assertions.assertEquals(srcResult, destResult);
+                } else if (row[i] instanceof java.sql.Date) {
+                    String srcResult = row[i].toString();
+                    String destResult = expectedRow[i].toString();
+                    Assertions.assertEquals(srcResult, destResult);
                 } else {
                     Assertions.assertEquals(row[i], expectedRow[i]);
                 }
