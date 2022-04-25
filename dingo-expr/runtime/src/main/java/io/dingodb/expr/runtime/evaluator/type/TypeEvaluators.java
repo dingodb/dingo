@@ -17,6 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.type;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DecimalEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DoubleEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
@@ -26,12 +27,17 @@ import io.dingodb.expr.runtime.evaluator.base.IntegerEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.LongEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.exception.FailParseTime;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import javax.annotation.Nonnull;
 
@@ -201,5 +207,21 @@ final class TypeEvaluators {
         } catch (ParseException e) {
             throw new FailParseTime(str, fmt);
         }
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestamp(String str) {
+        String datetime = DateFormatUtil.completeToDatetimeFormat(str);
+        datetime = DateFormatUtil.validAndCompleteDateValue("TIMESTAMP", datetime);
+        return Timestamp.valueOf(LocalDateTime.parse(datetime, DateFormatUtil.getDatetimeFormatter()));
+    }
+
+    @Nonnull
+    @Evaluators.Base(DateEvaluator.class)
+    static java.sql.Date date(String str) {
+        String datetime = DateFormatUtil.completeToDatetimeFormat(str);
+        String date = DateFormatUtil.validAndCompleteDateValue("DATE", datetime);
+        return java.sql.Date.valueOf(LocalDate.parse(date, DateFormatUtil.getDateFormatter()));
     }
 }

@@ -446,16 +446,30 @@ public class DateTest {
         }
     }
 
-    // select date_format('2022-04-13 10:37:26', 'Year:%Y Month:%m Day:%d')
     @Test
     public void testDateFormatYYYYdMMdDDInput3() throws SQLException {
-        String sql = "select date_format('2022-04-13 10:37:26', 'Year:%Y Month:%m Day:%d')";
+        String sql = "select date_format('1999-01-01 10:37:26', '%Y year %m month %d day and %s seconds')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    assertThat(rs.getString(1)).isEqualTo("Year:2022 Month:04 Day:13");
+                    assertThat(rs.getString(1)).isEqualTo("1999 year 01 month 01 day and 26 seconds");
+                }
+            }
+        }
+    }
+
+    // YYYY-MM-DD HH:mm:ss
+    @Test
+    public void testDateFormatYYYYdMMdDDeHHcmmcss1() throws SQLException {
+        String sql = "select date_format('2022-04-13 10:37:36', '%H:%i:%S')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("10:37:36");
                 }
             }
         }
@@ -491,10 +505,38 @@ public class DateTest {
         }
     }
 
+    @Test
+    public void testDateDiff2() throws SQLException {
+        String sql = "select datediff('2022-04-13 15:17:58', '2022-05-31 00:01:01') as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-48");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiff3() throws SQLException {
+        String sql = "select datediff('2022-04-30 15:17:58', '2022-05-31 00:01:01') as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-31");
+                }
+            }
+        }
+    }
+
     // Result like: 1
     @Test
     public void testDateDiffOtherFormat() throws SQLException {
-        String sql = "select datediff('20071229','2007-12-30')";
+        String sql = "select datediff('2007-12-29','2007-12-30')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
@@ -516,7 +558,6 @@ public class DateTest {
             "2003-12-31, 1447430881, 2007-1-31 23:59:59"
         );
     }
-
 
     @Test
     public void testOneColumnFullScan() throws SQLException {
@@ -572,7 +613,6 @@ public class DateTest {
             TupleSchema.ofTypes("DATE", "TIME", "TIMESTAMP"),
             "2003-12-31, 12:12:12, 1970-01-17 18:03:50"
         );
-
     }
 
     /* TODO: Support this test, when the corresponding rule added.
@@ -599,5 +639,269 @@ public class DateTest {
     }
      */
 
+    // Check Cast function.
+    @Test
+    void testDateTypeInsert() throws SQLException {
+        String createTableSQL = "create table timetest(id int, dt date,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest values(11, '2022-11-01')";
 
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    System.out.println(resultSet.getString(2));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testDateTypeInsert1() throws SQLException {
+        String createTableSQL = "create table timetest1(id int, dt date,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest1 values(11, '2022-11-01')";
+
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest1";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    System.out.println(resultSet.getString(2));
+                }
+            }
+        }
+    }
+
+    // Check Cast function.
+    @Test
+    void testTimestampTypeInsert() throws SQLException {
+        String createTableSQL = "create table timetest3(id int, dt TIMESTAMP,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest3 values(11, '2022-11-01 11:01:01')";
+
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest3";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    System.out.println(resultSet.getString(2));
+                }
+            }
+        }
+    }
+
+    // Check Cast function.
+    @Test
+    void testCastDateTime() throws SQLException {
+        String castSQL = "SELECT CAST('2020/11-01 01:01:01' AS TIMESTAMP)";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastDateTime1() throws SQLException {
+        String castSQL = "SELECT * from (SELECT * from (SELECT CAST('2020-11-01 01:01:01' AS TIMESTAMP)))";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastDateTime2() throws SQLException {
+        String castSQL = "SELECT * from (SELECT * from (SELECT CAST('2020-11-1 01:1:01' AS TIMESTAMP), "
+            + "CAST('2020-1-1 01:1:1' AS TIMESTAMP)))";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastDateTime3() throws SQLException {
+        String castSQL = "SELECT CAST('2020/11-01 01:1:01' AS TIMESTAMP)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDateTimeFormat() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020/11/30 01:1:01' AS TIMESTAMP), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDateTimeFormat1() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30 01:1:01' AS TIMESTAMP), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDateTimeFormat2() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30 9:1:1' AS TIMESTAMP), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDateFormat() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30' AS DATE), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDate1Format() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020/11/30' AS DATE), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
+
+    // Check Cast function.
+    @Test
+    void testTimeTypeInsert() throws SQLException {
+        String createTableSQL = "create table timetest0(id int, create_time time,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest0 values(11, '04:00:02')";
+
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest0";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    System.out.println(resultSet.getString(2));
+                }
+            }
+        }
+    }
+
+    // Check Cast function.
+    @Test
+    void testTimeTypeInsert1() throws SQLException {
+        String createTableSQL = "create table timetest2(id int, create_time time,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest2 values(11, '04:30:02')";
+
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest2";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    System.out.println(resultSet.getString(2));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithInsertTimeFormat() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30' AS DATE), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                }
+            }
+        }
+    }
 }

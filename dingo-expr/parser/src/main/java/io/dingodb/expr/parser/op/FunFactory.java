@@ -20,6 +20,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.arithmetic.AbsEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AcosEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AsinEvaluatorFactory;
@@ -32,12 +33,14 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.type.DateEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DecimalTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DoubleTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.IntTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.TimeEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.type.TimestampEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
@@ -111,6 +114,9 @@ public final class FunFactory {
         registerUdf("curtime", DingoCurrentTimeOp::new);
         registerUdf("current_timestamp", DingoCurrentTimeStampOp::new);
         registerUdf("now", DingoCurrentTimeStampOp::new);
+        registerEvaluator("date", DateEvaluatorFactory.INSTANCE);
+        registerEvaluator("timestamp", TimestampEvaluatorFactory.INSTANCE);
+
 
         // Type conversion
         registerEvaluator("int", IntTypeEvaluatorFactory.INSTANCE);

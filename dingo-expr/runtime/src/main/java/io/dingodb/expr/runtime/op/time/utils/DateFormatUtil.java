@@ -16,13 +16,18 @@
 
 package io.dingodb.expr.runtime.op.time.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.Math.min;
+
 // Support the format map from mysql to localDate Formatting.
+@Slf4j
 public class DateFormatUtil implements Serializable {
     public static final long serialVersionUID = 4478587765478112418L;
     public static Map<String, String> formatMap = new HashMap();
@@ -65,6 +70,10 @@ public class DateFormatUtil implements Serializable {
     }
 
 
+    public static DateTimeFormatter getDateFormatter() {
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    }
+
     /**
      *  This function can process some miscellaneous pattern.
      * Params: originLocalTime - LocalTime used to get part of the date.
@@ -89,9 +98,9 @@ public class DateFormatUtil implements Serializable {
                         int date = originLocalTime.getDayOfMonth();
                         targetStr = targetStr.replace("%d", date >= 10 ? String.valueOf(date) : "0" + date);
                         break;
-                    case "%h":
+                    case "%H":
                         int hour = originLocalTime.getHour();
-                        targetStr =  targetStr.replace("%h", hour >= 10 ? String.valueOf(hour) : "0" + hour);
+                        targetStr =  targetStr.replace("%H", hour >= 10 ? String.valueOf(hour) : "0" + hour);
                         break;
                     case "%i":
                         int minute = originLocalTime.getMinute();
@@ -116,7 +125,7 @@ public class DateFormatUtil implements Serializable {
                         targetStr = targetStr.replace("%T", target);
                         break;
                     default:
-                        return targetStr;
+                        break;
                 }
             }
         }
@@ -160,7 +169,7 @@ public class DateFormatUtil implements Serializable {
                 targetDateTime += " 00:00:00";
             }
         }
-        return targetDateTime;
+        return targetDateTime.substring(0, min(19,targetDateTime.length()));
     }
 
     // YYYYMMDD/YYYYMMDDHHmmss => YYYY-MM-DD/YYYY-MM-DD HH:mm:ss
@@ -175,6 +184,77 @@ public class DateFormatUtil implements Serializable {
                 .append(":").append(sourceDateTime, 12, 14).toString();
         } else {
             throw new Exception("Input Date's length not equals 8 or 14");
+        }
+    }
+
+    // time format
+    public static String validAndCompleteDateValue(String type, String time) {
+        if (time.contains("/")) {
+            time = time.replace("/", "-");
+        }
+        switch (type) {
+            case "TIME":
+                // HH:mm:ss
+                String[]  timeParts = time.split(":");
+                int tl = timeParts.length;
+                if (Long.valueOf(timeParts[0]) > 23 || Long.valueOf(timeParts[1]) > 59
+                    || Long.valueOf(timeParts[0]) > 59) {
+                    log.error(time + "is not valid");
+                    return null;
+                }
+                for (int i = 0; i < tl; i++) {
+                    if (timeParts[i].length() == 1) {
+                        timeParts[i] = "0" + timeParts[i];
+                    }
+                }
+                return  String.join(":", timeParts[0], timeParts[1], timeParts[2]);
+            case "DATE":
+                String[] dateParts = time.split("-");
+                // yyyy-mm-dd
+                int dl = dateParts.length;
+                // yyyy range [1000,9999]
+                if (Long.valueOf(dateParts[0]) < 1000) {
+                    log.error("year in " + time + " is not in 1000-9999");
+                    return null;
+                }
+                if (dateParts[1].length() == 1) {
+                    dateParts[1] = "0" + dateParts[1];
+                }
+                if (dateParts[2].length() == 1) {
+                    dateParts[2] = "0" + dateParts[2];
+                }
+                return  String.join("-", dateParts[0], dateParts[1], dateParts[2]).split(" ")[0];
+
+            case "TIMESTAMP":
+                String datePartStr = time.split(" ")[0];
+                dateParts = datePartStr.split("-");
+                dl = dateParts.length;
+                if (Long.valueOf(dateParts[0]) < 1000) {
+                    log.error("year in " + time + " is not in 1000-9999");
+                    return null;
+                }
+                for (int i = 1; i < dl; i++) {
+                    if (dateParts[i].length() == 1) {
+                        dateParts[i] = "0" + dateParts[i];
+                    }
+                }
+                String timePartStr = time.split(" ")[1];
+                String[] timePart = timePartStr.split(":");
+                if (Long.valueOf(timePart[0]) > 23 || Long.valueOf(timePart[1]) > 59
+                    || Long.valueOf(timePart[0]) > 59) {
+                    log.error(time + " is not a valid time");
+                    return null;
+                }
+                tl = timePart.length;
+                for (int i = 0; i < tl; i++) {
+                    if (timePart[i].length() == 1) {
+                        timePart[i] = "0" + timePart[i];
+                    }
+                }
+
+                return String.join(" ", String.join("-",dateParts), String.join(":", timePart));
+            default:
+                return time;
         }
     }
 }
