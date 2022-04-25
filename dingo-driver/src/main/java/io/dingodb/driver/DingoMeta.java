@@ -34,18 +34,10 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.util.TimestampString;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -130,7 +122,7 @@ public class DingoMeta extends MetaImpl {
             );
             checkJobHasFailed(signature);
             return new ExecuteResult(ImmutableList.of(metaResultSet));
-        } catch (SQLException | SqlParseException e) {
+        } catch (Exception e) {
             log.error("Catch execute exception:{}", e.toString(), e);
             throw new RuntimeException(e);
         }

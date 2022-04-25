@@ -16,54 +16,94 @@
 
 package io.dingodb.expr.runtime.op.time.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.Serializable;
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.format.DateTimeParseException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 // Support the format map from mysql to localDate Formatting.
+@Slf4j
 public class DateFormatUtil implements Serializable {
     public static final long serialVersionUID = 4478587765478112418L;
-    public static Map<String, String> formatMap = new HashMap();
-    public static final String POINT = ".";
-    public static final String DASH = "-";
-    public static final String SLASH = "/";
-    public static final int DATE_LENGTH = 8 ;
-    public static final int DATE_TIME_LENGTH = 14;
 
-    public static String javaDefaultDateFormat() {
-        return "y-MM-dd";
+    public static final List<String> DELIMITER_LIST = Stream.of(
+        "",
+        "/",
+        "\\.",
+        "-"
+    ).collect(Collectors.toList());
+
+    public static final List<Pattern> TIME_REX_PATTERN_LIST = Stream.of(
+        Pattern.compile("[0-9]{8}"),
+        Pattern.compile("[0-9]{8}([0-9]{6}){1}"),
+        Pattern.compile("[0-9]+/[0-9]+/[0-9]+"),
+        Pattern.compile("[0-9]+/[0-9]+/[0-9]+(\\ [0-9]+:[0-9]+:[0-9]+){1}"),
+        Pattern.compile("[0-9]+\\.[0-9]+\\.[0-9]+"),
+        Pattern.compile("[0-9]+\\.[0-9]+\\.[0-9]+(\\ [0-9]+:[0-9]+:[0-9]+){1}"),
+        Pattern.compile("[0-9]+-[0-9]+-[0-9]+"),
+        Pattern.compile("[0-9]+-[0-9]+-[0-9]+(\\ [0-9]+:[0-9]+:[0-9]+){1}")
+        ).collect(Collectors.toList());
+
+    public static final List<DateTimeFormatter> DATETIME_FORMATTER_LIST = Stream.of(
+        DateTimeFormatter.ofPattern("yyyyMMddHHmmss"),
+        DateTimeFormatter.ofPattern("y/M/d H:m:s"),
+        DateTimeFormatter.ofPattern("y.M.d H:m:s"),
+        DateTimeFormatter.ofPattern("y-M-d H:m:s")
+    ).collect(Collectors.toList());
+
+    public static final List<DateTimeFormatter> DATE_FORMATTER_LIST = Stream.of(
+        DateTimeFormatter.ofPattern("yyyyMMdd"),
+        DateTimeFormatter.ofPattern("y/M/d"),
+        DateTimeFormatter.ofPattern("y.M.d"),
+        DateTimeFormatter.ofPattern("y-M-d")
+    ).collect(Collectors.toList());
+
+    public static final List<String> FORMAT_LIST = Stream.of(
+        "%Y",
+        "%m",
+        "%d",
+        "%H",
+        "%i",
+        "%S",
+        "%s",
+        "%T"
+    ).collect(Collectors.toList());
+
+    public static String defaultDatetimeFormat() {
+        return "y-MM-dd HH:mm:ss";
+    }
+
+    public static String defaultTimeFormat() {
+        return "HH:mm:ss";
     }
 
     public static String defaultDateFormat() {
         return "%Y-%m-%d";
     }
 
-    // TODO use function object as value.
-    static {
-        // %Y => y
-        formatMap.put("%Y", "y");
-        // %m => M
-        formatMap.put("%m", "MM");
-        // %d => d
-        formatMap.put("%d", "dd");
-        // %H => H
-        formatMap.put("%H", "HH");
-        // %i => m
-        formatMap.put("%i", "mm");
-        // %S => s
-        formatMap.put("%S", "ss");
-        // %s => ss
-        formatMap.put("%s", "ss");
-        // %T => h:m:s
-        formatMap.put("%T", "HH:mm:ss");
+    public static String javaDefaultDateFormat() {
+        return "y-MM-dd";
     }
 
     public static DateTimeFormatter getDatetimeFormatter() {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     }
 
+
+    public static DateTimeFormatter getDateFormatter() {
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    }
 
     /**
      *  This function can process some miscellaneous pattern.
@@ -75,9 +115,9 @@ public class DateFormatUtil implements Serializable {
     public static String processFormatStr(LocalDateTime originLocalTime, String formatStr) {
         // Insert each part into mapForReplace.
         String targetStr = formatStr;
-        for (Map.Entry<String, String> entry: formatMap.entrySet()) {
-            if (formatStr.contains(entry.getKey())) {
-                switch (entry.getKey()) {
+        for (String entry: FORMAT_LIST) {
+            if (formatStr.contains(entry)) {
+                switch (entry) {
                     case "%Y":
                         targetStr = targetStr.replace("%Y", String.valueOf(originLocalTime.getYear()));
                         break;
@@ -89,9 +129,9 @@ public class DateFormatUtil implements Serializable {
                         int date = originLocalTime.getDayOfMonth();
                         targetStr = targetStr.replace("%d", date >= 10 ? String.valueOf(date) : "0" + date);
                         break;
-                    case "%h":
+                    case "%H":
                         int hour = originLocalTime.getHour();
-                        targetStr =  targetStr.replace("%h", hour >= 10 ? String.valueOf(hour) : "0" + hour);
+                        targetStr =  targetStr.replace("%H", hour >= 10 ? String.valueOf(hour) : "0" + hour);
                         break;
                     case "%i":
                         int minute = originLocalTime.getMinute();
@@ -116,66 +156,103 @@ public class DateFormatUtil implements Serializable {
                         targetStr = targetStr.replace("%T", target);
                         break;
                     default:
-                        return targetStr;
+                        break;
                 }
             }
         }
         return targetStr;
     }
 
-    public static String defaultDatetimeFormat() {
-        return "y-MM-dd HH:mm:ss";
-    }
-
-    public static String defaultTimeFormat() {
-        return "HH:mm:ss";
-    }
-
-    public static String completeToDatetimeFormat(String originDateTime) {
-        // Process the YYYYmmDD/YYYYmmDDmmss type date.
-        String targetDateTime = originDateTime;
+    // TODO wait for validate rule for parsing date 2022-04-31.
+    /**
+     * This function convert datetime (string type) into LocalDateTime.
+     * @param originDateTime contains (hh:mm:ss or not)
+     * @return LocalDateTime if success.
+     * @throws SQLException throw SQLException
+     */
+    public static LocalDateTime convertToDatetime(String originDateTime) throws SQLException {
+        // Process the YYYYmmDD/YYYYmmDDmmss pattern date. The LocalDateTime can't parse yyyyMMdd pattern.
+        if (originDateTime.length() > 10 && originDateTime.endsWith(".0")) {
+            originDateTime = originDateTime.substring(0, originDateTime.length() - 2);
+        }
+        int index = 0;
         try {
-            Long v = Long.valueOf(originDateTime);
-            if (Long.valueOf(v) < 0) {
-                System.out.println("Unexpected negative number");
-                return "";
+            LocalDateTime dateTime;
+            for (Pattern pattern : TIME_REX_PATTERN_LIST) {
+                if (pattern.matcher(originDateTime).matches()) {
+                    if ((index & 1) == 1) {
+                        dateTime =  LocalDateTime.parse(originDateTime, DATETIME_FORMATTER_LIST.get(index / 2));
+                    } else {
+                        dateTime = LocalDate.parse(originDateTime, DATE_FORMATTER_LIST.get(index / 2)).atStartOfDay();
+                    }
+                    if (extractDateFromTimeStr(originDateTime, DELIMITER_LIST.get(index / 2))
+                        == dateTime.getDayOfMonth()) {
+                        return dateTime;
+                    }
+                    throw new Exception(originDateTime + " date part is invalid");
+                }
+                index++;
             }
-            targetDateTime = addSplitSymbol(originDateTime);
+            String errorMsg = originDateTime + " does not match any of the datetime pattern yyyyMMdd[HHmmss], "
+                + "yyyy-MM-dd [HH:mm:ss] , yyyy.MM.dd [HH:mm:ss], yyyy/MM/dd [HH:mm:ss]";
+            log.error(errorMsg);
+            throw new Exception(errorMsg);
         } catch (Exception e) {
-            if (!(e instanceof NumberFormatException)) {
-                System.out.println("Exception happened, complete datetime failed.");
+            if (!(e instanceof DateTimeParseException)) {
+                throw new SQLException(e.getMessage() + " ," + originDateTime + " FORMAT " + (((index & 1) == 1)
+                    ? DATETIME_FORMATTER_LIST.get(index / 2) : DATE_FORMATTER_LIST.get(index / 2)));
+            } else {
+                throw new SQLException(e.getMessage(), "");
             }
         }
-        // Process the slash seperated type date.
-        if (targetDateTime.contains((SLASH))) {
-            targetDateTime = targetDateTime.replace(SLASH, DASH);
-        }
-        // Process the point seperated type date.
-        if (targetDateTime.contains(POINT)) {
-            targetDateTime = targetDateTime.replace(POINT, DASH);
-        }
-        // Process the dash type date.
-        if (targetDateTime.contains(DASH)) {
-            if (targetDateTime.split(":").length < 2) {
-                targetDateTime += " 00:00:00";
-            }
-        }
-        return targetDateTime;
     }
 
-    // YYYYMMDD/YYYYMMDDHHmmss => YYYY-MM-DD/YYYY-MM-DD HH:mm:ss
-    public static String addSplitSymbol(String sourceDateTime) throws Exception {
-        if (sourceDateTime.length() == DATE_LENGTH) {
-            return new StringBuilder().append(sourceDateTime, 0, 4).append(DASH)
-                .append(sourceDateTime,4,6).append(DASH).append(sourceDateTime, 6, 8).toString();
-        } else if (sourceDateTime.length() == DATE_TIME_LENGTH) {
-            return new StringBuilder().append(sourceDateTime, 0, 4).append(DASH)
-                .append(sourceDateTime,4,6).append(DASH).append(sourceDateTime, 6, 8).append(" ")
-                .append(sourceDateTime, 8, 10).append(":").append(sourceDateTime, 10, 12)
-                .append(":").append(sourceDateTime, 12, 14).toString();
-        } else {
-            throw new Exception("Input Date's length not equals 8 or 14");
+    // TODO wait for validate rule for parsing date 2022-04-31.
+    /**
+     *  This function convert date (string type) into LocalDate.
+     * @param originDate does not contain (HH:mm:ss)
+     * @return LocalDate return localDate
+     * @throws SQLException throw Exception
+     */
+    public static LocalDate convertToDate(String originDate) throws SQLException {
+        int index = 0;
+        try {
+            LocalDate localDate;
+            for (Pattern pattern : TIME_REX_PATTERN_LIST) {
+                if (pattern.matcher(originDate).matches()) {
+                    localDate =  LocalDate.parse(originDate, DATE_FORMATTER_LIST.get(index / 2));
+                    if (extractDateFromTimeStr(originDate, DELIMITER_LIST.get(index / 2))
+                        == localDate.getDayOfMonth()) {
+                        return localDate;
+                    }
+                    throw new Exception(originDate + " date part is invalid");
+                }
+
+                index++;
+            }
+            String errorMsg = originDate + " does not match any of the datetime pattern yyyyMMdd, "
+                + "yyyy-MM-dd , yyyy.MM.dd, yyyy/MM/dd";
+            log.error(errorMsg);
+            throw new Exception(errorMsg);
+        } catch (Exception e) {
+            if (!(e instanceof DateTimeParseException)) {
+                throw new SQLException(e.getMessage() + " ," + originDate + " FORMAT "
+                    + DATETIME_FORMATTER_LIST.get(index / 2));
+            } else {
+                throw new SQLException(e.getMessage(), "");
+            }
         }
+    }
+
+
+    /**
+     * Extract the date from originTimeStr.
+     * @param originTimeStr time String
+     * @return int
+     */
+    static int extractDateFromTimeStr(String originTimeStr, String delimiter) {
+        return ((delimiter.equals("")) ? Integer.valueOf(originTimeStr.substring(6,8))
+            : Integer.valueOf(originTimeStr.split(" ")[0].split(delimiter)[2]));
     }
 }
 

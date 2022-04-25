@@ -17,6 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.type;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DecimalEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DoubleEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
@@ -26,14 +27,22 @@ import io.dingodb.expr.runtime.evaluator.base.IntegerEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.LongEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.exception.FailParseTime;
+import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import javax.annotation.Nonnull;
+
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -201,5 +210,29 @@ final class TypeEvaluators {
         } catch (ParseException e) {
             throw new FailParseTime(str, fmt);
         }
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestamp(String str) {
+        LocalDateTime datetime;
+        try {
+            datetime = DateFormatUtil.convertToDatetime(str);
+        } catch (SQLException e) {
+            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+        }
+        return Timestamp.valueOf(datetime);
+    }
+
+    @Nonnull
+    @Evaluators.Base(DateEvaluator.class)
+    static java.sql.Date date(String str) {
+        LocalDate date;
+        try {
+            date = DateFormatUtil.convertToDate(str);
+        } catch (SQLException e) {
+            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+        }
+        return new java.sql.Date(date.toEpochDay() * 24 * 60 * 60 * 1000);
     }
 }
