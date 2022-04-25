@@ -19,6 +19,7 @@ package io.dingodb.expr.runtime.op.time;
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
@@ -26,6 +27,7 @@ import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -55,13 +57,16 @@ public class DingoDateDiffOp extends RtFun {
     }
 
     public static Long dateDiff(String inputStr1, String inputStr2) {
-        LocalDate fromDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(inputStr1),
-            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
-        LocalDate toDate = LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(inputStr2),
-            DateFormatUtil.getDatetimeFormatter()).toLocalDate();
-
-        return (fromDate.atStartOfDay().atZone(ZoneId.systemDefault()).toEpochSecond()
-            - toDate.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()) /  (24 * 60 * 60);
+        LocalDate fromDate;
+        LocalDate toDate;
+        try {
+            fromDate = DateFormatUtil.convertToDatetime(inputStr1).toLocalDate();
+            toDate = DateFormatUtil.convertToDatetime(inputStr2).toLocalDate();
+        } catch (SQLException e) {
+            log.error(e.getMessage());
+            throw new FailParseTime(e.getMessage(), "");
+        }
+        return fromDate.toEpochDay() - toDate.toEpochDay();
     }
 
     @AutoService(DingoFuncProvider.class)
