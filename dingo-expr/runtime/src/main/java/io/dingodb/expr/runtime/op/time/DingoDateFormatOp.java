@@ -19,6 +19,7 @@ package io.dingodb.expr.runtime.op.time;
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
@@ -26,6 +27,7 @@ import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -58,9 +60,14 @@ public class DingoDateFormatOp extends RtFun {
 
     // Todo this place only checks the type thing. so we just return ""
     public static String dateFormat(final String dateTime, final String formatStr) {
-        LocalDateTime originLocalDateTime =
-            LocalDateTime.parse(DateFormatUtil.completeToDatetimeFormat(dateTime),
-                DateFormatUtil.getDatetimeFormatter());
+        LocalDateTime originLocalDateTime;
+        try {
+            originLocalDateTime =
+                DateFormatUtil.convertToDatetime(dateTime);
+        } catch (SQLException e) {
+            log.error(e.getMessage());
+            throw new FailParseTime(e.getMessage(), "");
+        }
         if (formatStr.equals(DateFormatUtil.defaultTimeFormat())) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
             return originLocalDateTime.format(formatter);
