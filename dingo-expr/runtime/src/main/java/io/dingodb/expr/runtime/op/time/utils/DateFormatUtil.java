@@ -24,13 +24,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 
 // Support the format map from mysql to localDate Formatting.
 @Slf4j
@@ -43,6 +41,8 @@ public class DateFormatUtil implements Serializable {
         "\\.",
         "-"
     ).collect(Collectors.toList());
+
+    public static final Pattern DATE_TIME_PATTERN = Pattern.compile("([0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2})");
 
     public static final List<Pattern> TIME_REX_PATTERN_LIST = Stream.of(
         Pattern.compile("[0-9]{8}"),
@@ -172,8 +172,11 @@ public class DateFormatUtil implements Serializable {
      */
     public static LocalDateTime convertToDatetime(String originDateTime) throws SQLException {
         // Process the YYYYmmDD/YYYYmmDDmmss pattern date. The LocalDateTime can't parse yyyyMMdd pattern.
-        if (originDateTime.length() > 10 && originDateTime.endsWith(".0")) {
-            originDateTime = originDateTime.substring(0, originDateTime.length() - 2);
+
+        Matcher m = DATE_TIME_PATTERN.matcher(originDateTime);
+        // Only get the first result in the group.
+        if (m.find()) {
+            originDateTime = originDateTime.split(" ")[0] + " " + m.group();
         }
         int index = 0;
         try {

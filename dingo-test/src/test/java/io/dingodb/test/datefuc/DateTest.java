@@ -42,6 +42,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -640,6 +641,52 @@ public class DateTest {
         }
     }
 
+    // Result like: -30
+    @Test
+    public void testDateDiffOtherFormat2() throws SQLException {
+        String sql = "select datediff('2022-12-31',Current_Timestamp()) as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    Long delta = LocalDate.of(2022, 12, 31).toEpochDay() - LocalDate.now().toEpochDay();
+                    assertThat(rs.getString(1)).isEqualTo(String.valueOf(delta.intValue()));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiffOtherFormat3() throws SQLException {
+        String sql = "select datediff('2022-12-31',now()) as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    Long delta = LocalDate.of(2022, 12, 31).toEpochDay() - LocalDate.now().toEpochDay();
+                    assertThat(rs.getString(1)).isEqualTo(String.valueOf(delta.intValue()));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiffOtherFormat4() throws SQLException {
+        String sql = "select datediff('2022-12-31',Current_Timestamp) as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    Long delta = LocalDate.of(2022, 12, 31).toEpochDay() - LocalDate.now().toEpochDay();
+                    assertThat(rs.getString(1)).isEqualTo(String.valueOf(delta.intValue()));
+                }
+            }
+        }
+    }
+
     @Test
     public void testFullScan() throws SQLException {
         String sql = "select date_column, timestamp_column, datetime_column from test3";
@@ -1231,5 +1278,35 @@ public class DateTest {
             DateTimeFormatter.ofPattern("y-M-d H:m:s")
         ).collect(Collectors.toList());
         System.out.println(datetimes.get(0));
+    }
+
+    @Test
+    @Disabled
+    void testTimePart() throws SQLException {
+        Pattern timePartPattern = Pattern.compile("([0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2})");
+        String dt0 = "16:52:17.1756, 16:54:17.1756";
+
+        System.out.println("Result: ");
+        Matcher m = timePartPattern.matcher(dt0);
+        if (m.find()) {
+            System.out.println(m.group());
+        }
+        while (m.find()) {
+            System.out.println(m.group());
+        }
+
+        String dt1 = "2022-04-27 16:53:17.175";
+        System.out.println("Result :");
+        m = timePartPattern.matcher(dt1);
+        while (m.find()) {
+            System.out.println(m.group());
+        }
+
+        String dt2 = "2022-04-27 16:54:17.17";
+        System.out.println("Result :");
+        m = timePartPattern.matcher(dt2);
+        while (m.find()) {
+            System.out.println(m.group());
+        }
     }
 }
