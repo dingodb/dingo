@@ -21,12 +21,16 @@ import io.dingodb.common.util.StackTraces;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 
 @Slf4j
@@ -35,33 +39,68 @@ public class BasicTypeWithTimeTest {
         = "1, Alice, 00:00:01\n"
         + "2, Betty, 00:01:02\n";
     private static SqlHelper sqlHelper;
+    private static Connection connection;
 
     @BeforeAll
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
+        connection = (sqlHelper = new SqlHelper()).getConnection();
         sqlHelper.execFile("/table-test-create-with-time.sql");
     }
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
         sqlHelper.cleanUp();
+        connection.close();
     }
 
     @BeforeEach
     public void setup() throws Exception {
+        sqlHelper.execFile("/table-test-data-with-time.sql");
     }
 
     @AfterEach
     public void cleanUp() throws Exception {
+        sqlHelper.clearTable("test");
     }
 
     @Test
     public void testScan() throws SQLException, IOException {
-        sqlHelper.execFile("/table-test-data-with-time.sql");
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
             TupleSchema.ofTypes("INTEGER", "STRING", "TIME"),
             TEST_ALL_DATA
         );
+    }
+
+    @Test
+    public void testScanTableWithConcatConst() throws SQLException, IOException {
+        String prefix = "test-";
+        String sql = "select '" + prefix + "' || birth from test where id = 1";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(">>" + rs.getString(1));
+                    Assertions.assertEquals(rs.getString(1), prefix + "00:00:01");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testScanTableWithConcatColumns() throws SQLException, IOException {
+        String sql = "select id || name || birth from test where id = 1";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(">>" + rs.getString(1));
+                    String realResult = rs.getString(1);
+                    String expectedResult = "1Alice00:00:01";
+                    Assertions.assertEquals(realResult, expectedResult);
+                }
+            }
+        }
     }
 }
