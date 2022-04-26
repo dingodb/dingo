@@ -29,6 +29,7 @@ import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import io.dingodb.expr.runtime.evaluator.utils.Time2StringUtils;
 import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 
@@ -39,7 +40,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Date;
 import javax.annotation.Nonnull;
 
@@ -167,6 +167,38 @@ final class TypeEvaluators {
 
     @Evaluators.Base(StringEvaluator.class)
     static String stringType(@Nonnull Object value) {
+        if (value instanceof java.sql.Time) {
+            return Time2StringUtils.convertTime2String((java.sql.Time) value);
+        } else if (value instanceof java.sql.Timestamp) {
+            return Time2StringUtils.convertTimeStamp2String((java.sql.Timestamp) value, "yyyy-MM-dd HH:mm:ss");
+        } else if (value instanceof Long) {
+            return stringType((Long) value);
+        } else {
+            return value.toString();
+        }
+    }
+
+    @Evaluators.Base(StringEvaluator.class)
+    static String stringType(@Nonnull Long value) {
+        int exepectMSLen = String.valueOf(System.currentTimeMillis()).length();
+        int inputValueLen = String.valueOf(value).length();
+        if (inputValueLen == exepectMSLen || inputValueLen == exepectMSLen - 3) {
+            Long timeStampWithSeconds = (inputValueLen == exepectMSLen) ? value / 1000 : value;
+
+            /**
+             * very trick mode: to check current timestamp is date or timestamp.
+             */
+            if (timeStampWithSeconds % (24 * 60 * 60L) != 0) {
+                Timestamp timestamp = new Timestamp(timeStampWithSeconds);
+                return Time2StringUtils.convertTimeStamp2String(timestamp, "yyyy-MM-dd HH:mm:ss");
+            } else {
+                java.sql.Date dateValue = new java.sql.Date(timeStampWithSeconds * 1000);
+                return Time2StringUtils.convertDate2String(dateValue);
+            }
+        } else if (inputValueLen < exepectMSLen - 3) {
+            java.sql.Time time = new java.sql.Time(value);
+            return Time2StringUtils.convertTime2String(time);
+        }
         return value.toString();
     }
 
