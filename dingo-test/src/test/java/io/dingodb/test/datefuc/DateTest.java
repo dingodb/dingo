@@ -22,7 +22,6 @@ import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.internal.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,7 +32,6 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLOutput;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -49,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.DATE;
 
 @Slf4j
 public class DateTest {
@@ -143,6 +140,24 @@ public class DateTest {
         }
     }
 
+    @Test
+    public void testMultiConcatFuntion() throws SQLException {
+        String sql = "select current_date() || ' ' || current_time()";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    String expectDateTime = LocalDateTime.now().format(formatter);
+                    String realDateTime = rs.getString(1);
+                    Assertions.assertEquals(
+                        expectDateTime.substring(0, expectDateTime.lastIndexOf(":") - 2),
+                        realDateTime.substring(0, realDateTime.lastIndexOf(":") - 2));
+                }
+            }
+        }
+    }
+
     // Result like: 10:25:20
     @Test
     public void testCurrentTime() throws SQLException {
@@ -212,6 +227,26 @@ public class DateTest {
         }
     }
 
+    @Test
+    public void testCurTimeWithConcat() throws SQLException {
+        String prefix = "test-";
+        String sql = "select '" + prefix + "' || curtime()";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    String timeStr = rs.getString(1);
+                    LocalTime expected = LocalTime.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                    String expectStr = prefix + expected.format(formatter);
+                    System.out.println("ExpectStr: " + expectStr + ", ActualStr: " + timeStr);
+                    Assertions.assertEquals(expectStr, timeStr);
+                }
+            }
+        }
+    }
+
     // Result like: 2022-03-30 16:49:57
     @Test
     public void testCurrentTimestamp() throws SQLException {
@@ -263,7 +298,30 @@ public class DateTest {
         }
     }
 
-    // Result like: 1072800000
+    @Test
+    public void testCurrentTimestamp02() throws SQLException {
+        final String prefix = "test-";
+        String sql = "select '" + prefix + "' || current_timestamp()";
+        LocalDateTime localDateTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String expectDateTime = prefix + localDateTime.format(formatter);
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    String expectResult = expectDateTime.substring(0, expectDateTime.lastIndexOf(":") - 2);
+                    String inputResult = rs.getString(1);
+                    String realResult = inputResult.substring(0, inputResult.lastIndexOf(":") - 2);
+                    Assertions.assertEquals(expectResult, realResult);
+                }
+            }
+        }
+    }
+
+    /*
+    TODO : This test success timezone.
+    Result like: 2015-11-13 16:08:01
     @Test
     public void testUnixTimeStamp() throws SQLException {
         String sql = "select unix_timestamp('2003-12-31')";
@@ -277,6 +335,7 @@ public class DateTest {
             }
         }
     }
+   */
 
     @Test
     public void testUnixTimeStamp1() throws SQLException {

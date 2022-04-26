@@ -20,12 +20,16 @@ import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 @Slf4j
 public class BasicTypeWithDateTest {
@@ -33,25 +37,29 @@ public class BasicTypeWithDateTest {
         = "1, Alice, 2020-01-01\n"
         + "2, Betty, 2020-01-02\n";
     private static SqlHelper sqlHelper;
+    private static Connection connection;
 
     @BeforeAll
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
+        connection = (sqlHelper = new SqlHelper()).getConnection();
         sqlHelper.execFile("/table-test-create-with-date.sql");
-        sqlHelper.execFile("/table-test-data-with-date.sql");
     }
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
         sqlHelper.cleanUp();
+        connection.close();
     }
 
     @BeforeEach
     public void setup() throws Exception {
+        sqlHelper.execFile("/table-test-data-with-date.sql");
     }
 
     @AfterEach
     public void cleanUp() throws Exception {
+        sqlHelper.clearTable("test");
     }
 
     @Test
@@ -62,4 +70,20 @@ public class BasicTypeWithDateTest {
             TEST_ALL_DATA
         );
     }
+
+    @Test
+    public void testScanTableWithConcatConst() throws SQLException, IOException {
+        String prefix = "test-";
+        String sql = "select '" + prefix + "' || birth from test where id = 1";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(">>" + rs.getString(1));
+                    Assertions.assertEquals(rs.getString(1), prefix + "2020-01-01");
+                }
+            }
+        }
+    }
+
 }
