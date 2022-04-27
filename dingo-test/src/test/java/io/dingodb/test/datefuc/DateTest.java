@@ -496,6 +496,51 @@ public class DateTest {
     @Test
     public void testDateDiff1() throws SQLException {
         String sql = "select datediff('2022-04-14 15:17:58', '2022-05-31 00:01:01') as diffDate";
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-47");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiff2() throws SQLException {
+        String sql = "select datediff('2022-04-14 15:17:58', '2022-05-31 00:01:01') as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-47");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiff3() throws SQLException {
+        String sql = "select datediff('2022-04-30 15:17:58', '2022-05-31 00:01:01') as diffDate";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("-31");
+                }
+            }
+        }
+    }
+
+    // bad case
+    @Test
+    @Disabled
+    public void testDateDiff4() throws SQLException {
+        String sql = "select datediff('2022-04-30', '2022-05-01') as diffDate";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
@@ -902,7 +947,97 @@ public class DateTest {
             }
         }
     }
+  
+    @Test
+    void testCastWithDateFormat() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30' AS DATE), '%Y year, %m month')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    assertThat(resultSet.getString(1)).isEqualTo("2020 year, 11 month");
+                }
+            }
+        }
+    }
 
+
+    @Test
+    void testCastWithDate1Format() throws SQLException {
+        String castSQL = "SELECT DATE_FORMAT(CAST('2020/11/3' AS DATE), '%Y year, %m month %d day')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    assertThat(resultSet.getString(1)).isEqualTo("2020 year, 11 month 03 day");
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDate1Format2() throws SQLException {
+        String castSQL = "select date_format('2022-04-1', '%Y-%m-%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    assertThat(resultSet.getString(1)).isEqualTo("2022-04-01");
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDate1Format3() throws SQLException {
+        String castSQL = "select date_format('2022-04-13 10:37:26', '%m month and %d day of Year %Y, %H hour %i "
+            + "minutes and %S seconds')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    assertThat(resultSet.getString(1)).isEqualTo("04 month and 13 day of Year 2022, "
+                        + "10 hour 37 minutes and 26 seconds");
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCastWithDate1Format4() throws SQLException {
+        String castSQL = "select date_format('2022-04-13 10:37:26', '%Ss')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
+                System.out.println("Result: ");
+                while (resultSet.next()) {
+                    System.out.println(resultSet.getString(1));
+                    assertThat(resultSet.getString(1)).isEqualTo("26s");
+                }
+            }
+        }
+    }
+
+    // Check Cast function. checked.
+    @Test
+    @Disabled
+    void testTimeTypeInsert() throws SQLException {
+        String createTableSQL = "create table timetest0(id int, create_time time,"
+            + " primary key (id))";
+        String insertSql = "insert into timetest0 values(11, '04:70:02')";
+
+        try (Statement statement = connection.createStatement()) {
+            Boolean t = statement.execute(createTableSQL);
+            System.out.println("testDateTypeInsert result: ");
+            System.out.println(t);
+            int count = statement.executeUpdate(insertSql);
+            assertThat(count).isEqualTo(1);
+        }
+        String selectSql = "SELECT * from timetest0";
+      
     @Test
     void testCastWithDateFormat() throws SQLException {
         String castSQL = "SELECT DATE_FORMAT(CAST('2020.11.30' AS DATE), '%Y year, %m month')";
@@ -1220,7 +1355,6 @@ public class DateTest {
         ).collect(Collectors.toList());
         System.out.println(datetimes.get(0));
     }
-
 
     @Test
     @Disabled
