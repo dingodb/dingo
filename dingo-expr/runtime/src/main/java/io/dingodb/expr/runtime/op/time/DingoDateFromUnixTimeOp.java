@@ -50,7 +50,7 @@ public class DingoDateFromUnixTimeOp extends RtFun {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String timeStr = String.valueOf(values[0]);
-        if (timeStr == null || timeStr.length() < 9) {
+        if (timeStr == null) {
             throw new IllegalArgumentException("incorrect value of unix_timestamp for from_unixtime function");
         }
 
