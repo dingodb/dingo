@@ -40,6 +40,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -320,11 +321,8 @@ public class DateTest {
         }
     }
 
-    /*
-    TODO : This test success timezone.
-    Result like: 2015-11-13 16:08:01
     @Test
-    public void testUnixTimeStamp() throws SQLException {
+    public void testUnixTimeStamp01() throws SQLException {
         String sql = "select unix_timestamp('2003-12-31')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
@@ -336,10 +334,10 @@ public class DateTest {
             }
         }
     }
-   */
+
 
     @Test
-    public void testUnixTimeStamp1() throws SQLException {
+    public void testUnixTimeStamp02() throws SQLException {
         String sql = "select unix_timestamp('2022/4/21')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
@@ -347,6 +345,54 @@ public class DateTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(1650470400);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUnixTimeStamp03() throws SQLException {
+        String sql = "select unix_timestamp(current_date())";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                LocalDate date = LocalDate.now();
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(date.atStartOfDay().toInstant(
+                        ZoneOffset.ofHours(8)).toEpochMilli() / 1000);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUnixTimeStamp04() throws SQLException {
+        String sql = "select unix_timestamp(curdate())";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                LocalDate date = LocalDate.now();
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(date.atStartOfDay().toInstant(
+                        ZoneOffset.ofHours(8)).toEpochMilli() / 1000);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUnixTimeStamp05() throws SQLException {
+        String sql = "select unix_timestamp(curdate())";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                LocalDate date = LocalDate.now();
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(date.atStartOfDay().toInstant(
+                        ZoneOffset.ofHours(8)).toEpochMilli() / 1000);
                 }
             }
         }
