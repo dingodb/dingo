@@ -85,6 +85,9 @@ public final class ReceiveOperator extends SourceOperator {
         endpoint = new ReceiveEndpoint(host, port, tag);
         endpoint.init();
         endpoint.sendControlMessage(ControlStatus.READY);
+        if (log.isDebugEnabled()) {
+            log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
+        }
     }
 
     @Override
@@ -157,6 +160,8 @@ public final class ReceiveOperator extends SourceOperator {
                 }
                 QueueUtil.forcePut(tupleQueue, tuple);
             } catch (IOException e) {
+                log.error("ReceiveMessageListener ({}:{} tag = {}) catch exception:{}",
+                    host, port, tag, e.toString(), e);
                 throw new RuntimeException(e);
             }
         }
