@@ -80,9 +80,7 @@ public final class Services {
     }
 
     public static void initNetService() {
-        NET.registerTagMessageListener(SimpleTag.CTRL_TAG, (message, channel) -> {
-            EndpointManager.INSTANCE.onControlMessage(message);
-        });
+        initControlMsgService();
         NET.registerTagMessageListener(SimpleTag.TASK_TAG, (message, channel) -> {
             String taskStr = new String(message.toBytes(), StandardCharsets.UTF_8);
             if (log.isInfoEnabled()) {
@@ -97,6 +95,12 @@ public final class Services {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Cannot deserialize received task.", e);
             }
+        });
+    }
+
+    public static void initControlMsgService() {
+        NET.registerTagMessageListener(SimpleTag.CTRL_TAG, (message, channel) -> {
+            EndpointManager.INSTANCE.onControlMessage(message);
         });
     }
 

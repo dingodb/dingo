@@ -118,6 +118,40 @@ public class QueryAggTest {
     }
 
     @Test
+    public void testMultiCountWithGroupBy() throws SQLException {
+        String sql = "select name, count(distinct id), count(distinct name) from test group by name";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"name", "expr$1", "expr$2"},
+            TupleSchema.ofTypes("STRING", "LONG", "LONG"),
+            "Alice, 3, 1\n"
+                + "Betty, 2, 1\n"
+                + "Cindy, 2, 1\n"
+                + "Doris, 1, 1\n"
+                + "Emily, 1, 1\n");
+    }
+
+    @Test
+    public void testMultiCountWithDiffColumns() throws SQLException {
+        String sql = "select count(distinct id), count(distinct name) from test";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"expr$0", "expr$1"},
+            TupleSchema.ofTypes("LONG", "LONG"),
+            "9, 5\n");
+    }
+
+    @Test
+    public void testMulAggWithCountMax() throws SQLException {
+        String sql = "select count(distinct name), max(id) from test";
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"expr$0", "expr$1"},
+            TupleSchema.ofTypes("LONG", "INTEGER"),
+            "5, 9\n");
+    }
+
+    @Test
     public void testCount2() throws SQLException {
         String sql = "select count(*) from test group by name";
         sqlHelper.queryTest(

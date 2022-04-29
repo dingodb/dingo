@@ -757,7 +757,6 @@ public class TestRexConverter {
         Assert.assrt(localDateTime.getMonth() == nowTime.getMonth());
         Assert.assrt(localDateTime.getDayOfMonth() == nowTime.getDayOfMonth());
         Assert.assrt(localDateTime.getHour() == nowTime.getHour());
-        // Assert.assrt(localDateTime.getMinute() == nowTime.getMinute());
     }
 
     @Test

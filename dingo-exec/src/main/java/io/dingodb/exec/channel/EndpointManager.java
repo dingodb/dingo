@@ -41,6 +41,7 @@ public final class EndpointManager {
         try {
             msg = ControlMessage.fromMessage(message);
         } catch (JsonProcessingException e) {
+            log.error("Failed to parse control message", e.toString(), e);
             throw new RuntimeException("Deserializing control message failed.");
         }
         String tag = msg.getTag();

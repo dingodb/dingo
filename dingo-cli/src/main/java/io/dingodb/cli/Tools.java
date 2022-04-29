@@ -79,13 +79,14 @@ public class Tools {
                 log.info("Listen exchange port {}.", listenRandomPort(netService));
                 DingoSqlline sqlline = new DingoSqlline();
                 sqlline.connect();
+                Services.initControlMsgService();
                 SqlLine.Status status = sqlline.begin(new String[0], null, true);
                 if (!Boolean.getBoolean("sqlline.system.exit")) {
                     System.exit(status.ordinal());
                 }
                 break;
             case "DRIVER":
-                Services.initNetService();
+                Services.initControlMsgService();
                 netService.listenPort(port);
                 DingoConfiguration.instance().setPort(port);
                 DriverProxyService driverProxyService = new DriverProxyService();

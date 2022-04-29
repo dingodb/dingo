@@ -59,9 +59,15 @@ public class SendEndpoint {
                 try {
                     wait();
                 } catch (InterruptedException e) {
+                    log.warn("Catch (tag = {}) Interrupted while waiting for channel to be ready.", tag);
                     continue;
                 }
-                break;
+                status = EndpointManager.INSTANCE.getStatus(tag);
+                if (status == ControlStatus.READY) {
+                    log.info("ReCheck Status of Instance:{}:{} (tag = {}) Status = {}.",
+                        host, port, tag, status);
+                    break;
+                }
             }
         }
     }

@@ -46,6 +46,8 @@ public class ReceiveEndpoint {
         try {
             content = ControlMessage.of(tag, status).toBytes();
         } catch (JsonProcessingException e) {
+            log.error("Failed to serialize control message: host:{} port:{} tag:{}, status:{}",
+                host, port, tag, status, e);
             throw new RuntimeException("Serialize control message failed.");
         }
         channel.send(
