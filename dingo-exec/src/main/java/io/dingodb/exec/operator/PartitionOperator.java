@@ -43,7 +43,7 @@ public final class PartitionOperator extends FanOutOperator {
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
     @JsonProperty("partIndices")
-    private Map<Object, Integer> partIndices;
+    private Map<String, Integer> partIndices;
 
     @JsonCreator
     public PartitionOperator(
@@ -58,7 +58,7 @@ public final class PartitionOperator extends FanOutOperator {
     @Override
     protected int calcOutputIndex(int pin, @Nonnull Object[] tuple) {
         Object partId = strategy.calcPartId(tuple, keyMapping);
-        return partIndices.get(partId);
+        return partIndices.get(partId.toString());
     }
 
     public void createOutputs(@Nonnull NavigableMap<ComparableByteArray, Part> partLocations) {
@@ -73,7 +73,7 @@ public final class PartitionOperator extends FanOutOperator {
             hint.setPartId(partId);
             output.setHint(hint);
             outputs.add(output);
-            partIndices.put(partId, outputs.size() - 1);
+            partIndices.put(partId.toString(), outputs.size() - 1);
         }
     }
 }
