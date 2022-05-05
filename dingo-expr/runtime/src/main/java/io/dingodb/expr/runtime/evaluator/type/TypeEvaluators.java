@@ -34,13 +34,14 @@ import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.LocalTime;
 import javax.annotation.Nonnull;
 
 
@@ -219,36 +220,15 @@ final class TypeEvaluators {
 
     @Nonnull
     @Evaluators.Base(TimeEvaluator.class)
-    static java.sql.Date time() {
-        return new java.sql.Date(System.currentTimeMillis());
-    }
-
-    @Nonnull
-    @Evaluators.Base(TimeEvaluator.class)
-    static Date time(long timestamp) {
-        return new Date(timestamp);
-    }
-
-    @Nonnull
-    @Evaluators.Base(TimeEvaluator.class)
-    static Date time(String str) {
-        return time(str, "yyyy-MM-dd HH:mm:ss.SSS");
-    }
-
-    @Nonnull
-    @Evaluators.Base(TimeEvaluator.class)
-    static Date time(String str, String fmt) {
-        SimpleDateFormat sdf = new SimpleDateFormat(fmt);
-        try {
-            return sdf.parse(str);
-        } catch (ParseException e) {
-            throw new FailParseTime(str, fmt);
-        }
+    static Time timeType(String str) {
+        LocalTime time = LocalTime.parse(str);
+        return new Time(((time.getHour() * 60 + time.getMinute()) * 60 + time.getSecond()) * 1000
+            + time.getNano() / 1000000);
     }
 
     @Nonnull
     @Evaluators.Base(TimestampEvaluator.class)
-    static Timestamp timestamp(String str) {
+    static Timestamp timestampType(String str) {
         LocalDateTime datetime;
         try {
             datetime = DateFormatUtil.convertToDatetime(str);
@@ -260,13 +240,13 @@ final class TypeEvaluators {
 
     @Nonnull
     @Evaluators.Base(DateEvaluator.class)
-    static java.sql.Date date(String str) {
+    static Date dateType(String str) {
         LocalDate date;
         try {
             date = DateFormatUtil.convertToDate(str);
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        return new java.sql.Date(date.toEpochDay() * 24 * 60 * 60 * 1000);
+        return new Date(date.toEpochDay() * 24 * 60 * 60 * 1000);
     }
 }

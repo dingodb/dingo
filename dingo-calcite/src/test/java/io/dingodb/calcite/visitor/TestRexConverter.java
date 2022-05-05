@@ -36,18 +36,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.text.ParseException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
-import java.util.TimeZone;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Slf4j
@@ -128,7 +124,7 @@ public class TestRexConverter {
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
         String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals("ing"));
+        assertThat(realResult).isEqualTo("ing");
     }
 
     @Test
@@ -409,7 +405,7 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(rtExpr.eval(null).equals("BC"));
+        assertThat(rtExpr.eval(null)).isEqualTo("BC");
     }
 
     @Test
@@ -688,7 +684,7 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(rtExpr.eval(null).equals("100.2"));
+        assertThat(rtExpr.eval(null)).isEqualTo("100.2");
     }
 
     @Test

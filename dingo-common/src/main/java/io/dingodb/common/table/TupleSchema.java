@@ -126,10 +126,10 @@ public class TupleSchema implements CompileContext {
         return result;
     }
 
-    public Object[] convert(@Nonnull Object[] row) {
-        Object[] result = new Object[row.length];
-        for (int i = 0; i < row.length; ++i) {
-            result[i] = elementSchemas[i].convert(row[i]);
+    public Object[] convert(@Nonnull Object[] tuple) {
+        Object[] result = new Object[tuple.length];
+        for (int i = 0; i < tuple.length; ++i) {
+            result[i] = elementSchemas[i].convert(tuple[i]);
         }
         return result;
     }

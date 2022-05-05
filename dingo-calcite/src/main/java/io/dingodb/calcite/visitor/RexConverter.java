@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor;
 
-import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.DataUtils;
 import io.dingodb.common.table.ElementSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.parser.DingoExprParser;
@@ -204,7 +204,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Nonnull
     @Override
     public Expr visitLiteral(@Nonnull RexLiteral literal) {
-        Object value = DingoValues.getValueOf(literal);
+        Object value = DataUtils.fromRexLiteral(literal);
         // `null` is implemented by Var in dingo-expr.
         return value != null ? Value.of(value) : Null.INSTANCE;
     }

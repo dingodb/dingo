@@ -39,6 +39,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
@@ -47,6 +48,8 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.List;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
@@ -259,6 +262,21 @@ public class TestPhysicalPlan {
     }
 
     @Test
+    public void testInsertValues1() throws SqlParseException {
+        String sql = "insert into test values(1, 'Alice', 1.0), (2, 'Betty', 1.0 + 1.0)";
+        RelNode relNode = parse(sql);
+        Values values = (Values) Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
+            .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
+            .getInstance();
+        List<? extends List<RexLiteral>> tuples = values.getTuples();
+        assertThat(tuples).size().isEqualTo(2);
+        assertThat(DataUtils.fromRexLiteral(tuples.get(1).get(2))).isEqualTo(BigDecimal.valueOf(2));
+    }
+
+    @Test
     public void testUpdate() throws SqlParseException {
         String sql = "update test set amount = amount + 2.0 where id = 1";
         RelNode relNode = parse(sql);
@@ -455,5 +473,38 @@ public class TestPhysicalPlan {
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM0, SqlKind.COUNT, SqlKind.SUM);
         assertAgg.singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
+    }
+
+    @Test
+    public void testValuesReduce() throws Exception {
+        String sql = "select a - b from (values (1, 2), (3, 5), (7, 11)) as t (a, b) where a + b > 4";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).isA(DingoValues.class);
+        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{-2}, new Object[]{-4});
+    }
+
+    @Test
+    public void testInsertDateValues() throws Exception {
+        String sql = "insert into `table-with-date`"
+            + " values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";
+        RelNode relNode = parse(sql);
+        RelOptNode values = Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
+            .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
+            .getInstance();
+        assertThat(((DingoDistributedValues) values).getValues()).containsExactly(
+            new Object[]{1, "Peso", new Date(0L)},
+            new Object[]{2, "Alice", new Date(24L * 60 * 60 * 1000)}
+        );
+    }
+
+    @Test
+    public void testDateValues() throws Exception {
+        String sql = "select cast(a as date) from (values('1970-1-1')) as t (a)";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).isA(DingoValues.class);
+        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{new Date(0L)});
     }
 }

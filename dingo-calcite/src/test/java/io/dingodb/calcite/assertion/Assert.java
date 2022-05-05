@@ -22,6 +22,7 @@ import io.dingodb.exec.base.Task;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.sql.SqlNode;
+import org.assertj.core.api.ObjectAssert;
 
 import javax.annotation.Nonnull;
 
@@ -74,6 +75,10 @@ public class Assert<T, A extends Assert<T, A>> {
     public A prop(String name, Object value) {
         assertThat(instance).hasFieldOrPropertyWithValue(name, value);
         return cast();
+    }
+
+    public ObjectAssert<T> that() {
+        return assertThat(instance);
     }
 
     @SuppressWarnings("unchecked")

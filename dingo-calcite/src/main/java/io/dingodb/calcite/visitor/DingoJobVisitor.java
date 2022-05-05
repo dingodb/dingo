@@ -32,6 +32,7 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -192,6 +193,47 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             .collect(Collectors.toList());
     }
 
+    @Nonnull
+    private List<Output> coalesceInputsByTask(@Nonnull Collection<Output> inputs) {
+        // Coalesce inputs from the same task. taskId --> list of inputs
+        Map<Id, List<Output>> inputsMap = new HashMap<>();
+        for (Output input : inputs) {
+            Id taskId = input.getTaskId();
+            List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
+            list.add(input);
+        }
+        List<Output> outputs = new LinkedList<>();
+        for (Map.Entry<Id, List<Output>> entry : inputsMap.entrySet()) {
+            List<Output> list = entry.getValue();
+            int size = list.size();
+            if (size <= 1) {
+                // Need no coalescing.
+                outputs.addAll(list);
+            } else {
+                Output one = list.get(0);
+                Task task = one.getTask();
+                Operator operator = new CoalesceOperator(size);
+                operator.setId(idGenerator.get());
+                task.putOperator(operator);
+                int i = 0;
+                for (Output input : list) {
+                    input.setLink(operator.getInput(i));
+                    ++i;
+                }
+                if (one.isToSumUp()) {
+                    Operator sumUpOperator = new SumUpOperator();
+                    sumUpOperator.setId(idGenerator.get());
+                    task.putOperator(sumUpOperator);
+                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
+                    outputs.addAll(sumUpOperator.getOutputs());
+                } else {
+                    outputs.addAll(operator.getOutputs());
+                }
+            }
+        }
+        return outputs;
+    }
+
     private Output exchange(@Nonnull Output input, @Nonnull Location target, TupleSchema schema) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
@@ -244,43 +286,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoCoalesce rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        // Coalesce inputs from the same task. taskId --> list of inputs
-        Map<Id, List<Output>> inputsMap = new HashMap<>();
-        for (Output input : inputs) {
-            Id taskId = input.getTaskId();
-            List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
-            list.add(input);
-        }
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<Id, List<Output>> entry : inputsMap.entrySet()) {
-            List<Output> list = entry.getValue();
-            int size = list.size();
-            if (size <= 1) {
-                // Need no coalescing.
-                outputs.addAll(list);
-            } else {
-                Output one = list.get(0);
-                Task task = one.getTask();
-                Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.get());
-                task.putOperator(operator);
-                int i = 0;
-                for (Output input : list) {
-                    input.setLink(operator.getInput(i));
-                    ++i;
-                }
-                if (one.isToSumUp()) {
-                    Operator sumUpOperator = new SumUpOperator();
-                    sumUpOperator.setId(idGenerator.get());
-                    task.putOperator(sumUpOperator);
-                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
-                    outputs.addAll(sumUpOperator.getOutputs());
-                } else {
-                    outputs.addAll(operator.getOutputs());
-                }
-            }
-        }
-        return outputs;
+        return coalesceInputsByTask(inputs);
     }
 
     @Override
@@ -578,6 +584,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoTableScan rel) {
         return illegalRelNode(rel);
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoUnion rel) {
+        Collection<Output> inputs = new LinkedList<>();
+        for (RelNode node : rel.getInputs()) {
+            inputs.addAll(dingo(node).accept(this));
+        }
+        return coalesceInputsByTask(inputs);
     }
 
     @Override

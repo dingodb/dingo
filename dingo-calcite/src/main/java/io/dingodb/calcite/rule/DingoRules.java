@@ -53,15 +53,30 @@ public final class DingoRules {
         = DingoTableModifyRule.DEFAULT_CONFIG.toRule(DingoTableModifyRule.class);
     public static final DingoToEnumerableRule DINGO_TO_ENUMERABLE_RULE
         = DingoToEnumerableRule.Config.DEFAULT.toRule();
+    public static final DingoUnionRule DINGO_UNION_RULE
+        = DingoUnionRule.DEFAULT_CONFIG.toRule(DingoUnionRule.class);
     public static final DingoValuesRule DINGO_VALUES_RULE
         = DingoValuesRule.DEFAULT_CONFIG.toRule(DingoValuesRule.class);
+
+    // Transformation rules
+    public static final DingoValuesReduceRule DINGO_PROJECT_VALUES_MERGE
+        = DingoValuesReduceRule.Config.PROJECT.toRule();
+    public static final DingoValuesReduceRule DINGO_FILTER_VALUES_MERGE
+        = DingoValuesReduceRule.Config.FILTER.toRule();
+    public static final DingoValuesReduceRule DINGO_PROJECT_FILTER_VALUES_MERGE
+        = DingoValuesReduceRule.Config.PROJECT_FILTER.toRule();
+    public static final DingoUnionValuesRule DINGO_UNION_VALUES_RULE
+        = DingoUnionValuesRule.Config.DEFAULT.toRule();
 
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.PROJECT_REMOVE,
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
-        CoreRules.PROJECT_VALUES_MERGE,
+        DINGO_PROJECT_VALUES_MERGE,
+        DINGO_FILTER_VALUES_MERGE,
+        DINGO_PROJECT_FILTER_VALUES_MERGE,
+        DINGO_UNION_VALUES_RULE,
         DINGO_AGGREGATE_RULE,
         DINGO_AGGREGATE_SINGLE_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
@@ -76,6 +91,7 @@ public final class DingoRules {
         DINGO_PROJECT_SCAN_RULE,
         DINGO_SORT_RULE,
         DINGO_TABLE_MODIFY_RULE,
+        DINGO_UNION_RULE,
         DINGO_VALUES_RULE
     );
 
