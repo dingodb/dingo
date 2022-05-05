@@ -30,11 +30,14 @@ import java.util.NavigableSet;
 import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"definition", "ranges"})
-@JsonTypeName("simpleHash")
+@JsonTypeName("RangeHash")
 public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
+    @JsonProperty("definition")
     private final TableDefinition definition;
     private final transient AvroCodec codec;
+
+    @JsonProperty("ranges")
     private final NavigableSet<ComparableByteArray> ranges;
 
     @JsonCreator
