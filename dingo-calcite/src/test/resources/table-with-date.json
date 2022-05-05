@@ -1,0 +1,22 @@
+{
+  "name": "table-with-date",
+  "columns": [
+    {
+      "name": "id",
+      "type": "integer",
+      "primary": true,
+      "notNull": true
+    },
+    {
+      "name": "name",
+      "type": "varchar",
+      "precision": 64,
+      "default": "Peso",
+      "notNull": true
+    },
+    {
+      "name": "birth",
+      "type": "date"
+    }
+  ]
+}

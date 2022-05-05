@@ -45,7 +45,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -55,7 +54,6 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
-import org.apache.calcite.util.ImmutableBeans;
 
 import java.util.Collections;
 import java.util.List;
@@ -140,7 +138,9 @@ public class DingoParser {
         SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             .withExpand(false)
-            .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN);
+            .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
+            // Disable simplify to use Dingo's own expr evaluation.
+            .addRelBuilderConfigTransform(c -> c.withSimplify(false));
 
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
             (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
