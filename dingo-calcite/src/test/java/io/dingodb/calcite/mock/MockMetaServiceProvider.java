@@ -49,7 +49,8 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
             when(metaService.getName()).thenReturn(SCHEMA_NAME);
             when(metaService.getTableDefinitions()).thenReturn(ImmutableMap.of(
                 TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
-                TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json"))
+                TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json")),
+                "table-with-date", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-date.json"))
             ));
             when(metaService.getTableId(anyString())).thenReturn(CommonId.prefix((byte) 0));
         } catch (IOException e) {
