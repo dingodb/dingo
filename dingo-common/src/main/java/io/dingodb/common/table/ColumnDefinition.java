@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ColumnStrategy;
@@ -39,6 +40,7 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default"})
 @EqualsAndHashCode
 @Builder
+@Slf4j
 public class ColumnDefinition {
     @JsonProperty(value = "name", required = true)
     @Getter
@@ -81,7 +83,7 @@ public class ColumnDefinition {
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
     @Builder.Default
-    private final Object defaultValue = null;
+    private final String defaultValue = null;
 
     @JsonCreator
     public static ColumnDefinition getInstance(
@@ -102,7 +104,7 @@ public class ColumnDefinition {
                 .scale(scale != null ? scale : RelDataType.SCALE_NOT_SPECIFIED)
                 .notNull(notNull)
                 .primary(primary)
-                .defaultValue(defaultValue)
+                .defaultValue(defaultValue != null ? defaultValue.toString() : null)
                 .build();
         }
         throw new AssertionError("Invalid type name \"" + typeName + "\".");

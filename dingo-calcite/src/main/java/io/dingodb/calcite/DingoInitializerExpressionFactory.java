@@ -16,32 +16,29 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.common.util.DateUtils;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.DingoExprParseException;
+import io.dingodb.expr.parser.op.FunFactory;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.parser.DingoExprCompiler;
+import io.dingodb.expr.parser.var.Var;
+import io.dingodb.expr.runtime.RtConst;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -64,46 +61,53 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         DingoTable dingoTable = DingoTable.dingo(table);
         Object defaultValue = dingoTable.getTableDefinition().getColumn(column).getDefaultValue();
         RelDataType type = table.getRowType().getFieldList().get(column).getType();
+        if (defaultValue == null) {
+            return super.newColumnDefaultValue(table, column, context);
+        }
 
         /**
          * if default value is function, we need to call function to get value
          */
-        if (defaultValue instanceof SqlIdentifier || defaultValue instanceof SqlBasicCall) {
-            defaultValue = getDefaultValueWhenUsingFunc(defaultValue, type);
-        }
-
-        if (defaultValue != null) {
-            return context.getRexBuilder().makeLiteral(defaultValue, type);
+        try {
+            Expr expr = DingoExprCompiler.parse(defaultValue.toString());
+            if (expr instanceof Var) {
+                expr = DingoExprCompiler.parse(defaultValue.toString().trim() + "()");
+            }
+            defaultValue = getDefaultValueByExpression(expr, type);
+            if (defaultValue != null) {
+                return context.getRexBuilder().makeLiteral(defaultValue, type);
+            }
+        } catch (DingoExprParseException e) {
+            log.error("parse default value error:{}", e.toString(), e);
         }
         return super.newColumnDefaultValue(table, column, context);
     }
 
-    private Object getDefaultValueWhenUsingFunc(final Object inputValue, RelDataType type) {
-        String methodName = "";
-        Object[] args = null;
+    private Object getDefaultValueByExpression(final Expr inputExpr, RelDataType type) {
+        Object defaultValue = null;
 
-        if (inputValue instanceof SqlIdentifier) {
-            methodName = ((SqlIdentifier) inputValue).getSimple();
-        } else if (inputValue instanceof SqlBasicCall) {
-            methodName = ((SqlBasicCall) inputValue).getOperator().getName();
-            args = Arrays.stream(((SqlBasicCall) inputValue).getOperands()).toArray();
-        }
-
-        if (methodName.length() == 0) {
-            return inputValue;
-        }
-
-        Object defaultValue = inputValue;
-        List<Method> methods = DingoFunctions.getInstance().getDingoFunction(methodName);
-        Method method = getMatchMethod(methods, args);
-        if (method != null) {
-            try {
-                defaultValue = method.invoke(null);
-                defaultValue = convertDefaultValueWhenUsingFunc(defaultValue, type);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                log.error("Error when invoke function {}", methodName, e.getCause(), e);
-                defaultValue = null;
+        try {
+            defaultValue = inputExpr.compileIn(null);
+            RtConst valueOfConst = (RtConst) defaultValue;
+            switch (type.getSqlTypeName()) {
+                case DATE:
+                    java.util.Date inputValue = (java.util.Date)valueOfConst.getValue();
+                    defaultValue = DateUtils.getEpochDay(inputValue.getTime());
+                    break;
+                case TIME:
+                    java.sql.Time time = (java.sql.Time)valueOfConst.getValue();
+                    defaultValue = DateUtils.getEpochTime(time.getTime());
+                    break;
+                case TIMESTAMP:
+                    java.sql.Timestamp timestamp = (java.sql.Timestamp)valueOfConst.getValue();
+                    defaultValue = DateUtils.getTimestampValueByCalcite(timestamp.getTime());
+                    break;
+                default:
+                    defaultValue = valueOfConst.getValue();
+                    break;
             }
+        } catch (DingoExprCompileException ex) {
+            log.error("compile expr error:{}", ex.toString(), ex);
         }
         return defaultValue;
     }

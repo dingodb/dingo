@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.common.util.DateUtils;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -224,36 +225,15 @@ public class DingoMeta extends MetaImpl {
         }
         switch (columnClassName) {
             case "java.sql.date": {
-                Long timeStamp = 0L;
-                if (input instanceof Number) {
-                    timeStamp = ((Number) input).longValue();
-                } else if (input instanceof java.sql.Date) {
-                    timeStamp = ((java.sql.Date) input).getTime();
-                }
-                Long epochTime = timeStamp / (24 * 60 * 60 * 1000);
-                valueAfterCvt = epochTime;
+                valueAfterCvt = Long.valueOf(DateUtils.getEpochDay(input));
                 break;
             }
             case "java.sql.time": {
-                Long timeStamp = 0L;
-                if (input instanceof Number) {
-                    timeStamp = ((Number) input).longValue();
-                } else if (input instanceof java.sql.Time) {
-                    // current_time will return a java.sql.Time object
-                    timeStamp = ((java.sql.Time) input).getTime();
-                }
-                timeStamp %= (24 * 60 * 60 * 1000);
-                valueAfterCvt = timeStamp;
+                valueAfterCvt = Long.valueOf(DateUtils.getEpochTime(input));
                 break;
             }
             case "java.sql.timestamp": {
-                Long timeStamp = 0L;
-                if (input instanceof Number) {
-                    timeStamp = ((Number) input).longValue();
-                } else if (input instanceof java.sql.Timestamp) {
-                    timeStamp = ((java.sql.Timestamp) input).getTime();
-                }
-                valueAfterCvt = timeStamp;
+                valueAfterCvt = DateUtils.getTimestampValueByCalcite(input);
                 break;
             }
             case "java.lang.integer": {
