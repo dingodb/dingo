@@ -93,6 +93,14 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(columnDefinition -> definitionToMeta(table, columnDefinition))
             .peek(column -> column.setId(columnAdaptor.newId(column)))
             .collect(Collectors.toList());
+
+        if (log.isDebugEnabled()) {
+            log.debug("receive create tableName:{} definition:{}, after convert columns:{}",
+                table.getName(),
+                definition,
+                columns.stream().map(Column::toString).collect(Collectors.joining("\n")));
+        }
+
         columns.stream()
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
@@ -187,6 +195,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(this::metaToDefinition)
             .collect(Collectors.toList());
         tableDefinition.setColumns(columnDefinitions);
+        if (log.isDebugEnabled()) {
+            log.info("Meta to table definition: {}", tableDefinition);
+        }
         return tableDefinition;
     }
 
@@ -198,6 +209,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .primary(column.isPrimary())
             .scale(column.getScale())
             .type(SqlTypeName.get(column.getType()))
+            .defaultValue(column.getDefaultValue())
             .build();
     }
 
@@ -216,6 +228,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .notNull(definition.isNotNull())
             .table(table.getId())
             .schema(table.getSchema())
+            .defaultValue(definition.getDefaultValue())
             .build();
     }
 
