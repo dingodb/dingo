@@ -50,6 +50,6 @@ public class Column implements Meta {
     private int precision;
     private String type;
     private int version;
-    private Object defaultValue;
+    private String defaultValue;
 
 }

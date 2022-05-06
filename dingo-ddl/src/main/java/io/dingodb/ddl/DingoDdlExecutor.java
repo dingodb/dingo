@@ -18,6 +18,9 @@ package io.dingodb.ddl;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.DingoExprParseException;
+import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -79,18 +82,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SqlTypeName typeName = dataType.getSqlTypeName();
         int precision = typeName.allowsPrec() ? dataType.getPrecision() : RelDataType.PRECISION_NOT_SPECIFIED;
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
-        Object defaultValue = null;
+        String defaultValue = "";
         ColumnStrategy strategy = scd.strategy;
         if (strategy == ColumnStrategy.DEFAULT) {
             SqlNode expr = scd.expression;
             if (expr instanceof SqlLiteral) {
-                defaultValue = ((SqlLiteral) expr).getValue();
+                defaultValue = ((SqlLiteral) expr).getValue().toString();
             }
             // case like: current_date(SqlIdentifier) or current_date()(SqlIdentifier)
             if (expr instanceof SqlIdentifier || expr instanceof SqlBasicCall) {
-                defaultValue = expr;
+                defaultValue = expr.toString();
             }
         }
+
         String name = scd.name.getSimple();
         boolean isPrimary = (primaryKeyList != null && primaryKeyList.contains(name));
         return ColumnDefinition.builder()

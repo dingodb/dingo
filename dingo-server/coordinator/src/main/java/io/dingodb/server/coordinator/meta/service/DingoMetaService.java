@@ -89,7 +89,6 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     @Override
     public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
         ((TableAdaptor) getMetaAdaptor(Table.class)).create(DINGO_ID, tableDefinition);
-
     }
 
     @Override

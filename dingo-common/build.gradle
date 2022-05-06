@@ -21,6 +21,7 @@ plugins {
 
 dependencies {
     api group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
+    api project(':dingo-expr:dingo-expr-parser')
     api project(':dingo-expr:dingo-expr-json-runtime')
     api project(':dingo-expr:dingo-expr-runtime')
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
