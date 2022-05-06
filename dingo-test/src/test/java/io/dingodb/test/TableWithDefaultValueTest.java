@@ -173,6 +173,27 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
+    public void testCaseDefaultValueIsNull() throws Exception {
+        String tableName = "testDefaultValueIsNull";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int not null,\n"
+            + "    name varchar(32) not null,\n"
+            + "    age int null default 20,\n"
+            + " primary key(id))\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.execSqlCmd(sql);
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            "100, lala, 20");
+        sqlHelper.clearTable(tableName);
+    }
+
+    @Test
     public void testCase05() throws Exception {
         List<String> inputDateFuncList = Arrays.asList(
             "current_date",
