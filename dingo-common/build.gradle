@@ -27,4 +27,6 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
     compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
     compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
+    compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
+    compile group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
 }

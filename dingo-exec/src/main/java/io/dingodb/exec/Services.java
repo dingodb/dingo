@@ -16,9 +16,11 @@
 
 package io.dingodb.exec;
 
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.error.DingoException;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.channel.EndpointManager;
@@ -82,18 +84,26 @@ public final class Services {
     public static void initNetService() {
         initControlMsgService();
         NET.registerTagMessageListener(SimpleTag.TASK_TAG, (message, channel) -> {
+            final long startTime = System.currentTimeMillis();
             String taskStr = new String(message.toBytes(), StandardCharsets.UTF_8);
             if (log.isInfoEnabled()) {
                 log.info("Received task: {}", taskStr);
             }
             try {
+                final Timer.Context timeCtx = DingoMetrics.getTimeContext("deserialize");
                 Task task = TaskImpl.deserialize(taskStr);
+                timeCtx.stop();
+
                 executorService.execute(() -> {
                     task.init();
                     task.run();
                 });
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Cannot deserialize received task.", e);
+            } finally {
+                final long cost = System.currentTimeMillis() - startTime;
+                log.info("Services initNetService TASK_TAG msg cost: {}ms.", cost);
+                DingoMetrics.latency("on_task_message", cost);
             }
         });
     }
