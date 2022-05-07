@@ -40,12 +40,11 @@ public class TablePartAdaptor extends BaseAdaptor<TablePart> {
 
     @Override
     protected CommonId newId(TablePart tablePart) {
-        byte[] tableSeq = tablePart.getTable().seqContent();
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            tableSeq,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), tableSeq).encode())
+            tablePart.getTable().seqContent(),
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 

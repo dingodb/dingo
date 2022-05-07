@@ -40,7 +40,6 @@ import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.Opt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +92,13 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     }
 
     public void listenAvailable(Runnable listener) {
+        try {
+            if (available) {
+                listener.run();
+            }
+        } catch (Exception e) {
+            log.error("Run available listener error.", e);
+        }
         this.availableListener.add(listener);
     }
 

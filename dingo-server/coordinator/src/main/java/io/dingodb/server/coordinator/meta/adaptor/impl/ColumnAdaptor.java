@@ -45,7 +45,8 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
         byte[] tableSeq = column.getTable().seqContent();
         return new CommonId(
             META_ID.type(),
-            META_ID.identifier(), tableSeq,
+            META_ID.identifier(),
+            tableSeq,
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), tableSeq).encode())
         );
     }

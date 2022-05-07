@@ -21,6 +21,7 @@ import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.channel.ChannelIdAllocator;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
@@ -58,7 +59,7 @@ public class NetServiceLocalConnection implements Connection<Message> {
 
     public NetServiceLocalConnection(int capacity) {
         genericSubChannel = new NetServiceConnectionSubChannel(GENERIC_CHANNEL_ID, GENERIC_CHANNEL_ID, this);
-        socketAddress = new InetSocketAddress("127.0.0.1", 0);
+        socketAddress = new InetSocketAddress(NetServiceConfiguration.host(), 0);
         channelPool = new ChannelPool(capacity);
         limitChannelIdAllocator = new LimitedChannelIdAllocator<>(capacity, SimpleChannelId::new);
         unLimitChannelIdAllocator = new UnlimitedChannelIdAllocator<>(SimpleChannelId::new);

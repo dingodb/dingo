@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
@@ -218,6 +217,9 @@ public class RocksRawKVStore implements RawKVStore {
                 }
                 int count = 0;
                 while (true) {
+                    if (!iterator.isValid()) {
+                        break;
+                    }
                     byte[] key = iterator.key();
                     if (endKey != null && ByteArrayUtils.compare(iterator.key(), endKey) >= 0) {
                         break;
@@ -226,9 +228,6 @@ public class RocksRawKVStore implements RawKVStore {
                     sstFileWriter.put(key, value);
                     iterator.next();
                     count++;
-                    if (!iterator.isValid()) {
-                        break;
-                    }
                 }
                 if (count > 0) {
                     sstFileWriter.finish();

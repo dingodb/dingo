@@ -25,6 +25,7 @@ import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Column;
+import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.store.api.KeyValue;
@@ -158,11 +159,23 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         ArrayList<byte[]> keys = new ArrayList<>(columns.size() + tableParts.size() + 1);
         columns.forEach(column -> keys.add(column.getId().encode()));
         tableParts.forEach(part -> keys.add(part.getId().encode()));
+        ReplicaAdaptor replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
+        tableParts.stream().flatMap(part -> replicaAdaptor.getByDomain(part.getId().seqContent()).stream())
+            .map(Replica::getId)
+            .peek(replicaAdaptor::delete)
+            .map(CommonId::encode)
+            .forEach(keys::add);
         keys.add(id.encode());
         metaStore.delete(keys);
         metaMap.remove(id);
+        tableParts.stream()
+            .map(TablePart::getId)
+            .peek(tablePartAdaptor::delete)
+            .flatMap(partId -> replicaAdaptor.getByDomain(partId.seqContent()).stream())
+            .map(Replica::getId)
+            .forEach(replicaAdaptor::delete);
         columnAdaptor.deleteByDomain(id.domain());
-        ClusterScheduler.instance().getTableScheduler(id).deleteTable(tableParts);
+        ClusterScheduler.instance().getTableScheduler(id).deleteTable();
         ClusterScheduler.instance().deleteTableScheduler(id);
     }
 
