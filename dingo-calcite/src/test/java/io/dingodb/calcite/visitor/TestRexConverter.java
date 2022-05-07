@@ -647,8 +647,7 @@ public class TestRexConverter {
 
     @Test
     public void testStringConcat() throws Exception {
-        String sql = "select 'AA' || 'BB' || 'CC' ";
-        // String sql = "select concat('AA', 'BB', 'CC') ";
+        String sql = "select concat(concat('AA', 'BB'), 'CC')";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
@@ -657,9 +656,20 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
 
-        // Expr expr1 = DingoExprCompiler.parse("concat('A', 'B')");
-        // System.out.println(expr1.toString());
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).equals("AABBCC"));
+    }
 
+    @Test
+    public void testStringConcat01() throws Exception {
+        String sql = "select 'AA' || 'BB' || 'CC' ";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel;
+        RexNode rexNode = project.getProjects().get(0);
+        Expr expr = RexConverter.convert(rexNode);
+        System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("AABBCC"));
     }

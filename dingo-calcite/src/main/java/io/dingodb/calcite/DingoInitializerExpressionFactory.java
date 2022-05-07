@@ -69,6 +69,10 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
          * if default value is function, we need to call function to get value
          */
         try {
+            /**
+             * discard the special character "`" imported by MySQL dialect.
+             */
+            defaultValue = defaultValue.toString().trim().replace('`', ' ').trim();
             Expr expr = DingoExprCompiler.parse(defaultValue.toString());
             if (expr instanceof Var) {
                 expr = DingoExprCompiler.parse(defaultValue.toString().trim() + "()");
@@ -154,26 +158,4 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         return defaultValue;
     }
 
-    private Method getMatchMethod(final List<Method> methods,
-                                  final Object[] args) throws IllegalArgumentException {
-        boolean isMatch = false;
-        Method foundMethod = null;
-        for (Method method : methods) {
-            // just like current_date
-            if ((args == null || args.length == 0) && method.getParameterCount() == 0) {
-                isMatch = true;
-                foundMethod = method;
-                break;
-            }
-
-            if (method.getGenericParameterTypes().length != args.length) {
-                continue;
-            }
-
-            // Nowly, we only support function without paramerter
-            // check if the parameter type is match
-        }
-
-        return isMatch ? foundMethod : null;
-    }
 }
