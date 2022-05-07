@@ -16,10 +16,21 @@
 
 package io.dingodb.expr.runtime.op.string;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.func.DingoFuncProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoStringConcatOp extends RtStringConversionOp {
     private static final long serialVersionUID = 5454356467741754567L;
 
@@ -35,11 +46,41 @@ public class DingoStringConcatOp extends RtStringConversionOp {
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String result = "";
-        for (Object obj: values) {
-            String inputStr = (String) obj;
-            result += inputStr;
+        if (values.length != 2) {
+            throw new IllegalArgumentException("concat only accept 2 args, current input args: " + values.length);
         }
-        return result;
+        String inputStr1 = (values[0] == null ? "" : values[0].toString());
+        String inputStr2 = (values[1] == null ? "" : values[1].toString());
+        return concat(inputStr1, inputStr2);
     }
+
+    public static String concat(String str1, String str2) {
+        return str1 + str2;
+    }
+
+    @AutoService(DingoFuncProvider.class)
+    public static class Provider implements DingoFuncProvider {
+
+        public Function<RtExpr[], RtOp> supplier() {
+            return DingoStringConcatOp::new;
+        }
+
+        @Override
+        public List<String> name() {
+            return Arrays.asList("concat");
+        }
+
+        @Override
+        public List<Method> methods() {
+            try {
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoStringConcatOp.class.getMethod("concat", String.class, String.class));
+                return methods;
+            } catch (NoSuchMethodException e) {
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 }

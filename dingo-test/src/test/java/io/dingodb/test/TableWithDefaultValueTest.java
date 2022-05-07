@@ -311,28 +311,44 @@ public class TableWithDefaultValueTest {
     @Test
     public void testCase08() throws Exception {
         String tableName = "testCase08";
-        try {
-            final String sqlCmd = "create table " + tableName + " (\n"
-                + "    id int,\n"
-                + "    name varchar(32) not null,\n"
-                + "    address varchar(32) default lcase('ABC'), \n"
-                + "    primary key(id)\n"
-                + ")\n";
-            sqlHelper.execSqlCmd(sqlCmd);
-            String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-            sqlHelper.updateTest(sql, 1);
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    address varchar(32) default lcase('ABC'), \n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
 
-            String expectRecord = "100, lala, abc";
-            sql = "select * from " + tableName;
-            sqlHelper.queryTest(sql,
-                new String[]{"id", "name", "address"},
-                TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
-                expectRecord);
-        } catch (SQLException ex) {
-            assertTrue(ex.getMessage().contains("cannot be cast"));
-        } finally {
-            sqlHelper.clearTable(tableName);
-        }
+        String expectRecord = "100, lala, abc";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "address"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            expectRecord);
+        sqlHelper.clearTable(tableName);
+    }
 
+    @Test
+    public void testCase09() throws Exception {
+        String tableName = "testCase09";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    address varchar(32) default concat('AAA','BBB'), \n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        String expectRecord = "100, lala, AAABBB";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "address"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            expectRecord);
+        sqlHelper.clearTable(tableName);
     }
 }
