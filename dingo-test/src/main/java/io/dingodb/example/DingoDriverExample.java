@@ -60,10 +60,13 @@ public class DingoDriverExample {
             connection = DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + connectUrl);
             statement = connection.createStatement();
         } catch (ClassNotFoundException ex) {
-            log.info("Init driver catch ClassNotFoundExeption:{}", ex.toString(), ex);
+            log.error("Init driver catch ClassNotFoundExeption:{}", ex.toString(), ex);
             return;
         } catch (SQLException ex) {
-            log.info("Init driver catch SQLException:{}", ex.toString(), ex);
+            log.error("Init driver catch SQLException:{}", ex.toString(), ex);
+            return;
+        } catch (Exception ex) {
+            log.error("Init driver catch Exception:{}", ex.toString(), ex);
             return;
         }
 
