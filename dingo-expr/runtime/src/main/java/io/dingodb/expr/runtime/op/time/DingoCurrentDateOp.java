@@ -29,6 +29,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -50,7 +51,9 @@ public class DingoCurrentDateOp extends RtFun {
     }
 
     public static java.sql.Date getCurrentDate() {
-        return new Date(System.currentTimeMillis());
+        Long millis = System.currentTimeMillis();
+        millis += TimeZone.getDefault().getRawOffset();
+        return new Date(millis);
     }
 
     @AutoService(DingoFuncProvider.class)
