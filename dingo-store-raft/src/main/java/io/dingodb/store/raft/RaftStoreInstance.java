@@ -93,12 +93,12 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     public void clear() {
+        log.info("Clear store instance, id: [{}], data path: [{}]", id, path.toString());
+        startKeyPartMap.clear();
         parts.values().forEach(RaftStoreInstancePart::clear);
         parts.clear();
-        startKeyPartMap.clear();
         store.close();
         Files.deleteIfExists(path);
-        log.info("Clear store instance, id: [{}], data path: [{}]", id, path.toString());
     }
 
     @Override
@@ -106,13 +106,14 @@ public class RaftStoreInstance implements StoreInstance {
         part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
         try {
             Path partPath = Optional.ofNullable(StoreConfiguration.raft().getRaftPath())
-                .filter(String::isEmpty)
+                .filter(s -> !s.isEmpty())
                 .ifAbsentSet(path::toString)
                 .map(p -> Paths.get(p, part.getId().toString()))
                 .ifPresent(Files::createDirectories)
                 .get();
             RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, partPath, store, logStore);
             storeInstancePart.getStateMachine().listenAvailable(() -> onPartAvailable(storeInstancePart));
+            storeInstancePart.init();
             parts.put(part.getId(), storeInstancePart);
             waitStoreParts.add(storeInstancePart);
         } catch (Exception e) {
@@ -148,6 +149,7 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     public void onPartAvailable(RaftStoreInstancePart part) {
+        log.info("The part {} available change {}", part.getId(), part.getStateMachine().isAvailable());
         if (part.getStateMachine().isAvailable()) {
             startKeyPartMap.put(part.getPart().getStart(), part.getPart());
         } else {

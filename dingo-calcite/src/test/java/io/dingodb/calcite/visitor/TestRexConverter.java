@@ -35,10 +35,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.text.ParseException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -755,18 +758,14 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        String result = ((java.sql.Timestamp)(rtExpr.eval(null))).toString();
+        String result = rtExpr.eval(null).toString();
         System.out.println(result);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-        LocalDateTime localDateTime = LocalDateTime.parse(result, formatter);
-        Long millis = System.currentTimeMillis();
-        millis += TimeZone.getDefault().getRawOffset();
-        LocalDateTime nowTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
-        Assert.assrt(localDateTime.getYear() == nowTime.getYear());
-        Assert.assrt(localDateTime.getMonth() == nowTime.getMonth());
-        Assert.assrt(localDateTime.getDayOfMonth() == nowTime.getDayOfMonth());
-        Assert.assrt(localDateTime.getHour() == nowTime.getHour());
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .appendFraction(ChronoField.MILLI_OF_SECOND, 0, 3, true).toFormatter();
+        assertThat(Duration.between(LocalDateTime.parse(result, formatter), LocalDateTime.now()))
+            .isLessThan(Duration.ofSeconds(1));
     }
 
     @Test

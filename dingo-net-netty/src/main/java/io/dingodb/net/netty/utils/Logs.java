@@ -84,7 +84,7 @@ public final class Logs {
             return;
         }
         log.error(
-            "Packet [{}/{}] {} [{}/{}], mode: [{}], type: [{}], msg seq: [{}].",
+            "Packet [{}/{}] {} [{}/{}], mode: [{}], type: [{}], msg seq: [{}], err: [{}]",
             connection.localAddress(),
             packet.header().channelId(),
             send ? "------>" : "<------",
@@ -92,9 +92,10 @@ public final class Logs {
             packet.header().targetChannelId(),
             packet.header().mode(),
             packet.header().type(),
-            packet.header().msgNo()
+            packet.header().msgNo(),
+            errMsg,
+            ex
         );
-        log.error("", ex);
     }
 
 }

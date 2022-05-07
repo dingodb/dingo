@@ -76,6 +76,7 @@ public class TestRaftInstancePart {
         storeInstancePart = new RaftStoreInstancePart(
             part, Paths.get(TEST_PATH.toString(), id.toString()), store, logStore
         );
+        storeInstancePart.init();
         while (!storeInstancePart.getStateMachine().isAvailable()) {
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
         }

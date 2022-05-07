@@ -89,7 +89,6 @@ public class CommonIdConstant {
     @FieldNameConstants
     public static final class IndexIdentifier {
         public final byte[] data = new byte[] {'I', 'D'};
-        public final byte[] replicaExecutor = new byte[] {'I', 'R'};
 
         private IndexIdentifier() {
         }

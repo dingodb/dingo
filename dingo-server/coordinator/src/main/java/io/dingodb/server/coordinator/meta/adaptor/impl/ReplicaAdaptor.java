@@ -18,22 +18,18 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Replica;
-import io.dingodb.store.api.KeyValue;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
-import static io.dingodb.server.protocol.CommonIdConstant.INDEX_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
 @Slf4j
@@ -41,62 +37,53 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.replica);
 
-    private final NavigableMap<byte[], Replica> executorReplica;
+    private final NavigableMap<CommonId, List<Replica>> executorReplica;
 
     public ReplicaAdaptor(MetaStore metaStore) {
         super(metaStore);
         MetaAdaptorRegistry.register(Replica.class, this);
-        Iterator<KeyValue> iterator = this.metaStore.keyValueScan(
-            CommonId.prefix(ID_TYPE.index, INDEX_IDENTIFIER.replicaExecutor).encode()
+        executorReplica = new ConcurrentSkipListMap<>();
+        metaMap.forEach(
+            (k, v) -> executorReplica.computeIfAbsent(v.getExecutor(), id -> new CopyOnWriteArrayList<>()).add(v)
         );
-        executorReplica = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
-        while (iterator.hasNext()) {
-            KeyValue keyValue = iterator.next();
-            Replica meta = decodeMeta(keyValue.getValue());
-            executorReplica.put(keyValue.getKey(), meta);
-        }
     }
 
     @Override
     protected void doSave(Replica replica) {
-        CommonId executorIndex = createExecutorIndex(replica.getExecutor());
+        // save replica
         byte[] metaContent = encodeMeta(replica);
-        byte[] idContent = replica.getId().encode();
-        byte[] index = new byte[CommonId.LEN * 2];
-        System.arraycopy(executorIndex.encode(), 0, index, 0, CommonId.LEN);
-        System.arraycopy(idContent, 0, index, CommonId.LEN, CommonId.LEN);
-        metaStore.upsertKeyValue(Arrays.asList(
-            new KeyValue(idContent, metaContent),
-            new KeyValue(index, metaContent)
-        ));
-        log.info(
-            "Save replica index for executor, key: {} ==> {}{}, value: {}",
-            Arrays.toString(index), executorIndex, replica.getId(), replica
-        );
+        metaStore.upsertKeyValue(replica.getId().encode(), metaContent);
         metaMap.put(replica.getId(), replica);
-        executorReplica.put(index, replica);
-    }
 
-    private CommonId createExecutorIndex(CommonId executor) {
-        return new CommonId(ID_TYPE.index, INDEX_IDENTIFIER.replicaExecutor, executor.domain(), executor.seqContent());
+        // add replica executor index
+        executorReplica.computeIfAbsent(replica.getExecutor(), id -> new CopyOnWriteArrayList<>()).add(replica);
     }
 
     public List<Replica> getByExecutor(CommonId executor) {
-        executor = createExecutorIndex(executor);
-        byte[] start = executor.encode();
-        byte[] end = executor.encode();
-        end[end.length - 1]++;
-        return new ArrayList<>(executorReplica.subMap(start, true, end, false).values());
+        return executorReplica.get(executor);
     }
 
     @Override
     protected CommonId newId(Replica replica) {
+        byte[] partSeq = replica.getPart().seqContent();
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            replica.getPart().seqContent(),
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            partSeq,
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), partSeq).encode())
         );
+    }
+
+    @Override
+    public void delete(CommonId id) {
+        Replica replica = metaMap.remove(id);
+        Optional.ofNullable(replica)
+            .ifAbsent(() -> {
+                throw new RuntimeException("Not found!");
+            })
+            .map(Replica::getExecutor)
+            .map(executorReplica::get)
+            .ifPresent(replicas -> replicas.remove(replica));
     }
 
     @Override

@@ -20,7 +20,9 @@ import io.dingodb.common.CommonId;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreService;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
 
     private final StoreService storeService;
@@ -32,31 +34,37 @@ public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
 
     @Override
     public void newTable(CommonId id) {
+        log.info("New table [{}].", id);
         storeService.getInstance(id);
     }
 
     @Override
     public void deleteTable(CommonId id) {
+        log.info("Delete table [{}].", id);
         storeService.deleteInstance(id);
     }
 
     @Override
     public void assignTablePart(Part part) {
+        log.info("Assign table part: {}", part);
         storeService.getInstance(part.getInstanceId()).assignPart(part);
     }
 
     @Override
     public void reassignTablePart(Part part) {
+        log.info("Reassign table part: {}", part);
         storeService.getInstance(part.getInstanceId()).reassignPart(part);
     }
 
     @Override
     public void removeTablePart(Part part) {
+        log.info("Remote table part: {}", part);
         storeService.getInstance(part.getInstanceId()).unassignPart(part);
     }
 
     @Override
     public void deleteTablePart(Part part) {
+        log.info("Delete table part: {}", part);
         storeService.getInstance(part.getInstanceId()).deletePart(part);
     }
 }

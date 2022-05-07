@@ -19,6 +19,7 @@ package io.dingodb.store.raft;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Files;
+import io.dingodb.common.util.Optional;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;
@@ -66,6 +67,6 @@ public class RaftStoreService implements StoreService {
 
     @Override
     public void deleteInstance(CommonId id) {
-        storeInstanceMap.get(id).clear();
+        Optional.ofNullable(storeInstanceMap.get(id)).ifPresent(RaftStoreInstance::clear);
     }
 }
