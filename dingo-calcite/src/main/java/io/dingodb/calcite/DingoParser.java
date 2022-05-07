@@ -104,8 +104,9 @@ public class DingoParser {
         );
 
         // CatalogReader is also serving as SqlOperatorTable
+        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         sqlValidator = SqlValidatorUtil.newValidator(
-            SqlOperatorTables.chain(SqlStdOperatorTable.instance(), catalogReader),
+            SqlOperatorTables.chain(tableInstance, catalogReader),
             catalogReader,
             context.getTypeFactory(),
             validatorConfig
