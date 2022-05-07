@@ -47,6 +47,7 @@ public final class Time2StringUtils {
     }
 
     public static String convertDate2String(java.sql.Date input) {
-        return input.toString();
+        Long unixTime = input.getTime() - TimeZone.getDefault().getRawOffset();
+        return new java.sql.Date(unixTime).toString();
     }
 }

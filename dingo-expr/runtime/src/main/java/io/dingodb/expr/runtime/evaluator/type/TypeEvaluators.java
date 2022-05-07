@@ -171,6 +171,8 @@ final class TypeEvaluators {
             return Time2StringUtils.convertTime2String((java.sql.Time) value);
         } else if (value instanceof java.sql.Timestamp) {
             return Time2StringUtils.convertTimeStamp2String((java.sql.Timestamp) value, "yyyy-MM-dd HH:mm:ss");
+        } else if (value instanceof java.sql.Date) {
+            return Time2StringUtils.convertDate2String((java.sql.Date) value);
         } else if (value instanceof Long) {
             return stringType((Long) value);
         } else {
