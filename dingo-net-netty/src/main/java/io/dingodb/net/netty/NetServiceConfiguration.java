@@ -34,6 +34,7 @@ public class NetServiceConfiguration {
             DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
             if (dingoConfiguration == null) {
                 INSTANCE = new NetServiceConfiguration();
+                INSTANCE.host = "127.0.0.1";
             } else {
                 dingoConfiguration.setNet(NetServiceConfiguration.class);
                 INSTANCE = dingoConfiguration.getNet();
