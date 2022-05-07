@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -106,7 +107,13 @@ public class DingoDateUnixTimestampOp extends RtFun {
     }
 
     public static Long unixTimestamp(final Date input) {
-        return input.toLocalDate().atStartOfDay(ZONEOFFSET).toInstant().toEpochMilli();
+        Long epochMilli = input.getTime();
+        /**
+         * current_date() returns the time in milliseconds added by timezone.
+         */
+        epochMilli -= TimeZone.getDefault().getRawOffset();
+        LocalDate localDate = new Date(epochMilli).toLocalDate();
+        return localDate.atStartOfDay(ZONEOFFSET).toInstant().toEpochMilli();
     }
 
     public static Long unixTimestamp() {
