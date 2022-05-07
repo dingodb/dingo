@@ -179,6 +179,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (td.getColumns().stream().noneMatch(ColumnDefinition::isPrimary)) {
             throw new RuntimeException("Primary keys are required in table definition.");
         }
+
+        long distinctColCnt = td.getColumns().stream().map(ColumnDefinition::getName).distinct().count();
+        long realColCnt = td.getColumns().size();
+        if (distinctColCnt != realColCnt) {
+            throw new RuntimeException("Duplicate column names are not allowed in table definition. Total: "
+                + realColCnt + ", distinct: " + distinctColCnt);
+        }
+
         final MutableSchema schema = schemaTableName.left;
         assert schema != null;
         if (schema.getTable(tableName) != null) {
