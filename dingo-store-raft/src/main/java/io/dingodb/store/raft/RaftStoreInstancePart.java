@@ -87,7 +87,6 @@ public final class RaftStoreInstancePart implements StoreInstance {
         this.raftStore = new RaftRawKVStore(id.toString(), store, nodeOptions, location);
         this.stateMachine = new PartStateMachine(id, raftStore, part);
         nodeOptions.setFsm(stateMachine);
-        this.raftStore.init(null);
         log.info("Start raft store instance part, id: {}, part: {}", id, part);
     }
 
@@ -96,9 +95,15 @@ public final class RaftStoreInstancePart implements StoreInstance {
         this.stateMachine.resetPart(part);
     }
 
+    public void init() {
+        this.raftStore.init(null);
+    }
+
     public void clear() {
+        log.info("Clear raft store instance part, id: {}, raft path: {}", id.toString(), path);
         raftStore.shutdown();
-        Files.deleteIfExists(Paths.get(StoreConfiguration.raft().getRaftPath(), id.toString()));
+        log.info("Raft store closed, id: {}", id.toString());
+        Files.deleteIfExists(path);
     }
 
     public SeekableIterator<byte[], ByteArrayEntry> iterator() {

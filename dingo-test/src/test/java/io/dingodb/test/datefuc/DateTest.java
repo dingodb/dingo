@@ -23,7 +23,6 @@ import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +42,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.Temporal;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,10 +53,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DateTest {
+
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private static Connection connection;
     private static SqlHelper sqlHelper;
     // precision for minute
     private static final Long GLOBAL_TIME_PRECISION = 1000 * 60L;
+
+    private static final Duration ERROR_RANGE = Duration.ofSeconds(1);
 
     @BeforeAll
     public static void setupAll() throws Exception {
@@ -70,91 +78,87 @@ public class DateTest {
         Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
     }
 
+    public void assertTemporalWithErrorRange(Temporal time1, Temporal time2) {
+        assertThat(Duration.between(time1, time2)).isLessThan(ERROR_RANGE);
+    }
+
     //Result like: 2022-03-30 02:19:42
     @Test
     public void testNow() throws SQLException {
         String sql = "select now()";
+        LocalDateTime expected = LocalDateTime.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(rs.getString(1));
+                    // case1:
+                    assertTemporalWithErrorRange(expected, rs.getTimestamp(1).toLocalDateTime());
+                    // case2:
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalDateTime.parse(rs.getObject(1).toString().substring(0, 19), DATETIME_FORMATTER)
+                    );
+                    // case3:
+                    assertTemporalWithErrorRange(expected, LocalDateTime.parse(rs.getString(1), DATETIME_FORMATTER));
                 }
             }
         }
     }
 
-    // Result like: 2022-03-30
     @Test
     public void testCurDate() throws SQLException {
-        String sql = "select current_date";
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
-                while (rs.next()) {
-                    System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = LocalDateTime.now().format(formatter);
-                    System.out.println(dateTime);
-                    assertThat(rs.getString(1)).isEqualTo(dateTime);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testCurrentDate01() throws SQLException {
         String sql = "select curdate()";
+        LocalDate expected = LocalDate.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = LocalDateTime.now().format(formatter);
-                    System.out.println(dateTime);
-                    assertThat(rs.getString(1)).isEqualTo(dateTime);
+                    assertThat(LocalDate.parse(rs.getString(1), DATE_FORMATTER)).isEqualTo(expected);
                 }
             }
         }
     }
-
-
 
     // Result like: 2022-03-30
     @Test
     public void testCurrentDate() throws SQLException {
         String sql = "select current_date";
+        LocalDate expected = LocalDate.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    System.out.println(rs.getString(1));
-                    String formatStr = DateFormatUtil.javaDefaultDateFormat();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    String dateTime = LocalDateTime.now().format(formatter);
-                    System.out.println(dateTime);
-                    assertThat(rs.getString(1)).isEqualTo(dateTime);
+                    assertThat(LocalDate.parse(rs.getString(1), DATE_FORMATTER)).isEqualTo(expected);
+                }
+            }
+        }
+    }
+
+    // Result like: 2022-03-30
+    @Test
+    public void testCurrentDate01() throws SQLException {
+        String sql = "select current_date";
+        LocalDate expected = LocalDate.now();
+
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                while (rs.next()) {
+                    assertThat(LocalDate.parse(rs.getString(1), DATE_FORMATTER)).isEqualTo(expected);
                 }
             }
         }
     }
 
     @Test
-    public void testMultiConcatFuntion() throws SQLException {
+    public void testMultiConcatFunction() throws SQLException {
         String sql = "select current_date() || ' ' || current_time()";
+        LocalDateTime expected = LocalDateTime.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    String expectDateTime = LocalDateTime.now().format(formatter);
-                    String realDateTime = rs.getString(1);
-                    Assertions.assertEquals(
-                        expectDateTime.substring(0, expectDateTime.lastIndexOf(":") - 2),
-                        realDateTime.substring(0, realDateTime.lastIndexOf(":") - 2));
+                    assertTemporalWithErrorRange(expected, LocalDateTime.parse(rs.getString(1), DATETIME_FORMATTER));
                 }
             }
         }
@@ -165,31 +169,21 @@ public class DateTest {
     public void testCurrentTime() throws SQLException {
         String sql = "select current_time";
         LocalTime expected = LocalTime.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    Time time = rs.getTime(1);
-                    System.out.println("Case1=> Time:" + time.toString());
                     // case1:
-                    LocalTime real = time.toLocalTime();
-                    Assertions.assertEquals(expected.getHour(), real.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real.getMinute());
+                    assertTemporalWithErrorRange(expected, rs.getTime(1).toLocalTime());
 
                     // case2:
-                    String timeStr = rs.getString(1);
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                    LocalTime real2 = LocalTime.parse(timeStr, formatter);
-                    System.out.println("Case2=> String:" + real2);
-                    Assertions.assertEquals(expected.getHour(), real2.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real2.getMinute());
+                    assertTemporalWithErrorRange(expected, LocalTime.parse(rs.getString(1), TIME_FORMATTER));
 
                     // case3:
-                    String objectStr = rs.getObject(1).toString();
-                    LocalTime real3 = LocalTime.parse(objectStr, formatter);
-                    System.out.println("Case3=> Object :" + real3);
-                    Assertions.assertEquals(expected.getHour(), real3.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real3.getMinute());
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalTime.parse(rs.getObject(1).toString(), TIME_FORMATTER)
+                    );
                 }
             }
         }
@@ -199,31 +193,21 @@ public class DateTest {
     public void testCurTime() throws SQLException {
         String sql = "select curtime()";
         LocalTime expected = LocalTime.now();
+
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    Time time = rs.getTime(1);
-                    System.out.println("Case1=> Time:" + time.toString());
                     // case1:
-                    LocalTime real = time.toLocalTime();
-                    Assertions.assertEquals(expected.getHour(), real.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real.getMinute());
+                    assertTemporalWithErrorRange(expected, rs.getTime(1).toLocalTime());
 
                     // case2:
-                    String timeStr = rs.getString(1);
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                    LocalTime real2 = LocalTime.parse(timeStr, formatter);
-                    System.out.println("Case2=> String:" + real2);
-                    Assertions.assertEquals(expected.getHour(), real2.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real2.getMinute());
+                    assertTemporalWithErrorRange(expected, LocalTime.parse(rs.getString(1), TIME_FORMATTER));
 
                     // case3:
-                    String objectStr = rs.getObject(1).toString();
-                    LocalTime real3 = LocalTime.parse(objectStr, formatter);
-                    System.out.println("Case3=> Object :" + real3);
-                    Assertions.assertEquals(expected.getHour(), real3.getHour());
-                    Assertions.assertEquals(expected.getMinute(), real3.getMinute());
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalTime.parse(rs.getObject(1).toString(), TIME_FORMATTER)
+                    );
                 }
             }
         }
@@ -233,17 +217,16 @@ public class DateTest {
     public void testCurTimeWithConcat() throws SQLException {
         String prefix = "test-";
         String sql = "select '" + prefix + "' || curtime()";
+        LocalTime expected = LocalTime.now();
 
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    String timeStr = rs.getString(1);
-                    LocalTime expected = LocalTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                    String expectStr = prefix + expected.format(formatter);
-                    System.out.println("ExpectStr: " + expectStr + ", ActualStr: " + timeStr);
-                    Assertions.assertEquals(expectStr, timeStr);
+                    assertThat(rs.getString(1)).startsWith(prefix);
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalTime.parse(rs.getString(1).substring(prefix.length()), TIME_FORMATTER)
+                    );
                 }
             }
         }
@@ -253,23 +236,20 @@ public class DateTest {
     @Test
     public void testCurrentTimestamp() throws SQLException {
         String sql = "select current_timestamp";
-        LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String expectDateTime = localDateTime.format(formatter);
+        LocalDateTime expected = LocalDateTime.now();
 
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
                     // case1:
-                    Timestamp timestamp = rs.getTimestamp(1);
-                    String result1 = formatter.format(timestamp.toLocalDateTime());
-                    Assertions.assertEquals(expectDateTime, result1);
+                    assertTemporalWithErrorRange(expected, rs.getTimestamp(1).toLocalDateTime());
                     // case2:
-                    System.out.println(rs.getObject(1));
-                    Assertions.assertEquals(expectDateTime, rs.getObject(1).toString().substring(0, 19));
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalDateTime.parse(rs.getObject(1).toString().substring(0, 19), DATETIME_FORMATTER)
+                    );
                     // case3:
-                    Assertions.assertEquals(expectDateTime, rs.getString(1).substring(0, 19));
+                    assertTemporalWithErrorRange(expected, LocalDateTime.parse(rs.getString(1), DATETIME_FORMATTER));
                 }
             }
         }
@@ -278,23 +258,20 @@ public class DateTest {
     @Test
     public void testCurrentTimestamp01() throws SQLException {
         String sql = "select current_timestamp()";
-        LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String expectDateTime = localDateTime.format(formatter);
+        LocalDateTime expected = LocalDateTime.now();
 
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
                     // case1:
-                    Timestamp timestamp = rs.getTimestamp(1);
-                    String result1 = formatter.format(timestamp.toLocalDateTime());
-                    Assertions.assertEquals(expectDateTime, result1);
+                    assertTemporalWithErrorRange(expected, rs.getTimestamp(1).toLocalDateTime());
                     // case2:
-                    System.out.println(rs.getObject(1));
-                    Assertions.assertEquals(expectDateTime, rs.getObject(1).toString().substring(0, 19));
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalDateTime.parse(rs.getObject(1).toString().substring(0, 19), DATETIME_FORMATTER)
+                    );
                     // case3:
-                    Assertions.assertEquals(expectDateTime, rs.getString(1).substring(0, 19));
+                    assertTemporalWithErrorRange(expected, LocalDateTime.parse(rs.getString(1), DATETIME_FORMATTER));
                 }
             }
         }
@@ -304,18 +281,16 @@ public class DateTest {
     public void testCurrentTimestamp02() throws SQLException {
         final String prefix = "test-";
         String sql = "select '" + prefix + "' || current_timestamp()";
-        LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String expectDateTime = prefix + localDateTime.format(formatter);
+        LocalDateTime expected = LocalDateTime.now();
 
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
                 while (rs.next()) {
-                    String expectResult = expectDateTime.substring(0, expectDateTime.lastIndexOf(":") - 2);
-                    String inputResult = rs.getString(1);
-                    String realResult = inputResult.substring(0, inputResult.lastIndexOf(":") - 2);
-                    Assertions.assertEquals(expectResult, realResult);
+                    assertThat(rs.getString(1)).startsWith(prefix);
+                    assertTemporalWithErrorRange(
+                        expected,
+                        LocalDateTime.parse(rs.getString(1).substring(prefix.length()), DATETIME_FORMATTER)
+                    );
                 }
             }
         }

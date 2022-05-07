@@ -137,17 +137,11 @@ public class TableScheduler {
         );
     }
 
-    public void deleteTable(List<TablePart> tableParts) {
-        log.info("On delete table: [{}], table parts: [{}] ==> {}", table.getId(), tableParts.size(), tableParts);
-        tableParts.stream()
-            .flatMap(tablePart -> replicaAdaptor.getByDomain(tablePart.getId().seqContent()).stream())
-            .parallel()
-            .peek(replica -> replicaAdaptor.delete(replica.getId()))
-            .peek(replica -> log.info("Delete replica: {}", replica))
-            .map(Replica::getExecutor)
-            .distinct()
-            .map(tableStoreApis::get)
-            .forEach(api -> api.deleteTable(table.getId()));
+    public void deleteTable() {
+        for (Map.Entry<CommonId, TableStoreApi> entry : tableStoreApis.entrySet()) {
+            log.info("Delete table on {}", entry.getKey());
+            entry.getValue().deleteTable(table.getId());
+        }
     }
 
     public void assignPart(TablePart tablePart) {
@@ -221,10 +215,11 @@ public class TableScheduler {
         if (log.isDebugEnabled()) {
             log.debug("Receive stats: {}", stats);
         }
-        log.info("Receive stats: {}", stats);
-        tablePartStatsAdaptor.onStats(stats);
-        Optional.ofNullable(waitFutures.remove(stats.getTablePart())).ifPresent(future -> future.complete(null));
-        executorService.submit(() -> splitPart(stats));
+        executorService.submit(() -> {
+            tablePartStatsAdaptor.onStats(stats);
+            Optional.ofNullable(waitFutures.remove(stats.getTablePart())).ifPresent(future -> future.complete(null));
+            splitPart(stats);
+        });
         return true;
     }
 

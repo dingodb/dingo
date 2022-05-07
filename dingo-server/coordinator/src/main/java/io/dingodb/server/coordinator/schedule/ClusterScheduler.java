@@ -18,17 +18,10 @@ package io.dingodb.server.coordinator.schedule;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
-import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.StackTraces;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.api.ServerApi;
-import io.dingodb.server.api.TableStoreApi;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
-import io.dingodb.server.coordinator.config.ScheduleConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorStatsAdaptor;
@@ -43,14 +36,14 @@ import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
-import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
 import io.dingodb.store.api.Part;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -127,10 +120,14 @@ public class ClusterScheduler implements ServerApi, ReportApi {
     @Override
     public List<Part> storeMap(CommonId id) {
         List<Replica> replicas = replicaAdaptor.getByExecutor(id);
+        if (replicas == null) {
+            return Collections.emptyList();
+        }
         log.info("Executor get store map, id: [{}], replicas: [{}] ==> {}", id, replicas.size(), replicas);
         return replicas.stream()
             .map(Replica::getPart)
             .map(tablePartAdaptor::get)
+            .filter(Objects::nonNull)
             .map(tablePart -> Part.builder()
                 .id(tablePart.getId())
                 .instanceId(tablePart.getTable())
