@@ -205,7 +205,9 @@ public class DateFormatUtil implements Serializable {
                 throw new SQLException(e.getMessage() + " ," + originDateTime + " FORMAT " + (((index & 1) == 1)
                     ? DATETIME_FORMATTER_LIST.get(index / 2) : DATE_FORMATTER_LIST.get(index / 2)));
             } else {
-                throw new SQLException(e.getMessage(), "");
+                throw new SQLException(
+                    " Some parameters of the function are in the wrong format and cannot be parsed, error datetime: "
+                    + originDateTime, "");
             }
         }
     }
