@@ -16,12 +16,11 @@
 
 package io.dingodb.store.memory;
 
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.store.api.KeyValue;
-import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreInstance;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;

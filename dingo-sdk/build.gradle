@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+group 'io.dingodb'
+version '0.3.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+
+    implementation project(":dingo-common")
+    implementation project(":dingo-cluster-api")
+    implementation project(":dingo-meta-api")
+    implementation project(":dingo-net-netty")
+    implementation project(":dingo-server:dingo-server-protocol")
+    implementation project(":dingo-net-api")
+    implementation project(":dingo-server:dingo-server-client")
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}

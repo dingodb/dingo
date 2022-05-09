@@ -17,9 +17,11 @@
 package io.dingodb.exec.table;
 
 import com.google.common.collect.Iterators;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.KeyValueCodec;
+import io.dingodb.common.table.Part;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

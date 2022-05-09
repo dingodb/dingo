@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.partition;
+package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.table.TupleMapping;
-import io.dingodb.exec.hash.SimpleHashStrategy;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -41,6 +41,8 @@ public abstract class PartitionStrategy<I> {
 
     // Should be `String` for json serialization.
     public abstract I calcPartId(@Nonnull final Object[] keyTuple);
+
+    public abstract I calcPartId(@Nonnull final byte[] keyBytes);
 
     public I calcPartId(@Nonnull final Object[] tuple, @Nonnull TupleMapping keyMapping) {
         Object[] keyTuple = keyMapping.revMap(tuple);

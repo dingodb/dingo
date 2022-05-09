@@ -16,8 +16,8 @@
 
 package io.dingodb.store.rocksdb;
 
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.store.api.KeyValue;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.RocksDB;
 

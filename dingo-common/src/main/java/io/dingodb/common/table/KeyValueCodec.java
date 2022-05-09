@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.table;
+package io.dingodb.common.table;
 
 import io.dingodb.common.codec.AvroCodec;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.store.api.KeyValue;
+import io.dingodb.common.store.KeyValue;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
@@ -53,6 +51,10 @@ public class KeyValueCodec {
 
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
         return keyCodec.encode(keys);
+    }
+
+    public byte[] encodeKeyByRecord(@Nonnull Object[] record) throws IOException {
+        return keyCodec.encode(record, keyMapping);
     }
 
     public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException {

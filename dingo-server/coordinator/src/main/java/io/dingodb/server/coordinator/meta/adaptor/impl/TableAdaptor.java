@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
@@ -28,7 +29,6 @@ import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
-import io.dingodb.store.api.KeyValue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.type.SqlTypeName;
 

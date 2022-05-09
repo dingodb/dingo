@@ -18,6 +18,7 @@ package io.dingodb.server.executor;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.store.Part;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
@@ -25,10 +26,11 @@ import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.api.ServerApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.executor.api.DriverProxyApi;
+import io.dingodb.server.executor.api.ExecutorApi;
 import io.dingodb.server.executor.api.TableStoreApi;
 import io.dingodb.server.executor.config.ExecutorConfiguration;
 import io.dingodb.server.protocol.meta.Executor;
-import io.dingodb.store.api.Part;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +47,16 @@ public class ExecutorServer {
 
     private NetService netService;
     private StoreService storeService;
+
+    private StoreInstance storeInstance;
+
     private CoordinatorConnector coordinatorConnector;
     private CommonId id;
 
     private TableStoreApi tableStoreApi;
     private DriverProxyApi driverProxyApi;
+
+    private ExecutorApi executorApi;
     private ServerApi serverApi;
 
     public ExecutorServer() {
@@ -92,6 +99,7 @@ public class ExecutorServer {
 
     private void initStore() {
         List<Part> parts = serverApi.storeMap(this.id);
+        this.storeInstance = storeService.getInstance(this.id);
         log.info("Init store, parts: {}", parts);
         parts.forEach(tableStoreApi::assignTablePart);
     }
@@ -99,6 +107,7 @@ public class ExecutorServer {
     private void initAllApi() {
         tableStoreApi = new TableStoreApi(netService, storeService);
         driverProxyApi = new DriverProxyApi(netService);
+        executorApi = new ExecutorApi(netService, storeService);
         netService.apiRegistry().register(LogLevelApi.class, LogLevelApi.INSTANCE);
     }
 
