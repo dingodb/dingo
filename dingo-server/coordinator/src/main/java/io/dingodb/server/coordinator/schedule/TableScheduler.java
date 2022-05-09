@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.store.Part;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
@@ -42,7 +43,6 @@ import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
-import io.dingodb.store.api.Part;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;

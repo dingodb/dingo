@@ -17,6 +17,8 @@
 package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
 import io.dingodb.common.util.Optional;
@@ -29,8 +31,6 @@ import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
-import io.dingodb.store.api.KeyValue;
-import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;

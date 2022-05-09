@@ -14,44 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.api;
+package io.dingodb.common.store;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.List;
-
 @Getter
 @Setter
-@Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class Part {
+public class Row {
 
-    public enum PartType {
-        ROW_STORE,
-        COLUMN_STORE,
-    }
-
-    private CommonId id;
-    private CommonId instanceId;
-    private byte[] start;
-    private byte[] end;
-    @Builder.Default
-    private PartType type = PartType.ROW_STORE;
-
-    private Location leader;
-    private List<Location> replicates;
-    private int version;
+    protected byte[] primaryKey;
+    protected int[] indexes;
+    protected int[] width;
+    protected byte[][] columns;
 
 }

@@ -20,13 +20,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.meta.Part;
 
 import java.util.ArrayList;

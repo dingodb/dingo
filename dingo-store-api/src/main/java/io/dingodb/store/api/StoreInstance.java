@@ -16,6 +16,10 @@
 
 package io.dingodb.store.api;
 
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.store.Part;
+import io.dingodb.common.store.Row;
+
 import java.util.Iterator;
 import java.util.List;
 

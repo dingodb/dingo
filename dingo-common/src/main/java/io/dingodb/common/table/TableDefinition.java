@@ -138,6 +138,16 @@ public class TableDefinition {
         return getColumnMapping(false);
     }
 
+    public TupleMapping getMapping() {
+        List<Integer> indices = new LinkedList<>();
+        int index = 0;
+        for (ColumnDefinition column : columns) {
+            indices.add(index);
+            ++index;
+        }
+        return TupleMapping.of(indices);
+    }
+
     @Nonnull
     private TupleMapping getColumnMapping(boolean keyOrValue) {
         List<Integer> indices = new LinkedList<>();

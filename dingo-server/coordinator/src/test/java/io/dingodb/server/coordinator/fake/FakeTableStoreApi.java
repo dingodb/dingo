@@ -17,17 +17,15 @@
 package io.dingodb.server.coordinator.fake;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.store.Part;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.api.TableStoreApi;
 import io.dingodb.server.protocol.meta.TablePartStats;
-import io.dingodb.store.api.Part;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.ServiceLoader;
 

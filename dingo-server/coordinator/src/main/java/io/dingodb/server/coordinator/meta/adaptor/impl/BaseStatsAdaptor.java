@@ -18,10 +18,10 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.server.coordinator.meta.adaptor.StatsAdaptor;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Stats;
-import io.dingodb.store.api.KeyValue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;

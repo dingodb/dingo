@@ -17,8 +17,8 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.store.Part;
 import io.dingodb.net.NetService;
-import io.dingodb.store.api.Part;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
