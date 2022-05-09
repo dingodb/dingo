@@ -18,6 +18,7 @@ package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.store.Part;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Node;
@@ -37,7 +38,6 @@ import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
-import io.dingodb.store.api.Part;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.extern.slf4j.Slf4j;
 

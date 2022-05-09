@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.table;
+package io.dingodb.common.table;
 
 import java.util.Iterator;
 import java.util.List;

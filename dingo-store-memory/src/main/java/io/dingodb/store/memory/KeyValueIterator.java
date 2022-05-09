@@ -16,7 +16,7 @@
 
 package io.dingodb.store.memory;
 
-import io.dingodb.store.api.KeyValue;
+import io.dingodb.common.store.KeyValue;
 
 import java.util.Iterator;
 import java.util.Map;

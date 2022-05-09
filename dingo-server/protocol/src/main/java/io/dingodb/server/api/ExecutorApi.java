@@ -17,27 +17,33 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.store.Part;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
-public interface TableStoreApi {
+import java.util.List;
+
+public interface ExecutorApi {
+    @ApiDeclaration
+    boolean upsertKeyValue(CommonId tableId, KeyValue row);
 
     @ApiDeclaration
-    void newTable(CommonId id);
+    boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows);
 
     @ApiDeclaration
-    void deleteTable(CommonId id);
+    boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row);
 
     @ApiDeclaration
-    void assignTablePart(Part part);
+    public byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey);
 
     @ApiDeclaration
-    void reassignTablePart(Part part);
+    public List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys);
 
     @ApiDeclaration
-    void removeTablePart(Part part);
+    public boolean delete(CommonId tableId, byte[] primaryKey);
 
     @ApiDeclaration
-    void deleteTablePart(Part part);
+    public boolean delete(CommonId tableId, List<byte[]> primaryKeys);
 
+    @ApiDeclaration
+    public boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 }

@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.store;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
@@ -26,7 +27,6 @@ import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.ReadIndexRunner;
 import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.server.protocol.CommonIdConstant;
-import io.dingodb.store.api.KeyValue;
 import io.dingodb.store.api.StoreInstance;
 
 import java.util.Iterator;

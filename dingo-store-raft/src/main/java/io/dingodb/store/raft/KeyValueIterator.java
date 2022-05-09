@@ -16,9 +16,9 @@
 
 package io.dingodb.store.raft;
 
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.SeekableIterator;
-import io.dingodb.store.api.KeyValue;
 
 import java.util.Iterator;
 

@@ -21,10 +21,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.Location;
+import io.dingodb.common.hash.HashStrategy;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
-import io.dingodb.exec.hash.HashStrategy;
 import io.dingodb.exec.impl.OutputIml;
 
 import java.util.ArrayList;

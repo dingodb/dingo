@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.partition;
+package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -44,6 +44,13 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
     @Override
     public String calcPartId(@Nonnull Object[] keyTuples) {
         int hash = Objects.hash(keyTuples);
+        return Integer.toString(Math.abs(hash) % partNum);
+    }
+
+    @Nonnull
+    @Override
+    public String calcPartId(@Nonnull byte[] keyBytes) {
+        int hash = Objects.hash(keyBytes);
         return Integer.toString(Math.abs(hash) % partNum);
     }
 }

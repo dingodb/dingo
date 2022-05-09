@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.hash;
+package io.dingodb.common.hash;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 

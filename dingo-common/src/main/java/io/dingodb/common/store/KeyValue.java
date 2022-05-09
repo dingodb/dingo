@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.api;
+package io.dingodb.common.store;
 
 public class KeyValue extends Row {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.partition;
+package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
 import java.io.IOException;
@@ -62,6 +61,11 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public ComparableByteArray calcPartId(@Nonnull byte[] keyBytes) {
+        return ranges.floor(new ComparableByteArray(keyBytes));
     }
 
 }
