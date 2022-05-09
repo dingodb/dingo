@@ -65,3 +65,5 @@ include 'dingo-store-raft'
 include 'dingo-store-memory'
 include 'dingo-func-api'
 include 'dingo-sdk'
+include 'dingo-example'
+

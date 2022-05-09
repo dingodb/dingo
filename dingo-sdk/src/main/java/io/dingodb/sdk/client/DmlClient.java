@@ -88,20 +88,26 @@ public class DmlClient extends ClientBase {
     }
 
     public boolean insert(List<Object[]> records, Integer batchSize) throws Exception {
-        Map<ExecutorApi, List<KeyValue>> recordGroup = new HashMap<ExecutorApi, List<KeyValue>>();
+        Map<ByteArrayUtils.ComparableByteArray, List<KeyValue>> recordGroup
+            = new HashMap<ByteArrayUtils.ComparableByteArray, List<KeyValue>>();
         for (Object[] record : records) {
             KeyValue keyValue = codec.encode(record);
-            ExecutorApi executorApi = getExecutor(ps.calcPartId(keyValue.getKey()));
+            ByteArrayUtils.ComparableByteArray keyId = ps.calcPartId(keyValue.getKey());
             List<KeyValue> currentGroup;
-            currentGroup = recordGroup.get(executorApi);
+            currentGroup = recordGroup.get(keyId);
             if (currentGroup == null) {
                 currentGroup = new ArrayList<KeyValue>();
-                recordGroup.put(executorApi, currentGroup);
+                recordGroup.put(keyId, currentGroup);
             }
             currentGroup.add(keyValue);
             if (currentGroup.size() >= batchSize) {
-                internalInsert(executorApi, currentGroup);
+                internalInsert(getExecutor(keyId), currentGroup);
                 currentGroup.clear();
+            }
+        }
+        for (Map.Entry<ByteArrayUtils.ComparableByteArray, List<KeyValue>> entry : recordGroup.entrySet()) {
+            if (entry.getValue().size() > 0) {
+                internalInsert(getExecutor(entry.getKey()), entry.getValue());
             }
         }
         return true;
