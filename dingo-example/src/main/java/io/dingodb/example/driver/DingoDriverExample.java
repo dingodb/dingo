@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.example;
+package io.dingodb.example.driver;
 
 import io.dingodb.driver.client.DingoDriverClient;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class DingoDriverExample {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.out.println("Usage: java -jar io.dingodb.example.DingoDriverExample\r\n"
+            System.out.println("Usage: java -jar io.dingodb.example.driver.DingoDriverExample\r\n"
                 + "\t\t 172.20.3.14 create exampletest\r\n"
                 + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
                 + "\t\t 172.20.3.14 query  exampletest");
