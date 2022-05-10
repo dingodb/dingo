@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.packet;
+package io.dingodb.common.codec.pojo;
 
-public enum PacketMode {
-    USER_DEFINE,
-    GENERIC,
-    API
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.List;
+
+@Getter
+@Setter
+@ToString
+@AllArgsConstructor
+public class School {
+    private String name;
+    private List<Student> students;
 }

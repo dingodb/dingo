@@ -66,28 +66,3 @@ task intTest(type: Test) {
     useJUnitPlatform()
     shouldRunAfter test
 }
-
-task fatJar(type: Jar) {
-    classifier 'all'
-    from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-    )
-    with jar
-
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
-}
-
-fatJar.dependsOn([
-    ':dingo-driver-client:fatJar',
-    ':dingo-driver:build',
-    ':dingo-server:dingo-server-driver-proxy:jar'
-])
-
-tasks.named("build") { x ->
-    x.finalizedBy("fatJar")
-}
-
-
-

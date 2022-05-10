@@ -22,65 +22,65 @@ import org.apache.calcite.avatica.remote.Service;
 public interface DriverProxyApi {
 
     @ApiDeclaration
-    String apply(Service.CatalogsRequest request);
+    Service.ResultSetResponse apply(Service.CatalogsRequest request);
 
     @ApiDeclaration
-    String apply(Service.SchemasRequest request);
+    Service.ResultSetResponse apply(Service.SchemasRequest request);
 
     @ApiDeclaration
-    String apply(Service.TablesRequest request);
+    Service.ResultSetResponse apply(Service.TablesRequest request);
 
     @ApiDeclaration
-    String apply(Service.TableTypesRequest request);
+    Service.ResultSetResponse apply(Service.TableTypesRequest request);
 
     @ApiDeclaration
-    String apply(Service.TypeInfoRequest request);
+    Service.ResultSetResponse apply(Service.TypeInfoRequest request);
 
     @ApiDeclaration
-    String apply(Service.ColumnsRequest request);
+    Service.ResultSetResponse apply(Service.ColumnsRequest request);
 
     @ApiDeclaration
-    String apply(Service.PrepareRequest request);
+    Service.PrepareResponse apply(Service.PrepareRequest request);
 
     @ApiDeclaration
-    String apply(Service.ExecuteRequest request);
+    Service.ExecuteResponse apply(Service.ExecuteRequest request);
 
     @ApiDeclaration
-    String apply(Service.PrepareAndExecuteRequest request);
+    Service.ExecuteResponse apply(Service.PrepareAndExecuteRequest request);
 
     @ApiDeclaration
-    String apply(Service.SyncResultsRequest request);
+    Service.SyncResultsResponse apply(Service.SyncResultsRequest request);
 
     @ApiDeclaration
-    String apply(Service.FetchRequest request);
+    Service.FetchResponse apply(Service.FetchRequest request);
 
     @ApiDeclaration
-    String apply(Service.CreateStatementRequest request);
+    Service.CreateStatementResponse apply(Service.CreateStatementRequest request);
 
     @ApiDeclaration
-    String apply(Service.CloseStatementRequest request);
+    Service.CloseStatementResponse apply(Service.CloseStatementRequest request);
 
     @ApiDeclaration
-    String apply(Service.OpenConnectionRequest request);
+    Service.OpenConnectionResponse apply(Service.OpenConnectionRequest request);
 
     @ApiDeclaration
-    String apply(Service.CloseConnectionRequest request);
+    Service.CloseConnectionResponse apply(Service.CloseConnectionRequest request);
 
     @ApiDeclaration
-    String apply(Service.ConnectionSyncRequest request);
+    Service.ConnectionSyncResponse apply(Service.ConnectionSyncRequest request);
 
     @ApiDeclaration
-    String apply(Service.DatabasePropertyRequest request);
+    Service.DatabasePropertyResponse apply(Service.DatabasePropertyRequest request);
 
     @ApiDeclaration
-    String apply(Service.CommitRequest request);
+    Service.CommitResponse apply(Service.CommitRequest request);
 
     @ApiDeclaration
-    String apply(Service.RollbackRequest request);
+    Service.RollbackResponse apply(Service.RollbackRequest request);
 
     @ApiDeclaration
-    String apply(Service.PrepareAndExecuteBatchRequest request);
+    Service.ExecuteBatchResponse apply(Service.PrepareAndExecuteBatchRequest request);
 
     @ApiDeclaration
-    String apply(Service.ExecuteBatchRequest request);
+    Service.ExecuteBatchResponse apply(Service.ExecuteBatchRequest request);
 }
