@@ -94,18 +94,52 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             }
 
             RtConst valueOfConst = (RtConst) defaultValue;
+            Object constValue = valueOfConst.getValue();
             switch (type.getSqlTypeName()) {
                 case DATE:
-                    java.sql.Date inputValue = (java.sql.Date)valueOfConst.getValue();
-                    defaultValue = inputValue.toLocalDate().toEpochDay();
+                    java.sql.Date inputValue = null;
+                    try {
+                        if (constValue instanceof  java.sql.Date) {
+                            inputValue = (java.sql.Date) constValue;
+                        } else if (constValue instanceof java.lang.String) {
+                            inputValue = java.sql.Date.valueOf(constValue.toString());
+                        }
+                        defaultValue = inputValue.toLocalDate().toEpochDay();
+                    } catch (Exception ex) {
+                        log.error("Set default value:{} of Date catch exception:{}",
+                            constValue.toString(), ex.toString(), ex);
+                        throw new RuntimeException("Invalid Input DateFormat, Expect(yyyy-MM-dd)");
+                    }
                     break;
                 case TIME:
-                    java.sql.Time time = (java.sql.Time)valueOfConst.getValue();
-                    defaultValue = time.getTime();
+                    java.sql.Time time = null;
+                    try {
+                        if (constValue instanceof java.sql.Time) {
+                            time = (java.sql.Time) valueOfConst.getValue();
+                        } else if (constValue instanceof java.lang.String) {
+                            time = java.sql.Time.valueOf(constValue.toString());
+                        }
+                        defaultValue = time.getTime();
+                    } catch (Exception ex) {
+                        log.error("Set default value:{} of Time catch exception:{}",
+                            constValue.toString(), ex.toString(), ex);
+                        throw new RuntimeException("Invalid Input TimeFormat: Expect(HH:mm:dd)");
+                    }
                     break;
                 case TIMESTAMP:
-                    java.sql.Timestamp timestamp = (java.sql.Timestamp)valueOfConst.getValue();
-                    defaultValue = timestamp.toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                    try {
+                        java.sql.Timestamp timestamp = null;
+                        if (constValue instanceof java.sql.Timestamp) {
+                            timestamp = (java.sql.Timestamp) valueOfConst.getValue();
+                        } else if (constValue instanceof java.lang.String) {
+                            timestamp = java.sql.Timestamp.valueOf(constValue.toString());
+                        }
+                        defaultValue = timestamp.toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                    } catch (Exception ex) {
+                        log.error("Set default value:{} of TimeStamp catch exception:{}",
+                            constValue.toString(), ex.toString(), ex);
+                        throw new RuntimeException("Invalid Input TimeStampFormat: Expect(yyyy-MM-dd HH:mm:dd)");
+                    }
                     break;
                 default:
                     defaultValue = valueOfConst.getValue();
