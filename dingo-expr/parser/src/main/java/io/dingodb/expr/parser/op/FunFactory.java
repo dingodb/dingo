@@ -32,6 +32,7 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.type.BooleanTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DateTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DecimalTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DoubleTypeEvaluatorFactory;
@@ -123,6 +124,7 @@ public final class FunFactory {
         registerEvaluator("date", DateTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("time", TimeTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("timestamp", TimestampTypeEvaluatorFactory.INSTANCE);
+        registerEvaluator("boolean", BooleanTypeEvaluatorFactory.INSTANCE);
 
         // String
         registerUdf("char_length", DingoCharLengthOp::new);
