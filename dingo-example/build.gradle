@@ -20,3 +20,25 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+
+task fatJar(type: Jar) {
+    classifier 'all'
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+fatJar.dependsOn([
+    ':dingo-driver-client:fatJar',
+    ':dingo-sdk:build',
+])
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}
