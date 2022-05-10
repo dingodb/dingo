@@ -17,7 +17,6 @@
 package io.dingodb.net.netty.packet;
 
 public enum PacketType {
-
     PING,
     PONG,
     ACK,
