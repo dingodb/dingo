@@ -52,7 +52,6 @@ public class DingoCurrentTimeOp extends RtFun {
 
     public static Time getCurrentTime() {
         Long millis = System.currentTimeMillis();
-        millis += TimeZone.getDefault().getRawOffset();
         return new Time(millis);
     }
 
