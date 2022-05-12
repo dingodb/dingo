@@ -18,6 +18,7 @@ package io.dingodb.server.client.connector.impl;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.Channel;
@@ -55,15 +56,19 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
     private static final CoordinatorConnector DEFAULT_CONNECTOR;
 
     static {
-        final String coordSrvList = ClientConfiguration.coordinatorExchangeSvrList();
-        List<String> servers = Arrays.asList(coordSrvList.split(","));
+        if (ClientConfiguration.instance() == null) {
+            DEFAULT_CONNECTOR = null;
+        } else {
+            final String coordSrvList = ClientConfiguration.coordinatorExchangeSvrList();
+            List<String> servers = Arrays.asList(coordSrvList.split(","));
 
-        List<NetAddress> addrList = servers.stream()
-            .map(s -> s.split(":"))
-            .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
-            .collect(Collectors.toList());
+            List<NetAddress> addrList = servers.stream()
+                .map(s -> s.split(":"))
+                .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
+                .collect(Collectors.toList());
 
-        DEFAULT_CONNECTOR = new CoordinatorConnector(addrList);
+            DEFAULT_CONNECTOR = new CoordinatorConnector(addrList);
+        }
     }
 
     public static CoordinatorConnector defaultConnector() {

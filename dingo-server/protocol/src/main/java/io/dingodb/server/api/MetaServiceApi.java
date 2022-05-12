@@ -49,11 +49,6 @@ public interface MetaServiceApi {
     Map<String, TableDefinition> getTableDefinitions();
 
     @ApiDeclaration
-    default TableDefinition getTableDefinition(String name) {
-        return getTableDefinitions().get(name);
-    }
-
-    @ApiDeclaration
     NavigableMap<ComparableByteArray, Part> getParts(String name);
 
     @ApiDeclaration

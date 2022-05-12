@@ -22,7 +22,7 @@ plugins {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'io.github.datacanvasio.dingo.web.DemoApplication'
+        attributes 'Main-Class': 'io.dingodb.web.DingoApplication'
     }
 }
 
@@ -39,6 +39,11 @@ dependencies {
     implementation project(":dingo-net-netty")
     implementation project(":dingo-common")
     implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+    implementation project(":dingo-server:dingo-server-client")
+    implementation project(":dingo-server:dingo-server-protocol")
+    implementation project(":dingo-meta-api")
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
 }
 
 
