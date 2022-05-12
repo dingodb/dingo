@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -262,7 +263,25 @@ public class TestLogicalPlan {
         String sql = "select * from test join test1 on test.name = test1.id1";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE).prop("joinType", JoinRelType.INNER)
+            .inputNum(2);
+    }
+
+    @Test
+    public void testJoinLeft() throws SqlParseException {
+        String sql = "select * from test left join test1 on test.name = test1.id1";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE).prop("joinType", JoinRelType.LEFT)
+            .inputNum(2);
+    }
+
+    @Test
+    public void testJoinRight() throws SqlParseException {
+        String sql = "select * from test right join test1 on test.name = test1.id1";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);
     }
 

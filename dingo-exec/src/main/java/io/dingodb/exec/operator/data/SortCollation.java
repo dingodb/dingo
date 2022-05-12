@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.sort;
+package io.dingodb.exec.operator.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

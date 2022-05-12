@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.sort.SortCollation;
+import io.dingodb.exec.operator.data.SortCollation;
 
 import java.util.Comparator;
 import java.util.LinkedList;

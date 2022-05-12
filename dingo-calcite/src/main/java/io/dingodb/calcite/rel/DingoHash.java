@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,11 +30,11 @@ import javax.annotation.Nonnull;
 
 public final class DingoHash extends SingleRel implements DingoRel {
     @Getter
-    private final TupleMapping mapping;
+    private final List<Integer> keys;
 
-    public DingoHash(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping mapping) {
+    public DingoHash(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<Integer> keys) {
         super(cluster, traits, input);
-        this.mapping = mapping;
+        this.keys = keys;
     }
 
     @Override
@@ -46,7 +45,7 @@ public final class DingoHash extends SingleRel implements DingoRel {
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoHash(getCluster(), traitSet, AbstractRelNode.sole(inputs), mapping);
+        return new DingoHash(getCluster(), traitSet, AbstractRelNode.sole(inputs), keys);
     }
 
     @Override

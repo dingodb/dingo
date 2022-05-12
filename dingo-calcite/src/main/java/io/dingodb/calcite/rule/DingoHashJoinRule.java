@@ -21,7 +21,6 @@ import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.common.table.TupleMapping;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -31,6 +30,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 
 public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
@@ -42,7 +42,7 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     private static RelNode hashRedistribute(
         @Nonnull Join join,
         RelNode rel,
-        TupleMapping mapping
+        List<Integer> keys
     ) {
         RelOptCluster cluster = join.getCluster();
         RelTraitSet traitSet = join.getTraitSet().replace(DingoConventions.DISTRIBUTED);
@@ -56,7 +56,7 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
                     cluster,
                     traitSet,
                     convert(rel, DingoConventions.DISTRIBUTED),
-                    mapping
+                    keys
                 )
             )
         );
@@ -69,8 +69,6 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
         if (!joinInfo.isEqui()) {
             throw new RuntimeException("This type of join is not supported.");
         }
-        TupleMapping leftMapping = TupleMapping.of(joinInfo.leftKeys);
-        TupleMapping rightMapping = TupleMapping.of(joinInfo.rightKeys);
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traitSet = rel.getTraitSet().replace(DingoConventions.DISTRIBUTED);
         call.transformTo(
@@ -78,13 +76,11 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
                 cluster,
                 traitSet,
                 rel.getHints(),
-                hashRedistribute(rel, rel.getLeft(), leftMapping),
-                hashRedistribute(rel, rel.getRight(), rightMapping),
+                hashRedistribute(rel, rel.getLeft(), joinInfo.leftKeys),
+                hashRedistribute(rel, rel.getRight(), joinInfo.rightKeys),
                 rel.getCondition(),
                 rel.getVariablesSet(),
-                rel.getJoinType(),
-                leftMapping,
-                rightMapping
+                rel.getJoinType()
             )
         );
     }

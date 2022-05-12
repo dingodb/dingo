@@ -16,9 +16,12 @@
 
 package io.dingodb.test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import io.dingodb.calcite.Connections;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.CsvUtils;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.test.MetaTestService;
@@ -28,15 +31,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,6 +78,20 @@ public class SqlHelper {
     public void queryTest(
         String sql,
         String[] columns,
+        List<Object[]> tuples
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet)
+                    .columnLabels(columns)
+                    .isRecords(tuples);
+            }
+        }
+    }
+
+    public void queryTest(
+        String sql,
+        String[] columns,
         TupleSchema schema,
         String data
     ) throws SQLException {
@@ -82,6 +102,24 @@ public class SqlHelper {
                     .isRecords(schema, data);
             }
         }
+    }
+
+    public void queryTest(String sql, InputStream resultFile) throws IOException, SQLException {
+        Iterator<String[]> it = CsvUtils.readCsv(resultFile);
+        String[] columnNames = null;
+        if (it.hasNext()) {
+            columnNames = it.next();
+        }
+        TupleSchema schema = null;
+        if (it.hasNext()) {
+            schema = TupleSchema.ofTypes(it.next());
+        }
+        if (columnNames == null || schema == null) {
+            throw new IllegalArgumentException("Result file must be csv, "
+                + "and its first two rows are column names and schema definitions.");
+        }
+        List<Object[]> tuples = ImmutableList.copyOf(Iterators.transform(it, schema::parse));
+        queryTest(sql, columnNames, tuples);
     }
 
     public void queryTestOrder(
@@ -132,12 +170,10 @@ public class SqlHelper {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public int execFile(@Nonnull String sqlFile) throws IOException, SQLException {
+    public int execFile(@Nullable InputStream stream) throws IOException, SQLException {
+        Objects.requireNonNull(stream);
         int result = -1;
-        String[] sqlList = IOUtils.toString(
-            Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)),
-            StandardCharsets.UTF_8
-        ).split(";");
+        String[] sqlList = IOUtils.toString(stream, StandardCharsets.UTF_8).split(";");
         try (Statement statement = connection.createStatement()) {
             for (String sql : sqlList) {
                 if (!sql.trim().isEmpty()) {
@@ -146,6 +182,11 @@ public class SqlHelper {
             }
         }
         return result;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public int execFile(@Nonnull String sqlFile) throws IOException, SQLException {
+        return execFile(SqlHelper.class.getResourceAsStream(sqlFile));
     }
 
     @SuppressWarnings("UnusedReturnValue")
