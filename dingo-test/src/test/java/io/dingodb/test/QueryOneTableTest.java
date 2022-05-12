@@ -20,11 +20,17 @@ import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class QueryOneTableTest {
@@ -235,5 +241,20 @@ public class QueryOneTableTest {
                 + "8, Alice, A\n"
                 + "9, Cindy, A\n"
         );
+    }
+
+    @Test
+    public void testCountOfTable() throws SQLException {
+        Connection connection = sqlHelper.getConnection();
+        String sql = "select count(*) from test";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getInt(1));
+                    Assertions.assertEquals(rs.getInt(1), 9);
+                }
+            }
+        }
     }
 }
