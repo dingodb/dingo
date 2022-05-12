@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime.evaluator.utils;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
@@ -41,13 +42,13 @@ public final class Time2StringUtils {
      * @return
      */
     public static String convertTime2String(java.sql.Time input) {
-        Long unixTime = input.getTime() - TimeZone.getDefault().getRawOffset();
+        Long unixTime = input.getTime();
         java.sql.Time result = new java.sql.Time(unixTime);
         return result.toString();
     }
 
     public static String convertDate2String(java.sql.Date input) {
-        Long unixTime = input.getTime() - TimeZone.getDefault().getRawOffset();
-        return new java.sql.Date(unixTime).toString();
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        return format.format(input);
     }
 }

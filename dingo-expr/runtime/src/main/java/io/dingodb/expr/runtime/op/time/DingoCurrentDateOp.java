@@ -52,7 +52,6 @@ public class DingoCurrentDateOp extends RtFun {
 
     public static java.sql.Date getCurrentDate() {
         Long millis = System.currentTimeMillis();
-        millis += TimeZone.getDefault().getRawOffset();
         return new Date(millis);
     }
 

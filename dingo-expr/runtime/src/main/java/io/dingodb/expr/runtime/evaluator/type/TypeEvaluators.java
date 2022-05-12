@@ -208,7 +208,7 @@ final class TypeEvaluators {
     @Nonnull
     @Evaluators.Base(StringEvaluator.class)
     static String stringType(@Nonnull Date value) {
-        return stringType(value, "yyyy-MM-dd HH:mm:ss.SSS");
+        return stringType(value, "yyyy-MM-dd");
     }
 
     @Nonnull
