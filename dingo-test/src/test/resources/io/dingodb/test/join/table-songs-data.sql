@@ -15,4 +15,7 @@ INSERT INTO songs(id, title, artist) VALUES
 (14, 'Goodbye', 9),
 (15, 'Remember When', 9),
 (16, 'Trip To Your Heart', 10),
-(17, 'Trouble For Me', 10)
+(17, 'Trouble For Me', 10),
+(18, 'Take Me To Your Heart', 11), -- Michael Learns To Rock
+(19, 'I Still Believe', 12), -- Mariah Carey
+(20, 'Obsessed', 12) -- Mariah Carey

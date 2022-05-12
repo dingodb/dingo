@@ -17,8 +17,6 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
-import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -33,11 +31,6 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 public class DingoHashJoin extends Join implements DingoRel {
-    @Getter
-    private final TupleMapping leftMapping;
-    @Getter
-    private final TupleMapping rightMapping;
-
     public DingoHashJoin(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -46,13 +39,9 @@ public class DingoHashJoin extends Join implements DingoRel {
         RelNode right,
         RexNode condition,
         Set<CorrelationId> variablesSet,
-        JoinRelType joinType,
-        TupleMapping leftMapping,
-        TupleMapping rightMapping
+        JoinRelType joinType
     ) {
         super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
-        this.leftMapping = leftMapping;
-        this.rightMapping = rightMapping;
     }
 
     @Override
@@ -72,9 +61,7 @@ public class DingoHashJoin extends Join implements DingoRel {
             right,
             conditionExpr,
             getVariablesSet(),
-            joinType,
-            leftMapping,
-            rightMapping
+            joinType
         );
     }
 

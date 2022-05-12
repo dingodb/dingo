@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
 
 import java.util.Arrays;
@@ -31,22 +32,40 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @JsonTypeName("hashJoin")
-@JsonPropertyOrder({"leftMapping", "rightMapping"})
+@JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
 public class HashJoinOperator extends SoleOutOperator {
     @JsonProperty("leftMapping")
     private final TupleMapping leftMapping;
     @JsonProperty("rightMapping")
     private final TupleMapping rightMapping;
+    // For OUTER join, there may be no input tuples, so the length of tuple cannot be achieved.
+    @JsonProperty("leftLength")
+    private final int leftLength;
+    @JsonProperty("rightLength")
+    private final int rightLength;
+    @JsonProperty("leftRequired")
+    private final boolean leftRequired;
+    @JsonProperty("rightRequired")
+    private final boolean rightRequired;
+
     boolean rightFinFlag;
-    private ConcurrentHashMap<TupleKey, List<Object[]>> hashMap;
+    private ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap;
 
     @JsonCreator
     public HashJoinOperator(
         @JsonProperty("leftMapping") TupleMapping leftMapping,
-        @JsonProperty("rightMapping") TupleMapping rightMapping
+        @JsonProperty("rightMapping") TupleMapping rightMapping,
+        @JsonProperty("leftLength") int leftLength,
+        @JsonProperty("rightLength") int rightLength,
+        @JsonProperty("leftRequired") boolean leftRequired,
+        @JsonProperty("rightRequired") boolean rightRequired
     ) {
         this.leftMapping = leftMapping;
         this.rightMapping = rightMapping;
+        this.leftLength = leftLength;
+        this.rightLength = rightLength;
+        this.leftRequired = leftRequired;
+        this.rightRequired = rightRequired;
         rightFinFlag = false;
     }
 
@@ -70,20 +89,25 @@ public class HashJoinOperator extends SoleOutOperator {
                 }
             }
             TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
-            List<Object[]> rightList = hashMap.get(leftKey);
+            List<TupleWithJoinFlag> rightList = hashMap.get(leftKey);
             if (rightList != null) {
-                for (Object[] t : rightList) {
-                    Object[] newTuple = Arrays.copyOf(tuple, tuple.length + t.length);
-                    System.arraycopy(t, 0, newTuple, tuple.length, t.length);
+                for (TupleWithJoinFlag t : rightList) {
+                    Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                    System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
+                    t.setJoined(true);
                     if (!output.push(newTuple)) {
                         return false;
                     }
                 }
+            } else if (leftRequired) {
+                Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                return output.push(newTuple);
             }
         } else if (pin == 1) { //right
             TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
-            List<Object[]> list = hashMap.computeIfAbsent(rightKey, k -> new LinkedList<>());
-            list.add(tuple);
+            List<TupleWithJoinFlag> list = hashMap.computeIfAbsent(rightKey, k -> new LinkedList<>());
+            list.add(new TupleWithJoinFlag(tuple));
         }
         return true;
     }
@@ -96,6 +120,21 @@ public class HashJoinOperator extends SoleOutOperator {
         }
 
         if (pin == 0) { // left
+            if (rightRequired) {
+                outer:
+                for (List<TupleWithJoinFlag> tList : hashMap.values()) {
+                    for (TupleWithJoinFlag t : tList) {
+                        if (!t.isJoined()) {
+                            Object[] newTuple = new Object[leftLength + rightLength];
+                            Arrays.fill(newTuple, 0, leftLength, null);
+                            System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
+                            if (!output.push(newTuple)) {
+                                break outer;
+                            }
+                        }
+                    }
+                }
+            }
             output.fin(fin);
         } else if (pin == 1) { //right
             rightFinFlag = true;

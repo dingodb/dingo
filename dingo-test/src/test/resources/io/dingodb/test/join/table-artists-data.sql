@@ -8,4 +8,6 @@ INSERT INTO artists (id, name, category) VALUES
 (7, 'Adele Adkins', 'Female'),
 (8, 'Richard Marx', 'Male'),
 (9, 'Avril Lavigne', 'Female'),
-(10, 'Britney Spears', 'Female')
+(10, 'Britney Spears', 'Female'),
+(100, 'Carpenters', 'Band'),
+(101, 'Taylor Swift', 'Female')
