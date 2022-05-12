@@ -16,7 +16,10 @@
 
 package io.dingodb.store.raft;
 
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Timer;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -47,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static io.dingodb.common.metrics.DingoMetrics.name;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.compare;
 
@@ -64,6 +68,7 @@ public class RaftStoreInstance implements StoreInstance {
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final List<RaftStoreInstancePart> waitStoreParts;
+    private final Clock clock;
 
     public RaftStoreInstance(Path path, CommonId id)  {
         try {
@@ -86,6 +91,7 @@ public class RaftStoreInstance implements StoreInstance {
             this.parts = new ConcurrentHashMap<>();
             this.waitParts = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
             this.waitStoreParts = new CopyOnWriteArrayList<>();
+            this.clock = Clock.defaultClock();
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -171,18 +177,22 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean exist(byte[] primaryKey) {
-        Part part;
-        if ((part = getPart(primaryKey)) == null) {
+        long startTime = this.clock.getTime();
+        Part part = getPart(primaryKey);
+        if (part == null) {
             throw new IllegalArgumentException(
                 "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
             );
         }
-        return parts.get(part.getId()).exist(primaryKey);
+        boolean exist = parts.get(part.getId()).exist(primaryKey);
+        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        return exist;
     }
 
     @Override
     public boolean existAny(List<byte[]> primaryKeys) {
         Part part = null;
+        long startTime = this.clock.getTime();
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
                 throw new IllegalArgumentException(
@@ -193,7 +203,9 @@ public class RaftStoreInstance implements StoreInstance {
                 throw new IllegalArgumentException("The primary key list not in same part.");
             }
         }
-        return parts.get(part.getId()).existAny(primaryKeys);
+        boolean exist = parts.get(part.getId()).existAny(primaryKeys);
+        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        return exist;
     }
 
     @Override
@@ -207,29 +219,36 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
+        long startTime = this.clock.getTime();
         Part part = getPart(row.getPrimaryKey());
         if (part == null) {
             throw new IllegalArgumentException(
                 "The primary key " + Arrays.toString(row.getKey()) + " not in current instance."
             );
         }
-        return parts.get(part.getId()).upsertKeyValue(row);
+        boolean result = parts.get(part.getId()).upsertKeyValue(row);
+        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        return result;
     }
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
+        long startTime = this.clock.getTime();
         Part part = getPart(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
                 "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
             );
         }
-        return parts.get(part.getId()).upsertKeyValue(primaryKey, row);
+        boolean result = parts.get(part.getId()).upsertKeyValue(primaryKey, row);
+        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        return result;
     }
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
         Part part = null;
+        long startTime = this.clock.getTime();
         for (KeyValue row: rows) {
 
             if (part == null && (part = getPart(row.getPrimaryKey())) == null) {
@@ -241,7 +260,9 @@ public class RaftStoreInstance implements StoreInstance {
                 throw new IllegalArgumentException("The primary key list not in same part.");
             }
         }
-        return parts.get(part.getId()).upsertKeyValue(rows);
+        boolean result = parts.get(part.getId()).upsertKeyValue(rows);
+        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        return result;
     }
 
     @Override
@@ -282,17 +303,21 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
+        long startTime = this.clock.getTime();
         Part part = getPart(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
                 "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
             );
         }
-        return parts.get(part.getId()).getValueByPrimaryKey(primaryKey);
+        byte[] result = parts.get(part.getId()).getValueByPrimaryKey(primaryKey);
+        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        return result;
     }
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
+        long startTime = this.clock.getTime();
         Part part = null;
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
@@ -304,7 +329,9 @@ public class RaftStoreInstance implements StoreInstance {
                 throw new IllegalArgumentException("The primary key list not in same part.");
             }
         }
-        return parts.get(part.getId()).getKeyValueByPrimaryKeys(primaryKeys);
+        List<KeyValue> result = parts.get(part.getId()).getKeyValueByPrimaryKeys(primaryKeys);
+        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        return result;
     }
 
     @Override
@@ -319,6 +346,11 @@ public class RaftStoreInstance implements StoreInstance {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
         return parts.get(part.getId()).keyValueScan(startPrimaryKey, endPrimaryKey);
+    }
+
+    private void statLatency(String name, long startTime) {
+        long cost = this.clock.getTime() - startTime;
+        DingoMetrics.partLatency(name, cost);
     }
 
     class FullScanRawIterator extends KeyValueIterator {

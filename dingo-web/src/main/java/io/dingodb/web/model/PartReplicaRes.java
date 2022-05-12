@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.web;
+package io.dingodb.web.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.oas.annotations.EnableOpenApi;
+import io.dingodb.common.Location;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@EnableOpenApi
-@SpringBootApplication
-public class DemoApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
-    }
+import java.util.List;
+
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+public class PartReplicaRes {
+
+    private String schema;
+    private String name;
+    private Location leader;
+    private List<Location> replicates;
+
 }

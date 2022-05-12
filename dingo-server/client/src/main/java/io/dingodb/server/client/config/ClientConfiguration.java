@@ -34,8 +34,12 @@ public class ClientConfiguration {
 
     static {
         try {
-            DingoConfiguration.instance().setClient(ClientConfiguration.class);
-            INSTANCE = DingoConfiguration.instance().getClient();
+            if (DingoConfiguration.instance() == null) {
+                INSTANCE = null;
+            } else {
+                DingoConfiguration.instance().setClient(ClientConfiguration.class);
+                INSTANCE = DingoConfiguration.instance().getClient();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

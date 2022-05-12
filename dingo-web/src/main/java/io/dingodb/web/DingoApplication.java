@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.api;
+package io.dingodb.web;
 
-import io.dingodb.server.protocol.meta.Stats;
+import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import springfox.documentation.oas.annotations.EnableOpenApi;
 
-public interface StatsApi {
+@Configurable
+@EnableOpenApi
+@SpringBootApplication
+public class DingoApplication {
 
-    void reportStats(Stats stats);
-
+    public static void main(String[] args) {
+        SpringApplication.run(DingoApplication.class, args);
+    }
 }
