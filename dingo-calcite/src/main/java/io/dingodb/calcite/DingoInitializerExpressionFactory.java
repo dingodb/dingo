@@ -25,6 +25,7 @@ import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.RtConst;
+import io.dingodb.expr.runtime.RtNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
@@ -92,6 +93,10 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
         try {
             defaultValue = inputExpr.compileIn(null);
+            if (defaultValue instanceof RtNull) {
+                return null;
+            }
+
             RtConst valueOfConst = (RtConst) defaultValue;
             switch (type.getSqlTypeName()) {
                 case DATE:

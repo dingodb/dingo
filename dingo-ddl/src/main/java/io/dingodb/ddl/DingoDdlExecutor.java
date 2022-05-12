@@ -86,11 +86,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         ColumnStrategy strategy = scd.strategy;
         if (strategy == ColumnStrategy.DEFAULT) {
             SqlNode expr = scd.expression;
-            if (expr instanceof SqlLiteral) {
-                defaultValue = ((SqlLiteral) expr).getValue().toString();
-            }
-            // case like: current_date(SqlIdentifier) or current_date()(SqlIdentifier)
-            if (expr instanceof SqlIdentifier || expr instanceof SqlBasicCall) {
+            if (expr != null) {
                 defaultValue = expr.toString();
             }
         }
