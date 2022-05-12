@@ -36,9 +36,20 @@ public final class CsvUtils {
     }
 
     @Nonnull
+    public static Iterator<String[]> readCsv(InputStream is) throws IOException {
+        return PARSER.readValues(is, String[].class);
+    }
+
+    @Nonnull
     public static Iterator<Object[]> readCsv(@Nonnull TupleSchema schema, InputStream is) throws IOException {
-        final Iterator<String[]> it = PARSER.readValues(is, String[].class);
-        return Iterators.transform(it, schema::parse);
+        return Iterators.transform(readCsv(is), schema::parse);
+    }
+
+    @Nonnull
+    public static List<Object[]> readCsv(@Nonnull TupleSchema schema, String lines) throws JsonProcessingException {
+        return Arrays.stream(PARSER.parse(lines, String[][].class))
+            .map(schema::parse)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -49,7 +60,7 @@ public final class CsvUtils {
      * @throws IOException when errors occurred in reading the stream
      */
     @Nonnull
-    public static Iterator<Object[]> readCsv(InputStream is) throws IOException {
+    public static Iterator<Object[]> readCsvWithSchema(InputStream is) throws IOException {
         final Iterator<String[]> it = PARSER.readValues(is, String[].class);
         if (it.hasNext()) {
             String[] types = it.next();
@@ -57,12 +68,5 @@ public final class CsvUtils {
             return Iterators.transform(it, schema::parse);
         }
         return Iterators.transform(it, s -> s);
-    }
-
-    @Nonnull
-    public static List<Object[]> readCsv(@Nonnull TupleSchema schema, String lines) throws JsonProcessingException {
-        return Arrays.stream(PARSER.parse(lines, String[][].class))
-            .map(schema::parse)
-            .collect(Collectors.toList());
     }
 }

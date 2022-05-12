@@ -17,6 +17,34 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/dingo-test/src/test/resources/io/dingodb/test/join/songs-artists-full-join.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/dingo-test/src/test/resources/io/dingodb/test/join/songs-artists-inner-join.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/dingo-test/src/test/resources/io/dingodb/test/join/songs-artists-left-join.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/dingo-test/src/test/resources/io/dingodb/test/join/songs-artists-right-join.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

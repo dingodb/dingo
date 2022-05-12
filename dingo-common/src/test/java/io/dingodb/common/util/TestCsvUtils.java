@@ -58,7 +58,7 @@ public class TestCsvUtils {
 
     @Test
     public void testReadCsvWithSchema() throws IOException {
-        Iterator<Object[]> it = CsvUtils.readCsv(
+        Iterator<Object[]> it = CsvUtils.readCsvWithSchema(
             getClass().getResourceAsStream("/table-test-data-with-schema.csv")
         );
         int id = 1;

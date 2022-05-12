@@ -73,15 +73,17 @@ import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
-import io.dingodb.exec.sort.SortCollation;
-import io.dingodb.exec.sort.SortDirection;
-import io.dingodb.exec.sort.SortNullDirection;
+import io.dingodb.exec.operator.data.SortCollation;
+import io.dingodb.exec.operator.data.SortDirection;
+import io.dingodb.exec.operator.data.SortNullDirection;
 import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -374,7 +376,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final HashStrategy hs = new SimpleHashStrategy();
         for (Output input : inputs) {
             Task task = input.getTask();
-            HashOperator operator = new HashOperator(hs, rel.getMapping());
+            HashOperator operator = new HashOperator(hs, TupleMapping.of(rel.getKeys()));
             operator.setId(idGenerator.get());
             operator.createOutputs(locations);
             task.putOperator(operator);
@@ -398,7 +400,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             Id taskId = entry.getKey();
             Output left = entry.getValue();
             Output right = rightInputsMap.get(taskId);
-            Operator operator = new HashJoinOperator(rel.getLeftMapping(), rel.getRightMapping());
+            JoinInfo joinInfo = rel.analyzeCondition();
+            Operator operator = new HashJoinOperator(
+                TupleMapping.of(joinInfo.leftKeys),
+                TupleMapping.of(joinInfo.rightKeys),
+                rel.getLeft().getRowType().getFieldCount(),
+                rel.getRight().getRowType().getFieldCount(),
+                rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
+                rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
+            );
             operator.setId(idGenerator.get());
             left.setLink(operator.getInput(0));
             right.setLink(operator.getInput(1));
