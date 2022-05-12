@@ -355,4 +355,27 @@ public class TableWithDefaultValueTest {
             expectRecord);
         sqlHelper.clearTable(tableName);
     }
+
+    @Test
+    public void testCase10() throws Exception {
+        String tableName = "testCase10";
+        final String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    age int default null, \n"
+            + "    address varchar(32) default null, \n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        String expectRecord = "100, lala, null, null";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING"),
+            expectRecord);
+        sqlHelper.clearTable(tableName);
+    }
 }
