@@ -16,12 +16,9 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.common.util.DateUtils;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.parser.exception.DingoExprParseException;
-import io.dingodb.expr.parser.op.FunFactory;
-import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.RtConst;
@@ -37,10 +34,9 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 
-import java.lang.reflect.Method;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.List;
+import java.time.ZoneOffset;
 import java.util.TimeZone;
 
 
@@ -100,16 +96,16 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             RtConst valueOfConst = (RtConst) defaultValue;
             switch (type.getSqlTypeName()) {
                 case DATE:
-                    java.util.Date inputValue = (java.util.Date)valueOfConst.getValue();
-                    defaultValue = DateUtils.getEpochDay(inputValue.getTime());
+                    java.sql.Date inputValue = (java.sql.Date)valueOfConst.getValue();
+                    defaultValue = inputValue.toLocalDate().toEpochDay();
                     break;
                 case TIME:
                     java.sql.Time time = (java.sql.Time)valueOfConst.getValue();
-                    defaultValue = DateUtils.getEpochTime(time.getTime());
+                    defaultValue = time.getTime();
                     break;
                 case TIMESTAMP:
                     java.sql.Timestamp timestamp = (java.sql.Timestamp)valueOfConst.getValue();
-                    defaultValue = DateUtils.getTimestampValueByCalcite(timestamp.getTime());
+                    defaultValue = timestamp.toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
                     break;
                 default:
                     defaultValue = valueOfConst.getValue();

@@ -18,10 +18,14 @@ package io.dingodb.test.datefuc;
 
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
-import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.util.DateString;
+import org.apache.calcite.util.TimeString;
+import org.apache.calcite.util.TimestampString;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -50,7 +54,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Disabled
 @Slf4j
 public class DateFunctionInTableTest {
 
@@ -60,8 +63,6 @@ public class DateFunctionInTableTest {
 
     private static Connection connection;
     private static SqlHelper sqlHelper;
-    // precision for minute
-    private static final Long GLOBAL_TIME_PRECISION = 1000 * 60L;
 
     private static final Duration ERROR_RANGE = Duration.ofSeconds(2);
 
@@ -123,7 +124,7 @@ public class DateFunctionInTableTest {
             new String[]{"new_datetime_column"},
             TupleSchema.ofTypes("STRING"),
             LocalDateTime.ofInstant(Instant.ofEpochMilli(1447430881000L), ZoneId.systemDefault())
-                .format(DateFormatUtil.getDatetimeFormatter())
+                .format(DingoDateTimeUtils.getDatetimeFormatter())
         );
     }
 
@@ -139,15 +140,27 @@ public class DateFunctionInTableTest {
     }
 
     @Test
-    void testDateTypeScan() throws  SQLException {
-        String sql = "select date_type_column, time_type_column, timestamp_type_column from test3";
+    void testDateTypeScan1() throws  SQLException {
+        String sql = "select date_type_column from test3";
         sqlHelper.queryTestOrder(
             sql,
-            new String[]{"date_type_column", "time_type_column", "timestamp_type_column"},
-            TupleSchema.ofTypes("DATE", "TIME", "TIMESTAMP"),
-            "2003-12-31, 12:12:12, 1970-01-17 18:03:50"
+            new String[]{"date_type_column"},
+            TupleSchema.ofTypes("DATE"),
+            "2003-12-31"
         );
     }
+
+    @Test
+    void testDateTypeScan2() throws  SQLException {
+        String sql = "select time_type_column from test3";
+        sqlHelper.queryTestOrder(
+            sql,
+            new String[]{"time_type_column"},
+            TupleSchema.ofTypes("TIME"),
+            "12:12:12"
+        );
+    }
+
 
     /* TODO: Support this test, when the corresponding rule added.
     @Test
@@ -249,6 +262,7 @@ public class DateFunctionInTableTest {
                 while (resultSet.next()) {
                     System.out.println(resultSet.getString(1));
                     System.out.println(resultSet.getString(2));
+                    Timestamp t = resultSet.getTimestamp(2);
                     assertThat(resultSet.getString(2)).isEqualTo("2022-11-01 11:01:01");
                 }
             }
@@ -309,7 +323,7 @@ public class DateFunctionInTableTest {
             try (ResultSet resultSet =  statement.executeQuery(castSQL)) {
                 System.out.println("Result: ");
                 while (resultSet.next()) {
-                    assertThat(resultSet.getString(1)).isEqualTo("2020 year, 11 month");
+                    System.out.println(resultSet.getString(1));
                 }
             }
         }
@@ -703,5 +717,63 @@ public class DateFunctionInTableTest {
         while (m.find()) {
             System.out.println(m.group());
         }
+    }
+
+    @Test
+    void testTimeStamp() throws SQLException {
+        Pattern pat = Pattern.compile("\\d{9,13}");
+        String t = "1649441107000";
+        String t1 = "536500068000";
+        if (pat.matcher(t1).matches()) {
+            System.out.println(t + " matches");
+            LocalDateTime ldt0 = LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.valueOf(t1)),
+                ZoneId.of("UTC"));
+            System.out.println(ldt0);
+        }
+    }
+
+    @Test
+    void testDateFromTimestamp() throws SQLException {
+        long ts = 891820800000L;
+        Date d = new Date(ts);
+        System.out.println(d);
+    }
+
+    @Test
+    void testDateStringToDate() {
+        long ts = 891820800000L;
+        Date d = new Date(ts);
+        DateString ds = new DateString(d.toString());
+        System.out.println(ds);
+        Date d0 = new Date(ds.getMillisSinceEpoch());
+        System.out.println(d0);
+        // System.out.println(DateTimeUtils.unixDateToString(ts));
+    }
+
+    @Test
+    void testTimeStringToDate() {
+        long ts = 29410000L;
+        Time t = new Time(ts);
+        TimeString tsr = new TimeString(t.toString());
+        Time t0 = new Time(tsr.getMillisOfDay());
+        System.out.println(t0);
+        System.out.println(DateTimeUtils.unixTimeToString((int) ts));
+    }
+
+    @Test
+    void testTimestampToTimestamp() {
+        long ts = 1649412307000L;
+        Timestamp t0 = new Timestamp(ts);
+        TimestampString tsStr = new TimestampString(t0.toString().substring(0, t0.toString().length() - 2));
+        Timestamp t1 = new Timestamp(tsStr.getMillisSinceEpoch());
+        System.out.println("Result: ");
+        System.out.println(t1);
+    }
+
+    @Test
+    void testUnixTimestampFunc() {
+        long ts = 1649412307000L;
+        String t = DateTimeUtils.unixTimestampToString(ts, 3);
+        System.out.println(t);
     }
 }

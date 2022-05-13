@@ -20,6 +20,8 @@ import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.store.KeyValue;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 public class KeyValueCodec {
@@ -27,25 +29,54 @@ public class KeyValueCodec {
     private final AvroCodec valueCodec;
     private final TupleMapping keyMapping;
     private final TupleMapping valueMapping;
+    private final TupleSchema tupleSchema;
 
     public KeyValueCodec(@Nonnull TupleSchema schema, @Nonnull TupleMapping keyMapping) {
+        this.tupleSchema = schema;
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.size());
         keyCodec = new AvroCodec(schema.select(keyMapping).getAvroSchema());
         valueCodec = new AvroCodec(schema.select(valueMapping).getAvroSchema());
     }
 
+    private Object[] convertFromAvro(Object[] record) {
+        List<Object> result = new ArrayList<>();
+        int len = record.length;
+        for (int i = 0; i < len; i++) {
+            result.add(tupleSchema.get(i).convertFromAvro(record[i]));
+        }
+        return result.toArray();
+    }
+
     public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyCodec.decode(result, keyValue.getKey(), keyMapping);
         valueCodec.decode(result, keyValue.getValue(), valueMapping);
-        return result;
+        return convertFromAvro(result);
     }
 
+    private Object[] convertToAvro(Object[] record) {
+        List<Object> result = new ArrayList<>();
+        int len = record.length;
+        if (record.length == tupleSchema.size()) {
+            for (int i = 0; i < len; i++) {
+                result.add(tupleSchema.get(i).convertToAvro(record[i]));
+            }
+        } else {
+            result.add(record[0]);
+            for (int i = 1; i < len; i++) {
+                result.add(tupleSchema.get(i - 1).convertToAvro(record[i]));
+            }
+        }
+        return result.toArray();
+    }
+
+
     public KeyValue encode(@Nonnull Object[] record) throws IOException {
+        Object[] convertedRecords = convertToAvro(record);
         return new KeyValue(
-            keyCodec.encode(record, keyMapping),
-            valueCodec.encode(record, valueMapping)
+            keyCodec.encode(convertedRecords, keyMapping),
+            valueCodec.encode(convertedRecords, valueMapping)
         );
     }
 
@@ -61,6 +92,6 @@ public class KeyValueCodec {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyMapping.map(result, keys);
         valueCodec.decode(result, bytes, valueMapping);
-        return result;
+        return convertFromAvro(result);
     }
 }

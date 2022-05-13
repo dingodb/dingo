@@ -20,7 +20,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 
-import java.util.Date;
+import java.sql.Date;
 import javax.annotation.Nonnull;
 
 public class RtTimestampOp extends RtFun {

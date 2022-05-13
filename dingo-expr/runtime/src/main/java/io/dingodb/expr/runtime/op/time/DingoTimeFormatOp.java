@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime.op.time;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
@@ -25,6 +26,7 @@ import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
+import java.sql.Time;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,16 +34,9 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-/**
- * Create an DingoDteNowOp to process date.
- */
-
 @Slf4j
-public class DingoDateNowOp extends RtFun {
-
-    public static final long serialVersionUID = -1436327540637259764L;
-
-    public DingoDateNowOp(@Nonnull RtExpr[] paras) {
+public class DingoTimeFormatOp extends RtFun {
+    public DingoTimeFormatOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
@@ -52,41 +47,45 @@ public class DingoDateNowOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        return getLocalTime();
+        Time originTime = (Time) values[0];
+        String formatStr = DingoDateTimeUtils.defaultDateFormat();
+        if (values.length == 2) {
+            formatStr = (String)values[1];
+        }
+        return timeFormat(originTime, formatStr);
     }
 
-    public static String getLocalTime() {
-        String formatStr = DingoDateTimeUtils.defaultDatetimeFormat();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-        return new java.sql.Timestamp(System.currentTimeMillis()).toLocalDateTime().format(formatter);
+    public static String timeFormat(final Time time, final String formatStr) {
+        if (formatStr.equals(DingoDateTimeUtils.defaultTimeFormat())) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+            return time.toLocalTime().format(formatter);
+        } else {
+            return DingoDateTimeUtils.processFormatStr(time.toLocalTime(), formatStr);
+        }
     }
 
-    /**
-     * the now function is equal to current_timestamp.
-     * then disable now function.
-     */
-    // @AutoService(DingoFuncProvider.class)
+    @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
+
         public Function<RtExpr[], RtOp> supplier() {
-            return DingoDateNowOp::new;
+            return DingoTimeFormatOp::new;
         }
 
         @Override
         public List<String> name() {
-            return Arrays.asList("now");
+            return Arrays.asList("time_format");
         }
 
         @Override
         public List<Method> methods() {
-            List<Method> methods = new ArrayList<>();
             try {
-                methods.add(DingoDateNowOp.class.getMethod("getLocalTime"));
+                List<Method> methods = new ArrayList<>();
+                methods.add(DingoTimeFormatOp.class.getMethod("timeFormat", Time.class, String.class));
+                return methods;
             } catch (NoSuchMethodException e) {
                 log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
                 throw new RuntimeException(e);
             }
-            return methods;
         }
     }
-
 }

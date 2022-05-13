@@ -23,7 +23,7 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.sql.Date;
 import javax.annotation.Nonnull;
 
 @Evaluators(

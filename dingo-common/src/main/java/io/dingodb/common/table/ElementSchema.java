@@ -28,6 +28,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -160,10 +162,22 @@ public class ElementSchema implements CompileContext {
                 }
                 break;
             case TypeCode.DATE:
+                if (origin instanceof Number) {
+                    return new Date((Long) origin);
+                } else if (origin instanceof Calendar) {
+                    return ((Calendar) origin).getTimeInMillis();// from RexLiteral
+                }
+                break;
             case TypeCode.TIME:
+                if (origin instanceof Number) { // from serialized milliseconds
+                    return new Time((Long) origin);
+                } else if (origin instanceof Calendar) { // from RexLiteral
+                    return ((Calendar) origin).getTimeInMillis();
+                }
+                break;
             case TypeCode.TIMESTAMP:
                 if (origin instanceof Number) { // from serialized milliseconds
-                    return ((Number) origin).longValue();
+                    return new Timestamp((Long) origin);
                 } else if (origin instanceof Calendar) { // from RexLiteral
                     return ((Calendar) origin).getTimeInMillis();
                 }
@@ -182,5 +196,34 @@ public class ElementSchema implements CompileContext {
                 break;
         }
         return origin;
+    }
+
+    public Object convertToAvro(Object item) {
+        switch (type) {
+            case TypeCode.TIME:
+                return ((Time) item).getTime();
+            case TypeCode.DATE:
+                return ((Date) item).getTime();
+            case TypeCode.TIMESTAMP:
+                return ((Timestamp) item).getTime();
+            default:
+                break;
+        }
+        return item;
+    }
+
+
+    public Object convertFromAvro(Object item) {
+        switch (type) {
+            case TypeCode.TIME:
+                return new Time((Long) item);
+            case TypeCode.DATE:
+                return new Date((Long) item);
+            case TypeCode.TIMESTAMP:
+                return new Timestamp((Long) item);
+            default:
+                break;
+        }
+        return item;
     }
 }

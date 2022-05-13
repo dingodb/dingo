@@ -69,6 +69,7 @@ import io.dingodb.expr.runtime.op.time.DingoDateDiffOp;
 import io.dingodb.expr.runtime.op.time.DingoDateFormatOp;
 import io.dingodb.expr.runtime.op.time.DingoDateFromUnixTimeOp;
 import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
+import io.dingodb.expr.runtime.op.time.DingoTimeFormatOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -155,6 +156,7 @@ public final class FunFactory {
         registerUdf("from_unixtime", DingoDateFromUnixTimeOp::new);
         registerUdf("unix_timestamp", DingoDateUnixTimestampOp::new);
         registerUdf("date_format", DingoDateFormatOp::new);
+        registerUdf("time_format", DingoTimeFormatOp::new);
         registerUdf("datediff", DingoDateDiffOp::new);
     }
 
