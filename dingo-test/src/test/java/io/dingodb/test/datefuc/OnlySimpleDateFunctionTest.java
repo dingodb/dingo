@@ -42,6 +42,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.Temporal;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -440,10 +441,93 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+    @Test
+    public void testUnixTimeStamp08() throws SQLException {
+        String sql = "select unix_timestamp(20220412172630)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(20220412172630L);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUnixTimeStamp09() throws SQLException {
+        String sql = "select unix_timestamp(-20220412172830)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
+                }
+            }
+        }
+    }
+
+    @Test
     @Disabled
+    public void testUnixTimeStamp10() throws SQLException {
+        String sql = "select unix_timestamp('-20220412172830')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
+                }
+            }
+        }
+    }
 
+    // 1577808000
+    // Wednesday, January 1, 2020 12:00:00 AM GMT+08:00
+    @Test
+    public void testUnixTimeStamp11() throws SQLException {
+        String sql = "select unix_timestamp('2022-04-14')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
+                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
+                        .toEpochMilli());
+                    Long target = (d.getTime() / 1000);
 
-    //
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(target);
+                }
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testUnixTimeStamp12() throws SQLException {
+        String sql = "select unix_timestamp('2022-04-12 Z0Z8:00:00AAA')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
+                }
+            }
+        }
+    }
+
     // YYYY-MM-DD Input
     @Test
     public void testDateFormatYYYYdMMdDD() throws SQLException {
@@ -458,8 +542,6 @@ public class OnlySimpleDateFunctionTest {
             }
         }
     }
-
-
 
     // YYYY/MM/DD Input
     @Test
@@ -641,6 +723,34 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+    @Test
+    public void testDateFormatYYYYdMMdDDInput6() throws SQLException {
+        String sql = "select date_format('2022-04-1', '%Y-%m-%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("2022-04-01");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateFormatYYYYdMMdDDInput7() throws SQLException {
+        String sql = "select date_format('2022-04-1', '%Y-%m-%d %A')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("2022-04-01 A");
+                }
+            }
+        }
+    }
+
     // YYYY-MM-DD HH:mm:ss
     @Test
     public void testDateFormatYYYYdMMdDDeHHcmmcss1() throws SQLException {
@@ -679,6 +789,20 @@ public class OnlySimpleDateFunctionTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     assertThat(rs.getString(1)).isEqualTo("Year:2022 Month:04 Day:13");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateFormatEmptyTypeInput() throws SQLException {
+        String sql = "select date_format('', 'Year:%Y Month:%m Day:%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo(null);
                 }
             }
         }
@@ -766,6 +890,34 @@ public class OnlySimpleDateFunctionTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     assertThat(rs.getString(1)).isEqualTo("3287181");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiff6() throws SQLException {
+        String sql = "select datediff(20220531,20220413)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("48");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateDiff7() throws SQLException {
+        String sql = "select datediff('','')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo(null);
                 }
             }
         }
@@ -891,6 +1043,51 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+
+    @Test
+    @Disabled
+    public void testTimeFormat2() throws SQLException {
+        String sql = "select time_format(CurTime(),'%H%i%S')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("110203");
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testTimeFormat3() throws SQLException {
+        String sql = "select time_format(083026, '%H.%i.%s')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("08.30.26");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testTimeFormat4() throws SQLException {
+        String sql = "select time_format('', '%H.%i.%s')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo(null);
+                }
+            }
+        }
+    }
+
     @Test
     public void testGetZoneOffset() {
         Instant instant = Instant.now(); //can be LocalDateTime
@@ -929,5 +1126,72 @@ public class OnlySimpleDateFunctionTest {
                 }
             }
         }
+    }
+
+    public void testFromUnixTime1() throws SQLException {
+        String sql = "select from_unixtime(2147483648)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Timestamp ts = new Timestamp(2147483648000L);
+                    System.out.println(rs.getString(1));
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    assertThat(rs.getString(1)).isEqualTo(sdf.format(ts));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testRexPattern() {
+        Pattern pt = Pattern.compile("^\\d{8}");
+        if (pt.matcher("-12345678").matches()) {
+            System.out.println("match");
+        } else {
+            System.out.println("not match");
+        }
+    }
+
+    @Test
+    public void testRexPattern1() {
+        Pattern pt = Pattern.compile("[0-2]?[0-9][0-5]?[0-9][0-5]?[0-9]");
+        if (pt.matcher("83026").matches()) {
+            System.out.println("match");
+        } else {
+            System.out.println("not match");
+        }
+    }
+
+    @Test
+    public void testRexPattern2() {
+        Pattern pt = Pattern.compile("\\d*[a-zA-Z_]\\d*");
+        String s = "20220414180215";
+        if (pt.matcher(s).matches()) {
+            System.out.println("match");
+        } else {
+            System.out.println("not match");
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testRawTimeFormat() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("Hmmss");
+        LocalTime localTime = LocalTime.parse("83031", dtf);
+        System.out.println(localTime);
+    }
+
+    @Test
+    public void testReplace() {
+        String str = "aaa%%%";
+        System.out.println(str.replaceAll("%", ""));
+    }
+
+    @Test
+    public void testConvertLong2Date() {
+        Long l = 12457L;
+        Date d = new Date(l);
+        System.out.println(d);
     }
 }
