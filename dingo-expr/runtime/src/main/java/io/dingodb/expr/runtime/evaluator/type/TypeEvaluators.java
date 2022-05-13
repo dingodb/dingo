@@ -96,7 +96,6 @@ final class TypeEvaluators {
         return value;
     }
 
-
     @Evaluators.Base(LongEvaluator.class)
     static long longType(long value) {
         return value;
@@ -119,6 +118,11 @@ final class TypeEvaluators {
 
     @Evaluators.Base(LongEvaluator.class)
     static long longType(@Nonnull Date value) {
+        return value.getTime();
+    }
+
+    @Evaluators.Base(LongEvaluator.class)
+    static long longType(@Nonnull Time value) {
         return value.getTime();
     }
 
@@ -279,7 +283,7 @@ final class TypeEvaluators {
 
     @Nonnull
     @Evaluators.Base(DateEvaluator.class)
-    static Date dateType(long ts) {
+    static Date dateType(Long ts) {
         return new Date(ts);
     }
 

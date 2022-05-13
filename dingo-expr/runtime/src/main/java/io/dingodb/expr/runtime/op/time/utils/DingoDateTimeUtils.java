@@ -51,16 +51,17 @@ public class DingoDateTimeUtils implements Serializable {
     ).collect(Collectors.toList());
 
     public static final Pattern DATE_TIME_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2})");
+    public static final Pattern NEGTIVE_DATETIME_PATTERN = Pattern.compile("\\d*[a-zA-Z_]+\\d*");
 
     public static final List<Pattern> TIME_REX_PATTERN_LIST = Stream.of(
-        Pattern.compile("\\d{8}"),
-        Pattern.compile("\\d{8}(\\d{6}){1}"),
-        Pattern.compile("\\d{4}/\\d+/\\d+"),
-        Pattern.compile("\\d{4}/\\d+/\\d+(\\ \\d+:\\d+:\\d+){1}"),
-        Pattern.compile("\\d{4}\\.\\d+\\.\\d+"),
-        Pattern.compile("\\d{4}\\.\\d+\\.\\d+(\\ \\d+:\\d+:\\d+){1}"),
-        Pattern.compile("\\d{4}-\\d+-\\d+"),
-        Pattern.compile("\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}")
+        Pattern.compile("^\\d{8}"),
+        Pattern.compile("^\\d{8}(\\d{6}){1}"),
+        Pattern.compile("^\\d{4}/\\d+/\\d+"),
+        Pattern.compile("^\\d{4}/\\d+/\\d+(\\ \\d+:\\d+:\\d+){1}"),
+        Pattern.compile("^\\d{4}\\.\\d+\\.\\d+"),
+        Pattern.compile("^\\d{4}\\.\\d+\\.\\d+(\\ \\d+:\\d+:\\d+){1}"),
+        Pattern.compile("^\\d{4}-\\d+-\\d+"),
+        Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}")
         ).collect(Collectors.toList());
 
     public static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\d{9,13}");
@@ -84,13 +85,14 @@ public class DingoDateTimeUtils implements Serializable {
 
     public static final List<Pattern> TIME_PATTERN_LIST = Stream.of(
         Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]"),
-        Pattern.compile("[0-2][0-9][0-5][0-9][0-5][0-9]")
+        Pattern.compile("[0-2]?[0-9][0-5]?[0-9][0-5]?[0-9]")
         ).collect(Collectors.toList());
 
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:m:s");
     public static final List<DateTimeFormatter> TIME_FORMATTER_LIST = Stream.of(
         DateTimeFormatter.ofPattern("H:m:s"),
-        DateTimeFormatter.ofPattern("HHmmss")
+        DateTimeFormatter.ofPattern("HHmmss"),
+        DateTimeFormatter.ofPattern("Hmmss")
         ).collect(Collectors.toList());
 
     public static final List<String> FORMAT_LIST = Stream.of(
@@ -221,7 +223,7 @@ public class DingoDateTimeUtils implements Serializable {
                 }
             }
         }
-        return targetStr;
+        return targetStr.replaceAll("%", "");
     }
 
     // TODO wait for validate rule for parsing date 2022-04-31.
@@ -232,15 +234,21 @@ public class DingoDateTimeUtils implements Serializable {
      * @throws SQLException throw SQLException
      */
     public static LocalDateTime convertToDatetime(String originDateTime) throws SQLException {
-        // Process the YYYYmmDD/YYYYmmDDmmss pattern date. The LocalDateTime can't parse yyyyMMdd pattern.
-
-        Matcher m = DATE_TIME_PATTERN.matcher(originDateTime);
-        // Only get the first result in the group.
-        if (m.find()) {
-            originDateTime = originDateTime.split(" ")[0] + " " + m.group();
-        }
         int index = 0;
         try {
+            // Process the YYYYmmDD/YYYYmmDDmmss pattern date. The LocalDateTime can't parse yyyyMMdd pattern.
+            Matcher wordMatch = NEGTIVE_DATETIME_PATTERN.matcher(originDateTime);
+            if (wordMatch.find()) {
+                String errorMsg = originDateTime + " does not match any of the datetime pattern yyyyMMdd[HHmmss], "
+                    + "yyyy-MM-dd [HH:mm:ss] , yyyy.MM.dd [HH:mm:ss], yyyy/MM/dd [HH:mm:ss]";
+                log.error(errorMsg);
+                throw new Exception(errorMsg);
+            }
+            Matcher m = DATE_TIME_PATTERN.matcher(originDateTime);
+            // Only get the first result in the group.
+            if (m.find()) {
+                originDateTime = originDateTime.split(" ")[0] + " " + m.group();
+            }
             LocalDateTime dateTime;
             for (Pattern pattern : TIME_REX_PATTERN_LIST) {
                 if (pattern.matcher(originDateTime).matches()) {
@@ -256,9 +264,6 @@ public class DingoDateTimeUtils implements Serializable {
                     throw new Exception(originDateTime + " date part is invalid");
                 }
                 index++;
-            }
-            if (originDateTime.startsWith("-") || TIMESTAMP_PATTERN.matcher(originDateTime).matches()) {
-                return LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.valueOf(originDateTime)), ZoneId.of(ZONE_ID));
             }
             String errorMsg = originDateTime + " does not match any of the datetime pattern yyyyMMdd[HHmmss], "
                 + "yyyy-MM-dd [HH:mm:ss] , yyyy.MM.dd [HH:mm:ss], yyyy/MM/dd [HH:mm:ss]";
@@ -315,8 +320,8 @@ public class DingoDateTimeUtils implements Serializable {
 
     public static LocalTime convertToTime(String originTime) throws SQLException {
         int index = 0;
+        LocalTime localTime;
         try {
-            LocalTime localTime;
             for (Pattern pattern: TIME_PATTERN_LIST) {
                 if (pattern.matcher(originTime).matches()) {
                     localTime = LocalTime.parse(originTime, TIME_FORMATTER_LIST.get(index));
@@ -324,7 +329,7 @@ public class DingoDateTimeUtils implements Serializable {
                 }
                 index++;
             }
-            String errorMsg = originTime + " does not match any of the time pattern HH:mm:ss";
+            String errorMsg = originTime + " does not match any of the time pattern HH:mm:ss or HHmmss";
             log.error(errorMsg);
             throw new Exception(errorMsg);
         } catch (Exception e) {
@@ -332,7 +337,14 @@ public class DingoDateTimeUtils implements Serializable {
                 throw new SQLException(e.getMessage() + " ," + originTime + " FORMAT "
                     + TIME_PATTERN_LIST.get(index));
             } else {
-                throw new SQLException(e.getMessage(), "");
+                // try last chance.
+                index++;
+                try {
+                    localTime = LocalTime.parse(originTime, TIME_FORMATTER_LIST.get(index));
+                    return localTime;
+                } catch (Exception e1) {
+                    throw new SQLException(e1.getMessage(), "");
+                }
             }
         }
     }
