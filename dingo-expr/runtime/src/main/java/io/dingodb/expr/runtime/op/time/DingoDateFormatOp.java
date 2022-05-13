@@ -51,6 +51,9 @@ public class DingoDateFormatOp extends RtFun {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         String time = (String) values[0];
+        if (time.isEmpty()) {
+            return null;
+        }
         String formatStr = DingoDateTimeUtils.defaultDateFormat();
         if (values.length == 2) {
             formatStr = (String)values[1];

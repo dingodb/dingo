@@ -59,6 +59,9 @@ public class DingoDateDiffOp extends RtFun {
     }
 
     public static Long dateDiff(String value0, String value1) {
+        if (value0.isEmpty() || value1.isEmpty()) {
+            return  null;
+        }
         Timestamp timestamp0;
         Timestamp timestamp1;
         try {
@@ -79,7 +82,12 @@ public class DingoDateDiffOp extends RtFun {
                     .atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
             }
         } catch (SQLException e) {
-            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+            String errMsg = e.getMessage();
+            if (errMsg.contains("FORMAT")) {
+                throw new FailParseTime(errMsg.split("FORMAT")[0], errMsg.split("FORMAT")[1]);
+            } else {
+                throw new FailParseTime(errMsg, "");
+            }
         }
         int extraDate0 = (timestamp0.getTime() % DAY_MILLI_SECONDS < ZONE_OFFSET_MILLI_SECONDS ? 0 : 1);
         int extraDate1 = (timestamp1.getTime() % DAY_MILLI_SECONDS < ZONE_OFFSET_MILLI_SECONDS ? 0 : 1);

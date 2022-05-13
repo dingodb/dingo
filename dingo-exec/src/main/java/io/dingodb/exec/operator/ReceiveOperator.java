@@ -161,7 +161,6 @@ public final class ReceiveOperator extends SourceOperator {
                         log.error("ReceiveMessageListener, parse error.");
                         return;
                     }
-
                     int arrLen = pair.getKey().length;
                     Object[] tuple = codec.decode(pair.getKey());
                     if (log.isDebugEnabled()) {

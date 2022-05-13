@@ -27,6 +27,7 @@ import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -59,6 +60,11 @@ public class DingoDateUnixTimestampOp extends RtFun {
         }
 
         Object value = values[0];
+
+        if (value instanceof BigInteger) {
+            return unixTimestamp(((BigInteger) value).longValue());
+        }
+
         if (value instanceof Long) {
             return unixTimestamp((Long) value);
         }
@@ -143,5 +149,4 @@ public class DingoDateUnixTimestampOp extends RtFun {
             }
         }
     }
-
 }
