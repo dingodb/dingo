@@ -23,6 +23,7 @@ import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -31,6 +32,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -388,6 +390,59 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+    @Test
+    public void testUnixTimeStamp05() throws SQLException {
+        String sql = "select unix_timestamp('2022-05-15 00:14:01')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    LocalDateTime localDateTime = DingoDateTimeUtils
+                        .convertToDatetime("2022-05-15 00:14:01");
+                    Long ts = localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(ts);
+                }
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testUnixTimeStamp06() throws SQLException {
+        String sql = "select unix_timestamp('1652544841')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(1652544841L);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUnixTimeStamp07() throws SQLException {
+        String sql = "select unix_timestamp(1652544841)";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
+                        .getLocalZoneOffset()).toEpochMilli());
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getLong(1)).isEqualTo(1652544841L);
+                }
+            }
+        }
+    }
+
+    @Disabled
+
+
     //
     // YYYY-MM-DD Input
     @Test
@@ -466,7 +521,6 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
-
     // YYYY-MM-DD Input
     @Test
     public void testDateFormatYYYYdMMdDDInput() throws SQLException {
@@ -507,6 +561,20 @@ public class OnlySimpleDateFunctionTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     assertThat(rs.getString(1)).isEqualTo("19990101 01:01:01");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateFormatYYYYmmDDHHmmssInput1() throws SQLException {
+        String sql = "select date_format(20220413103706,'%Y/%m/%d %H:%i:%S')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("2022/04/13 10:37:06");
                 }
             }
         }
@@ -588,6 +656,34 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+    @Test
+    public void testDateFormatIntTypeInput() throws SQLException {
+        String sql = "select date_format(20220413103726, 'Year:%Y Month:%m Day:%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("Year:2022 Month:04 Day:13");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDateFormatIntTypeInput1() throws SQLException {
+        String sql = "select date_format(20220413, 'Year:%Y Month:%m Day:%d')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("Year:2022 Month:04 Day:13");
+                }
+            }
+        }
+    }
+
     // Result like: 1
     @Test
     public void testDateDiff() throws SQLException {
@@ -661,6 +757,19 @@ public class OnlySimpleDateFunctionTest {
         }
     }
 
+    @Test
+    public void testDateDiff5() throws SQLException {
+        String sql = "select datediff('9999-12-31 23:59:59', '1000-01-01 00:00:00')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("3287181");
+                }
+            }
+        }
+    }
 
     // Result like: 1
     @Test
@@ -804,5 +913,21 @@ public class OnlySimpleDateFunctionTest {
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
         Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
         System.out.println(ts.getTime());
+    }
+
+    @Test
+    public void testFromUnixTime() throws SQLException {
+        String sql = "select from_unixtime('1649770110')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    Timestamp ts = new Timestamp(1649770110000L);
+                    System.out.println(rs.getString(1));
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    assertThat(rs.getString(1)).isEqualTo(sdf.format(ts));
+                }
+            }
+        }
     }
 }

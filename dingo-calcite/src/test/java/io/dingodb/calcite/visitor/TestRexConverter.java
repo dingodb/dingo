@@ -837,8 +837,7 @@ public class TestRexConverter {
         System.out.println(result);
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
         Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
-        String targetString = String.valueOf((ts.getTime() / 1000)
-            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
         Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
@@ -846,7 +845,7 @@ public class TestRexConverter {
 
     @Test
     public void unixTimestamp04() throws Exception {
-        String sql = "select unix_timestamp('2022/04/14 18:02:15')";
+        String sql = "select unix_timestamp('2022/04/14 19:02:15')";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
@@ -855,10 +854,9 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
+        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
         Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
-        String targetString = String.valueOf((ts.getTime() / 1000)
-            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
         Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
@@ -866,7 +864,7 @@ public class TestRexConverter {
 
     @Test
     public void unixTimestamp05() throws Exception {
-        String sql = "select unix_timestamp('2022.04.14 18:02:15')";
+        String sql = "select unix_timestamp('2022.04.14 19:02:15')";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
@@ -878,10 +876,9 @@ public class TestRexConverter {
         Object result = rtExpr.eval(null);
         System.out.println("Result: ");
         System.out.println(result);
-        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
+        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
         Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
-        String targetString = String.valueOf((ts.getTime() / 1000)
-            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
         Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
