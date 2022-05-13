@@ -81,7 +81,7 @@ public final class DataUtils {
                 return ((Number) value).intValue();
             case BIGINT:
                 if (value instanceof BigDecimal) {
-                    return ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).intValue();
+                    return ((BigDecimal) value).toBigInteger();
                 }
                 return ((Number) value).longValue();
             case DATE:

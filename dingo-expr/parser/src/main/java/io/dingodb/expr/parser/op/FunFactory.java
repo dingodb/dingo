@@ -32,6 +32,7 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.type.BigIntegerTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.BooleanTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DateTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.type.DecimalTypeEvaluatorFactory;
@@ -118,6 +119,7 @@ public final class FunFactory {
 
         // Type conversion
         registerEvaluator("int", IntTypeEvaluatorFactory.INSTANCE);
+        registerEvaluator("bigint", BigIntegerTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("long", LongTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("double", DoubleTypeEvaluatorFactory.INSTANCE);
         registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);

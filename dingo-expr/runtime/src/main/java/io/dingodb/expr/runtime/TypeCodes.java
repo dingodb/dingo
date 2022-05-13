@@ -26,6 +26,7 @@ import javax.annotation.Nonnull;
 @GenerateTypeCodes({
     @GenerateTypeCodes.TypeCode(name = "BOOLEAN", type = "java.lang.Boolean"),
     @GenerateTypeCodes.TypeCode(name = "INTEGER", type = "java.lang.Integer"),
+    @GenerateTypeCodes.TypeCode(name = "BIGINT", type = "java.math.BigInteger"),
     @GenerateTypeCodes.TypeCode(name = "LONG", type = "java.lang.Long"),
     @GenerateTypeCodes.TypeCode(name = "DOUBLE", type = "java.lang.Double"),
     @GenerateTypeCodes.TypeCode(name = "STRING", type = "java.lang.String"),

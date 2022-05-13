@@ -18,7 +18,6 @@ package io.dingodb.expr.runtime.evaluator.utils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 
 public final class Time2StringUtils {
 

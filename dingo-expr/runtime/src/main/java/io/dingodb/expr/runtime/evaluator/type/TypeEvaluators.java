@@ -17,6 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.type;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.runtime.evaluator.base.BigIntegerEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.BooleanEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DecimalEvaluator;
@@ -35,6 +36,7 @@ import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -84,10 +86,16 @@ final class TypeEvaluators {
         return Integer.parseInt(value);
     }
 
+    @Evaluators.Base(BigIntegerEvaluator.class)
+    static BigInteger bigIntegerType(String value) {
+        return BigInteger.valueOf(Long.valueOf(value));
+    }
+
     @Evaluators.Base(LongEvaluator.class)
     static long longType(int value) {
         return value;
     }
+
 
     @Evaluators.Base(LongEvaluator.class)
     static long longType(long value) {
@@ -180,11 +188,6 @@ final class TypeEvaluators {
         }
     }
 
-    @Evaluators.Base(StringEvaluator.class)
-    static String stringType(@Nonnull Long value) {
-        return value.toString();
-    }
-
     @Nonnull
     @Evaluators.Base(StringEvaluator.class)
     static String stringType(@Nonnull Date value) {
@@ -233,7 +236,8 @@ final class TypeEvaluators {
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        return new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000L);
+        return ts;
     }
 
     @Nonnull

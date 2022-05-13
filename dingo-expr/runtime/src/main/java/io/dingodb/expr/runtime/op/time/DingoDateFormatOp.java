@@ -19,6 +19,7 @@ package io.dingodb.expr.runtime.op.time;
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
@@ -26,9 +27,8 @@ import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.sql.Timestamp;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,29 +50,25 @@ public class DingoDateFormatOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        Timestamp originDateTime;
-        if (values[0] instanceof Timestamp) {
-            originDateTime = (Timestamp) values[0];
-        } else {
-            LocalDateTime ldt = LocalDateTime.ofEpochSecond(((Long) values[0]) / 1000,
-                0 , ZoneOffset.UTC);
-            originDateTime = Timestamp.valueOf(ldt);
-
-        }
+        String time = (String) values[0];
         String formatStr = DingoDateTimeUtils.defaultDateFormat();
         if (values.length == 2) {
             formatStr = (String)values[1];
         }
-        return dateFormat(originDateTime, formatStr);
+        return dateFormat(time, formatStr);
     }
 
-    // Todo this place only checks the type thing. so we just return ""
-    public static String dateFormat(final Timestamp dateTime, final String formatStr) {
-        if (formatStr.equals(DingoDateTimeUtils.defaultTimeFormat())) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-            return dateTime.toLocalDateTime().format(formatter);
-        } else {
-            return DingoDateTimeUtils.processFormatStr(dateTime.toLocalDateTime(), formatStr);
+    public static String dateFormat(final String time, final String formatStr) {
+        try {
+            LocalDateTime dateTime = DingoDateTimeUtils.convertToDatetime(time);
+            if (formatStr.equals(DingoDateTimeUtils.defaultTimeFormat())) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+                return dateTime.format(formatter);
+            } else {
+                return DingoDateTimeUtils.processFormatStr(dateTime, formatStr);
+            }
+        } catch (SQLException e) {
+            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
     }
 
@@ -92,7 +88,7 @@ public class DingoDateFormatOp extends RtFun {
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DingoDateFormatOp.class.getMethod("dateFormat", Timestamp.class, String.class));
+                methods.add(DingoDateFormatOp.class.getMethod("dateFormat", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
                 log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
