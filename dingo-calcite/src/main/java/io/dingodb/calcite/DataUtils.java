@@ -45,14 +45,15 @@ public final class DataUtils {
                 break;
             case TIME:
                 if (value instanceof Time) {
-                    return new TimeString(value.toString());
+                    TimeString ts =  new TimeString(value.toString());
+                    return ts;
                 }
                 break;
             case TIMESTAMP:
                 if (value instanceof Timestamp) {
-                    // The pattern check of this is insane, do not use it.
-                    // return new TimestampString(value.toString());
-                    return TimestampString.fromMillisSinceEpoch(((Timestamp) value).getTime());
+                    Timestamp tsConverted = (Timestamp) value;
+                    TimestampString ts =  TimestampString.fromMillisSinceEpoch(tsConverted.getTime());
+                    return ts;
                 }
                 break;
             default:

@@ -26,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +54,6 @@ public class DingoCurrentTimeStampOp extends RtFun {
 
     public static Timestamp getCurrentTimeStamp() {
         Long millis = System.currentTimeMillis();
-        millis += TimeZone.getDefault().getRawOffset();
         return new Timestamp(millis);
     }
 

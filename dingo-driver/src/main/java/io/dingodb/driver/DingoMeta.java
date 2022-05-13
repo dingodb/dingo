@@ -18,7 +18,6 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.common.util.DateUtils;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -38,13 +37,16 @@ import org.apache.calcite.schema.Table;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
@@ -225,15 +227,15 @@ public class DingoMeta extends MetaImpl {
         }
         switch (columnClassName) {
             case "java.sql.date": {
-                valueAfterCvt = Long.valueOf(DateUtils.getEpochDay(input));
+                valueAfterCvt = ((Date) input).toLocalDate().toEpochDay();
                 break;
             }
             case "java.sql.time": {
-                valueAfterCvt = Long.valueOf(DateUtils.getEpochTime(input));
+                valueAfterCvt = ((Time) input).getTime();
                 break;
             }
             case "java.sql.timestamp": {
-                valueAfterCvt = DateUtils.getTimestampValueByCalcite(input);
+                valueAfterCvt = ((Timestamp) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
                 break;
             }
             case "java.lang.integer": {
