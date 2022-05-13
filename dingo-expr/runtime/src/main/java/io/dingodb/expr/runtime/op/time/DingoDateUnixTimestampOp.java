@@ -63,6 +63,9 @@ public class DingoDateUnixTimestampOp extends RtFun {
             return unixTimestamp((Long) value);
         }
 
+        if (value instanceof Integer) {
+            return unixTimestamp(((Integer) value).longValue());
+        }
         // If value is String(such as unix_timestamp('2022-04-28'), then convert to long of zone.
         if (value instanceof String) {
             return unixTimestamp((String) value) / 1000;
@@ -90,7 +93,8 @@ public class DingoDateUnixTimestampOp extends RtFun {
             // Include hours, minutes and seconds
             try {
                 LocalDateTime dateTime = DingoDateTimeUtils.convertToDatetime(input);
-                return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+                Long ts = dateTime.toInstant(ZONE_OFFSET).toEpochMilli();
+                return ts;
             } catch (SQLException e) {
                 log.error(e.getMessage());
                 throw new FailParseTime(e.getMessage(), "");

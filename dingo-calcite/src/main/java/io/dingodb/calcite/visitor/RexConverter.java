@@ -129,6 +129,9 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                     case INTEGER:
                         op = FunFactory.INS.getFun("int");
                         break;
+                    case BIGINT:
+                        op = FunFactory.INS.getFun("bigint");
+                        break;
                     case CHAR:
                     case VARCHAR:
                         op = FunFactory.INS.getFun("string");

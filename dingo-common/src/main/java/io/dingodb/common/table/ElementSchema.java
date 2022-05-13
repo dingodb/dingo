@@ -236,7 +236,6 @@ public class ElementSchema implements CompileContext {
         return item;
     }
 
-
     public Object convertFromAvro(Object item) {
         switch (type) {
             case TypeCode.TIME:

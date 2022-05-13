@@ -116,10 +116,6 @@ public class DingoDateTimeUtils implements Serializable {
         return "%Y-%m-%d";
     }
 
-    public static String javaDefaultDateFormat() {
-        return "y-MM-dd";
-    }
-
     public static DateTimeFormatter getDatetimeFormatter() {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     }
