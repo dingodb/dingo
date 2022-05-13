@@ -22,6 +22,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -34,8 +35,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -773,6 +777,7 @@ public class TestRexConverter {
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
+        System.out.println("Result: ");
         System.out.println(expr.toString());
         // RtExpr rtExpr = expr.compileIn(null);
         // Assert.assrt(rtExpr.eval(null).equals("2022-04-13 16:20:34"));
@@ -787,9 +792,14 @@ public class TestRexConverter {
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
+        System.out.println("Result: ");
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649865600"));
+        LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
+        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        String targetString = String.valueOf((d.getTime() / 1000));
+        System.out.println("targetString: ");
+        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 
     @Test
@@ -803,7 +813,12 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649865600"));
+        LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
+        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        String targetString = String.valueOf((d.getTime() / 1000));
+        System.out.println("targetString :");
+        System.out.println(targetString);
+        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 
     @Test
@@ -817,7 +832,16 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649930535"));
+        Object result = rtExpr.eval(null);
+        System.out.println("Result: ");
+        System.out.println(result);
+        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
+        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        String targetString = String.valueOf((ts.getTime() / 1000)
+            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        System.out.println("targetString :");
+        System.out.println(targetString);
+        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 
     @Test
@@ -831,12 +855,18 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1649930535"));
+        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
+        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        String targetString = String.valueOf((ts.getTime() / 1000)
+            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        System.out.println("targetString :");
+        System.out.println(targetString);
+        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 
     @Test
     public void unixTimestamp05() throws Exception {
-        String sql = "select unix_timestamp('2022.04.15 16:27:50')";
+        String sql = "select unix_timestamp('2022.04.14 18:02:15')";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
@@ -845,6 +875,15 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals("1650011270"));
+        Object result = rtExpr.eval(null);
+        System.out.println("Result: ");
+        System.out.println(result);
+        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
+        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        String targetString = String.valueOf((ts.getTime() / 1000)
+            + DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds());
+        System.out.println("targetString :");
+        System.out.println(targetString);
+        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 }

@@ -21,7 +21,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,7 +72,7 @@ public class DingoDateFromUnixTimeOp extends RtFun {
     }
 
     public static String fromUnixTime(final Long timestamp) {
-        DateTimeFormatter formatter = DateFormatUtil.getDatetimeFormatter();
+        DateTimeFormatter formatter = DingoDateTimeUtils.getDatetimeFormatter();
         LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
         return formatter.format(dateTime);
     }

@@ -19,18 +19,17 @@ package io.dingodb.expr.runtime.op.time;
 import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,22 +50,27 @@ public class DingoDateDiffOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        String date0 = (String)values[0];
-        String date1 = (String)values[1];
-        return dateDiff(date0, date1);
+        Timestamp timestamp0;
+        if (!(values[0] instanceof Timestamp)) {
+            LocalDateTime ldt0 = LocalDateTime.ofEpochSecond((Long) values[0] / 1000, 0, ZoneOffset.UTC);
+            timestamp0 = new Timestamp(ldt0.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        } else {
+            timestamp0 = (Timestamp) values[0];
+        }
+        Timestamp timestamp1;
+        if (!(values[1] instanceof Timestamp)) {
+            LocalDateTime ldt1 = LocalDateTime.ofEpochSecond((Long) values[1] / 1000, 0, ZoneOffset.UTC);
+            timestamp1 = new Timestamp(ldt1.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        } else {
+            timestamp1 = (Timestamp) values[1];
+        }
+        return dateDiff(timestamp0, timestamp1);
     }
 
-    public static Long dateDiff(String inputStr1, String inputStr2) {
-        LocalDate fromDate;
-        LocalDate toDate;
-        try {
-            fromDate = DateFormatUtil.convertToDatetime(inputStr1).toLocalDate();
-            toDate = DateFormatUtil.convertToDatetime(inputStr2).toLocalDate();
-        } catch (SQLException e) {
-            log.error(e.getMessage());
-            throw new FailParseTime(e.getMessage(), "");
-        }
-        return fromDate.toEpochDay() - toDate.toEpochDay();
+    public static Long dateDiff(Timestamp timestamp0, Timestamp timestamp1) {
+        LocalDate ld0 = timestamp0.toLocalDateTime().atZone(ZoneOffset.UTC).toLocalDate();
+        LocalDate ld1 = timestamp1.toLocalDateTime().atZone(ZoneOffset.UTC).toLocalDate();
+        return ld0.toEpochDay() - ld1.toEpochDay();
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -85,7 +89,7 @@ public class DingoDateDiffOp extends RtFun {
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DingoDateDiffOp.class.getMethod("dateDiff", String.class, String.class));
+                methods.add(DingoDateDiffOp.class.getMethod("dateDiff", Timestamp.class, Timestamp.class));
                 return methods;
             } catch (NoSuchMethodException e) {
                 log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);

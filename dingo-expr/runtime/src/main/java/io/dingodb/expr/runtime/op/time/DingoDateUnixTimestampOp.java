@@ -22,7 +22,7 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,11 +32,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -47,7 +45,7 @@ public class DingoDateUnixTimestampOp extends RtFun {
         super(paras);
     }
 
-    static final ZoneOffset ZONEOFFSET = ZoneOffset.ofHours(8);
+    static final ZoneOffset ZONE_OFFSET = DingoDateTimeUtils.getLocalZoneOffset();
 
     @Override
     public int typeCode() {
@@ -80,21 +78,19 @@ public class DingoDateUnixTimestampOp extends RtFun {
 
     public static Long unixTimestamp(final String input) {
         int length = input.length();
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("");
         // Does not include hours, minutes and seconds
         if (length < 14) {
             try {
-                LocalDate date = DateFormatUtil.convertToDate(input);
-                return date.atStartOfDay().toInstant(ZONEOFFSET).toEpochMilli();
+                LocalDate date = DingoDateTimeUtils.convertToDate(input);
+                return date.atStartOfDay().toInstant(ZONE_OFFSET).toEpochMilli();
             } catch (SQLException e) {
                 throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
             }
         } else {
             // Include hours, minutes and seconds
             try {
-                LocalDateTime dateTime = DateFormatUtil.convertToDatetime(input);
-                return dateTime.toInstant(ZONEOFFSET).toEpochMilli();
+                LocalDateTime dateTime = DingoDateTimeUtils.convertToDatetime(input);
+                return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
             } catch (SQLException e) {
                 log.error(e.getMessage());
                 throw new FailParseTime(e.getMessage(), "");
@@ -109,11 +105,11 @@ public class DingoDateUnixTimestampOp extends RtFun {
     public static Long unixTimestamp(final Date input) {
         Long epochMilli = input.getTime();
         LocalDate localDate = new Date(epochMilli).toLocalDate();
-        return localDate.atStartOfDay(ZONEOFFSET).toInstant().toEpochMilli();
+        return localDate.atStartOfDay(ZONE_OFFSET).toInstant().toEpochMilli();
     }
 
     public static Long unixTimestamp() {
-        return LocalDateTime.now().toInstant(ZONEOFFSET).toEpochMilli();
+        return LocalDateTime.now().toInstant(ZONE_OFFSET).toEpochMilli();
     }
 
     @AutoService(DingoFuncProvider.class)

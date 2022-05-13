@@ -32,7 +32,7 @@ import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.evaluator.utils.Time2StringUtils;
 import io.dingodb.expr.runtime.exception.FailParseTime;
-import io.dingodb.expr.runtime.op.time.utils.DateFormatUtil;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -43,6 +43,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import javax.annotation.Nonnull;
 
 
@@ -173,10 +175,6 @@ final class TypeEvaluators {
             return Time2StringUtils.convertTime2String((java.sql.Time) value);
         } else if (value instanceof java.sql.Timestamp) {
             return Time2StringUtils.convertTimeStamp2String((java.sql.Timestamp) value, "yyyy-MM-dd HH:mm:ss");
-        } else if (value instanceof java.sql.Date) {
-            return Time2StringUtils.convertDate2String((java.sql.Date) value);
-        } else if (value instanceof Long) {
-            return stringType((Long) value);
         } else {
             return value.toString();
         }
@@ -184,25 +182,6 @@ final class TypeEvaluators {
 
     @Evaluators.Base(StringEvaluator.class)
     static String stringType(@Nonnull Long value) {
-        int exepectMSLen = String.valueOf(System.currentTimeMillis()).length();
-        int inputValueLen = String.valueOf(value).length();
-        if (inputValueLen == exepectMSLen || inputValueLen == exepectMSLen - 3) {
-            Long timeStampWithSeconds = (inputValueLen == exepectMSLen) ? value / 1000 : value;
-
-            /**
-             * very trick mode: to check current timestamp is date or timestamp.
-             */
-            if (timeStampWithSeconds % (24 * 60 * 60L) != 0) {
-                Timestamp timestamp = new Timestamp(timeStampWithSeconds);
-                return Time2StringUtils.convertTimeStamp2String(timestamp, "yyyy-MM-dd HH:mm:ss");
-            } else {
-                java.sql.Date dateValue = new java.sql.Date(timeStampWithSeconds * 1000);
-                return Time2StringUtils.convertDate2String(dateValue);
-            }
-        } else if (inputValueLen < exepectMSLen - 3) {
-            java.sql.Time time = new java.sql.Time(value);
-            return Time2StringUtils.convertTime2String(time);
-        }
         return value.toString();
     }
 
@@ -222,33 +201,91 @@ final class TypeEvaluators {
     @Nonnull
     @Evaluators.Base(TimeEvaluator.class)
     static Time timeType(String str) {
-        LocalTime time = LocalTime.parse(str);
-        return new Time(((time.getHour() * 60 + time.getMinute()) * 60 + time.getSecond()) * 1000
-            + time.getNano() / 1000000);
+        LocalTime localTime;
+        try {
+            localTime = DingoDateTimeUtils.convertToTime(str);
+        } catch (SQLException e) {
+            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+        }
+        return DingoDateTimeUtils.convertLocalTimeToTime(localTime);
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimeEvaluator.class)
+    static Date timeType(String str, String fmt) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(fmt);
+        LocalDate ld = LocalDate.parse(str, dtf);
+        return new Date(ld.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimeEvaluator.class)
+    static Date timeType(long timestamp) {
+        return new Date(timestamp);
     }
 
     @Nonnull
     @Evaluators.Base(TimestampEvaluator.class)
     static Timestamp timestampType(String str) {
-        LocalDateTime datetime;
+        LocalDateTime localDateTime;
         try {
-            datetime = DateFormatUtil.convertToDatetime(str);
+            localDateTime = DingoDateTimeUtils.convertToDatetime(str);
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        return Timestamp.valueOf(datetime);
+        return new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestampType(int timestamp) {
+        return new Timestamp((long) timestamp * 1000);
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestampType(Long ts) {
+        return new Timestamp(ts * 1000);
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestampType(Date dt) {
+        return new Timestamp(dt.getTime());
+    }
+
+    @Nonnull
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp timestampType(Timestamp ts) {
+        return ts;
     }
 
     @Nonnull
     @Evaluators.Base(DateEvaluator.class)
     static Date dateType(String str) {
-        LocalDate date;
+        LocalDate localDate;
         try {
-            date = DateFormatUtil.convertToDate(str);
+            localDate = DingoDateTimeUtils.convertToDate(str);
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        return new Date(date.toEpochDay() * 24 * 60 * 60 * 1000);
+        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        return d;
+    }
+
+    @Nonnull
+    @Evaluators.Base(DateEvaluator.class)
+    static Date dateType(long ts) {
+        return new Date(ts);
+    }
+
+    @Nonnull
+    @Evaluators.Base(DateEvaluator.class)
+    static Date dateType(String str, String fmt) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(fmt);
+        LocalDate ld = LocalDate.parse(str, dtf);
+        Date dt = new Date(ld.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        return dt;
     }
 
     @Evaluators.Base(BooleanEvaluator.class)
@@ -270,7 +307,6 @@ final class TypeEvaluators {
         if (value instanceof Boolean) {
             return (boolean) value;
         }
-
         throw new RuntimeException("Invalid input parameter.");
     }
 }
