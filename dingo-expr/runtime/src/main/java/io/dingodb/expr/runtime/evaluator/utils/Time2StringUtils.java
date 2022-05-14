@@ -29,8 +29,7 @@ public final class Time2StringUtils {
      * @return string after format.
      */
     public static String convertTimeStamp2String(java.sql.Timestamp input, String format) {
-        Long finalTime = input.getTime() - TimeZone.getDefault().getRawOffset();
-        java.sql.Timestamp realTime = new java.sql.Timestamp(finalTime);
+        java.sql.Timestamp realTime = new java.sql.Timestamp(input.getTime());
         LocalDateTime localDateTime = realTime.toLocalDateTime();
         return localDateTime.format(DateTimeFormatter.ofPattern(format));
     }

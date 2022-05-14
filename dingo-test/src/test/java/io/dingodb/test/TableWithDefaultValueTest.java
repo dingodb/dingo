@@ -195,7 +195,6 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
-    @Disabled("Failed to encoding Date")
     public void testCase05() throws Exception {
         List<String> inputDateFuncList = Arrays.asList(
             "current_date",
@@ -235,7 +234,6 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
-    @Disabled("Failed to encoding Time")
     public void testCase06() throws Exception {
         List<String> inputTimeFuncList = Arrays.asList(
             "current_time",
@@ -276,7 +274,6 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
-    @Disabled("Failed to encoding Timestamp")
     public void testCase07() throws Exception {
         List<String> inputTimeFuncList = Arrays.asList(
             "current_timestamp",
@@ -399,6 +396,32 @@ public class TableWithDefaultValueTest {
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "age", "address", "birthday"},
             TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "TIMESTAMP"),
+            expectRecord);
+        sqlHelper.clearTable(tableName);
+    }
+
+    @Test
+    public void testCase12() throws Exception {
+        String tableName = "testCase12";
+        String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    age int default null, \n"
+            + "    address varchar(32) default null, \n"
+            + "    birth1 date not null default '2020-01-01', \n"
+            + "    birth2 time not null default '10:30:30', \n"
+            + "    birth3 timestamp not null default '2020-01-01 10:30:30', \n"
+            + "    primary key(id))\n";
+        sqlHelper.execSqlCmd(sqlCmd);
+
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        String expectRecord = "100, lala, null, null, 2020-01-01, 10:30:30, 2020-01-01 10:30:30";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord);
         sqlHelper.clearTable(tableName);
     }

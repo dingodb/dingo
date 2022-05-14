@@ -41,6 +41,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -227,15 +228,27 @@ public class DingoMeta extends MetaImpl {
         }
         switch (columnClassName) {
             case "java.sql.date": {
-                valueAfterCvt = ((Date) input).toLocalDate().toEpochDay();
+                if (input instanceof Date) {
+                    valueAfterCvt = ((Date) input).toLocalDate().toEpochDay();
+                } else if (input instanceof Long) {
+                    valueAfterCvt = new Date((Long) input).toLocalDate().toEpochDay();
+                }
                 break;
             }
             case "java.sql.time": {
-                valueAfterCvt = ((Time) input).getTime();
+                if (input instanceof Time) {
+                    valueAfterCvt = ((Time) input).getTime();
+                } else if (input instanceof Long) {
+                    valueAfterCvt = new Time((Long) input).getTime();
+                }
                 break;
             }
             case "java.sql.timestamp": {
-                valueAfterCvt = ((Timestamp) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                if (input instanceof Timestamp) {
+                    valueAfterCvt = ((Timestamp) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                } else if (input instanceof Long) {
+                    valueAfterCvt = new Timestamp((Long) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                }
                 break;
             }
             case "java.lang.integer": {

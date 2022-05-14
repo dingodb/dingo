@@ -69,7 +69,7 @@ public class OnlySimpleDateFunctionTest {
     }
 
     public void assertTemporalWithErrorRange(Temporal time1, Temporal time2) {
-        assertThat(Duration.between(time1, time2)).isLessThan(ERROR_RANGE);
+        assertThat(Duration.between(time1, time2).abs()).isLessThan(ERROR_RANGE);
     }
 
     //Result like: 2022-03-30 02:19:42

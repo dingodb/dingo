@@ -18,12 +18,16 @@ package io.dingodb.common.table;
 
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.store.KeyValue;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+
+@Slf4j
 public class KeyValueCodec {
     private final AvroCodec keyCodec;
     private final AvroCodec valueCodec;
@@ -39,7 +43,7 @@ public class KeyValueCodec {
         valueCodec = new AvroCodec(schema.select(valueMapping).getAvroSchema());
     }
 
-    private Object[] convertFromAvro(Object[] record) {
+    public static Object[] convertFromAvro(Object[] record, TupleSchema tupleSchema) {
         List<Object> result = new ArrayList<>();
         int len = record.length;
         for (int i = 0; i < len; i++) {
@@ -52,10 +56,10 @@ public class KeyValueCodec {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyCodec.decode(result, keyValue.getKey(), keyMapping);
         valueCodec.decode(result, keyValue.getValue(), valueMapping);
-        return convertFromAvro(result);
+        return convertFromAvro(result, tupleSchema);
     }
 
-    private Object[] convertToAvro(Object[] record) {
+    public static Object[] convertToAvro(Object[] record, TupleSchema tupleSchema) throws SQLException  {
         List<Object> result = new ArrayList<>();
         int len = record.length;
         if (record.length == tupleSchema.size()) {
@@ -73,11 +77,16 @@ public class KeyValueCodec {
 
 
     public KeyValue encode(@Nonnull Object[] record) throws IOException {
-        Object[] convertedRecords = convertToAvro(record);
-        return new KeyValue(
-            keyCodec.encode(convertedRecords, keyMapping),
-            valueCodec.encode(convertedRecords, valueMapping)
-        );
+        try {
+            Object[] convertedRecords = convertToAvro(record, tupleSchema);
+            return new KeyValue(
+                keyCodec.encode(convertedRecords, keyMapping),
+                valueCodec.encode(convertedRecords, valueMapping)
+            );
+        } catch (SQLException e) {
+            log.error("Error encoding record catch exception:{}", e.toString(), e);
+            throw new IOException(e);
+        }
     }
 
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
@@ -92,6 +101,6 @@ public class KeyValueCodec {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyMapping.map(result, keys);
         valueCodec.decode(result, bytes, valueMapping);
-        return convertFromAvro(result);
+        return convertFromAvro(result, tupleSchema);
     }
 }
