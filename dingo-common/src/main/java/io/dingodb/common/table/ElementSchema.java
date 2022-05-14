@@ -27,14 +27,19 @@ import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import javax.annotation.Nonnull;
+
+import static io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils.convertToDate;
+import static io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils.convertToTime;
 
 public class ElementSchema implements CompileContext {
     private static final String NULL = "NULL";
@@ -198,14 +203,33 @@ public class ElementSchema implements CompileContext {
         return origin;
     }
 
-    public Object convertToAvro(Object item) {
+    public Object convertToAvro(Object item) throws SQLException {
         switch (type) {
             case TypeCode.TIME:
-                return ((Time) item).getTime();
+                if (item instanceof Time) {
+                    return ((Time) item).getTime();
+                } else if (item instanceof String) {
+                    return Time.valueOf((String) item).getTime();
+                } else {
+                    throw new SQLException("Failed to convert " + item.getClass() + " to time.");
+                }
             case TypeCode.DATE:
-                return ((Date) item).getTime();
+                if (item instanceof Date) {
+                    return ((Date) item).getTime();
+                }
+                if (item instanceof String) {
+                    return Date.valueOf((String) item).getTime();
+                } else {
+                    throw new SQLException("Failed to convert " + item.getClass() + " to date.");
+                }
             case TypeCode.TIMESTAMP:
-                return ((Timestamp) item).getTime();
+                if (item instanceof Timestamp) {
+                    return ((Timestamp) item).getTime();
+                } else if (item instanceof String) {
+                    return Timestamp.valueOf((String) item).getTime();
+                } else {
+                    throw new SQLException("Failed to convert " + item.getClass() + " to timestamp.");
+                }
             default:
                 break;
         }

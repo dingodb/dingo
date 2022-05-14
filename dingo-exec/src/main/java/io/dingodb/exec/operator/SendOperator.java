@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.table.ElementSchema;
+import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.channel.SendEndpoint;

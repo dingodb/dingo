@@ -23,6 +23,7 @@ import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtNull;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
@@ -36,7 +37,10 @@ import org.apache.calcite.util.TimestampString;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 
 
@@ -104,7 +108,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
                         } else if (constValue instanceof java.lang.String) {
                             inputValue = java.sql.Date.valueOf(constValue.toString());
                         }
-                        defaultValue = inputValue.toLocalDate().toEpochDay();
+                        defaultValue = new DateString(inputValue.toString());
                     } catch (Exception ex) {
                         log.error("Set default value:{} of Date catch exception:{}",
                             constValue.toString(), ex.toString(), ex);
@@ -119,11 +123,13 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
                         } else if (constValue instanceof java.lang.String) {
                             time = java.sql.Time.valueOf(constValue.toString());
                         }
-                        defaultValue = time.getTime();
+                        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000;
+                        Time newTimeWithOffset = new Time(time.getTime() - offsetInMillis);
+                        defaultValue = new TimeString(newTimeWithOffset.toString());
                     } catch (Exception ex) {
                         log.error("Set default value:{} of Time catch exception:{}",
                             constValue.toString(), ex.toString(), ex);
-                        throw new RuntimeException("Invalid Input TimeFormat: Expect(HH:mm:dd)");
+                        throw new RuntimeException("Invalid Input TimeFormat: Expect(HH:mm:ss)");
                     }
                     break;
                 case TIMESTAMP:
@@ -134,7 +140,9 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
                         } else if (constValue instanceof java.lang.String) {
                             timestamp = java.sql.Timestamp.valueOf(constValue.toString());
                         }
-                        defaultValue = timestamp.toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                        defaultValue = timestamp
+                            .toLocalDateTime()
+                            .toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000;
                     } catch (Exception ex) {
                         log.error("Set default value:{} of TimeStamp catch exception:{}",
                             constValue.toString(), ex.toString(), ex);
