@@ -160,34 +160,6 @@ public class DingoConfiguration {
                 throw e;
             }
         }
-        //BeanInfo beanInfo = Introspector.getBeanInfo(obj.getClass());
-        //PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
-        //for (PropertyDescriptor property : propertyDescriptors) {
-        //    try {
-        //        Object value;
-        //        if ((value = map.get(property.getName())) == null) {
-        //            continue;
-        //        }
-        //        if (value instanceof Map && !property.getPropertyType().equals(Map.class)) {
-        //            value = mapToBean((Map<String, Object>) value, property.getPropertyType());
-        //        }
-        //        if (!property.getPropertyType().equals(value.getClass())) {
-        //            value = tryConvertValue(value, property.getPropertyType());
-        //        }
-        //        Method setter = property.getWriteMethod();
-        //        if (setter != null) {
-        //            setter.invoke(obj, value);
-        //        } else {
-        //            Field field = cls.getDeclaredField(property.getName());
-        //            field.setAccessible(true);
-        //            field.set(obj, value);
-        //        }
-        //    } catch (Exception e) {
-        //        log.error("parse property name: {}. class name: {};", property.getName(), cls.getName(), e);
-        //        throw e;
-        //    }
-        //}
-
         return obj;
     }
 
