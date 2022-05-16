@@ -19,7 +19,6 @@ package io.dingodb.server.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.Part;
 import io.dingodb.net.api.annotation.ApiDeclaration;

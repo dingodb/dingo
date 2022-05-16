@@ -32,7 +32,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class ReadIndexRunner {
 
-    private final Executor executor = readIndexExecutor();
+    private static final Executor executor = readIndexExecutor();
 
     private final Node node;
     private final Function<RaftRawKVOperation, Object> executeFunc;

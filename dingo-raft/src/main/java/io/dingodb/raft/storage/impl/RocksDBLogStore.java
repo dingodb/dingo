@@ -284,6 +284,6 @@ public class RocksDBLogStore implements LogStore<RaftLogStoreOptions> {
 
     @Override
     public void shutdown() {
-
+        close();
     }
 }
