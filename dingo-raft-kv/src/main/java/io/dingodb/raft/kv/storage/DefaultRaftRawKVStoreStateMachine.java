@@ -126,6 +126,7 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
 
     @Override
     public void onShutdown() {
+        executorService.shutdown();
         log.info("onShutdown.");
     }
 

@@ -22,6 +22,6 @@ JAR_PATH=$(find $ROOT -name dingo-web-*.jar)
 nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
      -jar ${JAR_PATH} \
-     --spring.config.location={${ROOT}/conf/application.yaml}
+     --spring.config.location=${ROOT}/conf/application.yaml \
      io.dingodb.web.DingoApplication \
      > ${ROOT}/log/web.out &

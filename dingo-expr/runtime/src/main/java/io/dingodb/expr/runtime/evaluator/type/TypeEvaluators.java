@@ -291,13 +291,20 @@ final class TypeEvaluators {
     @Evaluators.Base(BooleanEvaluator.class)
     static boolean booleanType(@Nonnull Object value) {
         if (value instanceof Number) {
-            Double doubleValue = Double.valueOf(value.toString());
-            if (doubleValue == 0) {
-                return false;
-            } else if (doubleValue < 0) {
+            BigDecimal decimal = new BigDecimal(String.valueOf(value));
+
+            int scale = decimal.scale();
+            int compareResult = decimal.compareTo(BigDecimal.ZERO);
+
+            if (compareResult == 0) {
+                if (scale == 0) {
+                    return false;
+                }
+                throw new RuntimeException("Invalid input parameter.");
+            } else if (compareResult < 0) {
                 throw new RuntimeException("Invalid input parameter.");
             } else {
-                if (doubleValue % 1 != 0) {
+                if (scale != 0) {
                     throw new RuntimeException("Invalid input parameter.");
                 }
                 return true;
