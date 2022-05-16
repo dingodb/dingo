@@ -98,6 +98,7 @@ public class RaftStoreInstance implements StoreInstance {
         parts.values().forEach(RaftStoreInstancePart::clear);
         parts.clear();
         store.close();
+        logStore.shutdown();
         Files.deleteIfExists(path);
     }
 

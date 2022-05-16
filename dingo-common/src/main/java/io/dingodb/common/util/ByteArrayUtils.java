@@ -58,8 +58,4 @@ public class ByteArrayUtils {
         return bytes1.length - bytes2.length;
     }
 
-    public static void main(String[] args) {
-        System.out.println(compare(EMPTY_BYTES, new byte[] {1}));
-    }
-
 }
