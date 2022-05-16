@@ -59,6 +59,9 @@ public class QueryBooleanTest {
                 + "2, c2, 17, 139.2, beijing, false\n"
                 + "3, c3, 22, 34.89, shanghai, false\n"
                 + "4, c4, 33, 3392.88, zhengzhou, true\n"
+                + "5, c5, 39, 342.01, beijing, true\n"
+                + "6, c6, 11, 3.6, zhengzhou, true\n"
+                + "7, c7, 19, 223.18, shanghai, true\n"
         );
     }
 }
