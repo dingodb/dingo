@@ -20,6 +20,8 @@ dependency-reduced-pom.xml
 .idea/libraries/
 .idea/CodeReadingNote.xml
 .idea/compiler.xml
+.idea/csv-plugin.xml
+.idea/dbnavigator.xml
 .idea/gradle.xml
 .idea/jarRepositories.xml
 .idea/libraries-with-intellij-classes.xml

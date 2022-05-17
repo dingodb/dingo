@@ -31,6 +31,10 @@ public final class DingoRules {
         = DingoDistributedValuesRule.Config.DEFAULT.toRule();
     public static final DingoExchangeRootRule DINGO_EXCHANGE_ROOT_RULE
         = DingoExchangeRootRule.Config.DEFAULT.toRule();
+    public static final DingoFilterRule DINGO_FILTER_RULE_DISTRIBUTED
+        = DingoFilterRule.DISTRIBUTED.toRule(DingoFilterRule.class);
+    public static final DingoFilterRule DINGO_FILTER_RULE_ROOT
+        = DingoFilterRule.ROOT.toRule(DingoFilterRule.class);
     public static final DingoFilterScanRule DINGO_FILTER_TABLE_SCAN_RULE
         = DingoFilterScanRule.Config.DEFAULT.toRule();
     public static final DingoGetByKeysRule DINGO_GET_BY_KEYS_RULE
@@ -80,6 +84,8 @@ public final class DingoRules {
         DINGO_AGGREGATE_RULE,
         DINGO_AGGREGATE_SINGLE_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
+        DINGO_FILTER_RULE_DISTRIBUTED,
+        DINGO_FILTER_RULE_ROOT,
         DINGO_FILTER_TABLE_SCAN_RULE,
         DINGO_EXCHANGE_ROOT_RULE,
         DINGO_GET_BY_KEYS_RULE,

@@ -70,6 +70,11 @@ public class QueryHashJoinTest {
     }
 
     @Test
+    public void testSongsArtistsInnerFilter() throws SQLException, IOException {
+        testJoin("songs-artists-inner-join-filter");
+    }
+
+    @Test
     public void testSongsArtistsLeft() throws SQLException, IOException {
         testJoin("songs-artists-left-join");
     }

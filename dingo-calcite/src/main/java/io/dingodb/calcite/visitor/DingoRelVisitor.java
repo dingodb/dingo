@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoExchangeRoot;
+import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
@@ -47,6 +48,8 @@ public interface DingoRelVisitor<T> {
     T visit(@Nonnull DingoExchange rel);
 
     T visit(@Nonnull DingoExchangeRoot rel);
+
+    T visit(@Nonnull DingoFilter rel);
 
     T visit(@Nonnull DingoGetByKeys rel);
 
