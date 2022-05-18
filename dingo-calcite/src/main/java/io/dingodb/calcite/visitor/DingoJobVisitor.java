@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoExchangeRoot;
+import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
@@ -57,6 +58,7 @@ import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.impl.JobImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
+import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
@@ -95,6 +97,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -264,25 +267,31 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return receive.getSoleOutput();
     }
 
-    @Override
-    public Collection<Output> visit(@Nonnull DingoAggregate rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+    @Nonnull
+    private Collection<Output> bridge(@Nonnull Collection<Output> inputs, Supplier<Operator> operatorSupplier) {
         List<Output> outputs = new LinkedList<>();
         for (Output input : inputs) {
-            Operator operator = new AggregateOperator(
-                getAggKeys(rel.getGroupSet()),
-                getAggList(
-                    rel.getAggCallList(),
-                    TupleSchema.fromRelDataType(rel.getInput().getRowType())
-                )
-            );
+            Operator operator = operatorSupplier.get();
             Task task = input.getTask();
             operator.setId(idGenerator.get());
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
+            operator.getSoleOutput().copyHint(input);
             outputs.addAll(operator.getOutputs());
         }
         return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoAggregate rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        return bridge(inputs, () -> new AggregateOperator(
+            getAggKeys(rel.getGroupSet()),
+            getAggList(
+                rel.getAggCallList(),
+                TupleSchema.fromRelDataType(rel.getInput().getRowType())
+            )
+        ));
     }
 
     @Override
@@ -340,6 +349,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             outputs.add(exchange(input, currentLocation, schema));
         }
         return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoFilter rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        return bridge(inputs, () -> new FilterOperator(
+            RexConverter.toRtExprWithType(rel.getCondition()),
+            TupleSchema.fromRelDataType(rel.getInput().getRowType())
+        ));
     }
 
     @Override
@@ -529,20 +547,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoProject rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new ArrayList<>(inputs.size());
-        for (Output input : inputs) {
-            Operator operator = new ProjectOperator(
-                RexConverter.toRtExprWithType(rel.getProjects()),
-                TupleSchema.fromRelDataType(rel.getInput().getRowType())
-            );
-            Task task = input.getTask();
-            operator.setId(idGenerator.get());
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return bridge(inputs, () -> new ProjectOperator(
+            RexConverter.toRtExprWithType(rel.getProjects()),
+            TupleSchema.fromRelDataType(rel.getInput().getRowType())
+        ));
     }
 
     @Override
@@ -567,23 +575,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoSort rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        for (Output input : inputs) {
-            Operator operator = new SortOperator(
-                rel.getCollation().getFieldCollations().stream()
-                    .map(DingoJobVisitor::toSortCollation)
-                    .collect(Collectors.toList()),
-                rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
-                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
-            );
-            Task task = input.getTask();
-            operator.setId(idGenerator.get());
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return bridge(inputs, () -> new SortOperator(
+            rel.getCollation().getFieldCollations().stream()
+                .map(DingoJobVisitor::toSortCollation)
+                .collect(Collectors.toList()),
+            rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
+            rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
+        ));
     }
 
     @Override
