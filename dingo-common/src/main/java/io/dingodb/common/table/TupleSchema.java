@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
+import lombok.Getter;
 import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -31,6 +32,7 @@ import javax.annotation.Nonnull;
 
 public class TupleSchema implements CompileContext {
     @JsonValue
+    @Getter
     private final ElementSchema[] elementSchemas;
 
     @JsonCreator

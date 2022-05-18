@@ -204,6 +204,10 @@ public class ElementSchema implements CompileContext {
     }
 
     public Object convertToAvro(Object item) throws SQLException {
+        if (item == null) {
+            return null;
+        }
+
         switch (type) {
             case TypeCode.TIME:
                 if (item instanceof Time) {
@@ -237,6 +241,9 @@ public class ElementSchema implements CompileContext {
     }
 
     public Object convertFromAvro(Object item) {
+        if (item == null) {
+            return null;
+        }
         switch (type) {
             case TypeCode.TIME:
                 return new Time((Long) item);

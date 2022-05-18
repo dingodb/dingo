@@ -25,9 +25,14 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Time;
+import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -67,13 +72,22 @@ public final class PartUpdateOperator extends PartModifyOperator {
         for (int i = 0; i < mapping.size(); ++i) {
             Object newValue = updates.get(i).eval(etx);
             int index = mapping.get(i);
-            if (!tuple[index].equals(newValue)) {
+            boolean isUpdate = (tuple[index] == null && newValue != null)
+                || (tuple[index] != null && newValue == null)
+                || (tuple[index] != null && !tuple[index].equals(newValue));
+            if (isUpdate) {
+                // update table columns when column is time
+                if (newValue != null && schema.getElementSchemas()[index].getTypeCode() == TypeCode.TIME) {
+                    // disable timezone
+                    LocalTime localTime = LocalTime.parse(newValue.toString());
+                    newValue = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
+                }
                 tuple[index] = newValue;
                 update = true;
             }
         }
         if (update) {
-            part.upsert(tuple);
+            part.upsert(Arrays.copyOf(tuple, schema.getElementSchemas().length));
             count++;
         }
         return true;
