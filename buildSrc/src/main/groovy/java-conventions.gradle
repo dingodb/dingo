@@ -27,7 +27,7 @@ java {
 
 checkstyle {
     ignoreFailures = false
-    maxWarnings = 0
+    //maxWarnings = 0
 }
 
 repositories {

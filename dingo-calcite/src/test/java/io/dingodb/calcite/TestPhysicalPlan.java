@@ -24,6 +24,7 @@ import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoExchangeRoot;
+import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartModify;
@@ -451,6 +452,19 @@ public class TestPhysicalPlan {
         RelNode relNode = parse(sql);
         Assert.relNode(relNode)
             .isA(DingoProject.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)
+            .inputNum(2);
+    }
+
+    @Test
+    public void testJoinFilter() throws SqlParseException {
+        String sql = "select * from test join test1 on test.name = test1.id1 where test.amount > 3.0";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoFilter.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoProject.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)

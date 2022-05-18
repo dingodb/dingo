@@ -1,9 +1,5 @@
 plugins {
-    id 'java'
-}
-
-repositories {
-    mavenCentral()
+    id 'java-conventions'
 }
 
 dependencies {
@@ -26,18 +22,10 @@ dependencies {
     compile group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
     compile group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
     compile group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
-    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compile group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
     compile group: 'com.alipay.sofa', name: 'hessian', version: 'hessian'.v()
 
     testImplementation group: 'org.hamcrest', name: 'hamcrest-library', version: 'hamcrest'.v()
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation group: 'org.openjdk.jmh', name: 'jmh-core', version: 'jmh'.v()
     testImplementation group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: 'jmh'.v()
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: 'junit'.v()
-    testRuntimeOnly group:'org.junit.jupiter', name: 'junit-jupiter-engine', version: 'junit'.v()
-}
-
-test {
-    useJUnitPlatform()
 }

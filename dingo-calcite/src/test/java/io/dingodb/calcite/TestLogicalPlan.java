@@ -286,6 +286,17 @@ public class TestLogicalPlan {
     }
 
     @Test
+    public void testJoinFilter() throws SqlParseException {
+        String sql = "select * from test join test1 on test.name = test1.id1 where test.amount > 3.0";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalJoin.class).convention(Convention.NONE).prop("joinType", JoinRelType.INNER)
+            .inputNum(2);
+    }
+
+    @Test
     public void testDefaultValue() throws Exception {
         String sql = "insert into test(id) values (1)";
         RelRoot relRoot = parse(sql);
