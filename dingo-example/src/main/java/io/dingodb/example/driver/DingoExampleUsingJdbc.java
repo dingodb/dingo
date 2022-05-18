@@ -31,15 +31,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DingoDriverExample {
+public class DingoExampleUsingJdbc {
     private static final String defaultConnectIp = "172.20.3.13";
-    private static Logger log = LoggerFactory.getLogger(DingoDriverExample.class);
+    private static Logger log = LoggerFactory.getLogger(DingoExampleUsingJdbc.class);
     private static String connectUrl = "url=" + defaultConnectIp + ":8765";
     private static Connection connection;
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.out.println("Usage: java -jar io.dingodb.example.driver.DingoDriverExample\r\n"
+            System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
                 + "\t\t 172.20.3.14 create exampletest\r\n"
                 + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
                 + "\t\t 172.20.3.14 query  exampletest");
