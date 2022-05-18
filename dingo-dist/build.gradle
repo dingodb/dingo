@@ -53,6 +53,11 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-example').layout.buildDirectory) {
+        include("libs/dingo-example-*-all.jar")
+    }
+    into layout.projectDirectory.dir("dingo")
+
     rename { fileName ->
         fileName.replace("-$project.version", "")
     }
@@ -71,7 +76,8 @@ copyDepends.dependsOn([
     ':dingo-server:dingo-server-executor:fatJar',
     ':dingo-cli:fatJar',
     ':dingo-driver-client:fatJar',
-    ':dingo-store-raft:fatJar'
+    ':dingo-store-raft:fatJar',
+    ':dingo-example:fatJar'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

@@ -27,6 +27,7 @@ import io.dingodb.meta.Part;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +36,8 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public class DmlClient extends ClientBase {
+@Slf4j
+public class DingoClient extends ClientBase {
     private MetaClient metaClient;
 
     private ApiRegistry apiRegistry;
@@ -49,11 +51,11 @@ public class DmlClient extends ClientBase {
 
     private Integer retryTime;
 
-    public DmlClient(String configPath, String tableName) throws Exception {
+    public DingoClient(String configPath, String tableName) throws Exception {
         this(configPath, tableName, 0);
     }
 
-    public DmlClient(String configPath, String tableName, Integer retryTime) throws Exception {
+    public DingoClient(String configPath, String tableName, Integer retryTime) throws Exception {
         super(configPath);
         this.tableName = tableName;
         this.metaClient = new MetaClient(configPath);
@@ -62,12 +64,12 @@ public class DmlClient extends ClientBase {
         refreshTableMeta();
     }
 
-    public DmlClient(String coordinatorExchangeSvrList, String currentHost, Integer currentPort, String tableName) {
+    public DingoClient(String coordinatorExchangeSvrList, String currentHost, Integer currentPort, String tableName) {
         this(coordinatorExchangeSvrList, currentHost, currentPort, tableName, 0);
     }
 
-    public DmlClient(String coordinatorExchangeSvrList, String currentHost,
-                     Integer currentPort, String tableName, Integer retryTime) {
+    public DingoClient(String coordinatorExchangeSvrList, String currentHost,
+                       Integer currentPort, String tableName, Integer retryTime) {
         super(coordinatorExchangeSvrList, currentHost, currentPort);
         this.tableName = tableName;
         this.metaClient = new MetaClient(coordinatorExchangeSvrList, currentHost, currentPort);
@@ -122,6 +124,7 @@ public class DmlClient extends ClientBase {
                 return executorApi.upsertKeyValue(tableId, keyValue);
             } catch (Exception e) {
                 exception = e;
+                log.error("insert keyValue record failed, tableId:{} retryTime:{} ", tableId, retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
@@ -139,6 +142,33 @@ public class DmlClient extends ClientBase {
                 return executorApi.upsertKeyValue(tableId, keyValues);
             } catch (Exception e) {
                 exception = e;
+                refreshTableMeta();
+                log.error("insert KeyValue error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
+            } finally {
+                retryTime++;
+            }
+        }
+        while (retryTime <= this.retryTime);
+        throw exception;
+    }
+
+    public List<Object[]> get(Object[] startKey, Object[] endKey) throws Exception {
+        byte[] bytesStartKey = codec.encodeKey(startKey);
+        byte[] bytesEndKey = codec.encodeKey(endKey);
+        ExecutorApi executorApi = getExecutor(ps.calcPartId(bytesStartKey));
+        int retryTime = 0;
+        Exception exception = null;
+        do {
+            try {
+                List<KeyValue> keyValues = executorApi.getKeyValueByRange(tableId, bytesStartKey, bytesEndKey);
+                List<Object[]> result = new ArrayList<Object[]>();
+                for (KeyValue kv: keyValues) {
+                    result.add(codec.decode(kv));
+                }
+                return result;
+            } catch (Exception e) {
+                exception = e;
+                log.error("get key value by range catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
@@ -158,6 +188,7 @@ public class DmlClient extends ClientBase {
                 return codec.mapKeyAndDecodeValue(key, executorApi.getValueByPrimaryKey(tableId, primaryKey));
             } catch (Exception e) {
                 exception = e;
+                log.error("get key value by key catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
@@ -177,6 +208,7 @@ public class DmlClient extends ClientBase {
                 return executorApi.delete(tableId, primaryKey);
             } catch (Exception e) {
                 exception = e;
+                log.error("delete key catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
