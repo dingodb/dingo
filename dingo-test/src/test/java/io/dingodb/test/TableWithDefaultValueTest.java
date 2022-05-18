@@ -24,12 +24,15 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -425,4 +428,108 @@ public class TableWithDefaultValueTest {
             expectRecord);
         sqlHelper.clearTable(tableName);
     }
+
+    @Test
+    public void testCase13() throws Exception {
+        String tableName = "testCase13";
+        String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32),\n"
+            + "    age int, \n"
+            + "    address varchar(32), \n"
+            + "    birth1 date, \n"
+            + "    birth2 time, \n"
+            + "    birth3 timestamp, \n"
+            + "    primary key(id))\n";
+
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        sql = "update " + tableName + " set address = 'beijing' where id = 100";
+        sqlHelper.updateTest(sql, 1);
+        String expectRecord01 = "100, lala, null, beijing, null, null, null";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            expectRecord01);
+
+        sql = "update " + tableName + " set birth1 = '2020-11-11' where id = 100";
+        sqlHelper.updateTest(sql, 1);
+        String expectRecord02 = "100, lala, null, beijing, 2020-11-11, null, null";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            expectRecord02);
+
+        sql = "update " + tableName + " set birth2 = '11:11:11' where id = 100";
+        sqlHelper.updateTest(sql, 1);
+        String expectRecord03 = "100, lala, null, beijing, 2020-11-11, 11:11:11, null";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            expectRecord03);
+
+        sql = "update " + tableName + " set birth3 = '2022-11-11 11:11:11' where id = 100";
+        sqlHelper.updateTest(sql, 1);
+        String expectRecord04 = "100, lala, null, beijing, 2020-11-11, 11:11:11, 2022-11-11 11:11:11";
+        sql = "select * from " + tableName;
+        sqlHelper.queryTest(sql,
+            new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            expectRecord04);
+
+        sqlHelper.clearTable(tableName);
+    }
+
+    @Test
+    public void testCase14() throws Exception {
+        String tableName = "testCase14";
+        String sqlCmd = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32),\n"
+            + "    birth1 date, \n"
+            + "    birth2 time, \n"
+            + "    birth3 timestamp, \n"
+            + "    primary key(id))\n";
+
+        sqlHelper.execSqlCmd(sqlCmd);
+        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+
+        sql = "update " + tableName + " set birth1 = current_date() where id = 100";
+        sqlHelper.updateTest(sql, 1);
+
+        sql = "update " + tableName + " set birth2 = current_time() where id = 100";
+        sqlHelper.updateTest(sql, 1);
+
+        sql = "update " + tableName + " set birth3 = now() where id = 100";
+        sqlHelper.updateTest(sql, 1);
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String currentTimeStamp = localDateTime.format(dateTimeFormatter);
+        System.out.println("=====Current time is: " + currentTimeStamp);
+        LocalTime localTime = LocalTime.now();
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        String currentTime = localTime.format(timeFormatter);
+        System.out.println("=====Current time is: " + currentTime);
+
+        List<Object[]> expectedResult02 = new ArrayList<>();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String currentDate = simpleDateFormat.format(new Date());
+        expectedResult02.add(new Object[] {100, "lala", currentDate, currentTime, currentTimeStamp});
+
+        sql = "select * from " + tableName;
+        sqlHelper.queryTestWithTime(
+            sql,
+            new String[]{"id", "name", "birth1", "birth2", "birth3"},
+            TupleSchema.ofTypes("INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            expectedResult02);
+        sqlHelper.clearTable(tableName);
+    }
+
 }

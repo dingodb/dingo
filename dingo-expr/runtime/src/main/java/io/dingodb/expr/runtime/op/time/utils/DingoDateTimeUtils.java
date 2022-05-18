@@ -355,6 +355,14 @@ public class DingoDateTimeUtils implements Serializable {
         return t;
     }
 
+    public static Time getTimeByLocalDateTime(LocalTime localTime) {
+        int hour = localTime.getHour();
+        int minute = localTime.getMinute();
+        int second = localTime.getSecond();
+        Time t = new Time(((hour * 60 + minute) * 60 + second) * 1000);
+        return t;
+    }
+
     public static ZoneOffset getLocalZoneOffset() {
         Instant instant = Instant.now(); //can be LocalDateTime
         ZoneId systemZone = ZoneId.systemDefault(); // my timezone

@@ -66,13 +66,11 @@ public class KeyValueCodec {
             for (int i = 0; i < len; i++) {
                 result.add(tupleSchema.get(i).convertToAvro(record[i]));
             }
+            return result.toArray();
         } else {
-            result.add(record[0]);
-            for (int i = 1; i < len; i++) {
-                result.add(tupleSchema.get(i - 1).convertToAvro(record[i]));
-            }
+            log.error("Record size {} does not match schema size {}", record.length, tupleSchema.size());
+            throw new RuntimeException("Record size does not match schema size");
         }
-        return result.toArray();
     }
 
 

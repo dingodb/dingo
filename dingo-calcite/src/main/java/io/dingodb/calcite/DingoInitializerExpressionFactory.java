@@ -58,7 +58,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         DingoTable dingoTable = DingoTable.dingo(table);
         Object defaultValue = dingoTable.getTableDefinition().getColumn(column).getDefaultValue();
         RelDataType type = table.getRowType().getFieldList().get(column).getType();
-        if (defaultValue == null) {
+        if (defaultValue == null || (defaultValue != null && defaultValue.toString().length() == 0)) {
             return super.newColumnDefaultValue(table, column, context);
         }
 
