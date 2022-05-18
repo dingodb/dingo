@@ -46,4 +46,7 @@ public interface ExecutorApi {
 
     @ApiDeclaration
     public boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+
+    @ApiDeclaration
+    public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 }

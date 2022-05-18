@@ -20,9 +20,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Iterator;
 import java.util.List;
 
+@Slf4j
 public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     private StoreService storeService;
@@ -70,5 +73,26 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     @Override
     public boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
         return storeService.getInstance(tableId).delete(startPrimaryKey, endPrimaryKey);
+    }
+
+    @Override
+    public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (log.isDebugEnabled()) {
+            log.info("Get Key value by range: instance:{} tableId:{}, startPrimaryKey: {}, endPrimaryKey: {}",
+                storeService.getInstance(tableId).getClass().getSimpleName(),
+                tableId,
+                startPrimaryKey == null ? "null" : new String(startPrimaryKey),
+                endPrimaryKey == null ? "null" : new String(endPrimaryKey));
+        }
+
+        Iterator<KeyValue> rows = storeService
+            .getInstance(tableId).scan(startPrimaryKey, endPrimaryKey);
+
+        List<KeyValue> keyValues = new java.util.ArrayList<>();
+        while (rows.hasNext()) {
+            KeyValue keyValue = rows.next();
+            keyValues.add(keyValue);
+        }
+        return keyValues;
     }
 }

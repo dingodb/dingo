@@ -116,12 +116,12 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<Row> scan() {
+    default Iterator<KeyValue> scan() {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<Row> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        throw new UnsupportedOperationException();
+    default Iterator<KeyValue> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return keyValueScan(startPrimaryKey, endPrimaryKey);
     }
 
     default Iterator<KeyValue> keyValueScan() {
