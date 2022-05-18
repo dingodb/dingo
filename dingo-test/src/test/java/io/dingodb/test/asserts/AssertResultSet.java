@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Assertions;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -132,6 +135,9 @@ public final class AssertResultSet {
         int size = metaData.getColumnCount();
         int count = 0;
 
+        // default 5 seconds
+        int timeMistake = 5 * 1000;
+
         while (instance.next()) {
             Object[] expectedRow = target.get(count);
             Object[] row = new Object[size];
@@ -142,15 +148,13 @@ public final class AssertResultSet {
                  * in order to compare time in test cases, we change HH:mm:ss to HH
                  */
                 if (row[i] instanceof java.sql.Time) {
-                    String timeStr = row[i].toString().substring(0, row[i].toString().length() - 6);
-                    String expected = expectedRow[i].toString();
-                    Assertions.assertEquals(timeStr, expected.substring(0, expected.length() - 6));
+                    Long expectedTimeMs = Time.valueOf(expectedRow[i].toString()).getTime();
+                    Long realTimeMs = ((java.sql.Time) row[i]).getTime();
+                    Assertions.assertTrue(Math.abs(expectedTimeMs - realTimeMs) < timeMistake);
                 } else if (row[i] instanceof java.sql.Timestamp) {
-                    String srcStr = row[i].toString();
-                    String srcResult = srcStr.substring(0, srcStr.lastIndexOf(":"));
-                    String destStr = expectedRow[i].toString();
-                    String destResult = destStr.substring(0, destStr.lastIndexOf(":"));
-                    Assertions.assertEquals(srcResult, destResult);
+                    Long expectedTimeMs = Timestamp.valueOf(expectedRow[i].toString()).getTime();
+                    Long realTimeMs = ((java.sql.Timestamp) row[i]).getTime();
+                    Assertions.assertTrue(Math.abs(expectedTimeMs - realTimeMs) < timeMistake);
                 } else if (row[i] instanceof java.sql.Date) {
                     String srcResult = row[i].toString();
                     String destResult = expectedRow[i].toString();
