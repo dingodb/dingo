@@ -49,23 +49,62 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         super(config);
     }
 
-    private static void matchProjectFilter(@Nonnull DingoValuesReduceRule rule, @Nonnull RelOptRuleCall call) {
-        LogicalProject project = call.rel(0);
-        LogicalFilter filter = call.rel(1);
-        LogicalValues values = call.rel(2);
-        DingoValuesReduceRule.apply(call, project, filter, values);
-    }
-
     private static void matchProject(@Nonnull DingoValuesReduceRule rule, @Nonnull RelOptRuleCall call) {
         LogicalProject project = call.rel(0);
         LogicalValues values = call.rel(1);
-        DingoValuesReduceRule.apply(call, project, null, values);
+        final List<RexNode> projects = project.getProjects();
+        RexBuilder rexBuilder = values.getCluster().getRexBuilder();
+        // Find reducible expressions.
+        final MyRexShuttle shuttle = new MyRexShuttle();
+        final ImmutableList.Builder<ImmutableList<RexLiteral>> tuplesBuilder = ImmutableList.builder();
+        for (final ImmutableList<RexLiteral> literalList : values.getTuples()) {
+            shuttle.literalList = literalList;
+            final ImmutableList<RexLiteral> valuesList;
+            final ImmutableList.Builder<RexLiteral> tupleBuilder = ImmutableList.builder();
+            int k = 0;
+            for (RexNode projectExpr : projects) {
+                RelDataType type = project.getRowType().getFieldList().get(k).getType();
+                RexNode e = projectExpr.accept(shuttle);
+                RexLiteral o = reduceValue(rexBuilder, e, type);
+                tupleBuilder.add(o);
+                ++k;
+            }
+            valuesList = tupleBuilder.build();
+            tuplesBuilder.add(valuesList);
+        }
+        RelDataType rowType = project.getRowType();
+        RelNode newRel = LogicalValues.create(values.getCluster(), rowType, tuplesBuilder.build());
+        call.transformTo(newRel);
     }
 
     private static void matchFilter(@Nonnull DingoValuesReduceRule rule, @Nonnull RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
         LogicalValues values = call.rel(1);
-        DingoValuesReduceRule.apply(call, null, filter, values);
+        final RexNode condition = filter.getCondition();
+        RexBuilder rexBuilder = values.getCluster().getRexBuilder();
+        RelDataType boolType = values.getCluster().getTypeFactory().createSqlType(SqlTypeName.BOOLEAN);
+        // Find reducible expressions.
+        final MyRexShuttle shuttle = new MyRexShuttle();
+        boolean changed = false;
+        final ImmutableList.Builder<ImmutableList<RexLiteral>> tuplesBuilder = ImmutableList.builder();
+        for (final ImmutableList<RexLiteral> literalList : values.getTuples()) {
+            shuttle.literalList = literalList;
+            RexNode c = condition.accept(shuttle);
+            RexLiteral o = reduceValue(rexBuilder, c, boolType);
+            if (!o.isAlwaysTrue()) {
+                changed = true;
+                continue;
+            }
+            tuplesBuilder.add(literalList);
+        }
+        if (changed) {
+            final RelDataType rowType;
+            rowType = values.getRowType();
+            RelNode newRel = LogicalValues.create(values.getCluster(), rowType, tuplesBuilder.build());
+            call.transformTo(newRel);
+        } else {
+            call.transformTo(values);
+        }
     }
 
     private static RexLiteral reduceValue(RexBuilder rexBuilder, RexNode in, RelDataType type) {
@@ -88,54 +127,6 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         @Nullable LogicalFilter filter,
         @Nonnull LogicalValues values
     ) {
-        final RexNode conditionExpr = (filter == null) ? null : filter.getCondition();
-        final List<RexNode> projectExprs = (project == null) ? null : project.getProjects();
-        RexBuilder rexBuilder = values.getCluster().getRexBuilder();
-        RelDataType boolType = values.getCluster().getTypeFactory().createSqlType(SqlTypeName.BOOLEAN);
-        // Find reducible expressions.
-        final MyRexShuttle shuttle = new MyRexShuttle();
-        boolean changed = false;
-        final ImmutableList.Builder<ImmutableList<RexLiteral>> tuplesBuilder = ImmutableList.builder();
-        for (final ImmutableList<RexLiteral> literalList : values.getTuples()) {
-            shuttle.literalList = literalList;
-            if (conditionExpr != null) {
-                RexNode c = conditionExpr.accept(shuttle);
-                RexLiteral o = reduceValue(rexBuilder, c, boolType);
-                if (!o.isAlwaysTrue()) {
-                    changed = true;
-                    continue;
-                }
-            }
-            final ImmutableList<RexLiteral> valuesList;
-            if (project != null) {
-                changed = true;
-                final ImmutableList.Builder<RexLiteral> tupleBuilder = ImmutableList.builder();
-                int k = 0;
-                for (RexNode projectExpr : projectExprs) {
-                    RelDataType type = project.getRowType().getFieldList().get(k).getType();
-                    RexNode e = projectExpr.accept(shuttle);
-                    RexLiteral o = reduceValue(rexBuilder, e, type);
-                    tupleBuilder.add(o);
-                    ++k;
-                }
-                valuesList = tupleBuilder.build();
-            } else {
-                valuesList = literalList;
-            }
-            tuplesBuilder.add(valuesList);
-        }
-        if (changed) {
-            final RelDataType rowType;
-            if (projectExprs != null) {
-                rowType = project.getRowType();
-            } else {
-                rowType = values.getRowType();
-            }
-            RelNode newRel = LogicalValues.create(values.getCluster(), rowType, tuplesBuilder.build());
-            call.transformTo(newRel);
-        } else {
-            call.transformTo(values);
-        }
     }
 
     @Override
@@ -164,16 +155,6 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
                         .predicate(Values::isNotEmpty).noInputs()))
             .as(Config.class)
             .withMatchHandler(DingoValuesReduceRule::matchProject);
-
-        Config PROJECT_FILTER = EMPTY
-            .withDescription("DingoValuesReduceRule(Project-Filter)")
-            .withOperandSupplier(b0 ->
-                b0.operand(LogicalProject.class).oneInput(b1 ->
-                    b1.operand(LogicalFilter.class).oneInput(b2 ->
-                        b2.operand(LogicalValues.class)
-                            .predicate(Values::isNotEmpty).noInputs())))
-            .as(Config.class)
-            .withMatchHandler(DingoValuesReduceRule::matchProjectFilter);
 
         @Override
         default DingoValuesReduceRule toRule() {
