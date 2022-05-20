@@ -16,10 +16,13 @@
 
 package io.dingodb.common.codec;
 
+import io.dingodb.common.util.Pair;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class PrimitiveCodec {
 
@@ -276,4 +279,34 @@ public class PrimitiveCodec {
         return new String(bytes);
     }
 
+    public static byte[] encodeArray(final byte[] content) {
+        if (content == null) {
+            return new byte[0];
+        }
+        byte[] len = encodeVarInt(content.length);
+        byte[] result = new byte[len.length + content.length];
+        System.arraycopy(len, 0, result, 0, len.length);
+        System.arraycopy(content, 0, result, len.length, content.length);
+        return result;
+    }
+
+    public static Pair<byte[], Integer> decodeArray(final byte[] bytes, final int offset) {
+        byte[] lenBytes = Arrays.copyOfRange(bytes, offset, offset + 4);
+        Integer len = readVarInt(lenBytes);
+        if (len == null || len < 0) {
+            return null;
+        }
+        int lenOffset = computeVarIntSize(len);
+        int totalOffset = offset + lenOffset + len;
+        return new Pair(Arrays.copyOfRange(bytes, offset + lenOffset, totalOffset), lenOffset + len);
+    }
+
+    public static byte[] intToByteArray(int num) {
+        return new byte[] {(byte)((num >> 24) & 0xff),(byte)((num >> 16) & 0xff),(byte)((num >> 8) & 0xff),
+            (byte)(num & 0xff)};
+    }
+
+    public static int byteArrayToInt(byte[] arr) {
+        return (arr[0] & 0xff) << 24 | (arr[1] & 0xff) << 16 | (arr[2] & 0xff) << 8 | (arr[3] & 0xff);
+    }
 }

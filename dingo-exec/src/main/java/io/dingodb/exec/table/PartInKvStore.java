@@ -52,14 +52,22 @@ public final class PartInKvStore implements Part {
     @Override
     @Nonnull
     public Iterator<Object[]> getIterator() {
-        return Iterators.transform(
-            store.keyValueScan(),
-            wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-        );
+        final long startTime = System.currentTimeMillis();
+        try {
+            return Iterators.transform(
+                store.keyValueScan(),
+                wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+            );
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
+        }
     }
 
     @Override
     public boolean insert(@Nonnull Object[] tuple) {
+        final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
             if (!store.exist(row.getPrimaryKey())) {
@@ -68,27 +76,41 @@ public final class PartInKvStore implements Part {
             }
         } catch (IOException e) {
             log.error("Insert: encode error.", e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
         return false;
     }
 
     @Override
     public void upsert(@Nonnull Object[] tuple) {
+        final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
             store.upsertKeyValue(row);
         } catch (IOException e) {
             log.error("Upsert: encode error.", e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore upsert cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
     }
 
     @Override
     public boolean remove(@Nonnull Object[] tuple) {
+        final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
             return store.delete(row.getPrimaryKey());
         } catch (IOException e) {
             log.error("Remove: encode error.", e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore remove cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
         return false;
     }
@@ -96,6 +118,7 @@ public final class PartInKvStore implements Part {
     @Override
     @Nullable
     public Object[] getByKey(@Nonnull Object[] keyTuple) {
+        final long startTime = System.currentTimeMillis();
         try {
             byte[] key = codec.encodeKey(keyTuple);
             byte[] value = store.getValueByPrimaryKey(key);
@@ -104,6 +127,10 @@ public final class PartInKvStore implements Part {
             }
         } catch (IOException e) {
             log.error("GetByKey: codec error.", e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore getByKey cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
         return null;
     }
@@ -116,6 +143,7 @@ public final class PartInKvStore implements Part {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
         List<Object[]> tuples = new ArrayList<>(keyList.size());
+        final long startTime = System.currentTimeMillis();
         try {
             List<KeyValue> valueList = store.getKeyValueByPrimaryKeys(keyList);
             if (keyList.size() != valueList.size()) {
@@ -134,6 +162,10 @@ public final class PartInKvStore implements Part {
             }
         } catch (IOException e) {
             log.error("Get KeyValues from Store => Catch Exception:{} when read data", e.getMessage(), e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore getByMultiKey cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
         return tuples;
     }
