@@ -162,6 +162,7 @@ public class CoordinatorStateMachine implements StateMachine {
         metaBuilder.setChecksum(Long.toHexString(checksum.getValue()));
         metaBuilder.setUserMeta(ByteString.copyFromUtf8(node.getGroupId()));
         writer.addFile(SNAPSHOT_ZIP, metaBuilder.build());
+        done.run(Status.OK());
     }
 
     @Override

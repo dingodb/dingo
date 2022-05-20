@@ -51,6 +51,20 @@ public interface Channel extends AutoCloseable {
      */
     NetAddress remoteAddress();
 
+    /**
+     * Returns true if current channel available.
+     */
+    default boolean isActive() {
+        return status() == Status.ACTIVE;
+    }
+
+    /**
+     * Returns true if current channel is closed.
+     */
+    default boolean isClosed() {
+        return status() == Status.CLOSE;
+    }
+
     enum Status {
         /**
          * New channel.

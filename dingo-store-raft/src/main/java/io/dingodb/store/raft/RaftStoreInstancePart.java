@@ -21,15 +21,10 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.util.Files;
-import io.dingodb.raft.conf.Configuration;
-import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.RaftRawKVStore;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.kv.storage.SeekableIterator;
-import io.dingodb.raft.option.NodeOptions;
-import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
@@ -39,7 +34,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -51,42 +45,27 @@ public final class RaftStoreInstancePart implements StoreInstance {
 
     private CommonId id;
     private Part part;
-    private Configuration configuration;
     private RawKVStore store;
     private RaftRawKVStore raftStore;
     private PartStateMachine stateMachine;
-
-    private Path path;
-    private Path metaPath;
-    private Path snapshotPath;
 
     public RaftStoreInstancePart(Part part, Path path, RawKVStore store, LogStore logStore) throws Exception {
         this.id = part.getId();
         this.store = store;
         this.part = part;
-        this.path = path;
-        this.metaPath = Paths.get(path.toString(), "meta");
-        this.snapshotPath = Paths.get(path.toString(), "snapshot");
-        this.configuration = new Configuration(part.getReplicates().stream()
-            .map(location -> new PeerId(location.getHost(), StoreConfiguration.raft().getPort()))
-            .collect(Collectors.toList()));
-        Files.createDirectories(metaPath);
-        Files.createDirectories(snapshotPath);
-        NodeOptions nodeOptions = StoreConfiguration.raft().getNode();
-        if (nodeOptions == null) {
-            nodeOptions = new NodeOptions();
-        } else {
-            nodeOptions = nodeOptions.copy();
-        }
-        LogStorage logStorage = new RocksDBLogStorage(id.seqContent(), (RocksDBLogStore) logStore);
-        nodeOptions.setLogStorage(logStorage);
-        nodeOptions.setInitialConf(configuration);
-        nodeOptions.setRaftMetaUri(metaPath.toString());
-        nodeOptions.setSnapshotUri(snapshotPath.toString());
-        Location location = new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort());
-        this.raftStore = new RaftRawKVStore(id.toString(), store, nodeOptions, location);
+        this.raftStore = new RaftRawKVStore(
+            id,
+            store,
+            StoreConfiguration.raft().getNode(),
+            path,
+            new RocksDBLogStorage(id.seqContent(), (RocksDBLogStore) logStore),
+            new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort()),
+            part.getReplicates().stream()
+                .map(l -> new Location(l.getHost(), StoreConfiguration.raft().getPort()))
+                .collect(Collectors.toList())
+        );
         this.stateMachine = new PartStateMachine(id, raftStore, part);
-        nodeOptions.setFsm(stateMachine);
+        raftStore.getNodeOptions().setFsm(stateMachine);
         log.info("Start raft store instance part, id: {}, part: {}", id, part);
     }
 
@@ -100,10 +79,9 @@ public final class RaftStoreInstancePart implements StoreInstance {
     }
 
     public void clear() {
-        log.info("Clear raft store instance part, id: {}, raft path: {}", id.toString(), path);
+        log.info("Clear raft store instance part, id: {}", id.toString());
         raftStore.shutdown();
         log.info("Raft store closed, id: {}", id.toString());
-        Files.deleteIfExists(path);
     }
 
     public SeekableIterator<byte[], ByteArrayEntry> iterator() {

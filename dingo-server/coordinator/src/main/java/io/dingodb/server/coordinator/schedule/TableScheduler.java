@@ -45,6 +45,7 @@ import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -120,6 +121,9 @@ public class TableScheduler {
             .forEach((task -> executorService.submit(() -> {
                 try {
                     busy.compareAndSet(false, true);
+                    if (task.getStep() == SplitTask.Step.IGNORE) {
+                        return;
+                    }
                     processSplitTask(task);
                 } finally {
                     busy.set(false);
@@ -273,6 +277,9 @@ public class TableScheduler {
             if (splitKey == null) {
                 return;
             }
+            if (Arrays.equals(tablePartAdaptor.get(stats.getTablePart()).getEnd(), splitKey)) {
+                return;
+            }
             SplitTask task = createTask(stats.getTablePart(), splitKey);
             processSplitTask(task);
         } catch (Exception e) {
@@ -284,6 +291,10 @@ public class TableScheduler {
 
     private void processSplitTask(SplitTask task) {
         TablePart oldPart = tablePartAdaptor.get(task.getOldPart());
+        if (Arrays.equals(oldPart.getEnd(), task.getSplitKey())) {
+            task.setStep(SplitTask.Step.IGNORE);
+            return;
+        }
         TablePart newPart = tablePartAdaptor.get(task.getNewPart());
         if (task.getStep() == SplitTask.Step.CREATE_NEW_PART) {
             newPart = createNewPart(task.getSplitKey(), task, oldPart);

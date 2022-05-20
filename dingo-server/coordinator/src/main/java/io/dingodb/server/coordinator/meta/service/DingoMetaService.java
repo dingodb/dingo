@@ -22,12 +22,16 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.MetaServiceApi;
+import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
+import io.dingodb.server.coordinator.meta.adaptor.impl.ReplicaAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
+import io.dingodb.server.coordinator.meta.adaptor.impl.TablePartStatsAdaptor;
 import io.dingodb.server.protocol.CommonIdConstant;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.Replica;
@@ -47,6 +51,8 @@ import javax.annotation.Nullable;
 
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getStatsMetaAdaptor;
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
 @Slf4j
 public class DingoMetaService implements MetaService, MetaServiceApi {
@@ -119,16 +125,21 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     public NavigableMap<ComparableByteArray, Part> getParts(String name) {
         CommonId tableId = ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(name);
 
+        TablePartStatsAdaptor statsMetaAdaptor = getStatsMetaAdaptor(TablePartStats.class);
+        ExecutorAdaptor executorAdaptor = getMetaAdaptor(Executor.class);
+        ReplicaAdaptor replicaAdaptor = getMetaAdaptor(Replica.class);
+
         NavigableMap<ComparableByteArray, Part> result = new TreeMap<>();
         getMetaAdaptor(TablePart.class).getByDomain(tableId.seqContent()).forEach(part -> {
-            getStatsMetaAdaptor(TablePartStats.class).getByDomain(part.getId().seqContent()).forEach(stats -> {
-                Location leader = getMetaAdaptor(Executor.class).get(stats.getLeader()).location();
-                List<Location> locations = getMetaAdaptor(Replica.class).getByDomain(part.getId().seqContent()).stream()
-                    .map(Replica::location)
-                    .collect(Collectors.toList());
+            Optional.ofNullable(statsMetaAdaptor.getStats(
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domain(), part.getId().seqContent())
+            )).ifPresent(stats -> {
                 result.put(
                     new ComparableByteArray(part.getStart()),
-                    new Part(part.getId().encode(), new Location(leader.getHost(), leader.getPort()), locations)
+                    new Part(
+                        part.getId().encode(),
+                        executorAdaptor.getLocation(stats.getLeader()),
+                        replicaAdaptor.getLocationsByDomain(part.getId().seqContent()))
                 );
             });
         });

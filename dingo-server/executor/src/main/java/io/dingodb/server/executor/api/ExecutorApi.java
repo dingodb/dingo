@@ -86,7 +86,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
         }
 
         Iterator<KeyValue> rows = storeService
-            .getInstance(tableId).scan(startPrimaryKey, endPrimaryKey);
+            .getInstance(tableId).keyValueScan(startPrimaryKey, endPrimaryKey);
 
         List<KeyValue> keyValues = new java.util.ArrayList<>();
         while (rows.hasNext()) {

@@ -16,7 +16,9 @@
 
 package io.dingodb.raft.kv.storage;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.Files;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
@@ -48,6 +50,8 @@ public class TestRaftRawKVStore {
 
     public static final String SRV_LIST = "localhost:9181";
     public static final String DB_PATH = TestRaftRawKVStore.class.getName();
+    public static final CommonId RAFT_ID = new CommonId(
+        (byte) 'T', new byte[] {'T', 'R'}, PrimitiveCodec.encodeInt(0), PrimitiveCodec.encodeInt(0));
 
     private static RaftRawKVStore store;
     private static MemoryRawKVStore STORE = new MemoryRawKVStore();
@@ -57,7 +61,7 @@ public class TestRaftRawKVStore {
         afterAll();
         Endpoint endpoint = new Endpoint("localhost", 9181);
         store = new RaftRawKVStore(
-            "TEST", STORE, createNodeOptions(), new Location(endpoint.getIp(), endpoint.getPort())
+            RAFT_ID, STORE, createNodeOptions(), new Location(endpoint.getIp(), endpoint.getPort())
         );
         store.init(null);
         while (!store.getNode().isLeader()) {

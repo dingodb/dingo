@@ -150,8 +150,9 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
         Checksum checksum = store.snapshotSave(snapshotSaveOperation(writer, done)).join();
         LocalFileMetaOutter.LocalFileMeta.Builder metaBuilder = LocalFileMetaOutter.LocalFileMeta.newBuilder();
         metaBuilder.setChecksum(Long.toHexString(checksum.getValue()));
-        metaBuilder.setUserMeta(ByteString.copyFromUtf8(store.getRaftId()));
+        metaBuilder.setUserMeta(ByteString.copyFromUtf8(store.getRaftId().toString()));
         writer.addFile(SNAPSHOT_ZIP, metaBuilder.build());
+        done.run(Status.OK());
     }
 
     @Override

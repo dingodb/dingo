@@ -18,7 +18,6 @@ package io.dingodb.server.client.connector.impl;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.Channel;
@@ -52,7 +51,11 @@ import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
 @Slf4j
 public class CoordinatorConnector implements Connector, NetAddressProvider {
 
-    private static final ExecutorService executorService = new ThreadPoolBuilder().name("CoordinatorConnector").build();
+    private static final ExecutorService executorService = new ThreadPoolBuilder()
+        .name("CoordinatorConnector")
+        .daemon(true)
+        .build();
+    
     private static final CoordinatorConnector DEFAULT_CONNECTOR;
 
     static {
@@ -202,7 +205,7 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
 
     private synchronized boolean leaderChange(Channel channel) {
         Channel oldLeader = this.leaderChannel.get();
-        if (oldLeader != null && channel.remoteAddress().equals(oldLeader.remoteAddress())) {
+        if (oldLeader != null && oldLeader.isActive() && channel.remoteAddress().equals(oldLeader.remoteAddress())) {
             log.info("Coordinator leader not changed, remote: {}", channel.remoteAddress());
             return false;
         }
@@ -220,6 +223,7 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
         if (oldLeader != null) {
             closeChannel(oldLeader);
         }
+        channel.closeListener(this::listenClose);
         refresh.set(false);
         return true;
     }
