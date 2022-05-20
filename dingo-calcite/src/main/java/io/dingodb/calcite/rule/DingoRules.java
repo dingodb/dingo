@@ -67,8 +67,6 @@ public final class DingoRules {
         = DingoValuesReduceRule.Config.PROJECT.toRule();
     public static final DingoValuesReduceRule DINGO_FILTER_VALUES_MERGE
         = DingoValuesReduceRule.Config.FILTER.toRule();
-    public static final DingoValuesReduceRule DINGO_PROJECT_FILTER_VALUES_MERGE
-        = DingoValuesReduceRule.Config.PROJECT_FILTER.toRule();
     public static final DingoUnionValuesRule DINGO_UNION_VALUES_RULE
         = DingoUnionValuesRule.Config.DEFAULT.toRule();
 
@@ -77,9 +75,8 @@ public final class DingoRules {
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
-        DINGO_PROJECT_VALUES_MERGE,
         DINGO_FILTER_VALUES_MERGE,
-        DINGO_PROJECT_FILTER_VALUES_MERGE,
+        DINGO_PROJECT_VALUES_MERGE,
         DINGO_UNION_VALUES_RULE,
         DINGO_AGGREGATE_RULE,
         DINGO_AGGREGATE_SINGLE_RULE,
