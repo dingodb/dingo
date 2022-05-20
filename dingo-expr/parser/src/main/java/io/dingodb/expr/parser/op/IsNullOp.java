@@ -47,10 +47,7 @@ public final class IsNullOp extends Op {
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         RtExpr rtExpr = rtExprArray[0];
         try {
-            if (rtExpr instanceof RtNull) {
-                return RtConst.TRUE;
-            }
-            if (rtExpr instanceof RtConst) {
+            if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
                 Object v = rtExpr.eval(null);
                 return v == null ? RtConst.TRUE : RtConst.FALSE;
             }
