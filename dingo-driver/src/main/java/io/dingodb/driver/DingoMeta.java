@@ -16,8 +16,10 @@
 
 package io.dingodb.driver;
 
+import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -90,11 +92,14 @@ public class DingoMeta extends MetaImpl {
         int maxRowsInFirstFrame,
         @Nonnull PrepareCallback callback
     ) {
+        final long startTime = System.currentTimeMillis();
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
             DingoConnection.DingoContext context = dingoConnection.createContext();
             DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
+            final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
             final DingoSignature signature = parser.parseQuery(sql, context);
+            timeCtx.stop();
             sh.signature = signature;
             final int updateCount;
             switch (signature.statementType) {
@@ -129,6 +134,10 @@ public class DingoMeta extends MetaImpl {
         } catch (Exception e) {
             log.error("Catch execute exception:{}", e.toString(), e);
             throw new RuntimeException(e);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("DingoMeta prepareAndExecute total cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
     }
 
@@ -155,6 +164,7 @@ public class DingoMeta extends MetaImpl {
         long offset,
         int fetchMaxRowCount
     ) throws MissingResultsException {
+        final long startTime = System.currentTimeMillis();
         try {
             DingoStatement stmt = getStatement(sh);
             DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
@@ -175,6 +185,10 @@ public class DingoMeta extends MetaImpl {
         } catch (SQLException e) {
             log.error("Fetch catch exception:{}", e.toString(), e);
             throw new RuntimeException(e.getMessage());
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
         }
     }
 

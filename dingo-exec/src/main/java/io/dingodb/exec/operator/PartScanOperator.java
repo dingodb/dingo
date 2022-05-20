@@ -26,9 +26,11 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 
+@Slf4j
 @JsonTypeName("scan")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output"})
 public final class PartScanOperator extends PartIteratorSourceOperator {
@@ -53,6 +55,7 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
 
     @Override
     public void init() {
+        final long startTime = System.currentTimeMillis();
         super.init();
         Iterator<Object[]> iterator = part.getIterator();
         if (filter != null) {
@@ -63,5 +66,8 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
             iterator = Iterators.transform(iterator, selection::revMap);
         }
         this.iterator = iterator;
+        if (log.isDebugEnabled()) {
+            log.debug("PartScanOperator init, cost: {}ms.", System.currentTimeMillis() - startTime);
+        }
     }
 }

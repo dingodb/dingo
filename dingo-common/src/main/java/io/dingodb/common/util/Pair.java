@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.raft.util;
+package io.dingodb.common.util;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -49,12 +49,14 @@ public class Pair<K, V> implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (other == null || getClass() != other.getClass()) {
             return false;
-        Pair<?, ?> pair = (Pair<?, ?>) o;
+        }
+        Pair<?, ?> pair = (Pair<?, ?>) other;
         return Objects.equals(key, pair.key) && Objects.equals(value, pair.value);
     }
 

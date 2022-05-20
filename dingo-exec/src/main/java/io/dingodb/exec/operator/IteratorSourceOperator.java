@@ -17,9 +17,11 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.fin.OperatorProfile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 
+@Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
     protected Iterator<Object[]> iterator;
 
@@ -28,12 +30,17 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         long count = 0;
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
+        final long startTime = System.currentTimeMillis();
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
             ++count;
             if (!output.push(tuple)) {
                 break;
             }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("IteratorSourceOperator push,  count: {}, cost: {}ms.", count,
+                System.currentTimeMillis() - startTime);
         }
         profile.setProcessedTupleCount(count);
         profile.setEndTimeStamp(System.currentTimeMillis());

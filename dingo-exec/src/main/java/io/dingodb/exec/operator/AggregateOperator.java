@@ -27,9 +27,11 @@ import io.dingodb.exec.aggregate.AbstractAgg;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.AggCache;
 import io.dingodb.exec.fin.Fin;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+@Slf4j
 @JsonTypeName("aggregate")
 @JsonPropertyOrder({"keys", "aggregates", "output"})
 public final class AggregateOperator extends SoleOutOperator {

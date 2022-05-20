@@ -102,7 +102,9 @@ public final class Services {
                 throw new RuntimeException("Cannot deserialize received task.", e);
             } finally {
                 final long cost = System.currentTimeMillis() - startTime;
-                log.info("Services initNetService TASK_TAG msg cost: {}ms.", cost);
+                if (log.isDebugEnabled()) {
+                    log.debug("Services initNetService TASK_TAG msg cost: {}ms.", cost);
+                }
                 DingoMetrics.latency("on_task_message", cost);
             }
         });

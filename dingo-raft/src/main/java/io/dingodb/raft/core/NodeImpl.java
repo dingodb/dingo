@@ -24,6 +24,7 @@ import com.lmax.disruptor.EventTranslator;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.dingodb.common.util.Pair;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.FSMCaller;
 import io.dingodb.raft.JRaftServiceFactory;
@@ -87,7 +88,6 @@ import io.dingodb.raft.util.JRaftSignalHandler;
 import io.dingodb.raft.util.LogExceptionHandler;
 import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.OnlyForTest;
-import io.dingodb.raft.util.Pair;
 import io.dingodb.raft.util.Platform;
 import io.dingodb.raft.util.RepeatedTimer;
 import io.dingodb.raft.util.Requires;
@@ -120,8 +120,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
-
-import static io.dingodb.raft.option.ApplyTaskMode.Blocking;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class NodeImpl implements Node, RaftServerService {
