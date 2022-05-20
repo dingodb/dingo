@@ -214,12 +214,17 @@ public class ElementSchema implements CompileContext {
                     return ((Time) item).getTime();
                 } else if (item instanceof String) {
                     return Time.valueOf((String) item).getTime();
+                } else if (item instanceof java.util.Date) {
+                    return new Time(((java.util.Date) item).getTime()).getTime();
                 } else {
                     throw new SQLException("Failed to convert " + item.getClass() + " to time.");
                 }
             case TypeCode.DATE:
                 if (item instanceof Date) {
                     return ((Date) item).getTime();
+                }
+                if (item instanceof java.util.Date) {
+                    return new Date(((java.util.Date) item).getTime()).getTime();
                 }
                 if (item instanceof String) {
                     return Date.valueOf((String) item).getTime();

@@ -246,4 +246,8 @@ public class DingoClient extends ClientBase {
             this.retryTime = 0;
         }
     }
+
+    public MetaClient getMetaClient() {
+        return metaClient;
+    }
 }
