@@ -24,7 +24,9 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'org.apache.commons', name: 'commons-csv', version: 'commons-csv'.v()
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-csv', version: 'jackson'.v()
 
+    implementation project(":dingo-sdk")
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
     implementation project(":dingo-driver")
