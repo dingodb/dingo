@@ -91,6 +91,8 @@ public final class FunFactory {
         funSuppliers.put("OR", OrOp::fun);
         funSuppliers.put("AND", AndOp::fun);
         funSuppliers.put("CASE", CaseOp::fun);
+        funSuppliers.put("IS_NULL", IsNullOp::fun);
+        funSuppliers.put("IS_NOT_NULL", IsNotNullOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);

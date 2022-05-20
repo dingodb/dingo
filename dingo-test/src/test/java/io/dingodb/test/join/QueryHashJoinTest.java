@@ -56,12 +56,16 @@ public class QueryHashJoinTest {
     public void cleanUp() throws Exception {
     }
 
-    private void testJoin(String fileName) throws SQLException, IOException {
+    private void testJoin(String sqlFileName, String resultFileName) throws SQLException, IOException {
         String sql = IOUtils.toString(
-            Objects.requireNonNull(this.getClass().getResourceAsStream(fileName + ".sql")),
+            Objects.requireNonNull(this.getClass().getResourceAsStream(sqlFileName + ".sql")),
             StandardCharsets.UTF_8
         );
-        sqlHelper.queryTest(sql, this.getClass().getResourceAsStream(fileName + ".csv"));
+        sqlHelper.queryTest(sql, this.getClass().getResourceAsStream(resultFileName + ".csv"));
+    }
+
+    private void testJoin(String fileName) throws SQLException, IOException {
+        testJoin(fileName, fileName);
     }
 
     @Test
@@ -77,6 +81,11 @@ public class QueryHashJoinTest {
     @Test
     public void testSongsArtistsLeft() throws SQLException, IOException {
         testJoin("songs-artists-left-join");
+    }
+
+    @Test
+    public void testSongsArtistsLeftFilter() throws SQLException, IOException {
+        testJoin("songs-artists-left-join-filter", "songs-artists-inner-join");
     }
 
     @Test

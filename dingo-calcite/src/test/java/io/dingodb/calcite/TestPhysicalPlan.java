@@ -498,6 +498,22 @@ public class TestPhysicalPlan {
     }
 
     @Test
+    public void testIsNull() throws Exception {
+        String sql = "select b from (values (1, 2), (null, 5), (7, 11)) as t (a, b) where a is null";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).isA(DingoValues.class);
+        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{5});
+    }
+
+    @Test
+    public void testIsNotNull() throws Exception {
+        String sql = "select b from (values (1, 2), (null, 5), (7, 11)) as t (a, b) where a is not null";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode).isA(DingoValues.class);
+        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{2}, new Object[]{11});
+    }
+
+    @Test
     public void testInsertDateValues() throws Exception {
         String sql = "insert into `table-with-date`"
             + " values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";

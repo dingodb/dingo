@@ -122,6 +122,12 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case CASE:
                 op = FunFactory.INS.getFun("case");
                 break;
+            case IS_NULL:
+                op = FunFactory.INS.getFun("is_null");
+                break;
+            case IS_NOT_NULL:
+                op = FunFactory.INS.getFun("is_not_null");
+                break;
             case CAST:
                 switch (call.getType().getSqlTypeName()) {
                     case TINYINT:
