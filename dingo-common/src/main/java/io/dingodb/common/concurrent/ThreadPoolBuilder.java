@@ -40,6 +40,10 @@ public class ThreadPoolBuilder {
     private ThreadFactory threadFactory;
     private RejectedExecutionHandler handler;
 
+    private boolean daemon = false;
+    private int priority = Thread.NORM_PRIORITY;
+    private ThreadGroup group = Thread.currentThread().getThreadGroup();
+
     public ThreadPoolBuilder name(String name) {
         this.name = name;
         return this;
@@ -75,8 +79,28 @@ public class ThreadPoolBuilder {
         return this;
     }
 
+    public ThreadPoolBuilder daemon(boolean daemon) {
+        this.daemon = daemon;
+        return this;
+    }
+
+    public ThreadPoolBuilder priority(int priority) {
+        this.priority = priority;
+        return this;
+    }
+
+    public ThreadPoolBuilder group(ThreadGroup group) {
+        this.group = group;
+        return this;
+    }
+
     protected ThreadFactory generateThreadFactory() {
-        return new ThreadFactoryBuilder().name(name).build();
+        return new ThreadFactoryBuilder()
+            .name(name)
+            .daemon(daemon)
+            .priority(priority)
+            .group(group)
+            .build();
     }
 
     public ThreadPoolExecutor build() {

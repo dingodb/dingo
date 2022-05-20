@@ -17,7 +17,6 @@
 package io.dingodb.store.raft;
 
 import com.codahale.metrics.Clock;
-import com.codahale.metrics.Timer;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.store.KeyValue;
@@ -103,6 +102,8 @@ public class RaftStoreInstance implements StoreInstance {
         startKeyPartMap.clear();
         parts.values().forEach(RaftStoreInstancePart::clear);
         parts.clear();
+        waitParts.clear();
+        waitStoreParts.clear();
         store.close();
         logStore.shutdown();
         Files.deleteIfExists(path);
@@ -336,7 +337,11 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return new FullScanRawIterator(parts.values().stream().map(RaftStoreInstancePart::iterator).iterator());
+        return new FullScanRawIterator(startKeyPartMap.values().stream()
+            .map(Part::getId)
+            .map(parts::get)
+            .map(RaftStoreInstancePart::iterator)
+            .iterator());
     }
 
     @Override

@@ -19,6 +19,7 @@ package io.dingodb.web.config;
 import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,14 +38,26 @@ public class ClientConfig {
     private String coordSrvList;
 
     @Bean
-    MetaServiceApi getMetaServiceApi() {
+    public CoordinatorConnector coordinatorConnector(
+        @Value("${server.coordinatorExchangeSvrList}") String coordSrvList
+    ) {
         List<String> servers = Arrays.asList(coordSrvList.split(","));
         List<NetAddress> addrList = servers.stream()
             .map(s -> s.split(":"))
             .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
             .collect(Collectors.toList());
-        CoordinatorConnector coordinatorConnector = new CoordinatorConnector(addrList);
+        return new CoordinatorConnector(addrList);
+    }
+
+    @Bean
+    public MetaApi metaApi(CoordinatorConnector connector) {
+        return ServiceLoader.load(NetServiceProvider.class).iterator().next().get()
+            .apiRegistry().proxy(MetaApi.class, connector);
+    }
+
+    @Bean
+    public MetaServiceApi metaServiceApi(CoordinatorConnector connector) {
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        return netService.apiRegistry().proxy(MetaServiceApi.class, coordinatorConnector);
+        return netService.apiRegistry().proxy(MetaServiceApi.class, connector);
     }
 }

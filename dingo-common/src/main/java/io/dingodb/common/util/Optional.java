@@ -54,6 +54,10 @@ public class Optional<T> {
         return optional.get();
     }
 
+    public boolean isAbsent() {
+        return !isPresent();
+    }
+
     public boolean isPresent() {
         return this.optional.isPresent();
     }

@@ -22,6 +22,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetError;
+import io.dingodb.net.netty.channel.AbstractConnectionSubChannel;
 import io.dingodb.net.netty.channel.ChannelId;
 import io.dingodb.net.netty.channel.ConnectionSubChannel;
 import io.dingodb.net.netty.channel.impl.LimitedChannelIdAllocator;
@@ -206,7 +207,7 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
         if (subChannel == null || subChannel.status() == Channel.Status.CLOSE) {
             return;
         }
-        if (channelPool == null) {
+        if (subChannel.channelPool() == null) {
             subChannel.status(Channel.Status.INACTIVE);
         }
         subChannel.close();
@@ -232,16 +233,15 @@ public class NetServiceNettyConnection extends AbstractNettyConnection<Message> 
     @Override
     public void close() {
         if (channelPool != null) {
-            for (NetServiceConnectionSubChannel channel : subChannels.values()) {
-                channel.setChannelPool(null);
-                channel.close();
-            }
             channelPool.clear();
-        } else {
-            subChannels.values().forEach(NetServiceConnectionSubChannel::close);
-            super.close();
-            log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
         }
+        subChannels.values().stream()
+            .peek(ch -> ch.setChannelPool(null))
+            .map(AbstractConnectionSubChannel::channelId)
+            .forEach(this::closeSubChannel);
+        super.close();
+        threadPoolExecutor.shutdown();
+        log.info("Connection close, remote: [{}], [{}]", remoteAddress(), stack(2));
     }
 
     @Override

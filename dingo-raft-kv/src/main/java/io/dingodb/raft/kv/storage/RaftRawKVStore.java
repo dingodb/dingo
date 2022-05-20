@@ -16,18 +16,25 @@
 
 package io.dingodb.raft.kv.storage;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.util.Files;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
+import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.option.NodeOptions;
+import io.dingodb.raft.storage.LogStorage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 
 import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
@@ -36,15 +43,54 @@ import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
 @Getter
 public class RaftRawKVStore implements Lifecycle<Void> {
 
-    private final String raftId;
+    private final CommonId raftId;
+
+    private Path path;
+    private Path metaPath;
+    private Path snapshotPath;
+
     private final Node node;
     private final RawKVStore kvStore;
     private final NodeOptions nodeOptions;
     private final ReadIndexRunner readIndexRunner;
 
-    public RaftRawKVStore(String raftId, RawKVStore kvStore, NodeOptions nodeOptions, Location location) {
+    public RaftRawKVStore(CommonId raftId, RawKVStore kvStore, NodeOptions nodeOptions, Location location) {
         this.raftId = raftId;
-        this.node = createRaftNode(raftId, new PeerId(location.getHost(), location.getPort()));
+        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort()));
+        this.kvStore = kvStore;
+        this.nodeOptions = nodeOptions;
+        this.readIndexRunner = new ReadIndexRunner(node, this::executeLocal);
+    }
+
+    public RaftRawKVStore(
+        CommonId raftId,
+        RawKVStore kvStore,
+        NodeOptions nodeOptions,
+        Path path,
+        LogStorage logStorage,
+        Location location,
+        List<Location> locations
+    ) {
+        this.raftId = raftId;
+        this.path = path;
+        this.metaPath = Paths.get(path.toString(), "meta");
+        this.snapshotPath = Paths.get(path.toString(), "snapshot");
+        Files.createDirectories(metaPath);
+        Files.createDirectories(snapshotPath);
+        Files.createDirectories(metaPath);
+        Files.createDirectories(snapshotPath);
+        if (nodeOptions == null) {
+            nodeOptions = new NodeOptions();
+        } else {
+            nodeOptions = nodeOptions.copy();
+        }
+        nodeOptions.setLogStorage(logStorage);
+        nodeOptions.setInitialConf(new Configuration(locations.stream()
+            .map(l -> new PeerId(l.getHost(), l.getPort()))
+            .collect(Collectors.toList())));
+        nodeOptions.setRaftMetaUri(metaPath.toString());
+        nodeOptions.setSnapshotUri(snapshotPath.toString());
+        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort()));
         this.kvStore = kvStore;
         this.nodeOptions = nodeOptions;
         this.readIndexRunner = new ReadIndexRunner(node, this::executeLocal);
@@ -61,7 +107,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
 
     @Override
     public void shutdown() {
-        this.node.shutdown();
+        this.node.shutdown(status -> {
+            log.info("The {} shutdown, status: {}.", raftId, status);
+            Files.deleteIfExists(path);
+        });
     }
 
     protected SeekableIterator<byte[], ByteArrayEntry> localIterator() {

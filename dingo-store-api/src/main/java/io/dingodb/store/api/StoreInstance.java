@@ -116,12 +116,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> scan() {
+    default Iterator<Row> scan() {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return keyValueScan(startPrimaryKey, endPrimaryKey);
+    default Iterator<Row> scan(byte[] key) {
+        byte[] stop = new byte[key.length];
+        System.arraycopy(key, 0, stop, 0, key.length);
+        stop[stop.length - 1]++;
+        return scan(key, stop);
+    }
+
+    default Iterator<Row> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        throw new UnsupportedOperationException();
     }
 
     default Iterator<KeyValue> keyValueScan() {

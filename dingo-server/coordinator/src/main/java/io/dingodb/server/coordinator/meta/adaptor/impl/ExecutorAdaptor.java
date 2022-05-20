@@ -19,6 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.codahale.metrics.Gauge;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
@@ -61,6 +62,10 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
             ZERO_DOMAIN,
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
+    }
+
+    public Location getLocation(CommonId id) {
+        return get(id).location();
     }
 
     @AutoService(BaseAdaptor.Creator.class)
