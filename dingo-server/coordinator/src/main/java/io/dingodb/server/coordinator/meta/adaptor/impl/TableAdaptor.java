@@ -189,6 +189,10 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         return metaToDefinition(get(tableIdMap.get(tableName)));
     }
 
+    public TableDefinition getDefinition(CommonId id) {
+        return metaToDefinition(get(id));
+    }
+
     public List<CommonId> getAllKey() {
         return new ArrayList<>(tableIdMap.values());
     }

@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
@@ -61,6 +63,10 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
 
     public List<Replica> getByExecutor(CommonId executor) {
         return executorReplica.get(executor);
+    }
+
+    public List<Location> getLocationsByDomain(byte[] domain) {
+        return getByDomain(domain).stream().map(Replica::location).collect(Collectors.toList());
     }
 
     @Override

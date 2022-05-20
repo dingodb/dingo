@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.coordinator.schedule;
+package io.dingodb.web.model;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.server.protocol.meta.Meta;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -31,24 +30,13 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class SplitTask implements Meta {
+public class Replica {
 
-    public enum Step {
-        START,
-        IGNORE,
-        CREATE_NEW_PART,
-        START_NEW_PART,
-        UPDATE_OLD_PART,
-        REASSIGN_PART,
-        FINISH,
-    }
-
-    private CommonId id;
-    private CommonId oldPart;
-    private CommonId newPart;
-    private byte[] splitKey;
-    private Step step;
-    private long createTime;
-    private long updateTime;
+    private String id;
+    private String table;
+    private String part;
+    private String executor;
+    private String host;
+    private int port;
 
 }

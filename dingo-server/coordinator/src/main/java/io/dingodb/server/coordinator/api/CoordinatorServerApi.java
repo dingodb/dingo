@@ -16,18 +16,34 @@
 
 package io.dingodb.server.coordinator.api;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.NetService;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.error.RemotingException;
 import io.dingodb.raft.rpc.RpcClient;
 import io.dingodb.raft.rpc.impl.cli.GetLocationProcessor;
+import io.dingodb.server.api.MetaApi;
+import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
+import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
+import io.dingodb.server.protocol.meta.Column;
+import io.dingodb.server.protocol.meta.Executor;
+import io.dingodb.server.protocol.meta.ExecutorStats;
+import io.dingodb.server.protocol.meta.Replica;
+import io.dingodb.server.protocol.meta.Schema;
+import io.dingodb.server.protocol.meta.Table;
+import io.dingodb.server.protocol.meta.TablePart;
+import io.dingodb.server.protocol.meta.TablePartStats;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorServerApi {
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
+
+public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorServerApi, MetaApi {
 
     private final Node node;
     private final RpcClient rpcClient;
@@ -36,6 +52,7 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
         this.node = node;
         this.rpcClient = rpcClient;
         netService.apiRegistry().register(io.dingodb.server.api.CoordinatorServerApi.class, this);
+        netService.apiRegistry().register(io.dingodb.server.api.MetaApi.class, this);
     }
 
     @Override
@@ -70,4 +87,69 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
         }
         return locations;
     }
+
+    @Override
+    public Table table(CommonId tableId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Table.class).get(tableId);
+    }
+
+    @Override
+    public TableDefinition tableDefinition(CommonId tableId) {
+        return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getDefinition(tableId);
+    }
+
+    @Override
+    public Column column(CommonId columnId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Column.class).get(columnId);
+    }
+
+    @Override
+    public List<Column> columns(CommonId tableId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Column.class).getByDomain(tableId.seqContent());
+    }
+
+    @Override
+    public Executor executor(CommonId executorId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Executor.class).get(executorId);
+    }
+
+    @Override
+    public ExecutorStats executorStats(CommonId executorId) {
+        return MetaAdaptorRegistry.getStatsMetaAdaptor(ExecutorStats.class).getStats(
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.executor, executorId.domain(), executorId.seqContent())
+        );
+    }
+
+    @Override
+    public Replica replica(CommonId replicaId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Replica.class).get(replicaId);
+    }
+
+    @Override
+    public List<Replica> replicas(CommonId tablePartId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Replica.class).getByDomain(tablePartId.seqContent());
+    }
+
+    @Override
+    public Schema schema(CommonId schemaId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Schema.class).get(schemaId);
+    }
+
+    @Override
+    public TablePart tablePart(CommonId tablePartId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(TablePart.class).get(tablePartId);
+    }
+
+    @Override
+    public List<TablePart> tableParts(CommonId tableId) {
+        return MetaAdaptorRegistry.getMetaAdaptor(TablePart.class).getByDomain(tableId.seqContent());
+    }
+
+    @Override
+    public TablePartStats tablePartStats(CommonId tablePartId) {
+        return MetaAdaptorRegistry.getStatsMetaAdaptor(TablePartStats.class).getStats(
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, tablePartId.domain(), tablePartId.seqContent())
+        );
+    }
+
 }

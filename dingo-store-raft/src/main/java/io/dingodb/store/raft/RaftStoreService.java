@@ -67,6 +67,6 @@ public class RaftStoreService implements StoreService {
 
     @Override
     public void deleteInstance(CommonId id) {
-        Optional.ofNullable(storeInstanceMap.get(id)).ifPresent(RaftStoreInstance::clear);
+        Optional.ofNullable(storeInstanceMap.remove(id)).ifPresent(RaftStoreInstance::clear);
     }
 }

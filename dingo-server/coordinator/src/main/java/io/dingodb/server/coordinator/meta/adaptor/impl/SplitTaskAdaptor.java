@@ -47,7 +47,7 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
             META_ID.identifier(),
             encodeInt(1),
             metaStore.generateSeq(
-                CommonId.prefix(META_ID.type(), META_ID.identifier(), task.getOldPart().seqContent()).encode()
+                CommonId.prefix(META_ID.type(), META_ID.identifier()).encode()
             )
         );
     }

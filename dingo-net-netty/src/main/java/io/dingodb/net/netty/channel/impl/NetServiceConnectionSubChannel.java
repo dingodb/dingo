@@ -43,8 +43,6 @@ import java.util.function.Consumer;
 @Slf4j
 public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel<Message> implements Channel {
 
-    private static final ThreadGroup THREAD_GROUP = new ThreadGroup("NetServiceConnectionSubChannel");
-
     private Status status;
     private MessageListener listener;
     private Consumer<Channel> closeListener;
@@ -123,6 +121,10 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
         this.channelPool = pool;
     }
 
+    public Connection.ChannelPool channelPool() {
+        return channelPool;
+    }
+
     @Override
     public void registerMessageListener(MessageListener listener) {
         this.listener = listener;
@@ -176,6 +178,7 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
         if (channelPool != null) {
             status = Status.WAIT;
             channelPool.offer(this);
+            closeListener.accept(this);
             listener = this::skipListener;
             closeListener = this::skipListener;
             if (log.isDebugEnabled()) {
