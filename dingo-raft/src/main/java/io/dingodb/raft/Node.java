@@ -16,6 +16,7 @@
 
 package io.dingodb.raft;
 
+import io.dingodb.common.util.Pair;
 import io.dingodb.raft.closure.ReadIndexClosure;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.NodeMetrics;
@@ -30,7 +31,6 @@ import io.dingodb.raft.error.LogNotFoundException;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RaftOptions;
 import io.dingodb.raft.util.Describer;
-import io.dingodb.raft.util.Pair;
 
 import java.util.List;
 

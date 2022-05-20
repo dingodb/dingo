@@ -205,5 +205,4 @@ public class RocksStoreInstance implements StoreInstance {
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         return new RocksBlockIterator(db, startPrimaryKey, endPrimaryKey);
     }
-
 }

@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ControlStatus;
 import io.dingodb.exec.channel.ReceiveEndpoint;
@@ -149,16 +151,37 @@ public final class ReceiveOperator extends SourceOperator {
         @Override
         public void onMessage(Message message, Channel channel) {
             try {
-                byte[] content = message.toBytes();
-                Object[] tuple = codec.decode(content);
-                if (log.isDebugEnabled()) {
-                    if (!(tuple[0] instanceof Fin)) {
-                        log.debug("(tag = {}) Received tuple {}.", tag, schema.formatTuple(tuple));
-                    } else {
-                        log.debug("(tag = {}) Received FIN.", tag);
+                final byte[] content = message.toBytes();
+                int count = 0;
+                int offset = 0;
+                while (offset < content.length) {
+                    byte[] bytes;
+                    Pair<byte[], Integer> pair = PrimitiveCodec.decodeArray(content, offset);
+                    if (pair == null) {
+                        log.error("ReceiveMessageListener, parse error.");
+                        return;
                     }
+
+                    int arrLen = pair.getKey().length;
+                    Object[] tuple = codec.decode(pair.getKey());
+                    if (log.isDebugEnabled()) {
+                        if (!(tuple[0] instanceof Fin)) {
+                            log.debug("ReceiveMessageListener (tag = {}) Received tuple {}, arr len: {}, "
+                                    + "total len: {}, offset: {}, hashCode: {}.", tag, schema.formatTuple(tuple),
+                                arrLen, pair.getValue(), offset, this.hashCode());
+                        } else {
+                            log.debug("ReceiveMessageListener (tag = {}) Received FIN, arr len: {}, "
+                                + "offset: {}, hashCode: {}.", tag, pair.getKey().length, offset, this.hashCode());
+                        }
+                    }
+                    offset += pair.getValue();
+                    count++;
+                    QueueUtil.forcePut(tupleQueue, tuple);
                 }
-                QueueUtil.forcePut(tupleQueue, tuple);
+                if (log.isDebugEnabled()) {
+                    log.debug("ReceiveMessageListener onMessage, content length: {}, tupleCount: {}, "
+                        + "hashCode: {}.", content.length, count, this.hashCode());
+                }
             } catch (IOException e) {
                 log.error("ReceiveMessageListener ({}:{} tag = {}) catch exception:{}",
                     host, port, tag, e.toString(), e);

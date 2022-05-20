@@ -115,6 +115,7 @@ public final class TaskImpl implements Task {
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
             executorService.execute(() -> {
+                final long startTime = System.currentTimeMillis();
                 boolean isStatusOK = true;
                 String  statusErrMsg = "OK";
                 try {
@@ -134,6 +135,9 @@ public final class TaskImpl implements Task {
                         taskStatus.setTaskId(operator.getTask().getId().toString());
                         taskStatus.setErrorMsg(statusErrMsg);
                         operator.fin(0, FinWithException.of(taskStatus));
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     }
                 }
             });

@@ -25,6 +25,7 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Job;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -48,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(DingoParserContext context) {
         super(context);
@@ -157,8 +159,8 @@ public final class DingoDriverParser extends DingoParser {
         List<List<String>> originList = getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
-        RelRoot relRoot = convert(sqlNode);
-        RelNode relNode = optimize(relRoot.rel, DingoConventions.ROOT);
+        final RelRoot relRoot = convert(sqlNode);
+        final RelNode relNode = optimize(relRoot.rel, DingoConventions.ROOT);
         CalciteSchema rootSchema = context.getRootSchema();
         CalciteSchema defaultSchema = rootSchema.getSubSchema(context.getDefaultSchemaPath().get(0), true);
         if (defaultSchema == null) {

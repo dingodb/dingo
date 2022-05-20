@@ -20,6 +20,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.tuple.TupleKey;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class AggCache implements Iterable<Object[]> {
     private final TupleMapping keyMapping;
     private final List<Agg> aggList;
