@@ -20,6 +20,8 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtOp;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import javax.annotation.Nonnull;
 
 public abstract class RtLogicalOp extends RtOp {
@@ -27,6 +29,21 @@ public abstract class RtLogicalOp extends RtOp {
 
     protected RtLogicalOp(@Nonnull RtExpr[] paras) {
         super(paras);
+    }
+
+    public static boolean test(Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        } else if (value instanceof Number) {
+            if (value instanceof BigDecimal) {
+                return ((BigDecimal) value).compareTo(BigDecimal.ZERO) != 0;
+            } else if (value instanceof BigInteger) {
+                return ((BigInteger) value).compareTo(BigInteger.ZERO) != 0;
+            }
+            // `Double` is enough to contain integer, long, float, etc.
+            return ((Number) value).doubleValue() != 0.0;
+        }
+        return false;
     }
 
     @Override

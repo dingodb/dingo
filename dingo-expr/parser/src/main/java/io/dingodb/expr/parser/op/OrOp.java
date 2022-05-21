@@ -53,17 +53,17 @@ public final class OrOp extends Op {
     @Nonnull
     @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+        int size = rtExprArray.length;
         try {
-            int size = rtExprArray.length;
             List<RtExpr> nonConstExprs = new ArrayList<>(size);
+            RtExpr result = RtConst.FALSE;
             for (RtExpr rtExpr : rtExprArray) {
-                if (rtExpr instanceof RtNull) {
-                    return RtNull.INSTANCE;
-                }
-                if (rtExpr instanceof RtConst) {
+                if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
                     Object v = rtExpr.eval(null);
                     if (v == null) {
-                        return RtNull.INSTANCE;
+                        if (result == RtConst.FALSE) {
+                            result = RtNull.INSTANCE;
+                        }
                     } else if ((boolean) v) {
                         return RtConst.TRUE;
                     }
@@ -71,7 +71,14 @@ public final class OrOp extends Op {
                     nonConstExprs.add(rtExpr);
                 }
             }
-            return nonConstExprs.size() == 0 ? RtConst.FALSE : createRtOp(nonConstExprs.toArray(new RtExpr[0]));
+            if (nonConstExprs.size() == 0) {
+                return result;
+            } else {
+                if (result == RtNull.INSTANCE) {
+                    nonConstExprs.add(result);
+                }
+                return createRtOp(nonConstExprs.toArray(new RtExpr[0]));
+            }
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }

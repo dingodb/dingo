@@ -21,25 +21,26 @@ import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-import io.dingodb.expr.runtime.op.logical.RtIsNotNull;
+import io.dingodb.expr.runtime.op.logical.RtIsNotTrue;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 import javax.annotation.Nonnull;
 
-public final class IsNotNullOp extends Op {
-    private IsNotNullOp(OpType type) {
+public final class IsNotTrueOp extends Op {
+    private IsNotTrueOp(OpType type) {
         super(type);
-        name = "IS_NOT_NULL";
+        name = "IS_NOT_TRUE";
     }
 
     @Nonnull
-    public static IsNotNullOp fun() {
-        return new IsNotNullOp(OpType.FUN);
+    public static IsNotTrueOp fun() {
+        return new IsNotTrueOp(OpType.FUN);
     }
 
     @Nonnull
     @Override
-    protected RtIsNotNull createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtIsNotNull(rtExprArray);
+    protected RtIsNotTrue createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtIsNotTrue(rtExprArray);
     }
 
     @Nonnull
@@ -49,7 +50,7 @@ public final class IsNotNullOp extends Op {
         try {
             if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
                 Object v = rtExpr.eval(null);
-                return v != null ? RtConst.TRUE : RtConst.FALSE;
+                return (v == null || !RtLogicalOp.test(v)) ? RtConst.TRUE : RtConst.FALSE;
             }
             return createRtOp(rtExprArray);
         } catch (FailGetEvaluator e) {

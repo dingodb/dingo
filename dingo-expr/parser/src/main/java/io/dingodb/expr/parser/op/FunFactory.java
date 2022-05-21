@@ -93,6 +93,10 @@ public final class FunFactory {
         funSuppliers.put("CASE", CaseOp::fun);
         funSuppliers.put("IS_NULL", IsNullOp::fun);
         funSuppliers.put("IS_NOT_NULL", IsNotNullOp::fun);
+        funSuppliers.put("IS_TRUE", IsTrueOp::fun);
+        funSuppliers.put("IS_NOT_TRUE", IsNotTrueOp::fun);
+        funSuppliers.put("IS_FALSE", IsFalseOp::fun);
+        funSuppliers.put("IS_NOT_FALSE", IsNotFalseOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);

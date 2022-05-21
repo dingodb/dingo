@@ -21,6 +21,7 @@ import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlCaseOp;
 
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public final class CaseOp extends Op {
                 }
                 if (rtExpr instanceof RtConst) {
                     Object v = rtExpr.eval(null);
-                    if (v != null && (boolean) v) {
+                    if (v != null && RtLogicalOp.test(v)) {
                         return rtExprArray[i + 1];
                     }
                 } else {

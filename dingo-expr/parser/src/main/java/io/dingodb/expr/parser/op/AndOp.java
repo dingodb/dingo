@@ -22,6 +22,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.logical.RtAndOp;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,24 +54,31 @@ public final class AndOp extends Op {
     @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         int size = rtExprArray.length;
-        List<RtExpr> nonConstExprs = new ArrayList<>(size);
         try {
+            List<RtExpr> nonConstExprs = new ArrayList<>(size);
+            RtExpr result = RtConst.TRUE;
             for (RtExpr rtExpr : rtExprArray) {
-                if (rtExpr instanceof RtNull) {
-                    return RtNull.INSTANCE;
-                }
-                if (rtExpr instanceof RtConst) {
+                if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
                     Object v = rtExpr.eval(null);
                     if (v == null) {
-                        return RtNull.INSTANCE;
-                    } else if (!(boolean) v) {
+                        if (result == RtConst.TRUE) {
+                            result = RtNull.INSTANCE;
+                        }
+                    } else if (!RtLogicalOp.test(v)) {
                         return RtConst.FALSE;
                     }
                 } else {
                     nonConstExprs.add(rtExpr);
                 }
             }
-            return nonConstExprs.size() == 0 ? RtConst.TRUE : createRtOp(nonConstExprs.toArray(new RtExpr[0]));
+            if (nonConstExprs.size() == 0) {
+                return result;
+            } else {
+                if (result == RtNull.INSTANCE) {
+                    nonConstExprs.add(result);
+                }
+                return createRtOp(nonConstExprs.toArray(new RtExpr[0]));
+            }
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }

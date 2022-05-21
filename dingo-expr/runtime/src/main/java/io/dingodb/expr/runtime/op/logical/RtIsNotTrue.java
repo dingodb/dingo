@@ -14,42 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op.sql;
+package io.dingodb.expr.runtime.op.logical;
 
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public final class RtSqlCaseOp extends RtOp {
-    private static final long serialVersionUID = 262253285071682317L;
+public class RtIsNotTrue extends RtLogicalOp {
+    private static final long serialVersionUID = 6319772421808568834L;
 
-    public RtSqlCaseOp(@Nonnull RtExpr[] paras) {
+    public RtIsNotTrue(@Nonnull RtExpr[] paras) {
         super(paras);
-    }
-
-    @Override
-    public int typeCode() {
-        return TypeCode.OBJECT;
     }
 
     @Nullable
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
-        int size = paras.length;
-        for (int i = 0; i < size - 1; i += 2) {
-            RtExpr para = paras[i];
-            Object v = para.eval(etx);
-            if (RtLogicalOp.test(v)) {
-                return paras[i + 1].eval(etx);
-            }
-        }
-        // There will be a `null` if you missed `ELSE` in SQL.
-        return paras[size - 1].eval(etx);
+        Object v = paras[0].eval(etx);
+        return v == null || !test(v);
     }
 }

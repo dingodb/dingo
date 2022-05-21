@@ -50,8 +50,8 @@ public class TestWithNullVar {
             arguments("$.a * $.b", null, null),
             arguments("$['a'] - $[\"b\"]", null, null),
             // short-circuit, there must be a var to prevent const optimization
-            arguments("d == 'bar' || c", null, true),
-            arguments("c or a = 3", true, null),
+            arguments("d == 'bar' || c", true, true),
+            arguments("c or a = 3", true, true),
             // functions
             arguments("abs(a)", null, 3L)
         );
