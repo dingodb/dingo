@@ -18,6 +18,7 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
+STORE_JAR_PATH=$(find $ROOT -name dingo-store*.jar)
 
 java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \

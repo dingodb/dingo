@@ -18,6 +18,7 @@
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 COORDINATOR_JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
 EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
+STORE_JAR_PATH=$(find $ROOT -name dingo-store*.jar)
 
 ROLE=$DINGO_ROLE
 
@@ -35,7 +36,7 @@ then
     /opt/dingo/bin/wait-for-it.sh coordinator:19181 -t 0 -s -- echo "Wait Coordniator Start Successfully!"
     java ${JAVA_OPTS} \
          -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
-         -classpath ${EXECUTOR_JAR_PATH}  \
+         -classpath ${EXECUTOR_JAR_PATH}:${STORE_JAR_PATH}  \
          io.dingodb.server.executor.Starter \
          --config ${ROOT}/conf/config.yaml \
          > ${ROOT}/log/executor.out

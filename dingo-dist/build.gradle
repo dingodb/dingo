@@ -47,6 +47,11 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-store-raft').layout.buildDirectory) {
+        include('libs/dingo-store-raft-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
     from(project(':dingo-web').layout.buildDirectory) {
         include("libs/dingo-web-*.jar")
         exclude("libs/dingo-web-*-plain.jar")
