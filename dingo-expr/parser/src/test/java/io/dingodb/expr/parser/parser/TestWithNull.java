@@ -34,8 +34,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestWithNull {
-    private static final double TAU = Math.PI * 2;
-
     @Nonnull
     private static Stream<Arguments> getParameters() throws ParseException {
         return Stream.of(
@@ -54,7 +52,7 @@ public class TestWithNull {
             arguments("1 < 0.1 and 2 - 2 = null", false),
             arguments("1 > 0 and 2 = null", null),
             arguments("1 < 0 or null = 3", null),
-            arguments("not (0.0 * null < 0 || 1 * 4 > 3 and 6 / 6 == 1)", null),
+            arguments("not (0.0 * null < 0 || 1 * 4 > 3 and 6 / 6 == 1)", false),
             // string op
             arguments("'abc' startsWith null", null),
             arguments("null startsWith ''", null),

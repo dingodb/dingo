@@ -128,6 +128,18 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case IS_NOT_NULL:
                 op = FunFactory.INS.getFun("is_not_null");
                 break;
+            case IS_TRUE:
+                op = FunFactory.INS.getFun("is_true");
+                break;
+            case IS_NOT_TRUE:
+                op = FunFactory.INS.getFun("is_not_true");
+                break;
+            case IS_FALSE:
+                op = FunFactory.INS.getFun("is_false");
+                break;
+            case IS_NOT_FALSE:
+                op = FunFactory.INS.getFun("is_not_false");
+                break;
             case CAST:
                 switch (call.getType().getSqlTypeName()) {
                     case TINYINT:
