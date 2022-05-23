@@ -62,7 +62,7 @@ public class DingoDateTimeUtils implements Serializable {
         Pattern.compile("^\\d{4}\\.\\d+\\.\\d+(\\ \\d+:\\d+:\\d+){1}"),
         Pattern.compile("^\\d{4}-\\d+-\\d+"),
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}")
-        ).collect(Collectors.toList());
+    ).collect(Collectors.toList());
 
     public static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\d{9,13}");
 
@@ -86,14 +86,14 @@ public class DingoDateTimeUtils implements Serializable {
     public static final List<Pattern> TIME_PATTERN_LIST = Stream.of(
         Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]"),
         Pattern.compile("[0-2]?[0-9][0-5]?[0-9][0-5]?[0-9]")
-        ).collect(Collectors.toList());
+    ).collect(Collectors.toList());
 
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:m:s");
     public static final List<DateTimeFormatter> TIME_FORMATTER_LIST = Stream.of(
         DateTimeFormatter.ofPattern("H:m:s"),
         DateTimeFormatter.ofPattern("HHmmss"),
         DateTimeFormatter.ofPattern("Hmmss")
-        ).collect(Collectors.toList());
+    ).collect(Collectors.toList());
 
     public static final List<String> FORMAT_LIST = Stream.of(
         "%Y",
@@ -124,18 +124,18 @@ public class DingoDateTimeUtils implements Serializable {
 
 
     /**
-     *  This function can process some miscellaneous pattern.
+     * This function can process some miscellaneous pattern.
      * Params: originLocalTime - LocalTime used to get part of the date.
-     *         formatStr - According to this format string to get the corresponded part
-     *                  in the date.
+     * formatStr - According to this format string to get the corresponded part
+     * in the date.
      * Returns: a formatted date string.
-    */
+     */
     public static String processFormatStr(Object originTime, String formatStr) {
         String targetStr = formatStr;
         // Insert each part into mapForReplace.
         if (originTime instanceof LocalDateTime) {
             LocalDateTime originLocalTime = (LocalDateTime) originTime;
-            for (String entry: FORMAT_LIST) {
+            for (String entry : FORMAT_LIST) {
                 if (formatStr.contains(entry)) {
                     switch (entry) {
                         case "%Y":
@@ -185,7 +185,7 @@ public class DingoDateTimeUtils implements Serializable {
             }
         } else {
             LocalTime localTime = (LocalTime) originTime;
-            for (String entry: FORMAT_LIST) {
+            for (String entry : FORMAT_LIST) {
                 if (formatStr.contains(entry)) {
                     switch (entry) {
                         case "%H":
@@ -227,8 +227,10 @@ public class DingoDateTimeUtils implements Serializable {
     }
 
     // TODO wait for validate rule for parsing date 2022-04-31.
+
     /**
      * This function convert datetime (string type) into LocalDateTime.
+     *
      * @param originDateTime contains (hh:mm:ss or not)
      * @return LocalDateTime if success.
      * @throws SQLException throw SQLException
@@ -253,7 +255,7 @@ public class DingoDateTimeUtils implements Serializable {
             for (Pattern pattern : TIME_REX_PATTERN_LIST) {
                 if (pattern.matcher(originDateTime).matches()) {
                     if ((index & 1) == 1) {
-                        dateTime =  LocalDateTime.parse(originDateTime, DATETIME_FORMATTER_LIST.get(index / 2));
+                        dateTime = LocalDateTime.parse(originDateTime, DATETIME_FORMATTER_LIST.get(index / 2));
                     } else {
                         dateTime = LocalDate.parse(originDateTime, DATE_FORMATTER_LIST.get(index / 2)).atStartOfDay();
                     }
@@ -276,14 +278,16 @@ public class DingoDateTimeUtils implements Serializable {
             } else {
                 throw new SQLException(
                     " Some parameters of the function are in the wrong format and cannot be parsed, error datetime: "
-                    + originDateTime, "");
+                        + originDateTime, "");
             }
         }
     }
 
     // TODO wait for validate rule for parsing date 2022-04-31.
+
     /**
-     *  This function convert date (string type) into LocalDate.
+     * This function convert date (string type) into LocalDate.
+     *
      * @param originDate does not contain (HH:mm:ss)
      * @return LocalDate return localDate
      * @throws SQLException throw Exception
@@ -294,7 +298,7 @@ public class DingoDateTimeUtils implements Serializable {
             LocalDate localDate;
             for (Pattern pattern : TIME_REX_PATTERN_LIST) {
                 if (pattern.matcher(originDate).matches()) {
-                    localDate =  LocalDate.parse(originDate, DATE_FORMATTER_LIST.get(index / 2));
+                    localDate = LocalDate.parse(originDate, DATE_FORMATTER_LIST.get(index / 2));
                     if (extractDateFromTimeStr(originDate, DELIMITER_LIST.get(index / 2))
                         == localDate.getDayOfMonth()) {
                         return localDate;
@@ -318,10 +322,16 @@ public class DingoDateTimeUtils implements Serializable {
         }
     }
 
+
     public static LocalTime convertToTime(String originTime) throws SQLException {
         int index = 0;
-        LocalTime localTime;
+        int length = originTime.length();
+        while (length < 6) {
+            originTime = "0" + originTime;
+            length++;
+        }
         try {
+            LocalTime localTime;
             for (Pattern pattern: TIME_PATTERN_LIST) {
                 if (pattern.matcher(originTime).matches()) {
                     localTime = LocalTime.parse(originTime, TIME_FORMATTER_LIST.get(index));
@@ -329,7 +339,7 @@ public class DingoDateTimeUtils implements Serializable {
                 }
                 index++;
             }
-            String errorMsg = originTime + " does not match any of the time pattern HH:mm:ss or HHmmss";
+            String errorMsg = originTime + " does not match any of the time pattern HH:mm:ss";
             log.error(errorMsg);
             throw new Exception(errorMsg);
         } catch (Exception e) {
@@ -337,17 +347,11 @@ public class DingoDateTimeUtils implements Serializable {
                 throw new SQLException(e.getMessage() + " ," + originTime + " FORMAT "
                     + TIME_PATTERN_LIST.get(index));
             } else {
-                // try last chance.
-                index++;
-                try {
-                    localTime = LocalTime.parse(originTime, TIME_FORMATTER_LIST.get(index));
-                    return localTime;
-                } catch (Exception e1) {
-                    throw new SQLException(e1.getMessage(), "");
-                }
+                throw new SQLException(e.getMessage(), "");
             }
         }
     }
+
 
     /**
      * Extract the date from originTimeStr.

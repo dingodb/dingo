@@ -75,9 +75,9 @@ public class InsertAndSelectDateTest {
             + "(7,'yamaha',76,2.30,'beijing changyang', '1949-01-01', '0:30:8', '2022-12-01 1:2:3')";
 
         //String queryDFTSSql = "select name, unix_timestamp(birthday) ts_out from test";
-        String queryDFTSSql = "select name, time_format(createTime, '%H:%i:%s') ts_out from test where id<8";
+        // String queryDFTSSql = "select name, time_format(createTime, '%H:%i:%s') ts_out from test where id<8";
         // String queryDFTSSql = "select name, createTime  from test where id<8";
-        // String queryDFTSSql = "select name,date_format(birthday, '%Y year %m month %d day') birth_out from test";
+        String queryDFTSSql = "select name,date_format(update_time, '%Y year %m month %d day') birth_out from test";
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.executeUpdate(batInsertSql);
