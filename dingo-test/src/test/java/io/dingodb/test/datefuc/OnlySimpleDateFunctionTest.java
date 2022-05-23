@@ -1089,6 +1089,20 @@ public class OnlySimpleDateFunctionTest {
     }
 
     @Test
+    public void testTimeFormat5() throws SQLException {
+        String sql = "select time_format(000006, '%H.%i.%s')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("00.00.06");
+                }
+            }
+        }
+    }
+
+    @Test
     public void testGetZoneOffset() {
         Instant instant = Instant.now(); //can be LocalDateTime
         ZoneId systemZone = ZoneId.systemDefault(); // my timezone

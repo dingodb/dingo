@@ -163,6 +163,7 @@ public final class ReceiveOperator extends SourceOperator {
                     }
                     int arrLen = pair.getKey().length;
                     Object[] tuple = codec.decode(pair.getKey());
+                    tuple = schema.convert(tuple);
                     if (log.isDebugEnabled()) {
                         if (!(tuple[0] instanceof Fin)) {
                             log.debug("ReceiveMessageListener (tag = {}) Received tuple {}, arr len: {}, "
