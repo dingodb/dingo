@@ -253,7 +253,7 @@ final class TypeEvaluators {
     @Nonnull
     @Evaluators.Base(TimestampEvaluator.class)
     static Timestamp timestampType(Long ts) {
-        return new Timestamp(ts * 1000);
+        return new Timestamp(ts);
     }
 
     @Nonnull
