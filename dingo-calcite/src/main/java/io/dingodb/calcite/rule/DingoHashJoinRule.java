@@ -67,7 +67,11 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
         Join rel = call.rel(0);
         JoinInfo joinInfo = rel.analyzeCondition();
         if (!joinInfo.isEqui()) {
-            throw new RuntimeException("This type of join is not supported.");
+            // If the conditions have been extracted to a Filter above, do HashJoin with empty key.
+            if (!joinInfo.nonEquiConditions.isEmpty()) {
+                // else we cannot handle.
+                return;
+            }
         }
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traitSet = rel.getTraitSet().replace(DingoConventions.DISTRIBUTED);

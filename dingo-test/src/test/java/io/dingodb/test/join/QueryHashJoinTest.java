@@ -97,4 +97,14 @@ public class QueryHashJoinTest {
     public void testSongsArtistsFull() throws SQLException, IOException {
         testJoin("songs-artists-full-join");
     }
+
+    @Test
+    public void testSongsArtistsCartesian() throws SQLException, IOException {
+        testJoin("songs-artists-join-cartesian");
+    }
+
+    @Test
+    public void testSongsArtistsInnerNonEq() throws SQLException, IOException {
+        testJoin("songs-artists-inner-join-non-eq");
+    }
 }
