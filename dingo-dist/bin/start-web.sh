@@ -17,7 +17,7 @@
 #
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-JAR_PATH=$(find $ROOT -name dingo-web-*.jar)
+JAR_PATH=$(find $ROOT -name dingo-web*.jar)
 
 nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \

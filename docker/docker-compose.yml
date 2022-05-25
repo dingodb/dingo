@@ -79,6 +79,22 @@ services:
        DINGO_ROLE: executor
        DINGO_HOSTNAME: executor3
 
+  web:
+    image: dingodatabase/dingo:latest
+    hostname: web
+    container_name: web
+    ports:
+      - 13000:13000
+    networks:
+      - dingo_net
+    depends_on:
+      - coordinator1
+      - coordinator2
+      - coordinator3
+    environment:
+      DINGO_ROLE: web
+      DINGO_HOSTNAME: web
+
 networks:
     dingo_net:
         driver: bridge
