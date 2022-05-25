@@ -1,0 +1,8 @@
+server:
+    compression:
+        enabled: true
+        mime-types: text/html,text/xml,text/plain,text/css, application/javascript, application/json
+        min-response-size: 1024
+    host: XXXXXX
+    port: 13000
+    coordinatorExchangeSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181

@@ -1,0 +1,5 @@
+spring:
+    application:
+        name: dingodb-manager
+    profiles:
+        active: dev

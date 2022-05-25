@@ -82,7 +82,8 @@ copyDepends.dependsOn([
     ':dingo-cli:fatJar',
     ':dingo-driver-client:fatJar',
     ':dingo-store-raft:fatJar',
-    ':dingo-example:fatJar'
+    ':dingo-example:fatJar',
+    ':dingo-web:build'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

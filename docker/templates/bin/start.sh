@@ -19,6 +19,7 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 COORDINATOR_JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
 EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
 DRIVER_JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
+WEB_JAR_PATH=$(find $ROOT -name dingo-web*.jar)
 
 ROLE=$DINGO_ROLE
 HOSTNAME=$DINGO_HOSTNAME
@@ -31,6 +32,7 @@ fi
 sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/coordinator.yaml
 sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/executor.yaml
 sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/client.yaml
+sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/application-dev.yaml
 
 if [[ $ROLE == "coordinator" ]]
 then
@@ -55,12 +57,17 @@ then
 elif [[ $ROLE == "driver" ]]
 then
     sleep 60
+    ./bin/start-driver.sh &
+    P3=$!
+    wait $P3
+elif [[ $ROLE == "web" ]]
+then
     java ${JAVA_OPTS} \
-    -Dlogback.configurationFile=file:${ROOT}/conf/logback-sqlline.xml \
-    -classpath ${DRIVER_JAR_PATH} \
-    io.dingodb.cli.Tools driver \
-    --config ${ROOT}/conf/client.yaml \
-    > ${ROOT}/log/driver.out 
+     -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
+     -jar ${WEB_JAR_PATH} \
+     --spring.config.location=${ROOT}/conf/application.yaml \
+     io.dingodb.web.DingoApplication \
+     > ${ROOT}/log/web.out
 else
     echo -e "Invalid DingoDB cluster roles"
 fi
