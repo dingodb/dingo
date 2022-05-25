@@ -459,6 +459,30 @@ public class TestPhysicalPlan {
     }
 
     @Test
+    public void testJoin1() throws SqlParseException {
+        String sql = "select * from test, test1 where test.name = test1.id1";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoFilter.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)
+            .inputNum(2);
+    }
+
+    @Test
+    public void testJoin2() throws SqlParseException {
+        String sql = "select * from test join test1 on test.amount < test1.amount";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoFilter.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoHashJoin.class).convention(DingoConventions.DISTRIBUTED)
+            .inputNum(2);
+    }
+
+    @Test
     public void testJoinFilter() throws SqlParseException {
         String sql = "select * from test join test1 on test.name = test1.id1 where test.amount > 3.0";
         RelNode relNode = parse(sql);
