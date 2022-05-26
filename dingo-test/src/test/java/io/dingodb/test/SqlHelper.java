@@ -205,4 +205,20 @@ public class SqlHelper {
             statement.executeUpdate("delete from " + tableName);
         }
     }
+
+    public void doTest(
+        @Nonnull Class<?> testClass,
+        String sqlFileName,
+        String resultFileName
+    ) throws SQLException, IOException {
+        String sql = IOUtils.toString(
+            Objects.requireNonNull(testClass.getResourceAsStream(sqlFileName + ".sql")),
+            StandardCharsets.UTF_8
+        );
+        queryTest(sql, testClass.getResourceAsStream(resultFileName + ".csv"));
+    }
+
+    public void doTest(Class<?> testClass, String fileName) throws SQLException, IOException {
+        doTest(testClass, fileName, fileName);
+    }
 }

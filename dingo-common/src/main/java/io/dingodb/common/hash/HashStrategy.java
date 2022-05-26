@@ -18,7 +18,6 @@ package io.dingodb.common.hash;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dingodb.common.table.TupleMapping;
 
 import javax.annotation.Nonnull;
 
@@ -30,11 +29,5 @@ import javax.annotation.Nonnull;
     @JsonSubTypes.Type(SimpleHashStrategy.class),
 })
 public interface HashStrategy {
-    // Should be `String` for json serialization.
-    int calcHash(@Nonnull final Object[] tuple);
-
-    default int calcHash(@Nonnull final Object[] tuple, @Nonnull TupleMapping mapping) {
-        Object[] t = mapping.revMap(tuple);
-        return calcHash(t);
-    }
+    int selectOutput(@Nonnull final Object[] tuple);
 }

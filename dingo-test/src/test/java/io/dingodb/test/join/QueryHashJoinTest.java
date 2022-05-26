@@ -18,7 +18,6 @@ package io.dingodb.test.join;
 
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,9 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Objects;
 
 @Slf4j
 public class QueryHashJoinTest {
@@ -56,55 +53,43 @@ public class QueryHashJoinTest {
     public void cleanUp() throws Exception {
     }
 
-    private void testJoin(String sqlFileName, String resultFileName) throws SQLException, IOException {
-        String sql = IOUtils.toString(
-            Objects.requireNonNull(this.getClass().getResourceAsStream(sqlFileName + ".sql")),
-            StandardCharsets.UTF_8
-        );
-        sqlHelper.queryTest(sql, this.getClass().getResourceAsStream(resultFileName + ".csv"));
-    }
-
-    private void testJoin(String fileName) throws SQLException, IOException {
-        testJoin(fileName, fileName);
-    }
-
     @Test
     public void testSongsArtistsInner() throws SQLException, IOException {
-        testJoin("songs-artists-inner-join");
+        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join");
     }
 
     @Test
     public void testSongsArtistsInnerFilter() throws SQLException, IOException {
-        testJoin("songs-artists-inner-join-filter");
+        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join-filter");
     }
 
     @Test
     public void testSongsArtistsLeft() throws SQLException, IOException {
-        testJoin("songs-artists-left-join");
+        sqlHelper.doTest(this.getClass(), "songs-artists-left-join");
     }
 
     @Test
     public void testSongsArtistsLeftFilter() throws SQLException, IOException {
-        testJoin("songs-artists-left-join-filter", "songs-artists-inner-join");
+        sqlHelper.doTest(this.getClass(), "songs-artists-left-join-filter", "songs-artists-inner-join");
     }
 
     @Test
     public void testSongsArtistsRight() throws SQLException, IOException {
-        testJoin("songs-artists-right-join");
+        sqlHelper.doTest(this.getClass(), "songs-artists-right-join");
     }
 
     @Test
     public void testSongsArtistsFull() throws SQLException, IOException {
-        testJoin("songs-artists-full-join");
+        sqlHelper.doTest(this.getClass(), "songs-artists-full-join");
     }
 
     @Test
     public void testSongsArtistsCartesian() throws SQLException, IOException {
-        testJoin("songs-artists-join-cartesian");
+        sqlHelper.doTest(this.getClass(), "songs-artists-join-cartesian");
     }
 
     @Test
     public void testSongsArtistsInnerNonEq() throws SQLException, IOException {
-        testJoin("songs-artists-inner-join-non-eq");
+        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join-non-eq");
     }
 }
