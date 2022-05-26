@@ -39,7 +39,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,7 @@ import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.compare;
@@ -249,7 +253,6 @@ public class RaftStoreInstance implements StoreInstance {
         Part part = null;
         long startTime = System.currentTimeMillis();
         for (KeyValue row: rows) {
-
             if (part == null && (part = getPart(row.getPrimaryKey())) == null) {
                 throw new IllegalArgumentException(
                     "The primary key " + Arrays.toString(row.getPrimaryKey()) + " not in current instance."
@@ -275,29 +278,134 @@ public class RaftStoreInstance implements StoreInstance {
         return parts.get(part.getId()).delete(primaryKey);
     }
 
-    @Override
-    public boolean delete(List<byte[]> primaryKeys) {
-        Part part = null;
-        for (byte[] primaryKey : primaryKeys) {
-            if (part == null && (part = getPart(primaryKey)) == null) {
+    private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
+        Map<Part, List<byte[]>> result = new HashMap<>();
+        for (byte[] primaryKey: primaryKeys) {
+            Part part = getPart(primaryKey);
+            if (part == null) {
                 throw new IllegalArgumentException(
-                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+                    "The primary key " + Arrays.toString(primaryKey) + " can not compute part info."
                 );
             }
-            if (part != getPart(primaryKey)) {
-                throw new IllegalArgumentException("The primary key list not in same part.");
+            List<byte[]> list = result.get(part);
+            if (list == null) {
+                list = new ArrayList<>();
+                result.put(part, list);
+            }
+            list.add(primaryKey);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean delete(List<byte[]> primaryKeys) {
+        boolean isSuccess = false;
+        try {
+            Map<Part, List<byte[]>> keysGroupByPart = groupKeysByPart(primaryKeys);
+            for (Map.Entry<Part, List<byte[]>> entry : keysGroupByPart.entrySet()) {
+                Part part = entry.getKey();
+                Optional<List<byte[]>> keysInPart = Optional.of(entry.getValue());
+                if (keysInPart.isPresent()) {
+                    isSuccess = parts.get(part.getId()).delete(keysInPart.get());
+                    if (!isSuccess) {
+                        log.error("Delete failed, part: {}, keysCnt: {}", part.getId(), keysInPart.get().size());
+                    }
+                } else {
+                    log.warn("Delete failed, part: {}, keysCnt: 0", part.getId());
+                }
+            }
+            return isSuccess;
+        } catch (IllegalArgumentException e) {
+            log.error("Delete Id:{} by keys failed: {}", this.id, e.getMessage());
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    public Map<Part, List<byte[]>> groupKeysByPart(byte[] startKey, byte[] endKey) {
+        Part startPart = getPart(startKey);
+        Part endPart = getPart(endKey);
+
+        // case1. startKey and endKey is in same part, then reture the part
+        if (startPart == endPart) {
+            return Collections.singletonMap(startPart, Arrays.asList(startKey, endKey));
+        }
+
+        // case2. compute the partition list by <startKey, endKey>
+        List<byte[]> keyArraysList = startKeyPartMap.keySet().stream().collect(Collectors.toList());
+        if (keyArraysList.size() <= 1) {
+            throw new IllegalArgumentException("Invalid Key Partition Map, should more than 1.");
+        }
+
+        int startIndex = 0;
+        int endIndex = keyArraysList.size() - 1;
+
+        for (int i = 0; i < keyArraysList.size(); i++) {
+            byte[] keyInList = keyArraysList.get(i);
+            if (ByteArrayUtils.compare(startKey, keyInList) <= 0) {
+                startIndex = i - 1;
+                break;
             }
         }
-        return parts.get(part.getId()).delete(primaryKeys);
+
+        for (int i = keyArraysList.size() - 1; i >= 0; i--) {
+            byte[] keyInList = keyArraysList.get(i);
+            if (ByteArrayUtils.compare(endKey, keyInList) >= 0) {
+                endIndex = i;
+                break;
+            }
+        }
+
+        if (startIndex < 0 || endIndex < 0 || startIndex >= endIndex) {
+            log.warn("Invalid Key Partition Map, startIndex: {}, endIndex: {}", startIndex, endIndex);
+            throw new IllegalArgumentException("Invalid Key Partition Map, startIndex: "
+                + startIndex + ", endIndex: " + endIndex);
+        }
+
+        Map<Part, List<byte[]>> result = new HashMap<>();
+        for (int i = startIndex; i <= endIndex; i++) {
+            if (i == startIndex) {
+                // first partition
+                byte[] keyInList = keyArraysList.get(i + 1);
+                Part part = getPart(startKey);
+                List<byte[]> list = Arrays.asList(startKey, keyInList);
+                result.put(part, list);
+            } else if (i == endIndex) {
+                // last partition
+                byte[] keyInList = keyArraysList.get(i);
+                Part part = getPart(endKey);
+                List<byte[]> list = Arrays.asList(keyInList, endKey);
+                result.put(part, list);
+            } else {
+                // middle partition
+                byte[] keyInList = keyArraysList.get(i);
+                byte[] keyInListNext = keyArraysList.get(i + 1);
+                Part part = getPart(keyInList);
+                List<byte[]> list = Arrays.asList(keyInList, keyInListNext);
+                result.put(part, list);
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        Part part = getPart(startPrimaryKey);
-        if (part == null || part != getPart(endPrimaryKey)) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        boolean isSuccess = true;
+        try {
+            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
+
+            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
+                Part part = entry.getKey();
+                List<byte[]> keys = entry.getValue();
+                boolean isOK = parts.get(part.getId()).delete(keys.get(0), keys.get(1));
+                if (!isOK) {
+                    isSuccess = false;
+                    log.warn("Delete partition failed: part: " + part.getId() + ", keys: " + keys);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Delete failed, startPrimaryKey: {}, endPrimaryKey: {}", startPrimaryKey, endPrimaryKey, e);
         }
-        return parts.get(part.getId()).delete(startPrimaryKey, endPrimaryKey);
+        return isSuccess;
     }
 
     @Override

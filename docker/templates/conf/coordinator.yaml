@@ -7,3 +7,5 @@ server:
     dataPath: /opt/dingo/coordinator
     raft:
         initRaftSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
+    schedule:
+        autoSplit: true
