@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.Location;
 import io.dingodb.common.hash.HashStrategy;
+import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
@@ -50,8 +51,18 @@ public class HashOperator extends FanOutOperator {
     }
 
     @Override
+    public void init() {
+        super.init();
+        if (strategy instanceof SimpleHashStrategy) {
+            ((SimpleHashStrategy) strategy).setOutputNum(outputs.size());
+        } else {
+            throw new IllegalArgumentException("Unsupported hash strategy \"" + strategy + "\".");
+        }
+    }
+
+    @Override
     protected int calcOutputIndex(int pin, @Nonnull Object[] tuple) {
-        return strategy.calcHash(tuple, keyMapping) % outputs.size();
+        return strategy.selectOutput(keyMapping.revMap(tuple));
     }
 
     public void createOutputs(@Nonnull Collection<Location> locations) {

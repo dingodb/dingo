@@ -17,14 +17,26 @@
 package io.dingodb.common.hash;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import lombok.Setter;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
 @JsonTypeName("simple")
 public final class SimpleHashStrategy implements HashStrategy {
+    @Setter
+    private int outputNum;
+
     @Override
-    public int calcHash(@Nonnull Object[] tuple) {
-        return Objects.hash(tuple);
+    public int selectOutput(@Nonnull Object[] tuple) {
+        int hash = Objects.hash(tuple);
+        int index = hash % outputNum;
+        return index >= 0 ? index : index + outputNum;
+    }
+
+    @Nonnull
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
     }
 }
