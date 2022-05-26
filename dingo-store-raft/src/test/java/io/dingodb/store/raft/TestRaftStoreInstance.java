@@ -35,7 +35,10 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -159,4 +162,144 @@ public class TestRaftStoreInstance {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    public void testGetValueByPrimaryKeyWithMultiPartition() {
+        /**
+         * Partition: 1:[-inf, 1), 2:[1, 3), 3:[3, 5), 4:[5, inf)
+         * ----------1------------3----------5---------
+         */
+        //
+        List<Part> parts = constructMultiPartTables();
+        for (Part part : parts) {
+            while (storeInstance.getPart(part.getStart()) == null) {
+                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+            }
+        }
+
+        /*
+         * case1: query range is: [1, 2)
+         * then result is : [1, 2)
+         */
+        Map<Part, List<byte[]>> partListMap01 = storeInstance.groupKeysByPart(
+            new byte[] {1},
+            new byte[] {2}
+        );
+        Assertions.assertThat(partListMap01.size()).isEqualTo(1);
+        for (Map.Entry<Part, List<byte[]>> entry : partListMap01.entrySet()) {
+            List<byte[]> keyRange = entry.getValue();
+            Assertions.assertThat(keyRange.get(0)).isEqualTo(new byte[]{1});
+            Assertions.assertThat(keyRange.get(1)).isEqualTo(new byte[]{2});
+        }
+
+        /**
+         * case2: query range is: [1, 3]
+         * then result is : [1, 3), [3,3)
+         */
+        Map<Part, List<byte[]>> partListMap02 = storeInstance.groupKeysByPart(
+            new byte[] {1},
+            new byte[] {3}
+        );
+        Assertions.assertThat(partListMap02.size()).isEqualTo(2);
+
+        List<List<byte[]>> expectResult = new ArrayList<>();
+        expectResult.add(Arrays.asList(new byte[]{1}, new byte[]{3}));
+        expectResult.add(Arrays.asList(new byte[]{3}, new byte[]{3}));
+        for (Map.Entry<Part, List<byte[]>> entry : partListMap02.entrySet()) {
+            List<byte[]> keyRange = entry.getValue();
+            boolean isOK1 = isByteArrayEquals(keyRange, expectResult.get(0));
+            boolean isOK2 = isByteArrayEquals(keyRange, expectResult.get(1));
+            Assertions.assertThat(isOK1 || isOK2).isTrue();
+        }
+
+
+        /**
+         * query range is : [0, 7)
+         * then result is : [0, 1), [1, 3), [3, 5), [5, 7)
+         */
+        Map<Part, List<byte[]>> partListMap03 = storeInstance.groupKeysByPart(
+            new byte[]{ 0 },
+            new byte[]{ 7 }
+        );
+        Assertions.assertThat(partListMap03.size()).isEqualTo(4);
+        expectResult.clear();
+        expectResult.add(Arrays.asList(new byte[]{0}, new byte[]{1}));
+        expectResult.add(Arrays.asList(new byte[]{1}, new byte[]{3}));
+        expectResult.add(Arrays.asList(new byte[]{3}, new byte[]{5}));
+        expectResult.add(Arrays.asList(new byte[]{5}, new byte[]{7}));
+        for (Map.Entry<Part, List<byte[]>> entry : partListMap03.entrySet()) {
+            List<byte[]> keyRange = entry.getValue();
+            boolean isOK1 = isByteArrayEquals(keyRange, expectResult.get(0));
+            boolean isOK2 = isByteArrayEquals(keyRange, expectResult.get(1));
+            boolean isOK3 = isByteArrayEquals(keyRange, expectResult.get(2));
+            boolean isOK4 = isByteArrayEquals(keyRange, expectResult.get(3));
+            Assertions.assertThat(isOK1 || isOK2 || isOK3 || isOK4).isTrue();
+        }
+    }
+
+    private List<Part> constructMultiPartTables() {
+        List<Part> parts = new ArrayList<>();
+
+        CommonId id1 = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(1), encodeInt(StackTraces.lineNumber())
+        );
+        Part part1 = Part.builder()
+            .id(id1)
+            .start(ByteArrayUtils.EMPTY_BYTES)
+            .end(new byte[] {1})
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.assignPart(part1);
+        parts.add(part1);
+
+        CommonId id2 = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(2), encodeInt(StackTraces.lineNumber())
+        );
+        Part part2 = Part.builder()
+            .id(id2)
+            .start(new byte[] {1})
+            .end(new byte[] {3})
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.assignPart(part2);
+        parts.add(part2);
+
+
+        CommonId id3 = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(3), encodeInt(StackTraces.lineNumber())
+        );
+        Part part3 = Part.builder()
+            .id(id3)
+            .start(new byte[] {3})
+            .end(new byte[] {5})
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.assignPart(part3);
+        parts.add(part3);
+
+        CommonId id4 = new CommonId(
+            ID_TYPE.table, TABLE_IDENTIFIER.part, encodeInt(4), encodeInt(StackTraces.lineNumber())
+        );
+        Part part4 = Part.builder()
+            .id(id4)
+            .start(new byte[] {5})
+            .replicates(singletonList(location))
+            .build();
+        storeInstance.assignPart(part4);
+        parts.add(part4);
+        return parts;
+    }
+
+    private boolean isByteArrayEquals(List<byte[]> expected, List<byte[]> real) {
+        if (expected.size() != real.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < expected.size(); i++) {
+            int result = ByteArrayUtils.compare(expected.get(i), real.get(i));
+            if (result != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

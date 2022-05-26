@@ -53,5 +53,4 @@ public class Part {
     private Location leader;
     private List<Location> replicates;
     private int version;
-
 }
