@@ -42,3 +42,6 @@ dingo-cli/dingo
 
 # Error log
 hs_err_*
+
+# Files left by testing
+dingo-raft-kv/io.dingodb.raft.kv.storage.TestRaftRawKVStore/
