@@ -6,6 +6,7 @@ exchange:
 server:
     coordinatorExchangeSvrList: node1:19181,node2:19181,node3:19181
     dataPath: /opt/dingo/data/executor
+    monitorPort: 9099
 store:
     dbPath: /opt/dingo/data/executor/db
     raft:

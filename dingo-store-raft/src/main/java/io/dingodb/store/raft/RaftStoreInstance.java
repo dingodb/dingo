@@ -16,9 +16,7 @@
 
 package io.dingodb.store.raft;
 
-import com.codahale.metrics.Clock;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -33,6 +31,7 @@ import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
+import io.dingodb.server.protocol.metric.MonitorMetric;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;
@@ -49,7 +48,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static io.dingodb.common.metrics.DingoMetrics.name;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.compare;
 
@@ -67,7 +65,7 @@ public class RaftStoreInstance implements StoreInstance {
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final List<RaftStoreInstancePart> waitStoreParts;
-    private final Clock clock;
+    private final PartReadWriteCollector collector;
 
     public RaftStoreInstance(Path path, CommonId id)  {
         try {
@@ -90,7 +88,7 @@ public class RaftStoreInstance implements StoreInstance {
             this.parts = new ConcurrentHashMap<>();
             this.waitParts = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
             this.waitStoreParts = new CopyOnWriteArrayList<>();
-            this.clock = Clock.defaultClock();
+            this.collector = PartReadWriteCollector.instance();
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -178,7 +176,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean exist(byte[] primaryKey) {
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         Part part = getPart(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
@@ -186,14 +184,14 @@ public class RaftStoreInstance implements StoreInstance {
             );
         }
         boolean exist = parts.get(part.getId()).exist(primaryKey);
-        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_READ);
         return exist;
     }
 
     @Override
     public boolean existAny(List<byte[]> primaryKeys) {
         Part part = null;
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
                 throw new IllegalArgumentException(
@@ -205,7 +203,7 @@ public class RaftStoreInstance implements StoreInstance {
             }
         }
         boolean exist = parts.get(part.getId()).existAny(primaryKeys);
-        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_READ);
         return exist;
     }
 
@@ -220,7 +218,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         Part part = getPart(row.getPrimaryKey());
         if (part == null) {
             throw new IllegalArgumentException(
@@ -228,13 +226,13 @@ public class RaftStoreInstance implements StoreInstance {
             );
         }
         boolean result = parts.get(part.getId()).upsertKeyValue(row);
-        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_WRITE);
         return result;
     }
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         Part part = getPart(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
@@ -242,14 +240,14 @@ public class RaftStoreInstance implements StoreInstance {
             );
         }
         boolean result = parts.get(part.getId()).upsertKeyValue(primaryKey, row);
-        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_WRITE);
         return result;
     }
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
         Part part = null;
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         for (KeyValue row: rows) {
 
             if (part == null && (part = getPart(row.getPrimaryKey())) == null) {
@@ -262,7 +260,7 @@ public class RaftStoreInstance implements StoreInstance {
             }
         }
         boolean result = parts.get(part.getId()).upsertKeyValue(rows);
-        statLatency(name(part.getId().toString(), "part_write"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_WRITE);
         return result;
     }
 
@@ -304,7 +302,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         Part part = getPart(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
@@ -312,13 +310,13 @@ public class RaftStoreInstance implements StoreInstance {
             );
         }
         byte[] result = parts.get(part.getId()).getValueByPrimaryKey(primaryKey);
-        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_READ);
         return result;
     }
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        long startTime = this.clock.getTime();
+        long startTime = System.currentTimeMillis();
         Part part = null;
         for (byte[] primaryKey : primaryKeys) {
             if (part == null && (part = getPart(primaryKey)) == null) {
@@ -331,7 +329,7 @@ public class RaftStoreInstance implements StoreInstance {
             }
         }
         List<KeyValue> result = parts.get(part.getId()).getKeyValueByPrimaryKeys(primaryKeys);
-        statLatency(name(part.getId().toString(), "part_read"), startTime);
+        this.collector.putSample(System.currentTimeMillis() - startTime, part.getId(), MonitorMetric.PART_READ);
         return result;
     }
 
@@ -351,11 +349,6 @@ public class RaftStoreInstance implements StoreInstance {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
         return parts.get(part.getId()).keyValueScan(startPrimaryKey, endPrimaryKey);
-    }
-
-    private void statLatency(String name, long startTime) {
-        long cost = this.clock.getTime() - startTime;
-        DingoMetrics.partLatency(name, cost);
     }
 
     class FullScanRawIterator extends KeyValueIterator {

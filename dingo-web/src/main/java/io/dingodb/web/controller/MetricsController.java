@@ -23,6 +23,7 @@ import io.dingodb.web.model.PartRequest;
 import io.dingodb.web.model.PartTableRes;
 import io.dingodb.web.service.MetricsService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Api
+@Api("Part")
 @RestController
 @RequestMapping("/part")
 public class MetricsController {
@@ -40,12 +41,14 @@ public class MetricsController {
     @Autowired
     private MetricsService metricsService;
 
+    @ApiOperation("Get table")
     @PostMapping("/table")
     public ResponseEntity<PartTableRes> getTablePart(@RequestBody PartRequest req) {
         List<Location> locations = metricsService.partTable(req.getSchema(), req.getName());
         return ResponseEntity.ok(new PartTableRes(req.getSchema(), req.getName(), locations));
     }
 
+    @ApiOperation("Get table replica")
     @PostMapping("/replica")
     public ResponseEntity<PartReplicaRes> getPartReplica(@RequestBody PartRequest req) {
         Part part = metricsService.partReplica(req.getSchema(), req.getName());
