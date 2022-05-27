@@ -275,7 +275,11 @@ final class TypeEvaluators {
         try {
             localDate = DingoDateTimeUtils.convertToDate(str);
         } catch (SQLException e) {
-            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+            if (e.getMessage().contains("FORMAT")) {
+                throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+            } else {
+                throw new FailParseTime(e.getMessage());
+            }
         }
         Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
         return d;

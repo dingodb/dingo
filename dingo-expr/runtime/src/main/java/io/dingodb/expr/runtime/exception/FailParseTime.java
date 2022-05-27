@@ -39,4 +39,12 @@ public class FailParseTime extends RuntimeException {
         this.time = time;
         this.format = format;
     }
+
+    public FailParseTime(String time) {
+        super(
+            "Error in parsing \"" + time + "\" to time/date/datetime"
+        );
+        this.time = time;
+        this.format = "";
+    }
 }

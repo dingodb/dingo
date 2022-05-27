@@ -1103,6 +1103,20 @@ public class OnlySimpleDateFunctionTest {
     }
 
     @Test
+    public void testTimeFormat6() throws SQLException {
+        String sql = "select time_format(180000, '%H.%i.%s')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("18.00.00");
+                }
+            }
+        }
+    }
+
+    @Test
     public void testGetZoneOffset() {
         Instant instant = Instant.now(); //can be LocalDateTime
         ZoneId systemZone = ZoneId.systemDefault(); // my timezone
@@ -1180,7 +1194,7 @@ public class OnlySimpleDateFunctionTest {
     @Test
     public void testRexPattern2() {
         Pattern pt = Pattern.compile("\\d*[a-zA-Z_]\\d*");
-        String s = "20220414180215";
+        String s = "1649412307000";
         if (pt.matcher(s).matches()) {
             System.out.println("match");
         } else {

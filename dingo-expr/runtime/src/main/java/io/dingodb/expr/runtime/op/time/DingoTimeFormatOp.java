@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoTimeFormatOp extends RtFun {
+    private static Integer TIME_PIVOT = 240000;
     public DingoTimeFormatOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
@@ -61,6 +62,10 @@ public class DingoTimeFormatOp extends RtFun {
         if (value instanceof Long) {
             return timeFormat((Long) value, formatStr);
         } else if (value instanceof Integer) {
+            if ((Integer)value >= TIME_PIVOT) {
+                throw new FailParseTime(value.toString() + " can be less than " + TIME_PIVOT);
+            }
+            // Check value larger than 239999.
             return timeFormat(values[0].toString(), formatStr);
         } else if (value instanceof Time) {
             return timeFormat((Time) values[0], formatStr);
@@ -70,6 +75,11 @@ public class DingoTimeFormatOp extends RtFun {
     }
 
     public static String timeFormat(final String time, final String formatStr) {
+        if (!time.contains(":")) {
+            if (Integer.valueOf(time) >= TIME_PIVOT) {
+                throw new FailParseTime(time+ " can be less than " + TIME_PIVOT);
+            }
+        }
         try {
             LocalTime localTime = DingoDateTimeUtils.convertToTime(time);
             return DingoDateTimeUtils.processFormatStr(localTime, formatStr);

@@ -314,8 +314,12 @@ public class DingoDateTimeUtils implements Serializable {
             throw new Exception(errorMsg);
         } catch (Exception e) {
             if (!(e instanceof DateTimeParseException)) {
-                throw new SQLException(e.getMessage() + " ," + originDate + " FORMAT "
-                    + DATETIME_FORMATTER_LIST.get(index / 2));
+                if (index < TIME_REX_PATTERN_LIST.size()) {
+                    throw new SQLException(e.getMessage() + " ," + originDate + " FORMAT "
+                        + DATETIME_FORMATTER_LIST.get(index / 2));
+                } else {
+                    throw new SQLException(e.getMessage());
+                }
             } else {
                 throw new SQLException(e.getMessage(), "");
             }
