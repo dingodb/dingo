@@ -43,6 +43,9 @@ public final class DingoRules {
         = DingoHashJoinRule.Config.DEFAULT.toRule();
     public static final DingoPartModifyRule DINGO_PART_MODIFY_RULE
         = DingoPartModifyRule.Config.DEFAULT.toRule();
+
+    public static final DingoPartitionDeleteRule DINGO_PARTITION_DELETE_RULE
+        = DingoPartitionDeleteRule.Config.DEFAULT.toRule();
     public static final DingoPartScanRule DINGO_PART_SCAN_RULE
         = DingoPartScanRule.Config.DEFAULT.toRule();
     public static final DingoProjectRule DINGO_PROJECT_RULE_DISTRIBUTED
@@ -97,7 +100,8 @@ public final class DingoRules {
         DINGO_SORT_RULE,
         DINGO_TABLE_MODIFY_RULE,
         DINGO_UNION_RULE,
-        DINGO_VALUES_RULE
+        DINGO_VALUES_RULE,
+        DINGO_PARTITION_DELETE_RULE
     );
 
     private DingoRules() {

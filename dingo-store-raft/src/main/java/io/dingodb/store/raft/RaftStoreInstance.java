@@ -53,6 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.compare;
 
 @Slf4j
@@ -156,6 +157,30 @@ public class RaftStoreInstance implements StoreInstance {
         unassignPart(part);
         store.delete(part.getStart(), part.getEnd());
         log.info("Delete store instance part, id: [{}], part: {}", part.getId(), part);
+    }
+
+    @Override
+    public long deletePart(byte[] startKey) {
+        Part part = getPart(startKey);
+        if (part == null) {
+            log.warn("delete store by part start key. but find start key:{} not in any part",
+                Arrays.toString(startKey));
+            return 0;
+        }
+        byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
+        byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
+        long count = store.count(startKeyInBytes, endKeyInBytes);
+
+        boolean isDeleteSuccess = false;
+        if (count > 0) {
+            isDeleteSuccess = store.delete(startKeyInBytes, endKeyInBytes);
+        }
+
+        log.info("delete store by part, id:{}, startKey:{}, endkey:{}, cnt:{}, isDeleteOK:{}, part: {}",
+            part.getId(),
+            Arrays.toString(startKeyInBytes), Arrays.toString(endKeyInBytes),
+            count, isDeleteSuccess, part);
+        return count;
     }
 
     public void onPartAvailable(RaftStoreInstancePart part) {

@@ -49,6 +49,7 @@ import lombok.Setter;
     @JsonSubTypes.Type(SortOperator.class),
     @JsonSubTypes.Type(SumUpOperator.class),
     @JsonSubTypes.Type(ValuesOperator.class),
+    @JsonSubTypes.Type(RemovePartOperator.class),
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractOperator implements Operator {

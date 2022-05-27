@@ -41,6 +41,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default long deletePart(byte[] startKey) {
+        throw new UnsupportedOperationException();
+    }
+
     default boolean exist(byte[] primaryKey) {
         throw new UnsupportedOperationException();
     }

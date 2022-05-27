@@ -16,7 +16,6 @@
 
 package io.dingodb.common.store;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import lombok.AllArgsConstructor;

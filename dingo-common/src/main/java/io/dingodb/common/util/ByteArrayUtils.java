@@ -24,6 +24,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 public class ByteArrayUtils {
 
     private ByteArrayUtils() {
@@ -46,6 +49,7 @@ public class ByteArrayUtils {
     }
 
     public static final byte[] EMPTY_BYTES = new byte[0];
+    public static final byte[] MAX_BYTES = new byte[] {(byte) 0xFF };
 
     public static int compare(byte[] bytes1, byte[] bytes2) {
         int n = Math.min(bytes1.length, bytes2.length);
@@ -56,6 +60,26 @@ public class ByteArrayUtils {
             return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
         }
         return bytes1.length - bytes2.length;
+    }
+
+
+    public static String enCodeBytes2Base64(byte[] input) {
+        byte[] encoded = Base64.getEncoder().encode(input);
+        return new String(encoded, StandardCharsets.UTF_8);
+    }
+
+    public static byte[] deCodeBase64String2Bytes(final String input) {
+        byte[] decoded = Base64.getDecoder().decode(input);
+        return decoded;
+    }
+
+    public static void main(String[] args) {
+        String input = "hello world";
+        String encoded = enCodeBytes2Base64(input.getBytes(StandardCharsets.UTF_8));
+
+        byte[] decodeBytes = deCodeBase64String2Bytes(encoded);
+        String decodeInStr = new String(decodeBytes, StandardCharsets.UTF_8);
+        System.out.println("=====> DeEncode: " + decodeInStr);
     }
 
 }
