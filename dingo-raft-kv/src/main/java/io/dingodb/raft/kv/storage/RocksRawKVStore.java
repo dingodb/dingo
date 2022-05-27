@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -172,6 +173,28 @@ public class RocksRawKVStore implements RawKVStore {
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public long count(byte[] startKey, byte[] endKey) {
+        long count = 0;
+        try (ReadOptions readOptions = new ReadOptions()) {
+            try (Snapshot snapshot = this.db.getSnapshot()) {
+                readOptions.setSnapshot(snapshot);
+                RocksIterator rocksIterator = db.newIterator(readOptions);
+                rocksIterator.seek(startKey);
+                while (rocksIterator.isValid()) {
+                    if (ByteArrayUtils.compare(rocksIterator.key(), endKey) >= 0) {
+                        break;
+                    }
+                    count++;
+                    rocksIterator.next();
+                }
+            }
+        }
+        log.info("the total count by range from {} to {} is: {}",
+            Arrays.toString(startKey), Arrays.toString(endKey), count);
+        return count;
     }
 
     @Override

@@ -134,6 +134,11 @@ public class MemoryRawKVStore implements RawKVStore {
     }
 
     @Override
+    public long count(byte[] startKey, byte[] endKey) {
+        return defaultDB.subMap(startKey, true, endKey, false).size();
+    }
+
+    @Override
     public CompletableFuture<Checksum> snapshotSave(String path) {
         return snapshotSave(path, null, null);
     }

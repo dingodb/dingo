@@ -48,6 +48,8 @@ public interface RawKVStore {
 
     boolean delete(byte[] startKey, byte[] endKey);
 
+    long count(byte[] startKey, byte[] endKey);
+
     CompletableFuture<Checksum> snapshotSave(String path);
 
     CompletableFuture<Checksum> snapshotSave(String path, byte[] startKey, byte[] endKey);

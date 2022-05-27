@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
+import io.dingodb.calcite.rel.DingoPartDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -44,6 +45,7 @@ import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
@@ -62,6 +64,7 @@ import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
+import io.dingodb.exec.operator.RemovePartOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
 import io.dingodb.exec.operator.PartScanOperator;
@@ -90,6 +93,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -614,4 +618,63 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         task.putOperator(operator);
         return operator.getOutputs();
     }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoPartDelete rel) {
+        MetaHelper metaHelper = new MetaHelper(rel.getTable());
+        CommonId tableId = metaHelper.getTableId();
+        TableDefinition td = metaHelper.getTableDefinition();
+        NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
+        List<Location> distributeNodes = metaHelper.getDistributes();
+        List<Output> outputs = new ArrayList<>(distributeNodes.size());
+        Map<Location, List<String>> groupAllPartKeysByAddress = groupAllPartKeysByAddress(parts);
+        for (Location node: distributeNodes) {
+            RemovePartOperator operator = new RemovePartOperator(
+                tableId,
+                groupAllPartKeysByAddress.get(node),
+                td.getTupleSchema(),
+                td.getKeyMapping()
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(node, idGenerator);
+            task.putOperator(operator);
+            OutputHint hint = new OutputHint();
+            hint.setToSumUp(true);
+            operator.getSoleOutput().setHint(hint);
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+
+    private Map<Location, List<String>> groupAllPartKeysByAddress(final NavigableMap<ComparableByteArray, Part> parts) {
+        Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
+        for (Map.Entry<ComparableByteArray, Part> entry : parts.entrySet()) {
+            Part part = entry.getValue();
+            List<String> startKeys = groupStartKeysByAddress.computeIfAbsent(part.getLeader(), k -> new ArrayList<>());
+            byte[] keyBytes = entry.getKey().getBytes();
+            String startKeyBase64 = ByteArrayUtils.enCodeBytes2Base64(keyBytes);
+            startKeys.add(startKeyBase64);
+            groupStartKeysByAddress.put(part.getLeader(), startKeys);
+            log.info("group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
+                part.getLeader(),
+                Arrays.toString(keyBytes),
+                startKeyBase64);
+        }
+
+        groupStartKeysByAddress.forEach((k, v) -> {
+            StringBuilder builder = new StringBuilder();
+            v.forEach(s -> {
+                byte[] bytes = ByteArrayUtils.deCodeBase64String2Bytes(s);
+                String result = Arrays.toString(bytes);
+                builder.append(result).append(",");
+                });
+
+            log.info("group all part start keys by address:{} startKeys:{}",
+                k.toString(),
+                builder.toString());
+        });
+        return  groupStartKeysByAddress;
+    }
+
 }
