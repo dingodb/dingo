@@ -9,3 +9,4 @@ server:
         group: COORDINATOR_RAFT
         port: 9181
         initRaftSvrList: node1:9181,node2:9181,node3:9181
+    monitorPort: 9088

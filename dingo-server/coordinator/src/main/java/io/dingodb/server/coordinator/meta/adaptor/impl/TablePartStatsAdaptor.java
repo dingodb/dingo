@@ -16,10 +16,8 @@
 
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
-import com.codahale.metrics.Counter;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.TablePartStats;
@@ -34,18 +32,6 @@ public class TablePartStatsAdaptor extends BaseStatsAdaptor<TablePartStats> {
     public TablePartStatsAdaptor(MetaStore metaStore) {
         super(metaStore);
         MetaAdaptorRegistry.register(TablePartStats.class, this);
-    }
-
-    @Override
-    public void onStats(TablePartStats stats) {
-        super.onStats(stats);
-        Counter counter = DingoMetrics.counter(stats.getTablePart().toString(), "table_part_size");
-        if (stats.getApproximateStats() != null && stats.getApproximateStats().size() > 0) {
-            counter.inc(stats.getApproximateStats()
-                .stream()
-                .map(TablePartStats.ApproximateStats::getSize)
-                .reduce(0L, Long::sum));
-        }
     }
 
     @Override

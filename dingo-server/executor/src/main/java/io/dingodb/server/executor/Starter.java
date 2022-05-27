@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.executor.config.ExecutorConfiguration;
+import io.prometheus.client.exporter.HTTPServer;
 
 public class Starter {
 
@@ -47,6 +48,7 @@ public class Starter {
         ClientConfiguration.instance()
             .setCoordinatorExchangeSvrList(ExecutorConfiguration.coordinatorExchangeSvrList());
 
+        HTTPServer httpServer = new HTTPServer(ExecutorConfiguration.monitorPort());
         ExecutorServer server = new ExecutorServer();
         server.start();
     }

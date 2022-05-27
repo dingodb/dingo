@@ -53,6 +53,7 @@ public class CoordinatorConfiguration {
     private RaftConfiguration raft;
     private RocksConfigration rocks = new RocksConfigration();
     private ScheduleConfiguration schedule = new ScheduleConfiguration();
+    private Integer monitorPort = 9088;
 
     public static String dataPath() {
         return INSTANCE.dataPath;
@@ -68,5 +69,9 @@ public class CoordinatorConfiguration {
 
     public static ScheduleConfiguration schedule() {
         return INSTANCE.schedule;
+    }
+
+    public static Integer monitorPort() {
+        return INSTANCE.monitorPort;
     }
 }

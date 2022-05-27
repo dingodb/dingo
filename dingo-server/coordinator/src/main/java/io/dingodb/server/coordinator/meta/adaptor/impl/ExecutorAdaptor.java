@@ -16,19 +16,13 @@
 
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
-import com.codahale.metrics.Gauge;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Executor;
-import io.dingodb.server.protocol.meta.Replica;
 
-import java.util.Optional;
-
-import static io.dingodb.common.metrics.DingoMetrics.name;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ZERO_DOMAIN;
@@ -45,14 +39,6 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
     @Override
     public CommonId metaId() {
         return META_ID;
-    }
-
-    @Override
-    protected void doSave(Executor meta) {
-        super.doSave(meta);
-        DingoMetrics.metricRegistry().register(name(meta.getId().toString(), "table_part_count"),
-            (Gauge<Integer>) () -> Optional.of(((ReplicaAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Replica.class))
-            .getByExecutor(meta.getId()).size()).orElse(0));
     }
 
     public CommonId newId(Executor executor) {

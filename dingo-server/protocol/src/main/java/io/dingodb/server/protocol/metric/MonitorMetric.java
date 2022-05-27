@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.server.protocol.metric;
 
-dependencies {
-    api group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-    implementation project(":dingo-common")
-    implementation project(":dingo-net-api")
-    implementation project(":dingo-meta-api")
-    implementation project(":dingo-store-api")
-    compile group: 'io.prometheus', name: 'simpleclient', version: 'simpleclient'.v()
-    compile group: 'io.prometheus', name: 'simpleclient_httpserver', version: 'simpleclient'.v()
+public enum MonitorMetric {
+    PART_COUNT("table_part_count"),
+    PART_SIZE("table_part_size"),
+    PART_READ("part_read"),
+    PART_WRITE("part_write");
+
+    private String value;
+
+    MonitorMetric(String value) {
+        this.value = value;
+    }
+
+    public String value() {
+        return value;
+    }
 }

@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class CsvParser implements Parser {
@@ -53,23 +55,33 @@ public class CsvParser implements Parser {
                 separatorChar = separator.charAt(0);
             }
             TableDefinition tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName);
+            if (tableDefinition == null) {
+                System.out.printf("Table:%s not found \n", tableName);
+                System.exit(1);
+            }
             BufferedReader br = new BufferedReader(new FileReader(localFile));
             String line = "";
             if (state) {
                 br.readLine();
             }
+            List<Object[]> records = new ArrayList<>();
             while ((line = br.readLine()) != null) {
                 String[] arr = mapper.readerFor(String[].class)
                     .with(schema.withColumnSeparator(separatorChar))
                     .readValue(line);
                 if (arr.length == tableDefinition.getColumns().size()) {
-                    TupleSchema schema = tableDefinition.getTupleSchema();
-                    Object[] record = schema.parse(arr);
-                    dingoClient.insert(record);
+                    try {
+                        TupleSchema schema = tableDefinition.getTupleSchema();
+                        Object[] record = schema.parse(arr);
+                        records.add(record);
+                    } catch (Exception e) {
+                        logger.warn("Data:{} parsing failed", line);
+                    }
                 } else {
                     logger.warn("The current data is missing a field value, skip it:{} ", line);
                 }
             }
+            dingoClient.insert(records);
 
         } catch (Exception ex) {
             logger.error("Error parsing csv message", ex);
