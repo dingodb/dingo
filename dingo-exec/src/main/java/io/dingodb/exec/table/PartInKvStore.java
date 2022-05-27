@@ -22,12 +22,15 @@ import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.table.Part;
 import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -99,6 +102,37 @@ public final class PartInKvStore implements Part {
         }
     }
 
+    @Override
+    public long getEntryCntAndDeleteByPart(@Nonnull List<String> startKeyList) {
+        final long startTime = System.currentTimeMillis();
+        long totalCnt = 0L;
+        try {
+            for (String partStartKey: startKeyList) {
+                long currentCnt = 0;
+                boolean isOK = false;
+                byte[] partStartKeyInBytes = ByteArrayUtils.deCodeBase64String2Bytes(partStartKey);
+                if (partStartKeyInBytes != null && partStartKeyInBytes.length > 0) {
+                    isOK = true;
+                    currentCnt = store.deletePart(partStartKeyInBytes);
+                } else {
+                    currentCnt = store.deletePart(ByteArrayUtils.EMPTY_BYTES);
+                }
+                totalCnt += currentCnt;
+                log.info("delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}",
+                    partStartKey,
+                    isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
+                    currentCnt,
+                    totalCnt);
+            }
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("getEntryCntAndDeleteByPart total part:{} delete cost: {} ms.",
+                    startKeyList.size(),
+                    System.currentTimeMillis() - startTime);
+            }
+            return totalCnt;
+        }
+    }
     @Override
     public boolean remove(@Nonnull Object[] tuple) {
         final long startTime = System.currentTimeMillis();

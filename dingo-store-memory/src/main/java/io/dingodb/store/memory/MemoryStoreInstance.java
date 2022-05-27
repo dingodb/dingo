@@ -47,6 +47,13 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
+    public long deletePart(byte[] startKey) {
+        db.clear();
+        int count = db.size();
+        return count;
+    }
+
+    @Override
     public boolean exist(byte[] primaryKey) {
         return db.containsKey(primaryKey);
     }

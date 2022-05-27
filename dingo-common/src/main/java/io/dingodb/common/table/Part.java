@@ -33,6 +33,8 @@ public interface Part {
 
     boolean remove(@Nonnull Object[] tuple);
 
+    long getEntryCntAndDeleteByPart(@Nonnull List<String> startKey);
+
     @Nullable
     Object[] getByKey(@Nonnull Object[] keyTuple);
 
