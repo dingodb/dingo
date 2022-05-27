@@ -39,4 +39,88 @@ public class DingoServiceImpl implements Service {
     public DingoServiceImpl(NetAddressProvider netAddressProvider) {
         proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, netAddressProvider);
     }
+
+    public ResultSetResponse apply(CatalogsRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ResultSetResponse apply(SchemasRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ResultSetResponse apply(TablesRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ResultSetResponse apply(TableTypesRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ResultSetResponse apply(TypeInfoRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ResultSetResponse apply(ColumnsRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public PrepareResponse apply(PrepareRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ExecuteResponse apply(ExecuteRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ExecuteResponse apply(PrepareAndExecuteRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public SyncResultsResponse apply(SyncResultsRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public FetchResponse apply(FetchRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public CreateStatementResponse apply(CreateStatementRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public CloseStatementResponse apply(CloseStatementRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public OpenConnectionResponse apply(OpenConnectionRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public CloseConnectionResponse apply(CloseConnectionRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ConnectionSyncResponse apply(ConnectionSyncRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public DatabasePropertyResponse apply(DatabasePropertyRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public CommitResponse apply(CommitRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public RollbackResponse apply(RollbackRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ExecuteBatchResponse apply(PrepareAndExecuteBatchRequest request) {
+        return this.proxyApi.apply(request);
+    }
+
+    public ExecuteBatchResponse apply(ExecuteBatchRequest request) {
+        return this.proxyApi.apply(request);
+    }
 }

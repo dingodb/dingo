@@ -22,6 +22,8 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaClientRuntimeException;
+import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -29,13 +31,16 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
+import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.parser.SqlParseException;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
@@ -49,9 +54,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.error.DingoException.EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP;
+import static io.dingodb.common.error.DingoException.RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
@@ -131,9 +139,44 @@ public class DingoMeta extends MetaImpl {
             );
             checkJobHasFailed(signature);
             return new ExecuteResult(ImmutableList.of(metaResultSet));
-        } catch (Exception e) {
+        } catch (SQLException | SqlParseException | RuntimeException e) {
             log.error("Catch execute exception:{}", e.toString(), e);
-            throw new RuntimeException(e);
+            String exceptMessage;
+            Integer exceptionCode = -1;
+            if (e instanceof CalciteContextException) {
+                exceptMessage = (((CalciteContextException) e).getMessage());
+                for (Pattern pat : EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.keySet()) {
+                    if (pat.matcher(exceptMessage).find()) {
+                        exceptionCode = EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.get(pat);
+                        break;
+                    }
+                }
+                throw new AvaticaClientRuntimeException(exceptMessage, exceptionCode,
+                    Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
+                    Collections.singletonList(""), null);
+            } else if (e instanceof RuntimeException) {
+                if (((RuntimeException) e).getCause() == null) {
+                    exceptMessage = e.getMessage();
+                } else {
+                    exceptMessage = ((RuntimeException) e).getCause().getMessage();
+                }
+                for (Pattern pat : RUNTIME_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
+                    if (pat.matcher(exceptMessage).find()) {
+                        exceptionCode = RUNTIME_EXCEPTION_PATTERN_CODE_MAP.get(pat);
+                        break;
+                    }
+                }
+                throw new AvaticaClientRuntimeException(exceptMessage, exceptionCode,
+                    Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
+                    Collections.singletonList(""), null);
+            } else if (e instanceof SQLException) {
+                throw new AvaticaClientRuntimeException(e.toString(), 12, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+                    AvaticaSeverity.ERROR, Collections.singletonList(""), null);
+            } else {
+                throw new AvaticaClientRuntimeException(e.toString(), 13, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+                    AvaticaSeverity.ERROR, Collections.singletonList(""), null);
+            }
+
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta prepareAndExecute total cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -184,6 +227,7 @@ public class DingoMeta extends MetaImpl {
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
             log.error("Fetch catch exception:{}", e.toString(), e);
+            // TODO AvaticaClientRuntimeException
             throw new RuntimeException(e.getMessage());
         } finally {
             if (log.isDebugEnabled()) {

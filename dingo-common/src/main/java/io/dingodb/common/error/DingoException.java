@@ -16,6 +16,8 @@
 
 package io.dingodb.common.error;
 
+import java.util.HashMap;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
 /**
@@ -55,6 +57,45 @@ import javax.annotation.Nonnull;
  * }</pre>
  */
 public class DingoException extends RuntimeException implements IndirectError {
+    /**
+     * The following exception patterns are used to convert to DingoException from Calcite.
+     */
+
+    public static HashMap<Pattern, Integer> EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP;
+    public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
+    static {
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP = new HashMap<>();
+        // "Table Not Found" from CalciteContextException (90002)
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Object .* not found"), 90002);
+        // "Table Already exists" from CalciteContextException (90007)
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"), 90007);
+        // "Column Not Found" from  CalciteContextException (90002)
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Unknown target column.*"), 90002);
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Column .* not found in any table"), 90002);
+
+        // "Insert Columns more than once" from CalciteContextException (90011)
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Target column .* is"
+            + " assigned more than once"), 90011);
+        // Insert Columns not equal" from CalciteContextException  (90013)
+        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Number of INSERT target columns "
+            + "\\(.*\\) does not equal number"), 90013);
+
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
+        // "Duplicated Columns" from RuntimeException (90009)
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Duplicate column names"), 90009);
+        // "Create Without Primary Key" from RuntimeException (90010)
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Primary keys are required"), 90010);
+        // "Insert Without Primary Key" from NullPointerException based on RuntimeException (90004)
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("java\\.lang\\.NullPointerException: null"), 90004);
+        // "Wrong Function Argument" from RunTimeException(90019)
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* does not match"), 90019);
+        // "Time Range Error"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* to time/date/datetime"), 90019);
+    }
+    // TODO
+    //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
+    //public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
+
     private static final long serialVersionUID = 5564571207617481306L;
 
     private final DingoError category;
