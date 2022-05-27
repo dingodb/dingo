@@ -14,17 +14,26 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.server.protocol.metric;
 
-dependencies {
-    api group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-    implementation project(":dingo-common")
-    implementation project(":dingo-net-api")
-    implementation project(":dingo-meta-api")
-    implementation project(":dingo-store-api")
-    compile group: 'io.prometheus', name: 'simpleclient', version: 'simpleclient'.v()
-    compile group: 'io.prometheus', name: 'simpleclient_httpserver', version: 'simpleclient'.v()
+import java.util.Arrays;
+import java.util.List;
+
+public class MetricLabel {
+
+    public static final String TABLE = "table";
+    public static final String PART = "part";
+    public static final String EXECUTOR = "executor";
+    public static final String INTERVAL = "interval";
+
+    public static final List<String> PART_LABELS = Arrays.asList(
+        TABLE,
+        PART,
+        EXECUTOR
+    );
+
+    public static final List<String> PART_INTERVAL_LABELS = Arrays.asList(
+        PART,
+        INTERVAL
+    );
 }

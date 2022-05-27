@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -43,11 +44,14 @@ public class JsonParser implements Parser {
     public void parse(String localFile, String tableName, DingoClient dingoClient) {
         this.dingoClient = dingoClient;
         this.tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            System.out.printf("Table:%s not found \n", tableName);
+            System.exit(1);
+        }
         try {
             readLocalFile(localFile);
         } catch (Exception ex) {
             logger.error("Error parsing json message", ex);
-            throw new RuntimeException("json parse error: ", ex);
         }
     }
 
@@ -55,12 +59,14 @@ public class JsonParser implements Parser {
         if (record.values().size() == this.tableDefinition.getColumns().size()) {
             TupleSchema schema = this.tableDefinition.getTupleSchema();
             String[] arr = new String[record.values().size()];
-            Object[] data = schema.parse(record.values().toArray(arr));
             try {
+                Object[] data = schema.parse(record.values().toArray(arr));
                 dingoClient.insert(data);
             } catch (Exception e) {
-                throw new RuntimeException("data insertion exception", e);
+                logger.error("Data:{} parsing failed", Arrays.toString(arr));
             }
+        } else {
+            logger.warn("The current data is missing a field value, skip it:{}", record.values());
         }
     }
 
