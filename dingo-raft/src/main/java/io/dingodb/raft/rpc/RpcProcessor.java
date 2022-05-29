@@ -16,10 +16,16 @@
 
 package io.dingodb.raft.rpc;
 
+import com.google.protobuf.Message;
+import io.dingodb.net.Tag;
+
 import java.util.concurrent.Executor;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface RpcProcessor<T> {
+
+    T parse(byte[] request);
+
     /**
      * Async to handle request with {@link RpcContext}.
      *
@@ -52,6 +58,10 @@ public interface RpcProcessor<T> {
     default ExecutorSelector executorSelector() {
         return null;
     }
+
+    Tag getRequestTag();
+
+    Tag getResponseTag();
 
     /**
      * Executor selector interface.

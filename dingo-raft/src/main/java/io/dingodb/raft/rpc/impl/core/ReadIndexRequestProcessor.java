@@ -16,12 +16,15 @@
 
 package io.dingodb.raft.rpc.impl.core;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.dingodb.net.Tag;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.rpc.RpcResponseClosureAdapter;
+import io.dingodb.net.RaftTag;
 
 import java.util.concurrent.Executor;
 
@@ -60,7 +63,26 @@ public class ReadIndexRequestProcessor extends NodeRequestProcessor<RpcRequests.
     }
 
     @Override
+    public RpcRequests.ReadIndexRequest parse(byte[] request) {
+        try {
+            return RpcRequests.ReadIndexRequest.parseFrom(request);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public String interest() {
         return RpcRequests.ReadIndexRequest.class.getName();
+    }
+
+    @Override
+    public Tag getRequestTag() {
+        return RaftTag.READINDEX_REQUEST;
+    }
+
+    @Override
+    public Tag getResponseTag() {
+        return RaftTag.READINDEX_RESPONSE;
     }
 }

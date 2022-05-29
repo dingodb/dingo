@@ -20,14 +20,12 @@ import io.dingodb.raft.option.NodeOptions;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.Delegate;
 
 @Getter
 @Setter
 @ToString
 public class RaftConfiguration {
     private String group = "COORDINATOR_RAFT";
-    private int port;
     private String initRaftSvrList;
     private NodeOptions node;
 }

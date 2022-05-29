@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.net;
+package io.dingodb.raft.rpc.dingo;
 
-public interface Tag {
+import com.google.protobuf.InvalidProtocolBufferException;
 
-    byte[] toBytes();
-
-    Tag load(byte[] bytes);
-
-    interface Provider {
-        Tag get();
-    }
-
-    int flag();
+@FunctionalInterface
+public interface ThrowableFunction<T, R> {
+    R apply(T t) throws InvalidProtocolBufferException;
 }

@@ -16,7 +16,9 @@
 
 package io.dingodb.raft.rpc.impl.cli;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.dingodb.net.Tag;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.entity.PeerId;
@@ -24,6 +26,7 @@ import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
+import io.dingodb.net.RaftTag;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.concurrent.Executor;
@@ -67,8 +70,27 @@ public class ResetPeerRequestProcessor extends BaseCliRequestProcessor<CliReques
     }
 
     @Override
+    public CliRequests.ResetPeerRequest parse(byte[] request) {
+        try {
+            return CliRequests.ResetPeerRequest.parseFrom(request);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public String interest() {
         return CliRequests.ResetPeerRequest.class.getName();
+    }
+
+    @Override
+    public Tag getRequestTag() {
+        return RaftTag.RESETPEER_REQUEST;
+    }
+
+    @Override
+    public Tag getResponseTag() {
+        return RaftTag.RESETPEER_RESPONSE;
     }
 
 }
