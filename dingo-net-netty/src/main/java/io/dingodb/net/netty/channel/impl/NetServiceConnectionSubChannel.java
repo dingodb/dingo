@@ -175,6 +175,9 @@ public class NetServiceConnectionSubChannel extends AbstractConnectionSubChannel
 
     @Override
     public void close() {
+        if (status == Status.CLOSE) {
+            return;
+        }
         if (channelPool != null) {
             status = Status.WAIT;
             channelPool.offer(this);

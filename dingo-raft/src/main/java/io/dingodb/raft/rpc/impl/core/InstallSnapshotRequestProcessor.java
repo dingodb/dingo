@@ -16,10 +16,13 @@
 
 package io.dingodb.raft.rpc.impl.core;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
+import io.dingodb.net.RaftTag;
 
 import java.util.concurrent.Executor;
 
@@ -46,7 +49,26 @@ public class InstallSnapshotRequestProcessor extends NodeRequestProcessor<RpcReq
     }
 
     @Override
+    public RpcRequests.InstallSnapshotRequest parse(byte[] request) {
+        try {
+            return RpcRequests.InstallSnapshotRequest.parseFrom(request);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public String interest() {
         return RpcRequests.InstallSnapshotRequest.class.getName();
+    }
+
+    @Override
+    public Tag getRequestTag() {
+        return RaftTag.INSTALLSNAPSHOT_REQUEST;
+    }
+
+    @Override
+    public Tag getResponseTag() {
+        return RaftTag.INSTALLSNAPSHOT_RESPONSE;
     }
 }

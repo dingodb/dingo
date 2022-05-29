@@ -45,6 +45,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Packet<Message>> {
         ByteArrayOutputStream bais = new ByteArrayOutputStream();
         byte[] tagBytes = tag.toBytes();
         bais.write(PrimitiveCodec.encodeVarInt(tagBytes.length));
+        bais.write(PrimitiveCodec.encodeVarInt(tag.flag()));
         bais.write(tagBytes);
         bais.flush();
         return bais.toByteArray();

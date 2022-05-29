@@ -39,4 +39,9 @@ public class GenericTag implements Tag {
     public Tag load(byte[] bytes) {
         return this;
     }
+
+    @Override
+    public int flag() {
+        return 1;
+    }
 }

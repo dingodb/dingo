@@ -58,7 +58,7 @@ public class TestRaftStoreInstance {
     public static void beforeAll() throws Exception {
         afterAll();
         DingoConfiguration.parse(TestRaftInstancePart.class.getResource("/config.yaml").getPath());
-        location = new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort());
+        location = new Location(DingoConfiguration.host(), DingoConfiguration.port());
         storeInstance = new RaftStoreInstance(TEST_PATH, id);
         store = storeInstance.getStore();
     }

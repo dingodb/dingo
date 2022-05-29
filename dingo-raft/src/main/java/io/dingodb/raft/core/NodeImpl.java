@@ -73,7 +73,7 @@ import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.rpc.RpcResponseClosure;
 import io.dingodb.raft.rpc.RpcResponseClosureAdapter;
-import io.dingodb.raft.rpc.impl.core.DefaultRaftClientService;
+import io.dingodb.raft.rpc.dingo.DingoRaftRpcClientService;
 import io.dingodb.raft.storage.LogManager;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.RaftMetaStorage;
@@ -1053,7 +1053,7 @@ public class NodeImpl implements Node, RaftServerService {
 
         // TODO RPC service and ReplicatorGroup is in cycle dependent, refactor it
         this.replicatorGroup = new ReplicatorGroupImpl();
-        this.rpcService = new DefaultRaftClientService(this.replicatorGroup);
+        this.rpcService = new DingoRaftRpcClientService();
         final ReplicatorGroupOptions rgOpts = new ReplicatorGroupOptions();
         rgOpts.setHeartbeatTimeoutMs(heartbeatTimeout(this.options.getElectionTimeoutMs()));
         rgOpts.setElectionTimeoutMs(this.options.getElectionTimeoutMs());
@@ -1167,7 +1167,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-                if (!this.rpcService.connect(peer.getEndpoint())) {
+                if (!this.rpcService.checkConnection(peer.getEndpoint(), false)) {
                     LOG.warn("Node {} channel init failed, address={}.", getNodeId(), peer.getEndpoint());
                     continue;
                 }
@@ -2780,7 +2780,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-                if (!this.rpcService.connect(peer.getEndpoint())) {
+                if (!this.rpcService.checkConnection(peer.getEndpoint(), false)) {
                     LOG.warn("Node {} channel init failed, address={}.", getNodeId(), peer.getEndpoint());
                     continue;
                 }

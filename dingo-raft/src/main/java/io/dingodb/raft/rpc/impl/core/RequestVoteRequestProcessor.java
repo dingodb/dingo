@@ -16,10 +16,13 @@
 
 package io.dingodb.raft.rpc.impl.core;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
+import io.dingodb.net.RaftTag;
 
 import java.util.concurrent.Executor;
 
@@ -27,6 +30,15 @@ import java.util.concurrent.Executor;
 public class RequestVoteRequestProcessor extends NodeRequestProcessor<RpcRequests.RequestVoteRequest> {
     public RequestVoteRequestProcessor(Executor executor) {
         super(executor, RpcRequests.RequestVoteResponse.getDefaultInstance());
+    }
+
+    @Override
+    public RpcRequests.RequestVoteRequest parse(byte[] request) {
+        try {
+            return RpcRequests.RequestVoteRequest.parseFrom(request);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -52,5 +64,15 @@ public class RequestVoteRequestProcessor extends NodeRequestProcessor<RpcRequest
     @Override
     public String interest() {
         return RpcRequests.RequestVoteRequest.class.getName();
+    }
+
+    @Override
+    public Tag getRequestTag() {
+        return RaftTag.REQUESTVOTE_REQUEST;
+    }
+
+    @Override
+    public Tag getResponseTag() {
+        return RaftTag.REQUESTVOTE_RESPONSE;
     }
 }

@@ -34,6 +34,4 @@ public class RaftConfiguration {
 
     private NodeOptions node;
     private String raftPath;
-    private Integer port;
-
 }

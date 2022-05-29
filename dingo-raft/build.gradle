@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
+    implementation project(":dingo-net-netty")
     compile group: 'org.ow2.asm', name: 'asm', version: 'asm'.v()
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: "protobuf".v()
     compile group: 'commons-lang', name: 'commons-lang', version: 'commons-lang'.v()
@@ -24,6 +25,7 @@ dependencies {
     compile group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compile group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
     compile group: 'com.alipay.sofa', name: 'hessian', version: 'hessian'.v()
+
 
     testImplementation group: 'org.hamcrest', name: 'hamcrest-library', version: 'hamcrest'.v()
     testImplementation group: 'org.openjdk.jmh', name: 'jmh-core', version: 'jmh'.v()
