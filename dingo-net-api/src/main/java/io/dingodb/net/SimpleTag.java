@@ -52,6 +52,11 @@ public class SimpleTag implements Tag {
     }
 
     @Override
+    public int flag() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return new String(tag, StandardCharsets.UTF_8);
     }

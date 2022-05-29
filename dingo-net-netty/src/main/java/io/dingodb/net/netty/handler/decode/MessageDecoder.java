@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.handler.decode;
 
 import io.dingodb.net.Message;
+import io.dingodb.net.RaftTag;
 import io.dingodb.net.SimpleMessage;
 import io.dingodb.net.SimpleTag;
 import io.dingodb.net.Tag;
@@ -26,6 +27,7 @@ import io.dingodb.net.netty.packet.Header;
 import io.dingodb.net.netty.packet.PacketMode;
 import io.dingodb.net.netty.packet.PacketType;
 import io.dingodb.net.netty.packet.impl.MessagePacket;
+import io.dingodb.net.netty.packet.message.GenericTag;
 import io.dingodb.net.netty.utils.Serializers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -93,9 +95,10 @@ public class MessageDecoder extends ByteToMessageDecoder {
         if (len == 0) {
             return null;
         }
+        Integer tagFlag = Serializers.readVarInt(buf);
         byte[] bytes = new byte[len];
         buf.readBytes(bytes);
-        return newTagInstance().load(bytes);
+        return newTagInstance(tagFlag).load(bytes);
     }
 
     private static Message readMessage(ByteBuf buf) {
@@ -126,8 +129,15 @@ public class MessageDecoder extends ByteToMessageDecoder {
         return msg;
     }
 
-    private static Tag newTagInstance() {
-        return SimpleTag.builder().build();
+    private static Tag newTagInstance(int tagFlag) {
+        switch (tagFlag) {
+            case 0 :
+                return SimpleTag.builder().build();
+            case 2 :
+                return RaftTag.builder().build();
+            default :
+                return null;
+        }
     }
 
     private static Message newMessageInstance(Tag tag) {
