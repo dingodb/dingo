@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.test.agg;
 
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -33,9 +34,8 @@ public class QueryAggTest {
     @BeforeAll
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
-        sqlHelper.execFile("/table-test-create.sql");
-        sqlHelper.execFile("/table-test-data.sql");
-        sqlHelper.execFile("/table-test1-create.sql");
+        sqlHelper.execFile(QueryAggTest.class.getResourceAsStream("table-test-create.sql"));
+        sqlHelper.execFile(QueryAggTest.class.getResourceAsStream("table-test-data.sql"));
     }
 
     @AfterAll
@@ -111,10 +111,10 @@ public class QueryAggTest {
             new String[]{"name", "expr$1"},
             TupleSchema.ofTypes("STRING", "LONG"),
             "Alice, 3\n"
-            + "Betty, 2\n"
-            + "Cindy, 2\n"
-            + "Doris, 1\n"
-            + "Emily, 1\n");
+                + "Betty, 2\n"
+                + "Cindy, 2\n"
+                + "Doris, 1\n"
+                + "Emily, 1\n");
     }
 
     @Test
@@ -163,17 +163,6 @@ public class QueryAggTest {
                 + "2\n"
                 + "1\n"
                 + "1\n"
-        );
-    }
-
-    @Test
-    public void testCount3() throws SQLException {
-        String sql = "select count(*) from test1";
-        sqlHelper.queryTest(
-            sql,
-            new String[]{"expr$0"},
-            TupleSchema.ofTypes("LONG"),
-            "0\n"
         );
     }
 
