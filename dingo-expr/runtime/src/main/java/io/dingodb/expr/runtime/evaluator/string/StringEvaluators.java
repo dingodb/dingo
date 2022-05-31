@@ -44,28 +44,4 @@ final class StringEvaluators {
     static String substring(@Nonnull String str, int begin) {
         return str.substring(begin);
     }
-
-    static String maxstring(String str1, String str2) {
-        if (str1 == null && str2 == null) {
-            return str1;
-        } else if (str1 == null) {
-            return str2;
-        } else if (str2 == null) {
-            return str1;
-        } else {
-            return str1.compareTo(str2) >= 0 ? str1 : str2;
-        }
-    }
-
-    static String minstring(String str1, String str2) {
-        if (str1 == null && str2 == null) {
-            return str1;
-        } else if (str1 == null) {
-            return str1;
-        } else if (str2 == null) {
-            return str2;
-        } else {
-            return str1.compareTo(str2) < 0 ? str1 : str2;
-        }
-    }
 }
