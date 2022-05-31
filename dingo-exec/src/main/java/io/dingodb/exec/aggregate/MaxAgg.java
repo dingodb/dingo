@@ -20,9 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.table.ElementSchema;
-import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.string.MaxstringEvaluatorFactory;
 
 import javax.annotation.Nonnull;
 
@@ -34,10 +32,6 @@ public class MaxAgg extends UnityEvaluatorAgg {
         @Nonnull @JsonProperty("type") ElementSchema type
     ) {
         super(index, type);
-        if (type.getTypeCode() == TypeCode.STRING) {
-            setEvaluator(MaxstringEvaluatorFactory.INSTANCE);
-        } else {
-            setEvaluator(MaxEvaluatorFactory.INSTANCE);
-        }
+        setEvaluator(MaxEvaluatorFactory.INSTANCE);
     }
 }

@@ -17,6 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.arithmetic;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DecimalEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.DoubleEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
@@ -24,10 +25,16 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.IntegerEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.LongEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import javax.annotation.Nonnull;
 
 @Evaluators(
@@ -232,6 +239,54 @@ final class ArithmeticEvaluators {
 
     @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal max(@Nonnull BigDecimal value0, BigDecimal value1) {
+        return value0.compareTo(value1) >= 0 ? value0 : value1;
+    }
+
+    /**
+     * These are string op, put here to share the same evaluator factory.
+     */
+
+    @Evaluators.Base(StringEvaluator.class)
+    static String min(@Nonnull String value0, String value1) {
+        return value0.compareTo(value1) <= 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(StringEvaluator.class)
+    static String max(@Nonnull String value0, String value1) {
+        return value0.compareTo(value1) >= 0 ? value0 : value1;
+    }
+
+    /**
+     * These are date time ops put here to share the same evaluator factory.
+     */
+
+    @Evaluators.Base(DateEvaluator.class)
+    static Date min(@Nonnull Date value0, Date value1) {
+        return value0.compareTo(value1) < 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(DateEvaluator.class)
+    static Date max(@Nonnull Date value0, Date value1) {
+        return value0.compareTo(value1) >= 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(TimeEvaluator.class)
+    static Time min(@Nonnull Time value0, Time value1) {
+        return value0.compareTo(value1) < 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(TimeEvaluator.class)
+    static Time max(@Nonnull Time value0, Time value1) {
+        return value0.compareTo(value1) >= 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp min(@Nonnull Timestamp value0, Timestamp value1) {
+        return value0.compareTo(value1) < 0 ? value0 : value1;
+    }
+
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp max(@Nonnull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 }
