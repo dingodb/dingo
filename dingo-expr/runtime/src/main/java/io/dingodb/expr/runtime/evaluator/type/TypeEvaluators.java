@@ -33,6 +33,7 @@ import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.evaluator.utils.Time2StringUtils;
 import io.dingodb.expr.runtime.exception.FailParseTime;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 
 import java.math.BigDecimal;
@@ -281,7 +282,7 @@ final class TypeEvaluators {
                 throw new FailParseTime(e.getMessage());
             }
         }
-        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        Date d = new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
         return d;
     }
 
@@ -302,30 +303,6 @@ final class TypeEvaluators {
 
     @Evaluators.Base(BooleanEvaluator.class)
     static boolean booleanType(@Nonnull Object value) {
-        if (value instanceof Number) {
-            BigDecimal decimal = new BigDecimal(String.valueOf(value));
-
-            int scale = decimal.scale();
-            int compareResult = decimal.compareTo(BigDecimal.ZERO);
-
-            if (compareResult == 0) {
-                if (scale == 0) {
-                    return false;
-                }
-                throw new RuntimeException("Invalid input parameter.");
-            } else if (compareResult < 0) {
-                throw new RuntimeException("Invalid input parameter.");
-            } else {
-                if (scale != 0) {
-                    throw new RuntimeException("Invalid input parameter.");
-                }
-                return true;
-            }
-        }
-
-        if (value instanceof Boolean) {
-            return (boolean) value;
-        }
-        throw new RuntimeException("Invalid input parameter.");
+        return RtLogicalOp.test(value);
     }
 }
