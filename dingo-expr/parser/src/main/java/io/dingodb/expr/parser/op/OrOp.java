@@ -22,6 +22,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.expr.runtime.op.logical.RtOrOp;
 
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public final class OrOp extends Op {
                         if (result == RtConst.FALSE) {
                             result = RtNull.INSTANCE;
                         }
-                    } else if ((boolean) v) {
+                    } else if (RtLogicalOp.test(v)) {
                         return RtConst.TRUE;
                     }
                 } else {

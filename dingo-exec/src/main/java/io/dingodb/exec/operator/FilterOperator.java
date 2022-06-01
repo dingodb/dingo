@@ -24,6 +24,7 @@ import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 @JsonTypeName("filter")
 @JsonPropertyOrder({"filter", "schema", "output"})
@@ -51,7 +52,7 @@ public final class FilterOperator extends SoleOutOperator {
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
-        if ((boolean) filter.eval(new TupleEvalContext(tuple))) {
+        if (RtLogicalOp.test(filter.eval(new TupleEvalContext(tuple)))) {
             return output.push(tuple);
         }
         return true;

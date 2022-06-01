@@ -26,6 +26,7 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -60,7 +61,10 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
         Iterator<Object[]> iterator = part.getIterator();
         if (filter != null) {
             filter.compileIn(schema);
-            iterator = Iterators.filter(iterator, tuple -> (boolean) filter.eval(new TupleEvalContext(tuple)));
+            iterator = Iterators.filter(
+                iterator,
+                tuple -> RtLogicalOp.test(filter.eval(new TupleEvalContext(tuple)))
+            );
         }
         if (selection != null) {
             iterator = Iterators.transform(iterator, selection::revMap);
