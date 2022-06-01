@@ -28,7 +28,9 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +52,8 @@ public class DingoDateTimeUtils implements Serializable {
         "-"
     ).collect(Collectors.toList());
 
-    public static final Pattern DATE_TIME_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2})");
+    public static final Pattern DATE_TIME_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2}\\.)");
+    public static final Pattern DATE_TIME_PRECISON_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2}\\.\\d{1,6})");
     public static final Pattern NEGTIVE_DATETIME_PATTERN = Pattern.compile("\\d*[a-zA-Z_]+\\d*");
 
     public static final List<Pattern> TIME_REX_PATTERN_LIST = Stream.of(
@@ -62,6 +65,18 @@ public class DingoDateTimeUtils implements Serializable {
         Pattern.compile("^\\d{4}\\.\\d+\\.\\d+(\\ \\d+:\\d+:\\d+){1}"),
         Pattern.compile("^\\d{4}-\\d+-\\d+"),
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}")
+    ).collect(Collectors.toList());
+
+    public static final List<Pattern> DATE_TIME_PRECISON_PATTERN_LIST = Stream.of(
+        Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d"),
+        Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d{2}"),
+        Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d{3}")
+    ).collect(Collectors.toList());
+
+    public static final List<DateTimeFormatter> DATE_TIME_PRECISON_FORMAT_LIST = Stream.of(
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SS"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
     ).collect(Collectors.toList());
 
     public static final Pattern TIMESTAMP_PATTERN = Pattern.compile("\\d{9,13}");
@@ -246,7 +261,35 @@ public class DingoDateTimeUtils implements Serializable {
                 log.error(errorMsg);
                 throw new Exception(errorMsg);
             }
-            Matcher m = DATE_TIME_PATTERN.matcher(originDateTime);
+
+            // Match datetime with precision, eg: yyyy-MM-dd HH:mm:ss.SSS
+            Matcher m = DATE_TIME_PRECISON_PATTERN.matcher(originDateTime);
+            if (m.find()) {
+                // Only three digits of precision are preserved
+                String[] datetimeArray = originDateTime.split("\\.");
+                if (datetimeArray.length == 2) {
+                    String precision = datetimeArray[1];
+                    if (precision.length() > 3) {
+                        precision = precision.substring(0, 3);
+                        originDateTime = datetimeArray[0] + "." + precision;
+                    }
+                }
+
+                int subscript = 0;
+                for (Pattern pattern : DATE_TIME_PRECISON_PATTERN_LIST) {
+                    if (pattern.matcher(originDateTime).matches()) {
+                        return LocalDateTime.parse(originDateTime, DATE_TIME_PRECISON_FORMAT_LIST.get(subscript));
+                    }
+                    subscript ++;
+                }
+
+                String errorMsg = originDateTime + " does not match any of the datetime pattern yyyy-MM-dd HH:mm:ss.S, "
+                    + "yyyy-MM-dd HH:mm:ss.SS , yyyy-MM-dd HH:mm:ss.SSS";
+                log.error(errorMsg);
+                throw new Exception(errorMsg);
+            }
+
+            m = DATE_TIME_PATTERN.matcher(originDateTime);
             // Only get the first result in the group.
             if (m.find()) {
                 originDateTime = originDateTime.split(" ")[0] + " " + m.group();
@@ -281,6 +324,13 @@ public class DingoDateTimeUtils implements Serializable {
                         + originDateTime, "");
             }
         }
+    }
+
+    public static DateTimeFormatter datetimeFormatByFsp(Integer fsp) {
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .appendFraction(ChronoField.MILLI_OF_SECOND, 0, fsp, true).toFormatter();
+        return formatter;
     }
 
     // TODO wait for validate rule for parsing date 2022-04-31.

@@ -241,7 +241,7 @@ final class TypeEvaluators {
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000L);
+        Timestamp ts = new Timestamp(localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
         return ts;
     }
 

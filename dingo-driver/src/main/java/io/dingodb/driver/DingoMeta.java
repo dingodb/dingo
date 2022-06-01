@@ -302,9 +302,10 @@ public class DingoMeta extends MetaImpl {
             }
             case "java.sql.timestamp": {
                 if (input instanceof Timestamp) {
-                    valueAfterCvt = ((Timestamp) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                    valueAfterCvt = ((Timestamp) input).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli();
                 } else if (input instanceof Long) {
-                    valueAfterCvt = new Timestamp((Long) input).toLocalDateTime().toEpochSecond(ZoneOffset.UTC) * 1000;
+                    valueAfterCvt = new Timestamp((Long) input).toLocalDateTime().toInstant(ZoneOffset.UTC)
+                        .toEpochMilli();
                 }
                 break;
             }
