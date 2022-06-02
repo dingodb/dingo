@@ -86,7 +86,7 @@ public class DingoDateDiffOp extends RtFun {
             if (errMsg.contains("FORMAT")) {
                 throw new FailParseTime(errMsg.split("FORMAT")[0], errMsg.split("FORMAT")[1]);
             } else {
-                throw new FailParseTime(errMsg, "");
+                throw new FailParseTime(errMsg);
             }
         }
         int extraDate0 = (timestamp0.getTime() % DAY_MILLI_SECONDS < ZONE_OFFSET_MILLI_SECONDS ? 0 : 1);

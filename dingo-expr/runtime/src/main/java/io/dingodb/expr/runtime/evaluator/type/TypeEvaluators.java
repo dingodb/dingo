@@ -213,7 +213,12 @@ final class TypeEvaluators {
         try {
             localTime = DingoDateTimeUtils.convertToTime(str);
         } catch (SQLException e) {
-            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+            String errMsg = e.getMessage();
+            if (errMsg.contains("FORMAT")) {
+                throw new FailParseTime(errMsg.split("FORMAT")[0], errMsg.split("FORMAT")[1]);
+            } else {
+                throw new FailParseTime(errMsg);
+            }
         }
         return DingoDateTimeUtils.convertLocalTimeToTime(localTime);
     }
