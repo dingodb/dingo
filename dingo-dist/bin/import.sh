@@ -21,7 +21,6 @@ JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback.xml \
      -classpath ${JAR_PATH} \
-     io.dingodb.cli.parser.Import \
+     io.dingodb.cli.source.Import \
      --config ${ROOT}/conf/client.yaml \
-     SOURCE \
      $@

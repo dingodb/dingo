@@ -21,13 +21,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.common.util.TypeMapping;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -35,11 +35,10 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.Calendar;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
-
-import static io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils.convertToDate;
-import static io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils.convertToTime;
 
 public class ElementSchema implements CompileContext {
     private static final String NULL = "NULL";
@@ -112,41 +111,83 @@ public class ElementSchema implements CompileContext {
         return new Schema.Field(name, schema);
     }
 
-    public Object parse(String str) {
-        if (str == null || str.equalsIgnoreCase("NULL")) {
+    public Object parse(Object obj) {
+        if (obj == null || obj.toString().equalsIgnoreCase("NULL")) {
             return null;
         }
 
         switch (type) {
             case TypeCode.INTEGER:
-                return Integer.parseInt(str);
+                return Integer.parseInt(obj.toString());
             case TypeCode.LONG:
-                return Long.parseLong(str);
+                return Long.parseLong(obj.toString());
             case TypeCode.DOUBLE:
-                return Double.parseDouble(str);
+                return Double.parseDouble(obj.toString());
             case TypeCode.BOOLEAN:
-                return Boolean.parseBoolean(str);
+                if (obj instanceof Number) {
+                    BigDecimal decimal = new BigDecimal(String.valueOf(obj));
+
+                    int scale = decimal.scale();
+                    int compareResult = decimal.compareTo(BigDecimal.ZERO);
+
+                    if (compareResult == 0) {
+                        if (scale == 0) {
+                            return false;
+                        }
+                    } else if (compareResult < 0) {
+                        throw new RuntimeException("Invalid input parameter.");
+                    } else {
+                        if (scale != 0) {
+                            throw new RuntimeException("Invalid input parameter.");
+                        }
+                        return true;
+                    }
+                }
+                if (obj instanceof String) {
+                    Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
+                    if (pattern.matcher(obj.toString()).matches()) {
+                        return parse(Integer.parseInt(obj.toString()));
+                    } else if (((String) obj).equalsIgnoreCase("true")
+                           ||  ((String) obj).equalsIgnoreCase("false")) {
+                        return parse(Boolean.parseBoolean(obj.toString()));
+                    } else {
+                        throw new RuntimeException("Invalid input parameter.");
+                    }
+                }
+                if (obj instanceof Boolean) {
+                    return obj;
+                }
+                throw new RuntimeException("Invalid input parameter.");
             case TypeCode.DATE:
                 try {
+                    if (obj instanceof Long) {
+                        return new java.util.Date(Long.parseLong(obj.toString()));
+                    }
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    return sdf.parse(str);
+                    return sdf.parse(obj.toString());
                 } catch (ParseException e) {
-                    throw new RuntimeException("Failed to parse \"" + str + "\" to date.");
+                    throw new RuntimeException("Failed to parse \"" + obj + "\" to date.");
                 }
             case TypeCode.TIME:
                 try {
-                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-                    return sdf.parse(str);
-                } catch (ParseException e) {
-                    throw new RuntimeException("Failed to parse \"" + str + "\" to time.");
+                    if (obj instanceof Long) {
+                        return new Time(Long.parseLong(obj.toString()));
+                    }
+                    LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
+                    return DingoDateTimeUtils.convertLocalTimeToTime(localTime);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
             case TypeCode.TIMESTAMP:
-                return Timestamp.valueOf(str);
+                if (obj instanceof Long) {
+                    return new Timestamp(Long.parseLong(obj.toString()));
+                }
+                return Timestamp.valueOf(obj.toString());
             case TypeCode.STRING:
             default:
                 break;
         }
-        return str;
+        return obj;
     }
 
     public Object convert(Object origin) {

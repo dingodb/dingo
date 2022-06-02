@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.parser;
+package io.dingodb.cli.source.impl.parser;
 
-public enum SourceDataFormat {
-    JSON,
-    CSV
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.client.DingoClient;
+
+import java.util.List;
+
+public class JsonParser extends AbstractParser {
+
+    @Override
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
+    }
 }
