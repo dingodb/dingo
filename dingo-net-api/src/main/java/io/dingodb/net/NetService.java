@@ -16,6 +16,7 @@
 
 package io.dingodb.net;
 
+import io.dingodb.common.Location;
 import io.dingodb.net.api.ApiRegistry;
 
 public interface NetService extends AutoCloseable {
@@ -23,27 +24,33 @@ public interface NetService extends AutoCloseable {
     /**
      * Return a new channel connected to the remote-end.
      *
-     * @param netAddress remote node
+     * @param location remote node
      * @return the channel connected to the remote node
      */
-    Channel newChannel(NetAddress netAddress);
+    Channel newChannel(Location location);
 
-    Channel newChannel(NetAddress netAddress, boolean keepAlive);
+    /**
+     * Returns new channel connected to the remote-end.
+     *
+     * @param location location
+     * @return the channel connected to the remote node
+     */
+    Channel newChannel(Location location, boolean keepAlive);
 
     /**
      * Register {@link MessageListenerProvider} on the net service,  When the remote-end send a message to current
      * service, will create new {@link MessageListener} instance to listen new channel.
      */
-    void registerMessageListenerProvider(Tag tag, MessageListenerProvider listenerProvider);
+    void registerMessageListenerProvider(String tag, MessageListenerProvider listenerProvider);
 
     /**
      * Unregister {@link MessageListenerProvider} on the net service.
      */
-    void unregisterMessageListenerProvider(Tag tag, MessageListenerProvider listenerProvider);
+    void unregisterMessageListenerProvider(String tag, MessageListenerProvider listenerProvider);
 
-    void registerTagMessageListener(Tag tag, MessageListener listener);
+    void registerTagMessageListener(String tag, MessageListener listener);
 
-    void unregisterTagMessageListener(Tag tag, MessageListener listener);
+    void unregisterTagMessageListener(String tag, MessageListener listener);
 
     /**
      * Listen the port, When receive message, notify the registered listener.

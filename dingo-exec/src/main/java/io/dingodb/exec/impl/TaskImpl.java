@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
@@ -40,15 +41,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonPropertyOrder({"jobId", "location", "operators", "runList"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
-    private static final ExecutorService executorService = Executors.newCachedThreadPool();
     @JsonProperty("id")
     @Getter
     private final Id id;
@@ -114,7 +112,7 @@ public final class TaskImpl implements Task {
             final Operator operator = operators.get(id);
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
-            executorService.execute(() -> {
+            Executors.execute("execute-" + jobId + "-" + id, () -> {
                 final long startTime = System.currentTimeMillis();
                 boolean isStatusOK = true;
                 String  statusErrMsg = "OK";

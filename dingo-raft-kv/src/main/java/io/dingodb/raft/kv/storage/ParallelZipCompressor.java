@@ -16,8 +16,7 @@
 
 package io.dingodb.raft.kv.storage;
 
-import io.dingodb.common.concurrent.ThreadFactoryBuilder;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.Utils;
 import io.dingodb.raft.util.CRC64;
 import io.dingodb.raft.util.Requires;
@@ -43,7 +42,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
@@ -56,14 +54,6 @@ import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
 
 public class ParallelZipCompressor {
     private static final Logger LOG = LoggerFactory.getLogger(ParallelZipCompressor.class);
-    private static final ExecutorService executorService = new ThreadPoolBuilder()
-        .name("Zip-executor")
-        .threadFactory(new ThreadFactoryBuilder()
-            .name("Zip-executor")
-            .daemon(true)
-            .group(new ThreadGroup("Zip-group"))
-            .build())
-        .build();
 
     private ParallelZipCompressor() {
     }
@@ -74,7 +64,7 @@ public class ParallelZipCompressor {
         }
         Checksum checksum = new CRC64();
         Files.createDirectories(Paths.get(zipFile.getParent()));
-        ParallelZipCreator zipCreator = new ParallelZipCreator(executorService, Deflater.DEFAULT_COMPRESSION);
+        ParallelZipCreator zipCreator = new ParallelZipCreator(Deflater.DEFAULT_COMPRESSION);
 
         compress(source, zipCreator, ZipEntry.DEFLATED);
 
@@ -132,7 +122,7 @@ public class ParallelZipCompressor {
             List<Future<Boolean>> futures = new ArrayList<>();
             for (Enumeration<ZipArchiveEntry> e = zipFile.getEntries(); e.hasMoreElements(); ) {
                 ZipArchiveEntry zipEntry = e.nextElement();
-                Future<Boolean> future = executorService.submit(() -> deCompress(zipFile, zipEntry, out));
+                Future<Boolean> future = Executors.submit("zip-decompress", () -> deCompress(zipFile, zipEntry, out));
                 futures.add(future);
             }
             for (Future<Boolean> future : futures) {

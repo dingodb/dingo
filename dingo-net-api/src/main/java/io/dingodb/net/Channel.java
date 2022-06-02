@@ -16,15 +16,24 @@
 
 package io.dingodb.net;
 
+import io.dingodb.common.Location;
+
 import java.util.function.Consumer;
 
 public interface Channel extends AutoCloseable {
+
+    /**
+     * Return channel id.
+     */
+    long channelId();
 
     /**
      * Send message to remote-end. If it is a new channel, then the message must specify the tag, the remote-end will
      * use the tag to determine who will process the message from this channel
      */
     void send(Message msg);
+
+    void send(Message message, boolean sync) throws InterruptedException;
 
     /**
      * Register message listener on the channel. When the remote-end returns a message, listener will be notified.
@@ -42,14 +51,14 @@ public interface Channel extends AutoCloseable {
     Status status();
 
     /**
-     * Returns current local address.
+     * Returns local location.
      */
-    NetAddress localAddress();
+    Location localLocation();
 
     /**
-     * Returns remote-end address.
+     * Returns remote-end location.
      */
-    NetAddress remoteAddress();
+    Location remoteLocation();
 
     /**
      * Returns true if current channel available.

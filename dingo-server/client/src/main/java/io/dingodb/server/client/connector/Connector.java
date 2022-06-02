@@ -16,10 +16,12 @@
 
 package io.dingodb.server.client.connector;
 
+import io.dingodb.common.Location;
 import io.dingodb.net.Channel;
-import io.dingodb.net.NetAddressProvider;
 
-public interface Connector extends NetAddressProvider {
+import java.util.function.Supplier;
+
+public interface Connector extends Supplier<Location> {
 
     Channel newChannel();
 

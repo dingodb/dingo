@@ -17,7 +17,7 @@
 package io.dingodb.raft.kv.storage;
 
 import com.google.protobuf.ByteString;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.Optional;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Iterator;
@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.Checksum;
 
@@ -49,10 +48,6 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
     protected final AtomicLong leaderTerm = new AtomicLong(-1L);
     protected final String id;
     protected final RaftRawKVStore store;
-
-    protected final ExecutorService executorService = new ThreadPoolBuilder()
-        .name(getClass().getSimpleName())
-        .build();
 
     public DefaultRaftRawKVStoreStateMachine(String id, RaftRawKVStore store) {
         this.store = store;
@@ -113,7 +108,7 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
             log.debug("Apply operation: {}", operation);
         }
         Object result = store.executeLocal(operation);
-        executorService.submit(() -> onApplyOperation(operation));
+        Executors.submit(id + " on apply", () -> onApplyOperation(operation));
         closures.forEach(closure -> Optional.ofNullable(closure)
             .filter(RaftClosure.class::isInstance)
             .ifPresent(raftClosure -> ((RaftClosure<?>) raftClosure).complete(result)));
@@ -126,7 +121,6 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
 
     @Override
     public void onShutdown() {
-        executorService.shutdown();
         log.info("onShutdown.");
     }
 

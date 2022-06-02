@@ -18,159 +18,83 @@ package io.dingodb.net.netty.api;
 
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.error.DingoException;
-import io.dingodb.common.util.PreParameters;
-import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
-import io.dingodb.net.NetAddressProvider;
-import io.dingodb.net.NetError;
-import io.dingodb.net.SimpleMessage;
 import io.dingodb.net.api.annotation.ApiDeclaration;
-import io.dingodb.net.netty.Constant;
-import io.dingodb.net.netty.NetServiceConfiguration;
-import io.dingodb.net.netty.NettyNetService;
-import io.dingodb.net.netty.NettyNetServiceProvider;
-import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
-import io.dingodb.net.netty.packet.PacketMode;
-import io.dingodb.net.netty.packet.PacketType;
-import io.dingodb.net.netty.packet.impl.MessagePacket;
-import io.dingodb.net.netty.utils.Serializers;
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.net.netty.channel.Channel;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import static io.dingodb.common.error.CommonError.EXEC;
-import static io.dingodb.common.error.CommonError.EXEC_INTERRUPT;
-import static io.dingodb.common.error.CommonError.EXEC_TIMEOUT;
-import static io.dingodb.common.error.DingoError.OK;
-import static io.dingodb.common.error.DingoError.UNKNOWN;
-import static java.lang.Thread.currentThread;
+import static io.dingodb.net.Message.API_OK;
+import static io.dingodb.net.netty.packet.Type.API;
 
-@Slf4j
-public class ApiProxy<T> implements InvocationHandler {
+public interface ApiProxy<T> extends InvocationHandler {
 
-    private static final NettyNetService netService = NettyNetServiceProvider.NET_SERVICE_INSTANCE;
+    Channel channel();
 
-    private final NetAddressProvider netAddressProvider;
-    private final T defined;
+    T defined();
 
-    private int timeout = NetServiceConfiguration.apiTimeout();
+    int timeout();
 
-    public ApiProxy(NetAddressProvider netAddressProvider) {
-        this.netAddressProvider = netAddressProvider;
-        this.defined = null;
-    }
-
-    public ApiProxy(NetAddressProvider netAddressProvider, T defined) {
-        this.netAddressProvider = netAddressProvider;
-        this.defined = defined;
-    }
+    void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws Exception;
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    default Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         ApiDeclaration declaration = method.getAnnotation(ApiDeclaration.class);
         if (declaration == null) {
-            if (defined == null) {
-                throw new UnsupportedOperationException();
-            }
-            return method.invoke(defined, args);
+            return invoke(method, args);
         }
         String name = declaration.name();
         if (name.isEmpty()) {
             name = method.toGenericString();
         }
-        return invoke(name, PreParameters.cleanNull(args, Constant.API_EMPTY_ARGS));
-    }
-
-    protected <T> T invoke(String name, Object[] args) throws Throwable {
-        NetServiceConnectionSubChannel channel = netService.newChannel(netAddressProvider.get());
-        MessagePacket packet = generatePacket(channel, name, args);
-        CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
-        channel.registerMessageListener(callHandler(future));
+        CompletableFuture<Object> future = new CompletableFuture<>();
         try {
-            channel.send(packet);
-            ByteBuffer buffer = future.get(timeout, TimeUnit.SECONDS);
-            if (buffer.hasRemaining()) {
-                return ProtostuffCodec.read(buffer);
-            } else {
-                return null;
-            }
-        } catch (InterruptedException e) {
-            EXEC_INTERRUPT.throwFormatError("invoke api on remote server", currentThread().getName(), e.getMessage());
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof DingoException) {
-                throw e.getCause();
-            }
-            EXEC.throwFormatError("invoke api on remote server", currentThread().getName(), e.getMessage());
-        } catch (TimeoutException e) {
-            EXEC_TIMEOUT.throwFormatError("invoke api on remote server", currentThread().getName(), e.getMessage());
-        } finally {
-            try {
-                channel.close();
-            } catch (Exception e) {
-                log.error("Close channel error, address: [{}].", channel.remoteAddress(), e);
-            }
+            Channel channel = channel();
+            channel.registerMessageListener(callHandler(future));
+            channel.closeListener(ch -> closeListener(future));
+            byte[] nameB = PrimitiveCodec.encodeString(name);
+            byte[] content = ProtostuffCodec.write(args);
+            invoke(channel, channel.buffer(API, nameB.length + content.length).put(nameB).put(content), future);
+        } catch (Exception e) {
+            future.completeExceptionally(e);
         }
-        throw UNKNOWN.asException();
+        if (method.getReturnType().isInstance(future)) {
+            return future;
+        }
+        int timeout = timeout();
+        return timeout == 0 ? future.join() : future.get(timeout, TimeUnit.SECONDS);
     }
 
-    private MessagePacket generatePacket(
-        NetServiceConnectionSubChannel channel,
-        String name,
-        Object[] args
-    ) throws IOException {
-        Message msg;
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            outputStream.write(PrimitiveCodec.encodeString(name));
-            for (int i = 0; i < args.length; i++) {
-                if (args[i] != null) {
-                    outputStream.write(PrimitiveCodec.encodeZigZagInt(i));
-                    byte[] bytes = ProtostuffCodec.write(args[i]);
-                    outputStream.write(PrimitiveCodec.encodeZigZagInt(bytes.length));
-                    outputStream.write(bytes);
-                }
-            }
-            outputStream.flush();
-            msg = SimpleMessage.builder().content(outputStream.toByteArray()).build();
+    default Object invoke(Method method, Object[] args) throws Exception {
+        T defined = defined();
+        if (defined == null) {
+            throw new UnsupportedOperationException();
         }
-        return MessagePacket.builder()
-            .channelId(channel.channelId())
-            .targetChannelId(channel.targetChannelId())
-            .type(PacketType.INVOKE)
-            .mode(PacketMode.API)
-            .content(msg)
-            .msgNo(channel.nextSeq())
-            .build();
+        return method.invoke(defined, args);
     }
 
-    private MessageListener callHandler(CompletableFuture<ByteBuffer> future) {
+    static MessageListener callHandler(CompletableFuture<Object> future) {
         return (message, channel) -> {
             try {
-                ByteBuffer buffer = ByteBuffer.wrap(message.toBytes());
-                Integer code = PrimitiveCodec.readZigZagInt(buffer);
-                if (OK.getCode() != code) {
-                    if (NetError.valueOf(code) != null) {
-                        NetError.valueOf(code).throwError();
-                    } else {
-                        EXEC.throwFormatError(
-                            "invoke remote api",
-                            currentThread().getName(),
-                            String.format("error code [%s], %s", code, ProtostuffCodec.read(buffer))
-                        );
-                    }
+                if (message.tag().equals(API_OK)) {
+                    future.complete(ProtostuffCodec.read(message.content()));
+                } else {
+                    future.completeExceptionally(ProtostuffCodec.read(message.content()));
                 }
-                future.complete(buffer);
             } catch (Exception e) {
                 future.completeExceptionally(e);
             }
         };
     }
+
+    static void closeListener(CompletableFuture<Object> future) {
+        if (!future.isDone()) {
+            future.completeExceptionally(new RuntimeException("Channel closed"));
+        }
+    }
+
 }

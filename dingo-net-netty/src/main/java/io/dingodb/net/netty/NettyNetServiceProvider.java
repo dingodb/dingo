@@ -19,19 +19,11 @@ package io.dingodb.net.netty;
 import com.google.auto.service.AutoService;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.netty.handler.MessageHandler;
-
-import java.util.ServiceLoader;
 
 @AutoService(NetServiceProvider.class)
 public class NettyNetServiceProvider implements NetServiceProvider {
 
     public static final NettyNetService NET_SERVICE_INSTANCE = new NettyNetService();
-
-    static {
-        ServiceLoader.load(MessageHandler.Provider.class).iterator().forEachRemaining(provider -> {
-        });
-    }
 
     @Override
     public NetService get() {

@@ -16,18 +16,12 @@
 
 package io.dingodb.server.protocol;
 
-import io.dingodb.net.SimpleTag;
-import io.dingodb.net.Tag;
-
-import java.nio.charset.StandardCharsets;
-
 public class Tags {
 
-    public static final Tag RAFT_SERVICE = new SimpleTag("RAFT_SERVICE".getBytes(StandardCharsets.UTF_8));
-    public static final Tag LISTEN_RAFT_LEADER = new SimpleTag("RAFT_SERVICE".getBytes(StandardCharsets.UTF_8));
-    public static final Tag META_SERVICE = new SimpleTag("META_SERVICE".getBytes(StandardCharsets.UTF_8));
-
-    public static final Tag SERVICE_STATS = new SimpleTag("SERVICE_STATS".getBytes(StandardCharsets.UTF_8));
+    public static final String RAFT_SERVICE = "RAFT_SERVICE";
+    public static final String LISTEN_RAFT_LEADER = "RAFT_SERVICE";
+    public static final String META_SERVICE = "META_SERVICE";
+    public static final String SERVICE_STATS = "SERVICE_STATS";
 
     private Tags() {
     }

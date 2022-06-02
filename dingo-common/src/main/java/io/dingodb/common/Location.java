@@ -18,14 +18,13 @@ package io.dingodb.common;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 
 @ToString(of = {"host", "port"})
-@EqualsAndHashCode
 public class Location implements Serializable {
     private static final long serialVersionUID = 4013504472715015258L;
 
@@ -35,6 +34,8 @@ public class Location implements Serializable {
     @JsonProperty("port")
     @Getter
     private final int port;
+    @Getter
+    private final String url;
 
     @JsonCreator
     public Location(
@@ -43,5 +44,27 @@ public class Location implements Serializable {
     ) {
         this.host = host;
         this.port = port;
+        this.url = String.format("%s:%s", host, port);
+    }
+
+    public String host() {
+        return host;
+    }
+
+    public int port() {
+        return port;
+    }
+
+    public InetSocketAddress toSocketAddress() {
+        return new InetSocketAddress(host, port);
+    }
+
+
+    public boolean equals(final Object other) {
+        return other == this || other instanceof Location && url.equals(((Location) other).url);
+    }
+
+    public int hashCode() {
+        return url.hashCode();
     }
 }

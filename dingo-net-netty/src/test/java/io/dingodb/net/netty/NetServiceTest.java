@@ -16,88 +16,48 @@
 
 package io.dingodb.net.netty;
 
-import io.dingodb.common.util.StackTraces;
+import io.dingodb.common.Location;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
-import io.dingodb.net.NetAddress;
-import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.SimpleTag;
-import io.dingodb.net.Tag;
-import io.dingodb.net.netty.channel.ConnectionSubChannel;
+import io.dingodb.net.api.annotation.ApiDeclaration;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ServiceLoader;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class NetServiceTest {
 
-    //@Test
+    public interface TestApi {
+        @ApiDeclaration
+        default void print(String s) {
+            System.out.println(s);
+        }
+    }
+
+    @Test
+    @Disabled
     public void hello() throws Exception {
         String hello = "hello";
-        Tag tag = SimpleTag.builder().tag("TEST".getBytes(StandardCharsets.UTF_8)).build();
+        String tag = "TEST";
 
-        ServiceLoader<NetServiceProvider> loader = ServiceLoader.load(NetServiceProvider.class);
-        NettyNetService netService = (NettyNetService) loader.iterator().next().get();
-
+        NettyNetService netService = NettyNetServiceProvider.NET_SERVICE_INSTANCE;
         netService.listenPort(19199);
-        netService.registerTagMessageListener(
-            tag, (msg, ch) -> assertThat(new String(msg.toBytes())).isEqualTo(hello));
-        netService.registerTagMessageListener(
-            tag, (msg, ch) -> System.out.println(
-                String.format("%s %s %s",
-                    new String(msg.toBytes()), ((ConnectionSubChannel) ch).channelId(), StackTraces.stack(2)))
-        );
-
-        Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(19199).build());
-
-        Message helloMsg = SimpleMessage.builder().tag(tag).content(hello.getBytes()).build();
-
-        channel.send(helloMsg);
-        Thread.sleep(100000);
-    }
-
-    //@Test
-    public void client() throws Exception {
-        Tag tag = SimpleTag.builder().tag("TEST".getBytes(StandardCharsets.UTF_8)).build();
-        String hello = "hello";
-
-        ServiceLoader<NetServiceProvider> loader = ServiceLoader.load(NetServiceProvider.class);
-        NettyNetService netService = (NettyNetService) loader.iterator().next().get();
-        netService.listenPort(26536);
-
-        Thread.sleep(5000);
-        netService.registerTagMessageListener(tag, (msg, ch) -> System.out.println(new String(msg.toBytes())));
-        for (int i = 0; i < 100; i++) {
-            Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(26535).build());
-            Message helloMsg = SimpleMessage.builder().tag(tag).content(hello.getBytes()).build();
-            channel.send(helloMsg);
-        }
-        Thread.sleep(100000);
-    }
-
-    //@Test
-    public void server() throws Exception {
-
-        Tag tag = SimpleTag.builder().tag("TEST".getBytes(StandardCharsets.UTF_8)).build();
-        String hello = "hello";
-
-        ServiceLoader<NetServiceProvider> loader = ServiceLoader.load(NetServiceProvider.class);
-        NettyNetService netService = (NettyNetService) loader.iterator().next().get();
-
-        netService.listenPort(26535);
-
-        Thread.sleep(5000);
-
-        netService.registerTagMessageListener(tag, (msg, ch) -> System.out.println(new String(msg.toBytes())));
-        for (int i = 0; i < 100; i++) {
-            Channel channel = netService.newChannel(NetAddress.builder().host("localhost").port(26536).build());
-            Message helloMsg = SimpleMessage.builder().tag(tag).content(hello.getBytes()).build();
-            channel.send(helloMsg);
-        }
-        Thread.sleep(10000000);
-
+        netService.registerTagMessageListener(tag, (message, ch) -> {
+            System.out.println(new String(message.content()));
+            ch.send(new Message(null, new byte[0]));
+        });
+        Channel channel = netService.newChannel(new Location("localhost", 19199));
+        channel.registerMessageListener((message, ch) -> {
+            try {
+                ch.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        channel.send(new Message(tag, hello.getBytes(StandardCharsets.UTF_8)), true);
+        netService.apiRegistry().register(TestApi.class, new TestApi() {});
+        netService.apiRegistry().proxy(TestApi.class, () -> new Location("localhost", 19199)).print("aaaa");
+        System.out.println("finish");
     }
 
 }

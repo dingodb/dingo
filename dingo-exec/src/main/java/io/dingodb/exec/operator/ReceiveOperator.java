@@ -80,10 +80,7 @@ public final class ReceiveOperator extends SourceOperator {
         tupleQueue = new LinkedBlockingDeque<>();
         messageListener = new ReceiveMessageListener();
         tag = TagUtil.tag(getTask().getJobId(), getId());
-        Services.NET.registerTagMessageListener(
-            TagUtil.getTag(tag),
-            messageListener
-        );
+        Services.NET.registerTagMessageListener(tag, messageListener);
         endpoint = new ReceiveEndpoint(host, port, tag);
         endpoint.init();
         endpoint.sendControlMessage(ControlStatus.READY);
@@ -120,10 +117,7 @@ public final class ReceiveOperator extends SourceOperator {
                 break;
             }
         }
-        Services.NET.unregisterTagMessageListener(
-            TagUtil.getTag(tag),
-            messageListener
-        );
+        Services.NET.unregisterTagMessageListener(tag, messageListener);
         return false;
     }
 
@@ -151,7 +145,7 @@ public final class ReceiveOperator extends SourceOperator {
         @Override
         public void onMessage(Message message, Channel channel) {
             try {
-                final byte[] content = message.toBytes();
+                final byte[] content = message.content();
                 int count = 0;
                 int offset = 0;
                 while (offset < content.length) {

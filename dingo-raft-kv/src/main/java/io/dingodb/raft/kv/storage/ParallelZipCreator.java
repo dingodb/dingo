@@ -16,6 +16,7 @@
 
 package io.dingodb.raft.kv.storage;
 
+import io.dingodb.common.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
 import org.apache.commons.compress.archivers.zip.StreamCompressor;
@@ -29,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
@@ -39,18 +39,15 @@ import static org.apache.commons.compress.archivers.zip.ZipArchiveEntryRequest.c
 @Slf4j
 public class ParallelZipCreator {
     private final AtomicInteger storeNum = new AtomicInteger(0);
-    private final ExecutorService executorService;
     private final Deque<Future<? extends ScatterZipOutputStream>> futures = new ConcurrentLinkedDeque<>();
     private final Deque<ScatterZipOutputStream> streams = new ConcurrentLinkedDeque<>();
     private final ThreadLocal<ScatterZipOutputStream> scatterStream = ThreadLocal.withInitial(this::scatterStream);
     private final int compressionLevel;
 
-    public ParallelZipCreator(ExecutorService executorService, int compressionLevel) throws IllegalArgumentException {
+    public ParallelZipCreator(int compressionLevel) throws IllegalArgumentException {
         if (compressionLevel < -1 || compressionLevel > 9) {
             throw new IllegalArgumentException("Compression level is expected between -1~9");
         }
-
-        this.executorService = executorService;
         this.compressionLevel = compressionLevel;
     }
 
@@ -71,7 +68,7 @@ public class ParallelZipCreator {
     }
 
     public void addArchiveEntry(ZipArchiveEntry zipArchiveEntry, InputStreamSupplier source) {
-        futures.add(executorService.submit(() -> {
+        futures.add(Executors.submit("zip-compress", () -> {
             ScatterZipOutputStream scatterStream = this.scatterStream.get();
             scatterStream.addArchiveEntry(createZipArchiveEntryRequest(zipArchiveEntry, source));
             return scatterStream;

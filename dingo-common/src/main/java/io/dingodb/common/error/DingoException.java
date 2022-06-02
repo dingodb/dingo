@@ -63,6 +63,7 @@ public class DingoException extends RuntimeException implements IndirectError {
 
     public static HashMap<Pattern, Integer> EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP;
     public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
+
     static {
         EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP = new HashMap<>();
         // "Table Not Found" from CalciteContextException (90002)

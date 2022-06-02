@@ -18,11 +18,10 @@ package io.dingodb.raft.rpc.impl.cli;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 
 import java.util.concurrent.Executor;
 
@@ -65,13 +64,13 @@ public class SnapshotRequestProcessor extends BaseCliRequestProcessor<CliRequest
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.SNAPSHOT_REQUEST;
+    public String getRequestTag() {
+        return Tags.SNAPSHOT_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.SNAPSHOT_RESPONSE;
+    public String getResponseTag() {
+        return Tags.SNAPSHOT_RESPONSE;
     }
 
 }

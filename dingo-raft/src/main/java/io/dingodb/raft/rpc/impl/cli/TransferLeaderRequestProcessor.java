@@ -18,14 +18,13 @@ package io.dingodb.raft.rpc.impl.cli;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.concurrent.Executor;
@@ -78,13 +77,13 @@ public class TransferLeaderRequestProcessor extends BaseCliRequestProcessor<CliR
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.TRANSFERLEADER_REQUEST;
+    public String getRequestTag() {
+        return Tags.TRANSFERLEADER_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.TRANSFERLEADER_RESPONSE;
+    public String getResponseTag() {
+        return Tags.TRANSFERLEADER_RESPONSE;
     }
 
 }

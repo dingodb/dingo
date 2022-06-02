@@ -20,8 +20,6 @@ import com.google.protobuf.Message;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.Connection;
 import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcProcessor;
@@ -54,9 +52,9 @@ public class DingoRaftRpcServer implements RpcServer {
     @Override
     public void registerProcessor(RpcProcessor processor) {
         netService.registerTagMessageListener(processor.getRequestTag(), (msg, ch) -> {
-            this.port = ch.localAddress().port();
+            this.port = ch.localLocation().port();
             RpcContext rpcCtx = new DingoRpcContext(processor.getResponseTag(), ch);
-            processor.handleRequest(rpcCtx, processor.parse(msg.toBytes()));
+            processor.handleRequest(rpcCtx, processor.parse(msg.content()));
         });
     }
 
@@ -68,18 +66,17 @@ public class DingoRaftRpcServer implements RpcServer {
 
 class DingoRpcContext implements RpcContext {
 
-    Tag tag;
+    String tag;
     Channel channel;
 
-    public DingoRpcContext(Tag tag, Channel changel) {
+    public DingoRpcContext(String tag, Channel changel) {
         this.tag = tag;
         this.channel = changel;
     }
 
     @Override
     public void sendResponse(Object responseObj) {
-        channel.send(SimpleMessage.builder()//.tag(this.tag)
-            .content(((Message)responseObj).toByteArray()).build());
+        channel.send(new io.dingodb.net.Message(null, ((Message)responseObj).toByteArray()));
     }
 
     @Override
@@ -113,6 +110,6 @@ class DingoRpcContext implements RpcContext {
 
     @Override
     public String getRemoteAddress() {
-        return channel.remoteAddress().toString();
+        return channel.remoteLocation().getUrl();
     }
 }
