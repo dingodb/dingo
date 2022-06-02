@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.parser;
+package io.dingodb.cli.source.impl.parser;
 
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
 
-public interface Parser {
-    public void parse(String localFile, String tableName, DingoClient dingoClient);
+import java.util.List;
 
-    public default void parse(
-        String localFile, String patternOrSeparator, String tableName, boolean state, DingoClient dingoClient) {
-        parse(localFile, tableName, dingoClient);
+public class CsvParser extends AbstractParser {
+
+    @Override
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
     }
 }

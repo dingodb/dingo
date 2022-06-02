@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.parser.impl;
+package io.dingodb.cli.source.impl.parser;
 
-import io.dingodb.cli.parser.Parser;
-import io.dingodb.cli.parser.ParserFactory;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.client.DingoClient;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
-public class DefaultParserFactory implements ParserFactory {
-
-    private Map<String, Parser> parsers;
-
-    /**
-     * Init DefaultParserFactory.
-     */
-    public DefaultParserFactory() {
-        parsers = new HashMap<>();
-        parsers.put("CSV", new CsvParser());
-        parsers.put("JSON", new JsonParser());
-    }
+public class KafkaAvroParser extends AbstractParser {
 
     @Override
-    public Parser getParser(String format) {
-        return parsers.get(format);
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
     }
 }

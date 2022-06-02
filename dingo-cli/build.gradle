@@ -20,11 +20,21 @@ plugins {
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
+repositories {
+    maven {
+        url 'http://packages.confluent.io/maven/'
+    }
+    mavenCentral()
+}
+
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'org.apache.commons', name: 'commons-csv', version: 'commons-csv'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-csv', version: 'jackson'.v()
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: 'kafka'.v()
+    implementation group: 'io.confluent', name: 'kafka-avro-serializer', version: 'confluent'.v()
+    compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.8.8'
 
     implementation project(":dingo-sdk")
     implementation project(":dingo-common")
