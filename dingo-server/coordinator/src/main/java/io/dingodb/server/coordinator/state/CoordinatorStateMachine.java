@@ -17,12 +17,11 @@
 package io.dingodb.server.coordinator.state;
 
 import com.google.protobuf.ByteString;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.SimpleMessage;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Iterator;
 import io.dingodb.raft.Node;
@@ -57,7 +56,6 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
 import java.util.zip.Checksum;
 
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
@@ -75,10 +73,6 @@ public class CoordinatorStateMachine implements StateMachine {
     private final NetService netService;
     private CoordinatorServerApi serverApi;
     private final Set<Channel> leaderListener = new CopyOnWriteArraySet<>();
-
-    private final ExecutorService executorService = new ThreadPoolBuilder()
-        .name(getClass().getSimpleName())
-        .build();
 
     public CoordinatorStateMachine(Node node, RawKVStore cache, RawKVStore store, MetaStore metaStore) {
         this.node = node;
@@ -192,8 +186,8 @@ public class CoordinatorStateMachine implements StateMachine {
                 netService
             );
         }
-        leaderListener.forEach(channel -> executorService.submit(() -> channel.send(SimpleMessage.EMPTY)));
-        executorService.submit(() -> {
+        leaderListener.forEach(channel -> Executors.submit("leader-notify", () -> channel.send(Message.EMPTY)));
+        Executors.submit("on-leader", () -> {
             ServiceLoader.load(BaseAdaptor.Creator.class).iterator()
                 .forEachRemaining(creator -> creator.create(metaStore));
             ServiceLoader.load(BaseStatsAdaptor.Creator.class).iterator()
@@ -244,7 +238,7 @@ public class CoordinatorStateMachine implements StateMachine {
     }
 
     private void onMessage(Message message, Channel channel) {
-        log.info("New leader listener channel, remote: [{}]", channel.remoteAddress());
+        log.info("New leader listener channel, remote: [{}]", channel.remoteLocation());
         leaderListener.add(channel);
         channel.closeListener(leaderListener::remove);
     }

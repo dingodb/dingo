@@ -54,7 +54,7 @@ public class ControlMessage {
     }
 
     public static ControlMessage fromMessage(@Nonnull Message message) throws JsonProcessingException {
-        String str = new String(message.toBytes(), StandardCharsets.UTF_8);
+        String str = new String(message.content(), StandardCharsets.UTF_8);
         return PARSER.parse(str, ControlMessage.class);
     }
 

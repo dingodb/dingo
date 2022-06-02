@@ -19,12 +19,10 @@ package io.dingodb.raft.rpc.dingo;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.dingodb.common.Location;
 import io.dingodb.net.Channel;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.option.RpcOptions;
@@ -41,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ServiceLoader;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public abstract class AbstractClientService implements ClientService {
@@ -62,7 +59,7 @@ public abstract class AbstractClientService implements ClientService {
 
     @Override
     public boolean checkConnection(final Endpoint endpoint, final boolean createIfAbsent) {
-        NetAddress remote = new NetAddress(endpoint.getIp(), endpoint.getPort());
+        Location remote = new Location(endpoint.getIp(), endpoint.getPort());
         Channel channel = null;
         try {
             channel = netService.newChannel(remote);
@@ -125,21 +122,20 @@ public abstract class AbstractClientService implements ClientService {
         return future;
     }
 
-    public <T extends Message> Future<Message> invokeWithDone(Endpoint endpoint, Tag tag, Message request,
+    public <T extends Message> Future<Message> invokeWithDone(Endpoint endpoint, String tag, Message request,
                                                               RpcResponseClosure<T> done, ThrowableFunction<byte[], T> parser) {
-        NetAddress remote = new NetAddress(endpoint.getIp(), endpoint.getPort());
-        io.dingodb.net.Message message = SimpleMessage.builder().tag(tag)
-            .content(request.toByteArray()).build();
+        Location remote = new Location(endpoint.getIp(), endpoint.getPort());
+        io.dingodb.net.Message message = new io.dingodb.net.Message(tag, request.toByteArray());
         try {
             Channel channel = netService.newChannel(remote, true);
             FutureImpl<Message> future = new FutureImpl<>(channel);
             channel.registerMessageListener((msg, ch) -> {
                 Message result = null;
                 try {
-                    result = parser.apply(msg.toBytes());
+                    result = parser.apply(msg.content());
                 } catch (InvalidProtocolBufferException e) {
                     try {
-                        result = RpcRequests.ErrorResponse.parseFrom(msg.toBytes());
+                        result = RpcRequests.ErrorResponse.parseFrom(msg.content());
                     } catch (InvalidProtocolBufferException ex) {
                         try {
                             ch.close();

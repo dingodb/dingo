@@ -17,16 +17,13 @@
 package io.dingodb.server.client.connector.impl;
 
 import io.dingodb.common.Location;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
-import io.dingodb.net.NetAddress;
-import io.dingodb.net.NetAddressProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.net.SimpleMessage;
 import io.dingodb.server.api.CoordinatorServerApi;
 import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.Connector;
@@ -40,22 +37,17 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
 
 @Slf4j
-public class CoordinatorConnector implements Connector, NetAddressProvider {
+public class CoordinatorConnector implements Connector, Supplier<Location> {
 
-    private static final ExecutorService executorService = new ThreadPoolBuilder()
-        .name("CoordinatorConnector")
-        .daemon(true)
-        .build();
-    
     private static final CoordinatorConnector DEFAULT_CONNECTOR;
 
     static {
@@ -65,9 +57,9 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
             final String coordSrvList = ClientConfiguration.coordinatorExchangeSvrList();
             List<String> servers = Arrays.asList(coordSrvList.split(","));
 
-            List<NetAddress> addrList = servers.stream()
+            List<Location> addrList = servers.stream()
                 .map(s -> s.split(":"))
-                .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
+                .map(ss -> new Location(ss[0], Integer.parseInt(ss[1])))
                 .collect(Collectors.toList());
 
             DEFAULT_CONNECTOR = new CoordinatorConnector(addrList);
@@ -80,17 +72,17 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
 
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
     private final AtomicReference<Channel> leaderChannel = new AtomicReference<>();
-    private final AtomicReference<NetAddress> leaderAddress = new AtomicReference<>();
+    private final AtomicReference<Location> leaderAddress = new AtomicReference<>();
 
-    private final Set<NetAddress> coordinatorAddresses = new HashSet<>();
-    private final Map<NetAddress, Channel> listenLeaderChannels = new ConcurrentHashMap<>();
+    private final Set<Location> coordinatorAddresses = new HashSet<>();
+    private final Map<Location, Channel> listenLeaderChannels = new ConcurrentHashMap<>();
 
     private long lastUpdateLeaderTime;
     private long lastUpdateNotLeaderChannelsTime;
 
     private AtomicBoolean refresh = new AtomicBoolean(false);
 
-    public CoordinatorConnector(List<NetAddress> coordinatorAddresses) {
+    public CoordinatorConnector(List<Location> coordinatorAddresses) {
         this.coordinatorAddresses.addAll(coordinatorAddresses);
         refresh();
     }
@@ -98,7 +90,7 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
     @Override
     public Channel newChannel() {
         get();
-        return netService.newChannel(leaderChannel.get().remoteAddress());
+        return netService.newChannel(leaderChannel.get().remoteLocation());
     }
 
     @Override
@@ -109,12 +101,12 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
     @Override
     public void refresh() {
         if (refresh.compareAndSet(false, true)) {
-            executorService.submit(this::initChannels);
+            Executors.submit("coordinator-connector-refresh", this::initChannels);
         }
     }
 
     @Override
-    public NetAddress get() {
+    public Location get() {
         int times = 5;
         int sleep = 200;
         while (!verify() && times-- > 0) {
@@ -129,16 +121,16 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
         if (!verify()) {
             CommonError.EXEC_TIMEOUT.throwFormatError("wait connector available", Thread.currentThread().getName(), "");
         }
-        return leaderChannel.get().remoteAddress();
+        return leaderChannel.get().remoteLocation();
     }
 
     private void initChannels() {
-        for (NetAddress address : coordinatorAddresses) {
+        for (Location address : coordinatorAddresses) {
             try {
                 Channel channel;
                 CoordinatorServerApi api = netService.apiRegistry().proxy(CoordinatorServerApi.class, () -> address);
                 Location leader = api.leader();
-                NetAddress leaderAddress = new NetAddress(leader.getHost(), leader.getPort());
+                Location leaderAddress = new Location(leader.getHost(), leader.getPort());
                 channel = netService.newChannel(leaderAddress);
                 connectedLeader(channel);
                 return;
@@ -150,11 +142,11 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
     }
 
     private void connected(Message message, Channel channel) {
-        log.info("Connected coordinator [{}] channel.", channel.remoteAddress());
-        coordinatorAddresses.add(channel.remoteAddress());
+        log.info("Connected coordinator [{}] channel.", channel.remoteLocation());
+        coordinatorAddresses.add(channel.remoteLocation());
         channel.closeListener(this::listenClose);
         channel.registerMessageListener(this::listenLeader);
-        channel.send(new SimpleMessage(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
+        channel.send(new Message(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
     }
 
     private void connectedLeader(Channel channel) {
@@ -164,29 +156,29 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
                 return;
             }
             lastUpdateLeaderTime = System.currentTimeMillis();
-            NetAddressProvider leaderAddress = channel::remoteAddress;
+            Supplier<Location> leaderLocation = channel::remoteLocation;
             coordinatorAddresses.addAll(netService.apiRegistry()
-                .proxy(CoordinatorServerApi.class, leaderAddress).getAll().stream()
-                .map(location -> new NetAddress(location.getHost(), location.getPort()))
+                .proxy(CoordinatorServerApi.class, leaderLocation).getAll().stream()
+                .map(location -> new Location(location.getHost(), location.getPort()))
                 .collect(Collectors.toList()));
             coordinatorAddresses.stream()
-                .filter(address -> !address.equals(channel.remoteAddress()))
-                .forEach(address -> executorService.submit(() -> listenLeaderChannels.computeIfAbsent(
+                .filter(address -> !address.equals(channel.remoteLocation()))
+                .forEach(address -> Executors.submit("CoordinatorConnector", () -> listenLeaderChannels.computeIfAbsent(
                     address,
                     wrap(this::connectFollow, e -> log.error("Open follow channel error, address: {}", address, e)))
                 ));
             lastUpdateNotLeaderChannelsTime = System.currentTimeMillis();
-            log.info("Connected coordinator leader success, remote: [{}]", channel.remoteAddress());
+            log.info("Connected coordinator leader success, remote: [{}]", channel.remoteLocation());
         } catch (Exception e) {
             log.error("Connected coordinator leader error, address: {}", channel, e);
         }
     }
 
     @Nonnull
-    private Channel connectFollow(NetAddress address) {
+    private Channel connectFollow(Location address) {
         Channel ch = netService.newChannel(address);
         ch.registerMessageListener(this::connected);
-        ch.send(new SimpleMessage(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
+        ch.send(new Message(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
         log.info("Open coordinator channel, address: [{}]", address);
         return ch;
     }
@@ -195,7 +187,7 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
         try {
             channel.close();
         } catch (Exception e) {
-            log.error("Close coordinator channel error, address: [{}].", channel.remoteAddress(), e);
+            log.error("Close coordinator channel error, address: [{}].", channel.remoteLocation(), e);
         }
     }
 
@@ -205,8 +197,8 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
 
     private synchronized boolean leaderChange(Channel channel) {
         Channel oldLeader = this.leaderChannel.get();
-        if (oldLeader != null && oldLeader.isActive() && channel.remoteAddress().equals(oldLeader.remoteAddress())) {
-            log.info("Coordinator leader not changed, remote: {}", channel.remoteAddress());
+        if (oldLeader != null && oldLeader.isActive() && channel.remoteLocation().equals(oldLeader.remoteLocation())) {
+            log.info("Coordinator leader not changed, remote: {}", channel.remoteLocation());
             return false;
         }
         if (!this.leaderChannel.compareAndSet(oldLeader, channel)) {
@@ -216,8 +208,8 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
         }
         lastUpdateLeaderTime = System.currentTimeMillis();
         log.info("Coordinator leader channel changed, new leader remote: [{}], old leader remote: [{}]",
-            channel.remoteAddress(),
-            oldLeader == null ? null : oldLeader.remoteAddress()
+            channel.remoteLocation(),
+            oldLeader == null ? null : oldLeader.remoteLocation()
         );
 
         if (oldLeader != null) {
@@ -229,11 +221,11 @@ public class CoordinatorConnector implements Connector, NetAddressProvider {
     }
 
     private void listenClose(Channel channel) {
-        this.listenLeaderChannels.remove(channel.remoteAddress(), channel);
-        log.info("Coordinator channel closed, remote: [{}]", channel.remoteAddress());
+        this.listenLeaderChannels.remove(channel.remoteLocation(), channel);
+        log.info("Coordinator channel closed, remote: [{}]", channel.remoteLocation());
         if (this.leaderChannel.compareAndSet(channel, null)) {
             lastUpdateLeaderTime = System.currentTimeMillis();
-            log.info("Coordinator leader channel closed, remote: [{}], then refresh", channel.remoteAddress());
+            log.info("Coordinator leader channel closed, remote: [{}], then refresh", channel.remoteLocation());
         }
     }
 

@@ -16,7 +16,7 @@
 
 package io.dingodb.raft.kv.storage;
 
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.Status;
@@ -25,28 +25,25 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Function;
 
 @Slf4j
-@AllArgsConstructor
 public class ReadIndexRunner {
 
-    private static final Executor executor = readIndexExecutor();
-
+    private final Executor executor;
     private final Node node;
     private final Function<RaftRawKVOperation, Object> executeFunc;
+
+    public ReadIndexRunner(Node node, Function<RaftRawKVOperation, Object> executeFunc) {
+        this.node = node;
+        this.executeFunc = executeFunc;
+        this.executor = Executors.executor(node.getGroupId() + "-read-index");
+    }
 
     public <T> CompletableFuture<T> readIndex(RaftRawKVOperation operation) {
         CompletableFuture<T> future = new CompletableFuture<>();
         this.node.readIndex(ByteArrayUtils.EMPTY_BYTES, new ReadIndexClosure<T>(future, operation));
         return future;
-    }
-
-    private static ThreadPoolExecutor readIndexExecutor() {
-        return new ThreadPoolBuilder()
-            .name("RaftRawKVStore-ReadIndex")
-            .build();
     }
 
     @AllArgsConstructor

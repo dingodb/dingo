@@ -18,11 +18,10 @@ package io.dingodb.raft.rpc.impl.core;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequestProcessor;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.storage.FileService;
 
 import java.util.concurrent.Executor;
@@ -53,12 +52,12 @@ public class GetFileRequestProcessor extends RpcRequestProcessor<RpcRequests.Get
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.GETFILE_REQUEST;
+    public String getRequestTag() {
+        return Tags.GETFILE_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.GETFILE_RESPONSE;
+    public String getResponseTag() {
+        return Tags.GETFILE_RESPONSE;
     }
 }

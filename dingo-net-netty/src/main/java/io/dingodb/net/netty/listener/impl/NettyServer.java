@@ -19,12 +19,10 @@ package io.dingodb.net.netty.listener.impl;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.connection.ConnectionManager;
-import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
+import io.dingodb.net.netty.connection.impl.NettyServerConnection;
 import io.dingodb.net.netty.handler.ExceptionHandler;
-import io.dingodb.net.netty.handler.InboundMessageHandler;
-import io.dingodb.net.netty.handler.decode.MessageDecoder;
-import io.dingodb.net.netty.handler.encode.MessageEncoder;
-import io.dingodb.net.netty.handler.handshake.ConnectionHandshakeHandler;
+import io.dingodb.net.netty.handler.MessageDecoder;
+import io.dingodb.net.netty.handler.MessageEncoder;
 import io.dingodb.net.netty.listener.PortListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -40,7 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @Builder
 public class NettyServer implements PortListener {
 
-    private final ConnectionManager<NetServiceNettyConnection> connectionManager;
+    private final ConnectionManager connectionManager;
     private final int port;
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
@@ -67,20 +65,17 @@ public class NettyServer implements PortListener {
     }
 
     private ChannelInitializer<SocketChannel> channelInitializer() {
-        MessageEncoder encoder = new MessageEncoder();
         return new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                NetServiceNettyConnection connection = new NetServiceNettyConnection(ch);
+                NettyServerConnection connection = new NettyServerConnection(ch);
                 ch.pipeline()
-                    .addLast(encoder)
-                    .addLast(new MessageDecoder())
-                    .addLast(new ConnectionHandshakeHandler(connection))
+                    .addLast(new MessageEncoder())
+                    .addLast(new MessageDecoder(connection))
                     .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.getHeartbeat(), 0, 0, SECONDS))
-                    .addLast(new InboundMessageHandler(connection))
                     .addLast(new ExceptionHandler(connection));
-                connectionManager.onOpenConnection(connection);
-                ch.closeFuture().addListener(future -> connectionManager.onCloseConnection(connection));
+                connectionManager.onOpen(connection);
+                ch.closeFuture().addListener(future -> connectionManager.onClose(connection));
             }
         };
     }

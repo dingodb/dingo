@@ -19,6 +19,7 @@ package io.dingodb.exec;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.Location;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
@@ -28,10 +29,8 @@ import io.dingodb.exec.impl.TaskImpl;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetError;
 import io.dingodb.net.NetService;
-import io.dingodb.net.SimpleTag;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +62,9 @@ public final class Services {
 
     private static final ExecutorService executorService = Executors.newWorkStealingPool();
 
+    public static final String TASK_TAG = "DINGO_TASK";
+    public static final String CTRL_TAG = "DINGO_CTRL";
+
     static {
         initMetaServices();
     }
@@ -83,9 +85,9 @@ public final class Services {
 
     public static void initNetService() {
         initControlMsgService();
-        NET.registerTagMessageListener(SimpleTag.TASK_TAG, (message, channel) -> {
+        NET.registerTagMessageListener(TASK_TAG, (message, channel) -> {
             final long startTime = System.currentTimeMillis();
-            String taskStr = new String(message.toBytes(), StandardCharsets.UTF_8);
+            String taskStr = new String(message.content(), StandardCharsets.UTF_8);
             if (log.isInfoEnabled()) {
                 log.info("Received task: {}", taskStr);
             }
@@ -111,7 +113,7 @@ public final class Services {
     }
 
     public static void initControlMsgService() {
-        NET.registerTagMessageListener(SimpleTag.CTRL_TAG, (message, channel) -> {
+        NET.registerTagMessageListener(CTRL_TAG, (message, channel) -> {
             EndpointManager.INSTANCE.onControlMessage(message);
         });
     }
@@ -120,7 +122,7 @@ public final class Services {
         int count = 0;
         while (count < 3) {
             try {
-                return Services.NET.newChannel(new NetAddress(host, port));
+                return Services.NET.newChannel(new Location(host, port));
             } catch (DingoException e) {
                 if (e.getCategory() == NetError.OPEN_CHANNEL_TIME_OUT
                     || e.getCategory() == NetError.OPEN_CONNECTION_TIME_OUT

@@ -16,31 +16,28 @@
 
 package io.dingodb.net.netty.api;
 
+import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.error.CommonError;
-import io.dingodb.common.error.DingoException;
 import io.dingodb.net.Message;
-import io.dingodb.net.NetAddressProvider;
 import io.dingodb.net.NetError;
-import io.dingodb.net.SimpleMessage;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.api.annotation.ApiDeclaration;
-import io.dingodb.net.netty.channel.ConnectionSubChannel;
-import io.dingodb.net.netty.packet.PacketMode;
-import io.dingodb.net.netty.packet.PacketType;
-import io.dingodb.net.netty.packet.impl.MessagePacket;
+import io.dingodb.net.error.ApiTerminateException;
+import io.dingodb.net.netty.Constant;
+import io.dingodb.net.netty.NetServiceConfiguration;
+import io.dingodb.net.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
+import static io.dingodb.net.Message.API_ERROR;
+import static io.dingodb.net.Message.API_OK;
 import static io.dingodb.net.netty.Constant.API_EMPTY_ARGS;
 import static java.lang.reflect.Proxy.newProxyInstance;
 
@@ -50,6 +47,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     public static final ApiRegistryImpl INSTANCE = new ApiRegistryImpl();
 
     private ApiRegistryImpl() {
+        register(HandshakeApi.class, HandshakeApi.INSTANCE);
     }
 
     public static ApiRegistryImpl instance() {
@@ -84,13 +82,47 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     }
 
     @Override
-    public <T> T proxy(Class<T> api, NetAddressProvider addressProvider) {
-        return proxy(api, addressProvider, null);
+    public <T> T proxy(Class<T> api, io.dingodb.net.Channel channel) {
+        return proxy(api, channel, NetServiceConfiguration.apiTimeout());
     }
 
     @Override
-    public <T> T proxy(Class<T> api, NetAddressProvider addressProvider, T defined) {
-        return (T) newProxyInstance(api.getClassLoader(), new Class[] {api}, new ApiProxy(addressProvider, defined));
+    public <T> T proxy(Class<T> api, io.dingodb.net.Channel channel, T defined) {
+        return proxy(api, new FixedChannelProxy<>((Channel) channel, defined, 0));
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, io.dingodb.net.Channel channel, int timeout) {
+        return proxy(api, channel, null, timeout);
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, io.dingodb.net.Channel channel, T defined, int timeout) {
+        return proxy(api, new FixedChannelProxy<>((Channel) channel, defined, timeout));
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, Supplier<Location> locationSupplier) {
+        return proxy(api, locationSupplier, null);
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, int timeout) {
+        return proxy(api, locationSupplier, null, timeout);
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined) {
+        return proxy(api, locationSupplier, defined, 0);
+    }
+
+    @Override
+    public <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined, int timeout) {
+        return proxy(api, new RandomChannelProxy<>(locationSupplier, defined, timeout));
+    }
+
+    private <T> T proxy(Class<T> api, ApiProxy apiProxy) {
+        return (T) newProxyInstance(api.getClassLoader(), new Class[] {api}, apiProxy);
     }
 
     @Override
@@ -98,86 +130,41 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         return method.invoke(proxy, args);
     }
 
-    public Object invoke(ConnectionSubChannel channel, MessagePacket packet) {
-        ByteBuffer buffer = ByteBuffer.wrap(packet.content().toBytes());
+    public Object invoke(Channel channel, ByteBuffer buffer) {
         String name = PrimitiveCodec.readString(buffer);
         Method method = declarationMap.get(name);
         Object result = null;
-        Message message = NetError.OK.message();
-
+        Message message = Constant.API_VOID;
         try {
             if (method == null) {
                 NetError.API_NOT_FOUND.throwFormatError(name);
             }
-            Object[] args = deserializeArgs(buffer, method.getParameterTypes());
+            Object[] args = deserializeArgs(channel, buffer, method.getParameterTypes());
             result = invoke(definedMap.get(name), method, args);
             if (result != null) {
-                message = returnMessage(NetError.OK.getCode(), result);
+                message = new Message(API_OK, ProtostuffCodec.write(result));
             }
-        } catch (DingoException e) {
-            message = returnMessage(e);
-            log.error("Invoke channel:{}, name:{} catch exception:{}",
-                channel.toString(), message.toString(), e);
-        } catch (InvocationTargetException e) {
-            message = returnMessage(e.getCause());
-            log.error("Invoke channel:{}, name:{} catch InvokeTargetException:{}",
-                channel.toString(), name, message.toString(), e);
+        } catch (ApiTerminateException e) {
+            log.error("Invoke [{}] from [{}/{}] is termination, message: {}.",
+                name, channel.connection().remoteLocation(), channel.channelId(), e.getMessage(), e);
+            return null;
         } catch (Throwable e) {
-            message = returnMessage(e);
-            log.error("Invoke channel:{}, name:{} catch other exception:{}.",
-                channel.toString(), name, message.toString(), e);
+            message = new Message(API_ERROR, ProtostuffCodec.write(e));
+            log.error("Invoke [{}] from [{}/{}] error, message: {}.",
+                name, channel.connection().remoteLocation(), channel.channelId(), e.getMessage(), e);
         }
-
-        channel.send(generatePacket(channel.nextSeq(), packet, message));
+        channel.send(message);
         return result;
     }
 
-    private Object[] deserializeArgs(ByteBuffer buffer, Class<?>[] parameterTypes) {
+    private Object[] deserializeArgs(Channel channel, ByteBuffer buffer, Class<?>[] parameterTypes) {
         if (parameterTypes == null || parameterTypes.length == 0) {
             return API_EMPTY_ARGS;
         }
-        Object[] args = new Object[parameterTypes.length];
-        while (true) {
-            Integer parameterIndex = PrimitiveCodec.readZigZagInt(buffer);
-            if (parameterIndex == null) {
-                break;
-            }
-            Integer len = PrimitiveCodec.readZigZagInt(buffer);
-            args[parameterIndex] = ProtostuffCodec.read(ByteBuffer.wrap(buffer.array(), buffer.position(), len));
-            buffer.position(buffer.position() + len);
+        Object[] args = ProtostuffCodec.read(buffer);
+        if (parameterTypes[0].isInstance(channel)) {
+            args[0] = channel;
         }
         return args;
-    }
-
-    private MessagePacket generatePacket(long nextSeq, MessagePacket packet, Message message) {
-        return MessagePacket.builder()
-            .channelId(packet.channelId())
-            .targetChannelId(packet.targetChannelId())
-            .type(PacketType.RETURN)
-            .mode(PacketMode.API)
-            .msgNo(nextSeq)
-            .content(message)
-            .build();
-    }
-
-    public Message returnMessage(Integer code, Object returnValue) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            outputStream.write(PrimitiveCodec.encodeZigZagInt(code));
-            outputStream.write(ProtostuffCodec.write(returnValue));
-            outputStream.flush();
-            return SimpleMessage.builder().content(outputStream.toByteArray()).build();
-        } catch (IOException e) {
-            log.error("Serialize/deserialize table info error.", e);
-            NetError.IO.message();
-        }
-        return NetError.UNKNOWN.message();
-    }
-
-    public Message returnMessage(Throwable returnValue) {
-        return returnMessage(CommonError.EXEC.getCode(), returnValue.getMessage());
-    }
-
-    public Message returnMessage(DingoException returnValue) {
-        return returnMessage(returnValue.getCode(), returnValue.getInfo());
     }
 }

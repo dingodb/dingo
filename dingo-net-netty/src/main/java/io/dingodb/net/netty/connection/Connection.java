@@ -16,18 +16,13 @@
 
 package io.dingodb.net.netty.connection;
 
-import io.dingodb.net.Message;
-import io.dingodb.net.netty.channel.ChannelId;
-import io.dingodb.net.netty.channel.ConnectionSubChannel;
-import io.dingodb.net.netty.packet.Packet;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
+import io.dingodb.common.Location;
+import io.dingodb.net.netty.channel.Channel;
+import io.netty.channel.socket.SocketChannel;
 
-import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
-public interface Connection<M> extends AutoCloseable {
-
-    void open() throws InterruptedException;
+public interface Connection extends AutoCloseable {
 
     /**
      * Return {@code true} if this connection is active.
@@ -37,70 +32,57 @@ public interface Connection<M> extends AutoCloseable {
     /**
      * Return this connection netty channel.
      */
-    Channel nettyChannel();
+    SocketChannel socketChannel();
 
     /**
-     * Returns buffer allocator.
+     * Returns the local location where this connection is connected to.
      */
-    ByteBufAllocator allocator();
+    Location localLocation();
 
     /**
-     * Returns the local address.
+     * Returns the remote location where this connection is connected to.
      */
-    InetSocketAddress localAddress();
-
-    /**
-     * Returns the remote address where this connection is connected to.
-     */
-    InetSocketAddress remoteAddress();
+    Location remoteLocation();
 
     /**
      * Returns generic sub channel.
      */
-    ConnectionSubChannel<M> genericSubChannel();
+    Channel channel();
+
+    ByteBuffer allocMessageBuffer(long channelId, int capacity);
 
     /**
      * Returns a new sub channel for current connection.
      */
-    ConnectionSubChannel<M> openSubChannel(boolean keepAlive);
-
-    /**
-     * Returns a new sub channel for current connection.
-     */
-    ConnectionSubChannel<M> openSubChannel(ChannelId targetChannelId, boolean keepAlive);
+    Channel newChannel(boolean keepAlive) throws InterruptedException;
 
     /**
      * Close sub channel with the specified {@code channel id}.
      */
-    void closeSubChannel(ChannelId channelId);
+    void closeChannel(long channelId);
 
     /**
-     * Returns sub channel by channel id, if channel id is null or channel not exists, will return null.
+     * Returns channel by channel id, if channel id is null or channel not exists, will return null.
      */
-    ConnectionSubChannel<M> getSubChannel(ChannelId channelId);
+    Channel getChannel(long channelId);
 
     /**
-     * Send handshake packet to remote-end.
+     * Send message to remote-end.
      */
-    <P extends Packet<M>> void send(P packet);
+    void send(ByteBuffer message) throws InterruptedException;
+
+    /**
+     * Async send message to remote-end.
+     */
+    void sendAsync(ByteBuffer message);
 
     /**
      * Receive message.
      */
-    void receive(Packet<Message> message);
+    void receive(ByteBuffer message);
 
-    ChannelPool getChannelPool();
+    @Override
+    default void close() {
 
-    interface Provider {
-
-        <C extends Connection<?>> C get(InetSocketAddress remoteAddress, int capacity);
-    }
-
-    interface ChannelPool {
-        io.dingodb.net.Channel poll();
-
-        void offer(io.dingodb.net.Channel channel);
-
-        void clear();
     }
 }

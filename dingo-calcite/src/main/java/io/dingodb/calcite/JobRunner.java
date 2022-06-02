@@ -24,8 +24,6 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.impl.JobImpl;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.SimpleTag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -34,6 +32,8 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 
 import javax.annotation.Nonnull;
+
+import static io.dingodb.exec.Services.TASK_TAG;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -108,8 +108,8 @@ public final class JobRunner {
             if (!location.equals(Services.META.currentLocation())) {
                 try {
                     Channel channel = Services.openNewSysChannel(location.getHost(), location.getPort());
-                    Message msg = SimpleMessage.builder()
-                        .tag(SimpleTag.TASK_TAG)
+                    Message msg = Message.builder()
+                        .tag(TASK_TAG)
                         .content(task.serialize())
                         .build();
                     channel.send(msg);

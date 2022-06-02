@@ -17,9 +17,9 @@
 package io.dingodb.server.coordinator.fake;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.Part;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ReportApi;
@@ -41,7 +41,7 @@ public class FakeTableStoreApi implements TableStoreApi {
         ApiRegistry apiRegistry = ServiceLoader.load(NetServiceProvider.class).iterator().next().get().apiRegistry();
         reportApi = apiRegistry.proxy(
             ReportApi.class,
-            () -> new NetAddress(DingoConfiguration.host(), DingoConfiguration.port())
+            () -> new Location(DingoConfiguration.host(), DingoConfiguration.port())
         );
         apiRegistry.register(TableStoreApi.class, this);
     }

@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 public class ExceptionHandler implements ChannelHandler {
     private static final Logger logger = LoggerFactory.getLogger(ExceptionHandler.class);
 
-    private Connection<?> connection;
+    private final Connection connection;
 
-    public ExceptionHandler(Connection<?> connection) {
+    public ExceptionHandler(Connection connection) {
         this.connection = connection;
     }
 

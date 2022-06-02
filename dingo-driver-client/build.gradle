@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
+    implementation project(':dingo-common')
     implementation project(':dingo-net-api')
     implementation project(':dingo-net-netty')
 }

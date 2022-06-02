@@ -18,12 +18,11 @@ package io.dingodb.raft.rpc.impl.cli;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.ArrayList;
@@ -99,13 +98,13 @@ public class RemoveLearnersRequestProcessor extends BaseCliRequestProcessor<CliR
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.REMOVELEARNERS_REQUEST;
+    public String getRequestTag() {
+        return Tags.REMOVELEARNERS_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.REMOVELEARNERS_RESPONSE;
+    public String getResponseTag() {
+        return Tags.REMOVELEARNERS_RESPONSE;
     }
 
 }

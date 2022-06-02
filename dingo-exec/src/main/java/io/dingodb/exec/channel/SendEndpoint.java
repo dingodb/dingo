@@ -17,10 +17,8 @@
 package io.dingodb.exec.channel;
 
 import io.dingodb.exec.Services;
-import io.dingodb.exec.util.TagUtil;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
-import io.dingodb.net.SimpleMessage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,8 +72,8 @@ public class SendEndpoint {
 
     public void send(byte[] content) {
         checkStatus();
-        Message msg = SimpleMessage.builder()
-            .tag(TagUtil.getTag(tag))
+        Message msg = Message.builder()
+            .tag(tag)
             .content(content)
             .build();
         channel.send(msg);

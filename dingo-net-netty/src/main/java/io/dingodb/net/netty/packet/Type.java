@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.net;
+package io.dingodb.net.netty.packet;
 
-public interface Tag {
-
-    byte[] toBytes();
-
-    Tag load(byte[] bytes);
-
-    interface Provider {
-        Tag get();
-    }
-
-    int flag();
+public enum Type {
+    USER_DEFINE,
+    COMMAND,
+    API,
+    HANDSHAKE,
 }

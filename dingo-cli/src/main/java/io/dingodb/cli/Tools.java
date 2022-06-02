@@ -18,9 +18,9 @@ package io.dingodb.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.Services;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.LogLevelApi;
@@ -99,7 +99,7 @@ public class Tools {
                     break;
                 }
                 LogLevelApi proxy = netService.apiRegistry()
-                    .proxy(LogLevelApi.class, () -> new NetAddress(serverHost, serverPort));
+                    .proxy(LogLevelApi.class, () -> new Location(serverHost, serverPort));
                 try {
                     proxy.setLevel(className, level);
                 } catch (ClassNotFoundException e) {

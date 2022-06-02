@@ -17,7 +17,7 @@
 package io.dingodb.server.coordinator.schedule;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -56,12 +55,6 @@ public class ClusterScheduler implements ServerApi, ReportApi {
     public static ClusterScheduler instance() {
         return INSTANCE;
     }
-
-    private final ExecutorService executorService = new ThreadPoolBuilder()
-        .maximumThreads(Integer.MAX_VALUE)
-        .keepAliveSeconds(60L)
-        .name("ClusterScheduler")
-        .build();
 
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
@@ -110,7 +103,7 @@ public class ClusterScheduler implements ServerApi, ReportApi {
     public CommonId registerExecutor(Executor executor) {
         log.info("Register executor {}", executor);
         CommonId id = executorAdaptor.save(executor);
-        executorService.submit(() ->
+        Executors.submit("add-executor-to-tables", () ->
             tableSchedulers.values().forEach(scheduler -> scheduler.addStore(executor.getId(), executor.location()))
         );
         log.info("Register executor success id: [{}], {}.", id, executor);

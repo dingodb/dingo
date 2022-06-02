@@ -27,7 +27,7 @@ import java.util.Arrays;
 public class PrimitiveCodec {
 
     public static final int INT_MAX_LEN = 5;
-    public static final int LONG_MAX_LEN = 9;
+    public static final int LONG_MAX_LEN = 10;
 
     private PrimitiveCodec() {
     }
@@ -74,7 +74,7 @@ public class PrimitiveCodec {
      * Encode {@code value} using VarInt.
      */
     public static byte[] encodeVarLong(long value) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(5);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(LONG_MAX_LEN);
         while ((value & ~0x7F) != 0) {
             outputStream.write((byte) ((value & 0x7F) | 0x80));
             value >>>= 7;
@@ -179,6 +179,24 @@ public class PrimitiveCodec {
         long result = 0;
         while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
             result ^= ((b = (bytes[position++] & 0XFF)) & 0X7F) << ((LONG_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
+        }
+        return result;
+    }
+
+    /**
+     * Read long from {@code buffer}, and use VarLong load.
+     */
+    public static Long readVarLong(ByteBuffer buf) {
+        int readerIndex = buf.position();
+        int maxBytes = LONG_MAX_LEN;
+        long b = Byte.MAX_VALUE + 1;
+        long result = 0;
+        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
+            if (!buf.hasRemaining()) {
+                buf.position(readerIndex);
+                return null;
+            }
+            result ^= ((b = (buf.get() & 0XFF)) & 0X7F) << ((LONG_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
         }
         return result;
     }

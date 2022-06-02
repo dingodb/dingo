@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ThreadPoolBuilder {
 
-    private static final Integer AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final RejectedExecutionHandler DEFAULT_HANDLER = new ThreadPoolExecutor.AbortPolicy();
+    public static final Integer AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
+    public static final RejectedExecutionHandler DEFAULT_HANDLER = new ThreadPoolExecutor.AbortPolicy();
 
     private String name;
     private Integer coreThreads = AVAILABLE_PROCESSORS;
@@ -117,6 +118,14 @@ public class ThreadPoolBuilder {
             threadFactory,
             handler
         );
+    }
+
+    public ScheduledThreadPoolExecutor buildSchedule() {
+        PreParameters.nonNull(name, "Name must not null.");
+        workQueue = PreParameters.cleanNull(workQueue, LinkedBlockingQueue::new);
+        handler = PreParameters.cleanNull(handler, DEFAULT_HANDLER);
+        threadFactory = PreParameters.cleanNull(threadFactory, this::generateThreadFactory);
+        return new ScheduledThreadPoolExecutor(coreThreads, threadFactory, handler);
     }
 
 }

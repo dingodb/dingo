@@ -17,6 +17,7 @@
 package io.dingodb.sdk.client;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
@@ -24,7 +25,6 @@ import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
@@ -234,7 +234,7 @@ public class DingoClient extends ClientBase {
         }
         Part part = parts.get(byteArray);
         ExecutorApi executor = apiRegistry
-            .proxy(ExecutorApi.class, () -> new NetAddress(part.getLeader().getHost(), part.getLeader().getPort()));
+            .proxy(ExecutorApi.class, () -> new Location(part.getLeader().getHost(), part.getLeader().getPort()));
         partsApi.put(byteArray, executor);
         return executor;
     }

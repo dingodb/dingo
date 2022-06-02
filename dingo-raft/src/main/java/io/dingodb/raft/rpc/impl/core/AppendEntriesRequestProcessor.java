@@ -18,7 +18,6 @@ package io.dingodb.raft.rpc.impl.core;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.JRaftUtils;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
@@ -28,7 +27,7 @@ import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.rpc.impl.ConnectionClosedEventListener;
 import io.dingodb.raft.util.RpcFactoryHelper;
 import io.dingodb.raft.util.Utils;
@@ -469,13 +468,13 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.APPENDENTRIES_REQUEST;
+    public String getRequestTag() {
+        return Tags.APPENDENTRIES_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.APPENDENTRIES_RESPONSE;
+    public String getResponseTag() {
+        return Tags.APPENDENTRIES_RESPONSE;
     }
 
     // TODO called when shutdown service.
