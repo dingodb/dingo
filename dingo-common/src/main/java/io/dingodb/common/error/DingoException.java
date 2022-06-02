@@ -92,6 +92,9 @@ public class DingoException extends RuntimeException implements IndirectError {
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* does not match"), 90019);
         // "Time Range Error"
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* to time/date/datetime"), 90019);
+        // "Empty String Convert To Time Error"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("is not allowed to convert to time type"), 90019);
+
     }
     // TODO
     //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;

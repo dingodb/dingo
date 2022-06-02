@@ -380,6 +380,9 @@ public class DingoDateTimeUtils implements Serializable {
     public static LocalTime convertToTime(String originTime) throws SQLException {
         int index = 0;
         int length = originTime.length();
+        if (length == 0) {
+            throw new SQLException(" '' is not allowed to convert to time type.");
+        }
         while (length < 6) {
             originTime = "0" + originTime;
             length++;

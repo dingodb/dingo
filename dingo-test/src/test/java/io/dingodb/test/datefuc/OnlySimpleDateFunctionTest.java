@@ -1117,6 +1117,21 @@ public class OnlySimpleDateFunctionTest {
     }
 
     @Test
+    @Disabled
+    public void testTimeFormat7() throws SQLException {
+        String sql = "select time_format('24:00:00', '%H.%i.%s')";
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("18.00.00");
+                }
+            }
+        }
+    }
+
+    @Test
     public void testGetZoneOffset() {
         Instant instant = Instant.now(); //can be LocalDateTime
         ZoneId systemZone = ZoneId.systemDefault(); // my timezone

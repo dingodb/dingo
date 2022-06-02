@@ -70,6 +70,12 @@ public class DingoTimeFormatOp extends RtFun {
         } else if (value instanceof Time) {
             return timeFormat((Time) values[0], formatStr);
         } else {
+            // Check value in hour position greater than 24.
+            String time = (String) values[0];
+            String hour =  time.contains(":")? time.split(":")[0]: "0";
+            if (Integer.valueOf(hour) >= TIME_PIVOT / 10000) {
+                throw new FailParseTime("hour " + hour + " can only be less than " + TIME_PIVOT / 10000);
+            }
             return timeFormat((String) values[0], formatStr);
         }
     }
