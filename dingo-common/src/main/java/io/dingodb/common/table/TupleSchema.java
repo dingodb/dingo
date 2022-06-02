@@ -128,6 +128,14 @@ public class TupleSchema implements CompileContext {
         return result;
     }
 
+    public Object[] parse(@Nonnull Object[] row) {
+        Object[] result = new Object[row.length];
+        for (int i = 0; i < row.length; ++i) {
+            result[i] = elementSchemas[i].parse(row[i]);
+        }
+        return result;
+    }
+
     public Object[] convert(@Nonnull Object[] tuple) {
         Object[] result = new Object[tuple.length];
         for (int i = 0; i < tuple.length; ++i) {

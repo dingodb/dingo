@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.parser;
+package io.dingodb.cli.source;
 
-public interface ParserFactory {
-    Parser getParser(String format);
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.client.DingoClient;
+
+import java.util.List;
+
+public interface Parser {
+
+    void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient);
 }

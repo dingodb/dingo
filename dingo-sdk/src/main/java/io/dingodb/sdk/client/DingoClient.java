@@ -221,6 +221,10 @@ public class DingoClient extends ClientBase {
     private void refreshTableMeta() {
         this.tableId = metaClient.getTableId(tableName);
         TableDefinition tableDefinition = metaClient.getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            System.out.printf("Table:%s not found \n", tableName);
+            System.exit(1);
+        }
         this.parts = metaClient.getParts(tableName);
         this.codec = new KeyValueCodec(tableDefinition.getTupleSchema(), tableDefinition.getKeyMapping());
         this.ps = new RangeStrategy(tableDefinition, parts.navigableKeySet());

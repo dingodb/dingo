@@ -14,38 +14,36 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.parser.impl;
+package io.dingodb.cli.source.impl.fetch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import io.dingodb.cli.parser.Parser;
+import com.google.common.base.Strings;
+import io.dingodb.cli.source.Fetch;
+import io.dingodb.cli.source.Parser;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TupleSchema;
 import io.dingodb.sdk.client.DingoClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
-public class CsvParser implements Parser {
-    private static final Logger logger = LoggerFactory.getLogger(CsvParser.class);
+@Slf4j
+public class CsvFetch implements Fetch {
+
     private ObjectMapper mapper = new CsvMapper();
     private CsvSchema schema = CsvSchema.builder()
         .setAllowComments(true)
         .build();
 
     @Override
-    public void parse(String localFile, String tableName, DingoClient dingoClient) {
-        throw new RuntimeException("Enter wrong parse method");
-    }
-
-    @Override
-    public void parse(String localFile, String separator, String tableName, boolean state, DingoClient dingoClient) {
+    public List<Object[]> fetch(String localFile, String tableName, String separator, boolean state) {
+        List<Object[]> records = new ArrayList<>();
         try {
             separator = Optional.of(separator.trim()).orElse(",");
             char separatorChar;
@@ -54,37 +52,27 @@ public class CsvParser implements Parser {
             } else {
                 separatorChar = separator.charAt(0);
             }
-            TableDefinition tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName);
-            if (tableDefinition == null) {
-                System.out.printf("Table:%s not found \n", tableName);
-                System.exit(1);
-            }
             BufferedReader br = new BufferedReader(new FileReader(localFile));
             String line = "";
             if (state) {
                 br.readLine();
             }
-            List<Object[]> records = new ArrayList<>();
             while ((line = br.readLine()) != null) {
-                String[] arr = mapper.readerFor(String[].class)
+                if (Strings.isNullOrEmpty(line)) {
+                    continue;
+                }
+                Object[] arr = mapper.readerFor(Object[].class)
                     .with(schema.withColumnSeparator(separatorChar))
                     .readValue(line);
-                if (arr.length == tableDefinition.getColumns().size()) {
-                    try {
-                        TupleSchema schema = tableDefinition.getTupleSchema();
-                        Object[] record = schema.parse(arr);
-                        records.add(record);
-                    } catch (Exception e) {
-                        logger.warn("Data:{} parsing failed", line);
-                    }
-                } else {
-                    logger.warn("The current data is missing a field value, skip it:{} ", line);
-                }
+                records.add(arr);
             }
-            dingoClient.insert(records);
-
-        } catch (Exception ex) {
-            logger.error("Error parsing csv message", ex);
+        } catch (Exception e) {
+            log.error("Error reading file:{}", localFile, e);
         }
+        return records;
+    }
+
+    @Override
+    public void fetch(Properties props, String topic, Parser parser, DingoClient dingoClient, TableDefinition tableDefinition) {
     }
 }
