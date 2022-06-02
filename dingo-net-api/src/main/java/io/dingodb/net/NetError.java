@@ -117,11 +117,11 @@ public enum NetError implements FormattingError {
     }
 
     public Message message() {
-        return SimpleMessage.builder().content(encodeZigZagInt(getCode())).build();
+        return Message.builder().content(encodeZigZagInt(getCode())).build();
     }
 
     public static Message message(DingoException err) {
-        return SimpleMessage.builder().content(encodeZigZagInt(err.getCode())).build();
+        return Message.builder().content(encodeZigZagInt(err.getCode())).build();
     }
 
     private static Map<Integer, NetError> valueOfCache;

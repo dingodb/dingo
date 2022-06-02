@@ -16,80 +16,59 @@
 
 package io.dingodb.net.netty.connection;
 
+import io.dingodb.common.Location;
 import io.dingodb.net.NetError;
-import io.dingodb.net.netty.listener.CloseConnectionListener;
-import io.dingodb.net.netty.listener.OpenConnectionListener;
+import io.dingodb.net.netty.connection.impl.NettyClientConnection;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
-public class ConnectionManager<C extends Connection<?>>
-        implements OpenConnectionListener<C>, CloseConnectionListener<C>, AutoCloseable {
+public class ConnectionManager implements AutoCloseable {
 
-    private final Map<InetSocketAddress, C> connections = new ConcurrentHashMap<>(8);
-    private final Connection.Provider provider;
+    private final Map<Location, Connection> connections = new ConcurrentHashMap<>(8);
     private final int capacity;
 
-    private final Set<OpenConnectionListener<C>> openConnectionListeners = new CopyOnWriteArraySet<>();
-    private final Set<CloseConnectionListener<C>> closeConnectionListeners = new CopyOnWriteArraySet<>();
-
-    public ConnectionManager(Connection.Provider provider, int capacity) {
-        this.provider = provider;
+    public ConnectionManager(int capacity) {
         this.capacity = capacity;
     }
 
-    public C openConnection(InetSocketAddress address) {
-        if (connections.containsKey(address)) {
+    public Connection open(Location location) {
+        if (connections.containsKey(location)) {
             throw new UnsupportedOperationException();
         }
-        C connection = provider.get(address, capacity);
+        NettyClientConnection connection = new NettyClientConnection(location, capacity);
         try {
-            connection.open();
+            connection.connect();
         } catch (InterruptedException e) {
-            NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(address);
+            NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(location);
         }
-        connection.nettyChannel().closeFuture().addListener(future -> onCloseConnection(connection));
+        connection.socketChannel().closeFuture().addListener(future -> onClose(connection));
         return connection;
     }
 
-    public C getOrOpenConnection(InetSocketAddress address) {
-        return connections.compute(address, (k, v) -> Optional.ofNullable(v).orElseGet(() -> openConnection(address)));
+    public Connection getOrOpenConnection(Location location) {
+        return connections.compute(location, (k, v) -> Optional.ofNullable(v).orElseGet(() -> open(location)));
     }
 
-    public void registerConnectionOpenListener(OpenConnectionListener<C> listener) {
-        openConnectionListeners.add(listener);
+    public void onOpen(Connection connection) {
+        connections.put(connection.remoteLocation(), connection);
     }
 
-    public void registerConnectionCloseListener(CloseConnectionListener<C> listener) {
-        closeConnectionListeners.add(listener);
-    }
-
-    @Override
-    public void onOpenConnection(C connection) {
-        connections.put(connection.remoteAddress(), connection);
-        openConnectionListeners.parallelStream().forEach(listener -> listener.onOpenConnection(connection));
-    }
-
-    @Override
-    public void onCloseConnection(C connection) {
+    public void onClose(Connection connection) {
         try {
-            connections.remove(connection.remoteAddress()).close();
+            connections.remove(connection.remoteLocation()).close();
         } catch (Exception e) {
-            log.error("Close connection error, remote: [{}]", connection.remoteAddress(), e);
+            log.error("Close connection error, remote: [{}]", connection.remoteLocation(), e);
         }
-        closeConnectionListeners.parallelStream().forEach(listener -> listener.onCloseConnection(connection));
     }
 
     @Override
     public void close() throws Exception {
-        for (C c : connections.values()) {
-            c.close();
+        for (Connection connection : connections.values()) {
+            connection.close();
         }
     }
 }

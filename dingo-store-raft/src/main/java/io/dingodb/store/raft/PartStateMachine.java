@@ -17,6 +17,7 @@
 package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.NetServiceProvider;
@@ -157,7 +158,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         }
         if (StoreConfiguration.collectStatsInterval() < 0) {
             available = true;
-            availableListener.forEach(executorService::submit);
+            availableListener.forEach(listen -> Executors.submit(id + " available", listen));
             return;
         }
         if (timer == null) {
@@ -217,7 +218,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
                 .approximateStats(approximateStats)
                 .build();
             if (available != (available = reportApi.report(stats))) {
-                availableListener.forEach(executorService::submit);
+                availableListener.forEach(listen -> Executors.submit(id + " available", listen));
             }
         } catch (Exception e) {
             log.error("Report stats error, id: {}", id, e);

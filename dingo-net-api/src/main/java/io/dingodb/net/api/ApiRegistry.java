@@ -16,9 +16,11 @@
 
 package io.dingodb.net.api;
 
-import io.dingodb.net.NetAddressProvider;
+import io.dingodb.common.Location;
+import io.dingodb.net.Channel;
 
 import java.lang.reflect.Method;
+import java.util.function.Supplier;
 
 public interface ApiRegistry {
 
@@ -30,8 +32,19 @@ public interface ApiRegistry {
 
     <T> void register(String name, Method method, T defined);
 
-    <T> T proxy(Class<T> api, NetAddressProvider addressProvider);
+    <T> T proxy(Class<T> api, Channel channel);
 
-    <T> T proxy(Class<T> api, NetAddressProvider addressProvider, T defined);
+    <T> T proxy(Class<T> api, Channel channel, T defined);
 
+    <T> T proxy(Class<T> api, Channel channel, int timeout);
+
+    <T> T proxy(Class<T> api, Channel channel, T defined, int timeout);
+
+    <T> T proxy(Class<T> api, Supplier<Location> locationSupplier);
+
+    <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, int timeout);
+
+    <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined);
+
+    <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined, int timeout);
 }

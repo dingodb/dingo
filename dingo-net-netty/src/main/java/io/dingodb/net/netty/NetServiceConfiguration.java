@@ -24,7 +24,7 @@ public class NetServiceConfiguration {
 
     public static final int DEFAULT_HEARTBEAT = 10;
     public static final int MIN_HEARTBEAT = 2;
-    public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors();
+    public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors() * 2;
     public static final String HEARTBEAT = "heartbeat";
 
     public static final NetServiceConfiguration INSTANCE;
@@ -61,6 +61,7 @@ public class NetServiceConfiguration {
     private Integer queueCapacity;
     private String host;
     private Integer apiTimeout;
+    private Boolean printMessageLog;
 
     public static Integer heartbeat() {
         return INSTANCE.heartbeat;
@@ -76,5 +77,9 @@ public class NetServiceConfiguration {
 
     public static Integer apiTimeout() {
         return INSTANCE.apiTimeout == null ? 30 : INSTANCE.apiTimeout;
+    }
+
+    public static boolean printMessageLog() {
+        return INSTANCE.printMessageLog != null && INSTANCE.printMessageLog;
     }
 }

@@ -16,8 +16,8 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.common.Location;
 import io.dingodb.driver.api.DriverProxyApi;
-import io.dingodb.net.NetAddressProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import lombok.Setter;
@@ -25,6 +25,7 @@ import lombok.experimental.Delegate;
 import org.apache.calcite.avatica.remote.Service;
 
 import java.util.ServiceLoader;
+import java.util.function.Supplier;
 
 public class DingoServiceImpl implements Service {
 
@@ -36,8 +37,8 @@ public class DingoServiceImpl implements Service {
     @Delegate
     private final DriverProxyApi proxyApi;
 
-    public DingoServiceImpl(NetAddressProvider netAddressProvider) {
-        proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, netAddressProvider);
+    public DingoServiceImpl(Supplier<Location> locationSupplier) {
+        proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, locationSupplier, null, 30);
     }
 
     public ResultSetResponse apply(CatalogsRequest request) {

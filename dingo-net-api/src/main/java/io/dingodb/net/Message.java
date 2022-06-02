@@ -16,22 +16,51 @@
 
 package io.dingodb.net;
 
-public interface Message {
+import io.dingodb.common.codec.PrimitiveCodec;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
-    /**
-     * The message tag.
-     */
-    Tag tag();
+import java.nio.ByteBuffer;
 
-    /**
-     * Returns the content serialized into a byte array.
-     */
-    byte[] toBytes();
+@Builder
+@Getter
+@EqualsAndHashCode
+@AllArgsConstructor
+public final class Message {
 
-    Message load(byte[] bytes);
+    public static final String EMPTY_TAG = "";
 
-    interface Provider {
-        Message get();
+    public static final String API_OK = "API_OK";
+    public static final String API_ERROR = "API_ERROR";
+
+    public static final Message EMPTY = new Message(EMPTY_TAG, new byte[0]);
+
+    private final String tag;
+    private final byte[] content;
+
+    public String tag() {
+        return tag;
+    }
+
+    public byte[] content() {
+        return content;
+    }
+
+    public byte[] encode() {
+        byte[] tag = PrimitiveCodec.encodeString(this.tag);
+        byte[] result = new byte[tag.length + content.length];
+        System.arraycopy(tag, 0, result, 0, tag.length);
+        System.arraycopy(content, 0, result, tag.length, content.length);
+        return result;
+    }
+
+    public static Message decode(ByteBuffer buffer) {
+        String tag = PrimitiveCodec.readString(buffer);
+        byte[] content = new byte[buffer.remaining()];
+        buffer.get(content);
+        return new Message(tag, content);
     }
 
 }

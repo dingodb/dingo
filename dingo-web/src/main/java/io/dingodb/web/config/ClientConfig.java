@@ -16,7 +16,7 @@
 
 package io.dingodb.web.config;
 
-import io.dingodb.net.NetAddress;
+import io.dingodb.common.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.MetaApi;
@@ -42,9 +42,9 @@ public class ClientConfig {
         @Value("${server.coordinatorExchangeSvrList}") String coordSrvList
     ) {
         List<String> servers = Arrays.asList(coordSrvList.split(","));
-        List<NetAddress> addrList = servers.stream()
+        List<Location> addrList = servers.stream()
             .map(s -> s.split(":"))
-            .map(ss -> new NetAddress(ss[0], Integer.parseInt(ss[1])))
+            .map(ss -> new Location(ss[0], Integer.parseInt(ss[1])))
             .collect(Collectors.toList());
         return new CoordinatorConnector(addrList);
     }

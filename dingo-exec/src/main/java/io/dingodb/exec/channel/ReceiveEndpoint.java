@@ -19,9 +19,10 @@ package io.dingodb.exec.channel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.exec.Services;
 import io.dingodb.net.Channel;
-import io.dingodb.net.SimpleMessage;
-import io.dingodb.net.SimpleTag;
+import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.dingodb.exec.Services.CTRL_TAG;
 
 @Slf4j
 public class ReceiveEndpoint {
@@ -51,8 +52,8 @@ public class ReceiveEndpoint {
             throw new RuntimeException("Serialize control message failed.");
         }
         channel.send(
-            SimpleMessage.builder()
-                .tag(SimpleTag.CTRL_TAG)
+            Message.builder()
+                .tag(CTRL_TAG)
                 .content(content)
                 .build()
         );

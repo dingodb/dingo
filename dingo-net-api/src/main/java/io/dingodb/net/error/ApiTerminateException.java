@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.listener;
+package io.dingodb.net.error;
 
-import io.dingodb.net.netty.connection.Connection;
-
-public interface OpenConnectionListener<C extends Connection<?>> {
-
-    void onOpenConnection(C connection);
-
+/**
+ * Thrown at the API definition side.
+ * When the API execution throws this exception, no anything is returned to the caller, caller might block.
+ */
+public class ApiTerminateException extends RuntimeException {
+    public ApiTerminateException(String message, Object...args) {
+        super(String.format(message, args));
+    }
 }

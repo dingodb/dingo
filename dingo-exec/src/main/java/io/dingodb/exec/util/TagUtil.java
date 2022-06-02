@@ -17,10 +17,7 @@
 package io.dingodb.exec.util;
 
 import io.dingodb.exec.base.Id;
-import io.dingodb.net.SimpleTag;
-import io.dingodb.net.Tag;
 
-import java.nio.charset.StandardCharsets;
 import javax.annotation.Nonnull;
 
 public final class TagUtil {
@@ -32,21 +29,4 @@ public final class TagUtil {
         return jobId + ":" + id;
     }
 
-    private static Tag getTag(@Nonnull byte[] bytes) {
-        return SimpleTag.builder().tag(bytes).build();
-    }
-
-    public static Tag getTag(@Nonnull String tag) {
-        return getTag(toBytes(tag));
-    }
-
-    @Nonnull
-    public static byte[] toBytes(@Nonnull String tag) {
-        return tag.getBytes(StandardCharsets.UTF_8);
-    }
-
-    @Nonnull
-    public static String fromBytes(@Nonnull byte[] bytes) {
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
 }

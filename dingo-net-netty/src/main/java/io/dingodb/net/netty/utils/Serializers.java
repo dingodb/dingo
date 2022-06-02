@@ -16,27 +16,10 @@
 
 package io.dingodb.net.netty.utils;
 
-import io.dingodb.common.error.CommonError;
-import io.dingodb.common.util.StackTraces;
-import io.dingodb.net.NetError;
 import io.netty.buffer.ByteBuf;
-import io.protostuff.ByteBufferInput;
-import io.protostuff.Input;
-import io.protostuff.LinkedBuffer;
-import io.protostuff.ProtostuffOutput;
-import io.protostuff.Schema;
-import io.protostuff.runtime.RuntimeSchema;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import static io.dingodb.common.codec.PrimitiveCodec.INT_MAX_LEN;
-import static io.dingodb.common.codec.PrimitiveCodec.LONG_MAX_LEN;
 
 @Slf4j
 public class Serializers {
@@ -58,24 +41,6 @@ public class Serializers {
                 return null;
             }
             result ^= ((b = (buf.readByte() & 0XFF)) & 0X7F) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read int from {@code bytes}, and use VarInt load.
-     */
-    public static Long readVarLong(ByteBuf buf) {
-        int readerIndex = buf.readerIndex();
-        int maxBytes = LONG_MAX_LEN;
-        long b = Byte.MAX_VALUE + 1;
-        long result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (!buf.isReadable()) {
-                buf.readerIndex(readerIndex);
-                return null;
-            }
-            result ^= ((b = (buf.readByte() & 0XFF)) & 0X7F) << ((LONG_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
         }
         return result;
     }

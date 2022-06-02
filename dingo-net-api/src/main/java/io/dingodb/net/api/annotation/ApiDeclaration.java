@@ -21,6 +21,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Api declaration.
+ * <br />
+ * If api parameter types have {@link io.dingodb.net.Channel}, must first parameter and set {@code null}.
+ * <br />
+ * if api return type is {@link java.util.concurrent.CompletableFuture}, returned immediately after invoke .
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface ApiDeclaration {

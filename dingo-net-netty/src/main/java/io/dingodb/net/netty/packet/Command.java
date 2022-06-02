@@ -14,10 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.channel;
+package io.dingodb.net.netty.packet;
 
-public interface ChannelIdProvider<I extends ChannelId> {
+import io.dingodb.net.Message;
 
-    I get(int id);
+public enum Command {
+    PING,
+    PONG,
+    ACK,
+    HANDSHAKE,
+    CLOSE,
+    ERROR,
+    ;
+
+    public byte code() {
+        return (byte) ordinal();
+    }
+
+    public static boolean isPingPong(Command command) {
+        return command == PING || command == PONG;
+    }
 
 }

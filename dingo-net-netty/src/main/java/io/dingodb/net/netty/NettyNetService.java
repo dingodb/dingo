@@ -16,21 +16,18 @@
 
 package io.dingodb.net.netty;
 
-import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.Location;
+import io.dingodb.common.util.PreParameters;
 import io.dingodb.common.util.StackTraces;
-import io.dingodb.net.Channel;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.MessageListenerProvider;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
-import io.dingodb.net.Tag;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
-import io.dingodb.net.netty.channel.impl.NetServiceConnectionSubChannel;
+import io.dingodb.net.netty.channel.Channel;
 import io.dingodb.net.netty.connection.ConnectionManager;
-import io.dingodb.net.netty.connection.impl.NetServiceLocalConnection;
-import io.dingodb.net.netty.connection.impl.NetServiceNettyConnection;
-import io.dingodb.net.netty.handler.impl.TagMessageHandler;
+import io.dingodb.net.netty.connection.impl.LocalClientConnection;
+import io.dingodb.net.netty.handler.TagMessageHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.dingodb.net.netty.listener.impl.NettyServer;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NettyNetService implements NetService {
 
     private final Map<Integer, PortListener> portListeners;
-    private final ConnectionManager<NetServiceNettyConnection> connectionManager;
-    private final NetServiceLocalConnection localConnection;
+    private final ConnectionManager connectionManager;
+    private final LocalClientConnection localConnection;
 
     private final int capacity;
     private final String hostname;
@@ -51,9 +48,9 @@ public class NettyNetService implements NetService {
     protected NettyNetService() {
         capacity = NetServiceConfiguration.queueCapacity();
         hostname = NetServiceConfiguration.host();
-        connectionManager = new ConnectionManager<>(new NetServiceNettyConnection.Provider(), capacity);
+        connectionManager = new ConnectionManager(capacity);
         portListeners = new ConcurrentHashMap<>();
-        localConnection = new NetServiceLocalConnection(capacity);
+        localConnection = LocalClientConnection.INSTANCE;
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -86,62 +83,67 @@ public class NettyNetService implements NetService {
         return ApiRegistryImpl.instance();
     }
 
-    private boolean isLocal(NetAddress address) {
-        return address.port() == 0 || (portListeners.containsKey(address.port())
-            && address.address().getHostName().equals(hostname));
+    private boolean isLocal(Location location) {
+        return location.port() == 0 || (portListeners.containsKey(location.port())
+            && location.host().equals(hostname));
     }
 
     @Override
-    public NetServiceConnectionSubChannel newChannel(NetAddress netAddress) {
-        return (NetServiceConnectionSubChannel) newChannel(netAddress, true);
+    public Channel newChannel(Location location) {
+        return newChannel(location, true);
     }
 
     @Override
-    public Channel newChannel(NetAddress netAddress, boolean keepAlive) {
-        if (keepAlive) {
-            if (isLocal(netAddress)) {
-                return new NetServiceLocalConnection(capacity).openSubChannel(true);
-            }
-            return connectionManager.getOrOpenConnection(netAddress.address()).openSubChannel(true);
-        } else {
-            if (isLocal(netAddress)) {
-                return localConnection.getChannelPool().poll();
-            }
-            return connectionManager.getOrOpenConnection(netAddress.address()).getChannelPool().poll();
+    public Channel newChannel(Location location, boolean keepAlive) {
+        //if (isLocal(location)) {
+        //    return localConnection.newChannel(keepAlive);
+        //}
+        try {
+            return connectionManager.getOrOpenConnection(location).newChannel(keepAlive);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void registerMessageListenerProvider(Tag tag, MessageListenerProvider listenerProvider) {
+    public void registerMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
+        PreParameters.nonNull(tag, "tag");
+        PreParameters.nonNull(listenerProvider, "listener provider");
         log.info("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
-            new String(tag.toBytes()),
+            tag,
             listenerProvider.getClass().getName(),
             StackTraces.stack(2));
         TagMessageHandler.INSTANCE.addTagListenerProvider(tag, listenerProvider);
     }
 
     @Override
-    public void unregisterMessageListenerProvider(Tag tag, MessageListenerProvider listenerProvider) {
+    public void unregisterMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
+        PreParameters.nonNull(tag, "tag");
+        PreParameters.nonNull(listenerProvider, "listener provider");
         log.info("Unregister message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
-            new String(tag.toBytes()),
+            tag,
             listenerProvider.getClass().getName(),
             StackTraces.stack(2));
         TagMessageHandler.INSTANCE.removeTagListenerProvider(tag, listenerProvider);
     }
 
     @Override
-    public void registerTagMessageListener(Tag tag, MessageListener listener) {
+    public void registerTagMessageListener(String tag, MessageListener listener) {
+        PreParameters.nonNull(tag, "tag");
+        PreParameters.nonNull(listener, "listener");
         log.info("Register message listener, tag: [{}], listener class: [{}], caller: [{}]",
-            new String(tag.toBytes()),
+            tag,
             listener.getClass().getName(),
             StackTraces.stack(2));
         TagMessageHandler.INSTANCE.addTagListener(tag, listener);
     }
 
     @Override
-    public void unregisterTagMessageListener(Tag tag, MessageListener listener) {
+    public void unregisterTagMessageListener(String tag, MessageListener listener) {
+        PreParameters.nonNull(tag, "tag");
+        PreParameters.nonNull(listener, "listener");
         log.info("Unregister message listener, tag: [{}], listener class: [{}], caller: [{}]",
-            new String(tag.toBytes()),
+            tag,
             listener.getClass().getName(),
             StackTraces.stack(2));
         TagMessageHandler.INSTANCE.removeTagListener(tag, listener);
@@ -154,4 +156,5 @@ public class NettyNetService implements NetService {
         }
         connectionManager.close();
     }
+
 }

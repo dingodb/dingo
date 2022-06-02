@@ -17,7 +17,6 @@
 package io.dingodb.raft.rpc.dingo;
 
 import com.google.protobuf.Message;
-import io.dingodb.net.RaftTag;
 import io.dingodb.raft.option.RpcOptions;
 import io.dingodb.raft.rpc.RaftClientService;
 import io.dingodb.raft.rpc.RpcRequests;
@@ -44,36 +43,36 @@ public class DingoRaftRpcClientService extends AbstractClientService implements 
 
     @Override
     public Future<Message> preVote(Endpoint endpoint, RpcRequests.RequestVoteRequest request, RpcResponseClosure<RpcRequests.RequestVoteResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.REQUESTVOTE_REQUEST, request, done, RpcRequests.RequestVoteResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.REQUESTVOTE_REQUEST, request, done, RpcRequests.RequestVoteResponse::parseFrom);
     }
 
     @Override
     public Future<Message> requestVote(Endpoint endpoint, RpcRequests.RequestVoteRequest request, RpcResponseClosure<RpcRequests.RequestVoteResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.REQUESTVOTE_REQUEST, request, done, RpcRequests.RequestVoteResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.REQUESTVOTE_REQUEST, request, done, RpcRequests.RequestVoteResponse::parseFrom);
     }
 
     @Override
     public Future<Message> appendEntries(Endpoint endpoint, RpcRequests.AppendEntriesRequest request, int timeoutMs, RpcResponseClosure<RpcRequests.AppendEntriesResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.APPENDENTRIES_REQUEST, request, done, RpcRequests.AppendEntriesResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.APPENDENTRIES_REQUEST, request, done, RpcRequests.AppendEntriesResponse::parseFrom);
     }
 
     @Override
     public Future<Message> installSnapshot(Endpoint endpoint, RpcRequests.InstallSnapshotRequest request, RpcResponseClosure<RpcRequests.InstallSnapshotResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.INSTALLSNAPSHOT_REQUEST, request, done, RpcRequests.InstallSnapshotResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.INSTALLSNAPSHOT_REQUEST, request, done, RpcRequests.InstallSnapshotResponse::parseFrom);
     }
 
     @Override
     public Future<Message> getFile(Endpoint endpoint, RpcRequests.GetFileRequest request, int timeoutMs, RpcResponseClosure<RpcRequests.GetFileResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.GETFILE_REQUEST, request, done, RpcRequests.GetFileResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.GETFILE_REQUEST, request, done, RpcRequests.GetFileResponse::parseFrom);
     }
 
     @Override
     public Future<Message> timeoutNow(Endpoint endpoint, RpcRequests.TimeoutNowRequest request, int timeoutMs, RpcResponseClosure<RpcRequests.TimeoutNowResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.TIMEOUTNOW_REQUEST, request, done, RpcRequests.TimeoutNowResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.TIMEOUTNOW_REQUEST, request, done, RpcRequests.TimeoutNowResponse::parseFrom);
     }
 
     @Override
     public Future<Message> readIndex(Endpoint endpoint, RpcRequests.ReadIndexRequest request, int timeoutMs, RpcResponseClosure<RpcRequests.ReadIndexResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.READINDEX_REQUEST, request, done, RpcRequests.ReadIndexResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.READINDEX_REQUEST, request, done, RpcRequests.ReadIndexResponse::parseFrom);
     }
 }

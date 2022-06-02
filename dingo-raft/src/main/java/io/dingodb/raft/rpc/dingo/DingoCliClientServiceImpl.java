@@ -17,7 +17,6 @@
 package io.dingodb.raft.rpc.dingo;
 
 import com.google.protobuf.Message;
-import io.dingodb.net.RaftTag;
 import io.dingodb.raft.rpc.CliClientService;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequests;
@@ -34,56 +33,56 @@ public class DingoCliClientServiceImpl extends AbstractClientService implements 
 
     @Override
     public Future<Message> addPeer(Endpoint endpoint, CliRequests.AddPeerRequest request, RpcResponseClosure<CliRequests.AddPeerResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.ADDPEER_REQUEST, request, done, CliRequests.AddPeerResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.ADDPEER_REQUEST, request, done, CliRequests.AddPeerResponse::parseFrom);
     }
 
     @Override
     public Future<Message> removePeer(Endpoint endpoint, CliRequests.RemovePeerRequest request, RpcResponseClosure<CliRequests.RemovePeerResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.REMOVEPEER_REQUEST, request, done, CliRequests.RemovePeerResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.REMOVEPEER_REQUEST, request, done, CliRequests.RemovePeerResponse::parseFrom);
     }
 
     @Override
     public Future<Message> resetPeer(Endpoint endpoint, CliRequests.ResetPeerRequest request, RpcResponseClosure<RpcRequests.ErrorResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.RESETPEER_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.RESETPEER_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
     }
 
     @Override
     public Future<Message> snapshot(Endpoint endpoint, CliRequests.SnapshotRequest request, RpcResponseClosure<RpcRequests.ErrorResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.SNAPSHOT_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.SNAPSHOT_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
     }
 
     @Override
     public Future<Message> changePeers(Endpoint endpoint, CliRequests.ChangePeersRequest request, RpcResponseClosure<CliRequests.ChangePeersResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.CHANGEPEERS_REQUEST, request, done, CliRequests.ChangePeersResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.CHANGEPEERS_REQUEST, request, done, CliRequests.ChangePeersResponse::parseFrom);
     }
 
     @Override
     public Future<Message> addLearners(Endpoint endpoint, CliRequests.AddLearnersRequest request, RpcResponseClosure<CliRequests.LearnersOpResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.ADDLEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.ADDLEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
     }
 
     @Override
     public Future<Message> removeLearners(Endpoint endpoint, CliRequests.RemoveLearnersRequest request, RpcResponseClosure<CliRequests.LearnersOpResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.REMOVELEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.REMOVELEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
     }
 
     @Override
     public Future<Message> resetLearners(Endpoint endpoint, CliRequests.ResetLearnersRequest request, RpcResponseClosure<CliRequests.LearnersOpResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.RESETLEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.RESETLEARNERS_REQUEST, request, done, CliRequests.LearnersOpResponse::parseFrom);
     }
 
     @Override
     public Future<Message> getLeader(Endpoint endpoint, CliRequests.GetLeaderRequest request, RpcResponseClosure<CliRequests.GetLeaderResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.GETLEADER_REQUEST, request, done, CliRequests.GetLeaderResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.GETLEADER_REQUEST, request, done, CliRequests.GetLeaderResponse::parseFrom);
     }
 
     @Override
     public Future<Message> transferLeader(Endpoint endpoint, CliRequests.TransferLeaderRequest request, RpcResponseClosure<RpcRequests.ErrorResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.TRANSFERLEADER_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.TRANSFERLEADER_REQUEST, request, done, RpcRequests.ErrorResponse::parseFrom);
     }
 
     @Override
     public Future<Message> getPeers(Endpoint endpoint, CliRequests.GetPeersRequest request, RpcResponseClosure<CliRequests.GetPeersResponse> done) {
-        return invokeWithDone(endpoint, RaftTag.GETPEERS_REQUEST, request, done, CliRequests.GetPeersResponse::parseFrom);
+        return invokeWithDone(endpoint, Tags.GETPEERS_REQUEST, request, done, CliRequests.GetPeersResponse::parseFrom);
     }
 }

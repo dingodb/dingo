@@ -174,10 +174,15 @@ public class Examples {
     }
 
     static interface Runner {
+
         long create() throws Exception;
+
         long insert(Object[] record) throws Exception;
+
         long insert(List<Object[]> records) throws Exception;
+
         void query() throws Exception;
+
         void count() throws Exception;
     }
 

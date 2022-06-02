@@ -17,12 +17,10 @@
 package io.dingodb.raft.rpc.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import io.dingodb.net.Tag;
 import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.net.RaftTag;
+import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
@@ -50,12 +48,12 @@ public class PingRequestProcessor implements RpcProcessor<RpcRequests.PingReques
     }
 
     @Override
-    public Tag getRequestTag() {
-        return RaftTag.PING_REQUEST;
+    public String getRequestTag() {
+        return Tags.PING_REQUEST;
     }
 
     @Override
-    public Tag getResponseTag() {
-        return RaftTag.PING_RESPONSE;
+    public String getResponseTag() {
+        return Tags.PING_RESPONSE;
     }
 }

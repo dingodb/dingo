@@ -18,11 +18,7 @@ package io.dingodb.server.client.meta.service;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.config.ExchangeConfiguration;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.MetaServiceApi;
@@ -30,7 +26,6 @@ import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.ServiceLoader;
 import javax.annotation.Nullable;

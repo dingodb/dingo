@@ -16,7 +16,15 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.net.Message;
+
+import static io.dingodb.net.Message.API_OK;
+
+
 public class Constant {
     public static final byte[] EMPTY_BYTES = new byte[0];
     public static final Object[] API_EMPTY_ARGS = new Object[0];
+
+    public static final Message API_VOID = new Message(API_OK, EMPTY_BYTES);
+
 }

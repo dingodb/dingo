@@ -19,10 +19,9 @@ package io.dingodb.server.coordinator.schedule;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.Optional;
-import io.dingodb.net.NetAddress;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.ApiRegistry;
@@ -52,7 +51,6 @@ import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,12 +66,6 @@ public class TableScheduler {
     public static final NetService NET_SERVICE = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
     private final Table table;
-
-    private final ExecutorService executorService = new ThreadPoolBuilder()
-        .maximumThreads(Integer.MAX_VALUE)
-        .keepAliveSeconds(60L)
-        .name("ClusterScheduler")
-        .build();
 
     private TableAdaptor tableAdaptor;
     private TablePartAdaptor tablePartAdaptor;
@@ -115,10 +107,10 @@ public class TableScheduler {
         ApiRegistry apiRegistry = NET_SERVICE.apiRegistry();
         executorAdaptor.getAll().stream().forEach(executor -> tableStoreApis.put(
             executor.getId(),
-            apiRegistry.proxy(TableStoreApi.class, () -> new NetAddress(executor.getHost(), executor.getPort())))
+            apiRegistry.proxy(TableStoreApi.class, () -> new Location(executor.getHost(), executor.getPort())))
         );
         splitTaskAdaptor.getByDomain(PrimitiveCodec.encodeInt(1))
-            .forEach((task -> executorService.submit(() -> {
+            .forEach((task -> Executors.submit("split-" + task.getId().toString(), () -> {
                 try {
                     busy.compareAndSet(false, true);
                     if (task.getStep() == SplitTask.Step.IGNORE) {
@@ -136,7 +128,7 @@ public class TableScheduler {
             id,
             NET_SERVICE.apiRegistry().proxy(
                 TableStoreApi.class,
-                () -> new NetAddress(location.getHost(), location.getPort())
+                () -> new Location(location.getHost(), location.getPort())
             )
         );
     }
@@ -219,7 +211,7 @@ public class TableScheduler {
         if (log.isDebugEnabled()) {
             log.debug("Receive stats: {}", stats);
         }
-        executorService.submit(() -> {
+        Executors.submit("on-stats-" + stats.getId().toString(), () -> {
             tablePartStatsAdaptor.onStats(stats);
             Optional.ofNullable(waitFutures.remove(stats.getTablePart())).ifPresent(future -> future.complete(null));
             splitPart(stats);
