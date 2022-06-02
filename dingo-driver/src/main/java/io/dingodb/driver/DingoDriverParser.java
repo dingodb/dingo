@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoSchema;
+import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.ddl.DingoDdlParserFactory;
@@ -128,6 +129,7 @@ public final class DingoDriverParser extends DingoParser {
 
     @Nonnull
     public DingoSignature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
+        MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             final DdlExecutor ddlExecutor = parserConfig.parserFactory().getDdlExecutor();

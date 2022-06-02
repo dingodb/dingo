@@ -19,6 +19,7 @@ package io.dingodb.driver;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.MetaCache;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
@@ -397,6 +398,7 @@ public class DingoMeta extends MetaImpl {
         if (schema == null) {
             return createEmptyResultSet(MetaTable.class);
         }
+        MetaCache.initTableDefinitions();
         return createResultSet(
             Linq4j.asEnumerable(schema.getTableNames())
                 .select(name -> new MetaTable(

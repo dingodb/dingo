@@ -18,6 +18,7 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.calcite.JobRunner;
+import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.Services;
@@ -54,6 +55,7 @@ public final class EnumerableRoot extends SingleRel implements EnumerableRel {
     @Nullable
     @Override
     public Result implement(@Nonnull EnumerableRelImplementor implementor, @Nonnull Prefer pref) {
+        MetaCache.initTableDefinitions();
         PhysType physType = PhysTypeImpl.of(
             implementor.getTypeFactory(),
             getRowType(),
