@@ -60,41 +60,74 @@ public class DingoException extends RuntimeException implements IndirectError {
     /**
      * The following exception patterns are used to convert to DingoException from Calcite.
      */
+    public static Integer OBJECT_NOT_FOUND = 90002;
+    public static Integer INSERT_NULL_POINTER = 90004;
+    public static Integer TYPE_CAST_ERROR = 90005;
+    public static Integer TABLE_ALREADY_EXISTS = 90007;
+    public static Integer DUPLICATED_COLUMN = 90009;
+    public static Integer PRIMARY_KEY_REQUIRED = 90010;
+    public static Integer ASSIGNED_MORE_THAN_ONCE = 90011;
+    public static Integer INSERT_COLUMN_NUMBER_NOT_EQUAL = 90013;
+    public static Integer JOIN_NAME_DUPLICATED = 90015;
+    public static Integer JOIN_NO_CONDITION = 90016;
+    public static Integer JOIN_SELECT_COLUMN_AMBIGUOUS = 90017;
 
-    public static HashMap<Pattern, Integer> EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP;
+    public static Integer INTERPRET_ERROR = 90019;
+    public static Integer FUNCTION_NOT_SUPPORT = 90022;
+
+    public static HashMap<Pattern, Integer> CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
     public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 
     static {
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP = new HashMap<>();
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
         // "Table Not Found" from CalciteContextException (90002)
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Object .* not found"), 90002);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Object .* not found"), OBJECT_NOT_FOUND);
         // "Table Already exists" from CalciteContextException (90007)
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"), 90007);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"),
+            TABLE_ALREADY_EXISTS);
         // "Column Not Found" from  CalciteContextException (90002)
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Unknown target column.*"), 90002);
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Column .* not found in any table"), 90002);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Unknown target column.*"),
+            OBJECT_NOT_FOUND);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* not found in any table"),
+            OBJECT_NOT_FOUND);
 
         // "Insert Columns more than once" from CalciteContextException (90011)
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Target column .* is"
-            + " assigned more than once"), 90011);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Target column .* is"
+            + " assigned more than once"), ASSIGNED_MORE_THAN_ONCE);
         // Insert Columns not equal" from CalciteContextException  (90013)
-        EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.put(Pattern.compile("Number of INSERT target columns "
-            + "\\(.*\\) does not equal number"), 90013);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Number of INSERT target columns "
+            + "\\(.*\\) does not equal number"), INSERT_COLUMN_NUMBER_NOT_EQUAL);
+        // Function not found from CalciteContextException (90022)
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put
+            (Pattern.compile("No match found for function signature"), FUNCTION_NOT_SUPPORT);
 
+        // Join name duplicated
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put( Pattern.compile(" Duplicate relation name"),
+            JOIN_NAME_DUPLICATED);
+        // Join need join condition
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("INNER, LEFT, RIGHT or FULL join"
+            + " requires a condition"), JOIN_NO_CONDITION);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* is ambiguous"),
+            JOIN_SELECT_COLUMN_AMBIGUOUS);
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
         // "Duplicated Columns" from RuntimeException (90009)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Duplicate column names"), 90009);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Duplicate column names"), DUPLICATED_COLUMN);
         // "Create Without Primary Key" from RuntimeException (90010)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Primary keys are required"), 90010);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Primary keys are required"), PRIMARY_KEY_REQUIRED);
         // "Insert Without Primary Key" from NullPointerException based on RuntimeException (90004)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("java\\.lang\\.NullPointerException: null"), 90004);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("java\\.lang\\.NullPointerException: null"),
+            INSERT_NULL_POINTER);
         // "Wrong Function Argument" from RunTimeException(90019)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* does not match"), 90019);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* does not match"), INTERPRET_ERROR);
         // "Time Range Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* to time/date/datetime"), 90019);
-        // "Empty String Convert To Time Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("is not allowed to convert to time type"), 90019);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* to time/date/datetime"), INTERPRET_ERROR);
+        // "Type  Error"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Error while applying rule DingoValuesReduceRule"),
+            INTERPRET_ERROR);
 
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exception\\.FailGetEvaluator"), TYPE_CAST_ERROR);
+        // "Number Range Error"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exceeds max .* or lower min value"), TYPE_CAST_ERROR);
     }
     // TODO
     //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
