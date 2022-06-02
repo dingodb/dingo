@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.expr.runtime.exception.FailParseNumber;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
@@ -73,6 +74,13 @@ public final class DataUtils {
             case VARCHAR:
                 return ((NlsString) value).getValue();
             case INTEGER:
+                if (!(value instanceof Integer)) {
+                    if (((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).intValue()
+                        != ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue()) {
+                        String errorMessage = value + " exceeds max 2147483647 or lower min value -2147483648";
+                        throw new FailParseNumber(errorMessage);
+                    }
+                }
             case TINYINT:
             case SMALLINT:
                 if (value instanceof BigDecimal) {
