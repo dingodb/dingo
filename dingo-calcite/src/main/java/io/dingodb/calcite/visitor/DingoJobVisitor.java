@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor;
 
+import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
@@ -112,17 +113,20 @@ import static io.dingodb.common.util.Utils.sole;
 public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     private final IdGenerator idGenerator;
     private final Location currentLocation;
+    private final MetaCache metaCache;
     @Getter
     private final Job job;
 
     public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation) {
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
+        this.metaCache = new MetaCache();
         job = new JobImpl(new Id(UUID.randomUUID().toString()));
     }
 
     @Nonnull
     public static Job createJob(RelNode input, Location currentLocation) {
+        MetaCache.initTableDefinitions();
         return createJob(input, currentLocation, false);
     }
 
@@ -307,9 +311,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoDistributedValues rel) {
         List<Output> outputs = new LinkedList<>();
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        final NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
-        final TableDefinition td = metaHelper.getTableDefinition();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
             rel.getValues(),
@@ -366,10 +370,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoGetByKeys rel) {
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        final NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
-        final TableDefinition td = metaHelper.getTableDefinition();
-        final CommonId tableId = metaHelper.getTableId();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        final CommonId tableId = this.metaCache.getTableId(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
         List<Output> outputs = new LinkedList<>();
@@ -445,9 +449,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoPartition rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
-        final TableDefinition td = metaHelper.getTableDefinition();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         for (Output input : inputs) {
             Task task = input.getTask();
@@ -468,9 +472,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoPartModify rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        TableDefinition td = metaHelper.getTableDefinition();
-        final CommonId tableId = metaHelper.getTableId();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        final CommonId tableId = this.metaCache.getTableId(tableName);
         for (Output input : inputs) {
             Task task = input.getTask();
             Operator operator;
@@ -521,11 +525,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoPartScan rel) {
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        TableDefinition td = metaHelper.getTableDefinition();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
         RtExprWithType filter = null;
-        List<Location> distributes = metaHelper.getDistributes();
-        CommonId tableId = metaHelper.getTableId();
+        List<Location> distributes = this.metaCache.getDistributes(tableName);
+        CommonId tableId = this.metaCache.getTableId(tableName);
         List<Output> outputs = new ArrayList<>(distributes.size());
         String filterStr = null;
         if (rel.getFilter() != null) {
@@ -621,11 +625,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoPartDelete rel) {
-        MetaHelper metaHelper = new MetaHelper(rel.getTable());
-        CommonId tableId = metaHelper.getTableId();
-        TableDefinition td = metaHelper.getTableDefinition();
-        NavigableMap<ComparableByteArray, Part> parts = metaHelper.getParts();
-        List<Location> distributeNodes = metaHelper.getDistributes();
+        String tableName = MetaCache.getTableName(rel.getTable());
+        CommonId tableId = this.metaCache.getTableId(tableName);
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        List<Location> distributeNodes = this.metaCache.getDistributes(tableName);
+
         List<Output> outputs = new ArrayList<>(distributeNodes.size());
         Map<Location, List<String>> groupAllPartKeysByAddress = groupAllPartKeysByAddress(parts);
         for (Location node: distributeNodes) {
