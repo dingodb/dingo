@@ -332,5 +332,28 @@ public class ExceptionTest {
 
         }
 
+        @Test
+        public void testInsertTime4() throws SQLException {
+            String createTableSql = "create table timetest4(id int, update_time time,primary key (id))";
+            String insertSql = "insert into timetest4 values(1,'')";
+            String selectSql = "select * from timetest4";
+            try (Statement statement = connection.createStatement()) {
+                statement.execute(createTableSql);
+                statement.executeUpdate(insertSql);
+                ResultSet rs = statement.executeQuery(selectSql);
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    System.out.println(rs.getString(2));
+                }
+            } catch (Exception e) {
+                System.out.println("Result: ");
+                System.out.println(e.getMessage());
+                assertThat(e.getMessage().replaceAll("(?<=#)\\d+", "")).isEqualTo("Error 90019 "
+                    + "(00000) : Error while executing SQL"
+                    + " \"insert into timetest4 values(1,'')\": Error in parsing \" '' is not allowed to convert "
+                    + "to time type.\" to time/date/datetime");
+            }
+    }
 
 }
