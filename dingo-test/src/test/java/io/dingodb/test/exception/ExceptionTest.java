@@ -138,7 +138,7 @@ public class ExceptionTest {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90002 (00000) : Error while executing SQL \"DELETE "
-                +"from datetest5\": From line 1, column 13 to line 1, column 21: Object 'DATETEST5' not found");
+                + "from datetest5\": From line 1, column 13 to line 1, column 21: Object 'DATETEST5' not found");
         }
     }
 
@@ -165,11 +165,14 @@ public class ExceptionTest {
         String sql = "select time_format('240001', '%H.%i.%s')";
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
+                System.out.println("Result: ");
+                System.out.println(rs.getString(0));
             } catch (Exception e) {
                 System.out.println("Result: ");
                 System.out.println(e.getMessage());
                 assertThat(e.getMessage()).isEqualTo("Error 90019 (00000) : Error while executing SQL "
-                    + "\"select time_format('240001', '%H.%i.%s')\": Error in parsing \"240001 can be less than 240000\""
+                    + "\"select time_format('240001', '%H.%i.%s')\": Error in parsing "
+                    + "\"240001 can be less than 240000\""
                     + " to time/date/datetime");
             }
         }
@@ -184,7 +187,7 @@ public class ExceptionTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.execute(createTableSql1);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90007 (00000) : Error while executing SQL \"create table "
@@ -202,12 +205,14 @@ public class ExceptionTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.executeUpdate(insertSql);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
-            assertThat(e.getMessage()).isEqualTo("Error 90013 (00000) : Error while executing SQL \"insert into test2 " +
-                "values('xiaoY')\": From line 1, column 13 to line 1, column 17: Number of INSERT target columns (6) " +
-                "does not equal number of source items (1)");
+            assertThat(e.getMessage()).isEqualTo("Error 90013 (00000) : Error while executing SQL "
+                + "\"insert into test2 "
+                + "values('xiaoY')\": From line 1, column 13 to line 1, column 17: Number of "
+                + "INSERT target columns (6) "
+                + "does not equal number of source items (1)");
         }
     }
 
@@ -222,7 +227,7 @@ public class ExceptionTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.execute(insertSql);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90002 (00000) : Error while executing SQL \"insert into "
@@ -245,7 +250,7 @@ public class ExceptionTest {
             statement.execute(createTableSql);
             statement.execute(insertSql);
             statement.executeQuery(selectSql);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90002 (00000) : Error while executing SQL \"SELECT name1 "
@@ -266,7 +271,7 @@ public class ExceptionTest {
             statement.execute(createTableSql);
             statement.execute(insertSql);
             statement.executeQuery(updateSql);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90002 (00000) : Error while executing SQL \"update test3_1 "
@@ -284,7 +289,7 @@ public class ExceptionTest {
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.execute(insertSql);
-        } catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage()).isEqualTo("Error 90011 (00000) : Error while executing SQL \"insert into test4 "
@@ -313,47 +318,176 @@ public class ExceptionTest {
         }
     }
 
-        // Primary key required (90010)
-        @Test
-        public void testPrimaryColumn() throws SQLException {
-            String createTableSql = "create table test6(id int, id int, name varchar(20), age int, amount double,"
-                + " address varchar(255), birthday date, create_time time, update_time timestamp,"
-                + " is_delete boolean)";
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(createTableSql);
-            } catch (Exception e){
-                System.out.println("Result: ");
-                System.out.println(e.getMessage());
-                assertThat(e.getMessage()).isEqualTo("Error 90010 (00000) : Error while executing SQL \"create "
-                    + "table test6(id int, id int, name varchar(20), age int, amount double, address varchar(255), "
-                    + "birthday date, create_time time, update_time timestamp, is_delete boolean)\": "
-                    + "Primary keys are required in table definition.");
-            }
-
+    // Primary key required (90010)
+    @Test
+    public void testPrimaryColumn() throws SQLException {
+        String createTableSql = "create table test6(id int, id int, name varchar(20), age int, amount double,"
+            + " address varchar(255), birthday date, create_time time, update_time timestamp,"
+            + " is_delete boolean)";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage()).isEqualTo("Error 90010 (00000) : Error while executing SQL \"create "
+                + "table test6(id int, id int, name varchar(20), age int, amount double, address varchar(255), "
+                + "birthday date, create_time time, update_time timestamp, is_delete boolean)\": "
+                + "Primary keys are required in table definition.");
         }
+    }
 
-        @Test
-        public void testInsertTime4() throws SQLException {
-            String createTableSql = "create table timetest4(id int, update_time time,primary key (id))";
-            String insertSql = "insert into timetest4 values(1,'')";
-            String selectSql = "select * from timetest4";
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(createTableSql);
-                statement.executeUpdate(insertSql);
-                ResultSet rs = statement.executeQuery(selectSql);
-                System.out.println("Result: ");
-                while (rs.next()) {
-                    System.out.println(rs.getString(1));
-                    System.out.println(rs.getString(2));
-                }
-            } catch (Exception e) {
-                System.out.println("Result: ");
-                System.out.println(e.getMessage());
-                assertThat(e.getMessage().replaceAll("(?<=#)\\d+", "")).isEqualTo("Error 90019 "
-                    + "(00000) : Error while executing SQL"
-                    + " \"insert into timetest4 values(1,'')\": Error in parsing \" '' is not allowed to convert "
-                    + "to time type.\" to time/date/datetime");
+    @Test
+    public void testInsertTime4() throws SQLException {
+        String createTableSql = "create table timetest4(id int, update_time time,primary key (id))";
+        String insertSql = "insert into timetest4 values(1,'')";
+        String selectSql = "select * from timetest4";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            ResultSet rs = statement.executeQuery(selectSql);
+            System.out.println("Result: ");
+            while (rs.next()) {
+                System.out.println(rs.getString(1));
+                System.out.println(rs.getString(2));
             }
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+", "")).isEqualTo("Error 90019 "
+                + "(00000) : Error while executing SQL"
+                + " \"insert into timetest4 values(1,'')\": Error in parsing \" '' is not allowed to convert "
+                + "to time type.\" to time/date/datetime");
+        }
+    }
+
+    // Insert type not match
+    @Test
+    public void testColumnTypeNotMatch() throws SQLException {
+        String createTableSql = "create table test7_1(id int, name varchar(256), age int, primary key(id))";
+        String insertSql = "INSERT INTO test7_1 VALUES (1,'Alice',true)";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.execute(insertSql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+", ""))
+                .isEqualTo("Error 90005 (00000) : Error while executing SQL \"INSERT INTO "
+                    + "test7_1 VALUES (1,'Alice',true)\": Error while applying rule DingoValuesReduceRule(Project), "
+                    + "args [rel#:LogicalProject.NONE(input=RelSubset#,exprs=[1, 'Alice', CAST(true):INTEGER NOT "
+                    + "NULL]), rel#:LogicalValues.NONE(type=RecordType(INTEGER ZERO),tuples=[{ 0 }])]");
+        }
+    }
+
+    // Insert Data Range Error
+    @Test
+    public void testColumnDataRangeError() throws SQLException {
+        String createTableSql = "create table test8(id int, name varchar(256), age int, primary key(id))";
+        String insertSql = "INSERT INTO test8 VALUES (1,'Alice', 2000000000000000)";
+        String selectSql = "SELECT * from test8";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.execute(insertSql);
+            ResultSet rs = statement.executeQuery(selectSql);
+            while (rs.next()) {
+                System.out.println("Result: ");
+                System.out.println(rs.getString(1));
+                System.out.println(rs.getString(2));
+                System.out.println(rs.getString(3));
+            }
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90005 (00000) : Error while executing SQL \"INSERT INTO test8 VALUES "
+                    + "(1,'Alice', 2000000000000000)\": 2000000000000000 exceeds max 2147483647 or lower"
+                    + " min value -2147483648");
+        }
+    }
+
+    // Function not found
+    @Test
+    public void testNoFunction() throws SQLException {
+        String createTableSql = "create table test9(id int, name varchar(256), age int, primary key(id))";
+        String sql = "select  sum1(age) from test9";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeQuery(sql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90022 (00000) : Error while executing SQL "
+                    + "\"select  sum1(age) from test9\": From line 1, column 9 to line 1, column 17: "
+                    + "No match found for function signature SUM1(<NUMERIC>)");
+        }
+    }
+
+    // Join name duplicated.
+    @Test
+    public void testJoinDuplicated() throws SQLException {
+        String createTableSql = "create table test10(id int, name varchar(256), age int, primary key(id))";
+        String sql = "select * from test10 as a join test10 as a on a.id = b.id";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeQuery(sql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90015 (00000) : Error while executing SQL \"select * from test10 as a join "
+                    + "test10 as a on a.id = b.id\": From line 1, column 32 to line 1, column 42: Duplicate "
+                    + "relation name 'A' in FROM clause");
+        }
+    }
+
+    @Test
+    public void testJoinNoCondition() throws SQLException {
+        String createTableSql = "create table test11(id int, name varchar(256), age int, primary key(id))";
+        String sql = "select * from test11 as a join test11 as b";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeQuery(sql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90016 (00000) : Error while executing SQL \"select * from test11 as a "
+                    + "join test11 as b\": From line 1, column 27 to line 1, column 30: INNER, LEFT, RIGHT"
+                    + " or FULL join requires a condition (NATURAL keyword or ON or USING clause)");
+        }
+    }
+
+    @Test
+    public void testJoinSelectColumnAmbiguous() throws SQLException {
+        String createTableSql = "create table test12(id int, name varchar(256), age int, primary key(id))";
+        String sql = "select name from test12 as a join test12 as b on a.id = b.id";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeQuery(sql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90017 (00000) : Error while executing SQL \"select name from test12 as a join"
+                    + " test12 as b on a.id = b.id\": From line 1, column 8 to line 1, column 11:"
+                    + " Column 'NAME' is ambiguous");
+        }
+    }
+
+    @Test
+    public void testInterpretError() throws SQLException {
+        String sql = "select date_format('1999/33/01 01:01:01', '%Y/%m/%d %T')";
+        try (Statement statement = connection.createStatement()) {
+            statement.executeQuery(sql);
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90019 (00000) : Error while executing SQL \"select date_format('1999/33/01 01:01:01',"
+                    + " '%Y/%m/%d %T')\": Error in parsing string \" Some parameters of the function are in the wrong "
+                    + "format and cannot be parsed, error datetime: 1999/33/01 01:01:01\" to time, format is \"\".");
+        }
     }
 
 }

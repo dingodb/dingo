@@ -59,8 +59,9 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.common.error.DingoException.EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP;
+import static io.dingodb.common.error.DingoException.CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
 import static io.dingodb.common.error.DingoException.RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
+import static io.dingodb.common.error.DingoException.TYPE_CAST_ERROR;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
@@ -146,9 +147,9 @@ public class DingoMeta extends MetaImpl {
             Integer exceptionCode = -1;
             if (e instanceof CalciteContextException) {
                 exceptMessage = (((CalciteContextException) e).getMessage());
-                for (Pattern pat : EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.keySet()) {
+                for (Pattern pat : CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
                     if (pat.matcher(exceptMessage).find()) {
-                        exceptionCode = EXCEPTION_FROM_CALCITE_CONTEXT_PATTERN_CODE_MAP.get(pat);
+                        exceptionCode = CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.get(pat);
                         break;
                     }
                 }
@@ -162,8 +163,13 @@ public class DingoMeta extends MetaImpl {
                     exceptMessage = ((RuntimeException) e).getCause().getMessage();
                 }
                 for (Pattern pat : RUNTIME_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
-                    if (pat.matcher(exceptMessage).find()) {
+                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) e).getMessage()).find() &&
+                        !((RuntimeException) e).getMessage().contains("CAST"))) {
                         exceptionCode = RUNTIME_EXCEPTION_PATTERN_CODE_MAP.get(pat);
+                        // TODO: Refine error message.
+                        if (exceptionCode == TYPE_CAST_ERROR) {
+                            exceptMessage = ((RuntimeException) e).getMessage();
+                        }
                         break;
                     }
                 }
