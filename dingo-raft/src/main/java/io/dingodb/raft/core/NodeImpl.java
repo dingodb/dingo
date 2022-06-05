@@ -592,6 +592,8 @@ public class NodeImpl implements Node, RaftServerService {
             if (isCurrentLeaderValid()) {
                 return;
             }
+
+            LOG.debug("Current Leader invalid : {}", this.leaderId);
             resetLeaderId(PeerId.emptyPeer(), new Status(RaftError.ERAFTTIMEDOUT, "Lost connection from leader %s.",
                 this.leaderId));
 
@@ -1469,21 +1471,26 @@ public class NodeImpl implements Node, RaftServerService {
 
         @Override
         public synchronized void run(final Status status) {
+            LOG.debug("ReadIndexHeartbeatResponseClosure run : {}, {}", status, getResponse());
             if (this.isDone) {
                 return;
             }
             if (status.isOk() && getResponse().getSuccess()) {
+                LOG.debug("ackSuccess: {}", this.ackSuccess);
                 this.ackSuccess++;
             } else {
+                LOG.debug("ackFailure: {}", this.ackFailures);
                 this.ackFailures++;
             }
             // Include leader self vote yes.
             if (this.ackSuccess + 1 >= this.quorum) {
+                LOG.debug("ackSuccess process : {}, {}", this.ackSuccess, this.quorum);
                 this.respBuilder.setSuccess(true);
                 this.closure.setResponse(this.respBuilder.build());
                 this.closure.run(Status.OK());
                 this.isDone = true;
             } else if (this.ackFailures >= this.failPeersThreshold) {
+                LOG.debug("ackFauiler process : {}, {}", this.ackFailures, this.failPeersThreshold);
                 this.respBuilder.setSuccess(false);
                 this.closure.setResponse(this.respBuilder.build());
                 this.closure.run(Status.OK());
@@ -1599,6 +1606,7 @@ public class NodeImpl implements Node, RaftServerService {
                     if (peer.equals(this.serverId)) {
                         continue;
                     }
+                    LOG.debug("Send heartbeat to : " + peer.getEndpoint() + " with Index : " + respBuilder.getIndex());
                     this.replicatorGroup.sendHeartbeat(peer, heartbeatDone);
                 }
                 break;
@@ -1900,7 +1908,6 @@ public class NodeImpl implements Node, RaftServerService {
                     .newResponse(RpcRequests.AppendEntriesResponse.getDefaultInstance(), RaftError.EINVAL,
                         "Node %s is not in active state, state %s.", getNodeId(), this.state.name());
             }
-
             final PeerId serverId = new PeerId();
             if (!serverId.parse(request.getServerId())) {
                 LOG.warn("Node {} received AppendEntriesRequest from {} serverId bad format.", getNodeId(),
@@ -1910,7 +1917,6 @@ public class NodeImpl implements Node, RaftServerService {
                     .newResponse(RpcRequests.AppendEntriesResponse.getDefaultInstance(), RaftError.EINVAL,
                         "Parse serverId failed: %s.", request.getServerId());
             }
-
             // Check stale term
             if (request.getTerm() < this.currTerm) {
                 LOG.warn("Node {} ignore stale AppendEntriesRequest from {}, term={}, currTerm={}.", getNodeId(),
@@ -1920,7 +1926,6 @@ public class NodeImpl implements Node, RaftServerService {
                     .setTerm(this.currTerm) //
                     .build();
             }
-
             // Check term and state to step down
             checkStepDown(request.getTerm(), serverId);
             if (!serverId.equals(this.leaderId)) {
@@ -1935,7 +1940,6 @@ public class NodeImpl implements Node, RaftServerService {
                     .setTerm(request.getTerm() + 1) //
                     .build();
             }
-
             updateLastLeaderTimestamp(Utils.monotonicMs());
 
             if (entriesCount > 0 && this.snapshotExecutor != null && this.snapshotExecutor.isInstallingSnapshot()) {
@@ -2027,6 +2031,9 @@ public class NodeImpl implements Node, RaftServerService {
             final FollowerStableClosure closure
                 = new FollowerStableClosure(request, RpcRequests.AppendEntriesResponse.newBuilder()
                 .setTerm(this.currTerm), this, done, this.currTerm);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("LogManager AppendEntries : {}, {}", entries.size(), entries.get(entries.size() - 1).getId());
+            }
             this.logManager.appendEntries(entries, closure);
             // update configuration after _log_manager updated its memory status
             checkAndSetConfiguration(true);
@@ -2153,6 +2160,7 @@ public class NodeImpl implements Node, RaftServerService {
 
         @Override
         public void run(final Status status) {
+            LOG.debug("on catch up : {}, {}", status, this.peer);
             this.node.onCaughtUp(this.peer, this.term, this.version, status);
         }
     }

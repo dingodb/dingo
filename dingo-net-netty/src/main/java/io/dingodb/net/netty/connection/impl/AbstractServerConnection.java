@@ -58,7 +58,10 @@ public abstract class AbstractServerConnection implements Connection {
 
     @Override
     public void closeChannel(long channelId) {
-        channels.remove(channelId).shutdown();
+        Channel channel = channels.remove(channelId);
+        if (channel != null) {
+            channel.shutdown();
+        }
     }
 
     @Override
