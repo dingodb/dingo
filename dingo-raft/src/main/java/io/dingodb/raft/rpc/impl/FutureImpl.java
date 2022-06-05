@@ -17,6 +17,8 @@
 package io.dingodb.raft.rpc.impl;
 
 import io.dingodb.net.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +30,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class FutureImpl<R> implements Future<R> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FutureImpl.class);
+
     protected final ReentrantLock lock;
 
     protected boolean isDone;
@@ -37,7 +42,7 @@ public class FutureImpl<R> implements Future<R> {
     protected boolean isCancelled;
     protected Throwable failure;
 
-    protected Channel channel;
+    protected Channel channel = null;
 
     protected R result;
 
@@ -208,8 +213,9 @@ public class FutureImpl<R> implements Future<R> {
     private void closeChannel() {
         if (this.channel != null) {
             try {
-                channel.close();
+                this.channel.close();
             } catch (Exception e) {
+                LOG.error("Fail to close channel : id-{}, {}", channel.channelId(), e);
                 throw new RuntimeException(e);
             }
         }

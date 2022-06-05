@@ -133,16 +133,22 @@ public abstract class AbstractClientService implements ClientService {
                 Message result = null;
                 try {
                     result = parser.apply(msg.content());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Recive Message {} : {}", ch.remoteLocation(), result.toString());
+                    }
                 } catch (InvalidProtocolBufferException e) {
                     try {
                         result = RpcRequests.ErrorResponse.parseFrom(msg.content());
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Recive ErrorMessage : {}", result.toString());
+                        }
                     } catch (InvalidProtocolBufferException ex) {
                         try {
                             ch.close();
                         } catch (Exception exc) {
                             throw new RuntimeException(exc);
                         }
-                        throw new RuntimeException(ex);
+                        LOG.error("Error Msg: {}", msg.content());
                     }
                 }
                 invokeWithDone(result, done, future, ch);

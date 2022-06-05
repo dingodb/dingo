@@ -25,6 +25,8 @@ import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcProcessor;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.rpc.impl.ConnectionClosedEventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ServiceLoader;
 
@@ -66,6 +68,8 @@ public class DingoRaftRpcServer implements RpcServer {
 
 class DingoRpcContext implements RpcContext {
 
+    protected static final Logger LOG = LoggerFactory.getLogger(DingoRpcContext.class);
+
     String tag;
     Channel channel;
 
@@ -76,6 +80,7 @@ class DingoRpcContext implements RpcContext {
 
     @Override
     public void sendResponse(Object responseObj) {
+        LOG.debug("send response to {}: {}", channel.remoteLocation(), responseObj);
         channel.send(new io.dingodb.net.Message(null, ((Message)responseObj).toByteArray()));
     }
 

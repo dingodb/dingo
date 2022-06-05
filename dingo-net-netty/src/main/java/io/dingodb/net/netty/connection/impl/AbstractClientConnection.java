@@ -70,8 +70,10 @@ public abstract class AbstractClientConnection implements Connection {
     @Override
     public void closeChannel(long channelId) {
         Channel channel = channels.remove(channelId);
-        channel.sendAsync(channel.buffer(Type.COMMAND, 1).put(Command.CLOSE.code()));
-        channel.shutdown();
+        if (channel != null) {
+            channel.sendAsync(channel.buffer(Type.COMMAND, 1).put(Command.CLOSE.code()));
+            channel.shutdown();
+        }
     }
 
     @Override

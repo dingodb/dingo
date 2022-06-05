@@ -157,6 +157,7 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
          */
         @Override
         public void run(final Status status) {
+            LOG.debug("ReadIndexResponseClosure run : {}, {}", status, getResponse());
             if (!status.isOk()) {
                 notifyFail(status);
                 return;

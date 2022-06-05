@@ -89,6 +89,7 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
     public void sendHeartbeat(final PeerId peer, final RpcResponseClosure<RpcRequests.AppendEntriesResponse> closure) {
         final ThreadId rid = this.replicatorMap.get(peer);
         if (rid == null) {
+            LOG.debug("Peer {} is not connected", peer);
             if (closure != null) {
                 closure.run(new Status(RaftError.EHOSTDOWN, "Peer %s is not connected", peer));
             }
