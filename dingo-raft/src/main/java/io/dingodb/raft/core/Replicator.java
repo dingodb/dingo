@@ -1142,6 +1142,7 @@ public class Replicator implements ThreadId.OnError {
 
     static void onHeartbeatReturned(final ThreadId id, final Status status, final RpcRequests.AppendEntriesRequest request,
                                     final RpcRequests.AppendEntriesResponse response, final long rpcSendTime) {
+        LOG.debug("OnHeartbeatReturned: {}, {}", status, id);
         if (id == null) {
             // replicator already was destroyed.
             return;
@@ -1212,6 +1213,22 @@ public class Replicator implements ThreadId.OnError {
                 r.startHeartbeatTimer(startTimeMs);
                 return;
             }
+            if (response.hasLastLogIndex()) {
+                if (response.getLastLogIndex() < r.options.getLogManager().getLastLogIndex()) {
+                    if (isLogDebugEnabled) {
+                        sb.append(" fail, response term ") //
+                            .append(response.getTerm()) //
+                            .append(" lastLogIndex ") //
+                            .append(response.getLastLogIndex())
+                            .append(" node lastLogIndex")
+                            .append(r.options.getLogManager().getLastLogIndex());
+                        LOG.debug(sb.toString());
+                    }
+                    r.sendProbeRequest();
+                    r.startHeartbeatTimer(startTimeMs);
+                    return;
+                }
+            }
             if (isLogDebugEnabled) {
                 LOG.debug(sb.toString());
             }
@@ -1229,6 +1246,7 @@ public class Replicator implements ThreadId.OnError {
     @SuppressWarnings("ContinueOrBreakFromFinallyBlock")
     static void onRpcReturned(final ThreadId id, final RequestType reqType, final Status status, final Message request,
                               final Message response, final int seq, final int stateVersion, final long rpcSendTime) {
+        LOG.debug("RpcReturned: {}, {}", status, id);
         if (id == null) {
             return;
         }

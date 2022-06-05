@@ -55,7 +55,7 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
     @Getter
     protected Status status;
 
-    private MessageListener messageListener = EMPTY_MESSAGE_LISTENER;
+    private MessageListener messageListener = null;
     private Consumer<io.dingodb.net.Channel> closeListener = EMPTY_CLOSE_LISTENER;
 
     public Channel(long channelId, Connection connection) {
@@ -78,6 +78,7 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
         if (thread != null) {
             thread.interrupt();
         }
+        closeListener.accept(this);
     }
 
     @Override
@@ -153,7 +154,9 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
             switch (Type.values()[buffer.get()]) {
                 case USER_DEFINE:
                     Message message = Message.decode(buffer);
-                    messageListener.onMessage(message, this);
+                    if (messageListener != null) {
+                        messageListener.onMessage(message, this);
+                    }
                     TagMessageHandler.instance().handler(this, message);
                     break;
                 case COMMAND:

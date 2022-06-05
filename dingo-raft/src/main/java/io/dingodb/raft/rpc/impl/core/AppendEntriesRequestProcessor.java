@@ -301,7 +301,20 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
                 while (!respQueue.isEmpty()) {
                     final SequenceMessage queuedPipelinedResponse = respQueue.peek();
 
-                    if (queuedPipelinedResponse.sequence != ctx.getNextRequiredSequence()) {
+                    int responseSequence = queuedPipelinedResponse.sequence;
+                    int requiredSequence = ctx.getNextRequiredSequence();
+                    if (responseSequence < requiredSequence) {
+                        LOG.warn("responseSequence faster: {}, {}", responseSequence, requiredSequence);
+                        queuedPipelinedResponse.rpcCtx.getConnection().close();
+                        respQueue.remove();
+                        while (!respQueue.isEmpty()) {
+                            SequenceMessage rejectResponse = respQueue.peek();
+                            rejectResponse.rpcCtx.getConnection().close();
+                            respQueue.remove();
+                        }
+                        removePeerRequestContext(groupId, pair);
+                        break;
+                    } else if (responseSequence != requiredSequence) {
                         // sequence mismatch, waiting for next response.
                         break;
                     }
@@ -431,12 +444,16 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
             boolean isHeartbeat = isHeartbeatRequest(request);
             int reqSequence = -1;
             if (!isHeartbeat) {
+                LOG.debug("AppendEntries {}, {}, {}, {}, {}:{}", request.getPrevLogTerm(), request.getPrevLogIndex(),
+                    request.getTerm(), request.getCommittedIndex(), request.getServerId(), request.getPeerId());
                 reqSequence = getAndIncrementSequence(groupId, pair, null);
             }
             final Message response = service.handleAppendEntriesRequest(request, new SequenceRpcRequestClosure(done,
                 defaultResp(), groupId, pair, reqSequence, isHeartbeat));
             if (response != null) {
                 if (isHeartbeat) {
+                    LOG.debug("AppendEntries Heartbeat from {}, {}, {}, {}, {}:{}", request.getPrevLogTerm(), request.getPrevLogIndex(),
+                        request.getTerm(), request.getCommittedIndex(), request.getServerId(), request.getPeerId());
                     done.getRpcCtx().sendResponse(response);
                 } else {
                     sendSequenceResponse(groupId, pair, reqSequence, done.getRpcCtx(), response);

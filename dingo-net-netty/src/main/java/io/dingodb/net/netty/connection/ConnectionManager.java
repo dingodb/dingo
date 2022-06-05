@@ -44,6 +44,9 @@ public class ConnectionManager implements AutoCloseable {
             connection.connect();
         } catch (InterruptedException e) {
             NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(location);
+        } catch (Exception e) {
+            connection.close();
+            throw e;
         }
         connection.socketChannel().closeFuture().addListener(future -> onClose(connection));
         return connection;
