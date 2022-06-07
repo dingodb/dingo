@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -75,6 +76,17 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
             getUpdateColumnList(),
             getSourceExpressionList()
         );
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("table", table);
+        pw.item("operation", operation);
+        pw.item("updateColumnList", updateColumnList);
+        pw.item("sourceExpressionList", sourceExpressionList);
+        return pw;
     }
 
     @Override

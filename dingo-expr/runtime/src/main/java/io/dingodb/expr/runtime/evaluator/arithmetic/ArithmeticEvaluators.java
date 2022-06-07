@@ -29,6 +29,8 @@ import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import io.dingodb.expr.runtime.evaluator.utils.Time2StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -37,6 +39,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import javax.annotation.Nonnull;
 
+@Slf4j
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
     evaluatorBase = Evaluator.class,
@@ -222,6 +225,38 @@ final class ArithmeticEvaluators {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
+    // This is not arithmetic op, but put here to share the same evaluator factory.
+    @Evaluators.Base(StringEvaluator.class)
+    static String min(@Nonnull String value0, String value1) {
+        return value0.compareTo(value1) <= 0 ? value0 : value1;
+    }
+
+    // This is not arithmetic op, but put here to share the same evaluator factory.
+    @Evaluators.Base(DateEvaluator.class)
+    static Date min(@Nonnull Date value0, Date value1) {
+        return value0.compareTo(value1) <= 0 ? value0 : value1;
+    }
+
+    // This is not arithmetic op, but put here to share the same evaluator factory.
+    @Nonnull
+    @Evaluators.Base(TimeEvaluator.class)
+    static Time min(@Nonnull Time value0, @Nonnull Time value1) {
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "min({}, {}):Time called.",
+                Time2StringUtils.toGmtString(value0),
+                Time2StringUtils.toGmtString(value1)
+            );
+        }
+        return value0.compareTo(value1) <= 0 ? value0 : value1;
+    }
+
+    // This is not arithmetic op, but put here to share the same evaluator factory.
+    @Evaluators.Base(TimestampEvaluator.class)
+    static Timestamp min(@Nonnull Timestamp value0, Timestamp value1) {
+        return value0.compareTo(value1) < 0 ? value0 : value1;
+    }
+
     @Evaluators.Base(IntegerEvaluator.class)
     static int max(int value0, int value1) {
         return Math.max(value0, value1);
@@ -242,49 +277,33 @@ final class ArithmeticEvaluators {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
-    /**
-     * These are string op, put here to share the same evaluator factory.
-     */
-
-    @Evaluators.Base(StringEvaluator.class)
-    static String min(@Nonnull String value0, String value1) {
-        return value0.compareTo(value1) <= 0 ? value0 : value1;
-    }
-
+    // This is not arithmetic op, but put here to share the same evaluator factory.
     @Evaluators.Base(StringEvaluator.class)
     static String max(@Nonnull String value0, String value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
-    /**
-     * These are date time ops put here to share the same evaluator factory.
-     */
-
-    @Evaluators.Base(DateEvaluator.class)
-    static Date min(@Nonnull Date value0, Date value1) {
-        return value0.compareTo(value1) < 0 ? value0 : value1;
-    }
-
+    // This is not arithmetic op, but put here to share the same evaluator factory.
     @Evaluators.Base(DateEvaluator.class)
     static Date max(@Nonnull Date value0, Date value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
+    // This is not arithmetic op, but put here to share the same evaluator factory.
+    @Nonnull
     @Evaluators.Base(TimeEvaluator.class)
-    static Time min(@Nonnull Time value0, Time value1) {
-        return value0.compareTo(value1) < 0 ? value0 : value1;
-    }
-
-    @Evaluators.Base(TimeEvaluator.class)
-    static Time max(@Nonnull Time value0, Time value1) {
+    static Time max(@Nonnull Time value0, @Nonnull Time value1) {
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "max({}, {}):Time called.",
+                Time2StringUtils.toGmtString(value0),
+                Time2StringUtils.toGmtString(value1)
+            );
+        }
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
-    @Evaluators.Base(TimestampEvaluator.class)
-    static Timestamp min(@Nonnull Timestamp value0, Timestamp value1) {
-        return value0.compareTo(value1) < 0 ? value0 : value1;
-    }
-
+    // This is not arithmetic op, but put here to share the same evaluator factory.
     @Evaluators.Base(TimestampEvaluator.class)
     static Timestamp max(@Nonnull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
