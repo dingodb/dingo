@@ -220,4 +220,6 @@ public interface ReplicatorGroup extends Describer {
      * Returns all replicators.
      */
     List<ThreadId> listReplicators();
+
+    void failReplicator(PeerId peerId);
 }

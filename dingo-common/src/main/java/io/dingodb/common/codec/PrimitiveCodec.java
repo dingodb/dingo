@@ -299,7 +299,7 @@ public class PrimitiveCodec {
 
     public static byte[] encodeArray(final byte[] content) {
         if (content == null) {
-            return new byte[0];
+            return new byte[] {0};
         }
         byte[] len = encodeVarInt(content.length);
         byte[] result = new byte[len.length + content.length];
