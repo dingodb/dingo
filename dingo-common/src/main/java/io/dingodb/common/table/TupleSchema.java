@@ -144,6 +144,14 @@ public class TupleSchema implements CompileContext {
         return result;
     }
 
+    public Object[] convertTimeZone(@Nonnull Object[] row) {
+        Object[] result = new Object[row.length];
+        for (int i = 0; i < row.length; ++i) {
+            result[i] = elementSchemas[i].convertTimeZone(row[i]);
+        }
+        return result;
+    }
+
     public String formatTuple(@Nonnull Object[] tuple) {
         StringBuilder b = new StringBuilder();
         b.append("{");

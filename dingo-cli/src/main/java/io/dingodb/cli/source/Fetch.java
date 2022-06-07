@@ -24,8 +24,8 @@ import java.util.Properties;
 
 public interface Fetch {
 
-    List<Object[]> fetch(String localFile, String tableName, String separatorOrPattern, boolean state);
+    void fetch(String localFile, String separatorOrPattern, boolean state, DingoClient dingoClient, TableDefinition tableDefinition);
 
-    void fetch(Properties props, String topic, Parser parser, DingoClient dingoClient, TableDefinition tableDefinition);
+    void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition);
 
 }

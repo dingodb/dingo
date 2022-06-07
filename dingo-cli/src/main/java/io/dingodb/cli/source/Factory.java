@@ -17,7 +17,5 @@
 package io.dingodb.cli.source;
 
 public interface Factory {
-    Parser getParser(String format);
-
     Fetch getFetch(String format);
 }

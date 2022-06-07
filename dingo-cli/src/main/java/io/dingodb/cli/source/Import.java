@@ -24,7 +24,6 @@ import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
-import java.util.List;
 import java.util.Properties;
 
 @Slf4j
@@ -39,7 +38,7 @@ public class Import {
     @Parameter(names = "--config", description = "Config file path.", order = 2)
     private String config;
 
-    @Parameter(names = "--record-type", description = "Data type, support json/csv/avro/kafka_json")
+    @Parameter(names = "--record-type", description = "Data type, support json/csv/avro/kafka_json", required = true)
     private String recordType;
 
     @Parameter(names = "--file-path", description = "local file path")
@@ -85,20 +84,24 @@ public class Import {
         TableDefinition tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName.toUpperCase());
         Factory factory = new DefaultFactory();
         Fetch fetch = factory.getFetch(recordType.toUpperCase());
-        Parser parser = factory.getParser(recordType.toUpperCase());
         switch (cmd.toUpperCase()) {
             case "LOCAL":
-                List<Object[]> records = fetch.fetch(localFile, tableName, separator, state);
-                parser.parse(tableDefinition, records, dingoClient);
+                if (localFile == null) {
+                    System.out.println("File-path cannot be empty \n");
+                }
+                fetch.fetch(localFile, separator, state, dingoClient, tableDefinition);
                 break;
             case "KAFKA":
                 Properties props = buildProp();
                 if (recordType.equalsIgnoreCase("AVRO")) {
+                    if (schemaRegistry == null) {
+                        System.out.println("schema-registry-url cannot be empty \n");
+                    }
                     props.put("schema.registry.url", schemaRegistry);
                     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                         "org.apache.kafka.common.serialization.ByteArrayDeserializer");
                 }
-                fetch.fetch(props, topic, parser, dingoClient, tableDefinition);
+                fetch.fetch(props, topic, dingoClient, tableDefinition);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
@@ -106,6 +109,9 @@ public class Import {
     }
 
     private Properties buildProp() {
+        if (bootstrapServers == null || groupId == null) {
+            System.out.println("Parameter bootstrap-servers/group-id cannot be empty \n");
+        }
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
