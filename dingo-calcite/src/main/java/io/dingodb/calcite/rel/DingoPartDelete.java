@@ -26,17 +26,13 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 
 public final class DingoPartDelete extends AbstractRelNode implements DingoRel {
     @Getter
@@ -61,10 +57,18 @@ public final class DingoPartDelete extends AbstractRelNode implements DingoRel {
         return RelOptUtil.createDmlRowType(SqlKind.INSERT, getCluster().getTypeFactory());
     }
 
-
     @Override
     public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCostFactory().makeCost(0, 0, 0);
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("table", table);
+        pw.item("tupleMapping", tupleMapping);
+        return pw;
     }
 
     @Override

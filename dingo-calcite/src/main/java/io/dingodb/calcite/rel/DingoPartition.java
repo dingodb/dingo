@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 
 import java.util.List;
@@ -41,6 +42,14 @@ public final class DingoPartition extends SingleRel implements DingoRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoPartition(getCluster(), traitSet, AbstractRelNode.sole(inputs), table);
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("table", table);
+        return pw;
     }
 
     @Override

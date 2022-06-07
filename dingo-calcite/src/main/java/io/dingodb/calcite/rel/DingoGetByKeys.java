@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -66,6 +67,16 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
         double cpu = rowCount + 1;
         double io = 0;
         return planner.getCostFactory().makeCost(rowCount, cpu, io);
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("table", table);
+        pw.item("keyTuples", keyTuples);
+        pw.item("selection", selection);
+        return pw;
     }
 
     @Override
