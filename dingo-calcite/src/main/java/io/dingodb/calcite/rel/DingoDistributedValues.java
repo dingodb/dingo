@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 
@@ -40,6 +41,14 @@ public class DingoDistributedValues extends DingoValues {
     ) {
         super(cluster, rowType, tuples, traits);
         this.table = table;
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("table", table);
+        return pw;
     }
 
     @Override

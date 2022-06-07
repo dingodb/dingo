@@ -16,14 +16,19 @@
 
 package io.dingodb.expr.runtime.evaluator.utils;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
+import javax.annotation.Nonnull;
 
 public final class Time2StringUtils {
 
     /**
      * convert input timestamp to string with timezone.
-     * @param input timestamp
+     *
+     * @param input  timestamp
      * @param format default "yyyy-MM-dd HH:mm:ss"
      * @return string after format.
      */
@@ -35,6 +40,7 @@ public final class Time2StringUtils {
 
     /**
      * convert input time to string with timezone.
+     *
      * @param input java.sql.Time
      * @return
      */
@@ -44,4 +50,10 @@ public final class Time2StringUtils {
         return result.toString();
     }
 
+    @Nonnull
+    public static String toGmtString(java.util.Date value) {
+        final DateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        dtf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return dtf.format(value);
+    }
 }

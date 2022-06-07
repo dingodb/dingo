@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.type.RelDataType;
 
@@ -46,6 +47,15 @@ public final class DingoHash extends SingleRel implements DingoRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoHash(getCluster(), traitSet, AbstractRelNode.sole(inputs), keys);
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        // crucial, this is how Calcite distinguish between different node with different props.
+        pw.itemIf("keys", keys, keys != null);
+        return pw;
     }
 
     @Override
