@@ -303,4 +303,12 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
         out.print("  failureReplicators: ") //
             .println(this.failureReplicators);
     }
+
+    @Override
+    public void failReplicator(PeerId peerId) {
+        ThreadId id = this.replicatorMap.remove(peerId);
+        if (id != null) {
+            this.failureReplicators.put(peerId, ((Replicator) id.getData()).getOpts().getReplicatorType());
+        };
+    }
 }

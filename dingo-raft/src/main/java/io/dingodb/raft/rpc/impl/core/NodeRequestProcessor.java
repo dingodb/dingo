@@ -53,9 +53,7 @@ public abstract class NodeRequestProcessor<T extends Message> extends RpcRequest
             } else {
                 return RpcFactoryHelper //
                     .responseFactory() //
-                    .newResponse(defaultResp(), RaftError.ENOENT, null);
-                //TODO: Server deserialize (RpcRequests.ErrorResponse.parse) error when fmt not null
-                //.newResponse(defaultResp(), RaftError.ENOENT, "Peer id not found: %s, group: %s.", peerIdStr, groupId);
+                    .newResponse(defaultResp(), RaftError.ENOENT, "Peer id not found: %s, group: %s.", peerIdStr, groupId);
             }
         } else {
             return RpcFactoryHelper //

@@ -1076,6 +1076,9 @@ public class NodeImpl implements Node, RaftServerService {
         }
         this.replicatorGroup.init(new NodeId(this.groupId, this.serverId), rgOpts);
 
+        Replicator.ReplicatorStateListener replicatorStateListener = new DingoReplicatorStateListenerImpl(this);
+        addReplicatorStateListener(replicatorStateListener);
+
         this.readOnlyService = new ReadOnlyServiceImpl();
         final ReadOnlyServiceOptions rosOpts = new ReadOnlyServiceOptions();
         rosOpts.setFsmCaller(this.fsmCaller);
@@ -3597,6 +3600,11 @@ public class NodeImpl implements Node, RaftServerService {
         snapshotMd5List.clear();
         this.isComparing.set(false);
         return new Pair(0, msg);
+    }
+
+    @Override
+    public void failReplicator(PeerId peerId) {
+        replicatorGroup.failReplicator(peerId);
     }
 
     public void snapshotByAppliedIndex() {
