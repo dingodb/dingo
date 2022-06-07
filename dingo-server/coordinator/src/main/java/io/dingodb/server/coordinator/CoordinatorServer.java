@@ -78,7 +78,7 @@ public class CoordinatorServer {
         rpcServer.init(null);
         NodeManager.getInstance().addAddress(endpoint);
 
-        Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, 0));
+        Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, ""));
         MetaStore metaStore = new MetaStore(node, rocksStore);
         CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
         NodeOptions nodeOptions = getNodeOptions();
