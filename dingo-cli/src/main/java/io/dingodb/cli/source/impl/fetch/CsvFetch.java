@@ -21,7 +21,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.Strings;
 import io.dingodb.cli.source.Fetch;
-import io.dingodb.cli.source.Parser;
+import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 @Slf4j
-public class CsvFetch implements Fetch {
+public class CsvFetch extends AbstractParser implements Fetch {
 
     private ObjectMapper mapper = new CsvMapper();
     private CsvSchema schema = CsvSchema.builder()
@@ -42,9 +42,10 @@ public class CsvFetch implements Fetch {
         .build();
 
     @Override
-    public List<Object[]> fetch(String localFile, String tableName, String separator, boolean state) {
-        List<Object[]> records = new ArrayList<>();
+    public void fetch(
+        String localFile, String separator, boolean state, DingoClient dingoClient, TableDefinition tableDefinition) {
         try {
+            List<Object[]> records = new ArrayList<>();
             separator = Optional.of(separator.trim()).orElse(",");
             char separatorChar;
             if (separator.length() > 1 && separator.startsWith("\\") ) {
@@ -65,14 +66,25 @@ public class CsvFetch implements Fetch {
                     .with(schema.withColumnSeparator(separatorChar))
                     .readValue(line);
                 records.add(arr);
+                if (records.size() >= 1000) {
+                    this.parse(tableDefinition, records, dingoClient);
+                    records.clear();
+                }
+            }
+            if (records.size() != 0) {
+                this.parse(tableDefinition, records, dingoClient);
             }
         } catch (Exception e) {
             log.error("Error reading file:{}", localFile, e);
         }
-        return records;
     }
 
     @Override
-    public void fetch(Properties props, String topic, Parser parser, DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
+    }
+
+    @Override
+    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
     }
 }

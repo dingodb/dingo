@@ -21,10 +21,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.common.util.TypeMapping;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.avro.Schema;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.NlsString;
 
@@ -35,8 +35,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalTime;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
@@ -160,27 +160,36 @@ public class ElementSchema implements CompileContext {
                 throw new RuntimeException("Invalid input parameter.");
             case TypeCode.DATE:
                 try {
-                    if (obj instanceof Long) {
-                        return new java.util.Date(Long.parseLong(obj.toString()));
+                    if (obj instanceof Number) {
+                        return new java.util.Date(((Number) obj).longValue());
                     }
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    sdf.setLenient(false);
                     return sdf.parse(obj.toString());
                 } catch (ParseException e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to date.");
                 }
             case TypeCode.TIME:
                 try {
-                    if (obj instanceof Long) {
-                        return new Time(Long.parseLong(obj.toString()));
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                    sdf.setLenient(false);
+                    if (obj instanceof Number) {
+                        return sdf.format(new java.util.Date((Long) obj));
                     }
-                    LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
-                    return DingoDateTimeUtils.convertLocalTimeToTime(localTime);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                    return sdf.parse((String) obj);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to parse \"" + obj + "\" to time.");
                 }
             case TypeCode.TIMESTAMP:
-                if (obj instanceof Long) {
-                    return new Timestamp(Long.parseLong(obj.toString()));
+                if (obj instanceof Number) {
+                    return new Timestamp(((Number) obj).longValue());
+                }
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                sdf.setLenient(false);
+                try {
+                    sdf.parse((String) obj);
+                } catch (ParseException e) {
+                    throw new RuntimeException("Failed to parse \"" + obj + "\" to timestamp");
                 }
                 return Timestamp.valueOf(obj.toString());
             case TypeCode.STRING:
@@ -188,6 +197,38 @@ public class ElementSchema implements CompileContext {
                 break;
         }
         return obj;
+    }
+
+    public Object convertTimeZone(Object item) {
+        if (item == null) {
+            return null;
+        }
+        switch (type) {
+            case TypeCode.TIME:
+                if (item instanceof java.util.Date) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                    String time = sdf.format((java.util.Date) item);
+                    return new Time(toCalendar(time).getTimeInMillis());
+                }
+                return new Time(toCalendar((String) item).getTimeInMillis());
+            default:
+                break;
+        }
+        return item;
+    }
+
+    private static Calendar toCalendar(String v) {
+        Calendar calendar = Calendar.getInstance(DateTimeUtils.DEFAULT_ZONE, Locale.ROOT);
+        int h = Integer.parseInt(v.substring(0, 2));
+        int m = Integer.parseInt(v.substring(3, 5));
+        int s = Integer.parseInt(v.substring(6, 8));
+        int ms = 0;
+        int millis = (int) (h * DateTimeUtils.MILLIS_PER_HOUR
+            + m * DateTimeUtils.MILLIS_PER_MINUTE
+            + s * DateTimeUtils.MILLIS_PER_SECOND
+            + ms);
+        calendar.setTimeInMillis(millis);
+        return calendar;
     }
 
     public Object convert(Object origin) {
