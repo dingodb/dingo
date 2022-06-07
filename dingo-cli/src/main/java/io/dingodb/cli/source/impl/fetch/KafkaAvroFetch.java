@@ -18,7 +18,7 @@ package io.dingodb.cli.source.impl.fetch;
 
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.dingodb.cli.source.Fetch;
-import io.dingodb.cli.source.Parser;
+import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
@@ -34,13 +34,12 @@ import java.util.List;
 import java.util.Properties;
 
 @Slf4j
-public class KafkaAvroFetch implements Fetch {
+public class KafkaAvroFetch extends AbstractParser implements Fetch {
 
     private KafkaAvroDeserializer deserializer = new KafkaAvroDeserializer();
 
     @Override
-    public void fetch(Properties props, String topic, Parser parser,
-                      DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
         deserializer.configure(Collections.singletonMap("schema.registry.url", props.getProperty("schema.registry.url")), false);
 
         KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(props);
@@ -61,9 +60,14 @@ public class KafkaAvroFetch implements Fetch {
                     } catch (Exception e) {
                         log.error("Avro deserialization failed ", e);
                     }
+                    if (result.size() >= 1000) {
+                        this.parse(tableDefinition, result, dingoClient);
+                        result.clear();
+                    }
                 }
                 if (result.size() != 0) {
-                    parser.parse(tableDefinition, result, dingoClient);
+                    this.parse(tableDefinition, result, dingoClient);
+                    result.clear();
                 }
             }
         } finally {
@@ -72,7 +76,13 @@ public class KafkaAvroFetch implements Fetch {
     }
 
     @Override
-    public List<Object[]> fetch(String localFile, String tableName, String separatorOrPattern, boolean state) {
-        return null;
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
+    }
+
+    @Override
+    public void fetch(String localFile, String separatorOrPattern, boolean state,
+                      DingoClient dingoClient, TableDefinition tableDefinition) {
+
     }
 }
