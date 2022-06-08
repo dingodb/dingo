@@ -51,14 +51,7 @@ public interface Task {
 
     List<Id> getRunList();
 
-    default void init() {
-        getOperators().forEach((id, o) -> {
-            o.setId(id);
-            o.setTask(this);
-        });
-        getOperators().values()
-            .forEach(Operator::init);
-    }
+    void init();
 
     void run();
 
@@ -68,4 +61,5 @@ public interface Task {
     }
 
     byte[] serialize();
+
 }

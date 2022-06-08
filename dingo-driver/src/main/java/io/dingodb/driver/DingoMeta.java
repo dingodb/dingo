@@ -158,7 +158,7 @@ public class DingoMeta extends MetaImpl {
                     Collections.singletonList(""), null);
             } else if (e instanceof RuntimeException) {
                 if (((RuntimeException) e).getCause() == null) {
-                    exceptMessage = e.getMessage();
+                    exceptMessage = e.getMessage() != null ? ((RuntimeException) e).getMessage() : "Null pointer";
                 } else {
                     exceptMessage = ((RuntimeException) e).getCause().getMessage();
                 }

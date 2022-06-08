@@ -27,6 +27,7 @@ import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.util.TagUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -117,19 +118,24 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(@Nonnull Fin fin) {
         try {
-            byte[] encodeArr = codec.encodeFin(fin);
-            byte[] array = PrimitiveCodec.encodeArray(encodeArr);
-            if ((array.length + this.sendBuffer.position() > this.sendBuffer.capacity())
-                || this.tupleCount >= SEND_MAX_COUNT) {
+            if (fin != null && fin instanceof FinWithException) {
+                byte[] encodeArr = codec.encodeFin(fin);
+                byte[] array = PrimitiveCodec.encodeArray(encodeArr);
+                endpoint.send(array);
+            } else {
+                byte[] encodeArr = codec.encodeFin(fin);
+                byte[] array = PrimitiveCodec.encodeArray(encodeArr);
+                if ((array.length + this.sendBuffer.position() > this.sendBuffer.capacity())
+                    || this.tupleCount >= SEND_MAX_COUNT) {
+                    this.sendBufferData();
+                }
+                this.putArray(array);
+                if (log.isDebugEnabled()) {
+                    log.debug("Send FIN to ({}, {}, {}), fin length: {}, arr len: {}, buff pos: {}, hashCode: {}.",
+                        host, port, receiveId, array.length, encodeArr.length, this.sendBuffer.position(), this.hashCode());
+                }
                 this.sendBufferData();
             }
-            this.putArray(array);
-            if (log.isDebugEnabled()) {
-                log.debug("Send FIN to ({}, {}, {}), fin length: {}, arr len: {}, buff pos: {}, hashCode: {}.",
-                    host, port, receiveId, array.length, encodeArr.length, this.sendBuffer.position(), this.hashCode());
-            }
-            this.sendBufferData();
-
             endpoint.close();
         } catch (Exception e) {
             log.error("Send FIN to ({}, {}, {}) error", host, port, receiveId, e);

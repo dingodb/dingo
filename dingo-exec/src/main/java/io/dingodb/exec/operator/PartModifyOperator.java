@@ -25,6 +25,7 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
 
@@ -70,7 +71,9 @@ public abstract class PartModifyOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        output.push(new Object[]{count});
+        if (!(fin != null && fin instanceof FinWithException)) {
+            output.push(new Object[]{count});
+        }
         output.fin(fin);
     }
 }
