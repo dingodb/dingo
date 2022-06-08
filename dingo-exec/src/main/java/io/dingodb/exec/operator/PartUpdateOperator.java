@@ -69,26 +69,34 @@ public final class PartUpdateOperator extends PartModifyOperator {
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         TupleEvalContext etx = new TupleEvalContext(Arrays.copyOf(tuple, tuple.length));
         boolean update = false;
-        for (int i = 0; i < mapping.size(); ++i) {
-            Object newValue = updates.get(i).eval(etx);
-            int index = mapping.get(i);
-            boolean isUpdate = (tuple[index] == null && newValue != null)
-                || (tuple[index] != null && newValue == null)
-                || (tuple[index] != null && !tuple[index].equals(newValue));
-            if (isUpdate) {
-                // update table columns when column is time
-                if (newValue != null && schema.getElementSchemas()[index].getTypeCode() == TypeCode.TIME) {
-                    // disable timezone
-                    LocalTime localTime = LocalTime.parse(newValue.toString());
-                    newValue = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
+        int i = 0;
+        try {
+            for (i = 0; i < mapping.size(); ++i) {
+                Object newValue = updates.get(i).eval(etx);
+                int index = mapping.get(i);
+                boolean isUpdate = (tuple[index] == null && newValue != null)
+                    || (tuple[index] != null && newValue == null)
+                    || (tuple[index] != null && !tuple[index].equals(newValue));
+                if (isUpdate) {
+                    // update table columns when column is time
+                    if (newValue != null && schema.getElementSchemas()[index].getTypeCode() == TypeCode.TIME) {
+                        // disable timezone
+                        LocalTime localTime = LocalTime.parse(newValue.toString());
+                        newValue = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
+                    }
+                    tuple[index] = newValue;
+                    update = true;
                 }
-                tuple[index] = newValue;
-                update = true;
             }
-        }
-        if (update) {
-            part.upsert(Arrays.copyOf(tuple, schema.getElementSchemas().length));
-            count++;
+            if (update) {
+                part.upsert(Arrays.copyOf(tuple, schema.getElementSchemas().length));
+                count++;
+            }
+        } catch (Exception ex) {
+            log.error("update operator with expr:{}, exception:{}",
+                updates.get(i) == null ? "None" : updates.get(i).getExprString(),
+                ex.toString(), ex);
+            throw new RuntimeException("Update Operator catch Exception");
         }
         return true;
     }

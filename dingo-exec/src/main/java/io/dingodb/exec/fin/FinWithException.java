@@ -56,7 +56,7 @@ public class FinWithException implements Fin {
     @Override
     public String detail() {
         StringBuilder builder = new StringBuilder();
-        builder.append(taskStatus.detail());
+        builder.append(taskStatus.getErrorMsg());
         return builder.toString();
     }
 
