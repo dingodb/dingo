@@ -24,9 +24,11 @@ import io.dingodb.exec.util.ExprUtil;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import lombok.Getter;
 
 public class RtExprWithType {
     @JsonProperty("expr")
+    @Getter
     private final String exprString;
     @JsonProperty("type")
     private final ElementSchema type;

@@ -377,21 +377,22 @@ public class DingoDateTimeUtils implements Serializable {
     }
 
 
-    public static LocalTime convertToTime(String originTime) throws SQLException {
+    public static LocalTime convertToTime(final String originTime) throws SQLException {
         int index = 0;
         int length = originTime.length();
+        String inOriginTime = originTime;
         if (length == 0) {
             throw new SQLException(" '' is not allowed to convert to time type.");
         }
         while (length < 6) {
-            originTime = "0" + originTime;
+            inOriginTime = "0" + inOriginTime;
             length++;
         }
         try {
             LocalTime localTime;
             for (Pattern pattern: TIME_PATTERN_LIST) {
-                if (pattern.matcher(originTime).matches()) {
-                    localTime = LocalTime.parse(originTime, TIME_FORMATTER_LIST.get(index));
+                if (pattern.matcher(inOriginTime).matches()) {
+                    localTime = LocalTime.parse(inOriginTime, TIME_FORMATTER_LIST.get(index));
                     return localTime;
                 }
                 index++;
@@ -401,8 +402,8 @@ public class DingoDateTimeUtils implements Serializable {
             throw new Exception(errorMsg);
         } catch (Exception e) {
             if (!(e instanceof DateTimeParseException)) {
-                throw new SQLException(e.getMessage() + " ," + originTime + " FORMAT "
-                    + TIME_PATTERN_LIST.get(index));
+                String errMsg = "input time:" + originTime + " is invalid, Expected(HH:MM:SS or HHMMSS) ";
+                throw new SQLException(errMsg);
             } else {
                 throw new SQLException(e.getMessage(), "");
             }

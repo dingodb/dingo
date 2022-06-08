@@ -65,6 +65,9 @@ public final class TaskImpl implements Task {
     @Getter
     private final List<Id> runList;
 
+    @Getter
+    private TaskStatus taskInitStatus;
+
     @JsonCreator
     public TaskImpl(
         @JsonProperty("id") Id id,
@@ -106,17 +109,50 @@ public final class TaskImpl implements Task {
         runList.remove(operator.getId());
     }
 
+    @Override
+    public void init() {
+        boolean isStatusOK = true;
+        String statusErrMsg = "";
+        getOperators().forEach((id, o) -> {
+            o.setId(id);
+            o.setTask(this);
+        });
+
+        for (Operator operator: getOperators().values()) {
+            try {
+                operator.init();
+            } catch (Exception ex) {
+                log.error("Init operator:{} in task:{} failed catch exception:{}",
+                    operator.toString(), this.id.toString(), ex.toString(), ex);
+                statusErrMsg = ex.toString();
+                isStatusOK = false;
+            }
+        }
+        taskInitStatus = new TaskStatus();
+        taskInitStatus.setStatus(isStatusOK);
+        taskInitStatus.setTaskId(this.id.toString());
+        taskInitStatus.setErrorMsg(statusErrMsg);
+    }
+
     public void run() {
         log.info("Task is starting at {}...", location);
-        runList.forEach(id -> {
+        for (Id id : runList) {
             final Operator operator = operators.get(id);
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
+
+            if (taskInitStatus != null && !taskInitStatus.getStatus()) {
+                log.error("Run task but check task has init failed: {}", taskInitStatus.toString());
+                operator.fin(0, FinWithException.of(taskInitStatus));
+                break;
+            }
+
             Executors.execute("execute-" + jobId + "-" + id, () -> {
                 final long startTime = System.currentTimeMillis();
                 boolean isStatusOK = true;
                 String  statusErrMsg = "OK";
                 try {
+
                     while (operator.push(0, null)) {
                         log.info("Operator {} need another pushing.", operator.getId());
                     }
@@ -125,7 +161,7 @@ public final class TaskImpl implements Task {
                     isStatusOK = false;
                     statusErrMsg = e.toString();
                     log.error("Run Task:{} catch operator:{} run Exception:{}",
-                            getId().toString(), operator.getId(), e);
+                            getId().toString(), operator.getId(), e.toString(), e);
                 } finally {
                     if (!isStatusOK) {
                         TaskStatus taskStatus = new TaskStatus();
@@ -139,7 +175,7 @@ public final class TaskImpl implements Task {
                     }
                 }
             });
-        });
+        }
     }
 
     @Nonnull

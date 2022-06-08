@@ -74,6 +74,9 @@ public final class RootOperator extends SinkOperator {
             log.debug("Received FIN. {}", fin.detail());
         }
 
+        if (tupleQueue == null) {
+            tupleQueue = new LinkedBlockingDeque<>();
+        }
         if (fin instanceof FinWithException) {
             errorFin = fin;
             log.warn("Receive FinWith Exception:{}", fin.detail());

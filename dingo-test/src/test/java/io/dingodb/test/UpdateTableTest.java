@@ -20,6 +20,7 @@ import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -142,4 +143,14 @@ public class UpdateTableTest {
                 + "11, Cindy, 8.5\n"
         );
     }
+    @Test
+    public void testUpdateWithException() throws SQLException {
+        String sql = "update test set amount = 'xxxx' where id = 1";
+        try {
+            sqlHelper.updateTest(sql, 1);
+        } catch (Exception ex) {
+            Assertions.assertTrue(ex.toString().contains("NumberFormatException"));
+        }
+    }
+
 }
