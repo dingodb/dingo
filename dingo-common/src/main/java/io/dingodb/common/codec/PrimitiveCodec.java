@@ -253,7 +253,7 @@ public class PrimitiveCodec {
 
     public static byte[] encodeString(String str) {
         if (str == null) {
-            return new byte[0];
+            return new byte[] {0};
         }
         byte[] content = str.getBytes(StandardCharsets.UTF_8);
         byte[] len = encodeVarInt(content.length);
