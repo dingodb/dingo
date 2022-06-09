@@ -75,19 +75,19 @@ public class HashJoinOperator extends SoleOutOperator {
         hashMap = new ConcurrentHashMap<>();
     }
 
+    private void waitRightFinFlag() {
+        while (!rightFinFlag) {
+            try {
+                wait();
+            } catch (InterruptedException ignored) {
+            }
+        }
+    }
+
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
         if (pin == 0) { // left
-            if (!rightFinFlag) {
-                while (true) {
-                    try {
-                        wait();
-                    } catch (InterruptedException e) {
-                        continue;
-                    }
-                    break;
-                }
-            }
+            waitRightFinFlag();
             TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
             List<TupleWithJoinFlag> rightList = hashMap.get(leftKey);
             if (rightList != null) {
@@ -121,6 +121,8 @@ public class HashJoinOperator extends SoleOutOperator {
 
         if (pin == 0) { // left
             if (rightRequired) {
+                // should wait in case of no data push to left.
+                waitRightFinFlag();
                 outer:
                 for (List<TupleWithJoinFlag> tList : hashMap.values()) {
                     for (TupleWithJoinFlag t : tList) {
