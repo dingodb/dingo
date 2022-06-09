@@ -23,6 +23,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -40,8 +42,19 @@ public final class DingoAggregate extends Aggregate implements DingoRel {
         List<AggregateCall> aggCalls
     ) {
         super(cluster, traitSet, hints, input, groupSet, groupSets, aggCalls);
+        // In `Aggregate`, type checks were done but with `assert`, which is not effective in production.
+        for (AggregateCall aggCall : aggCalls) {
+            SqlKind aggKind = aggCall.getAggregation().getKind();
+            if (aggKind == SqlKind.SUM || aggKind == SqlKind.SUM0) {
+                if (aggCall.type.getFamily() != SqlTypeFamily.NUMERIC) {
+                    throw new IllegalArgumentException(
+                        "Aggregation function \"" + aggKind + "\" requires numerical input but \""
+                            + aggCall.type + "\" was given."
+                    );
+                }
+            }
+        }
     }
-
 
     @Nonnull
     @Override
