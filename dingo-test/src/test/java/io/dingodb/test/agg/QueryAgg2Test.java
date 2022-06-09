@@ -17,15 +17,17 @@
 package io.dingodb.test.agg;
 
 import io.dingodb.common.table.TupleSchema;
+import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.test.SqlHelper;
+import org.apache.calcite.avatica.AvaticaSqlException;
+import org.apache.calcite.rel.core.Aggregate;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
-
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class QueryAgg2Test {
@@ -52,14 +54,21 @@ public class QueryAgg2Test {
     }
 
     @Test
-    public void testTypeMismatch() throws SQLException {
+    public void testTypeMismatch() {
+        // Disable assert in `Aggregate` to allow our own check in `DingoAggregate`.
+        // but `gradle test` seems not respect to this and throws AssertionError occasionally.
+        Aggregate.class.getClassLoader().clearAssertionStatus();
+        Aggregate.class.getClassLoader().setClassAssertionStatus(Aggregate.class.getName(), false);
+        assertFalse(Aggregate.class.desiredAssertionStatus());
         assertThrows(AssertionError.class, () -> {
-            sqlHelper.queryTest(
-                "select avg(name) from people",
-                new String[]{"expr$1"},
-                TupleSchema.ofTypes("DOUBLE"),
-                "1.2\n"
-            );
+            assertThrows(AvaticaSqlException.class, () -> {
+                sqlHelper.queryTest(
+                    "select avg(name) from people",
+                    new String[]{"expr$0"},
+                    TupleSchema.ofTypes(TypeCode.DECIMAL),
+                    "107803.547\n"
+                );
+            });
         });
     }
 }
