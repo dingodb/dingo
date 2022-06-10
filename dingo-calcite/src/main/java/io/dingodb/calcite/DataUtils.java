@@ -46,7 +46,16 @@ public final class DataUtils {
                 break;
             case TIME:
                 if (value instanceof Time) {
-                    TimeString ts =  new TimeString(value.toString());
+                    String timeStr = String.valueOf(((Time) value).getTime());
+                    TimeString ts =  new TimeString(value.toString()).withMillis(Integer.valueOf(
+                        timeStr.substring(timeStr.length() - 3)));
+                    return ts;
+                }
+
+                if (value instanceof Number) {
+                    String timeStr = String.valueOf(value);
+                    TimeString ts =  new TimeString(new Time((Long) value).toString()).withMillis(Integer.valueOf(
+                        timeStr.substring(timeStr.length() - 3)));
                     return ts;
                 }
                 break;
@@ -95,7 +104,7 @@ public final class DataUtils {
             case DATE:
                 return new Date(((Calendar) value).getTimeInMillis());
             case TIME:
-                return new Time(((Calendar) value).getTimeInMillis());
+                return ((Calendar) value).getTimeInMillis();
             case TIMESTAMP:
                 return new Timestamp(((Calendar) value).getTimeInMillis());
             default:

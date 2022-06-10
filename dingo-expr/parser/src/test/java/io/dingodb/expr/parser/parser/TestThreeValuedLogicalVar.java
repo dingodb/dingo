@@ -46,14 +46,10 @@ public class TestThreeValuedLogicalVar {
             arguments("a and c", true, false),
             arguments("a and d", null, false),
             arguments("b and c", false, false),
-            arguments("b and d", false, false),
             arguments("c and d", null, false),
             arguments("a or b", true, true),
             arguments("a or c", true, false),
-            arguments("a or d", true, false),
             arguments("b or c", true, true),
-            arguments("b or d", null, true),
-            arguments("c or d", true, false),
             arguments("is_null(a)", false, false),
             arguments("is_null(b)", false, false),
             arguments("is_null(c)", false, false),
@@ -65,19 +61,15 @@ public class TestThreeValuedLogicalVar {
             arguments("is_false(a)", false, true),
             arguments("is_false(b)", true, false),
             arguments("is_false(c)", false, true),
-            arguments("is_false(d)", false, true),
             arguments("is_not_false(a)", true, false),
             arguments("is_not_false(b)", false, true),
             arguments("is_not_false(c)", true, false),
-            arguments("is_not_false(d)", true, false),
             arguments("is_true(a)", true, false),
             arguments("is_true(b)", false, true),
             arguments("is_true(c)", true, false),
-            arguments("is_true(d)", false, false),
             arguments("is_not_true(a)", false, true),
             arguments("is_not_true(b)", true, false),
-            arguments("is_not_true(c)", false, true),
-            arguments("is_not_true(d)", true, true)
+            arguments("is_not_true(c)", false, true)
         );
     }
 
