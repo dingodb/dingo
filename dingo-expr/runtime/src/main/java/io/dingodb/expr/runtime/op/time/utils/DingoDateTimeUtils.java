@@ -100,14 +100,20 @@ public class DingoDateTimeUtils implements Serializable {
 
     public static final List<Pattern> TIME_PATTERN_LIST = Stream.of(
         Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]"),
-        Pattern.compile("[0-2]?[0-9][0-5]?[0-9][0-5]?[0-9]")
+        Pattern.compile("[0-2]?[0-9][0-5]?[0-9][0-5]?[0-9]"),
+        Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]\\.\\d"),
+        Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]\\.\\d{2}"),
+        Pattern.compile("[0-2]?[0-9]:[0-5]?[0-9]:[0-5]?[0-9]\\.\\d{3}")
     ).collect(Collectors.toList());
 
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:m:s");
     public static final List<DateTimeFormatter> TIME_FORMATTER_LIST = Stream.of(
         DateTimeFormatter.ofPattern("H:m:s"),
         DateTimeFormatter.ofPattern("HHmmss"),
-        DateTimeFormatter.ofPattern("Hmmss")
+        DateTimeFormatter.ofPattern("Hmmss"),
+        DateTimeFormatter.ofPattern("HH:mm:ss.S"),
+        DateTimeFormatter.ofPattern("HH:mm:ss.SS"),
+        DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
     ).collect(Collectors.toList());
 
     public static final List<String> FORMAT_LIST = Stream.of(
@@ -392,6 +398,9 @@ public class DingoDateTimeUtils implements Serializable {
             LocalTime localTime;
             for (Pattern pattern: TIME_PATTERN_LIST) {
                 if (pattern.matcher(inOriginTime).matches()) {
+                    if (index >= 2) {
+                        index++;
+                    }
                     localTime = LocalTime.parse(inOriginTime, TIME_FORMATTER_LIST.get(index));
                     return localTime;
                 }

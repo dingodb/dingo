@@ -56,7 +56,7 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
         } else {
             int startIndex = 0;
             int endIndex = str.length() - 1;
-            for (; endIndex > 0; endIndex--) {
+            for (; endIndex >= 0; endIndex--) {
                 if (str.charAt(endIndex) != ' ') {
                     break;
                 }
