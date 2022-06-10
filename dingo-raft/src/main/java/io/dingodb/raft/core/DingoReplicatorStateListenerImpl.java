@@ -42,10 +42,10 @@ public class DingoReplicatorStateListenerImpl implements Replicator.ReplicatorSt
         LOG.info("OnError : {}, {}", peer, status);
         switch (status.getRaftError()) {
             case ETIMEDOUT:
-                node.failReplicator(peer);
+                node.restartReplicator(peer);
                 break;
             case ENOENT:
-                node.failReplicator(peer);
+                node.restartReplicator(peer);
                 break;
             default:
         }
