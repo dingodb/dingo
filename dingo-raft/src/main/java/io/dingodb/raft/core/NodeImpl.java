@@ -1683,14 +1683,14 @@ public class NodeImpl implements Node, RaftServerService {
                         "Node {} ignore PreVoteRequest from {}, term={},"
                             + "currTerm={}, because the leader {}'s lease is still valid.",
                         getNodeId(), request.getServerId(), request.getTerm(), this.currTerm, this.leaderId);
-                    checkReplicator(candidateId);
+                    restartReplicator(candidateId);
                     break;
                 }
                 if (request.getTerm() < this.currTerm) {
                     LOG.info("Node {} ignore PreVoteRequest from {}, term={}, currTerm={}.", getNodeId(),
                         request.getServerId(), request.getTerm(), this.currTerm);
                     // A follower replicator may not be started when this node become leader, so we must check it.
-                    checkReplicator(candidateId);
+                    restartReplicator(candidateId);
                     break;
                 }
                 // A follower replicator may not be started when this node become leader, so we must check it.
@@ -3604,8 +3604,10 @@ public class NodeImpl implements Node, RaftServerService {
     }
 
     @Override
-    public void failReplicator(PeerId peerId) {
-        replicatorGroup.failReplicator(peerId);
+    public void restartReplicator(PeerId peerId) {
+        if (this.state == State.STATE_LEADER) {
+            replicatorGroup.restartReplicator(peerId);
+        }
     }
 
     public void snapshotByAppliedIndex() {

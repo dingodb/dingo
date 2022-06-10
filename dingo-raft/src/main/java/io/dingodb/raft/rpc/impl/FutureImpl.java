@@ -197,6 +197,7 @@ public class FutureImpl<R> implements Future<R> {
         try {
             this.failure = failure;
             notifyHaveResult();
+            closeChannel();
         } finally {
             this.lock.unlock();
         }

@@ -221,5 +221,5 @@ public interface ReplicatorGroup extends Describer {
      */
     List<ThreadId> listReplicators();
 
-    void failReplicator(PeerId peerId);
+    void restartReplicator(PeerId peerId);
 }

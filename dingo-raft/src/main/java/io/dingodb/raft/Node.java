@@ -338,5 +338,5 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
 
     Pair<Integer, String> getCompareResult();
 
-    void failReplicator(PeerId peerId);
+    void restartReplicator(PeerId peerId);
 }
