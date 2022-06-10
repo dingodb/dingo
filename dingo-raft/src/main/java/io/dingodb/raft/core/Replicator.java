@@ -1213,8 +1213,12 @@ public class Replicator implements ThreadId.OnError {
                 }
                 LOG.warn("Heartbeat to peer {} failure, try to send a probe request.", r.options.getPeerId());
                 doUnlock = false;
-                r.sendProbeRequest();
-                r.startHeartbeatTimer(startTimeMs);
+                if (++r.currentGapHeartbeatTimes < r.maxGapHeartbeatTimes) {
+                    r.sendProbeRequest();
+                    r.startHeartbeatTimer(startTimeMs);
+                } else {
+                    r.options.getNode().restartReplicator(r.options.getPeerId());
+                }
                 return;
             }
             if (response.hasLastLogIndex()
@@ -1234,7 +1238,7 @@ public class Replicator implements ThreadId.OnError {
                 }
                 LOG.warn("Heartbeat to peer {} failure, try to send a probe request.", r.options.getPeerId());
                 doUnlock = false;
-                r.options.getNode().failReplicator(r.options.getPeerId());
+                r.options.getNode().restartReplicator(r.options.getPeerId());
                 return;
             }
             if (isLogDebugEnabled) {
@@ -1587,7 +1591,7 @@ public class Replicator implements ThreadId.OnError {
     /**
      * Send as many requests as possible.
      */
-    void sendEntries() {
+    synchronized void sendEntries() {
         boolean doUnlock = true;
         try {
             long prevSendIndex = -1;
