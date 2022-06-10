@@ -257,7 +257,7 @@ public class ElementSchema implements CompileContext {
                 break;
             case TypeCode.TIME:
                 if (origin instanceof Number) { // from serialized milliseconds
-                    return new Time((Long) origin);
+                    return origin;
                 } else if (origin instanceof Calendar) { // from RexLiteral
                     return ((Calendar) origin).getTimeInMillis();
                 }
@@ -298,6 +298,8 @@ public class ElementSchema implements CompileContext {
                     return Time.valueOf((String) item).getTime();
                 } else if (item instanceof java.util.Date) {
                     return new Time(((java.util.Date) item).getTime()).getTime();
+                } else if (item instanceof Number) {
+                    return Long.valueOf(item.toString());
                 } else {
                     throw new SQLException("Failed to convert " + item.getClass() + " to time.");
                 }

@@ -36,14 +36,22 @@ public abstract class RtLogicalOp extends RtOp {
             return (Boolean) value;
         } else if (value instanceof Number) {
             if (value instanceof BigDecimal) {
-                return ((BigDecimal) value).compareTo(BigDecimal.ZERO) != 0;
+                throw new RuntimeException("Invalid input parameter.");
             } else if (value instanceof BigInteger) {
+                if (((BigInteger) value).compareTo(BigInteger.ZERO) < 0) {
+                    throw new RuntimeException("Invalid input parameter.");
+                }
                 return ((BigInteger) value).compareTo(BigInteger.ZERO) != 0;
             }
+
             // `Double` is enough to contain integer, long, float, etc.
+            if (((Number) value).doubleValue() < 0) {
+                throw new RuntimeException("Invalid input parameter.");
+            }
             return ((Number) value).doubleValue() != 0.0;
         }
-        return false;
+
+        throw new RuntimeException("Invalid input parameter.");
     }
 
     @Override

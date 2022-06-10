@@ -330,6 +330,19 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testRTrim02() throws Exception {
+        String sql = "select 'a'||rtrim(' ')||'b'";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel;
+        RexNode rexNode = project.getProjects().get(0);
+        Expr expr = RexConverter.convert(rexNode);
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).equals("ab"));
+    }
+
+    @Test
     public void testUCase() throws Exception {
         String sql = "select ucase('aaa')";
         SqlNode sqlNode = parser.parse(sql);
