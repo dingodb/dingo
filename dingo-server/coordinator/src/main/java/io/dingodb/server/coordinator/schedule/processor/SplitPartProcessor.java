@@ -26,6 +26,7 @@ import io.dingodb.server.coordinator.meta.adaptor.impl.SplitTaskAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TablePartAdaptor;
 import io.dingodb.server.coordinator.schedule.SplitTask;
+import io.dingodb.server.coordinator.schedule.TableScheduler;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
@@ -55,9 +56,11 @@ public class SplitPartProcessor {
     private final ReplicaAdaptor replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
     private final ExecutorAdaptor executorAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Executor.class);
 
+    private final TableScheduler tableScheduler;
     private final CommonId tableId;
 
-    public SplitPartProcessor(CommonId tableId) {
+    public SplitPartProcessor(TableScheduler tableScheduler, CommonId tableId) {
+        this.tableScheduler = tableScheduler;
         this.tableId = tableId;
     }
 
@@ -168,9 +171,7 @@ public class SplitPartProcessor {
     }
 
     public void startNewPart(SplitTask task, TablePart newPart) {
-        List<Replica> replicas = replicaAdaptor.createByPart(newPart, executorAdaptor.getAll());
-        List<Location> locations = replicas.stream().map(Replica::location).collect(Collectors.toList());
-        replicas.forEach(replica -> applyTablePart(newPart, replica.getExecutor(), locations, false));
+        tableScheduler.assignPart(newPart).join();
         task.setStep(SplitTask.Step.UPDATE_OLD_PART);
         splitTaskAdaptor.save(task);
     }

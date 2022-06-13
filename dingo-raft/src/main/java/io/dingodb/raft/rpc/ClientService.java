@@ -16,22 +16,22 @@
 
 package io.dingodb.raft.rpc;
 
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
-import io.dingodb.net.Channel;
 import io.dingodb.raft.Lifecycle;
-import io.dingodb.raft.Status;
-import io.dingodb.raft.error.InvokeTimeoutException;
-import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.option.RpcOptions;
-import io.dingodb.raft.rpc.impl.FutureImpl;
 import io.dingodb.raft.util.Endpoint;
 
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public interface ClientService extends Lifecycle<RpcOptions> {
+    /**
+     * Connect to endpoint, returns true when success.
+     *
+     * @param endpoint server address
+     * @return true on connect success
+     */
+    boolean connect(final Endpoint endpoint);
 
     /**
      * Check connection for given address and async to create a new one if there is no connection.
@@ -41,6 +41,31 @@ public interface ClientService extends Lifecycle<RpcOptions> {
      */
     boolean checkConnection(final Endpoint endpoint, final boolean createIfAbsent);
 
-    public <T extends Message> Future<Message> invokeWithDone(Message result, RpcResponseClosure<T> done,
-                                                              FutureImpl<Message> future, Channel channel);
+    /**
+     * Disconnect from endpoint.
+     *
+     * @param endpoint server address
+     * @return true on disconnect success
+     */
+    boolean disconnect(final Endpoint endpoint);
+
+    /**
+     * Returns true when the endpoint's connection is active.
+     *
+     * @param endpoint server address
+     * @return true on connection is active
+     */
+    boolean isConnected(final Endpoint endpoint);
+
+    /**
+     * Send a requests and waits for response with callback, returns the request future.
+     *
+     * @param endpoint  server address
+     * @param request   request data
+     * @param done      callback
+     * @param timeoutMs timeout millis
+     * @return a future with operation result
+     */
+    <T extends Message> Future<Message> invokeWithDone(final Endpoint endpoint, final Message request,
+                                                       final RpcResponseClosure<T> done, final int timeoutMs);
 }

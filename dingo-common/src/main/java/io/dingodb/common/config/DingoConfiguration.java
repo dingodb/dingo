@@ -81,12 +81,16 @@ public class DingoConfiguration {
         return INSTANCE == null ? 0 : INSTANCE.getPort();
     }
 
+    public static int raftPort() {
+        return INSTANCE == null ? 0 : INSTANCE.getRaftPort();
+    }
+
     public static CommonId serverId() {
         return INSTANCE.serverId;
     }
 
     public static Location location() {
-        return new Location(host(), port());
+        return new Location(host(), port(), raftPort());
     }
 
     public void setServer(Class<?> cls) throws Exception {
@@ -127,6 +131,21 @@ public class DingoConfiguration {
 
     public <T> T getStore() {
         return (T) storeConfiguration;
+    }
+
+    public int getRaftPort() {
+        Object raftPort = ((Map<String, Object>) store.get("raft")).get("port");
+        if (raftPort == null) {
+            log.error("Miss configuration store->raft->port");
+            return 0;
+        }
+        if (raftPort instanceof Integer) {
+            return (Integer) raftPort;
+        } else if (raftPort instanceof String) {
+            return Integer.parseInt((String) raftPort);
+        }
+        log.error("Cannot cast raft port");
+        return 0;
     }
 
     public <T> T getClient() {

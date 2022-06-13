@@ -24,7 +24,7 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-@ToString(of = {"host", "port"})
+@ToString(of = {"host", "port", "raftPort"})
 public class Location implements Serializable {
     private static final long serialVersionUID = 4013504472715015258L;
 
@@ -34,16 +34,28 @@ public class Location implements Serializable {
     @JsonProperty("port")
     @Getter
     private final int port;
+    @JsonProperty("raftPort")
+    @Getter
+    private final int raftPort;
     @Getter
     private final String url;
+
+    public Location(
+        String host,
+        int port
+    ) {
+        this(host, port, 0);
+    }
 
     @JsonCreator
     public Location(
         @JsonProperty("host") String host,
-        @JsonProperty("port") int port
+        @JsonProperty("port") int port,
+        @JsonProperty("raftPort") int raftPort
     ) {
         this.host = host;
         this.port = port;
+        this.raftPort = raftPort;
         this.url = String.format("%s:%s", host, port);
     }
 
@@ -53,6 +65,10 @@ public class Location implements Serializable {
 
     public int port() {
         return port;
+    }
+
+    public int raftPort() {
+        return raftPort;
     }
 
     public InetSocketAddress toSocketAddress() {

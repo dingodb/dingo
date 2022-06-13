@@ -233,7 +233,7 @@ public class RouteTable implements Describer {
         final CliRequests.GetLeaderRequest request = rb.build();
         TimeoutException timeoutException = null;
         for (final PeerId peer : conf) {
-            if (!cliClientService.checkConnection(peer.getEndpoint(), false)) {
+            if (!cliClientService.connect(peer.getEndpoint())) {
                 if (st.isOk()) {
                     st.setError(-1, "Fail to init channel to %s", peer);
                 } else {
@@ -295,7 +295,7 @@ public class RouteTable implements Describer {
             st.setError(-1, "Fail to get leader of group %s", groupId);
             return st;
         }
-        if (!cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!cliClientService.connect(leaderId.getEndpoint())) {
             st.setError(-1, "Fail to init channel to %s", leaderId);
             return st;
         }

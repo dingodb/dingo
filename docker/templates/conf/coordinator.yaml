@@ -6,6 +6,7 @@ exchange:
 server:
     dataPath: /opt/dingo/coordinator
     raft:
-        initRaftSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
+        port: 9181
+        initRaftSvrList: coordinator3:9181,coordinator2:9181,coordinator1:9181
     schedule:
         autoSplit: true

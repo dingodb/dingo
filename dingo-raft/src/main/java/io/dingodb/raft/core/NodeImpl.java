@@ -73,7 +73,7 @@ import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.rpc.RpcResponseClosure;
 import io.dingodb.raft.rpc.RpcResponseClosureAdapter;
-import io.dingodb.raft.rpc.dingo.DingoRaftRpcClientService;
+import io.dingodb.raft.rpc.impl.core.DefaultRaftClientService;
 import io.dingodb.raft.storage.LogManager;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.RaftMetaStorage;
@@ -592,8 +592,6 @@ public class NodeImpl implements Node, RaftServerService {
             if (isCurrentLeaderValid()) {
                 return;
             }
-
-            LOG.debug("Current Leader invalid : {}", this.leaderId);
             resetLeaderId(PeerId.emptyPeer(), new Status(RaftError.ERAFTTIMEDOUT, "Lost connection from leader %s.",
                 this.leaderId));
 
@@ -1055,7 +1053,7 @@ public class NodeImpl implements Node, RaftServerService {
 
         // TODO RPC service and ReplicatorGroup is in cycle dependent, refactor it
         this.replicatorGroup = new ReplicatorGroupImpl();
-        this.rpcService = new DingoRaftRpcClientService();
+        this.rpcService = new DefaultRaftClientService(this.replicatorGroup);
         final ReplicatorGroupOptions rgOpts = new ReplicatorGroupOptions();
         rgOpts.setHeartbeatTimeoutMs(heartbeatTimeout(this.options.getElectionTimeoutMs()));
         rgOpts.setElectionTimeoutMs(this.options.getElectionTimeoutMs());
@@ -1075,9 +1073,6 @@ public class NodeImpl implements Node, RaftServerService {
             return false;
         }
         this.replicatorGroup.init(new NodeId(this.groupId, this.serverId), rgOpts);
-
-        Replicator.ReplicatorStateListener replicatorStateListener = new DingoReplicatorStateListenerImpl(this);
-        addReplicatorStateListener(replicatorStateListener);
 
         this.readOnlyService = new ReadOnlyServiceImpl();
         final ReadOnlyServiceOptions rosOpts = new ReadOnlyServiceOptions();
@@ -1172,7 +1167,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-                if (!this.rpcService.checkConnection(peer.getEndpoint(), false)) {
+                if (!this.rpcService.connect(peer.getEndpoint())) {
                     LOG.warn("Node {} channel init failed, address={}.", getNodeId(), peer.getEndpoint());
                     continue;
                 }
@@ -1474,26 +1469,21 @@ public class NodeImpl implements Node, RaftServerService {
 
         @Override
         public synchronized void run(final Status status) {
-            LOG.debug("ReadIndexHeartbeatResponseClosure run : {}, {}", status, getResponse());
             if (this.isDone) {
                 return;
             }
             if (status.isOk() && getResponse().getSuccess()) {
-                LOG.debug("ackSuccess: {}", this.ackSuccess);
                 this.ackSuccess++;
             } else {
-                LOG.debug("ackFailure: {}", this.ackFailures);
                 this.ackFailures++;
             }
             // Include leader self vote yes.
             if (this.ackSuccess + 1 >= this.quorum) {
-                LOG.debug("ackSuccess process : {}, {}", this.ackSuccess, this.quorum);
                 this.respBuilder.setSuccess(true);
                 this.closure.setResponse(this.respBuilder.build());
                 this.closure.run(Status.OK());
                 this.isDone = true;
             } else if (this.ackFailures >= this.failPeersThreshold) {
-                LOG.debug("ackFauiler process : {}, {}", this.ackFailures, this.failPeersThreshold);
                 this.respBuilder.setSuccess(false);
                 this.closure.setResponse(this.respBuilder.build());
                 this.closure.run(Status.OK());
@@ -1609,7 +1599,6 @@ public class NodeImpl implements Node, RaftServerService {
                     if (peer.equals(this.serverId)) {
                         continue;
                     }
-                    LOG.debug("Send heartbeat to : " + peer.getEndpoint() + " with Index : " + respBuilder.getIndex());
                     this.replicatorGroup.sendHeartbeat(peer, heartbeatDone);
                 }
                 break;
@@ -1683,14 +1672,13 @@ public class NodeImpl implements Node, RaftServerService {
                         "Node {} ignore PreVoteRequest from {}, term={},"
                             + "currTerm={}, because the leader {}'s lease is still valid.",
                         getNodeId(), request.getServerId(), request.getTerm(), this.currTerm, this.leaderId);
-                    restartReplicator(candidateId);
                     break;
                 }
                 if (request.getTerm() < this.currTerm) {
                     LOG.info("Node {} ignore PreVoteRequest from {}, term={}, currTerm={}.", getNodeId(),
                         request.getServerId(), request.getTerm(), this.currTerm);
                     // A follower replicator may not be started when this node become leader, so we must check it.
-                    restartReplicator(candidateId);
+                    checkReplicator(candidateId);
                     break;
                 }
                 // A follower replicator may not be started when this node become leader, so we must check it.
@@ -1912,6 +1900,7 @@ public class NodeImpl implements Node, RaftServerService {
                     .newResponse(RpcRequests.AppendEntriesResponse.getDefaultInstance(), RaftError.EINVAL,
                         "Node %s is not in active state, state %s.", getNodeId(), this.state.name());
             }
+
             final PeerId serverId = new PeerId();
             if (!serverId.parse(request.getServerId())) {
                 LOG.warn("Node {} received AppendEntriesRequest from {} serverId bad format.", getNodeId(),
@@ -1921,6 +1910,7 @@ public class NodeImpl implements Node, RaftServerService {
                     .newResponse(RpcRequests.AppendEntriesResponse.getDefaultInstance(), RaftError.EINVAL,
                         "Parse serverId failed: %s.", request.getServerId());
             }
+
             // Check stale term
             if (request.getTerm() < this.currTerm) {
                 LOG.warn("Node {} ignore stale AppendEntriesRequest from {}, term={}, currTerm={}.", getNodeId(),
@@ -1930,6 +1920,7 @@ public class NodeImpl implements Node, RaftServerService {
                     .setTerm(this.currTerm) //
                     .build();
             }
+
             // Check term and state to step down
             checkStepDown(request.getTerm(), serverId);
             if (!serverId.equals(this.leaderId)) {
@@ -1944,6 +1935,7 @@ public class NodeImpl implements Node, RaftServerService {
                     .setTerm(request.getTerm() + 1) //
                     .build();
             }
+
             updateLastLeaderTimestamp(Utils.monotonicMs());
 
             if (entriesCount > 0 && this.snapshotExecutor != null && this.snapshotExecutor.isInstallingSnapshot()) {
@@ -2035,9 +2027,6 @@ public class NodeImpl implements Node, RaftServerService {
             final FollowerStableClosure closure
                 = new FollowerStableClosure(request, RpcRequests.AppendEntriesResponse.newBuilder()
                 .setTerm(this.currTerm), this, done, this.currTerm);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("LogManager AppendEntries : {}, {}", entries.size(), entries.get(entries.size() - 1).getId());
-            }
             this.logManager.appendEntries(entries, closure);
             // update configuration after _log_manager updated its memory status
             checkAndSetConfiguration(true);
@@ -2164,7 +2153,6 @@ public class NodeImpl implements Node, RaftServerService {
 
         @Override
         public void run(final Status status) {
-            LOG.debug("on catch up : {}, {}", status, this.peer);
             this.node.onCaughtUp(this.peer, this.term, this.version, status);
         }
     }
@@ -2792,7 +2780,7 @@ public class NodeImpl implements Node, RaftServerService {
                 if (peer.equals(this.serverId)) {
                     continue;
                 }
-                if (!this.rpcService.checkConnection(peer.getEndpoint(), false)) {
+                if (!this.rpcService.connect(peer.getEndpoint())) {
                     LOG.warn("Node {} channel init failed, address={}.", getNodeId(), peer.getEndpoint());
                     continue;
                 }
@@ -3601,13 +3589,6 @@ public class NodeImpl implements Node, RaftServerService {
         snapshotMd5List.clear();
         this.isComparing.set(false);
         return new Pair(0, msg);
-    }
-
-    @Override
-    public void restartReplicator(PeerId peerId) {
-        if (this.state == State.STATE_LEADER) {
-            replicatorGroup.restartReplicator(peerId);
-        }
     }
 
     public void snapshotByAppliedIndex() {

@@ -16,12 +16,10 @@
 
 package io.dingodb.raft.rpc.impl.cli;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.raft.rpc.dingo.Tags;
 
 import java.util.concurrent.Executor;
 
@@ -50,27 +48,8 @@ public class SnapshotRequestProcessor extends BaseCliRequestProcessor<CliRequest
     }
 
     @Override
-    public CliRequests.SnapshotRequest parse(byte[] request) {
-        try {
-            return CliRequests.SnapshotRequest.parseFrom(request);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public String interest() {
         return CliRequests.SnapshotRequest.class.getName();
-    }
-
-    @Override
-    public String getRequestTag() {
-        return Tags.SNAPSHOT_REQUEST;
-    }
-
-    @Override
-    public String getResponseTag() {
-        return Tags.SNAPSHOT_RESPONSE;
     }
 
 }
