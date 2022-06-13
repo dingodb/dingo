@@ -27,6 +27,11 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    compile.exclude(group: 'log4j', module: 'log4j')
+    compile.exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+}
+
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()

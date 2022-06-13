@@ -40,17 +40,13 @@ public class NettyNetService implements NetService {
 
     private final Map<Integer, PortListener> portListeners;
     private final ConnectionManager connectionManager;
-    private final LocalClientConnection localConnection;
 
-    private final int capacity;
     private final String hostname;
 
     protected NettyNetService() {
-        capacity = NetServiceConfiguration.queueCapacity();
         hostname = NetServiceConfiguration.host();
-        connectionManager = new ConnectionManager(capacity);
+        connectionManager = new ConnectionManager();
         portListeners = new ConcurrentHashMap<>();
-        localConnection = LocalClientConnection.INSTANCE;
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -95,9 +91,9 @@ public class NettyNetService implements NetService {
 
     @Override
     public Channel newChannel(Location location, boolean keepAlive) {
-        //if (isLocal(location)) {
-        //    return localConnection.newChannel(keepAlive);
-        //}
+        if (isLocal(location)) {
+            return LocalClientConnection.INSTANCE.newChannel(keepAlive);
+        }
         try {
             return connectionManager.getOrOpenConnection(location).newChannel(keepAlive);
         } catch (InterruptedException e) {
@@ -106,25 +102,23 @@ public class NettyNetService implements NetService {
     }
 
     @Override
-    public void registerMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
+    public void setMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
         PreParameters.nonNull(tag, "tag");
         PreParameters.nonNull(listenerProvider, "listener provider");
         log.info("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
             tag,
             listenerProvider.getClass().getName(),
             StackTraces.stack(2));
-        TagMessageHandler.INSTANCE.addTagListenerProvider(tag, listenerProvider);
+        TagMessageHandler.INSTANCE.setTagListenerProvider(tag, listenerProvider);
     }
 
     @Override
-    public void unregisterMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
+    public void unsetMessageListenerProvider(String tag) {
         PreParameters.nonNull(tag, "tag");
-        PreParameters.nonNull(listenerProvider, "listener provider");
-        log.info("Unregister message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
+        log.info("Unregister message listener provider, tag: [{}], caller: [{}]",
             tag,
-            listenerProvider.getClass().getName(),
             StackTraces.stack(2));
-        TagMessageHandler.INSTANCE.removeTagListenerProvider(tag, listenerProvider);
+        TagMessageHandler.INSTANCE.unsetTagListenerProvider(tag);
     }
 
     @Override

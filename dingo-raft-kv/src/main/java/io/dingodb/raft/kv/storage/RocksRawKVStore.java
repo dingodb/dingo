@@ -168,8 +168,26 @@ public class RocksRawKVStore implements RawKVStore {
     @Override
     public boolean delete(byte[] startKey, byte[] endKey) {
         try {
-            this.db.deleteRange(this.writeOptions, startKey, endKey);
-            return true;
+            if (endKey == null) {
+                try (RocksIterator iterator = this.db.newIterator()) {
+                    iterator.seekToLast();
+                    if (iterator.isValid()) {
+                        try (final WriteBatch batch = new WriteBatch()) {
+                            endKey = iterator.key();
+                            batch.delete(endKey);
+                            batch.deleteRange(startKey, endKey);
+                            this.db.write(this.writeOptions, batch);
+                            return true;
+                        }
+                    } else {
+                        log.warn("DB not have last key, may be db is empty.");
+                        return true;
+                    }
+                }
+            } else {
+                this.db.deleteRange(this.writeOptions, startKey, endKey);
+                return true;
+            }
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }

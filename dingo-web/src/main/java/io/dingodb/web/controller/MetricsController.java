@@ -18,9 +18,9 @@ package io.dingodb.web.controller;
 
 import io.dingodb.common.Location;
 import io.dingodb.meta.Part;
-import io.dingodb.web.model.PartReplicaRes;
-import io.dingodb.web.model.PartRequest;
-import io.dingodb.web.model.PartTableRes;
+import io.dingodb.web.model.metric.PartReplicaRes;
+import io.dingodb.web.model.metric.PartRequest;
+import io.dingodb.web.model.metric.PartTableRes;
 import io.dingodb.web.service.MetricsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

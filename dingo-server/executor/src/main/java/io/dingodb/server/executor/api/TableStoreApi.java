@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
@@ -42,6 +43,21 @@ public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
     public void deleteTable(CommonId id) {
         log.info("Delete table [{}].", id);
         storeService.deleteInstance(id);
+    }
+
+    @Override
+    public void addTablePartReplica(CommonId table, CommonId part, Location replica) {
+        // todo
+    }
+
+    @Override
+    public void removeTablePartReplica(CommonId table, CommonId part, Location replica) {
+        // todo
+    }
+
+    @Override
+    public void transferLeader(CommonId table, CommonId part, Location leader) {
+        // todo
     }
 
     @Override

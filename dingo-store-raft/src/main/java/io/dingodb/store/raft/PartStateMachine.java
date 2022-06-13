@@ -17,6 +17,7 @@
 package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.Part;
@@ -25,6 +26,7 @@ import io.dingodb.raft.Closure;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.entity.LocalFileMetaOutter;
+import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.DefaultRaftRawKVStoreStateMachine;
 import io.dingodb.raft.kv.storage.RaftRawKVOperation;
@@ -44,9 +46,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SNAPSHOT_LOAD;
@@ -105,10 +110,41 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
 
     public void resetPart(Part part) {
         this.part = part;
-        if (node.isLeader() && part.getLeader() != null && !part.getLeader().equals(DingoConfiguration.location())) {
-            // todo need raft net-api
-            //node.transferLeadershipTo();
+        if (node.isLeader()) {
+            Map<Location, PeerId> peers = node.listPeers().stream()
+                .collect(Collectors.toMap(PeerId::toLocation, Function.identity()));
+            if (part.getLeader() != null && !part.getLeader().equals(DingoConfiguration.location())) {
+                log.info("Transfer leader to [{}].", part.getLeader().getUrl());
+                node.transferLeadershipTo(peers.get(part.getLeader()));
+                return;
+            }
+            if (part.getReplicates().size() != node.listPeers().size()) {
+                part.getReplicates().stream()
+                    .filter(__ -> !peers.containsKey(__))
+                    .map(PeerId::of)
+                    .forEach(this::addReplica);
+                peers.keySet().stream()
+                    .filter(__ -> !part.getReplicates().contains(__))
+                    .map(peers::get)
+                    .forEach(this::removeReplica);
+            }
         }
+    }
+
+    public void addReplica(PeerId peerId) {
+        log.info("Add peer [{}] to [{}].", peerId, id);
+        Executors.submit("add-peer", () -> node.addPeer(
+            peerId,
+            status -> log.info("Add peer [{}] to [{}] -> [{}].", peerId, id, status)
+        ));
+    }
+
+    public void removeReplica(PeerId peerId) {
+        log.info("Remove peer [{}] from [{}].", peerId, id);
+        Executors.submit("remove-peer", () -> node.removePeer(
+            peerId,
+            status -> log.info("remove peer [{}] to [{}] -> [{}].", peerId, id, status)
+        ));
     }
 
     @Override
@@ -152,10 +188,6 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     @Override
     public void onLeaderStart(long term) {
         super.onLeaderStart(term);
-        if (part.getLeader() != null && !part.getLeader().equals(DingoConfiguration.location())) {
-            // todo need raft net-api
-            //node.transferLeadershipTo();
-        }
         if (StoreConfiguration.collectStatsInterval() < 0) {
             available = true;
             availableListener.forEach(listen -> Executors.submit(id + " available", listen));
@@ -172,7 +204,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         this.reportApi = ServiceLoader.load(NetServiceProvider.class).iterator().next().get().apiRegistry()
             .proxy(ReportApi.class, CoordinatorConnector.defaultConnector());
         this.timer.start();
-        this.timer.newTimeout(this::sendStats, 0, TimeUnit.SECONDS);
+        this.timer.newTimeout(this::sendStats, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -180,6 +212,8 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         if (this.timer != null) {
             this.timer.stop();
         }
+        available = false;
+        availableListener.forEach(listen -> Executors.submit(id + " available", listen));
     }
 
     //todo refactor send stats ?
@@ -216,6 +250,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
                 .tablePart(id)
                 .table(part.getInstanceId())
                 .approximateStats(approximateStats)
+                .alive(node.listAlivePeers().stream().map(PeerId::toLocation).collect(Collectors.toList()))
                 .build();
             if (available != (available = reportApi.report(stats))) {
                 availableListener.forEach(listen -> Executors.submit(id + " available", listen));

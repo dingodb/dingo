@@ -25,6 +25,7 @@ import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.rpc.RpcClient;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
+import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
 import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Executor;
@@ -73,6 +74,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     }
 
     @Override
+    public CommonId tableId(String name) {
+        return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(name);
+    }
+
+    @Override
     public Table table(CommonId tableId) {
         return MetaAdaptorRegistry.getMetaAdaptor(Table.class).get(tableId);
     }
@@ -83,6 +89,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     }
 
     @Override
+    public TableDefinition tableDefinition(String tableName) {
+        return ((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).get(tableName);
+    }
+
+    @Override
     public Column column(CommonId columnId) {
         return MetaAdaptorRegistry.getMetaAdaptor(Column.class).get(columnId);
     }
@@ -90,6 +101,16 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public List<Column> columns(CommonId tableId) {
         return MetaAdaptorRegistry.getMetaAdaptor(Column.class).getByDomain(tableId.seqContent());
+    }
+
+    @Override
+    public List<Column> columns(String tableName) {
+        return columns(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
+    }
+
+    @Override
+    public Executor executor(Location location) {
+        return ((ExecutorAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Executor.class)).get(location);
     }
 
     @Override
@@ -115,6 +136,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     }
 
     @Override
+    public List<Replica> replicas(String tableName) {
+        return replicas(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
+    }
+
+    @Override
     public Schema schema(CommonId schemaId) {
         return MetaAdaptorRegistry.getMetaAdaptor(Schema.class).get(schemaId);
     }
@@ -127,6 +153,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public List<TablePart> tableParts(CommonId tableId) {
         return MetaAdaptorRegistry.getMetaAdaptor(TablePart.class).getByDomain(tableId.seqContent());
+    }
+
+    @Override
+    public List<TablePart> tableParts(String tableName) {
+        return tableParts(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
     }
 
     @Override

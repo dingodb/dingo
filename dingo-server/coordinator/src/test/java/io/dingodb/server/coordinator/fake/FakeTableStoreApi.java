@@ -47,6 +47,21 @@ public class FakeTableStoreApi implements TableStoreApi {
     }
 
     @Override
+    public void addTablePartReplica(CommonId table, CommonId part, Location replica) {
+
+    }
+
+    @Override
+    public void removeTablePartReplica(CommonId table, CommonId part, Location replica) {
+
+    }
+
+    @Override
+    public void transferLeader(CommonId table, CommonId part, Location leader) {
+
+    }
+
+    @Override
     public void newTable(CommonId id) {
 
     }

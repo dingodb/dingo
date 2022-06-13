@@ -29,17 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConnectionManager implements AutoCloseable {
 
     private final Map<Location, Connection> connections = new ConcurrentHashMap<>(8);
-    private final int capacity;
-
-    public ConnectionManager(int capacity) {
-        this.capacity = capacity;
-    }
 
     public Connection open(Location location) {
         if (connections.containsKey(location)) {
             throw new UnsupportedOperationException();
         }
-        NettyClientConnection connection = new NettyClientConnection(location, capacity);
+        NettyClientConnection connection = new NettyClientConnection(location);
         try {
             connection.connect();
         } catch (InterruptedException e) {

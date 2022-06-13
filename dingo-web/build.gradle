@@ -36,14 +36,20 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+    implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
+
     implementation project(":dingo-net-netty")
     implementation project(":dingo-common")
-    implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-meta-api")
+
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
 }
 
 

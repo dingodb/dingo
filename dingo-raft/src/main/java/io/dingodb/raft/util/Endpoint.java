@@ -16,6 +16,8 @@
 
 package io.dingodb.raft.util;
 
+import io.dingodb.common.Location;
+
 import java.io.Serializable;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
@@ -42,6 +44,10 @@ public class Endpoint implements Copiable<Endpoint>, Serializable {
 
     public int getPort() {
         return this.port;
+    }
+
+    public Location toLocation() {
+        return new Location(ip, port);
     }
 
     @Override

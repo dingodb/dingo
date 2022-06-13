@@ -18,26 +18,17 @@ package io.dingodb.common;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.protostuff.Input;
-import io.protostuff.Output;
-import io.protostuff.Schema;
-import io.protostuff.runtime.RuntimeSchema;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.EqualsAndHashCode;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-
-import static io.dingodb.expr.json.runtime.Parser.JSON;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CommonId implements Comparable<CommonId>, Serializable {
@@ -92,19 +83,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     @Override
     public int compareTo(CommonId other) {
-        int flag = content.length - other.content.length;
-        int len = content.length - Math.max(flag, 0);
-        for (int i = 0; i < len; i++) {
-            if (content[i] == other.content[i]) {
-                continue;
-            }
-            if (content[i] > other.content[i]) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-        return flag;
+        return ByteArrayUtils.compare(content, other.content);
     }
 
     public byte[] content() {

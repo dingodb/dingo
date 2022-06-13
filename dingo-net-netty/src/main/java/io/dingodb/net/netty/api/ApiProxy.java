@@ -16,6 +16,7 @@
 
 package io.dingodb.net.netty.api;
 
+import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.MessageListener;
@@ -23,6 +24,7 @@ import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.netty.channel.Channel;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -52,15 +54,19 @@ public interface ApiProxy<T> extends InvocationHandler {
             name = method.toGenericString();
         }
         CompletableFuture<Object> future = new CompletableFuture<>();
+        Channel channel = channel();
         try {
-            Channel channel = channel();
-            channel.registerMessageListener(callHandler(future));
-            channel.closeListener(ch -> closeListener(future));
+            channel.setMessageListener(callHandler(future));
+            channel.closeListener(ch -> closeListener(channel, future));
             byte[] nameB = PrimitiveCodec.encodeString(name);
             byte[] content = ProtostuffCodec.write(args);
             invoke(channel, channel.buffer(API, nameB.length + content.length).put(nameB).put(content), future);
         } catch (Exception e) {
-            future.completeExceptionally(e);
+            if (channel == null) {
+                future.complete(e);
+            } else {
+                completeExceptionally(future, e, channel.remoteLocation());
+            }
         }
         if (method.getReturnType().isInstance(future)) {
             return future;
@@ -78,23 +84,29 @@ public interface ApiProxy<T> extends InvocationHandler {
     }
 
     static MessageListener callHandler(CompletableFuture<Object> future) {
-        return (message, channel) -> {
+        return (message, ch) -> {
             try {
                 if (message.tag().equals(API_OK)) {
                     future.complete(ProtostuffCodec.read(message.content()));
                 } else {
-                    future.completeExceptionally(ProtostuffCodec.read(message.content()));
+                    completeExceptionally(future, ProtostuffCodec.read(message.content()), ch.remoteLocation());
                 }
             } catch (Exception e) {
-                future.completeExceptionally(e);
+                completeExceptionally(future, e, ch.remoteLocation());
             }
         };
     }
 
-    static void closeListener(CompletableFuture<Object> future) {
+    static void closeListener(Channel channel, CompletableFuture<Object> future) {
         if (!future.isDone()) {
-            future.completeExceptionally(new RuntimeException("Channel closed"));
+            completeExceptionally(future, new RuntimeException("Channel closed"), channel.remoteLocation());
         }
+    }
+
+    static void completeExceptionally(CompletableFuture<?> future, Throwable throwable, Location location) {
+        future.completeExceptionally(
+            new InvocationTargetException(throwable, String.format("Invoke on [%s] failed.", location.getUrl()))
+        );
     }
 
 }

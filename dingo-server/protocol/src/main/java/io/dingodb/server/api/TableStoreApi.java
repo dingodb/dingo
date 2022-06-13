@@ -17,6 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
@@ -39,5 +40,14 @@ public interface TableStoreApi {
 
     @ApiDeclaration
     void deleteTablePart(Part part);
+
+    @ApiDeclaration
+    void addTablePartReplica(CommonId table, CommonId part, Location replica);
+
+    @ApiDeclaration
+    void removeTablePartReplica(CommonId table, CommonId part, Location replica);
+
+    @ApiDeclaration
+    void transferLeader(CommonId table, CommonId part, Location leader);
 
 }

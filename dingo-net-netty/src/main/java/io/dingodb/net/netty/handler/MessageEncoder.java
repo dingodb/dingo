@@ -33,7 +33,7 @@ public class MessageEncoder extends MessageToMessageEncoder<ByteBuffer> {
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuffer message, List<Object> out) throws Exception {
         int size = message.remaining();
-        out.add(ctx.alloc().buffer(size + 5)
+        out.add(ctx.alloc().buffer(size + PrimitiveCodec.INT_MAX_LEN)
             .writeBytes(PrimitiveCodec.encodeVarInt(size))
             .writeBytes(message)
         );

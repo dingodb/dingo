@@ -20,53 +20,30 @@ import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.netty.channel.Channel;
-import io.dingodb.net.netty.connection.Connection;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import io.dingodb.net.netty.connection.AbstractConnection;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
 
-@Accessors(fluent = true)
-public abstract class AbstractServerConnection implements Connection {
-
-    protected final ConcurrentHashMap<Long, Channel> channels = new ConcurrentHashMap<>();
-    @Getter
-    protected final Channel channel;
-    @Getter
-    protected final Location remoteLocation;
-    @Getter
-    protected final Location localLocation;
+@Slf4j
+public abstract class AbstractServerConnection extends AbstractConnection {
 
     protected AbstractServerConnection(Location remoteLocation, Location localLocation) {
-        this.remoteLocation = remoteLocation;
-        this.localLocation = localLocation;
-        this.channel = new Channel(0, this);
-        this.channels.put(0L, channel);
-        Executors.submit(String.format("<%s/%s/server>", remoteLocation.getUrl(), 0L), channel);
+        super(remoteLocation, localLocation);
     }
 
     @Override
-    public Channel getChannel(long channelId) {
-        return channels.get(channelId);
+    protected String submitChannelName() {
+        return "<%s/%s/server>";
+    }
+
+    protected Channel createChannel(long channelId) {
+        return new Channel(channelId, this, true, () -> channels.remove(channelId));
     }
 
     @Override
-    public Channel newChannel(boolean keepAlive) throws InterruptedException {
+    public Channel newChannel(boolean keepAlive) {
         throw new UnsupportedOperationException("Server connection cannot create new channel.");
-    }
-
-    @Override
-    public void closeChannel(long channelId) {
-        Channel channel = channels.remove(channelId);
-        if (channel != null) {
-            channel.shutdown();
-        }
-    }
-
-    @Override
-    public ByteBuffer allocMessageBuffer(long channelId, int capacity) {
-        return ByteBuffer.allocate(capacity + PrimitiveCodec.LONG_MAX_LEN).put(PrimitiveCodec.encodeVarLong(channelId));
     }
 
     @Override
@@ -75,20 +52,17 @@ public abstract class AbstractServerConnection implements Connection {
             return;
         }
         Long channelId = PrimitiveCodec.readVarLong(message);
+        if (channelId == null) {
+            log.error("Receive message, but channel id is null.");
+            return;
+        }
         Channel channel = channels.get(channelId);
         if (channel == null) {
-            channel = new Channel(channelId, this);
-            Executors.submit(String.format("<%s/%s/server>", remoteLocation.getUrl(), channel.channelId()), channel);
+            channel = createChannel(channelId);
+            Executors.submit(String.format(submitChannelName(), remoteLocation.getUrl(), channel.channelId()), channel);
             channels.put(channelId, channel);
         }
         channel.receive(message);
-    }
-
-    @Override
-    public void close() {
-        channel.close();
-        channels.values().forEach(Channel::close);
-        channels.clear();
     }
 
 }

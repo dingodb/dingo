@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
@@ -69,7 +68,6 @@ public class RaftStoreInstance implements StoreInstance {
     private final Map<CommonId, RaftStoreInstancePart> parts;
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
-    private final List<RaftStoreInstancePart> waitStoreParts;
     private final PartReadWriteCollector collector;
 
     public RaftStoreInstance(Path path, CommonId id)  {
@@ -92,7 +90,6 @@ public class RaftStoreInstance implements StoreInstance {
             this.startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
             this.parts = new ConcurrentHashMap<>();
             this.waitParts = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
-            this.waitStoreParts = new CopyOnWriteArrayList<>();
             this.collector = PartReadWriteCollector.instance();
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
@@ -106,7 +103,6 @@ public class RaftStoreInstance implements StoreInstance {
         parts.values().forEach(RaftStoreInstancePart::clear);
         parts.clear();
         waitParts.clear();
-        waitStoreParts.clear();
         store.close();
         logStore.shutdown();
         Files.deleteIfExists(path);
@@ -126,7 +122,6 @@ public class RaftStoreInstance implements StoreInstance {
             storeInstancePart.getStateMachine().listenAvailable(() -> onPartAvailable(storeInstancePart));
             storeInstancePart.init();
             parts.put(part.getId(), storeInstancePart);
-            waitStoreParts.add(storeInstancePart);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -134,15 +129,13 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public void reassignPart(Part part) {
+        // todo how to ensure consistency when reassign?
         RaftStoreInstancePart storeInstancePart = parts.get(part.getId());
         storeInstancePart.resetPart(part);
-        storeInstancePart.getStateMachine().setEnable(false);
-        if (startKeyPartMap.containsKey(part.getStart())) {
+        startKeyPartMap.computeIfPresent(part.getStart(), (key, old) -> {
             storeInstancePart.getRaftStore().sync();
-            startKeyPartMap.put(part.getStart(), part);
-        }
-        storeInstancePart.getStateMachine().setEnable(true);
-
+            return part;
+        });
     }
 
     @Override
@@ -303,25 +296,6 @@ public class RaftStoreInstance implements StoreInstance {
         return parts.get(part.getId()).delete(primaryKey);
     }
 
-    private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
-        Map<Part, List<byte[]>> result = new HashMap<>();
-        for (byte[] primaryKey: primaryKeys) {
-            Part part = getPart(primaryKey);
-            if (part == null) {
-                throw new IllegalArgumentException(
-                    "The primary key " + Arrays.toString(primaryKey) + " can not compute part info."
-                );
-            }
-            List<byte[]> list = result.get(part);
-            if (list == null) {
-                list = new ArrayList<>();
-                result.put(part, list);
-            }
-            list.add(primaryKey);
-        }
-        return result;
-    }
-
     @Override
     public boolean delete(List<byte[]> primaryKeys) {
         boolean isSuccess = false;
@@ -344,6 +318,46 @@ public class RaftStoreInstance implements StoreInstance {
             log.error("Delete Id:{} by keys failed: {}", this.id, e.getMessage());
             throw new IllegalArgumentException(e.getMessage());
         }
+    }
+
+    @Override
+    public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        boolean isSuccess = true;
+        try {
+            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
+
+            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
+                Part part = entry.getKey();
+                List<byte[]> keys = entry.getValue();
+                boolean isOK = parts.get(part.getId()).delete(keys.get(0), keys.get(1));
+                if (!isOK) {
+                    isSuccess = false;
+                    log.warn("Delete partition failed: part: " + part.getId() + ", keys: " + keys);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Delete failed, startPrimaryKey: {}, endPrimaryKey: {}", startPrimaryKey, endPrimaryKey, e);
+        }
+        return isSuccess;
+    }
+
+    private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
+        Map<Part, List<byte[]>> result = new HashMap<>();
+        for (byte[] primaryKey: primaryKeys) {
+            Part part = getPart(primaryKey);
+            if (part == null) {
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " can not compute part info."
+                );
+            }
+            List<byte[]> list = result.get(part);
+            if (list == null) {
+                list = new ArrayList<>();
+                result.put(part, list);
+            }
+            list.add(primaryKey);
+        }
+        return result;
     }
 
     public Map<Part, List<byte[]>> groupKeysByPart(byte[] startKey, byte[] endKey) {
@@ -413,27 +427,6 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        boolean isSuccess = true;
-        try {
-            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
-
-            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
-                Part part = entry.getKey();
-                List<byte[]> keys = entry.getValue();
-                boolean isOK = parts.get(part.getId()).delete(keys.get(0), keys.get(1));
-                if (!isOK) {
-                    isSuccess = false;
-                    log.warn("Delete partition failed: part: " + part.getId() + ", keys: " + keys);
-                }
-            }
-        } catch (IllegalArgumentException e) {
-            log.error("Delete failed, startPrimaryKey: {}, endPrimaryKey: {}", startPrimaryKey, endPrimaryKey, e);
-        }
-        return isSuccess;
-    }
-
-    @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
         long startTime = System.currentTimeMillis();
         Part part = getPart(primaryKey);
@@ -468,6 +461,9 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
+        if (startKeyPartMap.isEmpty()) {
+            return new KeyValueIterator(Collections.emptyIterator());
+        }
         return new FullScanRawIterator(startKeyPartMap.values().stream()
             .map(Part::getId)
             .map(parts::get)

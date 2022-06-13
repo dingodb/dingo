@@ -18,7 +18,6 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.net.NetService;
 import io.dingodb.server.driver.DriverProxyService;
-import io.dingodb.server.protocol.proto.DriverProxy;
 
 public class DriverProxyApi implements io.dingodb.server.api.DriverProxyApi {
 
@@ -29,13 +28,12 @@ public class DriverProxyApi implements io.dingodb.server.api.DriverProxyApi {
     }
 
     @Override
-    public void start(DriverProxy driverProxy) {
+    public void start() {
         service.start();
     }
 
     @Override
-    public void stop(DriverProxy driverProxy) {
+    public void stop() {
         service.stop();
     }
-
 }

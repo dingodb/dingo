@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,8 +79,6 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
     private long lastUpdateLeaderTime;
     private long lastUpdateNotLeaderChannelsTime;
 
-    private AtomicBoolean refresh = new AtomicBoolean(false);
-
     public CoordinatorConnector(List<Location> coordinatorAddresses) {
         this.coordinatorAddresses.addAll(coordinatorAddresses);
         refresh();
@@ -100,9 +97,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
 
     @Override
     public void refresh() {
-        if (refresh.compareAndSet(false, true)) {
-            Executors.submit("coordinator-connector-refresh", this::initChannels);
-        }
+        Executors.submit("coordinator-connector-refresh", this::initChannels);
     }
 
     @Override
@@ -113,7 +108,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
             try {
                 Thread.sleep(sleep);
                 refresh();
-                sleep += sleep;
+                sleep *= (5 - times);
             } catch (InterruptedException e) {
                 log.error("Wait coordinator connector ready, but interrupted.");
             }
@@ -126,11 +121,13 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
 
     private void initChannels() {
         for (Location address : coordinatorAddresses) {
+            if (verify()) {
+                return;
+            }
             try {
                 Channel channel;
                 CoordinatorServerApi api = netService.apiRegistry().proxy(CoordinatorServerApi.class, () -> address);
-                Location leader = api.leader();
-                Location leaderAddress = new Location(leader.getHost(), leader.getPort());
+                Location leaderAddress = api.leader();
                 channel = netService.newChannel(leaderAddress);
                 connectedLeader(channel);
                 return;
@@ -138,15 +135,13 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
                 log.error("Open coordinator channel error, address: {}", address, e);
             }
         }
-        refresh.set(false);
     }
 
     private void connected(Message message, Channel channel) {
         log.info("Connected coordinator [{}] channel.", channel.remoteLocation());
         coordinatorAddresses.add(channel.remoteLocation());
         channel.closeListener(this::listenClose);
-        channel.registerMessageListener(this::listenLeader);
-        channel.send(new Message(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
+        channel.setMessageListener(this::listenLeader);
     }
 
     private void connectedLeader(Channel channel) {
@@ -177,7 +172,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
     @Nonnull
     private Channel connectFollow(Location address) {
         Channel ch = netService.newChannel(address);
-        ch.registerMessageListener(this::connected);
+        ch.setMessageListener(this::connected);
         ch.send(new Message(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
         log.info("Open coordinator channel, address: [{}]", address);
         return ch;
@@ -192,6 +187,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
     }
 
     private void listenLeader(Message message, Channel channel) {
+        log.info("Receive leader message from [{}]", channel.remoteLocation().getUrl());
         leaderChange(channel);
     }
 
@@ -216,16 +212,16 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
             closeChannel(oldLeader);
         }
         channel.closeListener(this::listenClose);
-        refresh.set(false);
         return true;
     }
 
     private void listenClose(Channel channel) {
-        this.listenLeaderChannels.remove(channel.remoteLocation(), channel);
+        this.listenLeaderChannels.remove(channel.remoteLocation());
         log.info("Coordinator channel closed, remote: [{}]", channel.remoteLocation());
         if (this.leaderChannel.compareAndSet(channel, null)) {
             lastUpdateLeaderTime = System.currentTimeMillis();
             log.info("Coordinator leader channel closed, remote: [{}], then refresh", channel.remoteLocation());
+            refresh();
         }
     }
 

@@ -17,18 +17,16 @@
 package io.dingodb.web.controller;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.Location;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.MetaServiceApi;
+import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.TablePart;
-import io.dingodb.server.protocol.meta.TablePartStats;
-import io.dingodb.web.model.Part;
-import io.dingodb.web.model.PartReplicas;
-import io.dingodb.web.model.PartStats;
-import io.dingodb.web.model.Replica;
-import io.dingodb.web.model.TableParts;
-import io.dingodb.web.model.TableStats;
+import io.dingodb.web.mapper.DTOMapper;
+import io.dingodb.web.model.dto.meta.ReplicaDTO;
+import io.dingodb.web.model.dto.meta.TableDTO;
+import io.dingodb.web.model.dto.meta.TablePartDTO;
+import io.dingodb.web.model.dto.meta.TablePartStatsDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +36,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -58,126 +55,91 @@ public class MetaController {
     @Autowired
     private MetaServiceApi metaServiceApi;
 
+    @Autowired
+    private DTOMapper mapper;
+
     @ApiOperation("Get table")
     @GetMapping("/{table}/definition")
-    public ResponseEntity<TableDefinition> getTableDef(@PathVariable Integer table) {
-        return ResponseEntity.ok(metaApi.tableDefinition(
-            new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, PrimitiveCodec.encodeInt(0), table)
-        ));
+    public ResponseEntity<String> getTableDef(@PathVariable String table) {
+        return ResponseEntity.ok(metaApi.tableDefinition(metaApi.tableId(table.toUpperCase())).toString());
+    }
+
+    @ApiOperation("Get table")
+    @GetMapping("/{table}")
+    public ResponseEntity<TableDTO> getTable(@PathVariable String table) {
+        return ResponseEntity.ok(mapper.mapping(metaApi.table(metaApi.tableId(table.toUpperCase()))));
     }
 
     @ApiOperation("Get table parts")
     @GetMapping("/{table}/parts")
-    public ResponseEntity<TableParts> getTableParts(@PathVariable Integer table) {
-        CommonId tableId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, PrimitiveCodec.encodeInt(0), table);
-        List<Part> parts = metaApi.tableParts(tableId)
-            .stream()
-            .map(tp -> new Part(
-                tp.getId().toString(),
-                tp.getTable().toString(),
-                Arrays.toString(tp.getStart()),
-                Arrays.toString(tp.getEnd())
-            ))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(new TableParts(tableId.toString(), parts));
+    public ResponseEntity<List<TablePartDTO>> getTableParts(@PathVariable String table) {
+        return ResponseEntity.ok(
+            metaApi.tableParts(table.toUpperCase()).stream()
+                .map(mapper::mapping)
+                .collect(Collectors.toList())
+        );
     }
 
     @ApiOperation("Get table stats")
     @GetMapping("/{table}/stats")
-    public ResponseEntity<TableStats> getTableStats(@PathVariable Integer table) {
-        CommonId tableId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, PrimitiveCodec.encodeInt(0), table);
-        List<PartStats> parts = metaApi.tableParts(tableId)
-            .stream()
-            .map(TablePart::getId)
-            .map(metaApi::tablePartStats)
-            .map(stats ->  new PartStats(
-                stats.getId().toString(),
-                stats.getTable().toString(),
-                stats.getTablePart().toString(),
-                stats.getLeader().toString(),
-                stats.getApproximateStats().stream()
-                    .map(as -> new PartStats.ApproximateStats(
-                        Arrays.toString(as.getStartKey()),
-                        Arrays.toString(as.getEndKey()),
-                        as.getCount(),
-                        as.getSize()
-                    )).collect(Collectors.toList()),
-                Collections.emptyList()
-            ))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(new TableStats(tableId.toString(), parts));
+    public ResponseEntity<List<TablePartStatsDTO>> getTableStats(@PathVariable String table) {
+        return ResponseEntity.ok(
+            metaApi.tableParts(metaApi.tableId(table.toUpperCase())).stream()
+                .map(TablePart::getId)
+                .map(metaApi::tablePartStats)
+                .map(mapper::mapping)
+                .collect(Collectors.toList())
+        );
     }
 
     @ApiOperation("Get table stats")
     @GetMapping("/{table}/replicas")
-    public ResponseEntity<List<PartReplicas>> getTableReplicas(@PathVariable Integer table) {
-        CommonId tableId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, PrimitiveCodec.encodeInt(0), table);
-        List<PartReplicas> parts = metaApi.tableParts(tableId)
-            .stream()
-            .map(TablePart::getId)
-            .map(tp -> new PartReplicas(tp.toString(), metaApi.replicas(tp).stream()
-                .map(r -> new Replica(
-                    r.getId().toString(),
-                    r.getTable().toString(),
-                    r.getPart().toString(),
-                    r.getExecutor().toString(),
-                    r.getHost(),
-                    r.getPort()
-                ))
-                .collect(Collectors.toList())))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(parts);
+    public ResponseEntity<Map<String, List<ReplicaDTO>>> getTableReplicas(@PathVariable String table) {
+        List<TablePart> tableParts = metaApi.tableParts(table.toUpperCase());
+        return ResponseEntity.ok(
+            tableParts.stream().collect(Collectors.toMap(
+                tp -> tp.getId().toString(),
+                tp -> metaApi.replicas(tp.getId()).stream().map(mapper::mapping).collect(Collectors.toList())
+            )));
     }
 
     @ApiOperation("Get table part stats")
     @GetMapping("/{table}/{part}/stats")
-    public ResponseEntity<PartStats> getTablePartStats(@PathVariable Integer table, @PathVariable Integer part) {
-        CommonId partId = new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, PrimitiveCodec.encodeInt(table), part);
-        TablePartStats stats = metaApi.tablePartStats(partId);
-        return ResponseEntity.ok(new PartStats(
-            stats.getId().toString(),
-            stats.getTable().toString(),
-            stats.getTablePart().toString(),
-            stats.getLeader().toString(),
-            stats.getApproximateStats().stream()
-                .map(as -> new PartStats.ApproximateStats(
-                    Arrays.toString(as.getStartKey()),
-                    Arrays.toString(as.getEndKey()),
-                    as.getCount(),
-                    as.getSize()
-                )).collect(Collectors.toList()),
-            Collections.emptyList()
-        ));
+    public ResponseEntity<TablePartStatsDTO> getTablePartStats(@PathVariable String table, @PathVariable Integer part) {
+        return ResponseEntity.ok(mapper.mapping(metaApi.tablePartStats(
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seqContent(), part)
+        )));
     }
 
     @ApiOperation("Get table part")
     @GetMapping("/{table}/{part}/part")
-    public ResponseEntity<Part> getTablePart(@PathVariable Integer table, @PathVariable Integer part) {
-        CommonId partId  = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, PrimitiveCodec.encodeInt(table), part);
-        TablePart tablePart = metaApi.tablePart(partId);
-        return ResponseEntity.ok(new Part(
-            tablePart.getId().toString(),
-            tablePart.getTable().toString(),
-            Arrays.toString(tablePart.getStart()),
-            Arrays.toString(tablePart.getEnd())
-        ));
+    public ResponseEntity<TablePartDTO> getTablePart(@PathVariable String table, @PathVariable Integer part) {
+        return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seqContent(), part)
+        )));
     }
 
     @ApiOperation("Get table part")
     @GetMapping("/{table}/{part}/replica")
-    public ResponseEntity<List<Replica>> getTablePartReplica(@PathVariable Integer table, @PathVariable Integer part) {
-        CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, PrimitiveCodec.encodeInt(table), part);
-        return ResponseEntity.ok(metaApi.replicas(partId).stream()
-            .map(r -> new Replica(
-                r.getId().toString(),
-                r.getTable().toString(),
-                r.getPart().toString(),
-                r.getExecutor().toString(),
-                r.getHost(),
-                r.getPort()
-            ))
+    public ResponseEntity<List<ReplicaDTO>> getTablePartReplica(
+        @PathVariable String table, @PathVariable Integer part
+    ) {
+        return ResponseEntity.ok(metaApi
+            .replicas(new CommonId(
+                ID_TYPE.table,
+                TABLE_IDENTIFIER.part,
+                metaApi.tableId(table.toUpperCase()).seqContent(),
+                part
+            )).stream()
+            .map(mapper::mapping)
             .collect(Collectors.toList())
         );
+    }
+
+    @ApiOperation("Get executor.")
+    @GetMapping("/executor/{host}/{port}")
+    public ResponseEntity<Executor> getExecutor(@PathVariable String host, @PathVariable Integer port) {
+        return ResponseEntity.ok(metaApi.executor(new Location(host, port)));
     }
 
 }

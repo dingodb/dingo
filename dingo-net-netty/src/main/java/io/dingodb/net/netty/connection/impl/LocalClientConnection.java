@@ -30,9 +30,11 @@ public class LocalClientConnection extends AbstractClientConnection {
     public static final Location LOCATION = new Location(NetServiceConfiguration.host(), 0);
     public static final LocalClientConnection INSTANCE = new LocalClientConnection();
 
+    private final LocalServerConnection server = LocalServerConnection.INSTANCE;
+
     public LocalClientConnection() {
         super(LOCATION, LOCATION);
-        closeChannel(channel.channelId());
+        channel.close();
     }
 
     @Override
@@ -47,14 +49,12 @@ public class LocalClientConnection extends AbstractClientConnection {
 
     @Override
     public void send(ByteBuffer message) {
-        Executors.execute("LocalConnectionSend",
-            () -> LocalServerConnection.INSTANCE.receive((ByteBuffer) message.flip()));
+        Executors.execute("local-client-send", () -> server.receive((ByteBuffer) message.flip()));
     }
 
     @Override
     public void sendAsync(ByteBuffer message) {
-        Executors.execute("LocalConnectionSend",
-            () -> LocalServerConnection.INSTANCE.receive((ByteBuffer) message.flip()));
+        Executors.execute("local-client-send", () -> server.receive((ByteBuffer) message.flip()));
     }
 
 }

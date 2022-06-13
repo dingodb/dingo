@@ -17,6 +17,8 @@
 package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
+import io.dingodb.common.table.TableDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -24,17 +26,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldNameConstants;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
 @Builder
 @ToString
+@FieldNameConstants(asEnum = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 public class TablePartStats implements Stats {
+
+    public static final TableDefinition DEFINITION = new MetaTableDefinitionBuilder("TABLE_PART_STATS")
+        .addColumns(Arrays.stream(Fields.values()).map(Enum::name).collect(Collectors.toList()))
+        .build();
 
     private CommonId id;
     private long time;
@@ -47,7 +57,7 @@ public class TablePartStats implements Stats {
     private long writeBytesPerSecond;
     private long readBytesPerSecond;
     private List<ApproximateStats> approximateStats;
-    private List<CommonId> alive;
+    private List<Location> alive;
 
     @Getter
     @Setter

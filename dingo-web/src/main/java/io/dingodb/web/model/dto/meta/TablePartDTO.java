@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.model.dto.meta;
 
-import io.dingodb.common.CommonId;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,11 +29,22 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class Part {
+public class TablePartDTO {
 
     private String id;
+    private String comment;
+    private long createTime;
+    private long updateTime;
+    private int state;
+
+    private String schema;
     private String table;
-    private String start;
-    private String end;
+    private int[] start;
+    private int[] end;
+
+    private int replicas;
+    private int version;
+    private long upTime;
+    private long downTime;
 
 }

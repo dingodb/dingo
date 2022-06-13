@@ -17,7 +17,6 @@
 package io.dingodb.server.coordinator.schedule;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
@@ -25,12 +24,10 @@ import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.api.ServerApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
-import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorStatsAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ReplicaAdaptor;
-import io.dingodb.server.coordinator.meta.adaptor.impl.SplitTaskAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TablePartAdaptor;
-import io.dingodb.server.coordinator.meta.adaptor.impl.TablePartStatsAdaptor;
+import io.dingodb.server.coordinator.schedule.processor.TableStoreProcessor;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.ExecutorStats;
 import io.dingodb.server.protocol.meta.Replica;
@@ -62,10 +59,6 @@ public class ClusterScheduler implements ServerApi, ReportApi {
     private TablePartAdaptor tablePartAdaptor;
     private ReplicaAdaptor replicaAdaptor;
     private ExecutorAdaptor executorAdaptor;
-    private SplitTaskAdaptor splitTaskAdaptor;
-
-    private TablePartStatsAdaptor tablePartStatsAdaptor;
-    private ExecutorStatsAdaptor executorStatsAdaptor;
 
     private Map<CommonId, TableScheduler> tableSchedulers;
 
@@ -78,10 +71,6 @@ public class ClusterScheduler implements ServerApi, ReportApi {
         tablePartAdaptor = MetaAdaptorRegistry.getMetaAdaptor(TablePart.class);
         replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
         executorAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Executor.class);
-        splitTaskAdaptor = MetaAdaptorRegistry.getMetaAdaptor(SplitTask.class);
-
-        tablePartStatsAdaptor = MetaAdaptorRegistry.getStatsMetaAdaptor(TablePartStats.class);
-        executorStatsAdaptor = MetaAdaptorRegistry.getStatsMetaAdaptor(ExecutorStats.class);
 
         tableSchedulers = new ConcurrentHashMap<>();
 
@@ -103,9 +92,7 @@ public class ClusterScheduler implements ServerApi, ReportApi {
     public CommonId registerExecutor(Executor executor) {
         log.info("Register executor {}", executor);
         CommonId id = executorAdaptor.save(executor);
-        Executors.submit("add-executor-to-tables", () ->
-            tableSchedulers.values().forEach(scheduler -> scheduler.addStore(executor.getId(), executor.location()))
-        );
+        TableStoreProcessor.addStore(id, executor.location());
         log.info("Register executor success id: [{}], {}.", id, executor);
         return id;
     }

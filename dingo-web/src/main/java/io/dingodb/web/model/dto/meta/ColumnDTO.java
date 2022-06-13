@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.model.dto.meta;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -25,33 +23,30 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.List;
-
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class PartStats {
+public class ColumnDTO {
 
     private String id;
+    private String comment;
+    private long createTime;
+    private long updateTime;
+    private int state;
 
+    private String name;
+    private String schema;
     private String table;
-    private String tablePart;
-    private String leader;
-    private List<PartStats.ApproximateStats> approximateStats;
-    private List<String> alive;
-
-    @Getter
-    @Setter
-    @ToString
-    @AllArgsConstructor
-    public static class ApproximateStats {
-        String startKey;
-        String endKey;
-        Long count;
-        Long size;
-    }
+    private String alias;
+    private boolean notNull;
+    private boolean primary;
+    private int scale;
+    private int precision;
+    private String type;
+    private int version;
+    private String defaultValue;
 
 }

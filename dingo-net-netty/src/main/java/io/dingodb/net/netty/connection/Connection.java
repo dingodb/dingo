@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.connection;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.net.netty.channel.Channel;
 import io.netty.channel.socket.SocketChannel;
 
@@ -49,17 +50,14 @@ public interface Connection extends AutoCloseable {
      */
     Channel channel();
 
-    ByteBuffer allocMessageBuffer(long channelId, int capacity);
+    default ByteBuffer allocMessageBuffer(long channelId, int capacity) {
+        return ByteBuffer.allocate(capacity + PrimitiveCodec.LONG_MAX_LEN).put(PrimitiveCodec.encodeVarLong(channelId));
+    }
 
     /**
      * Returns a new sub channel for current connection.
      */
     Channel newChannel(boolean keepAlive) throws InterruptedException;
-
-    /**
-     * Close sub channel with the specified {@code channel id}.
-     */
-    void closeChannel(long channelId);
 
     /**
      * Returns channel by channel id, if channel id is null or channel not exists, will return null.

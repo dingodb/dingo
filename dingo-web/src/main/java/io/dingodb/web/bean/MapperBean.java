@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.bean;
 
-import io.dingodb.common.Location;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import io.dingodb.web.mapper.DTOMapper;
+import org.mapstruct.factory.Mappers;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
+@Component
+public class MapperBean {
 
-@Getter
-@Setter
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-public class PartReplicaRes {
-
-    private String schema;
-    private String name;
-    private Location leader;
-    private List<Location> replicates;
+    @Bean
+    public DTOMapper dtoMapper() {
+        return Mappers.getMapper(DTOMapper.class);
+    }
 
 }

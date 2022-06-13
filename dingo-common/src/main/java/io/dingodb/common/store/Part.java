@@ -24,14 +24,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.StringJoiner;
 
 @Getter
 @Setter
 @Builder
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
@@ -52,4 +52,18 @@ public class Part {
     private Location leader;
     private List<Location> replicates;
     private int version;
+
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", Part.class.getSimpleName() + "[", "]").add("id=" + id)
+            .add("instanceId=" + instanceId)
+            .add("start=" + Arrays.toString(start))
+            .add("end=" + Arrays.toString(end))
+            .add("type=" + type)
+            .add("leader=" + leader)
+            .add("replicates=" + replicates)
+            .add("version=" + version)
+            .toString();
+    }
 }

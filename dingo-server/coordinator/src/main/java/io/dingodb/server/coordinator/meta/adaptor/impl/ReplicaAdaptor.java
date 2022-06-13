@@ -19,12 +19,14 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.Replica;
+import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -65,8 +67,31 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
         return executorReplica.get(executor);
     }
 
+    public Replica getByExecutor(CommonId executor, CommonId partId) {
+        return executorReplica.get(executor).stream()
+            .filter(replica -> replica.getPart().equals(partId))
+            .findAny().orElse(null);
+    }
+
     public List<Location> getLocationsByDomain(byte[] domain) {
         return getByDomain(domain).stream().map(Replica::location).collect(Collectors.toList());
+    }
+
+    public List<Replica> createByPart(TablePart tablePart, Collection<Executor> executors) {
+        return executors.stream()
+            .map(executor -> newReplica(tablePart, executor))
+            .peek(this::save)
+            .collect(Collectors.toList());
+    }
+
+    public Replica newReplica(TablePart tablePart, Executor executor) {
+        return Replica.builder()
+            .part(tablePart.getId())
+            .table(tablePart.getTable())
+            .executor(executor.getId())
+            .host(executor.getHost())
+            .port(executor.getPort())
+            .build();
     }
 
     @Override
@@ -81,15 +106,8 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
     }
 
     @Override
-    public void delete(CommonId id) {
-        Replica replica = metaMap.remove(id);
-        Optional.ofNullable(replica)
-            .ifAbsent(() -> {
-                throw new RuntimeException("Not found!");
-            })
-            .map(Replica::getExecutor)
-            .map(executorReplica::get)
-            .ifPresent(replicas -> replicas.remove(replica));
+    protected void doDelete(Replica replica) {
+        executorReplica.get(replica.getExecutor()).remove(replica);
     }
 
     @Override

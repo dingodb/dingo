@@ -55,7 +55,7 @@ public class NettyClientConnection extends AbstractClientConnection {
     @Delegate(excludes = {ChannelOutboundInvoker.class, AttributeMap.class})
     protected SocketChannel socketChannel;
 
-    public NettyClientConnection(Location location, int capacity) {
+    public NettyClientConnection(Location location) {
         super(location, null);
     }
 

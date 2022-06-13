@@ -23,6 +23,9 @@ import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Executor;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ZERO_DOMAIN;
@@ -31,9 +34,24 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.executor);
 
+    protected final Map<Location, Executor> locationMap = new ConcurrentHashMap<>();
+
     public ExecutorAdaptor(MetaStore metaStore) {
         super(metaStore);
         MetaAdaptorRegistry.register(Executor.class, this);
+        metaMap.values().forEach(__ -> locationMap.put(__.location(), __));
+    }
+
+    @Override
+    protected void doSave(Executor meta) {
+        super.doSave(meta);
+        locationMap.put(meta.location(), meta);
+    }
+
+    @Override
+    protected void doDelete(Executor meta) {
+        super.doDelete(meta);
+        locationMap.remove(meta.location());
     }
 
     @Override
@@ -48,6 +66,10 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
             ZERO_DOMAIN,
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
+    }
+
+    public Executor get(Location location) {
+        return locationMap.get(location);
     }
 
     public Location getLocation(CommonId id) {
