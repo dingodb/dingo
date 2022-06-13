@@ -71,8 +71,10 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
     @Override
     public CommonId save(M meta) {
         if (meta.getId() ==  null) {
+            meta.setCreateTime(System.currentTimeMillis());
             meta.setId(newId(meta));
         }
+        meta.setUpdateTime(System.currentTimeMillis());
         doSave(meta);
         metaMap.put(meta.getId(), meta);
         log.info("Save meta {}", meta);

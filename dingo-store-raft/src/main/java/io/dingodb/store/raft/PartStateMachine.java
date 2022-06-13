@@ -45,6 +45,7 @@ import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -113,20 +114,24 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         if (node.isLeader()) {
             Map<Location, PeerId> peers = node.listPeers().stream()
                 .collect(Collectors.toMap(PeerId::toLocation, Function.identity()));
-            if (part.getLeader() != null && !part.getLeader().equals(DingoConfiguration.location())) {
+            if (part.getLeader() != null &&
+                (!part.getLeader().getHost().equals(DingoConfiguration.host())
+                    || part.getLeader().getRaftPort() != DingoConfiguration.raftPort())) {
                 log.info("Transfer leader to [{}].", part.getLeader().getUrl());
-                node.transferLeadershipTo(peers.get(part.getLeader()));
+                node.transferLeadershipTo(PeerId.of(part.getLeader()));
                 return;
             }
             if (part.getReplicates().size() != node.listPeers().size()) {
-                part.getReplicates().stream()
-                    .filter(__ -> !peers.containsKey(__))
-                    .map(PeerId::of)
-                    .forEach(this::addReplica);
-                peers.keySet().stream()
-                    .filter(__ -> !part.getReplicates().contains(__))
-                    .map(peers::get)
-                    .forEach(this::removeReplica);
+                for (Location replicateLoc : part.getReplicates()) {
+                    if (!raftLocationContains(peers.keySet(), replicateLoc)) {
+                        addReplica(PeerId.of(replicateLoc));
+                    }
+                }
+                for (Location peerLoc : peers.keySet()) {
+                    if (!raftLocationContains(part.getReplicates(), peerLoc)) {
+                        removeReplica(peers.get(peerLoc));
+                    }
+                }
             }
         }
     }
@@ -193,14 +198,18 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
             availableListener.forEach(listen -> Executors.submit(id + " available", listen));
             return;
         }
-        if (timer == null) {
-            this.timer = new HashedWheelTimer(
-                new NamedThreadFactory(TIMER_THREAD_NAME, true),
-                50,
-                TimeUnit.MILLISECONDS,
-                4096
-            );
+        if (this.timer != null) {
+            this.timer.stop();
+            this.timer = null;
         }
+
+        this.timer = new HashedWheelTimer(
+            new NamedThreadFactory(TIMER_THREAD_NAME, true),
+            50,
+            TimeUnit.MILLISECONDS,
+            4096
+        );
+
         this.reportApi = ServiceLoader.load(NetServiceProvider.class).iterator().next().get().apiRegistry()
             .proxy(ReportApi.class, CoordinatorConnector.defaultConnector());
         this.timer.start();
@@ -211,6 +220,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     public void onLeaderStop(Status status) {
         if (this.timer != null) {
             this.timer.stop();
+            this.timer = null;
         }
         available = false;
         availableListener.forEach(listen -> Executors.submit(id + " available", listen));
@@ -250,6 +260,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
                 .tablePart(id)
                 .table(part.getInstanceId())
                 .approximateStats(approximateStats)
+                .time(System.currentTimeMillis())
                 .alive(node.listAlivePeers().stream().map(PeerId::toLocation).collect(Collectors.toList()))
                 .build();
             if (available != (available = reportApi.report(stats))) {
@@ -263,6 +274,15 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
             }
         }
 
+    }
+
+    private boolean raftLocationContains(Collection<Location> list, Location location) {
+        for (Location loc : list) {
+            if (loc.getHost().equals(location.getHost()) && loc.getRaftPort() == location.getRaftPort()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

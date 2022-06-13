@@ -16,12 +16,12 @@
 
 package io.dingodb.raft.rpc;
 
-import io.dingodb.raft.rpc.dingo.DingoRaftRpcServer;
 import io.dingodb.raft.rpc.impl.PingRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.AddLearnersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.AddPeerRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.ChangePeersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.GetLeaderRequestProcessor;
+import io.dingodb.raft.rpc.impl.cli.GetLocationProcessor;
 import io.dingodb.raft.rpc.impl.cli.GetPeersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.RemoveLearnersRequestProcessor;
 import io.dingodb.raft.rpc.impl.cli.RemovePeerRequestProcessor;
@@ -36,6 +36,7 @@ import io.dingodb.raft.rpc.impl.core.ReadIndexRequestProcessor;
 import io.dingodb.raft.rpc.impl.core.RequestVoteRequestProcessor;
 import io.dingodb.raft.rpc.impl.core.TimeoutNowRequestProcessor;
 import io.dingodb.raft.util.Endpoint;
+import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.concurrent.Executor;
 
@@ -65,7 +66,7 @@ public class RaftRpcServerFactory {
      */
     public static RpcServer createRaftRpcServer(final Endpoint endpoint, final Executor raftExecutor,
                                                 final Executor cliExecutor) {
-        final RpcServer rpcServer = new DingoRaftRpcServer();
+        final RpcServer rpcServer = RpcFactoryHelper.rpcFactory().createRpcServer(endpoint);
         addRaftRequestProcessors(rpcServer, raftExecutor, cliExecutor);
         return rpcServer;
     }
@@ -111,6 +112,7 @@ public class RaftRpcServerFactory {
         rpcServer.registerProcessor(new AddLearnersRequestProcessor(cliExecutor));
         rpcServer.registerProcessor(new RemoveLearnersRequestProcessor(cliExecutor));
         rpcServer.registerProcessor(new ResetLearnersRequestProcessor(cliExecutor));
+        rpcServer.registerProcessor(new GetLocationProcessor());
     }
 
     /**

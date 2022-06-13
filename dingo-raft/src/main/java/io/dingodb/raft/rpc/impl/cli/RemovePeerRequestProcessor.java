@@ -16,13 +16,11 @@
 
 package io.dingodb.raft.rpc.impl.cli;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequestClosure;
-import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.util.RpcFactoryHelper;
 
 import java.util.List;
@@ -76,26 +74,7 @@ public class RemovePeerRequestProcessor extends BaseCliRequestProcessor<CliReque
     }
 
     @Override
-    public CliRequests.RemovePeerRequest parse(byte[] request) {
-        try {
-            return CliRequests.RemovePeerRequest.parseFrom(request);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public String interest() {
         return CliRequests.RemovePeerRequest.class.getName();
-    }
-
-    @Override
-    public String getRequestTag() {
-        return Tags.REMOVEPEER_REQUEST;
-    }
-
-    @Override
-    public String getResponseTag() {
-        return Tags.REMOVEPEER_RESPONSE;
     }
 }

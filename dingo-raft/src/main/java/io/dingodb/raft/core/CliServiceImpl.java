@@ -28,7 +28,6 @@ import io.dingodb.raft.option.CliOptions;
 import io.dingodb.raft.rpc.CliClientService;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.raft.rpc.dingo.DingoCliClientServiceImpl;
 import io.dingodb.raft.rpc.impl.cli.CliClientServiceImpl;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.Utils;
@@ -63,7 +62,7 @@ public class CliServiceImpl implements CliService {
             return true;
         }
         this.cliOptions = opts;
-        this.cliClientService = new DingoCliClientServiceImpl();
+        this.cliClientService = new CliClientServiceImpl();
         return this.cliClientService.init(this.cliOptions);
     }
 
@@ -99,7 +98,7 @@ public class CliServiceImpl implements CliService {
             return st;
         }
 
-        if (!this.cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(leaderId.getEndpoint())) {
             return new Status(-1, "Fail to init channel to leader %s", leaderId);
         }
 
@@ -215,7 +214,7 @@ public class CliServiceImpl implements CliService {
         Requires.requireNonNull(peerId, "Null peerId");
         Requires.requireNonNull(newPeers, "Null new peers");
 
-        if (!this.cliClientService.checkConnection(peerId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(peerId.getEndpoint())) {
             return new Status(-1, "Fail to init channel to %s", peerId);
         }
 
@@ -250,7 +249,7 @@ public class CliServiceImpl implements CliService {
             return st;
         }
 
-        if (!this.cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(leaderId.getEndpoint())) {
             return new Status(-1, "Fail to init channel to leader %s", leaderId);
         }
         final CliRequests.AddLearnersRequest.Builder rb = CliRequests.AddLearnersRequest.newBuilder() //
@@ -311,7 +310,7 @@ public class CliServiceImpl implements CliService {
             return st;
         }
 
-        if (!this.cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(leaderId.getEndpoint())) {
             return new Status(-1, "Fail to init channel to leader %s", leaderId);
         }
         final CliRequests.RemoveLearnersRequest.Builder rb = CliRequests.RemoveLearnersRequest.newBuilder() //
@@ -349,7 +348,7 @@ public class CliServiceImpl implements CliService {
             return st;
         }
 
-        if (!this.cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(leaderId.getEndpoint())) {
             return new Status(-1, "Fail to init channel to leader %s", leaderId);
         }
         final CliRequests.ResetLearnersRequest.Builder rb = CliRequests.ResetLearnersRequest.newBuilder() //
@@ -400,7 +399,7 @@ public class CliServiceImpl implements CliService {
         Requires.requireTrue(!StringUtils.isBlank(groupId), "Blank group id");
         Requires.requireNonNull(peer, "Null peer");
 
-        if (!this.cliClientService.checkConnection(peer.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(peer.getEndpoint())) {
             return new Status(-1, "Fail to init channel to %s", peer);
         }
 
@@ -427,7 +426,7 @@ public class CliServiceImpl implements CliService {
 
         final Status st = new Status(-1, "Fail to get leader of group %s", groupId);
         for (final PeerId peer : conf) {
-            if (!this.cliClientService.checkConnection(peer.getEndpoint(), false)) {
+            if (!this.cliClientService.connect(peer.getEndpoint())) {
                 LOG.error("Fail to connect peer {} to get leader for group {}.", peer, groupId);
                 continue;
             }
@@ -583,7 +582,7 @@ public class CliServiceImpl implements CliService {
             throw new IllegalStateException(st.getErrorMsg());
         }
 
-        if (!this.cliClientService.checkConnection(leaderId.getEndpoint(), false)) {
+        if (!this.cliClientService.connect(leaderId.getEndpoint())) {
             throw new IllegalStateException("Fail to init channel to leader " + leaderId);
         }
 

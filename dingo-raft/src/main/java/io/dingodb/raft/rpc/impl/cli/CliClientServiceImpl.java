@@ -23,7 +23,7 @@ import io.dingodb.raft.rpc.CliClientService;
 import io.dingodb.raft.rpc.CliRequests;
 import io.dingodb.raft.rpc.RpcRequests;
 import io.dingodb.raft.rpc.RpcResponseClosure;
-import io.dingodb.raft.rpc.dingo.AbstractClientService;
+import io.dingodb.raft.rpc.impl.AbstractClientService;
 import io.dingodb.raft.util.Endpoint;
 
 import java.util.concurrent.Future;
@@ -47,18 +47,10 @@ public class CliClientServiceImpl extends AbstractClientService implements CliCl
         return invokeWithDone(endpoint, request, done, this.cliOptions.getTimeoutMs());
     }
 
-    private Future<Message> invokeWithDone(Endpoint endpoint, Object request, Object done, int timeoutMs) {
-        return null;
-    }
-
     @Override
     public Future<Message> removePeer(final Endpoint endpoint, final CliRequests.RemovePeerRequest request,
                                       final RpcResponseClosure<CliRequests.RemovePeerResponse> done) {
         return invokeWithDone(endpoint, request, done, this.cliOptions.getTimeoutMs());
-    }
-
-    private Future<Message> invokeWithDone(Endpoint endpoint, CliRequests.RemovePeerRequest request, RpcResponseClosure<CliRequests.RemovePeerResponse> done, int timeoutMs) {
-        return null;
     }
 
     @Override

@@ -50,7 +50,7 @@ public class TestRaftRawKVStore {
 
     public static final CommonId RAFT_ID = new CommonId(
         (byte) 'T', new byte[] {'T', 'R'}, PrimitiveCodec.encodeInt(0), PrimitiveCodec.encodeInt(0));
-    public static final String SRV_LIST = "localhost:9181:" + RAFT_ID.toString();
+    public static final String SRV_LIST = "localhost:9181";
     public static final String DB_PATH = TestRaftRawKVStore.class.getName();
 
 

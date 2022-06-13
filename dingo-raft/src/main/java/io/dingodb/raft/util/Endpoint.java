@@ -47,7 +47,8 @@ public class Endpoint implements Copiable<Endpoint>, Serializable {
     }
 
     public Location toLocation() {
-        return new Location(ip, port);
+        return new Location(ip, port, port);
+        //TODO: first port avoid duplicate key; see Location equals & hashcode
     }
 
     @Override

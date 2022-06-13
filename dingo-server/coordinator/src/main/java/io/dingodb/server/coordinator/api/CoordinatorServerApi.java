@@ -22,7 +22,9 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.NetService;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.entity.PeerId;
+import io.dingodb.raft.error.RemotingException;
 import io.dingodb.raft.rpc.RpcClient;
+import io.dingodb.raft.rpc.impl.cli.GetLocationProcessor;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
@@ -57,7 +59,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public Location leader() {
         try {
-            return new Location(this.node.getLeaderId().getIp(), this.node.getLeaderId().getPort());
+            return ((GetLocationProcessor.GetLocationResponse) rpcClient.invokeSync(
+                node.getLeaderId().getEndpoint(),
+                GetLocationProcessor.GetLocationRequest.INSTANCE,
+                3000
+            )).getLocation();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -68,7 +74,17 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
         List<PeerId> peerIds = node.listPeers();
         List<Location> locations = new ArrayList<>();
         for (PeerId peerId : peerIds) {
-            locations.add(new Location(peerId.getIp(), peerId.getPort()));
+            try {
+                locations.add(((GetLocationProcessor.GetLocationResponse) rpcClient.invokeSync(
+                    peerId.getEndpoint(),
+                    GetLocationProcessor.GetLocationRequest.INSTANCE,
+                    3000
+                )).getLocation());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (RemotingException e) {
+                throw new RuntimeException(e);
+            }
         }
         return locations;
     }
