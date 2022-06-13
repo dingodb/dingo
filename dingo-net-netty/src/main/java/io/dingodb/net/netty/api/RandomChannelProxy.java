@@ -17,6 +17,8 @@
 package io.dingodb.net.netty.api;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.net.Message;
 import io.dingodb.net.netty.NettyNetService;
 import io.dingodb.net.netty.NettyNetServiceProvider;
 import io.dingodb.net.netty.channel.Channel;
@@ -24,14 +26,17 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.lang.reflect.InvocationHandler;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+import static io.dingodb.net.Message.API_CANCEL;
+import static io.dingodb.net.Message.EMPTY;
+
 @Slf4j
 @Accessors(fluent = true)
-public class RandomChannelProxy<T> implements InvocationHandler, ApiProxy<T> {
+public class RandomChannelProxy<T> implements ApiProxy<T> {
 
     private static final NettyNetService netService = NettyNetServiceProvider.NET_SERVICE_INSTANCE;
 
@@ -62,13 +67,17 @@ public class RandomChannelProxy<T> implements InvocationHandler, ApiProxy<T> {
 
     @Override
     public void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws Exception {
-        future.whenComplete((r, e) -> {
+        future.whenCompleteAsync((r, e) -> {
+            if (e instanceof CancellationException) {
+                System.out.println(1111);
+                ch.send(new Message(API_CANCEL, EMPTY.content()));
+            }
             try {
                 ch.close();
             } catch (Exception ex) {
                 log.error("Close channel error, address: [{}].", ch.remoteLocation(), ex);
             }
-        });
+        }, Executors.executor("on-invoke-complete"));
         ch.send(buffer);
     }
 

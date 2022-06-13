@@ -65,8 +65,8 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
     }
 
     @Override
-    public void delete(CommonId id) {
-        metaMap.remove(id);
+    protected void doDelete(Column column) {
+        // skip
     }
 
 }

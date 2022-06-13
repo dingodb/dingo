@@ -17,5 +17,6 @@
 package io.dingodb.meta;
 
 public interface MetaServiceProvider {
+
     MetaService get();
 }

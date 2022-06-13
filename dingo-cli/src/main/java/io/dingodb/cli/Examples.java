@@ -106,7 +106,7 @@ public class Examples {
                 Class.forName("io.dingodb.driver.client.DingoDriverClient");
                 runOperation(new JDBCRunner(
                     table.toUpperCase(),
-                    DriverManager.getConnection(CONNECT_STRING_PREFIX + jdbcUrl)
+                    DriverManager.getConnection(CONNECT_STRING_PREFIX + "url=" + jdbcUrl)
                 ));
                 break;
             case "SDK":
@@ -244,7 +244,7 @@ public class Examples {
                     .append("u_age      int,\n")
                     .append("u_income   double,\n")
                     .append("u_gender   boolean,\n")
-                    .append("primary key(id)\n")
+                    .append("primary key(u_id)\n")
                     .append(")");
                 long start = System.currentTimeMillis();
                 statement.execute(sqlBuilder.toString());

@@ -8,4 +8,4 @@ server:
     min-response-size: 1024
   host: 127.0.0.1
   port: 13000
-  coordinatorExchangeSvrList: node1:19181
+  coordinatorExchangeSvrList: node1:19181,node2:19182,node3:19181

@@ -33,6 +33,10 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.RSA"
 }
 
+fatJar.dependsOn(
+    ':dingo-server:dingo-server-client:jar'
+)
+
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }

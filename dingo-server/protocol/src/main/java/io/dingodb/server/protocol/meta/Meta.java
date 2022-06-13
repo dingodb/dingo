@@ -26,7 +26,6 @@ public interface Meta {
 
     void setUpdateTime(long updateTime);
 
-
     CommonId getId();
 
     long getCreateTime();

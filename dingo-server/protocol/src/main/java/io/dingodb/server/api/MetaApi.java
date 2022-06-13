@@ -17,6 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.server.protocol.meta.Column;
@@ -33,16 +34,28 @@ import java.util.List;
 public interface MetaApi {
 
     @ApiDeclaration
+    CommonId tableId(String name);
+
+    @ApiDeclaration
     Table table(CommonId tableId);
 
     @ApiDeclaration
     TableDefinition tableDefinition(CommonId tableId);
 
     @ApiDeclaration
+    TableDefinition tableDefinition(String tableName);
+
+    @ApiDeclaration
     Column column(CommonId columnId);
 
     @ApiDeclaration
     List<Column> columns(CommonId tableId);
+
+    @ApiDeclaration
+    List<Column> columns(String tableName);
+
+    @ApiDeclaration
+    Executor executor(Location location);
 
     @ApiDeclaration
     Executor executor(CommonId executorId);
@@ -57,6 +70,9 @@ public interface MetaApi {
     List<Replica> replicas(CommonId tablePartId);
 
     @ApiDeclaration
+    List<Replica> replicas(String tableName);
+
+    @ApiDeclaration
     Schema schema(CommonId schemaId);
 
     @ApiDeclaration
@@ -64,6 +80,9 @@ public interface MetaApi {
 
     @ApiDeclaration
     List<TablePart> tableParts(CommonId tableId);
+
+    @ApiDeclaration
+    List<TablePart> tableParts(String tableName);
 
     @ApiDeclaration
     TablePartStats tablePartStats(CommonId tablePartId);

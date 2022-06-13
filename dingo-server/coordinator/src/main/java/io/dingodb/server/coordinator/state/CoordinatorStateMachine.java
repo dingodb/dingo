@@ -41,6 +41,7 @@ import io.dingodb.raft.rpc.dingo.AbstractClientService;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import io.dingodb.server.coordinator.api.CoordinatorServerApi;
+import io.dingodb.server.coordinator.api.ScheduleApi;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseStatsAdaptor;
@@ -72,6 +73,7 @@ public class CoordinatorStateMachine implements StateMachine {
 
     private final NetService netService;
     private CoordinatorServerApi serverApi;
+    private ScheduleApi scheduleApi;
     private final Set<Channel> leaderListener = new CopyOnWriteArraySet<>();
 
     public CoordinatorStateMachine(Node node, RawKVStore cache, RawKVStore store, MetaStore metaStore) {
@@ -186,7 +188,13 @@ public class CoordinatorStateMachine implements StateMachine {
                 netService
             );
         }
-        leaderListener.forEach(channel -> Executors.submit("leader-notify", () -> channel.send(Message.EMPTY)));
+        if (scheduleApi == null) {
+            scheduleApi = new ScheduleApi();
+        }
+        leaderListener.forEach(channel -> Executors.submit("leader-notify", () -> {
+            log.info("Send leader message to [{}].", channel.remoteLocation().getUrl());
+            channel.send(Message.EMPTY);
+        }));
         Executors.submit("on-leader", () -> {
             ServiceLoader.load(BaseAdaptor.Creator.class).iterator()
                 .forEachRemaining(creator -> creator.create(metaStore));
@@ -199,7 +207,6 @@ public class CoordinatorStateMachine implements StateMachine {
             } catch (IOException e) {
                 log.error("http server error", e);
             }
-
         });
     }
 
@@ -240,6 +247,10 @@ public class CoordinatorStateMachine implements StateMachine {
     private void onMessage(Message message, Channel channel) {
         log.info("New leader listener channel, remote: [{}]", channel.remoteLocation());
         leaderListener.add(channel);
+        channel.send(Message.EMPTY);
+        if (node.isLeader()) {
+            channel.send(Message.EMPTY);
+        }
         channel.closeListener(leaderListener::remove);
     }
 

@@ -38,18 +38,19 @@ public class MessageDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        try {
-            if (!ctx.channel().isOpen()) {
-                if (in.readableBytes() > 0) {
-                    log.info("Channel is closed, discarding remaining {} byte(s) in buffer.", in.readableBytes());
-                }
-                in.skipBytes(in.readableBytes());
-                return;
+        if (!ctx.channel().isOpen()) {
+            if (in.readableBytes() > 0) {
+                log.info("Channel is closed, discarding remaining {} byte(s) in buffer.", in.readableBytes());
             }
-            connection.receive(read(in));
+            in.skipBytes(in.readableBytes());
+            return;
+        }
+        // if read throw exception, must close connection
+        ByteBuffer message = read(in);
+        try {
+            connection.receive(message);
         } catch (Exception e) {
-            log.error("Message Decoder Error : {}", e);
-            //TODO Need do something to exception.
+            log.error("Handler message from [{}] error.", connection.remoteLocation());
         }
     }
 

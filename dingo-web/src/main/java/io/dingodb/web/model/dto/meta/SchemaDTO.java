@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.protocol.proto;
+package io.dingodb.web.model.dto.meta;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -22,17 +22,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.Accessors;
 
 @Getter
 @Setter
 @ToString
-@Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class DriverProxy {
+public class SchemaDTO {
 
-    private int port = -1;
+    private String id;
+    private String comment;
+    private long createTime;
+    private long updateTime;
+    private int state;
+
+    private String name;
+    private String parent;
 
 }

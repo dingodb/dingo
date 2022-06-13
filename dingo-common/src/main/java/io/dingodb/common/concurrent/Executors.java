@@ -60,7 +60,7 @@ public final class Executors {
     }
 
     public static void execute(String name, Runnable command) {
-        GLOBAL_POOL.execute(() -> run(name, command));
+        GLOBAL_POOL.execute(wrap(name, command));
     }
 
     public static void schedule(String name, Runnable command, long delay, TimeUnit unit) {
@@ -71,14 +71,14 @@ public final class Executors {
         GLOBAL_SCHEDULE_POOL.schedule(wrap(name, callable), delay, unit);
     }
 
+    public static void schedule(String name, Runnable command, long initialDelay, long period, TimeUnit unit) {
+        GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
+    }
+
     public static void scheduleAtFixedRate(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
         GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(wrap(name, command), initialDelay, period, unit);
-    }
-
-    public static void schedule(String name, Runnable command, long initialDelay, long period, TimeUnit unit) {
-        GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
     }
 
     public static <T> Future<T> submit(String name, Callable<T> task) {

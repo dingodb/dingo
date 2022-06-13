@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
+import static io.dingodb.common.codec.PrimitiveCodec.readInt;
+
 @Slf4j
 public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
     protected final NavigableMap<CommonId, M> metaMap = new ConcurrentSkipListMap<>();
@@ -61,8 +64,8 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         metaStore.upsertKeyValue(meta.getId().encode(), encodeMeta(meta));
     }
 
-    protected void doDelete(CommonId id) {
-        metaStore.delete(id.encode());
+    protected void doDelete(M meta) {
+        metaStore.delete(meta.getId().encode());
     }
 
     @Override
@@ -89,11 +92,10 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         if (domain == null) {
             return Collections.emptyList();
         }
-        CommonId prefix = metaId();
-        prefix = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        ++domain[domain.length - 1];
-        CommonId stop = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        return new ArrayList<>(metaMap.subMap(prefix, true, stop, false).values());
+        CommonId from = metaId();
+        from = CommonId.prefix(from.type(), from.identifier(), domain);
+        CommonId to = CommonId.prefix(from.type(), from.identifier(), encodeInt(readInt(domain) + 1));
+        return new ArrayList<>(metaMap.subMap(from, true, to, false).values());
     }
 
     @Override
@@ -101,8 +103,15 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         if (!metaMap.containsKey(id)) {
             throw new RuntimeException("Not found!");
         }
-        doDelete(id);
-        M meta = metaMap.remove(id);
+        M meta = metaMap.get(id);
+        if (meta == null) {
+            throw new RuntimeException("Not found " + id);
+        } else {
+            log.info("Execute delete [{}] => {}", id, meta);
+        }
+        doDelete(meta);
+        metaMap.remove(id);
+        log.info("Delete done [{}] => {}", id, meta);
     }
 
     @Override

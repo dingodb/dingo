@@ -40,18 +40,16 @@ public class TagMessageHandler {
     private TagMessageHandler() {
     }
 
-    private final Map<String, Collection<MessageListenerProvider>> listenerProviders = new ConcurrentHashMap<>();
+    private final Map<String, MessageListenerProvider> listenerProviders = new ConcurrentHashMap<>();
 
     private final Map<String, Collection<MessageListener>> listeners = new ConcurrentHashMap<>();
 
-    public void addTagListenerProvider(String tag, MessageListenerProvider listenerProvider) {
-        Collection<MessageListenerProvider> providers =
-            listenerProviders.compute(tag, (t, ps) -> ps == null ? new CopyOnWriteArraySet<>() : ps);
-        providers.add(listenerProvider);
+    public void setTagListenerProvider(String tag, MessageListenerProvider listenerProvider) {
+        listenerProviders.put(tag, listenerProvider);
     }
 
-    public void removeTagListenerProvider(String tag, MessageListenerProvider listenerProvider) {
-        Optional.ofNullable(listenerProviders.get(tag)).ifPresent(ps -> ps.remove(listenerProvider));
+    public void unsetTagListenerProvider(String tag) {
+        listenerProviders.remove(tag);
     }
 
     public void addTagListener(String tag, MessageListener listener) {
@@ -72,7 +70,7 @@ public class TagMessageHandler {
         try {
             listener.onMessage(message, channel);
         } catch (Exception e) {
-            log.warn("Execute tag {} message listener error.", message.tag(), e);
+            log.error("Execute tag {} message listener error.", message.tag(), e);
         }
     }
 
@@ -86,5 +84,9 @@ public class TagMessageHandler {
             return;
         }
         listeners.forEach(listener -> onTagMessage(channel, message, listener));
+        MessageListenerProvider provider = listenerProviders.get(tag);
+        if (provider != null) {
+            channel.setMessageListener(provider.get());
+        }
     }
 }
