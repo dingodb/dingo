@@ -18,11 +18,16 @@ package io.dingodb.net.api;
 
 import io.dingodb.common.Location;
 import io.dingodb.net.Channel;
+import io.dingodb.net.NetServiceProvider;
 
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 public interface ApiRegistry {
+
+    static ApiRegistry getDefault() {
+        return NetServiceProvider.getDefault().get().apiRegistry();
+    }
 
     <T> void register(Class<T> api, T defined);
 

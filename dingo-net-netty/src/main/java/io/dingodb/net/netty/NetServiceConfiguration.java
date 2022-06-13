@@ -22,7 +22,7 @@ import lombok.Getter;
 @Getter
 public class NetServiceConfiguration {
 
-    public static final int DEFAULT_HEARTBEAT = 10;
+    public static final int DEFAULT_HEARTBEAT = 20;
     public static final int MIN_HEARTBEAT = 2;
     public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors() * 2;
     public static final String HEARTBEAT = "heartbeat";
@@ -45,9 +45,6 @@ public class NetServiceConfiguration {
             if (INSTANCE.heartbeat == null || INSTANCE.heartbeat < MIN_HEARTBEAT) {
                 INSTANCE.heartbeat = DEFAULT_HEARTBEAT;
             }
-            if (INSTANCE.queueCapacity == null || INSTANCE.queueCapacity < MIN_QUEUE_CAPACITY) {
-                INSTANCE.queueCapacity = MIN_QUEUE_CAPACITY;
-            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -58,17 +55,11 @@ public class NetServiceConfiguration {
     }
 
     private Integer heartbeat;
-    private Integer queueCapacity;
     private String host;
     private Integer apiTimeout;
-    private Boolean printMessageLog;
 
     public static Integer heartbeat() {
         return INSTANCE.heartbeat;
-    }
-
-    public static Integer queueCapacity() {
-        return INSTANCE.queueCapacity;
     }
 
     public static String host() {
@@ -77,9 +68,5 @@ public class NetServiceConfiguration {
 
     public static Integer apiTimeout() {
         return INSTANCE.apiTimeout == null ? 30 : INSTANCE.apiTimeout;
-    }
-
-    public static boolean printMessageLog() {
-        return INSTANCE.printMessageLog != null && INSTANCE.printMessageLog;
     }
 }

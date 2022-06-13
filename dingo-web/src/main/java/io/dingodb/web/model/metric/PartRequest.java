@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.model.metric;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -18,62 +18,25 @@ package io.dingodb.net.netty.connection.impl;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.netty.channel.Channel;
-import io.dingodb.net.netty.connection.Connection;
-import io.dingodb.net.netty.packet.Command;
-import io.dingodb.net.netty.packet.Type;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import io.dingodb.net.netty.connection.AbstractConnection;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Accessors(fluent = true)
-public abstract class AbstractClientConnection implements Connection {
-
-    protected final ConcurrentHashMap<Long, Channel> channels = new ConcurrentHashMap<>();
-    protected final AtomicLong channelIdSeq = new AtomicLong(0);
-    @Getter
-    protected final Channel channel;
-    @Getter
-    protected Location remoteLocation;
-    @Getter
-    protected Location localLocation;
-
+@Slf4j
+public abstract class AbstractClientConnection extends AbstractConnection {
     public AbstractClientConnection(Location remoteLocation, Location localLocation) {
-        this.remoteLocation = remoteLocation;
-        this.localLocation = localLocation;
-        this.channel = new Channel(0, this);
-        this.channels.put(0L, channel);
-        Executors.submit(String.format("<%s/%s/client>", this.remoteLocation.getUrl(), 0L), channel);
+        super(remoteLocation, localLocation);
+    }
+
+    protected Channel createChannel(long channelId) {
+        return new Channel(channelId, this, false, () -> channels.remove(channelId));
     }
 
     @Override
-    public Channel getChannel(long channelId) {
-        return channels.get(channelId);
-    }
-
-    @Override
-    public ByteBuffer allocMessageBuffer(long channelId, int capacity) {
-        return ByteBuffer.allocate(capacity + PrimitiveCodec.LONG_MAX_LEN).put(PrimitiveCodec.encodeVarLong(channelId));
-    }
-
-    @Override
-    public Channel newChannel(boolean keepAlive) {
-        Channel channel = channels.computeIfAbsent(channelIdSeq.incrementAndGet(), id -> new Channel(id, this));
-        Executors.submit(String.format("<%s/%s/client>", remoteLocation.getUrl(), channel.channelId()), channel);
-        return channel;
-    }
-
-    @Override
-    public void closeChannel(long channelId) {
-        Channel channel = channels.remove(channelId);
-        if (channel != null) {
-            channel.sendAsync(channel.buffer(Type.COMMAND, 1).put(Command.CLOSE.code()));
-            channel.shutdown();
-        }
+    protected String submitChannelName() {
+        return "<%s/%s/client>";
     }
 
     @Override
@@ -81,14 +44,17 @@ public abstract class AbstractClientConnection implements Connection {
         if (message == null) {
             return;
         }
-        getChannel(PrimitiveCodec.readVarLong(message)).receive(message);
-    }
-
-    @Override
-    public void close() {
-        channel.shutdown();
-        channels.values().forEach(Channel::shutdown);
-        channels.clear();
+        Long channelId = PrimitiveCodec.readVarLong(message);
+        if (channelId == null) {
+            log.error("Receive message, channel id is null.");
+            return;
+        }
+        Channel channel = getChannel(channelId);
+        if (channel == null) {
+            log.error("Receive message, channel id is [{}], but not have channel.", channelId);
+            return;
+        }
+        channel.receive(message);
     }
 
 }

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.config;
+package io.dingodb.web.bean;
 
 import io.dingodb.common.Location;
-import io.dingodb.net.NetService;
-import io.dingodb.net.NetServiceProvider;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.MetaServiceApi;
+import io.dingodb.server.api.ScheduleApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,11 +28,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 @Component
-public class ClientConfig {
+public class ApiBean {
 
     @Value("${server.coordinatorExchangeSvrList}")
     private String coordSrvList;
@@ -51,13 +50,16 @@ public class ClientConfig {
 
     @Bean
     public MetaApi metaApi(CoordinatorConnector connector) {
-        return ServiceLoader.load(NetServiceProvider.class).iterator().next().get()
-            .apiRegistry().proxy(MetaApi.class, connector);
+        return ApiRegistry.getDefault().proxy(MetaApi.class, connector);
+    }
+
+    @Bean
+    public ScheduleApi scheduleApi(CoordinatorConnector connector) {
+        return ApiRegistry.getDefault().proxy(ScheduleApi.class, connector);
     }
 
     @Bean
     public MetaServiceApi metaServiceApi(CoordinatorConnector connector) {
-        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        return netService.apiRegistry().proxy(MetaServiceApi.class, connector);
+        return ApiRegistry.getDefault().proxy(MetaServiceApi.class, connector);
     }
 }

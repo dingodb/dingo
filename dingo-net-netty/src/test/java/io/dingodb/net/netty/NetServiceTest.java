@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 
 public class NetServiceTest {
 
@@ -31,6 +32,11 @@ public class NetServiceTest {
         @ApiDeclaration
         default void print(String s) {
             System.out.println(s);
+        }
+
+        @ApiDeclaration
+        default CompletableFuture<String> test() {
+            return CompletableFuture.completedFuture("test");
         }
     }
 
@@ -47,7 +53,7 @@ public class NetServiceTest {
             ch.send(new Message(null, new byte[0]));
         });
         Channel channel = netService.newChannel(new Location("localhost", 19199));
-        channel.registerMessageListener((message, ch) -> {
+        channel.setMessageListener((message, ch) -> {
             try {
                 ch.close();
             } catch (Exception e) {
@@ -56,7 +62,9 @@ public class NetServiceTest {
         });
         channel.send(new Message(tag, hello.getBytes(StandardCharsets.UTF_8)), true);
         netService.apiRegistry().register(TestApi.class, new TestApi() {});
-        netService.apiRegistry().proxy(TestApi.class, () -> new Location("localhost", 19199)).print("aaaa");
+        TestApi testApi = netService.apiRegistry().proxy(TestApi.class, () -> new Location("localhost", 19199));
+        testApi.print("aaaa");
+        System.out.println(testApi.test().join());
         System.out.println("finish");
     }
 

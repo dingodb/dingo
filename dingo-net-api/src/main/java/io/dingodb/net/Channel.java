@@ -36,9 +36,9 @@ public interface Channel extends AutoCloseable {
     void send(Message message, boolean sync) throws InterruptedException;
 
     /**
-     * Register message listener on the channel. When the remote-end returns a message, listener will be notified.
+     * Set message listener on the channel. When the remote-end returns a message, listener will be notified.
      */
-    void registerMessageListener(MessageListener listener);
+    void setMessageListener(MessageListener listener);
 
     /**
      * Register close listener on the channel. When the channel close, listener will be notified.

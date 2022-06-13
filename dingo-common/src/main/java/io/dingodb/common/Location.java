@@ -59,7 +59,6 @@ public class Location implements Serializable {
         return new InetSocketAddress(host, port);
     }
 
-
     public boolean equals(final Object other) {
         return other == this || other instanceof Location && url.equals(((Location) other).url);
     }

@@ -29,3 +29,7 @@ dependencies {
     implementation project(":dingo-net-netty")
     implementation project(":dingo-server:dingo-server-protocol")
 }
+
+jar.dependsOn([
+    ':dingo-server:dingo-server-protocol:jar'
+])

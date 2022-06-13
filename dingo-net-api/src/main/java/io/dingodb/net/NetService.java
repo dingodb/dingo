@@ -38,15 +38,15 @@ public interface NetService extends AutoCloseable {
     Channel newChannel(Location location, boolean keepAlive);
 
     /**
-     * Register {@link MessageListenerProvider} on the net service,  When the remote-end send a message to current
+     * Set {@link MessageListenerProvider} on the net service,  When the remote-end send a message to current
      * service, will create new {@link MessageListener} instance to listen new channel.
      */
-    void registerMessageListenerProvider(String tag, MessageListenerProvider listenerProvider);
+    void setMessageListenerProvider(String tag, MessageListenerProvider listenerProvider);
 
     /**
-     * Unregister {@link MessageListenerProvider} on the net service.
+     * Unset {@link MessageListenerProvider} on the net service.
      */
-    void unregisterMessageListenerProvider(String tag, MessageListenerProvider listenerProvider);
+    void unsetMessageListenerProvider(String tag);
 
     void registerTagMessageListener(String tag, MessageListener listener);
 

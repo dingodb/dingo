@@ -127,15 +127,16 @@ public abstract class AbstractClientService implements ClientService {
         return future;
     }
 
-    public <T extends Message> Future<Message> invokeWithDone(Endpoint endpoint, String tag, Message request,
-                                                              RpcResponseClosure<T> done, ThrowableFunction<byte[], T> parser) {
+    public <T extends Message> Future<Message> invokeWithDone(
+        Endpoint endpoint, String tag, Message request, RpcResponseClosure<T> done, ThrowableFunction<byte[], T> parser
+    ) {
         Location remote = new Location(endpoint.getIp(), endpoint.getPort());
         io.dingodb.net.Message message = new io.dingodb.net.Message(tag, request.toByteArray());
         Channel channel = null;
         try {
             channel = netService.newChannel(remote, true);
             FutureImpl<Message> future = new FutureImpl<>(channel);
-            channel.registerMessageListener((msg, ch) -> {
+            channel.setMessageListener((msg, ch) -> {
                 Message result = null;
                 try {
                     result = parser.apply(msg.content());
@@ -174,11 +175,11 @@ public abstract class AbstractClientService implements ClientService {
         }
     }
 
-    private static Status handleErrorResponse(final RpcRequests.ErrorResponse eResp) {
+    private static Status handleErrorResponse(final RpcRequests.ErrorResponse errRes) {
         final Status status = new Status();
-        status.setCode(eResp.getErrorCode());
-        if (eResp.hasErrorMsg()) {
-            status.setErrorMsg(eResp.getErrorMsg());
+        status.setCode(errRes.getErrorCode());
+        if (errRes.hasErrorMsg()) {
+            status.setErrorMsg(errRes.getErrorMsg());
         }
         return status;
     }

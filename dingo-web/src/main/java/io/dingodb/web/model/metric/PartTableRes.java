@@ -14,29 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.model.metric;
 
-import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.List;
+
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
-public class Replica {
+@ToString
+public class PartTableRes {
 
-    private String id;
-    private String table;
-    private String part;
-    private String executor;
-    private String host;
-    private int port;
+    private String schema;
+    private String name;
+    private List<Location> parts;
 
 }

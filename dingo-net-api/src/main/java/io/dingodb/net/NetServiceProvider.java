@@ -16,6 +16,13 @@
 
 package io.dingodb.net;
 
+import java.util.ServiceLoader;
+
 public interface NetServiceProvider {
+
+    static NetServiceProvider getDefault() {
+        return ServiceLoader.load(NetServiceProvider.class).iterator().next();
+    }
+
     NetService get();
 }

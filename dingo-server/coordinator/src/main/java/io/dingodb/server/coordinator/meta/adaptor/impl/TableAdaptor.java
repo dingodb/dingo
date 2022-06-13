@@ -22,6 +22,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
+import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.store.MetaStore;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -70,6 +72,11 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     protected void doSave(Table meta) {
     }
 
+    public void pureSave(Table table) {
+        super.save(table);
+        metaStore.upsertKeyValue(table.getId().encode(), encodeMeta(table));
+    }
+
     @Override
     protected CommonId newId(Table table) {
         CommonId id = new CommonId(
@@ -85,9 +92,10 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     public void create(CommonId schemaId, TableDefinition definition) {
         Table table = definitionToMeta(schemaId, definition);
         ArrayList<KeyValue> keyValues = new ArrayList<>(definition.getColumnsCount() + 2);
-        table.setId(newId(table));
+        CommonId tableId = newId(table);
+        table.setId(tableId);
 
-        keyValues.add(new KeyValue(table.getId().encode(), encodeMeta(table)));
+        keyValues.add(new KeyValue(tableId.encode(), encodeMeta(table)));
 
         List<Column> columns = definition.getColumns()
             .stream()
@@ -109,19 +117,19 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         TablePart tablePart = TablePart.builder()
             .version(0)
             .schema(table.getSchema())
-            .table(table.getId())
+            .table(tableId)
             .start(EMPTY_BYTES)
             .build();
         tablePart.setId(tablePartAdaptor.newId(tablePart));
         keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
 
         metaStore.upsertKeyValue(keyValues);
-        metaMap.put(table.getId(), table);
+        metaMap.put(tableId, table);
         super.save(table);
         columns.forEach(columnAdaptor::save);
         tablePartAdaptor.save(tablePart);
         try {
-            ClusterScheduler.instance().getTableScheduler(table.getId()).assignPart(tablePart);
+            ClusterScheduler.instance().getTableScheduler(tableId).assignPart(tablePart).get(30, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException("Table meta save success, but schedule failed.", e);
         }
@@ -152,10 +160,10 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     @Override
-    public void delete(CommonId id) {
-        Table table = get(id);
-        List<Column> columns = columnAdaptor.getByDomain(table.getId().seqContent());
-        List<TablePart> tableParts = tablePartAdaptor.getByDomain(table.getId().seqContent());
+    protected void doDelete(Table table) {
+        CommonId id = table.getId();
+        List<Column> columns = columnAdaptor.getByDomain(id.seqContent());
+        List<TablePart> tableParts = tablePartAdaptor.getByDomain(id.seqContent());
         ArrayList<byte[]> keys = new ArrayList<>(columns.size() + tableParts.size() + 1);
         columns.forEach(column -> keys.add(column.getId().encode()));
         tableParts.forEach(part -> keys.add(part.getId().encode()));
@@ -232,7 +240,13 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
 
     private Table definitionToMeta(CommonId schemaId, TableDefinition definition) {
-        return Table.builder().name(definition.getName()).schema(schemaId).build();
+        return Table.builder()
+            .name(definition.getName())
+            .schema(schemaId)
+            .partMaxCount(CoordinatorConfiguration.schedule().getDefaultAutoMaxCount())
+            .partMaxSize(CoordinatorConfiguration.schedule().getDefaultAutoMaxSize())
+            .autoSplit(CoordinatorConfiguration.schedule().isAutoSplit())
+            .build();
     }
 
     private Column definitionToMeta(Table table, ColumnDefinition definition) {

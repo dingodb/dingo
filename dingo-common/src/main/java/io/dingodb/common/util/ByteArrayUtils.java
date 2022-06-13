@@ -52,6 +52,9 @@ public class ByteArrayUtils {
     public static final byte[] MAX_BYTES = new byte[] {(byte) 0xFF };
 
     public static int compare(byte[] bytes1, byte[] bytes2) {
+        if (bytes1 == bytes2) {
+            return 0;
+        }
         int n = Math.min(bytes1.length, bytes2.length);
         for (int i = 0; i < n; i++) {
             if (bytes1[i] == bytes2[i]) {

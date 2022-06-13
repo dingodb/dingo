@@ -16,12 +16,10 @@
 
 package io.dingodb.server.api;
 
-import io.dingodb.server.protocol.proto.DriverProxy;
-
 public interface DriverProxyApi {
 
-    void start(DriverProxy driverProxy);
+    void start();
 
-    void stop(DriverProxy driverProxy);
+    void stop();
 
 }

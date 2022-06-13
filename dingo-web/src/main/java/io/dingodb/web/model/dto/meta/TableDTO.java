@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model;
+package io.dingodb.web.model.dto.meta;
 
-import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -24,18 +23,29 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.List;
-
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class TableStats {
+public class TableDTO {
 
     private String id;
+    private String comment;
+    private long createTime;
+    private long updateTime;
+    private int state;
 
-    private List<PartStats> parts;
+    private String name;
+    private String schema;
+    private int type;
+
+    private int partitionPolicy;
+    private long partMaxSize;
+    private long partMaxCount;
+    private boolean autoSplit;
+
+    private int version;
 
 }
