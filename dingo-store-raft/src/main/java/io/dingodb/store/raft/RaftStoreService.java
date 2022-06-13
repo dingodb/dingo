@@ -48,7 +48,7 @@ public class RaftStoreService implements StoreService {
     private RaftStoreService() {
         Files.createDirectories(path);
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(
-            new Endpoint(DingoConfiguration.host(), DingoConfiguration.port()));
+            new Endpoint(DingoConfiguration.host(), StoreConfiguration.raft().getPort()));
         rpcServer.init(null);
         PartReadWriteCollector.instance().register();
     }

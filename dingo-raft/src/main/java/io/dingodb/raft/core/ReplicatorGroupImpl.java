@@ -89,7 +89,6 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
     public void sendHeartbeat(final PeerId peer, final RpcResponseClosure<RpcRequests.AppendEntriesResponse> closure) {
         final ThreadId rid = this.replicatorMap.get(peer);
         if (rid == null) {
-            LOG.debug("Peer {} is not connected", peer);
             if (closure != null) {
                 closure.run(new Status(RaftError.EHOSTDOWN, "Peer %s is not connected", peer));
             }
@@ -105,31 +104,29 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
 
     @Override
     public boolean addReplicator(final PeerId peer, final ReplicatorType replicatorType, final boolean sync) {
-        synchronized (peer) {
-            Requires.requireTrue(this.commonOptions.getTerm() != 0);
-            this.failureReplicators.remove(peer);
-            if (this.replicatorMap.containsKey(peer)) {
-                return true;
-            }
-            final ReplicatorOptions opts = this.commonOptions == null ? new ReplicatorOptions() : this.commonOptions.copy();
-            opts.setReplicatorType(replicatorType);
-            opts.setPeerId(peer);
-            if (!sync) {
-                final RaftClientService client = opts.getRaftRpcService();
-                if (client != null && !client.checkConnection(peer.getEndpoint(), true)) {
-                    LOG.error("Fail to check replicator connection to peer={}, replicatorType={}.", peer, replicatorType);
-                    this.failureReplicators.put(peer, replicatorType);
-                    return false;
-                }
-            }
-            final ThreadId rid = Replicator.start(opts, this.raftOptions);
-            if (rid == null) {
-                LOG.error("Fail to start replicator to peer={}, replicatorType={}.", peer, replicatorType);
+        Requires.requireTrue(this.commonOptions.getTerm() != 0);
+        this.failureReplicators.remove(peer);
+        if (this.replicatorMap.containsKey(peer)) {
+            return true;
+        }
+        final ReplicatorOptions opts = this.commonOptions == null ? new ReplicatorOptions() : this.commonOptions.copy();
+        opts.setReplicatorType(replicatorType);
+        opts.setPeerId(peer);
+        if (!sync) {
+            final RaftClientService client = opts.getRaftRpcService();
+            if (client != null && !client.checkConnection(peer.getEndpoint(), true)) {
+                LOG.error("Fail to check replicator connection to peer={}, replicatorType={}.", peer, replicatorType);
                 this.failureReplicators.put(peer, replicatorType);
                 return false;
             }
-            return this.replicatorMap.put(peer, rid) == null;
         }
+        final ThreadId rid = Replicator.start(opts, this.raftOptions);
+        if (rid == null) {
+            LOG.error("Fail to start replicator to peer={}, replicatorType={}.", peer, replicatorType);
+            this.failureReplicators.put(peer, replicatorType);
+            return false;
+        }
+        return this.replicatorMap.put(peer, rid) == null;
     }
 
     @Override
@@ -180,8 +177,8 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
             try {
                 if (node.isLeader()) {
                     final ReplicatorType rType = this.failureReplicators.get(peer);
-                    if (rType != null) {
-                        addReplicator(peer, rType, false);
+                    if (rType != null && addReplicator(peer, rType, false)) {
+                        this.failureReplicators.remove(peer, rType);
                     }
                 }
             } finally {
@@ -304,19 +301,5 @@ public class ReplicatorGroupImpl implements ReplicatorGroup {
             .println(this.replicatorMap.values());
         out.print("  failureReplicators: ") //
             .println(this.failureReplicators);
-    }
-
-    @Override
-    public void restartReplicator(PeerId peerId) {
-        synchronized (peerId) {
-            ThreadId id = this.replicatorMap.get(peerId);
-            ReplicatorType replicatorType = ReplicatorType.Follower;
-            if (id != null) {
-                replicatorType = ReplicatorType.valueOf(((Replicator) id.getData()).getOpts().getReplicatorType().name());
-                stopReplicator(peerId);
-            }
-            PeerId newPeerId = peerId.copy();
-            addReplicator(newPeerId, replicatorType);
-        }
     }
 }

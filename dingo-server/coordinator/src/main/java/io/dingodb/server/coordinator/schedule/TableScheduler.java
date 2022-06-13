@@ -75,7 +75,7 @@ public class TableScheduler {
 
     public TableScheduler(Table table) {
         this.tableId = table.getId();
-        this.splitPartProcessor = new SplitPartProcessor(tableId);
+        this.splitPartProcessor = new SplitPartProcessor(this, tableId);
         this.tableAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Table.class);
         this.tablePartAdaptor = MetaAdaptorRegistry.getMetaAdaptor(TablePart.class);
         this.replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
@@ -129,7 +129,10 @@ public class TableScheduler {
                 log.info("Start part [{}] replica [{}] on [{}] error.", partId, replica.getId(), executorId, e);
             }
             log.info("Add part [{}] replica [{}] on [{}] finish", partId, replica.getId(), executorId);
-        } finally {
+        } catch (Exception e ) {
+            System.out.println(e);
+        }
+        finally {
             busy.set(false);
         }
     }
@@ -242,10 +245,10 @@ public class TableScheduler {
     }
 
     public void runTask(Supplier<CompletableFuture<Void>> task) {
-        busy.compareAndSet(false, true);
-        task.get().whenComplete((r, e) -> {
-            busy.set(false);
-        });
+        if (busy.compareAndSet(false, true)) {
+            task.get().whenComplete((r, e) -> {
+                busy.set(false);
+            });
+        }
     }
-
 }

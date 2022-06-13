@@ -37,8 +37,8 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
 
     /** Peer address. */
     private Endpoint endpoint = new Endpoint(Utils.IP_ANY, 0);
-    /** tag in same addr, default is "". */
-    private String idx = "";
+    /** Index in same addr, default is 0. */
+    private int idx;
     /** Cached toString result. */
     private String str;
 
@@ -90,33 +90,33 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
     }
 
     public static PeerId of(final Location s) {
-        return new PeerId(s.host(), s.port());
+        return new PeerId(s.host(), s.raftPort());
     }
 
-    public PeerId(final Endpoint endpoint, final String idx) {
+    public PeerId(final Endpoint endpoint, final int idx) {
         super();
         this.endpoint = endpoint;
         this.idx = idx;
     }
 
     public PeerId(final String ip, final int port) {
-        this(ip, port, "");
+        this(ip, port, 0);
     }
 
-    public PeerId(final String ip, final int port, final String idx) {
+    public PeerId(final String ip, final int port, final int idx) {
         super();
         this.endpoint = new Endpoint(ip, port);
         this.idx = idx;
     }
 
-    public PeerId(final Endpoint endpoint, final String idx, final int priority) {
+    public PeerId(final Endpoint endpoint, final int idx, final int priority) {
         super();
         this.endpoint = endpoint;
         this.idx = idx;
         this.priority = priority;
     }
 
-    public PeerId(final String ip, final int port, final String idx, final int priority) {
+    public PeerId(final String ip, final int port, final int idx, final int priority) {
         super();
         this.endpoint = new Endpoint(ip, port);
         this.idx = idx;
@@ -139,7 +139,7 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         return this.endpoint.getPort();
     }
 
-    public String getIdx() {
+    public int getIdx() {
         return this.idx;
     }
 
@@ -156,7 +156,7 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
      * Returns true when ip is ANY_IP, port is zero and idx is zero too.
      */
     public boolean isEmpty() {
-        return getIp().equals(Utils.IP_ANY) && getPort() == 0 && this.idx.equals("");
+        return getIp().equals(Utils.IP_ANY) && getPort() == 0 && this.idx == 0;
     }
 
     @Override
@@ -164,12 +164,12 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         if (this.str == null) {
             final StringBuilder buf = new StringBuilder(this.endpoint.toString());
 
-            if (!this.idx.equals("")) {
+            if (this.idx != 0) {
                 buf.append(':').append(this.idx);
             }
 
             if (this.priority != ElectionPriority.Disabled) {
-                if (this.idx.equals("")) {
+                if (this.idx == 0) {
                     buf.append(':');
                 }
                 buf.append(':').append(this.priority);
@@ -207,11 +207,13 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
 
             switch (tmps.length) {
                 case 3:
-                    this.idx = tmps[2];
+                    this.idx = Integer.parseInt(tmps[2]);
                     break;
                 case 4:
-                    if (!tmps[2].equals("")) {
-                        this.idx = tmps[2];
+                    if (tmps[2].equals("")) {
+                        this.idx = 0;
+                    } else {
+                        this.idx = Integer.parseInt(tmps[2]);
                     }
                     this.priority = Integer.parseInt(tmps[3]);
                     break;
@@ -249,7 +251,7 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         final int prime = 31;
         int result = 1;
         result = prime * result + (this.endpoint == null ? 0 : this.endpoint.hashCode());
-        result = prime * result + this.idx.hashCode();
+        result = prime * result + this.idx;
         return result;
     }
 
@@ -272,6 +274,6 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         } else if (!this.endpoint.equals(other.endpoint)) {
             return false;
         }
-        return this.idx.equals(other.idx);
+        return this.idx == other.idx;
     }
 }

@@ -16,12 +16,10 @@
 
 package io.dingodb.raft.rpc.impl.core;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.raft.rpc.dingo.Tags;
 
 import java.util.concurrent.Executor;
 
@@ -48,26 +46,7 @@ public class TimeoutNowRequestProcessor extends NodeRequestProcessor<RpcRequests
     }
 
     @Override
-    public RpcRequests.TimeoutNowRequest parse(byte[] request) {
-        try {
-            return RpcRequests.TimeoutNowRequest.parseFrom(request);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public String interest() {
         return RpcRequests.TimeoutNowRequest.class.getName();
-    }
-
-    @Override
-    public String getRequestTag() {
-        return Tags.TIMEOUTNOW_REQUEST;
-    }
-
-    @Override
-    public String getResponseTag() {
-        return Tags.TIMEOUTNOW_RESPONSE;
     }
 }

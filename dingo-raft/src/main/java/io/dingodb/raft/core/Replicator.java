@@ -64,6 +64,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.concurrent.ThreadSafe;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 @ThreadSafe
 public class Replicator implements ThreadId.OnError {
@@ -110,10 +112,6 @@ public class Replicator implements ThreadId.OnError {
     private int requiredNextSeq = 0;
     // Replicator state reset version
     private int version = 0;
-
-    private final int maxGapHeartbeatTimes = Runtime.getRuntime().availableProcessors() * 2 + 1;
-
-    private volatile int currentGapHeartbeatTimes = 0;
 
     // Pending response queue;
     private final PriorityQueue<RpcResponse> pendingResponses = new PriorityQueue<>(50);
@@ -606,7 +604,7 @@ public class Replicator implements ThreadId.OnError {
             return;
         }
         boolean doUnlock = true;
-        if (!this.rpcService.checkConnection(this.options.getPeerId().getEndpoint(), false)) {
+        if (!this.rpcService.connect(this.options.getPeerId().getEndpoint())) {
             LOG.error("Fail to check install snapshot connection to peer={}, give up to send install snapshot request.", options.getPeerId().getEndpoint());
             block(Utils.nowMs(), RaftError.EHOSTDOWN.getNumber());
             return;
@@ -805,6 +803,7 @@ public class Replicator implements ThreadId.OnError {
                         }
 
                     });
+
                 addInflight(RequestType.AppendEntries, this.nextIndex, 0, 0, seq, rpcFuture);
             }
             LOG.debug("Node {} send HeartbeatRequest to {} term {} lastCommittedIndex {}", this.options.getNode()
@@ -871,7 +870,7 @@ public class Replicator implements ThreadId.OnError {
             throw new IllegalArgumentException("Invalid ReplicatorOptions.");
         }
         final Replicator r = new Replicator(opts, raftOptions);
-        if (!r.rpcService.checkConnection(opts.getPeerId().getEndpoint(), false)) {
+        if (!r.rpcService.connect(opts.getPeerId().getEndpoint())) {
             LOG.error("Fail to init sending channel to {}.", opts.getPeerId());
             // Return and it will be retried later.
             return null;
@@ -1146,7 +1145,6 @@ public class Replicator implements ThreadId.OnError {
 
     static void onHeartbeatReturned(final ThreadId id, final Status status, final RpcRequests.AppendEntriesRequest request,
                                     final RpcRequests.AppendEntriesResponse response, final long rpcSendTime) {
-        LOG.debug("OnHeartbeatReturned: {}, {}", status, id);
         if (id == null) {
             // replicator already was destroyed.
             return;
@@ -1213,32 +1211,8 @@ public class Replicator implements ThreadId.OnError {
                 }
                 LOG.warn("Heartbeat to peer {} failure, try to send a probe request.", r.options.getPeerId());
                 doUnlock = false;
-                if (++r.currentGapHeartbeatTimes < r.maxGapHeartbeatTimes) {
-                    r.sendProbeRequest();
-                    r.startHeartbeatTimer(startTimeMs);
-                } else {
-                    r.options.getNode().restartReplicator(r.options.getPeerId());
-                }
-                return;
-            }
-            if (response.hasLastLogIndex()
-                && response.getLastLogIndex() < r.options.getLogManager().getLastLogIndex()
-                && ++r.currentGapHeartbeatTimes > r.maxGapHeartbeatTimes) {
-                if (isLogDebugEnabled) {
-                    sb.append(" fail, response term ") //
-                        .append(response.getTerm()) //
-                        .append(" lastLogIndex ") //
-                        .append(response.getLastLogIndex())
-                        .append(" less than this node lastLogIndex ")
-                        .append(r.options.getLogManager().getLastLogIndex())
-                        .append(" more than ")
-                        .append(r.currentGapHeartbeatTimes)
-                        .append(" times.");
-                    LOG.debug(sb.toString());
-                }
-                LOG.warn("Heartbeat to peer {} failure, try to send a probe request.", r.options.getPeerId());
-                doUnlock = false;
-                r.options.getNode().restartReplicator(r.options.getPeerId());
+                r.sendProbeRequest();
+                r.startHeartbeatTimer(startTimeMs);
                 return;
             }
             if (isLogDebugEnabled) {
@@ -1258,7 +1232,6 @@ public class Replicator implements ThreadId.OnError {
     @SuppressWarnings("ContinueOrBreakFromFinallyBlock")
     static void onRpcReturned(final ThreadId id, final RequestType reqType, final Status status, final Message request,
                               final Message response, final int seq, final int stateVersion, final long rpcSendTime) {
-        LOG.debug("RpcReturned: {}, {}, {}, {}", status, id, request, response);
         if (id == null) {
             return;
         }
@@ -1591,7 +1564,7 @@ public class Replicator implements ThreadId.OnError {
     /**
      * Send as many requests as possible.
      */
-    synchronized void sendEntries() {
+    void sendEntries() {
         boolean doUnlock = true;
         try {
             long prevSendIndex = -1;

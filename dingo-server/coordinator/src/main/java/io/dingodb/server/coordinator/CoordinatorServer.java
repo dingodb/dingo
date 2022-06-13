@@ -73,12 +73,12 @@ public class CoordinatorServer {
             Paths.get(configuration.getDataPath(), "db").toString(), configuration.getRocks()
         );
 
-        Endpoint endpoint = new Endpoint(DingoConfiguration.host(), DingoConfiguration.port());
+        Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(endpoint);
         rpcServer.init(null);
         NodeManager.getInstance().addAddress(endpoint);
 
-        Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, ""));
+        Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, 0));
         MetaStore metaStore = new MetaStore(node, rocksStore);
         CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
         NodeOptions nodeOptions = getNodeOptions();

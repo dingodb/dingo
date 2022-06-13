@@ -53,13 +53,14 @@ public class Executor implements Meta {
 
     private String host;
     private int port;
+    private int raftPort;
     private int processors;
     private long memory;
     private long upTime;
     private long downTime;
 
     public Location location() {
-        return new Location(host, port);
+        return new Location(host, port, raftPort);
     }
 
 }

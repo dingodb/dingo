@@ -56,9 +56,10 @@ public class Replica implements Meta {
     private CommonId executor;
     private String host;
     private int port;
+    private int raftPort;
 
     public Location location() {
-        return new Location(host, port);
+        return new Location(host, port, raftPort);
     }
 
 }

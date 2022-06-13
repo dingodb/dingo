@@ -56,7 +56,7 @@ public class RaftRawKVStore implements Lifecycle<Void> {
 
     public RaftRawKVStore(CommonId raftId, RawKVStore kvStore, NodeOptions nodeOptions, Location location) {
         this.raftId = raftId;
-        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort(), this.raftId.toString()));
+        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort()));
         this.kvStore = kvStore;
         this.nodeOptions = nodeOptions;
         this.readIndexRunner = new ReadIndexRunner(node, this::executeLocal);
@@ -86,11 +86,11 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         }
         nodeOptions.setLogStorage(logStorage);
         nodeOptions.setInitialConf(new Configuration(locations.stream()
-            .map(l -> new PeerId(l.getHost(), l.getPort(), this.raftId.toString()))
+            .map(l -> new PeerId(l.getHost(), l.getRaftPort()))
             .collect(Collectors.toList())));
         nodeOptions.setRaftMetaUri(metaPath.toString());
         nodeOptions.setSnapshotUri(snapshotPath.toString());
-        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort(), this.raftId.toString()));
+        this.node = createRaftNode(raftId.toString(), new PeerId(location.getHost(), location.getPort()));
         this.kvStore = kvStore;
         this.nodeOptions = nodeOptions;
         this.readIndexRunner = new ReadIndexRunner(node, this::executeLocal);

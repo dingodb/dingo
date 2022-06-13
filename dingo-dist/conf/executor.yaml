@@ -11,4 +11,5 @@ store:
     dbPath: /opt/dingo/data/executor/db
     raft:
         raftPath: /opt/dingo/data/executor/raft
+        port: 9191
     collectStatsInterval: 5

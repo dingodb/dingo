@@ -16,10 +16,6 @@
 
 package io.dingodb.raft.rpc.impl;
 
-import io.dingodb.net.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -30,9 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class FutureImpl<R> implements Future<R> {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FutureImpl.class);
-
     protected final ReentrantLock lock;
 
     protected boolean isDone;
@@ -42,20 +35,13 @@ public class FutureImpl<R> implements Future<R> {
     protected boolean isCancelled;
     protected Throwable failure;
 
-    protected Channel channel = null;
-
     protected R result;
 
     public FutureImpl() {
-        this(null, new ReentrantLock());
+        this(new ReentrantLock());
     }
 
-    public FutureImpl(Channel channel) {
-        this(channel, new ReentrantLock());
-    }
-
-    public FutureImpl(Channel channel, ReentrantLock lock) {
-        this.channel = channel;
+    public FutureImpl(ReentrantLock lock) {
         this.lock = lock;
         this.latch = new CountDownLatch(1);
     }
@@ -111,7 +97,6 @@ public class FutureImpl<R> implements Future<R> {
             return true;
         } finally {
             this.lock.unlock();
-            closeChannel();
         }
     }
 
@@ -158,7 +143,6 @@ public class FutureImpl<R> implements Future<R> {
             return this.result;
         } finally {
             this.lock.unlock();
-            closeChannel();
         }
     }
 
@@ -184,7 +168,6 @@ public class FutureImpl<R> implements Future<R> {
             }
         } finally {
             this.lock.unlock();
-            closeChannel();
         }
     }
 
@@ -197,7 +180,6 @@ public class FutureImpl<R> implements Future<R> {
         try {
             this.failure = failure;
             notifyHaveResult();
-            closeChannel();
         } finally {
             this.lock.unlock();
         }
@@ -209,16 +191,5 @@ public class FutureImpl<R> implements Future<R> {
     protected void notifyHaveResult() {
         this.isDone = true;
         this.latch.countDown();
-    }
-
-    private void closeChannel() {
-        if (this.channel != null) {
-            try {
-                this.channel.close();
-            } catch (Exception e) {
-                LOG.error("Fail to close channel : id-{}, {}", channel.channelId(), e);
-                throw new RuntimeException(e);
-            }
-        }
     }
 }

@@ -37,7 +37,7 @@ import io.dingodb.raft.kv.storage.RaftClosure;
 import io.dingodb.raft.kv.storage.RaftRawKVOperation;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.raft.rpc.ReportTarget;
-import io.dingodb.raft.rpc.dingo.AbstractClientService;
+import io.dingodb.raft.rpc.impl.AbstractClientService;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import io.dingodb.server.coordinator.api.CoordinatorServerApi;

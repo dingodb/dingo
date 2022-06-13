@@ -68,9 +68,12 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
     }
 
     public Replica getByExecutor(CommonId executor, CommonId partId) {
-        return executorReplica.get(executor).stream()
-            .filter(replica -> replica.getPart().equals(partId))
-            .findAny().orElse(null);
+        if (executorReplica.containsKey(executor)) {
+            return executorReplica.get(executor).stream()
+                .filter(replica -> replica.getPart().equals(partId))
+                .findAny().orElse(null);
+        }
+        return null;
     }
 
     public List<Location> getLocationsByDomain(byte[] domain) {
@@ -91,6 +94,7 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
             .executor(executor.getId())
             .host(executor.getHost())
             .port(executor.getPort())
+            .raftPort(executor.getRaftPort())
             .build();
     }
 

@@ -89,6 +89,7 @@ public class ExecutorServer {
             this.id = serverApi.registerExecutor(Executor.builder()
                 .host(DingoConfiguration.host())
                 .port(DingoConfiguration.port())
+                .raftPort(DingoConfiguration.instance().getRaftPort())
                 .processors(Runtime.getRuntime().availableProcessors())
                 .memory(Runtime.getRuntime().maxMemory())
                 .build());

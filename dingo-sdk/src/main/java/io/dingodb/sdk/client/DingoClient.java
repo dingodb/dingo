@@ -30,6 +30,7 @@ import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,9 +81,24 @@ public class DingoClient extends ClientBase {
 
 
     public boolean insert(Object[] record) throws Exception {
-        KeyValue keyValue = codec.encode(record);
-        ExecutorApi executorApi = getExecutor(ps.calcPartId(keyValue.getKey()));
-        return internalInsert(executorApi, keyValue);
+        int retryTime = 0;
+        Exception exception = null;
+        do {
+            try {
+                KeyValue keyValue = codec.encode(record);
+                ExecutorApi executorApi = getExecutor(ps.calcPartId(keyValue.getKey()));
+                return internalInsert(executorApi, keyValue);
+            } catch (Exception e) {
+                exception = e;
+                log.error("insert record {} failed, tableId:{} retryTime:{} ",
+                    Arrays.toString(record), tableId, retryTime, e);
+                refreshTableMeta();
+            } finally {
+                retryTime++;
+            }
+        }
+        while (retryTime <= this.retryTime);
+        throw exception;
     }
 
     public boolean insert(List<Object[]> records) throws Exception {
@@ -90,76 +106,73 @@ public class DingoClient extends ClientBase {
     }
 
     public boolean insert(List<Object[]> records, Integer batchSize) throws Exception {
-        Map<ByteArrayUtils.ComparableByteArray, List<KeyValue>> recordGroup
-            = new HashMap<ByteArrayUtils.ComparableByteArray, List<KeyValue>>();
-        for (Object[] record : records) {
-            KeyValue keyValue = codec.encode(record);
-            ByteArrayUtils.ComparableByteArray keyId = ps.calcPartId(keyValue.getKey());
-            List<KeyValue> currentGroup;
-            currentGroup = recordGroup.get(keyId);
-            if (currentGroup == null) {
-                currentGroup = new ArrayList<KeyValue>();
-                recordGroup.put(keyId, currentGroup);
-            }
-            currentGroup.add(keyValue);
-            if (currentGroup.size() >= batchSize) {
-                internalInsert(getExecutor(keyId), currentGroup);
-                currentGroup.clear();
+        int retryTime = 0;
+        Exception exception = null;
+        do {
+            Map<ByteArrayUtils.ComparableByteArray, List<KeyValue>> recordGroup
+                = new HashMap<ByteArrayUtils.ComparableByteArray, List<KeyValue>>();
+            try {
+                for (Object[] record : records) {
+                    KeyValue keyValue = codec.encode(record);
+                    ByteArrayUtils.ComparableByteArray keyId = ps.calcPartId(keyValue.getKey());
+                    List<KeyValue> currentGroup;
+                    currentGroup = recordGroup.get(keyId);
+                    if (currentGroup == null) {
+                        currentGroup = new ArrayList<KeyValue>();
+                        recordGroup.put(keyId, currentGroup);
+                    }
+                    currentGroup.add(keyValue);
+                    if (currentGroup.size() >= batchSize) {
+                        internalInsert(getExecutor(keyId), currentGroup);
+                        currentGroup.clear();
+                    }
+                }
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, List<KeyValue>> entry : recordGroup.entrySet()) {
+                    if (entry.getValue().size() > 0) {
+                        internalInsert(getExecutor(entry.getKey()), entry.getValue());
+                    }
+                }
+                return true;
+            } catch (Exception e) {
+                exception = e;
+                log.error("batch insert record failed, tableId:{} retryTime:{} ",
+                    tableId, retryTime, e);
+                refreshTableMeta();
+            } finally {
+                retryTime++;
             }
         }
-        for (Map.Entry<ByteArrayUtils.ComparableByteArray, List<KeyValue>> entry : recordGroup.entrySet()) {
-            if (entry.getValue().size() > 0) {
-                internalInsert(getExecutor(entry.getKey()), entry.getValue());
-            }
-        }
-        return true;
+        while (retryTime <= this.retryTime);
+        throw exception;
     }
 
 
     private boolean internalInsert(ExecutorApi executorApi, KeyValue keyValue) throws Exception {
-        int retryTime = 0;
-        Exception exception = null;
-        do {
-            try {
-                return executorApi.upsertKeyValue(tableId, keyValue);
-            } catch (Exception e) {
-                exception = e;
-                log.error("insert keyValue record failed, tableId:{} retryTime:{} ", tableId, retryTime, e);
-                refreshTableMeta();
-            } finally {
-                retryTime++;
-            }
+        try {
+            return executorApi.upsertKeyValue(tableId, keyValue);
+        } catch (Exception e) {
+            log.error("insert keyValue record failed, tableId:{} retryTime:{} ", tableId, retryTime, e);
+            throw e;
         }
-        while (retryTime <= this.retryTime);
-        throw exception;
     }
 
     private boolean internalInsert(ExecutorApi executorApi, List<KeyValue> keyValues) throws Exception {
-        int retryTime = 0;
-        Exception exception = null;
-        do {
-            try {
-                return executorApi.upsertKeyValue(tableId, keyValues);
-            } catch (Exception e) {
-                exception = e;
-                refreshTableMeta();
-                log.error("insert KeyValue error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
-            } finally {
-                retryTime++;
-            }
+        try {
+            return executorApi.upsertKeyValue(tableId, keyValues);
+        } catch (Exception e) {
+            log.error("insert KeyValue error, tableId:{} retryTime:{} ", tableId,  retryTime, e);
+            throw e;
         }
-        while (retryTime <= this.retryTime);
-        throw exception;
     }
 
     public List<Object[]> get(Object[] startKey, Object[] endKey) throws Exception {
-        byte[] bytesStartKey = codec.encodeKey(startKey);
-        byte[] bytesEndKey = codec.encodeKey(endKey);
-        ExecutorApi executorApi = getExecutor(ps.calcPartId(bytesStartKey));
         int retryTime = 0;
         Exception exception = null;
         do {
             try {
+                byte[] bytesStartKey = codec.encodeKey(startKey);
+                byte[] bytesEndKey = codec.encodeKey(endKey);
+                ExecutorApi executorApi = getExecutor(ps.calcPartId(bytesStartKey));
                 List<KeyValue> keyValues = executorApi.getKeyValueByRange(tableId, bytesStartKey, bytesEndKey);
                 List<Object[]> result = new ArrayList<Object[]>();
                 for (KeyValue kv: keyValues) {
@@ -168,7 +181,8 @@ public class DingoClient extends ClientBase {
                 return result;
             } catch (Exception e) {
                 exception = e;
-                log.error("get key value by range catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
+                log.error("get key value by range {}:{} catch error,tableId:{} retryTime:{} ",
+                    Arrays.toString(startKey), Arrays.toString(endKey), tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
@@ -179,16 +193,17 @@ public class DingoClient extends ClientBase {
     }
 
     public Object[] get(Object[] key) throws Exception {
-        byte[] primaryKey = codec.encodeKey(key);
-        ExecutorApi executorApi = getExecutor(ps.calcPartId(primaryKey));
         int retryTime = 0;
         Exception exception = null;
         do {
             try {
+                byte[] primaryKey = codec.encodeKey(key);
+                ExecutorApi executorApi = getExecutor(ps.calcPartId(primaryKey));
                 return codec.mapKeyAndDecodeValue(key, executorApi.getValueByPrimaryKey(tableId, primaryKey));
             } catch (Exception e) {
                 exception = e;
-                log.error("get key value by key catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
+                log.error("get key value by key {} catch error,tableId:{} retryTime:{} ",
+                    Arrays.toString(key), tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;
@@ -199,16 +214,17 @@ public class DingoClient extends ClientBase {
     }
 
     public boolean delete(Object[] key) throws Exception {
-        byte[] primaryKey = codec.encodeKey(key);
-        ExecutorApi executorApi = getExecutor(ps.calcPartId(primaryKey));
         int retryTime = 0;
         Exception exception = null;
         do {
             try {
+                byte[] primaryKey = codec.encodeKey(key);
+                ExecutorApi executorApi = getExecutor(ps.calcPartId(primaryKey));
                 return executorApi.delete(tableId, primaryKey);
             } catch (Exception e) {
                 exception = e;
-                log.error("delete key catch error,tableId:{} retryTime:{} ", tableId,  retryTime, e);
+                log.error("delete key {} catch error,tableId:{} retryTime:{} ",
+                    Arrays.toString(key), tableId,  retryTime, e);
                 refreshTableMeta();
             } finally {
                 retryTime++;

@@ -64,7 +64,7 @@ public class ReadIndexRunner {
                     // If 'read index' read fails, try to applying to the state machine at the leader node
                     RaftRawKVOperation.sync().applyOnNode(node).whenComplete((r, e) -> {
                         if (e == null) {
-                            future.complete(null);
+                            future.complete((T) executeFunc.apply(operation));
                         } else {
                             future.completeExceptionally(e);
                         }

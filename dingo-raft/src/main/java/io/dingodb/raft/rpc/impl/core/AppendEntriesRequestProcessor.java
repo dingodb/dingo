@@ -16,7 +16,6 @@
 
 package io.dingodb.raft.rpc.impl.core;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.dingodb.raft.JRaftUtils;
 import io.dingodb.raft.Node;
@@ -27,7 +26,6 @@ import io.dingodb.raft.rpc.RaftServerService;
 import io.dingodb.raft.rpc.RpcContext;
 import io.dingodb.raft.rpc.RpcRequestClosure;
 import io.dingodb.raft.rpc.RpcRequests;
-import io.dingodb.raft.rpc.dingo.Tags;
 import io.dingodb.raft.rpc.impl.ConnectionClosedEventListener;
 import io.dingodb.raft.util.RpcFactoryHelper;
 import io.dingodb.raft.util.Utils;
@@ -301,20 +299,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
                 while (!respQueue.isEmpty()) {
                     final SequenceMessage queuedPipelinedResponse = respQueue.peek();
 
-                    int responseSequence = queuedPipelinedResponse.sequence;
-                    int requiredSequence = ctx.getNextRequiredSequence();
-                    if (responseSequence < requiredSequence) {
-                        LOG.warn("responseSequence faster: {}, {}", responseSequence, requiredSequence);
-                        queuedPipelinedResponse.rpcCtx.getConnection().close();
-                        respQueue.remove();
-                        while (!respQueue.isEmpty()) {
-                            SequenceMessage rejectResponse = respQueue.peek();
-                            rejectResponse.rpcCtx.getConnection().close();
-                            respQueue.remove();
-                        }
-                        removePeerRequestContext(groupId, pair);
-                        break;
-                    } else if (responseSequence != requiredSequence) {
+                    if (queuedPipelinedResponse.sequence != ctx.getNextRequiredSequence()) {
                         // sequence mismatch, waiting for next response.
                         break;
                     }
@@ -435,6 +420,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
     @Override
     public Message processRequest0(final RaftServerService service, final RpcRequests.AppendEntriesRequest request,
                                    final RpcRequestClosure done) {
+
         final Node node = (Node) service;
 
         if (node.getRaftOptions().isReplicatorPipeline()) {
@@ -444,16 +430,12 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
             boolean isHeartbeat = isHeartbeatRequest(request);
             int reqSequence = -1;
             if (!isHeartbeat) {
-                LOG.debug("AppendEntries {}, {}, {}, {}, {}:{}", request.getPrevLogTerm(), request.getPrevLogIndex(),
-                    request.getTerm(), request.getCommittedIndex(), request.getServerId(), request.getPeerId());
-                reqSequence = getAndIncrementSequence(groupId, pair, null);
+                reqSequence = getAndIncrementSequence(groupId, pair, done.getRpcCtx().getConnection());
             }
             final Message response = service.handleAppendEntriesRequest(request, new SequenceRpcRequestClosure(done,
                 defaultResp(), groupId, pair, reqSequence, isHeartbeat));
             if (response != null) {
                 if (isHeartbeat) {
-                    LOG.debug("AppendEntries Heartbeat from {}, {}, {}, {}, {}:{}", request.getPrevLogTerm(), request.getPrevLogIndex(),
-                        request.getTerm(), request.getCommittedIndex(), request.getServerId(), request.getPeerId());
                     done.getRpcCtx().sendResponse(response);
                 } else {
                     sendSequenceResponse(groupId, pair, reqSequence, done.getRpcCtx(), response);
@@ -466,15 +448,6 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
     }
 
     @Override
-    public RpcRequests.AppendEntriesRequest parse(byte[] request) {
-        try {
-            return RpcRequests.AppendEntriesRequest.parseFrom(request);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public String interest() {
         return RpcRequests.AppendEntriesRequest.class.getName();
     }
@@ -482,16 +455,6 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
     @Override
     public ExecutorSelector executorSelector() {
         return this.executorSelector;
-    }
-
-    @Override
-    public String getRequestTag() {
-        return Tags.APPENDENTRIES_REQUEST;
-    }
-
-    @Override
-    public String getResponseTag() {
-        return Tags.APPENDENTRIES_RESPONSE;
     }
 
     // TODO called when shutdown service.
