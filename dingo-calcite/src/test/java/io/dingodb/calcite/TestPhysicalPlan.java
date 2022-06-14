@@ -27,6 +27,7 @@ import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
+import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -187,8 +188,19 @@ public class TestPhysicalPlan {
     }
 
     @Test
-    public void testAggregate() throws SqlParseException {
+    public void testAggregateCount() throws SqlParseException {
         String sql = "select count(*) from test";
+        RelNode relNode = parse(sql);
+        Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoPartCountDelete.class).convention(DingoConventions.DISTRIBUTED)
+            .prop("doDeleting", false);
+    }
+
+    @Test
+    public void testAggregateCount1() throws SqlParseException {
+        String sql = "select count(amount) from test";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode)
             .isA(DingoReduce.class).convention(DingoConventions.ROOT)
@@ -197,7 +209,6 @@ public class TestPhysicalPlan {
             .singleInput().isA(DingoAggregate.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED);
     }
-
 
     @Test
     public void testDistinct() throws SqlParseException {

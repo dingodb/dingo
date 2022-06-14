@@ -36,6 +36,7 @@ import lombok.Setter;
     @JsonSubTypes.Type(GetByKeysOperator.class),
     @JsonSubTypes.Type(HashJoinOperator.class),
     @JsonSubTypes.Type(HashOperator.class),
+    @JsonSubTypes.Type(PartCountOperator.class),
     @JsonSubTypes.Type(PartDeleteOperator.class),
     @JsonSubTypes.Type(PartInsertOperator.class),
     @JsonSubTypes.Type(PartitionOperator.class),

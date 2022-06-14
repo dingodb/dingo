@@ -17,49 +17,48 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.annotation.Nonnull;
 
-public final class DingoPartDelete extends AbstractRelNode implements DingoRel {
+public final class DingoPartCountDelete extends AbstractRelNode implements DingoRel {
     @Getter
     private final RelOptTable table;
-
     @Getter
-    private final TupleMapping tupleMapping;
+    private final boolean doDeleting;
+    private final RelDataType rowType;
 
-    public DingoPartDelete(
+    public DingoPartCountDelete(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable table,
-        TupleMapping tupleMapping
+        boolean doDeleting,
+        RelDataType rowType
     ) {
         super(cluster, traits);
         this.table = table;
-        this.tupleMapping = tupleMapping;
+        this.doDeleting = doDeleting;
+        this.rowType = rowType;
     }
 
     @Override
     protected RelDataType deriveRowType() {
-        return RelOptUtil.createDmlRowType(SqlKind.INSERT, getCluster().getTypeFactory());
+        return rowType;
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeCost(0, 0, 0);
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeTinyCost();
     }
 
     @Nonnull
@@ -67,7 +66,7 @@ public final class DingoPartDelete extends AbstractRelNode implements DingoRel {
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table);
-        pw.item("tupleMapping", tupleMapping);
+        pw.item("doDeleting", doDeleting);
         return pw;
     }
 

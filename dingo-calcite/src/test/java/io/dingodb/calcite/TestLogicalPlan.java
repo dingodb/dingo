@@ -119,10 +119,27 @@ public class TestLogicalPlan {
     }
 
     @Test
-    public void testAggregate() throws SqlParseException {
+    public void testAggregateCount() throws SqlParseException {
         String sql = "select count(*) from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
+            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+    }
+
+    @Test
+    public void testAggregateCount1() throws SqlParseException {
+        String sql = "select count(1) from test";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
+            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+    }
+
+    @Test
+    public void testAggregateCount2() throws SqlParseException {
+        String sql = "select count(amount) from test";
+        RelRoot relRoot = parse(sql);
+        Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
+            .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
     }
 

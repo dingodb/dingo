@@ -19,7 +19,6 @@ package io.dingodb.store.rocksdb;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +33,6 @@ import org.rocksdb.WriteOptions;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -80,7 +78,7 @@ public class RocksStoreInstance implements StoreInstance {
     }
 
     @Override
-    public long deletePart(byte[] startKeyInBytes) {
+    public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
         long count = 0;
         List<byte[]> keyList = new ArrayList<>(1024);
         try (ReadOptions readOptions = new ReadOptions()) {
@@ -94,13 +92,15 @@ public class RocksStoreInstance implements StoreInstance {
                 }
             }
         }
-        keyList.stream().forEach(x -> {
-            try {
-                db.delete(x);
-            } catch (RocksDBException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        if (!doDeleting) {
+            keyList.stream().forEach(x -> {
+                try {
+                    db.delete(x);
+                } catch (RocksDBException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
         return count;
     }
 

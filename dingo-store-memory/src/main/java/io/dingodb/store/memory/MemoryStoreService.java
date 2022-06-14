@@ -18,9 +18,14 @@ package io.dingodb.store.memory;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
+import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.store.Part;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
@@ -35,11 +40,27 @@ public class MemoryStoreService implements StoreService {
         return "MEMORY";
     }
 
+    private Part createPart(@Nonnull CommonId id, byte[] start, byte[] end) {
+        return Part.builder()
+            .id(id)
+            .instanceId(id)
+            .start(start)
+            .end(end)
+            .type(Part.PartType.ROW_STORE)
+            .replicates(Collections.emptyList())
+            .leader(new Location("localhost", 0))
+            .version(0)
+            .build();
+    }
+
     @Override
     public StoreInstance getInstance(@Nonnull CommonId id) {
         MemoryStoreInstance instance = store.get(id);
         if (instance == null) {
             instance = new MemoryStoreInstance();
+            instance.assignPart(createPart(id, ByteArrayUtils.EMPTY_BYTES, PrimitiveCodec.encodeVarInt(3)));
+            instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
+            instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
             store.put(id, instance);
         }
         return instance;

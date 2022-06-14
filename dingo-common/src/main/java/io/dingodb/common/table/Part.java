@@ -35,6 +35,8 @@ public interface Part {
 
     long getEntryCntAndDeleteByPart(@Nonnull List<String> startKey);
 
+    long getEntryCnt(@Nonnull List<String> startKeyList);
+
     @Nullable
     Object[] getByKey(@Nonnull Object[] keyTuple);
 
