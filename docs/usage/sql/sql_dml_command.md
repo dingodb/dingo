@@ -37,7 +37,7 @@ dingo> SELECT * FROM test;
 
 ### Syntax
 
-```undefined
+```sql
 INSERT INTO table [(c1, c2, c3)] SELECT ...
 ```
 

@@ -7,7 +7,7 @@ upsert, interactive analysis, multi-dimensional analysis in extremely low latenc
 
 ## Key Features
 
-1. Compliant with ANSI SQL  
+1. Compliant with MySQL-Compatible
    Based on the popular [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB can parse, optimize and
    execute standard SQL statements, and is capable to run part of TPC-H and TPC-DS (See [TPC](http://www.tpc.org/))
    queries. DingoDB is also compliant with JDBC and can be seamlessly integrated with web services, BI tools, etc.
@@ -40,6 +40,28 @@ We recommend IntelliJ IDEA to develop the DingoDB codebase. Minimal requirements
 * Support for Java
 * Support for Gradle
 
+### How to make a clean pull request
+
+- Create a personal fork of dingo on GitHub.
+- Clone the fork on your local machine. Your remote repo on GitHub is called origin.
+- Add the original repository as a remote called upstream.
+- If you created your fork a while ago be sure to pull upstream changes into your local repository.
+- Create a new branch to work on. Branch from develop.
+- Implement/fix your feature, comment your code.
+- Follow the code style of Google code style, including indentation.
+- If the project has tests run them!
+- Add unit tests that test your new code.
+- In general, avoid changing existing tests, as they also make sure the existing public API is
+  unchanged.
+- Add or change the documentation as needed.
+- Squash your commits into a single commit with git's interactive rebase.
+- Push your branch to your fork on GitHub, the remote origin.
+- From your fork open a pull request in the correct branch. Target the Dingo's develop branch.
+- Once the pull request is approved and merged you can pull the changes from upstream to your local
+  repo and delete your branch.
+- Last but not least: Always write your commit messages in the present tense. Your commit message
+  should describe what the commit, when applied, does to the code – not what you did to the code.
+
 ### IntelliJ IDEA
 
 The IntelliJ IDE supports Java and Gradle out of the box. Download it
@@ -48,5 +70,4 @@ at [IntelliJ IDEA website](https://www.jetbrains.com/idea/).
 ## About
 
 DingoDB is an open source project licensed in **Apache License Version 2.0**. DingoDB relies on some third-party components, and their open source protocol is also Apache License 2.0.
-In addition, DingoDB also directly references some code (possibly with minor changes), which open source protocol is Apache License 2.0, including
-- [SOFAJRaft](https://github.com/sofastack/sofa-jraft/)
+DingoDB is Sponsored by [DataCanvas](https://www.datacanvas.com/). For support, please contact us.
