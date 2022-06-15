@@ -70,7 +70,7 @@ public class RaftStoreInstance implements StoreInstance {
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final PartReadWriteCollector collector;
 
-    public RaftStoreInstance(Path path, CommonId id)  {
+    public RaftStoreInstance(Path path, CommonId id) {
         try {
             this.id = id;
             this.path = path;
@@ -153,7 +153,7 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
-    public long deletePart(byte[] startKey) {
+    public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
         Part part = getPart(startKey);
         if (part == null) {
             log.warn("delete store by part start key. but find start key:{} not in any part",
@@ -163,7 +163,9 @@ public class RaftStoreInstance implements StoreInstance {
         byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
         byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
         long count = store.count(startKeyInBytes, endKeyInBytes);
-
+        if (!doDeleting) {
+            return count;
+        }
         boolean isDeleteSuccess = false;
         if (count > 0) {
             isDeleteSuccess = store.delete(startKeyInBytes, endKeyInBytes);
@@ -270,7 +272,7 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean upsertKeyValue(List<KeyValue> rows) {
         Part part = null;
         long startTime = System.currentTimeMillis();
-        for (KeyValue row: rows) {
+        for (KeyValue row : rows) {
             if (part == null && (part = getPart(row.getPrimaryKey())) == null) {
                 throw new IllegalArgumentException(
                     "The primary key " + Arrays.toString(row.getPrimaryKey()) + " not in current instance."
@@ -343,7 +345,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
         Map<Part, List<byte[]>> result = new HashMap<>();
-        for (byte[] primaryKey: primaryKeys) {
+        for (byte[] primaryKey : primaryKeys) {
             Part part = getPart(primaryKey);
             if (part == null) {
                 throw new IllegalArgumentException(
@@ -481,7 +483,7 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     class FullScanRawIterator extends KeyValueIterator {
-        private Iterator<SeekableIterator<byte[], ByteArrayEntry>> partIterator;
+        private final Iterator<SeekableIterator<byte[], ByteArrayEntry>> partIterator;
 
         public FullScanRawIterator(Iterator<SeekableIterator<byte[], ByteArrayEntry>> partIterator) {
             super(partIterator.next());

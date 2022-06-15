@@ -23,17 +23,23 @@ import io.dingodb.store.api.StoreInstance;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+
+import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
 
 public class MemoryStoreInstance implements StoreInstance {
-
+    private final Map<byte[], Part> startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
     private final NavigableMap<byte[], byte[]> db = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
 
     @Override
     public void assignPart(Part part) {
+        startKeyPartMap.put(part.getStart(), part);
     }
 
     @Override
@@ -42,14 +48,21 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public void deletePart(Part part) {
+    public void deletePart(@Nonnull Part part) {
         db.subMap(part.getStart(), true, part.getEnd(), false).keySet().forEach(db::remove);
+        startKeyPartMap.remove(part.getStart());
     }
 
     @Override
-    public long deletePart(byte[] startKey) {
-        db.clear();
-        int count = db.size();
+    public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
+        Part part = startKeyPartMap.get(startKey);
+        byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
+        byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
+        Map<byte[], byte[]> subMap = db.subMap(startKeyInBytes, true, endKeyInBytes, false);
+        long count = subMap.size();
+        if (doDeleting) {
+            subMap.clear();
+        }
         return count;
     }
 
@@ -135,5 +148,4 @@ public class MemoryStoreInstance implements StoreInstance {
             new TreeMap<>(db.subMap(startPrimaryKey, true, endPrimaryKey, false)).entrySet().iterator()
         );
     }
-
 }
