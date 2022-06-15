@@ -28,7 +28,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -104,18 +103,27 @@ public final class PartInKvStore implements Part {
 
     @Override
     public long getEntryCntAndDeleteByPart(@Nonnull List<String> startKeyList) {
+        return getEntryCntOrDeleteByPart(startKeyList, true);
+    }
+
+    @Override
+    public long getEntryCnt(@Nonnull List<String> startKeyList) {
+        return getEntryCntOrDeleteByPart(startKeyList, false);
+    }
+
+    private long getEntryCntOrDeleteByPart(@Nonnull List<String> startKeyList, boolean doDeleting) {
         final long startTime = System.currentTimeMillis();
         long totalCnt = 0L;
         try {
-            for (String partStartKey: startKeyList) {
+            for (String partStartKey : startKeyList) {
                 long currentCnt = 0;
                 boolean isOK = false;
                 byte[] partStartKeyInBytes = ByteArrayUtils.deCodeBase64String2Bytes(partStartKey);
                 if (partStartKeyInBytes != null && partStartKeyInBytes.length > 0) {
                     isOK = true;
-                    currentCnt = store.deletePart(partStartKeyInBytes);
+                    currentCnt = store.countOrDeletePart(partStartKeyInBytes, doDeleting);
                 } else {
-                    currentCnt = store.deletePart(ByteArrayUtils.EMPTY_BYTES);
+                    currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
                 }
                 totalCnt += currentCnt;
                 log.info("delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}",
@@ -133,6 +141,7 @@ public final class PartInKvStore implements Part {
             return totalCnt;
         }
     }
+
     @Override
     public boolean remove(@Nonnull Object[] tuple) {
         final long startTime = System.currentTimeMillis();

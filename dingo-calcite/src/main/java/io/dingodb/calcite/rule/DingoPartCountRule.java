@@ -18,54 +18,65 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
-import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoPartScan;
+import io.dingodb.calcite.rel.DingoTableScan;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.sql.SqlKind;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.Config> {
-    public DingoPartitionDeleteRule(Config config) {
+public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
+    public DingoPartCountRule(Config config) {
         super(config);
     }
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        final DingoPartModify rel = call.rel(0);
-        final DingoPartScan scan = call.rel(1);
-
-        RelOptCluster cluster = rel.getCluster();
+        final Aggregate aggregate = call.rel(0);
+        final DingoTableScan scan = call.rel(1);
+        RelOptCluster cluster = scan.getCluster();
         call.transformTo(new DingoPartCountDelete(
             cluster,
             scan.getTraitSet().replace(DingoConventions.DISTRIBUTED),
             scan.getTable(),
-            true,
-            rel.getRowType()
+            false,
+            aggregate.getRowType()
         ));
     }
 
     public interface Config extends RelRule.Config {
         Config DEFAULT = EMPTY
             .withOperandSupplier(b0 ->
-                b0.operand(DingoPartModify.class)
-                    .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
-                    .oneInput(b1 ->
-                        b1.operand(DingoPartScan.class)
+                b0.operand(Aggregate.class).trait(Convention.NONE)
+                    .predicate(x -> {
+                        if (x.getGroupCount() != 0) {
+                            return false;
+                        }
+                        List<AggregateCall> aggList = x.getAggCallList();
+                        if (aggList.size() != 1) {
+                            return false;
+                        }
+                        AggregateCall agg = aggList.get(0);
+                        return agg.getAggregation().getKind() == SqlKind.COUNT && agg.getArgList().isEmpty();
+                    }).oneInput(b1 ->
+                        b1.operand(DingoTableScan.class)
                             .predicate(x -> x.getFilter() == null)
                             .noInputs()
                     )
             )
-            .withDescription("DingoPartitionDeleteRule")
+            .withDescription("DingoPartCountRule")
             .as(Config.class);
 
         @Override
-        default DingoPartitionDeleteRule toRule() {
-            return new DingoPartitionDeleteRule(this);
+        default DingoPartCountRule toRule() {
+            return new DingoPartCountRule(this);
         }
     }
 }

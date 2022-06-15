@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.table.TupleMapping;
 import lombok.Getter;
@@ -26,14 +25,12 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.List;
 import javax.annotation.Nonnull;
 
 public final class DingoPartScan extends AbstractRelNode implements DingoRel {
@@ -76,11 +73,6 @@ public final class DingoPartScan extends AbstractRelNode implements DingoRel {
         double cpu = rowCount + 1;
         double io = 0;
         return planner.getCostFactory().makeCost(rowCount, cpu, io);
-    }
-
-    @Override
-    public List<RelNode> getInputs() {
-        return ImmutableList.of();
     }
 
     @Nonnull

@@ -26,7 +26,7 @@ import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.calcite.rel.DingoPartDelete;
+import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
@@ -65,7 +65,7 @@ import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
-import io.dingodb.exec.operator.RemovePartOperator;
+import io.dingodb.exec.operator.PartCountOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
 import io.dingodb.exec.operator.PartScanOperator;
@@ -74,6 +74,7 @@ import io.dingodb.exec.operator.PartitionOperator;
 import io.dingodb.exec.operator.ProjectOperator;
 import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.ReduceOperator;
+import io.dingodb.exec.operator.RemovePartOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.SortOperator;
@@ -624,7 +625,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartDelete rel) {
+    public Collection<Output> visit(@Nonnull DingoPartCountDelete rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         CommonId tableId = this.metaCache.getTableId(tableName);
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
@@ -633,8 +634,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
         List<Output> outputs = new ArrayList<>(distributeNodes.size());
         Map<Location, List<String>> groupAllPartKeysByAddress = groupAllPartKeysByAddress(parts);
-        for (Location node: distributeNodes) {
-            RemovePartOperator operator = new RemovePartOperator(
+        for (Location node : distributeNodes) {
+            Operator operator = rel.isDoDeleting() ? new RemovePartOperator(
+                tableId,
+                groupAllPartKeysByAddress.get(node),
+                td.getTupleSchema(),
+                td.getKeyMapping()
+            ) : new PartCountOperator(
                 tableId,
                 groupAllPartKeysByAddress.get(node),
                 td.getTupleSchema(),
@@ -650,7 +656,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         }
         return outputs;
     }
-
 
     private Map<Location, List<String>> groupAllPartKeysByAddress(final NavigableMap<ComparableByteArray, Part> parts) {
         Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
@@ -673,13 +678,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 byte[] bytes = ByteArrayUtils.deCodeBase64String2Bytes(s);
                 String result = Arrays.toString(bytes);
                 builder.append(result).append(",");
-                });
+            });
 
             log.info("group all part start keys by address:{} startKeys:{}",
                 k.toString(),
                 builder.toString());
         });
-        return  groupStartKeysByAddress;
+        return groupStartKeysByAddress;
     }
 
 }
