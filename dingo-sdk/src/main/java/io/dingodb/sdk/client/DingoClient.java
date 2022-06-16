@@ -234,7 +234,7 @@ public class DingoClient extends ClientBase {
         throw exception;
     }
 
-    private void refreshTableMeta() {
+    public void refreshTableMeta() {
         this.tableId = metaClient.getTableId(tableName);
         TableDefinition tableDefinition = metaClient.getTableDefinition(tableName);
         if (tableDefinition == null) {
