@@ -73,8 +73,8 @@ public class DingoExampleUsingSDK {
                 insertBatch();
                 break;
             }
-            case "get": {
-                get();
+            case "scan": {
+                scanAllRecords();
                 break;
             }
 
@@ -85,7 +85,7 @@ public class DingoExampleUsingSDK {
             default: {
                 insert();
                 insertBatch();
-                get();
+                scanAllRecords();
                 delete();
                 break;
             }
@@ -117,22 +117,57 @@ public class DingoExampleUsingSDK {
                     records.add(record);
                     totalRealInsertCnt++;
                 }
-                dingoClient.insert(records);
+                boolean isOK = true;
+                do {
+                    try {
+                        isOK = dingoClient.insert(records);
+                    } catch (Exception ex) {
+                        try {
+                            isOK = false;
+                            Thread.sleep(4000);
+                        } catch (Exception ex1) {
+                            ex1.printStackTrace();
+                        }
+                        dingoClient.refreshTableMeta();
+                    }
+                } while (!isOK);
                 long totalTimeCost = System.currentTimeMillis() - startTime;
                 System.out.println("inserted record: " + totalRealInsertCnt
                     + ", TotalCost: " + totalTimeCost + "ms"
-                    + ", AvgCost: " + (totalTimeCost / totalRealInsertCnt) + "ms");
+                    + ", AvgCost: " + (totalTimeCost * 1.0 / totalRealInsertCnt) + "ms");
             }
         }
         while (true);
     }
-
-    public static void get() throws Exception {
+    public static void scanAllRecords() throws Exception {
+        long loopCnt = 0L;
+        long totalTimeCost = 0L;
+        long warmCnt = 0L;
+        String stringResult = "";
         for (int i = 0; i < insertTotalCnt; i++) {
+            stringResult = "";
+            long startTime = System.currentTimeMillis();
             Object[] key = new Object[]{i};
-            Object[] record = dingoClient.get(key);
-            for (Object r : record) {
-                System.out.println(r);
+            try {
+                Object[] record = dingoClient.get(key);
+                for (Object r : record) {
+                    stringResult += r.toString();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            long endTime = System.currentTimeMillis();
+            warmCnt++;
+            if (warmCnt < 1000) {
+                continue;
+            }
+            loopCnt++;
+            totalTimeCost += (endTime - startTime);
+            if (loopCnt % 100 == 0) {
+                System.out.println("AvgTimeCost:" + totalTimeCost * 1.0 / loopCnt
+                    + ", LoopCnt:" + loopCnt
+                    + ", QueryResult:" + stringResult
+                );
             }
         }
     }
