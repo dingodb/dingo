@@ -22,6 +22,8 @@ plugins {
 dependencies {
     api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     api project(':dingo-exec')
+    annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
+    compileOnly group: 'org.immutables', name: 'value', version: 'immutables'.v()
     implementation project(':dingo-ddl')
     implementation project(':dingo-expr:dingo-expr-parser')
     implementation project(':dingo-func-api')

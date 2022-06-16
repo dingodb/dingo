@@ -22,9 +22,11 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoToEnumerableRule extends RelRule<DingoToEnumerableRule.Config> {
     protected DingoToEnumerableRule(Config config) {
         super(config);
@@ -40,13 +42,14 @@ public class DingoToEnumerableRule extends RelRule<DingoToEnumerableRule.Config>
         ));
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoToEnumerableRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(RelNode.class).trait(DingoConventions.ROOT).anyInputs()
             )
-            .withDescription("DingoToEnumerableRule")
-            .as(Config.class);
+            .description("DingoToEnumerableRule")
+            .build();
 
         @Override
         default DingoToEnumerableRule toRule() {

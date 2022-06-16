@@ -25,9 +25,11 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Values;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRule.Config> {
     protected DingoDistributedValuesRule(Config config) {
         super(config);
@@ -58,15 +60,16 @@ public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRu
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoDistributedValuesRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(DingoTableModify.class).trait(DingoConventions.DINGO).oneInput(b1 ->
                     b1.operand(Values.class).noInputs()
                 )
             )
-            .withDescription("DingoDistributedValuesRule")
-            .as(Config.class);
+            .description("DingoDistributedValuesRule")
+            .build();
 
         @Override
         default DingoDistributedValuesRule toRule() {

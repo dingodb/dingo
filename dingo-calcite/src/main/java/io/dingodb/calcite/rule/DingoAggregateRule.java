@@ -29,26 +29,25 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
+import org.immutables.value.Value;
 
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
-    protected DingoAggregateRule(Config config) {
-        super(config);
-    }
-
-
     /**
      * when the Operand is aggregate and contains distinct, we will skip it.
      */
     public static Predicate<AggregateCall> isAggregateHasDistinct = agg -> {
         SqlKind kind = agg.getAggregation().getKind();
-        if (agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM)) {
-            return true;
-        }
-        return false;
+        return agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM);
     };
+
+
+    protected DingoAggregateRule(Config config) {
+        super(config);
+    }
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
@@ -100,13 +99,14 @@ public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoAggregateRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(Aggregate.class).trait(Convention.NONE).anyInputs()
             )
-            .withDescription("DingoAggregateRule")
-            .as(Config.class);
+            .description("DingoAggregateRule")
+            .build();
 
         @Override
         default DingoAggregateRule toRule() {

@@ -25,10 +25,12 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.TableModify;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
 @Slf4j
+@Value.Enclosing
 public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.Config> {
     public DingoPartitionDeleteRule(Config config) {
         super(config);
@@ -49,9 +51,10 @@ public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.C
         ));
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoPartitionDeleteRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(DingoPartModify.class)
                     .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
                     .oneInput(b1 ->
@@ -60,8 +63,8 @@ public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.C
                             .noInputs()
                     )
             )
-            .withDescription("DingoPartitionDeleteRule")
-            .as(Config.class);
+            .description("DingoPartitionDeleteRule")
+            .build();
 
         @Override
         default DingoPartitionDeleteRule toRule() {

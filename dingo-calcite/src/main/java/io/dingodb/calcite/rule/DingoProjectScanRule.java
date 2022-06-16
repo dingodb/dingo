@@ -27,12 +27,14 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
+import org.immutables.value.Value;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@Value.Enclosing
 public class DingoProjectScanRule extends RelRule<DingoProjectScanRule.Config> {
     protected DingoProjectScanRule(Config config) {
         super(config);
@@ -83,15 +85,16 @@ public class DingoProjectScanRule extends RelRule<DingoProjectScanRule.Config> {
         }
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoProjectScanRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(LogicalProject.class).oneInput(b1 ->
                     b1.operand(DingoTableScan.class).predicate(rel -> rel.getSelection() == null).noInputs()
                 )
             )
-            .withDescription("DingoProjectScanRule")
-            .as(Config.class);
+            .description("DingoProjectScanRule")
+            .build();
 
         @Override
         default DingoProjectScanRule toRule() {

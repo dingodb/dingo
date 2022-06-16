@@ -20,9 +20,11 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Filter;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoFilterScanRule extends RelRule<DingoFilterScanRule.Config> {
     protected DingoFilterScanRule(Config config) {
         super(config);
@@ -44,15 +46,16 @@ public class DingoFilterScanRule extends RelRule<DingoFilterScanRule.Config> {
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoFilterScanRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(Filter.class).oneInput(b1 ->
                     b1.operand(DingoTableScan.class).predicate(rel -> rel.getFilter() == null).noInputs()
                 )
             )
-            .withDescription("DingoFilterScanRule")
-            .as(Config.class);
+            .description("DingoFilterScanRule")
+            .build();
 
         @Override
         default DingoFilterScanRule toRule() {

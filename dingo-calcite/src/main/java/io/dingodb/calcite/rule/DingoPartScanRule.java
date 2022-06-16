@@ -21,9 +21,11 @@ import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoPartScanRule extends RelRule<DingoPartScanRule.Config> {
     protected DingoPartScanRule(Config config) {
         super(config);
@@ -43,13 +45,14 @@ public class DingoPartScanRule extends RelRule<DingoPartScanRule.Config> {
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoPartScanRule.Config.builder()
+            .description("DingoPartScanRule")
+            .operandSupplier(b0 ->
                 b0.operand(DingoTableScan.class).trait(DingoConventions.DINGO).noInputs()
             )
-            .withDescription("DingoPartScanRule")
-            .as(Config.class);
+            .build();
 
         @Override
         default DingoPartScanRule toRule() {
