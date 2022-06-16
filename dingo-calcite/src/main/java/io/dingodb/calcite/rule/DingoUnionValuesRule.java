@@ -27,11 +27,13 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexLiteral;
+import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> implements SubstitutionRule {
     private DingoUnionValuesRule(Config config) {
         super(config);
@@ -85,12 +87,14 @@ public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> i
         return true;
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY.withDescription("DingoUnionValuesRule")
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoUnionValuesRule.Config.builder()
+            .description("DingoUnionValuesRule")
+            .operandSupplier(b0 ->
                 b0.operand(Union.class).predicate(union -> union.all).anyInputs()
             )
-            .as(Config.class);
+            .build();
 
         @Override
         default DingoUnionValuesRule toRule() {

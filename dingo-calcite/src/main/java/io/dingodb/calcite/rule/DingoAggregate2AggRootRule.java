@@ -24,9 +24,11 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.sql.SqlKind;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoAggregate2AggRootRule extends RelRule<DingoAggregate2AggRootRule.Config> {
     protected DingoAggregate2AggRootRule(Config config) {
         super(config);
@@ -58,11 +60,12 @@ public class DingoAggregate2AggRootRule extends RelRule<DingoAggregate2AggRootRu
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 -> b0.operand(Aggregate.class).trait(Convention.NONE).anyInputs())
-            .withDescription("DingoAggregateSingleRule")
-            .as(Config.class);
+        Config DEFAULT = ImmutableDingoAggregate2AggRootRule.Config.builder()
+            .operandSupplier(b0 -> b0.operand(Aggregate.class).trait(Convention.NONE).anyInputs())
+            .description("DingoAggregateSingleRule")
+            .build();
 
         @Override
         default DingoAggregate2AggRootRule toRule() {

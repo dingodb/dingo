@@ -25,6 +25,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.immutables.value.Value;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -34,6 +35,7 @@ import javax.annotation.Nonnull;
 import static io.dingodb.calcite.DingoTable.dingo;
 
 @Slf4j
+@Value.Enclosing
 public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
     public DingoGetByKeysRule(Config config) {
         super(config);
@@ -76,13 +78,14 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         }
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(
+        Config DEFAULT = ImmutableDingoGetByKeysRule.Config.builder()
+            .operandSupplier(
                 b0 -> b0.operand(DingoTableScan.class).predicate(r -> r.getFilter() != null).noInputs()
             )
-            .withDescription("DingoGetByKeysRule")
-            .as(Config.class);
+            .description("DingoGetByKeysRule")
+            .build();
 
         @Override
         default DingoGetByKeysRule toRule() {

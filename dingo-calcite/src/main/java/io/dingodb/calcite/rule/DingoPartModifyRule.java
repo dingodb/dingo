@@ -27,11 +27,13 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
     protected DingoPartModifyRule(Config config) {
         super(config);
@@ -94,13 +96,14 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
         ));
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoPartModifyRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(DingoTableModify.class).trait(DingoConventions.DINGO).anyInputs()
             )
-            .withDescription("DingoPartModifyRule")
-            .as(Config.class);
+            .description("DingoPartModifyRule")
+            .build();
 
         @Override
         default DingoPartModifyRule toRule() {
