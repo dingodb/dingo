@@ -29,10 +29,12 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.immutables.value.Value;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     protected DingoHashJoinRule(Config config) {
         super(config);
@@ -89,16 +91,17 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoHashJoinRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(Join.class).trait(Convention.NONE).inputs(
                     b1 -> b1.operand(RelNode.class).anyInputs(),
                     b2 -> b2.operand(RelNode.class).anyInputs()
                 )
             )
-            .withDescription("DingoHashJoinRule")
-            .as(Config.class);
+            .description("DingoHashJoinRule")
+            .build();
 
         @Override
         default DingoHashJoinRule toRule() {

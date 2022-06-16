@@ -27,11 +27,13 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
+import org.immutables.value.Value;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
 @Slf4j
+@Value.Enclosing
 public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
     public DingoPartCountRule(Config config) {
         super(config);
@@ -51,9 +53,10 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
         ));
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoPartCountRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(Aggregate.class).trait(Convention.NONE)
                     .predicate(x -> {
                         if (x.getGroupCount() != 0) {
@@ -71,8 +74,8 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
                             .noInputs()
                     )
             )
-            .withDescription("DingoPartCountRule")
-            .as(Config.class);
+            .description("DingoPartCountRule")
+            .build();
 
         @Override
         default DingoPartCountRule toRule() {

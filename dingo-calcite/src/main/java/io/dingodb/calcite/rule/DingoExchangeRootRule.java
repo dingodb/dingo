@@ -23,9 +23,11 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoExchangeRootRule extends RelRule<DingoExchangeRootRule.Config> {
     protected DingoExchangeRootRule(Config config) {
         super(config);
@@ -49,13 +51,14 @@ public class DingoExchangeRootRule extends RelRule<DingoExchangeRootRule.Config>
         );
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = EMPTY
-            .withOperandSupplier(b0 ->
+        Config DEFAULT = ImmutableDingoExchangeRootRule.Config.builder()
+            .operandSupplier(b0 ->
                 b0.operand(RelNode.class).trait(DingoConventions.DISTRIBUTED).anyInputs()
             )
-            .withDescription("DingoExchangeRootRule")
-            .as(Config.class);
+            .description("DingoExchangeRootRule")
+            .build();
 
         @Override
         default DingoExchangeRootRule toRule() {

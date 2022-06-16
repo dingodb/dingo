@@ -22,7 +22,6 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
@@ -38,12 +37,13 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.ImmutableBeans;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
+@Value.Enclosing
 public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config> implements SubstitutionRule {
     protected DingoValuesReduceRule(Config config) {
         super(config);
@@ -139,32 +139,37 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         return true;
     }
 
+    @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config FILTER = EMPTY.withDescription("DingoValuesReduceRule(Filter)")
-            .withOperandSupplier(b0 ->
+        Config FILTER = ImmutableDingoValuesReduceRule.Config.builder()
+            .description("DingoValuesReduceRule(Filter)")
+            .operandSupplier(b0 ->
                 b0.operand(LogicalFilter.class).oneInput(b1 ->
                     b1.operand(LogicalValues.class)
-                        .predicate(Values::isNotEmpty).noInputs()))
-            .as(Config.class)
-            .withMatchHandler(DingoValuesReduceRule::matchFilter);
+                        .predicate(Values::isNotEmpty).noInputs()
+                )
+            )
+            .matchHandler(DingoValuesReduceRule::matchFilter)
+            .build();
 
-        Config PROJECT = EMPTY.withDescription("DingoValuesReduceRule(Project)")
-            .withOperandSupplier(b0 ->
+        Config PROJECT = ImmutableDingoValuesReduceRule.Config.builder()
+            .description("DingoValuesReduceRule(Project)")
+            .operandSupplier(b0 ->
                 b0.operand(LogicalProject.class).oneInput(b1 ->
                     b1.operand(LogicalValues.class)
-                        .predicate(Values::isNotEmpty).noInputs()))
-            .as(Config.class)
-            .withMatchHandler(DingoValuesReduceRule::matchProject);
+                        .predicate(Values::isNotEmpty).noInputs()
+                )
+            )
+            .matchHandler(DingoValuesReduceRule::matchProject)
+            .build();
 
         @Override
         default DingoValuesReduceRule toRule() {
             return new DingoValuesReduceRule(this);
         }
 
-        @ImmutableBeans.Property
-        <R extends RelOptRule> MatchHandler<R> matchHandler();
-
-        <R extends RelOptRule> Config withMatchHandler(MatchHandler<R> matchHandler);
+        @Value.Parameter
+        MatchHandler<DingoValuesReduceRule> matchHandler();
     }
 
     private static class MyRexShuttle extends RexShuttle {
