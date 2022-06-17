@@ -19,13 +19,11 @@ package io.dingodb.common.jackson;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
-import com.fasterxml.jackson.databind.ser.std.NumberSerializers;
 import com.fasterxml.jackson.databind.ser.std.SqlDateSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 
 @Slf4j
@@ -59,58 +57,33 @@ public class DingoValuesSerializer extends StdSerializer<List<?>> {
                         }
                         Object element = elemArray[j];
                         if (element == null) {
-                            gen.writeNull();
+                            gen.writeRaw("null");
                         } else {
                             Class<?> cc = element.getClass();
                             switch (cc.getName()) {
-                                case "java.lang.Short":
-                                    gen.writeNumber((Short) element);
-                                    break;
-                                case "java.lang.Integer":
-                                    gen.writeNumber((Integer) element);
-                                    break;
-                                case "java.lang.BigInteger":
-                                    gen.writeNumber((BigInteger) element);
-                                    break;
-                                case "java.lang.Long":
-                                    new NumberSerializers.LongSerializer(Long.class).serialize(element, gen,
-                                        serializers);
-                                    break;
-                                case "java.lang.Double":
-                                    new NumberSerializers.DoubleSerializer(Double.class).serialize(element, gen,
-                                        serializers);
-                                    gen.getPrettyPrinter().writeArrayValueSeparator(gen);
-                                    break;
-                                case "java.lang.Float":
-                                    new NumberSerializers.FloatSerializer().serialize(element, gen, serializers);
-                                    gen.getPrettyPrinter().writeArrayValueSeparator(gen);
-                                    break;
                                 case "java.lang.String":
                                     gen.writeRaw("\"");
                                     gen.writeRaw((String) element);
                                     gen.writeRaw("\"");
                                     break;
                                 case "java.sql.Date":
-                                    new SqlDateSerializer().serialize((java.sql.Date) element, gen, serializers);
+                                    gen.writeRaw(Long.valueOf(((java.sql.Date) element).getTime()).toString());
                                     break;
                                 case "java.sql.Timestamp":
-                                    new DateSerializer().serialize((java.sql.Timestamp) element, gen, serializers);
+                                    gen.writeRaw(Long.valueOf(((java.sql.Timestamp) element).getTime()).toString());
                                     break;
                                 case "java.sql.Time":
-                                    gen.writeNumber(((java.sql.Time) element).getTime());
-                                    break;
-                                case "java.lang.Boolean":
-                                    gen.writeBoolean((java.lang.Boolean) element);
+                                    gen.writeRaw(Long.valueOf(((java.sql.Time) element).getTime()).toString());
                                     break;
                                 default:
+                                    gen.writeRaw(element.toString());
                                     break;
                             }
                         }
-                        if (j == 0) {
-                            gen.getPrettyPrinter().writeArrayValueSeparator(gen);
-                        }
                         if (j == elementLength - 1) {
                             gen.writeEndArray();
+                        } else {
+                            gen.getPrettyPrinter().writeArrayValueSeparator(gen);
                         }
                     }
                 }
