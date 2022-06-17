@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.jackson.DingoValuesSerializer;
 import io.dingodb.common.table.TupleSchema;
 import lombok.Getter;
 
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 @JsonTypeName("values")
 @JsonPropertyOrder({"tuples", "output"})
 public final class ValuesOperator extends IteratorSourceOperator {
+    @JsonSerialize(using = DingoValuesSerializer.class)
     @JsonProperty("tuples")
     @Getter
     private final List<Object[]> tuples;
@@ -54,4 +57,5 @@ public final class ValuesOperator extends IteratorSourceOperator {
         super.init();
         iterator = tuples.iterator();
     }
+
 }

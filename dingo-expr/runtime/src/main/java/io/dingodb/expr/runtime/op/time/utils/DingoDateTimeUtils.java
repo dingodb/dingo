@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime.op.time.utils;
 
+import io.dingodb.expr.runtime.exception.FailParseTime;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
@@ -42,9 +43,8 @@ import java.util.stream.Stream;
 public class DingoDateTimeUtils implements Serializable {
     public static final long serialVersionUID = 4478587765478112418L;
 
-    public static final long MILLIS_PER_DAY = 86400000; // = 24 * 60 * 60 * 1000
+    public static Integer TIME_PIVOT = 240000;
 
-    public static final String ZONE_ID = "UTC";
     public static final List<String> DELIMITER_LIST = Stream.of(
         "",
         "/",
@@ -384,15 +384,29 @@ public class DingoDateTimeUtils implements Serializable {
 
 
     public static LocalTime convertToTime(final String originTime) throws SQLException {
-        int index = 0;
         int length = originTime.length();
         String inOriginTime = originTime;
         if (length == 0) {
             throw new SQLException(" '' is not allowed to convert to time type.");
         }
+        int index = 0;
         while (length < 6) {
             inOriginTime = "0" + inOriginTime;
             length++;
+        }
+
+        String hour =  inOriginTime.contains(":") ? originTime.split(":")[0] : "0";
+        if (Integer.valueOf(hour) >= TIME_PIVOT / 10000) {
+            throw new FailParseTime("hour " + hour + " can only be less than " + TIME_PIVOT / 10000);
+        }
+
+        if (!inOriginTime.contains(":")) {
+            if (Integer.valueOf(originTime) >= TIME_PIVOT) {
+                throw new FailParseTime(originTime + " can be less than " + TIME_PIVOT);
+            }
+        }
+        if (inOriginTime.startsWith("24")) {
+            throw new SQLException(" Hour Part is not allowed to be 24.");
         }
         try {
             LocalTime localTime;
@@ -430,7 +444,7 @@ public class DingoDateTimeUtils implements Serializable {
             : Integer.valueOf(originTimeStr.split(" ")[0].split(delimiter)[2]));
     }
 
-
+    // "Time pattern convert to UTC time pattern without timezone info"
     public static Time convertLocalTimeToTime(LocalTime localTime) {
         Time t = new Time(((localTime.getHour() * 60 + localTime.getMinute()) * 60
             + localTime.getSecond()

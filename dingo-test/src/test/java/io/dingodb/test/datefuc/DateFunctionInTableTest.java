@@ -151,6 +151,7 @@ public class DateFunctionInTableTest {
     }
 
     @Test
+    @Disabled
     void testDateTypeScan2() throws  SQLException {
         String sql = "select time_type_column from test3";
         sqlHelper.queryTestOrder(
