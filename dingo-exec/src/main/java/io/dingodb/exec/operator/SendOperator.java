@@ -132,7 +132,8 @@ public final class SendOperator extends SinkOperator {
                 this.putArray(array);
                 if (log.isDebugEnabled()) {
                     log.debug("Send FIN to ({}, {}, {}), fin length: {}, arr len: {}, buff pos: {}, hashCode: {}.",
-                        host, port, receiveId, array.length, encodeArr.length, this.sendBuffer.position(), this.hashCode());
+                        host, port, receiveId, array.length, encodeArr.length, this.sendBuffer.position(),
+                        this.hashCode());
                 }
                 this.sendBufferData();
             }

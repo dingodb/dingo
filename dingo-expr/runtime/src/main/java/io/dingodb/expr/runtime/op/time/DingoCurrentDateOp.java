@@ -21,15 +21,16 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -51,7 +52,8 @@ public class DingoCurrentDateOp extends RtFun {
     }
 
     public static java.sql.Date getCurrentDate() {
-        Long millis = System.currentTimeMillis();
+        LocalDate localDate = LocalDate.now();
+        Long millis = localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli();
         return new Date(millis);
     }
 

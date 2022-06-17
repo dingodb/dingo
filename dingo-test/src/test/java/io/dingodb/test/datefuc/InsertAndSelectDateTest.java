@@ -65,7 +65,7 @@ public class InsertAndSelectDateTest {
             + ")";
 
         String batInsertSql = "insert into test"
-            + " values \n"
+            + " values "
             + "(1,'zhangsan',18,23.50,'beijing','20220401', '08:10:10', '2022-4-8 18:05:07') ,"
             + "(2,'lisi',25,895,' beijing haidian ', '1988-2-05', '06:15:8', '2000-02-29 00:00:00') ,"
             + " (3,'l3',55,123.123,'wuhan NO.1 Street', '2022-03-4', '07:3:15', '1999-2-28 23:59:59') ,"
@@ -86,7 +86,7 @@ public class InsertAndSelectDateTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     System.out.println(rs.getString(2));
-                    //assertThat(rs.getString(2)).isEqualTo("2022/04/01");
+                    assertThat(rs.getString(2)).isEqualTo("2022/04/08 18.05.07");
                     //System.out.println(rs.getString(3));
                 }
             }
@@ -108,7 +108,7 @@ public class InsertAndSelectDateTest {
                     System.out.println(rs.getString(1));
                     System.out.println(rs.getString(2));
                     System.out.println(rs.getString(5));
-                    // assertThat(rs.getString(2)).isEqualTo("2022/04/08 18.05.07");
+                    assertThat(rs.getString(5)).isEqualTo("11:23:41");
                     //System.out.println(rs.getString(3));
                 }
             }
@@ -161,11 +161,10 @@ public class InsertAndSelectDateTest {
 
     @Test
     public void testInsertTime3() throws SQLException {
-        String createTableSql = "create table test3(id int, name varchar(20), age int, amount double,"
+        String createTableSql = "create table timetest3(id int, name varchar(20), age int, amount double,"
             + " address varchar(255),update_time time,primary key (id))";
-        String insertSql = "insert into test3 values(1,'aa',18,2.5,'beijing','17:38:28')"
-            + ",(2,'bb',20,3.50,'shanghai','09:08:10')";
-        String selectSql = "select name,time_format(update_time, '%H:%i:%s') time_out from test3";
+        String insertSql = "insert into timetest3 values(1,'aa',18,2.5,'beijing','17:38:28')";
+        String selectSql = "select name,time_format(update_time, '%H:%i:%s') time_out from timetest3";
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             statement.executeUpdate(insertSql);
@@ -174,6 +173,116 @@ public class InsertAndSelectDateTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     System.out.println(rs.getString(2));
+                    assertThat(rs.getString(2)).isEqualTo("17:38:28");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInsertTime4() throws SQLException {
+        String createTableSql = "create table dateinserttest4(id int, name varchar(20), age int, amount double,"
+            + " address varchar(255), birthday date, create_time time, update_time timestamp, "
+            + "is_delete boolean, primary key (id))";
+
+        String insertSql = "insert into dateinserttest4 values "
+            + "(1,'zhangsan',18,23.50,'beijing','1998-4-6', '08:10:10', '2022-4-8 18:05:07', true),"
+            + "(2,'lisi',25,895,' beijing haidian ', '1988-2-05', '06:15:8', '2000-02-29 00:00:00', false),"
+            + "(3,'l3',55,123.123,'wuhan NO.1 Street', '2022-03-4', '07:3:15', '1999-2-28 23:59:59', true),"
+            + "(4,'HAHA',57,9.0762556,'CHANGping', '2020-11-11', '5:59:59', '2021-05-04 12:00:00', true),"
+            + "(5,'awJDs',1,1453.9999,'pingYang1', '2010-10-1', '19:0:0', '2010-10-1 02:02:02', false),"
+            + "(6,'123',544,0,'543', '1987-7-16', '1:2:3', '1952-12-31 12:12:12', false),"
+            + "(7,'yamaha',76,2.30,'beijing changyang', '1949-01-01', '0:30:8', '2022-12-01 1:2:3', true)";
+        // 19:00:00
+        String selectSql = "select max(create_time) from dateinserttest4";
+        // 00:30:08
+        // String selectSql = "select min(create_time) from dateinserttest4";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("19:00:00");
+                }
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testInsertTime5() throws SQLException {
+        String createTableSql = "create table timetest5(id int, name varchar(20), age int, amount double,"
+            + " address varchar(255),update_time time,primary key (id))";
+        String insertSql = "insert into timetest5 values(1,'aa',18,2.5,'beijing','24:00:00')";
+        String selectSql = "select name,time_format(update_time, '%H:%i:%s') time_out from timetest5";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    System.out.println(rs.getString(2));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInsertAndSerialize() throws SQLException {
+        String createTableSql = "create table test22(id int, name varchar(20), age int, " +
+            "amount double, primary key(id))";
+        String insertSql = "insert into test22 values(1,'zhangsan',16,20.35)";
+        String selectSql = "SELECT * from test22";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    System.out.println(rs.getString(3));
+                    assertThat(rs.getString(3)).isEqualTo("16");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInsertAndSerialize1() throws SQLException {
+        String createTableSql = "create table strdemo1(id int, name varchar(32) not null, age int," +
+            " address varchar(255), primary key(id))";
+        String insertSql = "insert into strdemo1 values(1,'zhangsan',18,'beijing')";
+        String selectSql = "SELECT * from strdemo1";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    System.out.println(rs.getString(3));
+                    assertThat(rs.getString(3)).isEqualTo("18");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInsertAndSerialize2() throws SQLException {
+        String createTableSql = "create table testnull(id int, name varchar(20), age int, primary key(id))";
+        String insertSql = "insert into testnull(id,name) values (1,'zhangsan')";
+        String selectSql = "SELECT * from testnull";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    assertThat(rs.getString(1)).isEqualTo("1");
                 }
             }
         }
@@ -193,8 +302,7 @@ public class InsertAndSelectDateTest {
                 while (rs.next()) {
                     System.out.println(rs.getString(4));
                     System.out.println(rs.getString(5));
-                    // assertThat(rs.getString(2)).isEqualTo("2022/04/08 18.05.07");
-                    //System.out.println(rs.getString(3));
+                    assertThat(rs.getString(5)).isEqualTo("2020-01-01");
                 }
             }
         }
@@ -259,6 +367,27 @@ public class InsertAndSelectDateTest {
                     System.out.println(rs.getString(4));
                     System.out.println(rs.getString(5));
                     assertThat(rs.getString(5)).isEqualTo("2022-04-01");
+                    //System.out.println(rs.getString(3));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInsertDate4() throws SQLException {
+        String createTableSql = "create table datetest4(id int, n int, name varchar(20), age int, "
+            + "amount double, create_date date, primary key (id, n))";
+        String insertSql = "insert into datetest4 values(1, 2, 'zhang san', 18, 1342.09, '2020/4/1')";
+        String selectSql = "SELECT * from datetest4";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.executeUpdate(insertSql);
+            try (ResultSet rs = statement.executeQuery(selectSql)) {
+                System.out.println("Result: ");
+                while (rs.next()) {
+                    System.out.println(rs.getString(4));
+                    System.out.println(rs.getString(5));
+                    assertThat(rs.getString(6)).isEqualTo("2020-04-01");
                     //System.out.println(rs.getString(3));
                 }
             }

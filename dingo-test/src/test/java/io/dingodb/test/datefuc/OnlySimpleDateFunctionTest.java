@@ -31,6 +31,7 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -1218,11 +1219,12 @@ public class OnlySimpleDateFunctionTest {
     }
 
     @Test
-    @Disabled
     public void testRawTimeFormat() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("Hmmss");
-        LocalTime localTime = LocalTime.parse("83031", dtf);
+        LocalTime localTime = LocalTime.parse("083031", dtf);
         System.out.println(localTime);
+        Time t = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
+        System.out.println(t);
     }
 
     @Test
@@ -1236,5 +1238,14 @@ public class OnlySimpleDateFunctionTest {
         Long l = 12457L;
         Date d = new Date(l);
         System.out.println(d);
+    }
+
+    @Test
+    public void testDateOffset() {
+        LocalDate localDate = LocalDate.now();
+        Date d = new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        LocalDateTime localDateTime = LocalDateTime.now();
+        localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).getEpochSecond();
+        System.out.println(localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
     }
 }
