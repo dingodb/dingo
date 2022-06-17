@@ -36,9 +36,10 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils.TIME_PIVOT;
+
 @Slf4j
 public class DingoTimeFormatOp extends RtFun {
-    private static Integer TIME_PIVOT = 240000;
     public DingoTimeFormatOp(@Nonnull RtExpr[] paras) {
         super(paras);
     }
@@ -70,22 +71,11 @@ public class DingoTimeFormatOp extends RtFun {
         } else if (value instanceof Time) {
             return timeFormat((Time) values[0], formatStr);
         } else {
-            // Check value in hour position greater than 24.
-            String time = (String) values[0];
-            String hour =  time.contains(":")? time.split(":")[0]: "0";
-            if (Integer.valueOf(hour) >= TIME_PIVOT / 10000) {
-                throw new FailParseTime("hour " + hour + " can only be less than " + TIME_PIVOT / 10000);
-            }
             return timeFormat((String) values[0], formatStr);
         }
     }
 
     public static String timeFormat(final String time, final String formatStr) {
-        if (!time.contains(":")) {
-            if (Integer.valueOf(time) >= TIME_PIVOT) {
-                throw new FailParseTime(time+ " can be less than " + TIME_PIVOT);
-            }
-        }
         try {
             LocalTime localTime = DingoDateTimeUtils.convertToTime(time);
             return DingoDateTimeUtils.processFormatStr(localTime, formatStr);

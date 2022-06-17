@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.common.util.TypeMapping;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
+import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.avro.Schema;
@@ -33,8 +35,9 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -166,40 +169,38 @@ public class ElementSchema implements CompileContext {
                     if (obj instanceof Number) {
                         return new java.util.Date(((Number) obj).longValue());
                     }
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    sdf.setLenient(false);
-                    return sdf.parse(obj.toString());
-                } catch (ParseException e) {
+                    LocalDate localDate = DingoDateTimeUtils.convertToDate(obj.toString());
+                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
+                        .toEpochMilli());
+                    return d;
+                } catch (Exception e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to date.");
                 }
             case TypeCode.TIME:
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
                     sdf.setLenient(false);
-
-                    if (((String) obj).contains(".")) {
-                        sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+                    if (obj instanceof String) {
+                        if (((String) obj).contains(".")) {
+                            sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+                        }
+                        return sdf.parse((String) obj);
+                    } else {
+                        LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
+                        Date d = new Date(Time.valueOf(localTime).getTime() + localTime.getNano() / 1000000);
+                        if (localTime.getNano() / 1000000 != 0) {
+                            sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+                        } else {
+                            sdf = new SimpleDateFormat("HH:mm:ss");
+                        }
+                        return sdf.format(d);
                     }
-
-                    if (obj instanceof Number) {
-                        return sdf.format(new java.util.Date((Long) obj));
-                    }
-                    return sdf.parse((String) obj);
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to time.");
                 }
             case TypeCode.TIMESTAMP:
-                if (obj instanceof Number) {
-                    return new Timestamp(((Number) obj).longValue());
-                }
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                sdf.setLenient(false);
-                try {
-                    sdf.parse((String) obj);
-                } catch (ParseException e) {
-                    throw new RuntimeException("Failed to parse \"" + obj + "\" to timestamp");
-                }
-                return Timestamp.valueOf(obj.toString());
+                Timestamp ts = new Timestamp(DingoDateUnixTimestampOp.unixTimestamp(obj.toString()));
+                return ts;
             case TypeCode.STRING:
             default:
                 break;
@@ -258,21 +259,21 @@ public class ElementSchema implements CompileContext {
                 break;
             case TypeCode.DATE:
                 if (origin instanceof Number) {
-                    return new Date((Long) origin);
+                    return new Date(((Number) origin).longValue());
                 } else if (origin instanceof Calendar) {
                     return ((Calendar) origin).getTimeInMillis();// from RexLiteral
                 }
                 break;
             case TypeCode.TIME:
                 if (origin instanceof Number) { // from serialized milliseconds
-                    return origin;
+                    return new Time(((Number) origin).longValue());
                 } else if (origin instanceof Calendar) { // from RexLiteral
                     return ((Calendar) origin).getTimeInMillis();
                 }
                 break;
             case TypeCode.TIMESTAMP:
                 if (origin instanceof Number) { // from serialized milliseconds
-                    return new Timestamp((Long) origin);
+                    return new Timestamp(((Number) origin).longValue());
                 } else if (origin instanceof Calendar) { // from RexLiteral
                     return ((Calendar) origin).getTimeInMillis();
                 }

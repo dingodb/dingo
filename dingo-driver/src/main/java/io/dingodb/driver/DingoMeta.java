@@ -163,8 +163,8 @@ public class DingoMeta extends MetaImpl {
                     exceptMessage = ((RuntimeException) e).getCause().getMessage();
                 }
                 for (Pattern pat : RUNTIME_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
-                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) e).getMessage()).find() &&
-                        !((RuntimeException) e).getMessage().contains("CAST"))) {
+                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) e).getMessage()).find()
+                        && !((RuntimeException) e).getMessage().contains("CAST"))) {
                         exceptionCode = RUNTIME_EXCEPTION_PATTERN_CODE_MAP.get(pat);
                         // TODO: Refine error message.
                         if (exceptionCode == TYPE_CAST_ERROR) {
