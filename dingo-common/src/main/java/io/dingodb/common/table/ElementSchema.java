@@ -112,7 +112,10 @@ public class ElementSchema implements CompileContext {
     }
 
     public Object parse(Object obj) {
-        if (obj == null || obj.toString().equalsIgnoreCase("NULL")) {
+        if (obj == null || obj.toString().equalsIgnoreCase(NULL)) {
+            if (nullable) {
+                return obj;
+            }
             return null;
         }
 
