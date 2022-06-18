@@ -67,7 +67,20 @@ We recommend IntelliJ IDEA to develop the DingoDB codebase. Minimal requirements
 The IntelliJ IDE supports Java and Gradle out of the box. Download it
 at [IntelliJ IDEA website](https://www.jetbrains.com/idea/).
 
-## About
+## Special Thanks
 
-DingoDB is an open source project licensed in **Apache License Version 2.0**. DingoDB relies on some third-party components, and their open source protocol is also Apache License 2.0.
-DingoDB is Sponsored by [DataCanvas](https://www.datacanvas.com/). For support, please contact us.
+### DataCanvas
+
+DingoDB is Sponsored by [DataCanvas](https://www.datacanvas.com/), a new platform to do data science and data process in real-time.
+
+### Java Profiler tools: YourKit
+
+[![YourKit](https://www.yourkit.com/images/yklogo.png)](https://www.yourkit.com/java/profiler/index.jsp)
+
+I highly recommend YourKit Java Profiler for any preformance critical application you make.
+
+Check it out at https://www.yourkit.com/
+
+
+DingoDB is an open-source project licensed in **Apache License Version 2.0**, welcome any feedback from the community.
+For any support or suggestion, please contact us.
