@@ -176,6 +176,11 @@ public class ElementSchema implements CompileContext {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
                     sdf.setLenient(false);
+
+                    if (((String) obj).contains(".")) {
+                        sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+                    }
+
                     if (obj instanceof Number) {
                         return sdf.format(new java.util.Date((Long) obj));
                     }

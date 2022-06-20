@@ -33,6 +33,8 @@ public class DingoSqlline {
         this.sqlLine = new SqlLine();
         SqlLineOpts opts = this.sqlLine.getOpts();
         opts.set(BuiltInProperty.NULL_VALUE, "NULL");
+        opts.set(BuiltInProperty.TIMESTAMP_FORMAT, "yyyy-MM-dd HH:mm:ss.SSS");
+        opts.set(BuiltInProperty.TIME_FORMAT, "HH:mm:ss.SSS");
         this.sqlLine.setOpts(opts);
         databaseConnections = sqlLine.getDatabaseConnections();
     }
