@@ -20,11 +20,13 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Files;
 import io.dingodb.common.util.Optional;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
+import io.dingodb.store.raft.api.StoreReportStatsApi;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import org.rocksdb.RocksDB;
 
@@ -51,6 +53,7 @@ public class RaftStoreService implements StoreService {
             new Endpoint(DingoConfiguration.host(), StoreConfiguration.raft().getPort()));
         rpcServer.init(null);
         PartReadWriteCollector.instance().register();
+        ApiRegistry.getDefault().register(io.dingodb.server.api.StoreReportStatsApi.class, new StoreReportStatsApi());
     }
 
 
@@ -62,7 +65,6 @@ public class RaftStoreService implements StoreService {
     @Override
     public StoreInstance getInstance(@Nonnull CommonId id) {
         Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
-        Files.createDirectories(instancePath);
         return storeInstanceMap.compute(id, (l, i) -> i == null ? new RaftStoreInstance(instancePath, id) : i);
     }
 

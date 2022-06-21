@@ -100,7 +100,11 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         return new byte[] {identifier[0], identifier[1]};
     }
 
-    public byte[] domain() {
+    public int domain() {
+        return PrimitiveCodec.readInt(domain);
+    }
+
+    public byte[] domainContent() {
         return new byte[] {domain[0], domain[1], domain[2], domain[3]};
     }
 

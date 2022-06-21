@@ -36,6 +36,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,6 +59,10 @@ public interface DTOMapper {
 
     TablePartStatsDTO mapping(TablePartStats tablePartStats);
 
+    default Date mapping(long time) {
+        return new Date(time);
+    }
+
     default String mapping(CommonId id) {
         return id.toString();
     }
@@ -65,15 +71,8 @@ public interface DTOMapper {
         return location.getUrl();
     }
 
-    default int[] mapping(byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        int[] result = new int[bytes.length];
-        for (int i = 0; i < bytes.length; i++) {
-            result[i] = bytes[i];
-        }
-        return result;
+    default String mapping(byte[] bytes) {
+        return Arrays.toString(bytes);
     }
 
     default byte[] mapping(int[] ints) {

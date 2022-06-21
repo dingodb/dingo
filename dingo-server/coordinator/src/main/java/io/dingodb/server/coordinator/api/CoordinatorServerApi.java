@@ -100,6 +100,11 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     }
 
     @Override
+    public List<Table> table() {
+        return new ArrayList<>(MetaAdaptorRegistry.getMetaAdaptor(Table.class).getAll());
+    }
+
+    @Override
     public TableDefinition tableDefinition(CommonId tableId) {
         return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getDefinition(tableId);
     }
@@ -137,7 +142,7 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public ExecutorStats executorStats(CommonId executorId) {
         return MetaAdaptorRegistry.getStatsMetaAdaptor(ExecutorStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.executor, executorId.domain(), executorId.seqContent())
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.executor, executorId.domainContent(), executorId.seqContent())
         );
     }
 
@@ -179,7 +184,7 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public TablePartStats tablePartStats(CommonId tablePartId) {
         return MetaAdaptorRegistry.getStatsMetaAdaptor(TablePartStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, tablePartId.domain(), tablePartId.seqContent())
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, tablePartId.domainContent(), tablePartId.seqContent())
         );
     }
 

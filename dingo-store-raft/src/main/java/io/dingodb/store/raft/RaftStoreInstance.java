@@ -109,6 +109,16 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
+    public void closeReportStats(CommonId part) {
+        parts.get(part).getStateMachine().collectStats(false);
+    }
+
+    @Override
+    public void openReportStats(CommonId part) {
+        parts.get(part).getStateMachine().collectStats(true);
+    }
+
+    @Override
     public void assignPart(Part part) {
         part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
         try {

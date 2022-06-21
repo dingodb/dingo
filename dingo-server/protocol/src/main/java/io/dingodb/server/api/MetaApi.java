@@ -40,6 +40,9 @@ public interface MetaApi {
     Table table(CommonId tableId);
 
     @ApiDeclaration
+    List<Table> table();
+
+    @ApiDeclaration
     TableDefinition tableDefinition(CommonId tableId);
 
     @ApiDeclaration

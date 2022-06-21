@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -34,7 +35,7 @@ import java.util.List;
 public class TablePartStatsDTO {
 
     private String id;
-    private long time;
+    private Date time;
 
     private String table;
     private String tablePart;
@@ -52,8 +53,8 @@ public class TablePartStatsDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ApproximateStats {
-        int[] startKey;
-        int[] endKey;
+        String startKey;
+        String endKey;
         long count = 0;
         long size = 0;
     }

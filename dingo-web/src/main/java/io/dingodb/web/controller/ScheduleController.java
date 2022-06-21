@@ -18,10 +18,19 @@ package io.dingodb.web.controller;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.AvroCodec;
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.Part;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ScheduleApi;
+import io.dingodb.server.api.StoreReportStatsApi;
 import io.dingodb.server.protocol.meta.Executor;
+import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.web.mapper.DTOMapper;
 import io.dingodb.web.model.dto.meta.KeyDTO;
 import io.swagger.annotations.Api;
@@ -35,8 +44,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.NavigableMap;
+
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
+import static java.util.stream.Collectors.toMap;
 
 @Api("Schedule")
 @RestController
@@ -79,7 +93,7 @@ public class ScheduleController {
     @ApiOperation("Set auto size.")
     @GetMapping("/{table}/auto/count/{value}")
     public ResponseEntity<String> setAutoCount(@PathVariable String table, @PathVariable Long value) {
-        scheduleApi.maxSize(tableId(table), value);
+        scheduleApi.maxCount(tableId(table), value);
         return ResponseEntity.ok("ok");
     }
 
@@ -120,13 +134,57 @@ public class ScheduleController {
     }
 
     @ApiOperation("Split part.")
-    @PostMapping("/{table}/{part}/split")
+    @PostMapping("/{table}/{part}/split/bk")
     public ResponseEntity<String> splitPart(
         @PathVariable String table, @PathVariable Integer part, @RequestBody KeyDTO key
     ) {
         CommonId tableId = metaApi.tableId(table.toUpperCase());
         CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, tableId.seqContent(), part);
         scheduleApi.splitPart(tableId, partId, mapper.mapping(key.getKey()));
+        return ResponseEntity.ok("ok");
+    }
+
+    @ApiOperation("Split part.")
+    @PostMapping("/{table}/{part}/split/pk")
+    public ResponseEntity<String> splitPart(
+        @PathVariable String table, @PathVariable Integer part, @RequestBody Map<String, Object> params
+    ) throws IOException {
+        table = table.toUpperCase();
+        CommonId tableId = metaApi.tableId(table);
+        CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, tableId.seqContent(), part);
+        params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
+        TableDefinition def = metaApi.tableDefinition(table);
+        Object[] keys = def.getKeyMapping().revMap(def.getTupleSchema().parse(def.getColumns().stream()
+            .map(ColumnDefinition::getName)
+            .map(params::get)
+            .toArray(Object[]::new)
+        ));
+        scheduleApi.splitPart(tableId, partId, new AvroCodec(def.getAvroSchemaOfKey()).encode(keys));
+        return ResponseEntity.ok("ok");
+    }
+
+    @ApiOperation("Open store report stats.")
+    @GetMapping("/{table}/{part}/report/stats/open")
+    public ResponseEntity<String> openStoreReportStats(@PathVariable String table, @PathVariable Integer part) {
+        CommonId tableId = metaApi.tableId(table.toUpperCase());
+        CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, tableId.seqContent(), part);
+        metaApi.replicas(tableId).stream()
+            .map(Replica::location)
+            .map(__ -> ApiRegistry.getDefault().proxy(StoreReportStatsApi.class, () -> __))
+            .forEach(api -> Executors.execute("open-report-stats", () -> api.open(tableId, partId)));
+        return ResponseEntity.ok("ok");
+    }
+
+    @ApiOperation("Close store report stats.")
+    @GetMapping("/{table}/{part}/report/stats/close")
+    public ResponseEntity<String> closeStoreReportStats(@PathVariable String table, @PathVariable Integer part) {
+        CommonId tableId = metaApi.tableId(table.toUpperCase());
+        CommonId partId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, tableId.seqContent(), part);
+        metaApi.replicas(tableId).stream()
+            .map(Replica::location)
+            .map(__ -> ApiRegistry.getDefault().proxy(StoreReportStatsApi.class, () -> __))
+            .forEach(api -> Executors.execute("close-report-stats", () -> api.close(tableId, partId)));
         return ResponseEntity.ok("ok");
     }
 

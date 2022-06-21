@@ -117,7 +117,7 @@ public class ElementSchema implements CompileContext {
     public Object parse(Object obj) {
         if (obj == null || obj.toString().equalsIgnoreCase(NULL)) {
             if (nullable) {
-                return obj;
+                return NULL;
             }
             return null;
         }
@@ -202,6 +202,7 @@ public class ElementSchema implements CompileContext {
                 Timestamp ts = new Timestamp(DingoDateUnixTimestampOp.unixTimestamp(obj.toString()));
                 return ts;
             case TypeCode.STRING:
+                return obj.toString();
             default:
                 break;
         }
@@ -295,7 +296,7 @@ public class ElementSchema implements CompileContext {
     }
 
     public Object convertToAvro(Object item) throws SQLException {
-        if (item == null) {
+        if (item == null || item.toString().equalsIgnoreCase(NULL)) {
             return null;
         }
 

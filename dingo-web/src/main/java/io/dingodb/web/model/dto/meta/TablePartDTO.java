@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @ToString
@@ -33,14 +35,14 @@ public class TablePartDTO {
 
     private String id;
     private String comment;
-    private long createTime;
-    private long updateTime;
+    private Date createTime;
+    private Date updateTime;
     private int state;
 
     private String schema;
     private String table;
-    private int[] start;
-    private int[] end;
+    private String start;
+    private String end;
 
     private int replicas;
     private int version;
