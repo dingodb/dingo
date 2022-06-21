@@ -114,7 +114,7 @@ public class TableScheduler {
                 log.info("The replica meta [{}] on [{}] is exist.", partId, executorId);
             }
             TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domain(), partId.seqContent()));
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
             List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
             log.info("Update part [{}] on leader.", partId);
             try {
@@ -152,7 +152,7 @@ public class TableScheduler {
                 replicaAdaptor.delete(replica.getId());
             }
             TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domain(), partId.seqContent()));
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
             List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
             log.info("Update part [{}] on leader.", partId);
             try {
@@ -184,7 +184,7 @@ public class TableScheduler {
                 throw new RuntimeException("Not found part on executor.");
             }
             TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domain(), partId.seqContent()));
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
             List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
             log.info("Update part [{}] on current leader.", partId);
             try {
@@ -200,7 +200,7 @@ public class TableScheduler {
 
     public void split(CommonId part) {
         TablePartStats stats = getStatsMetaAdaptor(TablePartStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.domain(), part.seqContent())
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.domainContent(), part.seqContent())
         );
         if (stats.getApproximateStats().size() < 2) {
             log.warn("The part approximate stats size less than 2, unsupported split.");
@@ -246,9 +246,9 @@ public class TableScheduler {
 
     public void runTask(Supplier<CompletableFuture<Void>> task) {
         if (busy.compareAndSet(false, true)) {
-            task.get().whenComplete((r, e) -> {
+            task.get().whenCompleteAsync((r, e) -> {
                 busy.set(false);
-            });
+            }, Executors.executor("run-task"));
         }
     }
 }

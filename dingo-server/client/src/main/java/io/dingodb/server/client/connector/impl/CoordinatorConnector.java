@@ -220,8 +220,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
         log.info("Coordinator channel closed, remote: [{}]", channel.remoteLocation());
         if (this.leaderChannel.compareAndSet(channel, null)) {
             lastUpdateLeaderTime = System.currentTimeMillis();
-            log.info("Coordinator leader channel closed, remote: [{}], then refresh", channel.remoteLocation());
-            refresh();
+            log.info("Coordinator leader channel closed, remote: [{}].", channel.remoteLocation());
         }
     }
 

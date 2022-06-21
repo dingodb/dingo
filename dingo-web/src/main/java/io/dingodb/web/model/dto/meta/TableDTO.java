@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @ToString
@@ -33,8 +35,8 @@ public class TableDTO {
 
     private String id;
     private String comment;
-    private long createTime;
-    private long updateTime;
+    private Date createTime;
+    private Date updateTime;
     private int state;
 
     private String name;

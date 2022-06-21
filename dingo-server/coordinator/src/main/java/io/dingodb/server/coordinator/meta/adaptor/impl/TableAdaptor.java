@@ -91,6 +91,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
     public void create(CommonId schemaId, TableDefinition definition) {
         Table table = definitionToMeta(schemaId, definition);
+        table.setCreateTime(System.currentTimeMillis());
         ArrayList<KeyValue> keyValues = new ArrayList<>(definition.getColumnsCount() + 2);
         CommonId tableId = newId(table);
         table.setId(tableId);
@@ -119,6 +120,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .schema(table.getSchema())
             .table(tableId)
             .start(EMPTY_BYTES)
+            .createTime(System.currentTimeMillis())
             .build();
         tablePart.setId(tablePartAdaptor.newId(tablePart));
         keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
@@ -182,7 +184,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .flatMap(partId -> replicaAdaptor.getByDomain(partId.seqContent()).stream())
             .map(Replica::getId)
             .forEach(replicaAdaptor::delete);
-        columnAdaptor.deleteByDomain(id.domain());
+        columnAdaptor.deleteByDomain(id.domainContent());
         ClusterScheduler.instance().getTableScheduler(id).deleteTable();
         ClusterScheduler.instance().deleteTableScheduler(id);
     }

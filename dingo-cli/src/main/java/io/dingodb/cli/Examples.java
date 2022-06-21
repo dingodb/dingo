@@ -88,6 +88,14 @@ public class Examples {
     )
     private String jdbcUrl;
 
+    @Parameter(
+        names = "--query",
+        description = "Query [all] on one sql, [loop] from sequence to count, [random] from sequence to count.",
+        order = 8
+    )
+    private String queryMode;
+
+
     public static void main(String[] args) throws Exception {
         Examples examples = new Examples();
         JCommander commander = new JCommander(examples);
@@ -129,7 +137,7 @@ public class Examples {
             case "INSERT": {
                 long elapsed;
                 long total = 0;
-                for (int i = 0; i < count; i++) {
+                for (int i = sequence; i <= count; i++) {
                     elapsed = runner.insert(generateRecord(i));
                     System.out.printf("Insert %d use %dms, current %dms\n", i, total += elapsed, elapsed);
                 }
@@ -139,7 +147,7 @@ public class Examples {
                 List<Object[]> records = new ArrayList<>();
                 long total = 0;
                 long elapsed;
-                for (int i = 0; i < count; i++) {
+                for (int i = sequence; i <= count; i++) {
                     records.add(generateRecord(i));
                     if (records.size() >= batch) {
                         elapsed = runner.insert(records);
@@ -150,10 +158,46 @@ public class Examples {
                 runner.insert(records);
                 break;
             }
-            case "QUERY": {
-                runner.query();
+            case "QUERY":
+                long total = 0;
+                long elapsed;
+                switch (queryMode.toUpperCase()) {
+                    case "ALL":
+                        runner.query();
+                        break;
+                    case "LOOP":
+                        for (int i = sequence; i <= count; i++) {
+                            try {
+                                total += elapsed = runner.query(i);
+                            } catch (Exception e) {
+                                System.out.printf("Query [%d] error\n", i);
+                                throw e;
+                            }
+                            if (elapsed == -1) {
+                                return;
+                            }
+                            System.out.printf("Query %d use %dms, current %dms\n", i - sequence + 1, total, elapsed);
+                        }
+                        break;
+                    case "RANDOM":
+                        long n = 1;
+                        while (true) {
+                            int id = Math.abs(RANDOM.nextInt() % (count - sequence)) + sequence;
+                            try {
+                                total += elapsed = runner.query(id);
+                            } catch (Exception e) {
+                                System.out.printf("Query [%d] error\n", id);
+                                throw e;
+                            }
+                            if (elapsed == -1) {
+                                return;
+                            }
+                            System.out.printf("Query %d use %dms, current %dms, id: %s\n", n++ , total, elapsed, id);
+                        }
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + queryMode);
+                }
                 break;
-            }
             case "COUNT": {
                 runner.count();
                 break;
@@ -164,24 +208,26 @@ public class Examples {
     }
 
     @Nonnull
-    private Object[] generateRecord(int i) {
+    private Object[] generateRecord(int n) {
         return new Object[] {
-            String.valueOf(i),
-            "name-" + i,
+            String.valueOf(n),
+            "name-" + n,
             Math.abs(RANDOM.nextInt()) % 99,
-            i * 0.1,
+            n * 0.1,
             RANDOM.nextBoolean()};
     }
 
     static interface Runner {
 
-        long create() throws Exception;
+        void create() throws Exception;
 
         long insert(Object[] record) throws Exception;
 
         long insert(List<Object[]> records) throws Exception;
 
         void query() throws Exception;
+
+        long query(int i) throws Exception;
 
         void count() throws Exception;
     }
@@ -195,7 +241,7 @@ public class Examples {
         }
 
         @Override
-        public long create() throws Exception {
+        public void create() throws Exception {
             throw new UnsupportedOperationException();
         }
 
@@ -219,6 +265,17 @@ public class Examples {
         }
 
         @Override
+        public long query(int n) throws Exception {
+            long start = System.currentTimeMillis();
+            Object[] objects = dingoClient.get(new Object[] {String.valueOf(n)});
+            System.out.printf(
+                "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
+                objects[0], objects[1], objects[2], objects[3], objects[4]
+            );
+            return System.currentTimeMillis() - start;
+        }
+
+        @Override
         public void count() throws Exception {
             throw new UnsupportedOperationException();
         }
@@ -235,7 +292,7 @@ public class Examples {
         }
 
         @Override
-        public long create() throws Exception {
+        public void create() throws Exception {
             try (Statement statement = connection.createStatement()) {
                 StringBuilder sqlBuilder = new StringBuilder()
                     .append("create table ").append(table).append(" (\n")
@@ -248,7 +305,7 @@ public class Examples {
                     .append(")");
                 long start = System.currentTimeMillis();
                 statement.execute(sqlBuilder.toString());
-                return System.currentTimeMillis() - start;
+                System.currentTimeMillis();
             }
         }
 
@@ -261,7 +318,7 @@ public class Examples {
         public long insert(List<Object[]> records) throws Exception {
             try (Statement statement = connection.createStatement()) {
                 StringBuilder sqlBuilder = new StringBuilder();
-                sqlBuilder.append("insert into ").append("test").append(" values");
+                sqlBuilder.append("insert into ").append(table).append(" values");
                 StringJoiner joiner = new StringJoiner(",").setEmptyValue("");
                 for (Object[] record : records) {
                     joiner
@@ -306,13 +363,40 @@ public class Examples {
         }
 
         @Override
+        public long query(int i) throws Exception {
+            String sql = "select * from " + table + " where u_id = '" + i + "'";
+            long time = System.currentTimeMillis();
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    if (!resultSet.next()) {
+                        return -1;
+                    }
+                    System.out.printf(
+                        "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
+                        resultSet.getString("u_id"),
+                        resultSet.getString("u_name"),
+                        resultSet.getInt("u_age"),
+                        resultSet.getDouble("u_income"),
+                        resultSet.getBoolean("u_gender")
+                    );
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+            return System.currentTimeMillis() - time;
+        }
+
+        @Override
         public void count() throws Exception {
+            long start = System.currentTimeMillis();
             String sql = "select count(*) cnt from " + table;
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(sql);
                 resultSet.next();
                 System.out.println("Count: " + resultSet.getInt("cnt"));
             }
+            System.out.printf("Query use %sms\n", System.currentTimeMillis() - start);
         }
     }
 
