@@ -65,6 +65,21 @@ public class ByteArrayUtils {
         return bytes1.length - bytes2.length;
     }
 
+    public static boolean lessThan(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2) < 0;
+    }
+
+    public static boolean greatThan(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2) > 0;
+    }
+
+    public static boolean lessThanOrEqual(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2) <= 0;
+    }
+
+    public static boolean greatThanOrEqual(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2) >= 0;
+    }
 
     public static String enCodeBytes2Base64(byte[] input) {
         byte[] encoded = Base64.getEncoder().encode(input);
