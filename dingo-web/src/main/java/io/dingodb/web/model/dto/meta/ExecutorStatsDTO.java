@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @ToString
@@ -32,7 +34,7 @@ import lombok.ToString;
 public class ExecutorStatsDTO {
 
     private String id;
-    private long time;
+    private Date time;
 
     private long memory;
     private long diskCapacity;

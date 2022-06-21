@@ -16,6 +16,7 @@
 
 package io.dingodb.store.api;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
@@ -24,6 +25,18 @@ import java.util.Iterator;
 import java.util.List;
 
 public interface StoreInstance {
+
+    // todo A temporary solution need refactor report stats
+    @Deprecated
+    default void openReportStats(CommonId part) {
+        throw new UnsupportedOperationException();
+    }
+
+    // todo A temporary solution need refactor report stats
+    @Deprecated
+    default void closeReportStats(CommonId part) {
+        throw new UnsupportedOperationException();
+    }
 
     default void assignPart(Part part) {
         throw new UnsupportedOperationException();

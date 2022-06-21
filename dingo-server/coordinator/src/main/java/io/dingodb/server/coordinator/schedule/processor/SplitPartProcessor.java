@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.schedule.processor;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
@@ -129,7 +130,7 @@ public class SplitPartProcessor {
 
     public void processSplitTask(SplitTask task) {
         TablePart oldPart = tablePartAdaptor.get(task.getOldPart());
-        if (Arrays.equals(oldPart.getEnd(), task.getSplitKey())) {
+        if (ByteArrayUtils.compare(oldPart.getEnd(), task.getSplitKey()) <= 0) {
             task.setStep(SplitTask.Step.IGNORE);
             return;
         }

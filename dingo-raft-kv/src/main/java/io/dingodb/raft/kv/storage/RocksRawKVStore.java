@@ -271,6 +271,9 @@ public class RocksRawKVStore implements RawKVStore {
                     count++;
                 }
                 if (count > 0) {
+                    if (log.isDebugEnabled()) {
+                        log.warn("Save snapshot file {}, but count is 0, skip finish.", sstPath);
+                    }
                     sstFileWriter.finish();
                 }
             }
@@ -304,6 +307,12 @@ public class RocksRawKVStore implements RawKVStore {
     public Boolean snapshotLoadSync(String path, String checksum, byte[] startKey, byte[] endKey) throws Exception {
         Path sstPath = Paths.get(path, Constants.SNAPSHOT_SST);
         ParallelZipCompressor.deCompress(Paths.get(path, Constants.SNAPSHOT_ZIP).toString(), path ,checksum);
+        if (Files.size(sstPath) == 0) {
+            if (log.isDebugEnabled()) {
+                log.warn("Load snapshot file {}, but sst file size is 0, skip load and return true.", sstPath);
+            }
+            return true;
+        }
         try (
             ReadOptions readOptions = new ReadOptions();
             Options options = new Options();

@@ -75,6 +75,8 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     private ReportApi reportApi;
     private long lastTime;
 
+    private boolean collectStats = true;
+
     private volatile boolean available = false;
     private volatile boolean enable = true;
     private List<Runnable> availableListener = new CopyOnWriteArrayList<>();
@@ -84,6 +86,15 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         this.id = id;
         this.node = store.getNode();
         this.part = part;
+    }
+
+    public boolean collectStats() {
+        return collectStats;
+    }
+
+    public PartStateMachine collectStats(boolean collectStats) {
+        this.collectStats = collectStats;
+        return this;
     }
 
     public boolean isAvailable() {
@@ -231,31 +242,33 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         try {
             SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(part.getStart(), part.getEnd()).join();
             List<ApproximateStats> approximateStats = new ArrayList<>();
-            long count = 0;
-            long size = 0;
-            byte[] startKey = null;
-            byte[] endKey = null;
-            while (iterator.hasNext()) {
-                count++;
-                ByteArrayEntry entry = iterator.next();
-                size += entry.getKey().length;
-                size += entry.getValue().length;
-                if (startKey == null) {
-                    startKey = entry.getKey();
+            if (collectStats) {
+                long count = 0;
+                long size = 0;
+                byte[] startKey = null;
+                byte[] endKey = null;
+                while (iterator.hasNext()) {
+                    count++;
+                    ByteArrayEntry entry = iterator.next();
+                    size += entry.getKey().length;
+                    size += entry.getValue().length;
+                    if (startKey == null) {
+                        startKey = entry.getKey();
+                    }
+                    endKey = entry.getKey();
+                    if (count >= approximateCount) {
+                        approximateStats.add(new ApproximateStats(startKey, entry.getKey(), count, size));
+                        count = 0;
+                        size = 0;
+                        startKey = null;
+                    }
                 }
-                endKey = entry.getKey();
-                if (count >= approximateCount) {
-                    approximateStats.add(new ApproximateStats(startKey, entry.getKey(), count, size));
-                    count = 0;
-                    size = 0;
-                    startKey = null;
+                if (count > 0) {
+                    approximateStats.add(new ApproximateStats(startKey, endKey, count, size));
                 }
-            }
-            if (count > 0) {
-                approximateStats.add(new ApproximateStats(startKey, endKey, count, size));
             }
             TablePartStats stats = TablePartStats.builder()
-                .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, id.domain(), id.seqContent()))
+                .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, id.domainContent(), id.seqContent()))
                 .leader(DingoConfiguration.instance().getServerId())
                 .tablePart(id)
                 .table(part.getInstanceId())

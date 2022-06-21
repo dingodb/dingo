@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.web.model.dto.meta;
+package io.dingodb.server.api;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import io.dingodb.common.CommonId;
+import io.dingodb.net.api.annotation.ApiDeclaration;
 
-import java.util.Date;
+// todo A temporary solution need refactor report stats
+@Deprecated
+public interface StoreReportStatsApi {
 
-@Getter
-@Setter
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class SchemaDTO {
+    @ApiDeclaration
+    void open(CommonId table, CommonId part);
 
-    private String id;
-    private String comment;
-    private Date createTime;
-    private Date updateTime;
-    private int state;
-
-    private String name;
-    private String parent;
+    @ApiDeclaration
+    void close(CommonId table, CommonId part);
 
 }
