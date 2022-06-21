@@ -130,8 +130,9 @@ public class SplitPartProcessor {
 
     public void processSplitTask(SplitTask task) {
         TablePart oldPart = tablePartAdaptor.get(task.getOldPart());
-        if (ByteArrayUtils.compare(oldPart.getEnd(), task.getSplitKey()) <= 0) {
+        if (oldPart.getEnd() != null && ByteArrayUtils.lessThanOrEqual(oldPart.getEnd(), task.getSplitKey())) {
             task.setStep(SplitTask.Step.IGNORE);
+            splitTaskAdaptor.save(task);
             return;
         }
         TablePart newPart = tablePartAdaptor.get(task.getNewPart());
