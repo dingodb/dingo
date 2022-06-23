@@ -133,6 +133,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         return this.kvStore.scan(startKey, endKey);
     }
 
+    protected long localCount(final byte[] startKey, final byte[] endKey) {
+        return this.kvStore.count(startKey, endKey);
+    }
+
     protected void localPut(final byte[] key, final byte[] value) {
         this.kvStore.put(key, value);
     }
@@ -173,6 +177,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
     public PhaseCommitAck sync() {
         write(RaftRawKVOperation.SYNC_OP).join();
         return new PhaseCommitAck().complete();
+    }
+
+    public CompletableFuture<Long> count(byte[] start, byte[] end) {
+        return read(RaftRawKVOperation.count(start, end));
     }
 
     public CompletableFuture<byte[]> get(byte[] key) {
@@ -239,6 +247,8 @@ public class RaftRawKVStore implements Lifecycle<Void> {
                 return localIterator();
             case SCAN:
                 return localScan(operation.getKey(), operation.getExtKey());
+            case COUNT:
+                return localCount(operation.getKey(), operation.getExtKey());
             case CONTAINS_KEY:
                 return localContainsKey(operation.getKey());
             case SNAPSHOT_SAVE:

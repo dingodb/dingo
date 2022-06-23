@@ -18,7 +18,6 @@ package io.dingodb.raft.kv.storage;
 
 import com.google.protobuf.ByteString;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.util.Optional;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Iterator;
 import io.dingodb.raft.StateMachine;
@@ -33,8 +32,6 @@ import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.Checksum;
 
@@ -58,38 +55,19 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
     public void onApply(final Iterator it) {
         int applied = 0;
         try {
-            RaftRawKVOperation mergedOperation = null;
-            List<Closure> closures = new ArrayList<>();
+            RaftRawKVOperation operation = null;
             while (it.hasNext()) {
                 try {
-                    RaftRawKVOperation operation = RaftRawKVOperation.decode(it.getData()).toBatchOp();
-                    closures.add(it.done());
-                    if (mergedOperation == null) {
-                        if (operation.isBatch()) {
-                            mergedOperation = RaftRawKVOperation.batch(new ArrayList<>(), operation.getOp());
-                        } else {
-                            mergedOperation = operation;
-                        }
-                    }
-                    if (mergedOperation.isBatch() && mergedOperation.getOp() == operation.getOp()) {
-                        mergedOperation.merge(operation);
-                    } else {
-                        applied += apply(mergedOperation, closures);
-                        closures.clear();
-                        mergedOperation = null;
-                    }
+                    operation = RaftRawKVOperation.decode(it.getData());
+                    apply(operation, it.done());
+                    applied++;
                 } catch (Exception e) {
-                    it.next();
-                    closures.forEach(closure -> Optional.ofNullable(closure)
-                        .filter(RaftClosure.class::isInstance)
-                        .ifPresent(raftClosure -> closure.run(new Status(-1, "")))
-                    );
+                    if (it.done() instanceof RaftClosure) {
+                        it.done().run(new Status(-1, "Apply %s operation error: %s.", operation, e.getMessage()));
+                    }
                     throw e;
                 }
                 it.next();
-            }
-            if (mergedOperation != null) {
-                applied += apply(mergedOperation, closures);
             }
         } catch (final Throwable t) {
             log.error("StateMachine meet critical error: {}.", t.getMessage(), t);
@@ -103,16 +81,16 @@ public class DefaultRaftRawKVStoreStateMachine implements StateMachine {
     protected void onApplyOperation(RaftRawKVOperation operation) {
     }
 
-    private int apply(RaftRawKVOperation operation, List<Closure> closures) {
+    private void apply(RaftRawKVOperation operation, Closure closure) {
         if (log.isDebugEnabled()) {
             log.debug("Apply operation: {}", operation);
         }
-        Object result = store.executeLocal(operation);
+        if (closure instanceof  RaftClosure) {
+            ((RaftClosure<?>) closure).complete(store.executeLocal(operation));
+        } else {
+            store.executeLocal(operation);
+        }
         Executors.submit(id + " on apply", () -> onApplyOperation(operation));
-        closures.forEach(closure -> Optional.ofNullable(closure)
-            .filter(RaftClosure.class::isInstance)
-            .ifPresent(raftClosure -> ((RaftClosure<?>) raftClosure).complete(result)));
-        return closures.size();
     }
 
     private void applyMeter(int applied) {
