@@ -63,6 +63,7 @@ public class QueryAgg3Test {
         );
     }
 
+    // 2022-03-04T00:00:00 => 2022-03-03T23:00:00 in negative timezone. DST problem.
     @Test
     public void testMaxDate() throws SQLException {
         sqlHelper.queryTest(

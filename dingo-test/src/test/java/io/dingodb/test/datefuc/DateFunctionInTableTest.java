@@ -585,8 +585,8 @@ public class DateFunctionInTableTest {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("H:m:s");
         LocalTime lt = LocalTime.parse("19:01:01", dtf);
         System.out.println(lt);
-        Time t = Time.valueOf(lt);
-        System.out.println(t);
+        Time time = Time.valueOf(lt);
+        System.out.println(time);
     }
 
     @Test
@@ -596,8 +596,8 @@ public class DateFunctionInTableTest {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y-M-d");
         LocalDate ld = LocalDate.parse("1909-12-01", dtf);
         System.out.println(ld);
-        Date d = Date.valueOf(ld);
-        System.out.println(d);
+        Date date = Date.valueOf(ld);
+        System.out.println(date);
     }
 
     @Test
@@ -736,15 +736,15 @@ public class DateFunctionInTableTest {
     @Test
     void testDateFromTimestamp() throws SQLException {
         long ts = 891820800000L;
-        Date d = new Date(ts);
-        System.out.println(d);
+        Date date = new Date(ts);
+        System.out.println(date);
     }
 
     @Test
     void testDateStringToDate() {
         long ts = 891820800000L;
-        Date d = new Date(ts);
-        DateString ds = new DateString(d.toString());
+        Date date = new Date(ts);
+        DateString ds = new DateString(date.toString());
         System.out.println(ds);
         Date d0 = new Date(ds.getMillisSinceEpoch());
         System.out.println(d0);

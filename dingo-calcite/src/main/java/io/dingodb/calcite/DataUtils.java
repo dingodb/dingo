@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.expr.runtime.exception.FailParseNumber;
 import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
+import org.apache.calcite.rex.RexDigestIncludeType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
@@ -30,6 +31,7 @@ import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Calendar;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -103,11 +105,8 @@ public final class DataUtils {
                 }
                 return ((Number) value).longValue();
             case DATE:
-                return DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() >= 0?
-                    new Date(((Calendar) value).getTimeInMillis()) :
-                    new Date(((Calendar) value).getTimeInMillis() -
-                    DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000 +
-                        DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE);
+                LocalDate localDate =  LocalDate.parse(literal.computeDigest(RexDigestIncludeType.NO_TYPE));
+                return DingoDateTimeUtils.convertDateFromLocalDate(localDate);
             case TIME:
                 return ((Calendar) value).getTimeInMillis();
             case TIMESTAMP:

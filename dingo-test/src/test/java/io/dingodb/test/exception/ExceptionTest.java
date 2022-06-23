@@ -22,7 +22,6 @@ import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -492,13 +491,12 @@ public class ExceptionTest {
     }
 
     @Test
-    @Disabled
     public void testColumnNull() throws SQLException {
         String createTableSql = "create table testnull(id int not null, name varchar(20) not null, age int not null, "
             + "primary key(id))";
-        // String insertSql = "insert into testnull(id,name,age) values(1,'zhangsan', null)";
-        //String insertSql = "insert into testnull(id,name) values(1,'zhangsan')";
-        String insertSql = "insert into testnull(id) values(1)";
+        //String insertSql = "insert into testnull(id,name,age) values(1,'zhangsan', null)";
+        String insertSql = "insert into testnull(id,name) values(1,'zhangsan')";
+        // String insertSql = "insert into testnull (id) values(1)";
         String selectSql = "SELECT * from testnull";
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
@@ -512,10 +510,35 @@ public class ExceptionTest {
             System.out.println("Result: ");
             System.out.println(e.getMessage());
             assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
-                .isEqualTo("Error 90004 (00000) : Error while executing SQL \"insert into testnull(id,name) "
-                    + "values(1,'zhangsan')\": java.lang.NullPointerException: null of int in field _1 "
-                    + "of io.dingodb.common.table.TupleSchema");
+                .isEqualTo("Error 90003 (00000) : Error while executing SQL \"insert into testnull(id,name) "
+                    + "values(1,'zhangsan')\": Column AGE has no default value and does not allow NULLs");
         }
     }
 
+    @Test
+    public void testColumnNull1() throws SQLException {
+        String createTableSql = "create table testnull1(id int, name varchar(20), age int, "
+            + "primary key(id))";
+        //String insertSql = "insert into testnull(id,name,age) values(1,'zhangsan', null)";
+        // String insertSql = "insert into testnull(id,name) values(1,'zhangsan')";
+        String insertSql = "insert into testnull1 (id) values(1)";
+        String selectSql = "SELECT * from testnull1";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.execute(insertSql);
+            ResultSet rs = statement.executeQuery(selectSql);
+            while (rs.next()) {
+                System.out.println("Result: ");
+                System.out.println(rs.getString(1));
+                System.out.println(rs.getString(2));
+                System.out.println(rs.getString(3));
+            }
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90003 (00000) : Error while executing SQL \"insert into testnull(id,name) "
+                    + "values(1,'zhangsan')\": Column AGE has no default value and does not allow NULLs");
+        }
+    }
 }

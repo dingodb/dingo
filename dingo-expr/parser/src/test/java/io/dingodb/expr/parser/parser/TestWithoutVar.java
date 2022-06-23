@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -138,9 +139,9 @@ public class TestWithoutVar {
             // time
             arguments("time(1609300025000)", new Date(1609300025000L)),
             arguments(
-                "timestamp('2020-02-20 20:20:20')",
+                "timestamp('2020-02-20 00:00:20')",
                 new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                    .parse("2020-02-20 20:20:20").getTime())
+                    .parse("2020-02-20 00:00:20").getTime())
             ),
             arguments(
                 "date('1999-09-19', 'yyyy-MM-dd')",
@@ -196,6 +197,17 @@ public class TestWithoutVar {
         Object result = rtExpr.eval(null);
         if (result instanceof Double) {
             assertThat((Double) result).isCloseTo((Double) value, offset(1e-6));
+        } else if (result instanceof Date) {
+            if (value instanceof Date) {
+                assertThat(((Date) result).toLocalDate())
+                    .isEqualTo(((Date) value).toLocalDate());
+            } else {
+                assertThat(((Date) result).toLocalDate())
+                    .isEqualTo(new Date(((java.util.Date)value).getTime()).toLocalDate());
+            }
+
+        } else if (result instanceof Time) {
+            assertThat(result.toString()).isEqualTo(value);
         } else {
             assertThat(result).isEqualTo(value);
         }

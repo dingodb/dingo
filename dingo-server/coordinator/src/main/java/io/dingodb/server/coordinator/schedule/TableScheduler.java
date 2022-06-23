@@ -131,8 +131,7 @@ public class TableScheduler {
             log.info("Add part [{}] replica [{}] on [{}] finish", partId, replica.getId(), executorId);
         } catch (Exception e ) {
             System.out.println(e);
-        }
-        finally {
+        } finally {
             busy.set(false);
         }
     }
