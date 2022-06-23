@@ -85,15 +85,13 @@ public class DingoTimeFormatOp extends RtFun {
     }
 
     public static String timeFormat(final Long time, final String formatStr) {
-        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000;
-        Time t = new Time(time - offsetInMillis);
-        return DingoDateTimeUtils.processFormatStr(t.toLocalTime(), formatStr);
+        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000;
+        return DingoDateTimeUtils.processFormatStr(new Time(time - offsetInMillis).toLocalTime(), formatStr);
     }
 
     public static String timeFormat(final Time time, final String formatStr) {
-        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000;
-        Time t = new Time(time.getTime() - offsetInMillis);
-        return DingoDateTimeUtils.processFormatStr(t.toLocalTime(), formatStr);
+        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000;
+        return DingoDateTimeUtils.processFormatStr(new Time(time.getTime() - offsetInMillis).toLocalTime(), formatStr);
     }
 
     @AutoService(DingoFuncProvider.class)

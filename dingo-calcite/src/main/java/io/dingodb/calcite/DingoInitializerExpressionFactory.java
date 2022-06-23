@@ -119,7 +119,9 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
                         } else if (constValue instanceof java.lang.String) {
                             time = java.sql.Time.valueOf(constValue.toString());
                         }
-                        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000;
+                        // Data in Time type use UTC-0 timezone.
+                        long offsetInMillis = DingoDateTimeUtils.getLocalZoneOffset(0L)
+                            .getTotalSeconds() * 1000;
                         Time newTimeWithOffset = new Time(time.getTime() - offsetInMillis);
                         defaultValue = new TimeString(newTimeWithOffset.toString());
                     } catch (Exception ex) {
@@ -136,9 +138,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
                         } else if (constValue instanceof java.lang.String) {
                             timestamp = java.sql.Timestamp.valueOf(constValue.toString());
                         }
-                        defaultValue = timestamp
-                            .toLocalDateTime()
-                            .toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000;
+                        defaultValue = timestamp.getTime();
                     } catch (Exception ex) {
                         log.error("Set default value:{} of TimeStamp catch exception:{}",
                             constValue.toString(), ex.toString(), ex);

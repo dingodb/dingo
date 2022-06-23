@@ -297,6 +297,7 @@ public class TableWithDefaultValueTest {
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             String formatTime = localDateTime.format(dateTimeFormatter);
             System.out.println("=====Current time is: " + formatTime);
+
             List<Object[]> expectedResult = new ArrayList<>();
             expectedResult.add(new Object[] {100, "lala", formatTime});
             sqlHelper.queryTestWithTime(sql,

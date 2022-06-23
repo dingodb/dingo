@@ -61,6 +61,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * The following exception patterns are used to convert to DingoException from Calcite.
      */
     public static Integer OBJECT_NOT_FOUND = 90002;
+    public static Integer INSERT_NULL_TO_NON_NULL_COLUMN = 90003;
     public static Integer INSERT_NULL_POINTER = 90004;
     public static Integer TYPE_CAST_ERROR = 90005;
     public static Integer TABLE_ALREADY_EXISTS = 90007;
@@ -82,6 +83,8 @@ public class DingoException extends RuntimeException implements IndirectError {
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
         // "Table Not Found" from CalciteContextException (90002)
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Object .* not found"), OBJECT_NOT_FOUND);
+
+
         // "Table Already exists" from CalciteContextException (90007)
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"),
             TABLE_ALREADY_EXISTS);
@@ -98,8 +101,8 @@ public class DingoException extends RuntimeException implements IndirectError {
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Number of INSERT target columns "
             + "\\(.*\\) does not equal number"), INSERT_COLUMN_NUMBER_NOT_EQUAL);
         // Function not found from CalciteContextException (90022)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put
-            (Pattern.compile("No match found for function signature"), FUNCTION_NOT_SUPPORT);
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP
+            .put(Pattern.compile("No match found for function signature"), FUNCTION_NOT_SUPPORT);
 
         // Join name duplicated
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put( Pattern.compile(" Duplicate relation name"),
@@ -109,7 +112,11 @@ public class DingoException extends RuntimeException implements IndirectError {
             + " requires a condition"), JOIN_NO_CONDITION);
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* is ambiguous"),
             JOIN_SELECT_COLUMN_AMBIGUOUS);
+
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
+        // "Insert Null into non-null column"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* has no default "
+            + "value and does not allow NULLs"), INSERT_NULL_TO_NON_NULL_COLUMN);
         // "Duplicated Columns" from RuntimeException (90009)
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Duplicate column names"), DUPLICATED_COLUMN);
         // "Create Without Primary Key" from RuntimeException (90010)

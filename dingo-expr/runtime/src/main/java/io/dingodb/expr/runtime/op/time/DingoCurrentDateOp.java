@@ -53,9 +53,7 @@ public class DingoCurrentDateOp extends RtFun {
 
     public static java.sql.Date getCurrentDate() {
         LocalDate localDate = LocalDate.now();
-        Long millis;
-        millis = localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli();
-        return new Date(millis);
+        return DingoDateTimeUtils.convertDateFromLocalDate(localDate);
     }
 
     @AutoService(DingoFuncProvider.class)

@@ -20,8 +20,10 @@ import io.dingodb.expr.runtime.exception.FailParseTime;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,9 +44,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class DingoDateTimeUtils implements Serializable {
     public static final long serialVersionUID = 4478587765478112418L;
-    public static Long DAY_MILLI_SECONDS = Long.valueOf(24 * 60 * 60 * 1000);
     public static Long MILLI_SECONDS_FOR_ADJUST_TIMEZONE = Long.valueOf(1 * 60 * 60 * 1000);
     public static Integer TIME_PIVOT = 240000;
+    public static final Long DAY_SECONDS = Long.valueOf(24 * 60 * 60);
+    public static final Long HOUR_SECONDS = Long.valueOf(3600);
+    public static final Long MINUTE_SECONDS = Long.valueOf(60);
 
     public static final List<String> DELIMITER_LIST = Stream.of(
         "",
@@ -54,8 +58,9 @@ public class DingoDateTimeUtils implements Serializable {
     ).collect(Collectors.toList());
 
     public static final Pattern DATE_TIME_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2}\\.)");
-    public static final Pattern DATE_TIME_PRECISON_PATTERN = Pattern.compile("(\\d{1,2}:\\d{1,2}:\\d{1,2}\\.\\d{1,6})");
-    public static final Pattern NEGTIVE_DATETIME_PATTERN = Pattern.compile("\\d*[a-zA-Z_]+\\d*");
+    public static final Pattern DATE_TIME_PRECISION_PATTERN = Pattern
+        .compile("(\\d{1,2}:\\d{1,2}:\\d{1,2}\\.\\d{1,6})");
+    public static final Pattern NEGATIVE_DATETIME_PATTERN = Pattern.compile("\\d*[a-zA-Z_]+\\d*");
 
     public static final List<Pattern> TIME_REX_PATTERN_LIST = Stream.of(
         Pattern.compile("^\\d{8}"),
@@ -68,7 +73,7 @@ public class DingoDateTimeUtils implements Serializable {
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}")
     ).collect(Collectors.toList());
 
-    public static final List<Pattern> DATE_TIME_PRECISON_PATTERN_LIST = Stream.of(
+    public static final List<Pattern> DATE_TIME_PRECISION_PATTERN_LIST = Stream.of(
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d"),
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d{2}"),
         Pattern.compile("^\\d{4}-\\d+-\\d+(\\ \\d+:\\d+:\\d+){1}\\.\\d{3}")
@@ -261,7 +266,7 @@ public class DingoDateTimeUtils implements Serializable {
         int index = 0;
         try {
             // Process the YYYYmmDD/YYYYmmDDmmss pattern date. The LocalDateTime can't parse yyyyMMdd pattern.
-            Matcher wordMatch = NEGTIVE_DATETIME_PATTERN.matcher(originDateTime);
+            Matcher wordMatch = NEGATIVE_DATETIME_PATTERN.matcher(originDateTime);
             if (wordMatch.find()) {
                 String errorMsg = originDateTime + " does not match any of the datetime pattern yyyyMMdd[HHmmss], "
                     + "yyyy-MM-dd [HH:mm:ss] , yyyy.MM.dd [HH:mm:ss], yyyy/MM/dd [HH:mm:ss]";
@@ -270,7 +275,7 @@ public class DingoDateTimeUtils implements Serializable {
             }
 
             // Match datetime with precision, eg: yyyy-MM-dd HH:mm:ss.SSS
-            Matcher m = DATE_TIME_PRECISON_PATTERN.matcher(originDateTime);
+            Matcher m = DATE_TIME_PRECISION_PATTERN.matcher(originDateTime);
             if (m.find()) {
                 // Only three digits of precision are preserved
                 String[] datetimeArray = originDateTime.split("\\.");
@@ -283,7 +288,7 @@ public class DingoDateTimeUtils implements Serializable {
                 }
 
                 int subscript = 0;
-                for (Pattern pattern : DATE_TIME_PRECISON_PATTERN_LIST) {
+                for (Pattern pattern : DATE_TIME_PRECISION_PATTERN_LIST) {
                     if (pattern.matcher(originDateTime).matches()) {
                         return LocalDateTime.parse(originDateTime, DATE_TIME_PRECISON_FORMAT_LIST.get(subscript));
                     }
@@ -447,26 +452,56 @@ public class DingoDateTimeUtils implements Serializable {
 
     // "Time pattern convert to UTC time pattern without timezone info"
     public static Time convertLocalTimeToTime(LocalTime localTime) {
-        Time t = new Time(((localTime.getHour() * 60 + localTime.getMinute()) * 60
+        Time time = new Time(((localTime.getHour() * 60 + localTime.getMinute()) * 60
             + localTime.getSecond()
-            - DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds()) * 1000 + localTime.getNano() / 1000000);
-        return t;
+            - DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds()) * 1000 + localTime.getNano() / 1000000);
+        return time;
+    }
+
+    // "Time pattern convert to UTC time pattern without timezone info"
+    public static Time convertIntToTime(long time, long offset) {
+        return new Time(time + offset);
     }
 
     public static Time getTimeByLocalDateTime(LocalTime localTime) {
         int hour = localTime.getHour();
         int minute = localTime.getMinute();
         int second = localTime.getSecond();
-        Time t = new Time(((hour * 60 + minute) * 60 + second) * 1000);
-        return t;
+        return new Time(((hour * 60 + minute) * 60 + second) * 1000);
     }
 
-    public static ZoneOffset getLocalZoneOffset() {
-        Instant instant = Instant.now(); //can be LocalDateTime
+    // Get Zone offset for timestamp at this instant. work for Date/Timestamp.
+    public static ZoneOffset getLocalZoneOffset(long epochSeconds) {
+        Instant instant = Instant.ofEpochSecond(epochSeconds); //can be LocalDateTime
         ZoneId systemZone = ZoneId.systemDefault(); // my timezone
         ZoneOffset localZoneOffset = systemZone.getRules().getOffset(instant);
         return localZoneOffset;
     }
+
+    public static Long getEpochSeconds(LocalDate date) {
+        long epochSeconds = date.toEpochDay() * DingoDateTimeUtils.DAY_SECONDS;
+        return epochSeconds;
+    }
+
+    public static Long getEpochSeconds(LocalDateTime localDatetime) {
+        LocalDate localDate = localDatetime.toLocalDate();
+        long epochSeconds = getEpochSeconds(localDate) + localDatetime.getHour() * HOUR_SECONDS
+            + localDatetime.getMinute() * MINUTE_SECONDS + localDatetime.getSecond();
+        return epochSeconds;
+    }
+
+    public static Timestamp convertTimeStampFromLocalTimeStamp(LocalDateTime localDateTime) {
+        Long epochSeconds = getEpochSeconds(localDateTime);
+        return new Timestamp(localDateTime
+            .toInstant(DingoDateTimeUtils.getLocalZoneOffset(epochSeconds)).toEpochMilli());
+    }
+
+    public static Date convertDateFromLocalDate(LocalDate localDate) {
+        Long epochSeconds = getEpochSeconds(localDate);
+        return new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.
+            getLocalZoneOffset(epochSeconds)).toEpochMilli());
+    }
+
 }
 
 

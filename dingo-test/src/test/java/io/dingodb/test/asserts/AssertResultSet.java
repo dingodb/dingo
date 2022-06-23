@@ -22,6 +22,7 @@ import io.dingodb.common.util.CsvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -79,6 +80,16 @@ public final class AssertResultSet {
         ResultSetMetaData metaData = instance.getMetaData();
         int size = metaData.getColumnCount();
         int count = 0;
+        Boolean hasDateType = Boolean.FALSE;
+        if (target.size() != 0) {
+            for (int i = 0; i < target.get(0).length; i++) {
+                if (target.get(0)[i] instanceof Date) {
+                    hasDateType = Boolean.TRUE;
+                    break;
+                }
+            }
+        }
+        int l = 0;
         while (instance.next()) {
             Object[] row = new Object[size];
             for (int i = 0; i < size; ++i) {
@@ -87,6 +98,17 @@ public final class AssertResultSet {
             log.info("Get tuple {}.", row);
             if (row.length == 1 && row[0] instanceof Time) {
                 assertThat(row[0].toString()).isEqualTo(target.get(0)[0]);
+            } else if (row.length == 1 && row[0] instanceof Date) {
+                assertThat(((Date) row[0]).toLocalDate()).isEqualTo(((Date)(target.get(0)[0])).toLocalDate());
+            } else if (hasDateType) {
+                for (int i = 0; i < target.get(0).length; i++) {
+                    if (!(target.get(l)[i] instanceof Date)) {
+                        assertThat(target.get(l)[i]).isEqualTo(row[i]);
+                    } else {
+                        assertThat(((Date)(target.get(l)[i])).toLocalDate()).isEqualTo(((Date)(row[i])).toLocalDate());
+                    }
+                }
+                l++;
             } else {
                 assertThat(row).isIn(target);
             }
@@ -116,7 +138,11 @@ public final class AssertResultSet {
                 row[i] = instance.getObject(i + 1);
             }
             log.info("Get tuple {}.", row);
-            assertThat(row).isEqualTo(target.get(count));
+            if (row[0] instanceof Date) {
+                Assertions.assertEquals(((Date) row[0]).toLocalDate(), ((Date)(target.get(count)[0])).toLocalDate());
+            } else {
+                assertThat(row).isEqualTo(target.get(count));
+            }
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -137,7 +163,6 @@ public final class AssertResultSet {
         ResultSetMetaData metaData = instance.getMetaData();
         int size = metaData.getColumnCount();
         int count = 0;
-
         // default 5 seconds
         int timeMistake = 5 * 1000;
 

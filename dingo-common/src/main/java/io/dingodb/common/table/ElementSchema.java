@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.common.util.TypeMapping;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
+import io.dingodb.expr.runtime.exception.FailParseTime;
 import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,6 +37,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Locale;
@@ -169,10 +170,18 @@ public class ElementSchema implements CompileContext {
                     if (obj instanceof Number) {
                         return new java.util.Date(((Number) obj).longValue());
                     }
-                    LocalDate localDate = DingoDateTimeUtils.convertToDate(obj.toString());
-                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
-                        .toEpochMilli());
-                    return d;
+                    LocalDate localDate;
+                    try {
+                        localDate = DingoDateTimeUtils.convertToDate(obj.toString());
+                    } catch (SQLException e) {
+                        if (e.getMessage().contains("FORMAT")) {
+                            throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+                        } else {
+                            throw new FailParseTime(e.getMessage());
+                        }
+                    }
+                    return DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to date.");
                 }
@@ -181,19 +190,24 @@ public class ElementSchema implements CompileContext {
                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
                     sdf.setLenient(false);
                     LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
-                    Date d = new Date(Time.valueOf(localTime).getTime() + localTime.getNano() / 1000000);
+                    Date date = new Date(Time.valueOf(localTime).getTime() + localTime.getNano() / 1000000);
                     if (localTime.getNano() / 1000000 != 0) {
                         sdf = new SimpleDateFormat("HH:mm:ss.SSS");
                     } else {
                         sdf = new SimpleDateFormat("HH:mm:ss");
                     }
-                    return sdf.format(d);
+                    return sdf.format(date);
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to time.");
                 }
             case TypeCode.TIMESTAMP:
-                Timestamp ts = new Timestamp(DingoDateUnixTimestampOp.unixTimestamp(obj.toString()));
-                return ts;
+                LocalDateTime localDateTime;
+                try {
+                    localDateTime = DingoDateTimeUtils.convertToDatetime(obj.toString());
+                } catch (SQLException e) {
+                    throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
+                }
+                return DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
             case TypeCode.STRING:
                 return obj.toString();
             default:
