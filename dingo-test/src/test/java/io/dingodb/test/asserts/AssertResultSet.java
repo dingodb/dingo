@@ -27,7 +27,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -86,7 +85,11 @@ public final class AssertResultSet {
                 row[i] = instance.getObject(i + 1);
             }
             log.info("Get tuple {}.", row);
-            assertThat(row).isIn(target);
+            if (row.length == 1 && row[0] instanceof Time) {
+                assertThat(row[0].toString()).isEqualTo(target.get(0)[0]);
+            } else {
+                assertThat(row).isIn(target);
+            }
             ++count;
         }
         assertThat(count).isEqualTo(target.size());

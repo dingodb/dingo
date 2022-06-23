@@ -146,8 +146,8 @@ public final class DingoDriverParser extends DingoParser {
                     SqlBasicTypeNameSpec typeNameSpec = (SqlBasicTypeNameSpec) column.dataType.getTypeNameSpec();
                     String simpleType = typeNameSpec.getTypeName().getSimple();
                     int precision = typeNameSpec.getPrecision();
-                    if ((simpleType.equals(SqlTypeName.TIME.getName()) ||
-                        simpleType.equals(SqlTypeName.TIMESTAMP.getName())) && precision > 0) {
+                    if ((simpleType.equals(SqlTypeName.TIME.getName())
+                        || simpleType.equals(SqlTypeName.TIMESTAMP.getName())) && precision > 0) {
                         if (precision > 3) {
                             throw new RuntimeException("Precision " + precision + " is not support.");
                         }

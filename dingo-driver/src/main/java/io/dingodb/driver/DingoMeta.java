@@ -60,6 +60,7 @@ import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.error.DingoException.CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
+import static io.dingodb.common.error.DingoException.EXECUTOR_NODE_FAIL;
 import static io.dingodb.common.error.DingoException.RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 import static io.dingodb.common.error.DingoException.TYPE_CAST_ERROR;
 import static java.util.Objects.requireNonNull;
@@ -169,6 +170,9 @@ public class DingoMeta extends MetaImpl {
                         // TODO: Refine error message.
                         if (exceptionCode == TYPE_CAST_ERROR) {
                             exceptMessage = ((RuntimeException) e).getMessage();
+                        } else if (exceptionCode == EXECUTOR_NODE_FAIL) {
+                            exceptMessage = ((RuntimeException)e).getCause().getMessage()
+                                + ",Table meta save success, but schedule failed.";
                         }
                         break;
                     }
