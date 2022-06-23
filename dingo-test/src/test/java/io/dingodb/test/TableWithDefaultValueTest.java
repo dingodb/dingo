@@ -23,8 +23,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,9 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class TableWithDefaultValueTest {
@@ -404,6 +399,7 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
+    @Disabled
     public void testCase12() throws Exception {
         String tableName = "testCase12";
         String sqlCmd = "create table " + tableName + " (\n"
@@ -430,6 +426,7 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
+    @Disabled
     public void testCase13() throws Exception {
         String tableName = "testCase13";
         String sqlCmd = "create table " + tableName + " (\n"

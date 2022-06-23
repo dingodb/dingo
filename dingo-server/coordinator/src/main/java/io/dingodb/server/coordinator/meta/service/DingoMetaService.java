@@ -132,7 +132,8 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
         NavigableMap<ComparableByteArray, Part> result = new TreeMap<>();
         getMetaAdaptor(TablePart.class).getByDomain(tableId.seqContent()).forEach(part -> {
             Optional.ofNullable(statsMetaAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domainContent(), part.getId().seqContent())
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domainContent(),
+                    part.getId().seqContent())
             )).ifPresent(stats -> {
                 result.put(
                     new ComparableByteArray(part.getStart()),

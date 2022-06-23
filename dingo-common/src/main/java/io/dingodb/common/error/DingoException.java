@@ -74,7 +74,7 @@ public class DingoException extends RuntimeException implements IndirectError {
 
     public static Integer INTERPRET_ERROR = 90019;
     public static Integer FUNCTION_NOT_SUPPORT = 90022;
-
+    public static Integer EXECUTOR_NODE_FAIL = 90024;
     public static HashMap<Pattern, Integer> CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
     public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 
@@ -128,6 +128,8 @@ public class DingoException extends RuntimeException implements IndirectError {
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exception\\.FailGetEvaluator"), TYPE_CAST_ERROR);
         // "Number Range Error"
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exceeds max .* or lower min value"), TYPE_CAST_ERROR);
+        // "Coordinator Failover Error"
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Invoke on .* failed"), EXECUTOR_NODE_FAIL);
     }
     // TODO
     //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;

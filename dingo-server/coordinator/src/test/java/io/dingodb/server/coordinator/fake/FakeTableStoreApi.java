@@ -74,7 +74,8 @@ public class FakeTableStoreApi implements TableStoreApi {
     @Override
     public void assignTablePart(Part part) {
         TablePartStats stats = TablePartStats.builder()
-            .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domainContent(), part.getId().seqContent()))
+            .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.getId().domainContent(),
+                part.getId().seqContent()))
             .leader(DingoConfiguration.instance().getServerId())
             .tablePart(part.getId())
             .table(part.getInstanceId())

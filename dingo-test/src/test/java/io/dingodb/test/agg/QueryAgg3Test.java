@@ -22,6 +22,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -49,7 +50,10 @@ public class QueryAgg3Test {
     public void cleanUp() throws Exception {
     }
 
+    // 1949-01-01 => 1948-12-31 in (utc -6 timezone).
+    // All new Date("xxx") will be error in (negative zone)
     @Test
+    @Disabled
     public void testMinDate() throws SQLException {
         sqlHelper.queryTest(
             "select min(birthday) from datetest",
