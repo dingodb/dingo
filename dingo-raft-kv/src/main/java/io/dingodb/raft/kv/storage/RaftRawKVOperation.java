@@ -21,7 +21,6 @@ import io.dingodb.raft.Node;
 import io.dingodb.raft.entity.Task;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import java.nio.ByteBuffer;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.CONTAINS_KEY;
+import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.COUNT;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.DELETE;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.DELETE_LIST;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.DELETE_RANGE;
@@ -56,6 +56,7 @@ public class RaftRawKVOperation {
         MULTI_GET,
         ITERATOR,
         SCAN,
+        COUNT,
         CONTAINS_KEY,
         SNAPSHOT_SAVE,
         SNAPSHOT_LOAD,
@@ -67,9 +68,9 @@ public class RaftRawKVOperation {
     public static final RaftRawKVOperation SYNC_OP = RaftRawKVOperation.builder().op(SYNC).build();
 
     private byte[] key;   // startKey for range
-    private byte[] value;   // endKey for range
+    private byte[] value;
 
-    private byte[] extKey;
+    private byte[] extKey;   // endKey for range
     private byte[] extValue;
 
     private Object ext1;
@@ -177,6 +178,14 @@ public class RaftRawKVOperation {
         return RaftRawKVOperation.builder()
             .ext1(keys)
             .op(MULTI_GET)
+            .build();
+    }
+
+    public static RaftRawKVOperation count(final byte[] startKey, final byte[] endKey) {
+        return RaftRawKVOperation.builder()
+            .key(startKey)
+            .extKey(endKey)
+            .op(COUNT)
             .build();
     }
 

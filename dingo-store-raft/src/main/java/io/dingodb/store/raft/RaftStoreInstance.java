@@ -52,7 +52,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
-import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.compare;
 
 @Slf4j
@@ -170,22 +169,7 @@ public class RaftStoreInstance implements StoreInstance {
                 Arrays.toString(startKey));
             return 0;
         }
-        byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
-        byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
-        long count = store.count(startKeyInBytes, endKeyInBytes);
-        if (!doDeleting) {
-            return count;
-        }
-        boolean isDeleteSuccess = false;
-        if (count > 0) {
-            isDeleteSuccess = store.delete(startKeyInBytes, endKeyInBytes);
-        }
-
-        log.info("delete store by part, id:{}, startKey:{}, endkey:{}, cnt:{}, isDeleteOK:{}, part: {}",
-            part.getId(),
-            Arrays.toString(startKeyInBytes), Arrays.toString(endKeyInBytes),
-            count, isDeleteSuccess, part);
-        return count;
+        return parts.get(part.getId()).countOrDeletePart(startKey, doDeleting);
     }
 
     public void onPartAvailable(RaftStoreInstancePart part) {
