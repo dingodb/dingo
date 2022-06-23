@@ -40,12 +40,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
+
+import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 
 @Slf4j
 public class RocksRawKVStore implements RawKVStore {
@@ -196,22 +197,24 @@ public class RocksRawKVStore implements RawKVStore {
     @Override
     public long count(byte[] startKey, byte[] endKey) {
         long count = 0;
-        try (ReadOptions readOptions = new ReadOptions()) {
-            try (Snapshot snapshot = this.db.getSnapshot()) {
-                readOptions.setSnapshot(snapshot);
-                RocksIterator rocksIterator = db.newIterator(readOptions);
-                rocksIterator.seek(startKey);
-                while (rocksIterator.isValid()) {
-                    if (ByteArrayUtils.compare(rocksIterator.key(), endKey) >= 0) {
-                        break;
-                    }
-                    count++;
-                    rocksIterator.next();
+        try (
+            ReadOptions readOptions = new ReadOptions();
+            Snapshot snapshot = this.db.getSnapshot();
+            RocksIterator iterator = db.newIterator(readOptions.setSnapshot(snapshot))
+        ) {
+            if (startKey == null) {
+                iterator.seekToFirst();
+            } else {
+                iterator.seek(startKey);
+            }
+            while (iterator.isValid()) {
+                if (endKey != null && greatThanOrEqual(iterator.key(), endKey)) {
+                    break;
                 }
+                count++;
+                iterator.next();
             }
         }
-        log.info("the total count by range from {} to {} is: {}",
-            Arrays.toString(startKey), Arrays.toString(endKey), count);
         return count;
     }
 
@@ -270,10 +273,9 @@ public class RocksRawKVStore implements RawKVStore {
                     iterator.next();
                     count++;
                 }
-                if (count > 0) {
-                    if (log.isDebugEnabled()) {
-                        log.warn("Save snapshot file {}, but count is 0, skip finish.", sstPath);
-                    }
+                if (count == 0) {
+                    sstFileWriter.close();
+                } else {
                     sstFileWriter.finish();
                 }
             }

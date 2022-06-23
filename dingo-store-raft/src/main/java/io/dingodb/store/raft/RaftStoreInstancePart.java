@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -204,4 +205,12 @@ public final class RaftStoreInstancePart implements StoreInstance {
         return raftStore.delete(startPrimaryKey, endPrimaryKey).join();
     }
 
+    @Override
+    public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
+        CompletableFuture<Long> count = raftStore.count(startKey, part.getEnd());
+        if (doDeleting) {
+            raftStore.delete(startKey, part.getEnd()).join();
+        }
+        return count.join();
+    }
 }

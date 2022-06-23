@@ -228,7 +228,10 @@ public class TableScheduler {
         }
         List<Location> locations = replicas.stream().map(Replica::location).collect(Collectors.toList());
         reportFutures.put(tablePart.getId(), future);
-        replicas.forEach(replica -> applyTablePart(tablePart, replica.getExecutor(), locations, false));
+        replicas.forEach(replica -> Executors.execute(
+            "assign-part",
+            () -> applyTablePart(tablePart, replica.getExecutor(), locations, false))
+        );
         return future;
     }
 

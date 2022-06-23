@@ -109,6 +109,9 @@ public final class Executors {
             }
             thread.setName(String.format(THREAD_NAME_FORMAT, name, thread.getId()));
             return callable.call();
+        } catch (Throwable e) {
+            log.error("Execute {} catch error.", name, e);
+            throw e;
         } finally {
             thread.setName(FREE_THREAD_NAME);
             if (log.isTraceEnabled()) {
@@ -125,6 +128,9 @@ public final class Executors {
             }
             thread.setName(String.format(THREAD_NAME_FORMAT, name, thread.getId()));
             runnable.run();
+        } catch (Throwable e) {
+            log.error("Execute {} catch error.", name, e);
+            throw e;
         } finally {
             thread.setName(FREE_THREAD_NAME);
             if (log.isTraceEnabled()) {
