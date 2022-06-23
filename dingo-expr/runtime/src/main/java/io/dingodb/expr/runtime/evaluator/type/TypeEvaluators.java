@@ -220,7 +220,16 @@ final class TypeEvaluators {
                 throw new FailParseTime(errMsg);
             }
         }
-        return DingoDateTimeUtils.convertLocalTimeToTime(localTime);
+        Time time =  DingoDateTimeUtils.convertLocalTimeToTime(localTime);
+        // If t's Hour is not equal to LocalTime's Hour.
+        int diffOfHours = localTime.getHour() - time.getHours();
+        //t.getCalendarDate().zoneinfo.getDSTSavings();
+        if (diffOfHours != 0) {
+            Time adjustedTime = DingoDateTimeUtils.convertIntToTime(time.getTime() , diffOfHours
+                * DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE);
+            return adjustedTime;
+        }
+        return time;
     }
 
     @Nonnull
@@ -246,8 +255,7 @@ final class TypeEvaluators {
         } catch (SQLException e) {
             throw new FailParseTime(e.getMessage().split("FORMAT")[0], e.getMessage().split("FORMAT")[1]);
         }
-        Timestamp ts = new Timestamp(localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        return ts;
+        return DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
     }
 
     @Nonnull
@@ -287,21 +295,7 @@ final class TypeEvaluators {
                 throw new FailParseTime(e.getMessage());
             }
         }
-        // Process DST (refer to
-        // http://www.webexhibits.org/daylightsaving/b.html#:~:text=Most%20of%20the%20United%20States,switches%20at%20a%20different%20time.)
-        Long milliseconds = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000L;
-        Date d = new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        if (d.toLocalDate().equals(localDate)) {
-            return d;
-        } else {
-            return localDate.toEpochDay() > d.toLocalDate().toEpochDay()
-                ? new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils
-                    .getLocalZoneOffset()).toEpochMilli() - milliseconds
-                    + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE) :
-                new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils
-                    .getLocalZoneOffset()).toEpochMilli() - milliseconds
-                    - DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE);
-        }
+        return DingoDateTimeUtils.convertDateFromLocalDate(localDate);
     }
 
     @Nonnull
@@ -314,9 +308,8 @@ final class TypeEvaluators {
     @Evaluators.Base(DateEvaluator.class)
     static Date dateType(String str, String fmt) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(fmt);
-        LocalDate ld = LocalDate.parse(str, dtf);
-        Date dt = new Date(ld.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        return dt;
+        LocalDate localDate = LocalDate.parse(str, dtf);
+        return DingoDateTimeUtils.convertDateFromLocalDate(localDate);
     }
 
     @Evaluators.Base(BooleanEvaluator.class)

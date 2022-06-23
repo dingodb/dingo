@@ -34,6 +34,7 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -333,9 +334,8 @@ public class OnlySimpleDateFunctionTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
-                        .toEpochMilli());
-                    String targetString = String.valueOf((d.getTime() / 1000));
+                    Date date = DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+                    String targetString = String.valueOf((date.getTime() / 1000));
                     System.out.println(rs.getString(1));
                     assertThat(rs.getString(1)).isEqualTo(targetString);
                 }
@@ -352,9 +352,8 @@ public class OnlySimpleDateFunctionTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
-                        .toEpochMilli());
-                    Long target = (d.getTime() / 1000);
+                    Date date = DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+                    Long target = (date.getTime() / 1000);
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(target);
                 }
@@ -368,8 +367,7 @@ public class OnlySimpleDateFunctionTest {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
+                    Date date = DingoDateTimeUtils.convertDateFromLocalDate(LocalDate.now());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(date.getTime() / 1000);
                 }
@@ -385,8 +383,7 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
+                    Date date = DingoDateTimeUtils.convertDateFromLocalDate(LocalDate.now());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(date.getTime() / 1000);
                 }
@@ -403,7 +400,8 @@ public class OnlySimpleDateFunctionTest {
                 while (rs.next()) {
                     LocalDateTime localDateTime = DingoDateTimeUtils
                         .convertToDatetime("2022-05-15 00:14:01");
-                    Long ts = localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset());
+                    Long epochSeconds = DingoDateTimeUtils.getEpochSeconds(LocalDate.now());
+                    Long ts = localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset(epochSeconds));
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(ts);
                 }
@@ -419,8 +417,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(1652544841L);
                 }
@@ -435,8 +431,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(1652544841L);
                 }
@@ -451,8 +445,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(20220412172630L);
                 }
@@ -467,8 +459,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
                 }
@@ -484,8 +474,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
                 }
@@ -503,10 +491,8 @@ public class OnlySimpleDateFunctionTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-                    Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset())
-                        .toEpochMilli());
-                    Long target = (d.getTime() / 1000);
-
+                    Date date = DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+                    Long target = (date.getTime() / 1000);
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(target);
                 }
@@ -522,8 +508,6 @@ public class OnlySimpleDateFunctionTest {
             try (ResultSet rs = statement.executeQuery(sql)) {
                 System.out.println("Result: ");
                 while (rs.next()) {
-                    Date date = new Date(LocalDate.now().atStartOfDay().toInstant(DingoDateTimeUtils
-                        .getLocalZoneOffset()).toEpochMilli());
                     System.out.println(rs.getString(1));
                     assertThat(rs.getLong(1)).isEqualTo(-20220412172830L);
                 }
@@ -965,7 +949,9 @@ public class OnlySimpleDateFunctionTest {
                 System.out.println("Result: ");
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
-                    Long delta = LocalDate.of(2022, 12, 31).toEpochDay() - LocalDate.now().toEpochDay();
+                    long d0 = LocalDate.of(2022, 12, 31).toEpochDay();
+                    long d1 = LocalDate.now().toEpochDay();
+                    Long delta = d0 - d1;
                     assertThat(rs.getString(1)).isEqualTo(String.valueOf(delta.intValue()));
                 }
             }
@@ -1012,7 +998,7 @@ public class OnlySimpleDateFunctionTest {
 
     @Test
     public void testAddDate() {
-        Date d = Date.valueOf("2020-01-01");
+        Date date = Date.valueOf("2020-01-01");
         LocalDate ld = LocalDate.now();
         LocalDate tomorrow = ld.plusDays(1);
         System.out.println(tomorrow);
@@ -1045,7 +1031,6 @@ public class OnlySimpleDateFunctionTest {
             }
         }
     }
-
 
     @Test
     @Disabled
@@ -1147,14 +1132,14 @@ public class OnlySimpleDateFunctionTest {
     @Test
     public void testDateToTimestamp() throws SQLException {
         LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        System.out.println(d.getTime());
+        Date date = DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+        System.out.println(date.getTime());
     }
 
     @Test
     public void testDateTimetoTimestamp() throws SQLException {
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
-        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
         System.out.println(ts.getTime());
     }
 
@@ -1225,8 +1210,8 @@ public class OnlySimpleDateFunctionTest {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("Hmmss");
         LocalTime localTime = LocalTime.parse("083031", dtf);
         System.out.println(localTime);
-        Time t = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
-        System.out.println(t);
+        Time time = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
+        System.out.println(time);
     }
 
     @Test
@@ -1238,25 +1223,116 @@ public class OnlySimpleDateFunctionTest {
     @Test
     public void testConvertLong2Date() {
         Long l = 12457L;
-        Date d = new Date(l);
-        System.out.println(d);
+        Date date = new Date(l);
+        System.out.println(date);
     }
 
     @Test
     public void testDateOffset() {
         LocalDate localDate = LocalDate.now();
-        Date d = new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        Long epochSeconds = DingoDateTimeUtils.getEpochSeconds(LocalDate.now());
+        Date date = new Date(localDate.atStartOfDay()
+            .toInstant(DingoDateTimeUtils.getLocalZoneOffset(epochSeconds)).toEpochMilli());
         LocalDateTime localDateTime = LocalDateTime.now();
-        localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).getEpochSecond();
-        System.out.println(localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
+        epochSeconds = DingoDateTimeUtils.getEpochSeconds(localDateTime);
+        localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset(epochSeconds)).getEpochSecond();
+        System.out.println(localDateTime.toInstant(DingoDateTimeUtils.getLocalZoneOffset(epochSeconds)).toEpochMilli());
     }
 
     @Test
     public void testDate() {
-        Long offsetMilli = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000L;
-        Date d = new Date(0L - offsetMilli);
+        Long offsetMilli = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000L;
+        Date date = new Date(0L - offsetMilli);
         System.out.println("Result: ");
-        System.out.println(d);
+        System.out.println(date);
         System.out.println(new Date(0L));
+    }
+
+    // Get the timezone at that timestamp.
+    // Zone will change.
+    @Test
+    public void testZoneOffsetWithInstant() {
+        Instant instant = Instant.ofEpochMilli(0L);
+        ZoneId systemZone = ZoneId.systemDefault(); // my timezone
+        ZoneOffset localZoneOffset = systemZone.getRules().getOffset(instant);
+
+        Instant instant1 = Instant.ofEpochSecond(576334800);
+        ZoneId systemZone1 = ZoneId.systemDefault(); // my timezone
+        ZoneOffset localZoneOffset1 = systemZone.getRules().getOffset(instant1);
+        System.out.println(localZoneOffset1);
+    }
+
+    @Test
+    public void testLocalDatetime() {
+        Instant instant = Instant.ofEpochMilli(0L);
+        ZoneOffset localZoneOffset = ZoneId.systemDefault().getRules().getOffset(instant);
+        LocalDateTime localTime = LocalDateTime.ofEpochSecond(576334800,0, localZoneOffset);
+        System.out.println(localTime);
+    }
+
+    @Test
+    public void testTime() {
+        Time time = new Time(576334800L);
+        System.out.println(time);
+    }
+
+    @Test
+    public void testSimpleDateFormat() throws Exception {
+        Timestamp ts = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            .parse("2020-02-20 00:00:20").getTime());
+        System.out.println(ts);
+    }
+
+    // During DST
+    @Test
+    void testSimpleTs() throws Exception {
+        // 1999-09-19T00:00:00.000-0500 in DST
+        // ZoneOffset: -18000000
+        // daylightSaving: 3600000
+        java.util.Date date = new SimpleDateFormat("yyyy-MM-dd")
+            .parse("1999-09-19");
+        System.out.println(date);
+    }
+
+    // Not During DST
+    @Test
+    void testSimpleTs1() throws Exception {
+        // 1999-12-19T00:00:00.000-0600
+        // ZoneOffset: -21600000
+        // daylightSaving: 0
+        java.util.Date date = new SimpleDateFormat("yyyy-MM-dd")
+            .parse("1999-12-19");
+        System.out.println(date);
+    }
+
+    @Test
+    void testSystemZone() {
+        ZoneId systemZone = ZoneId.systemDefault(); // my timezone
+        Boolean b = systemZone.getRules().isFixedOffset();
+        System.out.println(systemZone);
+    }
+
+    @Test
+    void testMod() {
+        int t = -3;
+        System.out.println( t % 10);
+    }
+
+    @Test
+    void testToEpochDay() {
+        LocalDate localDate = LocalDate.of(1970, 1, 1);
+        System.out.println(localDate.toEpochDay());
+    }
+
+    @Test
+    void testEpochSecond() {
+        LocalDateTime localDateTime = LocalDateTime.of(1970, 1, 1, 12, 30, 0);
+        System.out.println("Hello, World");
+    }
+
+    @Test
+    void testClock() {
+        Clock c = Clock.systemDefaultZone();
+        System.out.println(c);
     }
 }

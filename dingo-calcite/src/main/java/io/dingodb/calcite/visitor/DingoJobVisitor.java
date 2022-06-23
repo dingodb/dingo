@@ -317,6 +317,23 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         String tableName = MetaCache.getTableName(rel.getTable());
         final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
         final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+
+        // Find the first null value attempts insert into non-null column.
+        int columnNum = td.getColumns().size();
+        for (Object[] value: rel.getValues()) {
+            if (columnNum != value.length) {
+                log.error("Inserted value: " + value.toString() +", Row size: " + value.length
+                    + ", While actual column number needed: " + columnNum);
+                throw new RuntimeException("Inserted columns " + value.length + " not equal " + columnNum);
+            }
+            for (int i = 0; i < columnNum; i++) {
+                if (td.getColumn(i).isNotNull() && value[i] == null) {
+                    throw new RuntimeException("Column "+ td.getColumn(i).getName()  +" has no default "
+                        + "value and does not allow NULLs");
+                }
+            }
+        }
+
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
             rel.getValues(),

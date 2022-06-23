@@ -809,9 +809,10 @@ public class TestRexConverter {
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
         LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        String targetString = String.valueOf((d.getTime() / 1000));
+        Date date =  DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+        String targetString = String.valueOf((date.getTime() / 1000));
         System.out.println("targetString: ");
+        System.out.println("rtExpr eval :" + String.valueOf(rtExpr.eval(null)));
         Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
     }
 
@@ -827,8 +828,8 @@ public class TestRexConverter {
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
         LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-        Date d =  new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        String targetString = String.valueOf((d.getTime() / 1000));
+        Date date =  DingoDateTimeUtils.convertDateFromLocalDate(localDate);
+        String targetString = String.valueOf((date.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
         Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
@@ -849,7 +850,7 @@ public class TestRexConverter {
         System.out.println("Result: ");
         System.out.println(result);
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
-        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
         String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
@@ -868,7 +869,7 @@ public class TestRexConverter {
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
-        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
         String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
@@ -890,7 +891,7 @@ public class TestRexConverter {
         System.out.println("Result: ");
         System.out.println(result);
         LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
-        Timestamp ts = new Timestamp(localDateTime.toEpochSecond(DingoDateTimeUtils.getLocalZoneOffset()) * 1000);
+        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
         String targetString = String.valueOf((ts.getTime() / 1000));
         System.out.println("targetString :");
         System.out.println(targetString);
