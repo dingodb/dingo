@@ -287,8 +287,21 @@ final class TypeEvaluators {
                 throw new FailParseTime(e.getMessage());
             }
         }
+        // Process DST (refer to
+        // http://www.webexhibits.org/daylightsaving/b.html#:~:text=Most%20of%20the%20United%20States,switches%20at%20a%20different%20time.)
+        Long milliseconds = DingoDateTimeUtils.getLocalZoneOffset().getTotalSeconds() * 1000L;
         Date d = new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils.getLocalZoneOffset()).toEpochMilli());
-        return d;
+        if (d.toLocalDate().equals(localDate)) {
+            return d;
+        } else {
+            return localDate.toEpochDay() > d.toLocalDate().toEpochDay()
+                ? new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils
+                    .getLocalZoneOffset()).toEpochMilli() - milliseconds
+                    + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE) :
+                new Date(localDate.atStartOfDay().toInstant(DingoDateTimeUtils
+                    .getLocalZoneOffset()).toEpochMilli() - milliseconds
+                    - DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE);
+        }
     }
 
     @Nonnull

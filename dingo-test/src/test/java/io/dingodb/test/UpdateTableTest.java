@@ -143,6 +143,7 @@ public class UpdateTableTest {
                 + "11, Cindy, 8.5\n"
         );
     }
+
     @Test
     public void testUpdateWithException() throws SQLException {
         String sql = "update test set amount = 'xxxx' where id = 1";

@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.runtime.exception;
 
-public class FailParseNumber extends RuntimeException{
+public class FailParseNumber extends RuntimeException {
     private static final long serialVersionUID = -1049980909942382682L;
 
 

@@ -42,7 +42,8 @@ import java.util.stream.Stream;
 @Slf4j
 public class DingoDateTimeUtils implements Serializable {
     public static final long serialVersionUID = 4478587765478112418L;
-
+    public static Long DAY_MILLI_SECONDS = Long.valueOf(24 * 60 * 60 * 1000);
+    public static Long MILLI_SECONDS_FOR_ADJUST_TIMEZONE = Long.valueOf(1 * 60 * 60 * 1000);
     public static Integer TIME_PIVOT = 240000;
 
     public static final List<String> DELIMITER_LIST = Stream.of(

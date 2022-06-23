@@ -180,21 +180,14 @@ public class ElementSchema implements CompileContext {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
                     sdf.setLenient(false);
-                    if (obj instanceof String) {
-                        if (((String) obj).contains(".")) {
-                            sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-                        }
-                        return sdf.parse((String) obj);
+                    LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
+                    Date d = new Date(Time.valueOf(localTime).getTime() + localTime.getNano() / 1000000);
+                    if (localTime.getNano() / 1000000 != 0) {
+                        sdf = new SimpleDateFormat("HH:mm:ss.SSS");
                     } else {
-                        LocalTime localTime = DingoDateTimeUtils.convertToTime(obj.toString());
-                        Date d = new Date(Time.valueOf(localTime).getTime() + localTime.getNano() / 1000000);
-                        if (localTime.getNano() / 1000000 != 0) {
-                            sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-                        } else {
-                            sdf = new SimpleDateFormat("HH:mm:ss");
-                        }
-                        return sdf.format(d);
+                        sdf = new SimpleDateFormat("HH:mm:ss");
                     }
+                    return sdf.format(d);
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to parse \"" + obj + "\" to time.");
                 }

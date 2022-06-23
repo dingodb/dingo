@@ -22,6 +22,7 @@ import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -487,6 +488,33 @@ public class ExceptionTest {
                 .isEqualTo("Error 90019 (00000) : Error while executing SQL \"select date_format('1999/33/01 01:01:01',"
                     + " '%Y/%m/%d %T')\": Error in parsing string \" Some parameters of the function are in the wrong "
                     + "format and cannot be parsed, error datetime: 1999/33/01 01:01:01\" to time, format is \"\".");
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testColumnNull() throws SQLException {
+        String createTableSql = "create table testnull(id int not null, name varchar(20) not null, age int not null, "
+            + "primary key(id))";
+        // String insertSql = "insert into testnull(id,name,age) values(1,'zhangsan', null)";
+        //String insertSql = "insert into testnull(id,name) values(1,'zhangsan')";
+        String insertSql = "insert into testnull(id) values(1)";
+        String selectSql = "SELECT * from testnull";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            statement.execute(insertSql);
+            ResultSet rs = statement.executeQuery(selectSql);
+            while (rs.next()) {
+                System.out.println("Result: ");
+                System.out.println(rs.getString(1));
+            }
+        } catch (Exception e) {
+            System.out.println("Result: ");
+            System.out.println(e.getMessage());
+            assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
+                .isEqualTo("Error 90004 (00000) : Error while executing SQL \"insert into testnull(id,name) "
+                    + "values(1,'zhangsan')\": java.lang.NullPointerException: null of int in field _1 "
+                    + "of io.dingodb.common.table.TupleSchema");
         }
     }
 
