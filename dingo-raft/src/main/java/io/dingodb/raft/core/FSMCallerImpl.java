@@ -16,7 +16,6 @@
 
 package io.dingodb.raft.core;
 
-import com.codahale.metrics.Timer;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -52,7 +51,6 @@ import io.dingodb.raft.util.Describer;
 import io.dingodb.raft.util.DisruptorBuilder;
 import io.dingodb.raft.util.DisruptorMetricSet;
 import io.dingodb.raft.util.LogExceptionHandler;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.OnlyForTest;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.Utils;
@@ -180,7 +178,7 @@ public class FSMCallerImpl implements FSMCaller {
         this.disruptor = DisruptorBuilder.<ApplyTask>newInstance() //
             .setEventFactory(new ApplyTaskFactory()) //
             .setRingBufferSize(opts.getDisruptorBufferSize()) //
-            .setThreadFactory(new NamedThreadFactory("JRaft-FSMCaller-Disruptor-", true)) //
+            .setName("JRaft-FSMCaller-Disruptor")
             .setProducerType(ProducerType.MULTI) //
             .setWaitStrategy(new BlockingWaitStrategy()) //
             .build();

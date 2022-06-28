@@ -16,7 +16,6 @@
 
 package io.dingodb.raft.util;
 
-import io.dingodb.raft.util.timer.HashedWheelTimer;
 import io.dingodb.raft.util.timer.Timeout;
 import io.dingodb.raft.util.timer.Timer;
 import io.dingodb.raft.util.timer.TimerTask;
@@ -43,10 +42,6 @@ public abstract class RepeatedTimer implements Describer {
 
     public int getTimeoutMs() {
         return this.timeoutMs;
-    }
-
-    public RepeatedTimer(final String name, final int timeoutMs) {
-        this(name, timeoutMs, new HashedWheelTimer(new NamedThreadFactory(name, true), 1, TimeUnit.MILLISECONDS, 2048));
     }
 
     public RepeatedTimer(final String name, final int timeoutMs, final Timer timer) {

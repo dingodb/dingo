@@ -61,6 +61,7 @@ public class CommonIdConstant {
     @FieldNameConstants
     public static final class ServiceIdentifier {
         public final byte[] executor = new byte[] {'E', 'E'};
+        public final byte[] coordinator = new byte[] {'C', 'C'};
         public final byte[] driverProxy = new byte[] {'D', 'P'};
 
         private ServiceIdentifier() {

@@ -21,6 +21,7 @@ import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.dingodb.common.concurrent.Executors;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -31,6 +32,7 @@ public class DisruptorBuilder<T> {
     private ThreadFactory threadFactory = new NamedThreadFactory("Disruptor-", true);
     private ProducerType producerType  = ProducerType.MULTI;
     private WaitStrategy waitStrategy  = new BlockingWaitStrategy();
+    private String name;
 
     private DisruptorBuilder() {
     }
@@ -66,6 +68,15 @@ public class DisruptorBuilder<T> {
         return this;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public DisruptorBuilder<T> setName(String name) {
+        this.name = name;
+        return this;
+    }
+
     public ProducerType getProducerType() {
         return this.producerType;
     }
@@ -87,7 +98,7 @@ public class DisruptorBuilder<T> {
     public Disruptor<T> build() {
         Requires.requireNonNull(this.ringBufferSize, " Ring buffer size not set");
         Requires.requireNonNull(this.eventFactory, "Event factory not set");
-        return new Disruptor<>(this.eventFactory, this.ringBufferSize, this.threadFactory, this.producerType,
+        return new Disruptor<>(this.eventFactory, this.ringBufferSize, Executors.executor(name), this.producerType,
             this.waitStrategy);
     }
 

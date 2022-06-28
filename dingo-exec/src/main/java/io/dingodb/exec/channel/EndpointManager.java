@@ -41,7 +41,7 @@ public final class EndpointManager {
         try {
             msg = ControlMessage.fromMessage(message);
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse control message", e.toString(), e);
+            log.error("Failed to parse control message", e);
             throw new RuntimeException("Deserializing control message failed.");
         }
         String tag = msg.getTag();
@@ -58,6 +58,11 @@ public final class EndpointManager {
 
     public void registerSendEndpoint(SendEndpoint endpoint) {
         sendEndpointMap.put(endpoint.getTag(), endpoint);
+    }
+
+    public void unregisterSendEndpoint(SendEndpoint endpoint) {
+        sendEndpointMap.remove(endpoint.getTag());
+        signals.remove(endpoint.getTag());
     }
 
     public ControlStatus getStatus(@Nonnull String tag) {

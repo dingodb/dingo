@@ -86,7 +86,6 @@ import io.dingodb.raft.util.DisruptorMetricSet;
 import io.dingodb.raft.util.JRaftServiceLoader;
 import io.dingodb.raft.util.JRaftSignalHandler;
 import io.dingodb.raft.util.LogExceptionHandler;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.OnlyForTest;
 import io.dingodb.raft.util.Platform;
 import io.dingodb.raft.util.RepeatedTimer;
@@ -990,7 +989,7 @@ public class NodeImpl implements Node, RaftServerService {
         this.applyDisruptor = DisruptorBuilder.<LogEntryAndClosure>newInstance() //
             .setRingBufferSize(this.raftOptions.getDisruptorBufferSize()) //
             .setEventFactory(new LogEntryAndClosureFactory()) //
-            .setThreadFactory(new NamedThreadFactory("JRaft-NodeImpl-Disruptor-", true)) //
+            .setName("JRaft-NodeImpl-Disruptor")
             .setProducerType(ProducerType.MULTI) //
             .setWaitStrategy(new BlockingWaitStrategy()) //
             .build();

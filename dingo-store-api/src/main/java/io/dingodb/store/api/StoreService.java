@@ -23,6 +23,8 @@ import javax.annotation.Nonnull;
 public interface StoreService {
     String name();
 
+    StoreInstance getOrCreateInstance(@Nonnull CommonId id);
+
     StoreInstance getInstance(@Nonnull CommonId id);
 
     void deleteInstance(CommonId id);

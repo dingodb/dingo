@@ -17,7 +17,6 @@
 package io.dingodb.raft.rpc.impl.core;
 
 import com.google.protobuf.Message;
-import io.dingodb.raft.JRaftUtils;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
 import io.dingodb.raft.entity.PeerId;
@@ -35,11 +34,11 @@ import io.dingodb.raft.util.concurrent.SingleThreadExecutor;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcRequests.AppendEntriesRequest> implements
@@ -219,25 +218,17 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
         // The required sequence to be sent.
         private int nextRequiredSequence;
         // The response queue,it's not thread-safe and protected by it self object monitor.
-        private final PriorityQueue<SequenceMessage> responseQueue;
-
-        private final int maxPendingResponses;
+        private final AtomicReference<SequenceMessage> response = new AtomicReference<>();
 
         public PeerRequestContext(final String groupId, final PeerPair pair, final int maxPendingResponses) {
             super();
             this.pair = pair;
             this.groupId = groupId;
             this.executor = new MpscSingleThreadExecutor(Utils.MAX_APPEND_ENTRIES_TASKS_PER_THREAD,
-                JRaftUtils.createThreadFactory(groupId + "/" + pair + "-AppendEntriesThread"));
+                groupId + "/" + pair + "-AppendEntriesThread");
 
             this.sequence = 0;
             this.nextRequiredSequence = 0;
-            this.maxPendingResponses = maxPendingResponses;
-            this.responseQueue = new PriorityQueue<>(50);
-        }
-
-        boolean hasTooManyPendingResponses() {
-            return this.responseQueue.size() > this.maxPendingResponses;
         }
 
         int getAndIncrementSequence() {
@@ -286,39 +277,18 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<RpcReque
                               final Message msg) {
         final PeerRequestContext ctx = getPeerRequestContext(groupId, pair);
         if (ctx == null) {
-            // the context was destroyed, so the response can be ignored.
             return;
         }
-        final PriorityQueue<SequenceMessage> respQueue = ctx.responseQueue;
-        assert (respQueue != null);
-
-        synchronized (Utils.withLockObject(respQueue)) {
-            respQueue.add(new SequenceMessage(rpcCtx, msg, seq));
-
-            if (!ctx.hasTooManyPendingResponses()) {
-                while (!respQueue.isEmpty()) {
-                    final SequenceMessage queuedPipelinedResponse = respQueue.peek();
-
-                    if (queuedPipelinedResponse.sequence != ctx.getNextRequiredSequence()) {
-                        // sequence mismatch, waiting for next response.
-                        break;
-                    }
-                    respQueue.remove();
-                    try {
-                        queuedPipelinedResponse.sendResponse();
-                    } finally {
-                        ctx.getAndIncrementNextRequiredSequence();
-                    }
-                }
-            } else {
-                final Connection connection = rpcCtx.getConnection();
-                LOG.warn("Closed connection to peer {}/{}, because of too many pending responses, queued={}, max={}",
-                    ctx.groupId, pair, respQueue.size(), ctx.maxPendingResponses);
-                connection.close();
-                // Close the connection if there are too many pending responses in queue.
-                removePeerRequestContext(groupId, pair);
+        synchronized (ctx.response) {
+            try {
+                new SequenceMessage(rpcCtx, msg, seq).sendResponse();
+            } catch (Exception e) {
+                LOG.error("Send response error.", e);
+            } finally {
+                ctx.getAndIncrementNextRequiredSequence();
             }
         }
+
     }
 
     @SuppressWarnings("unchecked")

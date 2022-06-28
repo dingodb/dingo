@@ -32,7 +32,4 @@ public interface RaftTimerFactory {
 
     Timer getUnfreezingSnapshotTimer(final boolean shared, final String name);
 
-    Timer createTimer(final String name);
-
-    Scheduler createScheduler(final int workerNum, final String name);
 }

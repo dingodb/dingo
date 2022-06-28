@@ -16,49 +16,42 @@
 
 package io.dingodb.raft.core;
 
-import io.dingodb.raft.util.NamedThreadFactory;
-import io.dingodb.raft.util.ThreadPoolUtil;
+import io.dingodb.common.concurrent.Executors;
 
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class TimerManager implements Scheduler {
-    private final ScheduledExecutorService executor;
+
+    private final String name;
 
     public TimerManager(int workerNum) {
         this(workerNum, "JRaft-Node-ScheduleThreadPool");
     }
 
     public TimerManager(int workerNum, String name) {
-        this.executor = ThreadPoolUtil.newScheduledBuilder() //
-            .poolName(name) //
-            .coreThreads(workerNum) //
-            .enableMetric(true) //
-            .threadFactory(new NamedThreadFactory(name, true)) //
-            .build();
+        this.name = name;
     }
 
     @Override
     public ScheduledFuture<?> schedule(final Runnable command, final long delay, final TimeUnit unit) {
-        return this.executor.schedule(command, delay, unit);
+        return Executors.schedule(name, command, delay, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command, final long initialDelay, final long period,
                                                   final TimeUnit unit) {
-        return this.executor.scheduleAtFixedRate(command, initialDelay, period, unit);
+        return Executors.scheduleAtFixedRate(name, command, initialDelay, period, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command, final long initialDelay, final long delay,
                                                      final TimeUnit unit) {
-        return this.executor.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+        return Executors.scheduleWithFixecDelay(name, command, initialDelay, delay, unit);
     }
 
     @Override
     public void shutdown() {
-        this.executor.shutdownNow();
     }
 }

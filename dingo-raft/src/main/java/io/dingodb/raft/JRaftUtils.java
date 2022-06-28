@@ -23,14 +23,10 @@ import io.dingodb.raft.option.BootstrapOptions;
 import io.dingodb.raft.util.Endpoint;
 import io.dingodb.raft.util.JRaftServiceLoader;
 import io.dingodb.raft.util.NamedThreadFactory;
-import io.dingodb.raft.util.ThreadPoolUtil;
 import io.dingodb.raft.util.timer.RaftTimerFactory;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class JRaftUtils {
@@ -58,28 +54,6 @@ public final class JRaftUtils {
         node.shutdown();
         node.join();
         return ret;
-    }
-
-    /**
-     * Create a executor with size.
-     *
-     * @param prefix thread name prefix
-     * @param number thread number
-     * @return a new {@link ThreadPoolExecutor} instance
-     */
-    public static Executor createExecutor(final String prefix, final int number) {
-        if (number <= 0) {
-            return null;
-        }
-        return ThreadPoolUtil.newBuilder() //
-            .poolName(prefix) //
-            .enableMetric(true) //
-            .coreThreads(number) //
-            .maximumThreads(number) //
-            .keepAliveSeconds(60L) //
-            .workQueue(new SynchronousQueue<>()) //
-            .threadFactory(createThreadFactory(prefix)) //
-            .build();
     }
 
     /**

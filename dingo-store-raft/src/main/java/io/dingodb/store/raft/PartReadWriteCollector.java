@@ -19,6 +19,7 @@ package io.dingodb.store.raft;
 import io.dingodb.common.CommonId;
 import io.dingodb.server.protocol.metric.MetricLabel;
 import io.dingodb.server.protocol.metric.MonitorMetric;
+import io.dingodb.store.raft.config.StoreConfiguration;
 import io.prometheus.client.Collector;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +53,9 @@ public class PartReadWriteCollector extends Collector {
     }
 
     public void putSample(long cost, CommonId commonId, MonitorMetric metric) {
+        if (!StoreConfiguration.collectMetric()) {
+            return;
+        }
         ArrayList<MetricFamilySamples.Sample> samples = this.samplesMap.get(metric);
         if (samples == null) {
             samples = new ArrayList<>();

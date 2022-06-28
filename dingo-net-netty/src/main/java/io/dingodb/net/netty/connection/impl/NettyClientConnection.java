@@ -91,7 +91,7 @@ public class NettyClientConnection extends AbstractClientConnection {
         log.info("Connection open, remote: [{}]", remoteLocation.getUrl());
         InetSocketAddress localAddress = socketChannel.localAddress();
         localLocation = new Location(localAddress.getHostName(), localAddress.getPort());
-        Executors.scheduleAtFixedRate(
+        Executors.scheduleWithFixecDelay(
             String.format("%s-heartbeat", remoteLocation), this::sendHeartbeat, 0, heartbeat() / 2, SECONDS
         );
     }

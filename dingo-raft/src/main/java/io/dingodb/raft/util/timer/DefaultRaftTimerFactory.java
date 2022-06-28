@@ -18,7 +18,6 @@ package io.dingodb.raft.util.timer;
 
 import io.dingodb.raft.core.Scheduler;
 import io.dingodb.raft.core.TimerManager;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.SPI;
 import io.dingodb.raft.util.SystemPropertyUtil;
 import io.dingodb.raft.util.Utils;
@@ -74,42 +73,32 @@ public class DefaultRaftTimerFactory implements RaftTimerFactory {
 
     @Override
     public Timer getElectionTimer(final boolean shared, final String name) {
-        return shared ? ELECTION_TIMER_REF.getRef() : createTimer(name);
+        return ELECTION_TIMER_REF.getRef();
     }
 
     @Override
     public Timer getVoteTimer(final boolean shared, final String name) {
-        return shared ? VOTE_TIMER_REF.getRef() : createTimer(name);
+        return VOTE_TIMER_REF.getRef();
     }
 
     @Override
     public Timer getStepDownTimer(final boolean shared, final String name) {
-        return shared ? STEP_DOWN_TIMER_REF.getRef() : createTimer(name);
+        return STEP_DOWN_TIMER_REF.getRef();
     }
 
     @Override
     public Timer getSnapshotTimer(final boolean shared, final String name) {
-        return shared ? SNAPSHOT_TIMER_REF.getRef() : createTimer(name);
+        return SNAPSHOT_TIMER_REF.getRef();
     }
 
     @Override
     public Timer getUnfreezingSnapshotTimer(final boolean shared, final String name) {
-        return shared ? UNFREEZING_SNAPSHOT_TIMER_REF.getRef() : createTimer(name);
+        return UNFREEZING_SNAPSHOT_TIMER_REF.getRef();
     }
 
     @Override
     public Scheduler getRaftScheduler(final boolean shared, final int workerNum, final String name) {
-        return shared ? SCHEDULER_REF.getRef() : createScheduler(workerNum, name);
-    }
-
-    @Override
-    public Timer createTimer(final String name) {
-        return new HashedWheelTimer(new NamedThreadFactory(name, true), 1, TimeUnit.MILLISECONDS, 2048);
-    }
-
-    @Override
-    public Scheduler createScheduler(final int workerNum, final String name) {
-        return new TimerManager(workerNum, name);
+        return SCHEDULER_REF.getRef();
     }
 
     private abstract static class Shared<T> {

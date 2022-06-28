@@ -16,6 +16,7 @@
 
 package io.dingodb.raft;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.entity.PeerId;
 import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RpcOptions;
@@ -69,8 +70,7 @@ public class RaftGroupService {
 
     public RaftGroupService(final String groupId, final PeerId serverId, final NodeOptions nodeOptions) {
         this(groupId, serverId, nodeOptions, RaftRpcServerFactory.createRaftRpcServer(serverId.getEndpoint(),
-            JRaftUtils.createExecutor("RAFT-RPC-executor-", nodeOptions.getRaftRpcThreadPoolSize()),
-            JRaftUtils.createExecutor("CLI-RPC-executor-", nodeOptions.getCliRpcThreadPoolSize())));
+            Executors.executor("RAFT-RPC-executor"), Executors.executor("CLI-RPC-executor")));
     }
 
     public RaftGroupService(final String groupId, final PeerId serverId, final NodeOptions nodeOptions,

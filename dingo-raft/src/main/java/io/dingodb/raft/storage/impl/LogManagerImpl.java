@@ -47,7 +47,6 @@ import io.dingodb.raft.util.ArrayDeque;
 import io.dingodb.raft.util.DisruptorBuilder;
 import io.dingodb.raft.util.DisruptorMetricSet;
 import io.dingodb.raft.util.LogExceptionHandler;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.SegmentList;
 import io.dingodb.raft.util.Utils;
@@ -186,7 +185,7 @@ public class LogManagerImpl implements LogManager {
             this.disruptor = DisruptorBuilder.<StableClosureEvent>newInstance() //
                     .setEventFactory(new StableClosureEventFactory()) //
                     .setRingBufferSize(opts.getDisruptorBufferSize()) //
-                    .setThreadFactory(new NamedThreadFactory("JRaft-LogManager-Disruptor-", true)) //
+                    .setName("JRaft-LogManager-Disruptor")
                     .setProducerType(ProducerType.MULTI) //
                     .setWaitStrategy(new BlockingWaitStrategy())
                     .build();

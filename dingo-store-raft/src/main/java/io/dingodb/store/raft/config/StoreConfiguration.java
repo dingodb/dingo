@@ -55,6 +55,7 @@ public class StoreConfiguration {
     private RocksConfigration rocks = new RocksConfigration();
     private RaftLogStorageOptions raftLogStorageOptions;
     private RaftConfiguration raft;
+    private boolean collectMetric = false;   // default false, current collect is invalid
 
     public static Integer collectStatsInterval() {
         return INSTANCE.collectStatsInterval;
@@ -74,5 +75,9 @@ public class StoreConfiguration {
 
     public static int approximateCount() {
         return INSTANCE.approximateCount;
+    }
+
+    public static boolean collectMetric() {
+        return INSTANCE.collectMetric;
     }
 }
