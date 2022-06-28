@@ -19,21 +19,22 @@
 | --------- | ------- |
 | String    | Varchar |
 
-## Time and Date Types
+## Date Types
 
 | Data Type | Size   | Resolution | Min Value  | Max Value  | Precision  |
 | --------- | ------ | ---------- | ---------- | ---------- | ---------- |
-| Date      | 2 byte | day        | 1000-01-01 | 9999-12-31 | YYYY-MM-DD |
+| Date      | 4 byte | day        | 1000-01-01 | 9999-12-31 | YYYY-MM-DD |
 
-For example:
 
-```
-CREATE TABLE test
-(
-    id Int,
-    date Date
-);
+## Time Types
 
-INSERT INTO test VALUES (1,'2022-02-21');
-```
+| Data Type | Size   | Resolution | Min Value  | Max Value  | Precision  |
+| --------- | ------ | ---------- | ---------- | ---------- | ---------- |
+| Time      | 4 byte | Time       |  00:00:00  |  59:59:59  |  HH:mm:ss  |
 
+
+## Timestamp Types
+
+| Data Type | Size   | Resolution |      Min Value        |        Max Value      |        Precision      |
+| --------- | ------ | ---------- | --------------------- | --------------------- | --------------------- |
+| Timestamp | 4 byte |  Timestamp |  1000-01-01 00:00:00  |  9999-12-31 59:59:59  |  YYYY-MM-DD HH:mm:ss  |

@@ -1,4 +1,11 @@
-# SQL execution
+# SQL Execution
+
+
+## Execution about SQL
+
+The execution plan about SQL is as follows:
+
+![SQL Execution about DingoDB](../../images/dingo-sql-execution.jpg)
 
 1. Parsing an SQL string into a job graph.
 
@@ -8,7 +15,6 @@ flowchart TD
     L -->|transforming & optimizing| P[Physical Plan]
     P -->|building| J[Job Graph]
 ```
-
 This is done on the coordinator.
 
 2. Distribute the job.
@@ -35,3 +41,8 @@ special tuple "**FIN**" is pushed to its outputs, then the operator quit executi
 an operator received "FIN", it also pushes "FIN" to its outputs, quit executing and destroyed.
 
 "FIN" can be transferred over net link, so it is can be propagated over all operators of all tasks.
+
+
+## Sequence Diagram of Running
+
+![SQL Execution about DingoDB](../../images/dingo-execution-sequence.jpg)
