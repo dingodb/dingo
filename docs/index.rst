@@ -9,6 +9,7 @@ Welcome to DingoDB's documentation!
    architecture/index
    deployment/index
    release_notes/index
+   tools/index
    contribute/index
 
 Indices and Search
