@@ -21,3 +21,9 @@ This document describes the following common operations when you operate and mai
 ```shell
 ./bin/start-driver.sh
 ```
+
+- start dingo web 
+
+```shell
+./bin/start-web.sh
+```

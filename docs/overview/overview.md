@@ -7,7 +7,7 @@ upsert, interactive analysis, multi-dimensional analysis in extremely low latenc
 
 ## Key Features
 
-1. Compliant with ANSI SQL  
+1. Compliant with MySQL-Compatible  
    Based on the popular [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB can parse, optimize and
    execute standard SQL statement, and is capable to run part of TPC-H and TPC-DS (See [TPC](http://www.tpc.org/))
    queries. DingoDB is also compliant with JDBC and can be seamlessly integrated with web services, BI tools, etc.
