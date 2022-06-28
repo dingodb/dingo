@@ -36,7 +36,7 @@ public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
     @Override
     public void newTable(CommonId id) {
         log.info("New table [{}].", id);
-        storeService.getInstance(id);
+        storeService.getOrCreateInstance(id);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class TableStoreApi implements io.dingodb.server.api.TableStoreApi {
     @Override
     public void assignTablePart(Part part) {
         log.info("Assign table part: {}", part);
-        storeService.getInstance(part.getInstanceId()).assignPart(part);
+        storeService.getOrCreateInstance(part.getInstanceId()).assignPart(part);
     }
 
     @Override

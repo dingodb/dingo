@@ -24,6 +24,7 @@ import com.lmax.disruptor.EventTranslator;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.FSMCaller;
 import io.dingodb.raft.ReadOnlyService;
 import io.dingodb.raft.Status;
@@ -41,9 +42,7 @@ import io.dingodb.raft.util.Bytes;
 import io.dingodb.raft.util.DisruptorBuilder;
 import io.dingodb.raft.util.DisruptorMetricSet;
 import io.dingodb.raft.util.LogExceptionHandler;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.OnlyForTest;
-import io.dingodb.raft.util.ThreadHelper;
 import io.dingodb.raft.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -262,12 +260,10 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
         this.fsmCaller = opts.getFsmCaller();
         this.raftOptions = opts.getRaftOptions();
 
-        this.scheduledExecutorService = Executors
-            .newSingleThreadScheduledExecutor(new NamedThreadFactory("ReadOnlyService-PendingNotify-Scanner", true));
         this.readIndexDisruptor = DisruptorBuilder.<ReadIndexEvent>newInstance() //
             .setEventFactory(new ReadIndexEventFactory()) //
             .setRingBufferSize(this.raftOptions.getDisruptorBufferSize()) //
-            .setThreadFactory(new NamedThreadFactory("JRaft-ReadOnlyService-Disruptor-", true)) //
+            .setName("JRaft-ReadOnlyService-Disruptor")
             .setWaitStrategy(new BlockingWaitStrategy()) //
             .setProducerType(ProducerType.MULTI) //
             .build();
@@ -283,8 +279,13 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
         this.fsmCaller.addLastAppliedLogIndexListener(this);
 
         // start scanner
-        this.scheduledExecutorService.scheduleAtFixedRate(() -> onApplied(this.fsmCaller.getLastAppliedIndex()),
-            this.raftOptions.getMaxElectionDelayMs(), this.raftOptions.getMaxElectionDelayMs(), TimeUnit.MILLISECONDS);
+        Executors.scheduleAtFixedRate(
+            "ReadOnlyService-PendingNotify-Scanner",
+            () -> onApplied(this.fsmCaller.getLastAppliedIndex()),
+            this.raftOptions.getMaxElectionDelayMs(),
+            this.raftOptions.getMaxElectionDelayMs(),
+            TimeUnit.MILLISECONDS
+        );
         return true;
     }
 
@@ -303,7 +304,6 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
         this.shutdownLatch = new CountDownLatch(1);
         Utils.runInThread( //
             () -> this.readIndexQueue.publishEvent((event, sequence) -> event.shutdownLatch = this.shutdownLatch));
-        this.scheduledExecutorService.shutdown();
     }
 
     @Override
@@ -313,7 +313,6 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
         }
         this.readIndexDisruptor.shutdown();
         resetPendingStatusError(new Status(RaftError.ESTOP, "Node is quit."));
-        this.scheduledExecutorService.awaitTermination(5, TimeUnit.SECONDS);
     }
 
     @Override

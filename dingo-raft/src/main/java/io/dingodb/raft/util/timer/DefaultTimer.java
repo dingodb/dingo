@@ -16,28 +16,21 @@
 
 package io.dingodb.raft.util.timer;
 
-import io.dingodb.raft.util.ExecutorServiceHelper;
-import io.dingodb.raft.util.NamedThreadFactory;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.util.Requires;
-import io.dingodb.raft.util.ThreadPoolUtil;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public class DefaultTimer implements Timer {
-    private final ScheduledExecutorService scheduledExecutorService;
+
+    private final String name;
 
     public DefaultTimer(int workerNum, String name) {
-        this.scheduledExecutorService = ThreadPoolUtil.newScheduledBuilder() //
-            .coreThreads(workerNum) //
-            .poolName(name) //
-            .enableMetric(true) //
-            .threadFactory(new NamedThreadFactory(name, true)) //
-            .build();
+        this.name = name;
     }
 
     @Override
@@ -46,14 +39,13 @@ public class DefaultTimer implements Timer {
         Requires.requireNonNull(unit, "unit");
 
         final TimeoutTask timeoutTask = new TimeoutTask(task);
-        final ScheduledFuture<?> future = this.scheduledExecutorService.schedule(new TimeoutTask(task), delay, unit);
+        final ScheduledFuture<?> future = Executors.schedule(name, new TimeoutTask(task), delay, unit);
         timeoutTask.setFuture(future);
         return timeoutTask.getTimeout();
     }
 
     @Override
     public Set<Timeout> stop() {
-        ExecutorServiceHelper.shutdownAndAwaitTermination(this.scheduledExecutorService);
         return Collections.emptySet();
     }
 

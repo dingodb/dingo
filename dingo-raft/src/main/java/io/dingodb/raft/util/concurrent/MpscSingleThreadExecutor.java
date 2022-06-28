@@ -16,6 +16,7 @@
 
 package io.dingodb.raft.util.concurrent;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.util.Mpsc;
 import io.dingodb.raft.util.Requires;
 import org.slf4j.Logger;
@@ -58,14 +59,14 @@ public class MpscSingleThreadExecutor implements SingleThreadExecutor {
     private volatile int state = ST_NOT_STARTED;
     private volatile Worker worker;
 
-    public MpscSingleThreadExecutor(int maxPendingTasks, ThreadFactory threadFactory) {
-        this(maxPendingTasks, threadFactory, RejectedExecutionHandlers.reject());
+    public MpscSingleThreadExecutor(int maxPendingTasks, String name) {
+        this(maxPendingTasks, name, RejectedExecutionHandlers.reject());
     }
 
-    public MpscSingleThreadExecutor(int maxPendingTasks, ThreadFactory threadFactory,
+    public MpscSingleThreadExecutor(int maxPendingTasks, String name,
                                     RejectedExecutionHandler rejectedExecutionHandler) {
         this.taskQueue = newTaskQueue(maxPendingTasks);
-        this.executor = new ThreadPerTaskExecutor(threadFactory);
+        this.executor = Executors.executor(name);
         this.rejectedExecutionHandler = rejectedExecutionHandler;
     }
 

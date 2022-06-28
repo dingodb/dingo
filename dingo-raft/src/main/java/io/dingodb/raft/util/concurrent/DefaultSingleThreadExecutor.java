@@ -16,12 +16,10 @@
 
 package io.dingodb.raft.util.concurrent;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.util.ExecutorServiceHelper;
-import io.dingodb.raft.util.NamedThreadFactory;
-import io.dingodb.raft.util.ThreadPoolUtil;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
@@ -84,31 +82,22 @@ public final class DefaultSingleThreadExecutor
     }
 
     private static SingleThreadExecutor createSingleThreadExecutor(final String poolName, final int maxPendingTasks) {
-        final ExecutorService singleThreadPool = ThreadPoolUtil.newBuilder() //
-            .poolName(poolName) //
-            .enableMetric(true) //
-            .coreThreads(1) //
-            .maximumThreads(1) //
-            .keepAliveSeconds(60L) //
-            .workQueue(new LinkedBlockingQueue<>(maxPendingTasks)) //
-            .threadFactory(new NamedThreadFactory(poolName, true)) //
-            .build();
 
         return new SingleThreadExecutor() {
 
             @Override
             public boolean shutdownGracefully() {
-                return ExecutorServiceHelper.shutdownAndAwaitTermination(singleThreadPool);
+                return true;
             }
 
             @Override
             public boolean shutdownGracefully(final long timeout, final TimeUnit unit) {
-                return ExecutorServiceHelper.shutdownAndAwaitTermination(singleThreadPool, unit.toMillis(timeout));
+                return true;
             }
 
             @Override
             public void execute(final Runnable command) {
-                singleThreadPool.execute(command);
+                Executors.execute(poolName, command);
             }
         };
     }

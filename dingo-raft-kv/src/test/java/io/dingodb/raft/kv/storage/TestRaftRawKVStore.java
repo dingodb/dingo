@@ -37,7 +37,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
@@ -93,7 +92,7 @@ public class TestRaftRawKVStore {
         logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
-        LogStorage logStorage = new RocksDBLogStorage("test".getBytes(StandardCharsets.UTF_8), logStore);
+        LogStorage logStorage = new RocksDBLogStorage(CommonId.prefix((byte) 'T', new byte[] {'T', 'T'}), logStore);
         nodeOpts.setLogStorage(logStorage);
         String meteUri = Paths.get(DB_PATH, "meta").toString();
         nodeOpts.setRaftMetaUri(meteUri);

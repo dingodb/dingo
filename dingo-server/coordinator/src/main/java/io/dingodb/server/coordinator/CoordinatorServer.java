@@ -16,7 +16,7 @@
 
 package io.dingodb.server.coordinator;
 
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Files;
 import io.dingodb.net.NetService;
@@ -49,8 +49,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
 import static io.dingodb.server.coordinator.config.Constants.RAFT;
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
 
 @Slf4j
 public class CoordinatorServer {
@@ -106,7 +109,9 @@ public class CoordinatorServer {
         if (!logStore.init(logStoreOptions)) {
             log.error("Fail to init [RocksDBLogStore]");
         }
-        return nodeOptions.getServiceFactory().createLogStorage(PrimitiveCodec.encodeInt(0), logStore);
+        return nodeOptions.getServiceFactory().createLogStorage(
+            new CommonId(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator, encodeInt(0), encodeInt(0)), logStore
+        );
     }
 
     private NodeOptions getNodeOptions() {

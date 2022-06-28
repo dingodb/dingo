@@ -16,8 +16,8 @@
 
 package io.dingodb.raft;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
-import io.dingodb.raft.option.NodeOptions;
 import io.dingodb.raft.option.RaftOptions;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.LogStore;
@@ -32,7 +32,7 @@ public interface JRaftServiceFactory {
      * @param logStore the log store to.
      * @return storage to store raft log entires.
      */
-    LogStorage createLogStorage(final byte[] regionId, LogStore logStore);
+    LogStorage createLogStorage(final CommonId regionId, LogStore logStore);
 
     /*
      * Creates a raft snapshot storage

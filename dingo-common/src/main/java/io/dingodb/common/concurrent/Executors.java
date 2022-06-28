@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -48,7 +49,7 @@ public final class Executors {
     private static final ScheduledThreadPoolExecutor GLOBAL_SCHEDULE_POOL = new ThreadPoolBuilder()
         .name(GLOBAL_SCHEDULE_NAME)
         .daemon(true)
-        .coreThreads(0)
+        .coreThreads(1)
         .group(new ThreadGroup(GLOBAL_SCHEDULE_NAME))
         .buildSchedule();
 
@@ -63,22 +64,20 @@ public final class Executors {
         GLOBAL_POOL.execute(wrap(name, command));
     }
 
-    public static void schedule(String name, Runnable command, long delay, TimeUnit unit) {
-        GLOBAL_SCHEDULE_POOL.schedule(wrap(name, command), delay, unit);
+    public static ScheduledFuture<?> schedule(String name, Runnable command, long delay, TimeUnit unit) {
+        return GLOBAL_SCHEDULE_POOL.schedule(() -> execute(name, command), delay, unit);
     }
 
-    public static <V> void schedule(String name, Callable<V> callable, long delay, TimeUnit unit) {
-        GLOBAL_SCHEDULE_POOL.schedule(wrap(name, callable), delay, unit);
-    }
-
-    public static void schedule(String name, Runnable command, long initialDelay, long period, TimeUnit unit) {
-        GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
-    }
-
-    public static void scheduleAtFixedRate(
+    public static ScheduledFuture<?> scheduleWithFixecDelay(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
-        GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(wrap(name, command), initialDelay, period, unit);
+        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(() -> execute(name, command), initialDelay, period, unit);
+    }
+
+    public static ScheduledFuture<?> scheduleAtFixedRate(
+        String name, Runnable command, long initialDelay, long period, TimeUnit unit
+    ) {
+        return GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(() -> execute(name, command), initialDelay, period, unit);
     }
 
     public static <T> Future<T> submit(String name, Callable<T> task) {

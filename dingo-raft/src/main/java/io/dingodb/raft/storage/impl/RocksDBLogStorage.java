@@ -16,6 +16,7 @@
 
 package io.dingodb.raft.storage.impl;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.conf.ConfigurationEntry;
 import io.dingodb.raft.conf.ConfigurationManager;
@@ -38,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -105,7 +105,8 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     private RocksDBLogStore dbStore;
 
-    private final byte[] regionId;
+    private final CommonId id;
+    private final byte[] idContent;
     /**
      * First log index and last log index key in configuration column family.
      */
@@ -117,12 +118,13 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     private volatile boolean hasLoadFirstLogIndex;
 
-    public RocksDBLogStorage(byte[] regionId, RocksDBLogStore dbStore) {
+    public RocksDBLogStorage(CommonId id, RocksDBLogStore dbStore) {
         super();
-        this.regionId = regionId;
-        byte[] firstLogIndexKey = new byte[regionId.length + firstLogIndexTail.length];
-        System.arraycopy(regionId, 0, firstLogIndexKey, 0, regionId.length);
-        System.arraycopy(firstLogIndexTail, 0, firstLogIndexKey, regionId.length, firstLogIndexTail.length);
+        this.id = id;
+        this.idContent = id.content();
+        byte[] firstLogIndexKey = new byte[idContent.length + firstLogIndexTail.length];
+        System.arraycopy(idContent, 0, firstLogIndexKey, 0, idContent.length);
+        System.arraycopy(firstLogIndexTail, 0, firstLogIndexKey, idContent.length, firstLogIndexTail.length);
         this.firstLogIndexKey = firstLogIndexKey;
         this.dbStore = dbStore;
     }
@@ -142,20 +144,20 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         this.dbStore.getWriteLock().lock();
         try (final RocksIterator it = this.dbStore.getDb()
             .newIterator(this.dbStore.getConfHandle(), this.dbStore.getTotalOrderReadOptions())) {
-            it.seek(regionId);
+            it.seek(idContent);
             while (it.isValid()) {
                 final byte[] ks = it.key();
                 final byte[] bs = it.value();
-                if (ks.length < regionId.length) {
+                if (ks.length < idContent.length) {
                     break;
                 }
-                byte[] pre = new byte[regionId.length];
-                System.arraycopy(ks, 0, pre, 0, regionId.length);
-                if (!Arrays.equals(pre, regionId)) {
+                byte[] pre = new byte[idContent.length];
+                System.arraycopy(ks, 0, pre, 0, idContent.length);
+                if (!Arrays.equals(pre, idContent)) {
                     break;
                 }
                 // LogEntry index
-                if (ks.length == regionId.length + 8) {
+                if (ks.length == idContent.length + 8) {
                     final LogEntry entry = this.dbStore.getLogEntryDecoder().decode(bs);
                     if (entry != null) {
                         if (entry.getType() == EntryType.ENTRY_TYPE_CONFIGURATION) {
@@ -207,7 +209,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 this.dbStore.getWriteOptions(), firstLogIndexKey, vs);
             return true;
         } catch (final RocksDBException e) {
-            LOG.error("Fail to save first log index {}, {}.", firstLogIndex, e);
+            LOG.error("Fail to save first log index {} in {}.", firstLogIndex, id, e);
             return false;
         } finally {
             this.dbStore.getReadLock().unlock();
@@ -256,8 +258,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         try {
             onShutdown();
         } catch (Exception e) {
-            LOG.error("Fail to delete LogData on LogStorage RegionId = {}",
-                new String(this.regionId, StandardCharsets.UTF_8));
+            LOG.error("Fail to delete LogData on LogStorage in {}", id, e);
         } finally {
             this.dbStore.getWriteLock().unlock();
         }
@@ -280,16 +281,16 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         checkState();
         try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
             this.dbStore.getTotalOrderReadOptions())) {
-            it.seek(regionId);
+            it.seek(idContent);
             if (it.isValid()) {
                 byte[] key = it.key();
-                if (key.length < regionId.length) {
+                if (key.length < idContent.length) {
                     return 1L;
                 }
-                byte[] pre = new byte[regionId.length];
-                System.arraycopy(key, 0, pre, 0, regionId.length);
-                if (Arrays.equals(pre, regionId)) {
-                    final long ret = Bits.getLong(key, regionId.length);
+                byte[] pre = new byte[idContent.length];
+                System.arraycopy(key, 0, pre, 0, idContent.length);
+                if (Arrays.equals(pre, idContent)) {
+                    final long ret = Bits.getLong(key, idContent.length);
                     saveFirstLogIndex(ret);
                     setFirstLogIndex(ret);
                     return ret;
@@ -313,19 +314,19 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         checkState();
         try (final RocksIterator it = this.dbStore.getDb().newIterator(this.dbStore.getDefaultHandle(),
             this.dbStore.getTotalOrderReadOptions())) {
-            byte[] maxIndex = new byte[regionId.length + 8];
-            System.arraycopy(regionId, 0, maxIndex, 0, regionId.length);
-            Bits.putLong(maxIndex, regionId.length, Long.MAX_VALUE);
+            byte[] maxIndex = new byte[idContent.length + 8];
+            System.arraycopy(idContent, 0, maxIndex, 0, idContent.length);
+            Bits.putLong(maxIndex, idContent.length, Long.MAX_VALUE);
             it.seekForPrev(maxIndex);
             if (it.isValid()) {
                 byte[] key = it.key();
-                if (key.length < regionId.length) {
+                if (key.length < idContent.length) {
                     return 0L;
                 }
-                byte[] pre = new byte[regionId.length];
-                System.arraycopy(key, 0 , pre, 0, regionId.length);
-                if (Arrays.equals(pre, regionId)) {
-                    return Bits.getLong(key, regionId.length);
+                byte[] pre = new byte[idContent.length];
+                System.arraycopy(key, 0 , pre, 0, idContent.length);
+                if (Arrays.equals(pre, idContent)) {
+                    return Bits.getLong(key, idContent.length);
                 }
             }
             return 0L;
@@ -341,7 +342,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             }
             return getEntryFromDB(index);
         } catch (final RocksDBException | IOException e) {
-            LOG.error("Fail to get log entry at index {}, {}.", index, e);
+            LOG.error("Fail to get log entry at index {} in {}.", index, id, e);
         } finally {
             this.dbStore.getReadLock().unlock();
         }
@@ -357,7 +358,10 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             if (entry != null) {
                 return entry;
             } else {
-                LOG.error("Bad log entry format for index={}, the log data is: {}.", index, BytesUtil.toHex(bs));
+                LOG.error(
+                    "Bad log entry format for index={}, the log data is: {} in P{}.",
+                    index, BytesUtil.toHex(bs), id
+                );
                 // invalid data remove? TODO
                 return null;
             }
@@ -371,9 +375,9 @@ public class RocksDBLogStorage implements LogStorage, Describer {
     }
 
     protected byte[] getKeyBytes(final long index) {
-        byte[] ks = new byte[8 + regionId.length];
-        System.arraycopy(regionId, 0, ks, 0, regionId.length);
-        Bits.putLong(ks, regionId.length, index);
+        byte[] ks = new byte[8 + idContent.length];
+        System.arraycopy(idContent, 0, ks, 0, idContent.length);
+        Bits.putLong(ks, idContent.length, index);
         return ks;
     }
 
@@ -513,11 +517,11 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 this.dbStore.getDb().deleteFilesInRanges(this.dbStore.getConfHandle(),
                     Arrays.asList(startKey, endKey), false);
             } catch (final RocksDBException | IOException e) {
-                LOG.error("Fail to truncatePrefix, firstIndexKept={}.", firstIndexKept, e);
+                LOG.error("Fail to truncatePrefix in {}, firstIndexKept={}.", id, firstIndexKept, e);
             } finally {
                 this.dbStore.getReadLock().unlock();
-                LOG.info("Truncated prefix logs from log index {} to {}, cost {} ms.",
-                    startIndex, firstIndexKept, Utils.monotonicMs() - startMs);
+                LOG.info("Truncated prefix logs from log index {} to {} in {}, cost {} ms.",
+                    startIndex, firstIndexKept, id, Utils.monotonicMs() - startMs);
             }
         });
     }
@@ -540,8 +544,9 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
                 //Long times = doCompactByTimes(this.dbStore.getPath());
                 Long endMS = System.nanoTime();
-                LOG.debug("truncate Suffix: dbPath:{}, last startIndex:{}, "
+                LOG.debug("truncate Suffix in {}: dbPath:{}, last startIndex:{}, "
                         + "endIndex:{} diff:{}, cost:{}.",
+                    id,
                     this.dbStore.getPath(),
                     lastIndexKept,
                     lastIndex,
@@ -551,7 +556,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             }
             return true;
         } catch (final RocksDBException | IOException e) {
-            LOG.error("Fail to truncateSuffix {}, {}.", lastIndexKept, e);
+            LOG.error("Fail to truncateSuffix {} in {}.", lastIndexKept, id, e);
         } finally {
             this.dbStore.getReadLock().unlock();
         }
@@ -593,7 +598,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
                 entry = new LogEntry();
                 entry.setType(EntryType.ENTRY_TYPE_NO_OP);
                 entry.setId(new LogId(nextLogIndex, 0));
-                LOG.warn("Entry not found for nextLogIndex {} when reset.", nextLogIndex);
+                LOG.warn("Entry not found for nextLogIndex {} when reset in {}.", nextLogIndex, id);
             }
             return appendEntry(entry);
         } finally {
