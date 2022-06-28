@@ -34,14 +34,10 @@ import io.dingodb.raft.kv.storage.RaftRawKVStore;
 import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.storage.snapshot.SnapshotReader;
 import io.dingodb.raft.storage.snapshot.SnapshotWriter;
-import io.dingodb.raft.util.NamedThreadFactory;
-import io.dingodb.raft.util.timer.HashedWheelTimer;
-import io.dingodb.raft.util.timer.Timeout;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
-import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -50,28 +46,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.concurrent.Executors.execute;
+import static io.dingodb.common.concurrent.Executors.scheduleWithFixecDelay;
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SNAPSHOT_LOAD;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SNAPSHOT_SAVE;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
+import static io.dingodb.store.raft.config.StoreConfiguration.approximateCount;
+import static io.dingodb.store.raft.config.StoreConfiguration.collectStatsInterval;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
 
-    public static final String TIMER_THREAD_NAME = "ServiceStats-timer";
-
-    public final Integer approximateCount = StoreConfiguration.approximateCount();
+    public final Integer approximateCount = approximateCount();
     private final CommonId id;
 
     private final Node node;
 
     private Part part;
-    private HashedWheelTimer timer;
+    private ScheduledFuture<?> scheduledFuture;
     private ReportApi reportApi;
     private long lastTime;
 
@@ -204,42 +203,33 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
     @Override
     public void onLeaderStart(long term) {
         super.onLeaderStart(term);
-        if (StoreConfiguration.collectStatsInterval() < 0) {
+        if (collectStatsInterval() < 0) {
             available = true;
             availableListener.forEach(listen -> Executors.submit(id + " available", listen));
             return;
         }
-        if (this.timer != null) {
-            this.timer.stop();
-            this.timer = null;
-        }
-
-        this.timer = new HashedWheelTimer(
-            new NamedThreadFactory(TIMER_THREAD_NAME, true),
-            50,
-            TimeUnit.MILLISECONDS,
-            4096
-        );
-
         this.reportApi = ServiceLoader.load(NetServiceProvider.class).iterator().next().get().apiRegistry()
             .proxy(ReportApi.class, CoordinatorConnector.defaultConnector());
-        this.timer.start();
-        this.timer.newTimeout(this::sendStats, 1, TimeUnit.SECONDS);
+        scheduledFuture = scheduleWithFixecDelay("part-report", this::sendStats,  0, collectStatsInterval(), SECONDS);
+
     }
 
     @Override
     public void onLeaderStop(Status status) {
-        if (this.timer != null) {
-            this.timer.stop();
-            this.timer = null;
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(true);
         }
         available = false;
         availableListener.forEach(listen -> Executors.submit(id + " available", listen));
     }
 
     //todo refactor send stats ?
-    private void sendStats(Timeout timeout) throws Exception {
+    private void sendStats() {
         try {
+            if (!node.isLeader()) {
+                log.warn("Report stats but current node not leader.");
+                execute("cancel-report-stats", () -> scheduledFuture.cancel(true));
+            }
             SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(part.getStart(), part.getEnd()).join();
             List<ApproximateStats> approximateStats = new ArrayList<>();
             if (collectStats) {
@@ -281,12 +271,7 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
             }
         } catch (Exception e) {
             log.error("Report stats error, id: {}", id, e);
-        } finally {
-            if (node.isLeader()) {
-                this.timer.newTimeout(this::sendStats, StoreConfiguration.collectStatsInterval(), TimeUnit.SECONDS);
-            }
         }
-
     }
 
     private boolean raftLocationContains(Collection<Location> list, Location location) {

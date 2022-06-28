@@ -80,6 +80,7 @@ public class SendEndpoint {
     }
 
     public void close() throws Exception {
+        EndpointManager.INSTANCE.unregisterSendEndpoint(this);
         channel.close();
     }
 }

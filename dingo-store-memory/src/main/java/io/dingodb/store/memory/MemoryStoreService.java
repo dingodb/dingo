@@ -54,6 +54,11 @@ public class MemoryStoreService implements StoreService {
     }
 
     @Override
+    public StoreInstance getOrCreateInstance(@Nonnull CommonId id) {
+        return getInstance(id);
+    }
+
+    @Override
     public StoreInstance getInstance(@Nonnull CommonId id) {
         MemoryStoreInstance instance = store.get(id);
         if (instance == null) {

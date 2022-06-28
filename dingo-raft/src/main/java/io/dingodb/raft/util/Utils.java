@@ -17,6 +17,7 @@
 package io.dingodb.raft.util;
 
 import com.codahale.metrics.MetricRegistry;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.error.RaftError;
@@ -42,8 +43,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -99,24 +98,6 @@ public final class Utils {
                                                                               "jraft.use.mpsc.single.thread.executor",
                                                                               true);
 
-    /**
-     * Global thread pool to run closure.
-     */
-    private static ThreadPoolExecutor CLOSURE_EXECUTOR = ThreadPoolUtil
-                                                                              .newBuilder()
-                                                                              .poolName("JRAFT_CLOSURE_EXECUTOR")
-                                                                              .enableMetric(true)
-                                                                              .coreThreads(
-                                                                                  MIN_CLOSURE_EXECUTOR_POOL_SIZE)
-                                                                              .maximumThreads(
-                                                                                  MAX_CLOSURE_EXECUTOR_POOL_SIZE)
-                                                                              .keepAliveSeconds(60L)
-                                                                              .workQueue(new SynchronousQueue<>())
-                                                                              .threadFactory(
-                                                                                  new NamedThreadFactory(
-                                                                                      "JRaft-Closure-Executor-", true))
-                                                                              .build();
-
     private static final Pattern GROUP_ID_PATTER = Pattern.compile("^[a-zA-Z][a-zA-Z0-9\\-_]*$");
 
     public static void verifyGroupId(final String groupId) {
@@ -134,7 +115,7 @@ public final class Utils {
      * Register CLOSURE_EXECUTOR into metric registry.
      */
     public static void registerClosureExecutorMetrics(final MetricRegistry registry) {
-        registry.register("raft-utils-closure-thread-pool", new ThreadPoolMetricSet(CLOSURE_EXECUTOR));
+        //registry.register("raft-utils-closure-thread-pool", new ThreadPoolMetricSet(CLOSURE_EXECUTOR));
     }
 
     /**
@@ -162,7 +143,7 @@ public final class Utils {
      * Run a task in thread pool,returns the future object.
      */
     public static Future<?> runInThread(final Runnable runnable) {
-        return CLOSURE_EXECUTOR.submit(runnable);
+        return Executors.submit("JRAFT_CLOSURE_EXECUTOR", runnable);
     }
 
     /**

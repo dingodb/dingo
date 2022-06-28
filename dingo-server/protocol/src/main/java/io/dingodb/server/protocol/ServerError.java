@@ -49,8 +49,8 @@ public enum ServerError implements FormattingError {
      */
     TABLE_EXIST(12101, "Table exist.", "Create table failed, table exist, name: [%s]"),
     TABLE_NOT_FOUND(12102, "Table not found.", "Table not found, name: [%s]"),
-    //CREATE_META_SUCCESS_WAIT_LEADER_FAILED(12101, "Meta info add success, but wait leader time out.",
-    //    "Table [%s] meta add success, but wait all partition leader success time out."),
+    CREATE_META_SUCCESS_WAIT_LEADER_FAILED(12101, "Meta info add success, but wait leader time out.",
+        "Table [%s] meta add success, but wait all partition leader success time out."),
 
     CHECK_AND_WAIT_HELIX_ACTIVE(12901, "Check helix status error.", "Check helix status and wait active."),
 

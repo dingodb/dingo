@@ -18,6 +18,7 @@ package io.dingodb.raft.rpc.impl;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.Status;
 import io.dingodb.raft.error.InvokeTimeoutException;
 import io.dingodb.raft.error.RaftError;
@@ -34,18 +35,12 @@ import io.dingodb.raft.rpc.RpcResponseClosure;
 import io.dingodb.raft.rpc.RpcResponseFactory;
 import io.dingodb.raft.rpc.RpcUtils;
 import io.dingodb.raft.util.Endpoint;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.RpcFactoryHelper;
-import io.dingodb.raft.util.ThreadPoolMetricSet;
-import io.dingodb.raft.util.ThreadPoolUtil;
-import io.dingodb.raft.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public abstract class AbstractClientService implements ClientService {
@@ -56,7 +51,7 @@ public abstract class AbstractClientService implements ClientService {
     }
 
     protected volatile RpcClient rpcClient;
-    protected ThreadPoolExecutor rpcExecutor;
+    protected Executor rpcExecutor;
     protected RpcOptions rpcOptions;
 
     public RpcClient getRpcClient() {
@@ -100,20 +95,7 @@ public abstract class AbstractClientService implements ClientService {
         this.rpcClient = factory.createRpcClient(factory.defaultJRaftClientConfigHelper(this.rpcOptions));
         configRpcClient(this.rpcClient);
         this.rpcClient.init(null);
-        this.rpcExecutor = ThreadPoolUtil.newBuilder() //
-            .poolName("JRaft-RPC-Processor") //
-            .enableMetric(true) //
-            .coreThreads(rpcProcessorThreadPoolSize / 3) //
-            .maximumThreads(rpcProcessorThreadPoolSize) //
-            .keepAliveSeconds(60L) //
-            .workQueue(new ArrayBlockingQueue<>(10000)) //
-            .threadFactory(new NamedThreadFactory("JRaft-RPC-Processor-", true)) //
-            .build();
-        if (this.rpcOptions.getMetricRegistry() != null) {
-            this.rpcOptions.getMetricRegistry().register("raft-rpc-client-thread-pool",
-                new ThreadPoolMetricSet(this.rpcExecutor));
-            Utils.registerClosureExecutorMetrics(this.rpcOptions.getMetricRegistry());
-        }
+        this.rpcExecutor = Executors.executor("JRaft-RPC-Processor");
         return true;
     }
 
@@ -122,7 +104,6 @@ public abstract class AbstractClientService implements ClientService {
         if (this.rpcClient != null) {
             this.rpcClient.shutdown();
             this.rpcClient = null;
-            this.rpcExecutor.shutdown();
         }
     }
 

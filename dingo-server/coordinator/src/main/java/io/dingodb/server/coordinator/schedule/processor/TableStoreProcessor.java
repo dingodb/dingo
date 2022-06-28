@@ -18,6 +18,7 @@ package io.dingodb.server.coordinator.schedule.processor;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.TableStoreApi;
@@ -55,7 +56,7 @@ public class TableStoreProcessor {
     }
 
     public static void deleteTable(CommonId tableId) {
-        APIS.values().forEach(api -> api.deleteTable(tableId));
+        APIS.values().forEach(api -> Executors.execute("delete-table", () -> api.deleteTable(tableId)));
     }
 
     public static void addReplica(CommonId executor, CommonId table, CommonId part, Location replica) {

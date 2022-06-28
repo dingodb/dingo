@@ -25,6 +25,7 @@ import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaClientRuntimeException;
 import org.apache.calcite.avatica.AvaticaSeverity;
+import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -498,6 +499,14 @@ public class DingoMeta extends MetaImpl {
     @Override
     public void closeStatement(StatementHandle sh) {
         // Called in `AvaticaStatement.close` to do extra things.
+        AvaticaStatement statement = connection.statementMap.get(sh.id);
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override

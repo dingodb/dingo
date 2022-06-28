@@ -16,6 +16,7 @@
 
 package io.dingodb.raft.core;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.raft.JRaftServiceFactory;
 import io.dingodb.raft.entity.codec.LogEntryCodecFactory;
 import io.dingodb.raft.entity.codec.v2.LogEntryV2CodecFactory;
@@ -40,8 +41,8 @@ public class DefaultJRaftServiceFactory implements JRaftServiceFactory {
     }
 
     @Override
-    public LogStorage createLogStorage(byte[] regionId, LogStore logStore) {
-        Requires.requireTrue(regionId != null || regionId.length != 0, "Blank log storage regionId.");
+    public LogStorage createLogStorage(CommonId regionId, LogStore logStore) {
+        Requires.requireTrue(regionId != null);
         Requires.requireTrue(logStore != null, "Null logStore.");
         Requires.requireTrue(logStore instanceof RocksDBLogStore, "LogStore type error.");
         return new RocksDBLogStorage(regionId, (RocksDBLogStore) logStore);

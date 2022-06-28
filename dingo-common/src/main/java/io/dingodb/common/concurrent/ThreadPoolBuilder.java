@@ -122,7 +122,6 @@ public class ThreadPoolBuilder {
 
     public ScheduledThreadPoolExecutor buildSchedule() {
         PreParameters.nonNull(name, "Name must not null.");
-        workQueue = PreParameters.cleanNull(workQueue, LinkedBlockingQueue::new);
         handler = PreParameters.cleanNull(handler, DEFAULT_HANDLER);
         threadFactory = PreParameters.cleanNull(threadFactory, this::generateThreadFactory);
         return new ScheduledThreadPoolExecutor(coreThreads, threadFactory, handler);

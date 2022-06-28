@@ -16,19 +16,16 @@
 
 package io.dingodb.raft.rpc;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.raft.Closure;
 import io.dingodb.raft.Status;
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.SystemPropertyUtil;
-import io.dingodb.raft.util.ThreadPoolUtil;
 import io.dingodb.raft.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class RpcUtils {
@@ -49,20 +46,6 @@ public final class RpcUtils {
                                                                              Math.max(100, Utils.cpus() * 5));
 
     /**
-     * Global thread pool to run rpc closure.
-     */
-    private static ThreadPoolExecutor RPC_CLOSURE_EXECUTOR = ThreadPoolUtil
-        .newBuilder()
-        .poolName("JRAFT_RPC_CLOSURE_EXECUTOR")
-        .enableMetric(true)
-        .coreThreads(MIN_RPC_CLOSURE_EXECUTOR_POOL_SIZE)
-        .maximumThreads(MAX_RPC_CLOSURE_EXECUTOR_POOL_SIZE)
-        .keepAliveSeconds(60L)
-        .workQueue(new SynchronousQueue<>())
-        .threadFactory(new NamedThreadFactory("JRaft-Rpc-Closure-Executor-", true)) //
-        .build();
-
-    /**
      * Run closure with OK status in thread pool.
      */
     public static Future<?> runClosureInThread(final Closure done) {
@@ -76,7 +59,7 @@ public final class RpcUtils {
      * Run a task in thread pool, returns the future object.
      */
     public static Future<?> runInThread(final Runnable runnable) {
-        return RPC_CLOSURE_EXECUTOR.submit(runnable);
+        return Executors.submit("JRaft-Rpc-Closure-Executor", runnable);
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package io.dingodb.raft.util;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class NamedThreadFactory implements ThreadFactory {
 
     private static final LogUncaughtExceptionHandler UNCAUGHT_EX_HANDLER = new LogUncaughtExceptionHandler();
 
+    @Getter
     private final String prefix;
 
     private final AtomicInteger counter = new AtomicInteger(0);

@@ -100,7 +100,7 @@ public class ExecutorServer {
 
     private void initStore() {
         List<Part> parts = serverApi.storeMap(this.id);
-        this.storeInstance = storeService.getInstance(this.id);
+        this.storeInstance = storeService.getOrCreateInstance(this.id);
         log.info("Init store, parts: {}", parts);
         parts.forEach(tableStoreApi::assignTablePart);
     }

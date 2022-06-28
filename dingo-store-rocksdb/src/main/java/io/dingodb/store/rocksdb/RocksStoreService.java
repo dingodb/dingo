@@ -45,6 +45,11 @@ public class RocksStoreService implements StoreService {
     }
 
     @Override
+    public StoreInstance getOrCreateInstance(@Nonnull CommonId id) {
+        return getInstance(id);
+    }
+
+    @Override
     public void deleteInstance(CommonId id) {
 
     }

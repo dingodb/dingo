@@ -16,12 +16,10 @@
 
 package io.dingodb.raft.util.concurrent;
 
-import io.dingodb.raft.util.NamedThreadFactory;
 import io.dingodb.raft.util.Requires;
 import io.dingodb.raft.util.Utils;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 // Refer to SOFAJRaft: <A>https://github.com/sofastack/sofa-jraft/<A/>
 public final class DefaultFixedThreadsExecutorGroupFactory implements FixedThreadsExecutorGroupFactory {
@@ -39,10 +37,9 @@ public final class DefaultFixedThreadsExecutorGroupFactory implements FixedThrea
         Requires.requireTrue(nThreads > 0, "nThreads must > 0");
         final boolean mpsc = useMpscQueue && Utils.USE_MPSC_SINGLE_THREAD_EXECUTOR;
         final SingleThreadExecutor[] children = new SingleThreadExecutor[nThreads];
-        final ThreadFactory threadFactory = mpsc ? new NamedThreadFactory(poolName, true) : null;
         for (int i = 0; i < nThreads; i++) {
             if (mpsc) {
-                children[i] = new MpscSingleThreadExecutor(maxPendingTasksPerThread, threadFactory);
+                children[i] = new MpscSingleThreadExecutor(maxPendingTasksPerThread, poolName);
             } else {
                 children[i] = new DefaultSingleThreadExecutor(poolName, maxPendingTasksPerThread);
             }
