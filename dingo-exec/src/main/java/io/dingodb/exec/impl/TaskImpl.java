@@ -135,7 +135,9 @@ public final class TaskImpl implements Task {
     }
 
     public void run() {
-        log.info("Task is starting at {}...", location);
+        if (log.isDebugEnabled()) {
+            log.debug("Task is starting at {}...", location);
+        }
         for (Id id : runList) {
             final Operator operator = operators.get(id);
             assert operator instanceof SourceOperator

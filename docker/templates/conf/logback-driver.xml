@@ -16,9 +16,9 @@
   -->
 
 <configuration>
-    <property name="LOG_HOME" value="/tmp/log"/>
-    <property name="LOG_FILE" value="coordinator.log"/>
-    <property name="ERROR_LOG_FILE" value="coordinator-error.log"/>
+    <property name="LOG_HOME" value="/opt/dingo/log"/>
+    <property name="LOG_FILE" value="dingo-driver.log"/>
+    <property name="ERROR_LOG_FILE" value="dingo-driver-error.log"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -61,7 +61,7 @@
         </filter>
     </appender>
 
-    <root level="info">
+    <root level="INFO">
         <appender-ref ref="ALL_LOG_FILE"/>
         <appender-ref ref="ERROR_LOG_FILE"/>
     </root>
