@@ -125,10 +125,12 @@ public class NettyNetService implements NetService {
     public void registerTagMessageListener(String tag, MessageListener listener) {
         PreParameters.nonNull(tag, "tag");
         PreParameters.nonNull(listener, "listener");
-        log.info("Register message listener, tag: [{}], listener class: [{}], caller: [{}]",
-            tag,
-            listener.getClass().getName(),
-            StackTraces.stack(2));
+        if (log.isDebugEnabled()) {
+            log.info("Register message listener, tag: [{}], listener class: [{}], caller: [{}]",
+                tag,
+                listener.getClass().getName(),
+                StackTraces.stack(2));
+        }
         TagMessageHandler.INSTANCE.addTagListener(tag, listener);
     }
 
