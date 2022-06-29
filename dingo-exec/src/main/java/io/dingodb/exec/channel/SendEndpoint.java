@@ -41,8 +41,8 @@ public class SendEndpoint {
         EndpointManager.INSTANCE.registerSendEndpoint(this);
         // This may block.
         channel = Services.openNewChannel(host, port);
-        if (log.isInfoEnabled()) {
-            log.info("(tag = {}) Opened channel to {}:{}.", tag, host, port);
+        if (log.isDebugEnabled()) {
+            log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
         }
     }
 

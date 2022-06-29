@@ -149,7 +149,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             }
         }
         Job job = visitor.getJob();
-        log.info("job = {}", job);
+        if (log.isDebugEnabled()) {
+            log.info("job = {}", job);
+        }
         return job;
     }
 

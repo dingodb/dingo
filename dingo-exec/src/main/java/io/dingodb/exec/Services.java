@@ -88,8 +88,8 @@ public final class Services {
         NET.registerTagMessageListener(TASK_TAG, (message, channel) -> {
             final long startTime = System.currentTimeMillis();
             String taskStr = new String(message.content(), StandardCharsets.UTF_8);
-            if (log.isInfoEnabled()) {
-                log.info("Received task: {}", taskStr);
+            if (log.isDebugEnabled()) {
+                log.debug("Received task: {}", taskStr);
             }
             try {
                 final Timer.Context timeCtx = DingoMetrics.getTimeContext("deserialize");

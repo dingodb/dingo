@@ -19,7 +19,7 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 
 java ${JAVA_OPTS} \
-    -Dlog4j.configuration=file:${ROOT}/conf/log4j-sqlline.properties \
+    -Dlogback.configurationFile=file:${ROOT}/conf/logback-sqlline.xml \
     -classpath ${JAR_PATH} \
     io.dingodb.cli.Tools sqlline \
     --config ${ROOT}/conf/client.yaml \

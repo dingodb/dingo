@@ -17,8 +17,8 @@
 
 <configuration>
     <property name="LOG_HOME" value="/tmp/log"/>
-    <property name="LOG_FILE" value="coordinator.log"/>
-    <property name="ERROR_LOG_FILE" value="coordinator-error.log"/>
+    <property name="LOG_FILE" value="sqlline.log"/>
+    <property name="ERROR_LOG_FILE" value="sqlline-error.log"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
