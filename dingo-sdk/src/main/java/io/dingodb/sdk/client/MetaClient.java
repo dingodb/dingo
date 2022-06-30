@@ -26,18 +26,14 @@ import javax.annotation.Nullable;
 
 public class MetaClient extends ClientBase implements MetaService {
     @Delegate
-    private final MetaServiceApi metaServiceApi;
+    private MetaServiceApi metaServiceApi;
 
-    public MetaClient(String configPath) throws Exception {
+    public MetaClient(String configPath) {
         super(configPath);
-        metaServiceApi = super.getNetService()
-            .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
     }
 
     public MetaClient(String coordinatorExchangeSvrList, String currentHost, Integer currentPort) {
         super(coordinatorExchangeSvrList, currentHost, currentPort);
-        metaServiceApi = super.getNetService()
-            .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
     }
 
     @Override
@@ -46,13 +42,14 @@ public class MetaClient extends ClientBase implements MetaService {
     }
 
     @Override
-    public void init(@Nullable Map<String, Object> props) {
-
+    public void init(@Nullable Map<String, Object> props) throws Exception {
+        super.initConnection();
+        metaServiceApi = super.getNetService()
+            .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
     }
 
     @Override
     public void clear() {
-
     }
 
     @Override
