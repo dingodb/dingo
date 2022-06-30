@@ -45,6 +45,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.parser.SqlParseException;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -56,12 +57,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.error.DingoException.CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
-import static io.dingodb.common.error.DingoException.EXECUTOR_NODE_FAIL;
 import static io.dingodb.common.error.DingoException.RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 import static io.dingodb.common.error.DingoException.TYPE_CAST_ERROR;
 import static java.util.Objects.requireNonNull;
@@ -144,11 +145,18 @@ public class DingoMeta extends MetaImpl {
             checkJobHasFailed(signature);
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (SQLException | SqlParseException | RuntimeException e) {
-            log.error("Catch execute exception:{}", e.toString(), e);
+            Throwable throwable = e;
+            log.error("Catch execute exception: ", throwable);
+            while (throwable instanceof CompletionException || throwable instanceof InvocationTargetException) {
+                if (throwable.getCause() == null) {
+                    break;
+                }
+                throwable = throwable.getCause();
+            }
             String exceptMessage;
             Integer exceptionCode = -1;
-            if (e instanceof CalciteContextException) {
-                exceptMessage = (((CalciteContextException) e).getMessage());
+            if (throwable instanceof CalciteContextException) {
+                exceptMessage = (((CalciteContextException) throwable).getMessage());
                 for (Pattern pat : CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
                     if (pat.matcher(exceptMessage).find()) {
                         exceptionCode = CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.get(pat);
@@ -158,22 +166,19 @@ public class DingoMeta extends MetaImpl {
                 throw new AvaticaClientRuntimeException(exceptMessage, exceptionCode,
                     Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
                     Collections.singletonList(""), null);
-            } else if (e instanceof RuntimeException) {
-                if (((RuntimeException) e).getCause() == null) {
-                    exceptMessage = e.getMessage() != null ? ((RuntimeException) e).getMessage() : "Null pointer";
+            } else if (throwable instanceof RuntimeException) {
+                if (((RuntimeException) throwable).getCause() == null) {
+                    exceptMessage = throwable.getMessage() != null ? ((RuntimeException) throwable).getMessage() : "Null pointer";
                 } else {
-                    exceptMessage = ((RuntimeException) e).getCause().getMessage();
+                    exceptMessage = ((RuntimeException) throwable).getCause().getMessage();
                 }
                 for (Pattern pat : RUNTIME_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
-                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) e).getMessage()).find()
-                        && !((RuntimeException) e).getMessage().contains("CAST"))) {
+                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) throwable).getMessage()).find()
+                        && !((RuntimeException) throwable).getMessage().contains("CAST"))) {
                         exceptionCode = RUNTIME_EXCEPTION_PATTERN_CODE_MAP.get(pat);
                         // TODO: Refine error message.
                         if (exceptionCode == TYPE_CAST_ERROR) {
-                            exceptMessage = ((RuntimeException) e).getMessage();
-                        } else if (exceptionCode == EXECUTOR_NODE_FAIL) {
-                            exceptMessage = ((RuntimeException)e).getCause().getMessage()
-                                + ",Table meta save success, but schedule failed.";
+                            exceptMessage = ((RuntimeException) throwable).getMessage();
                         }
                         break;
                     }
@@ -181,11 +186,11 @@ public class DingoMeta extends MetaImpl {
                 throw new AvaticaClientRuntimeException(exceptMessage, exceptionCode,
                     Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
                     Collections.singletonList(""), null);
-            } else if (e instanceof SQLException) {
-                throw new AvaticaClientRuntimeException(e.toString(), 12, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+            } else if (throwable instanceof SQLException) {
+                throw new AvaticaClientRuntimeException(throwable.toString(), 12, Service.ErrorResponse.UNKNOWN_SQL_STATE,
                     AvaticaSeverity.ERROR, Collections.singletonList(""), null);
             } else {
-                throw new AvaticaClientRuntimeException(e.toString(), 13, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+                throw new AvaticaClientRuntimeException(throwable.toString(), 13, Service.ErrorResponse.UNKNOWN_SQL_STATE,
                     AvaticaSeverity.ERROR, Collections.singletonList(""), null);
             }
 
