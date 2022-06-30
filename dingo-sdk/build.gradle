@@ -5,6 +5,9 @@ plugins {
 
 dependencies {
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
+    implementation group: 'javax.validation', name: 'validation-api', version: 'validation'.v()
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
 
     compile project(":dingo-common")
