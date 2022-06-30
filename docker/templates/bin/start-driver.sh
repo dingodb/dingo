@@ -19,7 +19,7 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 
 
-nohup /opt/jdk/bin/java ${JAVA_OPTS} \
+nohup java ${JAVA_OPTS} \
     -Dlogback.configurationFile=file:${ROOT}/conf/logback-driver.xml \
     -classpath ${JAR_PATH} \
     io.dingodb.cli.Tools driver \

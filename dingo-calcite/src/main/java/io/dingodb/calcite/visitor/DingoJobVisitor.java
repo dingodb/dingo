@@ -328,7 +328,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             }
             for (int i = 0; i < columnNum; i++) {
                 if (td.getColumn(i).isNotNull() && value[i] == null) {
-                    throw new RuntimeException("Column "+ td.getColumn(i).getName()  +" has no default "
+                    throw new RuntimeException("Column '"+ td.getColumn(i).getName()  + "' has no default "
                         + "value and does not allow NULLs");
                 }
             }

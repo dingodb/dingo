@@ -511,7 +511,7 @@ public class ExceptionTest {
             System.out.println(e.getMessage());
             assertThat(e.getMessage().replaceAll("(?<=#)\\d+",""))
                 .isEqualTo("Error 90003 (00000) : Error while executing SQL \"insert into testnull(id,name) "
-                    + "values(1,'zhangsan')\": Column AGE has no default value and does not allow NULLs");
+                    + "values(1,'zhangsan')\": Column 'AGE' has no default value and does not allow NULLs");
         }
     }
 

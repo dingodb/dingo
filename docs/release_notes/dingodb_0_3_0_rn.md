@@ -88,7 +88,7 @@
 ### 3.3 Import data from external
 
 - Support to import data from local files in CSV, JSON format
-- Support to import data from Kafka in CSV, JSON, and Avro format
+- Support to import data from Kafka in JSON and Avro format
 
 
 ## 4. Tools and Monitor

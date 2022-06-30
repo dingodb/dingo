@@ -105,19 +105,23 @@ public class NettyNetService implements NetService {
     public void setMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
         PreParameters.nonNull(tag, "tag");
         PreParameters.nonNull(listenerProvider, "listener provider");
-        log.info("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
-            tag,
-            listenerProvider.getClass().getName(),
-            StackTraces.stack(2));
+        if (log.isDebugEnabled()) {
+            log.debug("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
+                tag,
+                listenerProvider.getClass().getName(),
+                StackTraces.stack(2));
+        }
         TagMessageHandler.INSTANCE.setTagListenerProvider(tag, listenerProvider);
     }
 
     @Override
     public void unsetMessageListenerProvider(String tag) {
         PreParameters.nonNull(tag, "tag");
-        log.info("Unregister message listener provider, tag: [{}], caller: [{}]",
-            tag,
-            StackTraces.stack(2));
+        if (log.isDebugEnabled()) {
+            log.debug("Unregister message listener provider, tag: [{}], caller: [{}]",
+                tag,
+                StackTraces.stack(2));
+        }
         TagMessageHandler.INSTANCE.unsetTagListenerProvider(tag);
     }
 
@@ -138,10 +142,12 @@ public class NettyNetService implements NetService {
     public void unregisterTagMessageListener(String tag, MessageListener listener) {
         PreParameters.nonNull(tag, "tag");
         PreParameters.nonNull(listener, "listener");
-        log.info("Unregister message listener, tag: [{}], listener class: [{}], caller: [{}]",
-            tag,
-            listener.getClass().getName(),
-            StackTraces.stack(2));
+        if (log.isDebugEnabled()) {
+            log.debug("Unregister message listener, tag: [{}], listener class: [{}], caller: [{}]",
+                tag,
+                listener.getClass().getName(),
+                StackTraces.stack(2));
+        }
         TagMessageHandler.INSTANCE.removeTagListener(tag, listener);
     }
 
