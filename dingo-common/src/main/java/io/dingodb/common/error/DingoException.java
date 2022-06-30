@@ -114,6 +114,9 @@ public class DingoException extends RuntimeException implements IndirectError {
             JOIN_SELECT_COLUMN_AMBIGUOUS);
 
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
+        // "Table Already exists"  (90007)
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"),
+            TABLE_ALREADY_EXISTS);
         // "Insert Null into non-null column"
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* has no default "
             + "value and does not allow NULLs"), INSERT_NULL_TO_NON_NULL_COLUMN);
@@ -136,7 +139,7 @@ public class DingoException extends RuntimeException implements IndirectError {
         // "Number Range Error"
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exceeds max .* or lower min value"), TYPE_CAST_ERROR);
         // "Coordinator Failover Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Invoke on .* failed"), EXECUTOR_NODE_FAIL);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table meta save success, but schedule failed"), EXECUTOR_NODE_FAIL);
     }
     // TODO
     //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;

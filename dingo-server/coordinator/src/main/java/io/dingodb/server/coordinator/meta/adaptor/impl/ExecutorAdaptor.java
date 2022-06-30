@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
+import io.dingodb.server.coordinator.schedule.processor.TableStoreProcessor;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Executor;
 
@@ -40,6 +41,7 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
         super(metaStore);
         MetaAdaptorRegistry.register(Executor.class, this);
         metaMap.values().forEach(__ -> locationMap.put(__.location(), __));
+        metaMap.values().forEach(__ -> TableStoreProcessor.addStore(__.getId(), __.location()));
     }
 
     @Override

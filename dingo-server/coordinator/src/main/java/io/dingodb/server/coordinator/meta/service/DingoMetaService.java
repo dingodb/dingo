@@ -95,7 +95,7 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     @Override
     public synchronized void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
         if (getTableDefinitions().containsKey(tableName)) {
-            throw new RuntimeException("Table exists: " + tableName);
+            throw new RuntimeException("Table " + tableName + " already exists");
         }
         ((TableAdaptor) getMetaAdaptor(Table.class)).create(DINGO_ID, tableDefinition);
     }
