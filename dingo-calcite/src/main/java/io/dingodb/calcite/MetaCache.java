@@ -26,9 +26,7 @@ import io.dingodb.meta.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -36,6 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 @Slf4j
 public class MetaCache {
@@ -57,8 +56,13 @@ public class MetaCache {
                 ms.getName());
             metaService = ms;
         }
-        final long startTime = System.currentTimeMillis();
-        tableDefinitionsMap = metaService.getTableDefinitions();
+        Map<String, TableDefinition> definitions;
+        try {
+            definitions = metaService.getTableDefinitions();
+        } catch (Exception e) {
+            definitions = new HashMap<>();
+        }
+        tableDefinitionsMap = definitions;
     }
 
     public MetaCache() {

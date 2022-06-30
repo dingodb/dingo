@@ -118,7 +118,7 @@ public class Examples {
                 ));
                 break;
             case "SDK":
-                runOperation(new SDKRunner(new DingoClient(config, table.toUpperCase())));
+                runOperation(new SDKRunner(new DingoClient(config, table.toUpperCase(), 10)));
                 break;
             case "SCHEMA":
                 System.out.println(TABLE_SCHEMA);

@@ -16,7 +16,6 @@
 
 package io.dingodb.net.netty.handler;
 
-import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
@@ -24,9 +23,9 @@ import io.dingodb.net.MessageListenerProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
 public class TagMessageHandler {
@@ -53,13 +52,27 @@ public class TagMessageHandler {
     }
 
     public void addTagListener(String tag, MessageListener listener) {
-        Collection<MessageListener> listeners =
-            this.listeners.compute(tag, (t, ps) -> ps == null ? new CopyOnWriteArraySet<>() : ps);
-        listeners.add(listener);
+        this.listeners.compute(tag, (k, v) -> {
+            if (v == null) {
+                v = new HashSet<>();
+            }
+            v.add(listener);
+            return v;
+        });
     }
 
     public void removeTagListener(String tag, MessageListener listener) {
-        Optional.ofNullable(listeners.get(tag)).ifPresent(ps -> ps.remove(listener));
+        listeners.compute(tag, (k, v) -> {
+            if (v == null) {
+                return null;
+            }
+            v.remove(listener);
+            if (v.isEmpty()) {
+                return null;
+            } else {
+                return v;
+            }
+        });
     }
 
     private void onTagMessage(

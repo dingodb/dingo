@@ -69,7 +69,6 @@ public class RandomChannelProxy<T> implements ApiProxy<T> {
     public void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws Exception {
         future.whenCompleteAsync((r, e) -> {
             if (e instanceof CancellationException) {
-                System.out.println(1111);
                 ch.send(new Message(API_CANCEL, EMPTY.content()));
             }
             try {

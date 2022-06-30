@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -40,12 +42,14 @@ import java.util.function.Consumer;
 @Accessors(fluent = true, chain = true)
 public class Channel implements Runnable, io.dingodb.net.Channel {
 
+    private static final long WAIT_THREAD_TIME = TimeUnit.MILLISECONDS.toNanos(2);
     private static final ApiRegistryImpl API_REGISTRY = ApiRegistryImpl.instance();
     private static final MessageListener EMPTY_MESSAGE_LISTENER = (msg, ch) -> {
         log.warn("Receive message, but listener is empty.");
     };
     private static final Consumer<io.dingodb.net.Channel> EMPTY_CLOSE_LISTENER = ch -> { };
 
+    private int closeRetry = 300;
     @Getter
     protected final long channelId;
     @Getter
@@ -79,6 +83,9 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
         if (this.status == Status.CLOSE) {
             log.warn("Channel [{}] already close", channelId);
             return;
+        }
+        while (thread == null && closeRetry-- > 0) {
+            LockSupport.parkNanos(WAIT_THREAD_TIME);
         }
         this.shutdown();
         this.sendAsync(buffer(Type.COMMAND, 1).put(Command.CLOSE.code()));
@@ -212,6 +219,7 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
                 if (log.isDebugEnabled()) {
                     log.debug("Channel [{}] receive close command.", channelId);
                 }
+                thread = null;
                 shutdown();
                 Executors.execute(channelId + "-channel-close", onClose);
                 return;
