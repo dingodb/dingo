@@ -118,7 +118,7 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(@Nonnull Fin fin) {
         try {
-            if (fin != null && fin instanceof FinWithException) {
+            if (fin instanceof FinWithException) {
                 byte[] encodeArr = codec.encodeFin(fin);
                 byte[] array = PrimitiveCodec.encodeArray(encodeArr);
                 endpoint.send(array);

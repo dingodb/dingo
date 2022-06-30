@@ -80,7 +80,7 @@ public class Import {
             commander.usage();
             return;
         }
-        DingoClient dingoClient = new DingoClient(config, tableName.toUpperCase());
+        DingoClient dingoClient = new DingoClient(config, tableName.toUpperCase(), 10);
         TableDefinition tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName.toUpperCase());
         Factory factory = new DefaultFactory();
         Fetch fetch = factory.getFetch(recordType.toUpperCase());
