@@ -94,7 +94,6 @@ public class CoordinatorServer {
         netService.apiRegistry().register(ClusterServiceApi.class, CoordinatorClusterService.instance());
 
         DingoMetaService.init();
-
     }
 
     private LogStorage createLogStorage(NodeOptions nodeOptions) {
