@@ -18,7 +18,7 @@ package io.dingodb.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoOldClient;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -118,7 +118,7 @@ public class Examples {
                 ));
                 break;
             case "SDK":
-                runOperation(new SDKRunner(new DingoClient(config, table.toUpperCase(), 10)));
+                runOperation(new SDKRunner(new DingoOldClient(config, table.toUpperCase(), 10)));
                 break;
             case "SCHEMA":
                 System.out.println(TABLE_SCHEMA);
@@ -234,10 +234,10 @@ public class Examples {
 
     static class SDKRunner implements Runner {
 
-        private final DingoClient dingoClient;
+        private final DingoOldClient dingoOldClient;
 
-        SDKRunner(DingoClient dingoClient) {
-            this.dingoClient = dingoClient;
+        SDKRunner(DingoOldClient dingoOldClient) {
+            this.dingoOldClient = dingoOldClient;
         }
 
         @Override
@@ -248,14 +248,14 @@ public class Examples {
         @Override
         public long insert(Object[] record) throws Exception {
             long start = System.currentTimeMillis();
-            dingoClient.insert(record);
+            dingoOldClient.insert(record);
             return System.currentTimeMillis() - start;
         }
 
         @Override
         public long insert(List<Object[]> records) throws Exception {
             long start = System.currentTimeMillis();
-            dingoClient.insert(records);
+            dingoOldClient.insert(records);
             return System.currentTimeMillis() - start;
         }
 
@@ -267,7 +267,7 @@ public class Examples {
         @Override
         public long query(int n) throws Exception {
             long start = System.currentTimeMillis();
-            Object[] objects = dingoClient.get(new Object[] {String.valueOf(n)});
+            Object[] objects = dingoOldClient.get(new Object[] {String.valueOf(n)});
             System.out.printf(
                 "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
                 objects[0], objects[1], objects[2], objects[3], objects[4]

@@ -16,7 +16,7 @@
 
 package io.dingodb.example.sdk.client;
 
-import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoOldClient;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class DingoExampleUsingSDK {
-    private static DingoClient dingoClient;
+    private static DingoOldClient dingoOldClient;
     private static int  insertBatchCnt = 1000;
     private static int  insertTotalCnt = 20000;
 
@@ -62,7 +62,7 @@ public class DingoExampleUsingSDK {
             + ", insertTotalCnt: " + insertTotalCnt
             + ", insertBatchCnt: " + insertBatchCnt);
 
-        dingoClient = new DingoClient(coordinatorCfg, tableName);
+        dingoOldClient = new DingoOldClient(coordinatorCfg, tableName);
         long startTime = System.currentTimeMillis();
         switch (cmd) {
             case "insert": {
@@ -99,7 +99,7 @@ public class DingoExampleUsingSDK {
         for (int i = 0; i < insertTotalCnt; i++) {
             String uuid = UUID.randomUUID().toString();
             Object[] record = new Object[]{i, "k-" + uuid, "v-" + uuid};
-            dingoClient.insert(record);
+            dingoOldClient.insert(record);
         }
     }
 
@@ -120,7 +120,7 @@ public class DingoExampleUsingSDK {
                 boolean isOK = true;
                 do {
                     try {
-                        isOK = dingoClient.insert(records);
+                        isOK = dingoOldClient.insert(records);
                     } catch (Exception ex) {
                         try {
                             isOK = false;
@@ -128,7 +128,7 @@ public class DingoExampleUsingSDK {
                         } catch (Exception ex1) {
                             ex1.printStackTrace();
                         }
-                        dingoClient.refreshTableMeta();
+                        dingoOldClient.refreshTableMeta();
                     }
                 } while (!isOK);
                 long totalTimeCost = System.currentTimeMillis() - startTime;
@@ -149,7 +149,7 @@ public class DingoExampleUsingSDK {
             long startTime = System.currentTimeMillis();
             Object[] key = new Object[]{i};
             try {
-                Object[] record = dingoClient.get(key);
+                Object[] record = dingoOldClient.get(key);
                 for (Object r : record) {
                     stringResult += r.toString();
                 }
@@ -175,7 +175,7 @@ public class DingoExampleUsingSDK {
     public static void getByRange(int start, int end) throws Exception {
         Object[] startKey = new Object[]{start};
         Object[] endKey = new Object[]{end};
-        List<Object[]> records = dingoClient.get(startKey, endKey);
+        List<Object[]> records = dingoOldClient.get(startKey, endKey);
         records.forEach(record -> {
             String rowInStr = Arrays.asList(record)
                 .stream().map(Object::toString).collect(Collectors.joining(","));
@@ -186,7 +186,7 @@ public class DingoExampleUsingSDK {
     public static void delete() throws Exception {
         for (int i = 0; i < insertTotalCnt; i++) {
             Object[] key = new Object[]{i};
-            dingoClient.delete(key);
+            dingoOldClient.delete(key);
         }
     }
 }
