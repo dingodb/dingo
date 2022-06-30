@@ -19,7 +19,7 @@ package io.dingodb.cli.source.impl;
 import io.dingodb.cli.source.Parser;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TupleSchema;
-import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoOldClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ import java.util.Objects;
 public abstract class AbstractParser implements Parser {
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
         List<Object[]> result = new ArrayList<>();
         for (Object[] arr : records) {
             if (arr.length == tableDefinition.getColumns().size()) {
@@ -52,7 +52,7 @@ public abstract class AbstractParser implements Parser {
             }
         }
         try {
-            dingoClient.insert(result);
+            dingoOldClient.insert(result);
         } catch (Exception e) {
             log.error("Error encoding record", e);
         }

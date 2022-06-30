@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.cli.source.impl.DefaultFactory;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoOldClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
@@ -80,8 +80,8 @@ public class Import {
             commander.usage();
             return;
         }
-        DingoClient dingoClient = new DingoClient(config, tableName.toUpperCase(), 10);
-        TableDefinition tableDefinition = dingoClient.getMetaClient().getTableDefinition(tableName.toUpperCase());
+        DingoOldClient dingoOldClient = new DingoOldClient(config, tableName.toUpperCase(), 10);
+        TableDefinition tableDefinition = dingoOldClient.getMetaClient().getTableDefinition(tableName.toUpperCase());
         Factory factory = new DefaultFactory();
         Fetch fetch = factory.getFetch(recordType.toUpperCase());
         switch (cmd.toUpperCase()) {
@@ -89,7 +89,7 @@ public class Import {
                 if (localFile == null) {
                     System.out.println("File-path cannot be empty \n");
                 }
-                fetch.fetch(localFile, separator, state, dingoClient, tableDefinition);
+                fetch.fetch(localFile, separator, state, dingoOldClient, tableDefinition);
                 break;
             case "KAFKA":
                 Properties props = buildProp();
@@ -101,7 +101,7 @@ public class Import {
                     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                         "org.apache.kafka.common.serialization.ByteArrayDeserializer");
                 }
-                fetch.fetch(props, topic, dingoClient, tableDefinition);
+                fetch.fetch(props, topic, dingoOldClient, tableDefinition);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);

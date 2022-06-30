@@ -22,33 +22,64 @@ import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.Getter;
+import lombok.extern.log4j.Log4j;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
-@Getter
+@Slf4j
 public class ClientBase {
-    private final NetService netService;
-    private final Location currentLocation;
-    private final CoordinatorConnector coordinatorConnector;
+    @Getter
+    private NetService netService;
+    @Getter
+    private Location currentLocation;
+    @Getter
+    private CoordinatorConnector coordinatorConnector;
+    private String configPath;
+    private String coordinatorExchangeSvrList;
+    private String currentHost;
+    private Integer currentPort;
 
-    public ClientBase(String configPath) throws Exception {
-        DingoConfiguration.parse(configPath);
-        this.netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        this.currentLocation = new Location(DingoConfiguration.host(), DingoConfiguration.port());
-        this.coordinatorConnector = CoordinatorConnector.defaultConnector();
+    public ClientBase(String configPath) {
+        this.configPath = configPath;
     }
 
     public ClientBase(String coordinatorExchangeSvrList, String currentHost, Integer currentPort) {
-        this.netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        this.currentLocation = new Location(currentHost, currentPort);
-        List<String> servers = Arrays.asList(coordinatorExchangeSvrList.split(","));
-        List<Location> addrList = servers.stream()
-            .map(s -> s.split(":"))
-            .map(ss -> new Location(ss[0], Integer.parseInt(ss[1])))
-            .collect(Collectors.toList());
-        this.coordinatorConnector = new CoordinatorConnector(addrList);
+        this.coordinatorExchangeSvrList = coordinatorExchangeSvrList;
+        this.currentHost = currentHost;
+        this.currentPort = currentPort;
+    }
+
+    public void initConnection() throws Exception {
+        String connectionMode = "Property Files";
+        try {
+            if (!this.configPath.trim().isEmpty()) {
+                // configuration mode
+                DingoConfiguration.parse(this.configPath);
+                this.currentHost = DingoConfiguration.host();
+                this.currentPort = DingoConfiguration.port();
+
+                this.currentLocation = new Location(currentHost, currentPort);
+                this.coordinatorConnector = CoordinatorConnector.defaultConnector();
+            } else {
+                // connection string mode
+                connectionMode = "Connection String";
+                this.currentLocation = new Location(currentHost, currentPort);
+                List<String> servers = Arrays.asList(coordinatorExchangeSvrList.split(","));
+
+                List<Location> addrList = servers.stream()
+                    .map(s -> s.split(":"))
+                    .map(ss -> new Location(ss[0], Integer.parseInt(ss[1])))
+                    .collect(Collectors.toList());
+                this.coordinatorConnector = new CoordinatorConnector(addrList);
+            }
+            this.netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+        } catch (Exception ex) {
+            log.error("Failed to initialize connection: connection mode:{}", connectionMode, ex.toString(), ex);
+            throw ex;
+        }
     }
 }
