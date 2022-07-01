@@ -38,11 +38,6 @@ public final class DingoHash extends SingleRel implements DingoRel {
         this.keys = keys;
     }
 
-    @Override
-    protected RelDataType deriveRowType() {
-        return input.getRowType();
-    }
-
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -56,6 +51,11 @@ public final class DingoHash extends SingleRel implements DingoRel {
         // crucial, this is how Calcite distinguish between different node with different props.
         pw.itemIf("keys", keys, keys != null);
         return pw;
+    }
+
+    @Override
+    protected RelDataType deriveRowType() {
+        return input.getRowType();
     }
 
     @Override

@@ -16,7 +16,7 @@
 
 package io.dingodb.common.codec;
 
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
@@ -28,7 +28,6 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.util.Utf8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -72,16 +71,12 @@ public class AvroCodec {
         writer.write(record, encoder);
     }
 
-    private static Object convert(Object in) {
-        return in instanceof Utf8 ? in.toString() : in;
-    }
-
     public Object[] decode(@Nonnull InputStream is) throws IOException {
         final GenericRecord keyRecord = decodeBytes(is, reader);
         int size = schema.getFields().size();
         Object[] tuple = new Object[size];
         for (int i = 0; i < size; ++i) {
-            tuple[i] = convert(keyRecord.get(i));
+            tuple[i] = keyRecord.get(i);
         }
         return tuple;
     }

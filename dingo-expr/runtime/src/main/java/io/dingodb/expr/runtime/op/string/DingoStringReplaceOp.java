@@ -42,18 +42,18 @@ public class DingoStringReplaceOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        return replaceStr((String) values[0], (String) values[1], (String) values[2]);
-    }
-
     public static String replaceStr(final String inputStr, final String str1, final String str2) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         }
 
         return inputStr.replace(str1, str2);
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        return replaceStr((String) values[0], (String) values[1], (String) values[2]);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -76,7 +76,7 @@ public class DingoStringReplaceOp extends RtStringConversionOp {
                     String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

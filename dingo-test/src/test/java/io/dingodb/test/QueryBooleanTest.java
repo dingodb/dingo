@@ -16,7 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,12 +50,12 @@ public class QueryBooleanTest {
     }
 
     @Test
-    public void test() throws SQLException {
+    public void test() throws SQLException, JsonProcessingException {
         String sql = "select * from bldemo";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "age", "amount", "address", "is_delete"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING", "BOOLEAN"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING", "BOOLEAN"),
             "1, c1, 28, 109.325, beijing, true\n"
                 + "2, c2, 17, 139.2, beijing, false\n"
                 + "3, c3, 22, 34.89, shanghai, false\n"

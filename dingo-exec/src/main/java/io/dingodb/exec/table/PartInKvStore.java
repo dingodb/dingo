@@ -20,8 +20,8 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.table.Part;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
@@ -46,7 +46,7 @@ public final class PartInKvStore implements Part {
     @Getter
     private final KeyValueCodec codec;
 
-    public PartInKvStore(StoreInstance store, TupleSchema schema, TupleMapping keyMapping) {
+    public PartInKvStore(StoreInstance store, DingoType schema, TupleMapping keyMapping) {
         this.store = store;
         this.codec = new KeyValueCodec(schema, keyMapping);
     }
@@ -157,8 +157,8 @@ public final class PartInKvStore implements Part {
                     startKeyList.size(),
                     System.currentTimeMillis() - startTime);
             }
-            return totalCnt;
         }
+        return totalCnt;
     }
 
     @Override

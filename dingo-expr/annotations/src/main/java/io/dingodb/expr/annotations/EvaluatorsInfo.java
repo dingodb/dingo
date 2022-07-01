@@ -25,17 +25,28 @@ import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.TypeElement;
 
-@Getter
-@Setter
 @RequiredArgsConstructor
 public class EvaluatorsInfo {
+    @Getter
+    private final TypeCodeInfo typeCodeInfo;
+    @Getter
     private final TypeElement evaluatorKey;
+    @Getter
     private final TypeElement evaluatorBase;
+    @Getter
     private final TypeElement evaluatorFactory;
+    @Getter
     private final TypeElement universalEvaluator;
+    @Getter
     private final List<TypeName> induceSequence;
 
+    @Getter
+    @Setter
     private String packageName;
+    @Getter
+    @Setter
     private TypeName originClassName;
+    @Getter
+    @Setter
     private Map<String, Map<String, EvaluatorInfo>> evaluatorMap;
 }

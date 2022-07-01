@@ -65,7 +65,7 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         final DingoTableScan rel = call.rel(0);
         RexNode rexNode = RexUtil.toDnf(rel.getCluster().getRexBuilder(), rel.getFilter());
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
-        KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td);
+        KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td, rel.getCluster().getRexBuilder());
         Set<Object[]> keyTuples = rexNode.accept(visitor);
         if (!visitor.isOperandHasNotPrimaryKey() && checkKeyTuples(keyTuples)) {
             call.transformTo(new DingoGetByKeys(
@@ -73,6 +73,7 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
                 rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                 rel.getTable(),
                 keyTuples,
+                rel.getFilter(),
                 rel.getSelection()
             ));
         }

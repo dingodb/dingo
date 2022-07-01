@@ -21,7 +21,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.TYPE)
+// Should be applied to a package to generate TypeCodes.
+@Target(ElementType.PACKAGE)
 @Retention(RetentionPolicy.SOURCE)
 public @interface GenerateTypeCodes {
     /**
@@ -35,5 +36,7 @@ public @interface GenerateTypeCodes {
         String name();
 
         String type();
+
+        String[] aliases() default {};
     }
 }

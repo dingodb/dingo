@@ -35,7 +35,7 @@ public class TestSchemaParser {
         RtSchema schema = root.getSchema();
         assertThat(schema.getChild("a").getTypeCode()).isEqualTo(TypeCode.LONG);
         assertThat(schema.getChild("b").getTypeCode()).isEqualTo(TypeCode.DOUBLE);
-        assertThat(schema.getChild("c").getTypeCode()).isEqualTo(TypeCode.BOOLEAN);
+        assertThat(schema.getChild("c").getTypeCode()).isEqualTo(TypeCode.BOOL);
         assertThat(schema.getChild("d").getTypeCode()).isEqualTo(TypeCode.STRING);
     }
 

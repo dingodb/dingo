@@ -42,18 +42,18 @@ public class DingoStringLowerOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        return toLowCase((String) values[0]);
-    }
-
     public static String toLowCase(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
             return str.toLowerCase();
         }
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        return toLowCase((String) values[0]);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -75,7 +75,7 @@ public class DingoStringLowerOp extends RtStringConversionOp {
                 methods.add(DingoStringLowerOp.class.getMethod("toLowCase", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

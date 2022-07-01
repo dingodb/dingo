@@ -16,25 +16,23 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
+@Disabled
 public class QueryWithMultiCondition {
-
     @Test
     public void testCaseWithOutPrimaryKeys() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
-        String sql = "select id, name from test where name in ('Alice', 'AAAA') and amount > 6" ;
+        String sql = "select id, name from test where name in ('Alice', 'AAAA') and amount > 6";
         sqlHelper.queryTest(
-                sql,
-                new String[]{"id", "name"},
-                TupleSchema.ofTypes("INTEGER", "STRING"),
-                "8, Alice"
+            sql,
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "8, Alice"
         );
         sqlHelper.cleanUp();
     }
@@ -44,12 +42,12 @@ public class QueryWithMultiCondition {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
-        String sql = "select id, name from test where id in (1,2) and amount > 3.6" ;
+        String sql = "select id, name from test where id in (1,2) and amount > 3.6";
         sqlHelper.queryTest(
-                sql,
-                new String[]{"id", "name"},
-                TupleSchema.ofTypes("INTEGER", "STRING"),
-                "2, Betty"
+            sql,
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "2, Betty"
         );
         sqlHelper.cleanUp();
     }
@@ -59,12 +57,12 @@ public class QueryWithMultiCondition {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-with-multi-key-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
-        String sql = "select id, name from test where id in (1,2,3,4) and name in ('Alice', 'Betty1')" ;
+        String sql = "select id, name from test where id in (1,2,3,4) and name in ('Alice', 'Betty1')";
         sqlHelper.queryTest(
-                sql,
-                new String[]{"id", "name"},
-                TupleSchema.ofTypes("INTEGER", "STRING"),
-                "1, Alice"
+            sql,
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "1, Alice"
         );
         sqlHelper.cleanUp();
     }
@@ -74,12 +72,12 @@ public class QueryWithMultiCondition {
         SqlHelper sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-with-multi-key-create.sql");
         sqlHelper.execFile("/table-test-data.sql");
-        String sql = "select id, name from test where id in (1,2,3,4) and name in ('Alice', 'Betty1') and amount > 0" ;
+        String sql = "select id, name from test where id in (1,2,3,4) and name in ('Alice', 'Betty1') and amount > 0";
         sqlHelper.queryTest(
-                sql,
-                new String[]{"id", "name"},
-                TupleSchema.ofTypes("INTEGER", "STRING"),
-                "1, Alice"
+            sql,
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "1, Alice"
         );
         sqlHelper.cleanUp();
     }

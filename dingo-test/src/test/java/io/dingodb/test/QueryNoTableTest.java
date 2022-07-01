@@ -16,7 +16,6 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class QueryNoTableTest {
@@ -52,11 +53,6 @@ public class QueryNoTableTest {
     public void testSimpleValues() throws SQLException {
         // Queries like 'select 1' is bypassed by Calcite.
         String sql = "select 'hello'";
-        sqlHelper.queryTest(
-            sql,
-            new String[]{"EXPR$0"},
-            TupleSchema.ofTypes("STRING"),
-            "hello"
-        );
+        assertThat(sqlHelper.querySimpleValue(sql)).isEqualTo("hello");
     }
 }

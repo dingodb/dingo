@@ -42,14 +42,14 @@ public final class RtContainsOp extends RtStringRelationOp {
         super(paras);
     }
 
+    public static boolean containsStr(final String str1, final String str2) {
+        return str1.contains(str2);
+    }
+
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
         return containsStr((String) values[0], (String) values[1]);
-    }
-
-    public static boolean containsStr(final String str1, final String str2) {
-        return str1.contains(str2);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -71,7 +71,7 @@ public final class RtContainsOp extends RtStringRelationOp {
                 methods.add(RtContainsOp.class.getMethod("containsStr", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

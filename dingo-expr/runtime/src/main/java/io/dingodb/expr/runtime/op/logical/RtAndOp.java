@@ -44,7 +44,7 @@ public class RtAndOp extends RtLogicalOp {
                 if (result == Boolean.TRUE) {
                     result = null;
                 }
-            } else if (!test(v)) {
+            } else if (!RtLogicalOp.test(v)) {
                 result = Boolean.FALSE;
                 break;
             }

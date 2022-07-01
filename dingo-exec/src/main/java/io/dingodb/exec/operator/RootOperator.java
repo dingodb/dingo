@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.util.QueueUtil;
@@ -36,18 +36,15 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
     public static final Object[] FIN = new Object[0];
-
+    @JsonProperty("schema")
+    private final DingoType schema;
     @Getter
     private Fin errorFin;
-
-    @JsonProperty("schema")
-    private final TupleSchema schema;
-
     private BlockingQueue<Object[]> tupleQueue;
 
     @JsonCreator
     public RootOperator(
-        @JsonProperty("schema") TupleSchema schema
+        @JsonProperty("schema") DingoType schema
     ) {
         super();
         this.schema = schema;
@@ -62,7 +59,7 @@ public final class RootOperator extends SinkOperator {
     @Override
     public boolean push(Object[] tuple) {
         if (log.isDebugEnabled()) {
-            log.debug("Put tuple {} into root queue.", schema.formatTuple(tuple));
+            log.debug("Put tuple {} into root queue.", schema.format(tuple));
         }
         QueueUtil.forcePut(tupleQueue, tuple);
         return true;
@@ -88,5 +85,4 @@ public final class RootOperator extends SinkOperator {
     public Object[] popValue() {
         return QueueUtil.forceTake(tupleQueue);
     }
-
 }

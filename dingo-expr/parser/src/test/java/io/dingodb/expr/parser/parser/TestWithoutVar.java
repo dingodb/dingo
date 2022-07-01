@@ -29,7 +29,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -81,6 +80,13 @@ public class TestWithoutVar {
             arguments("'abc123' matches '\\\\w{3}\\\\d{3}'", true),
             arguments("'abc123' matches '.{5}'", false),
             arguments("\"Alice\" + 'Bob'", "AliceBob"),
+            // string fun
+            arguments("substring('DingoDatabase', 1, 5)", "Dingo"),
+            arguments("substring('DingoDatabase', 1, 100)", "DingoDatabase"),
+            arguments("substring('DingoDatabase', 2, int(2.5))", "ing"),
+            arguments("substring('DingoDatabase', 2, -3)", ""),
+            arguments("substring('DingoDatabase', -4, 4)", "base"),
+            arguments("substring('abcde', 1, 6)", "abcde"),
             // mathematical fun
             arguments("abs(-1)", 1L),
             arguments("abs(-2.3)", 2.3),
@@ -136,30 +142,30 @@ public class TestWithoutVar {
             arguments("upper('HeLlO')", "HELLO"),
             arguments("trim(' HeLlO \\n\\t')", "HeLlO"),
             arguments("replace('I love $name', '$name', 'Lucia')", "I love Lucia"),
-            // time
-            arguments("time(1609300025000)", new Date(1609300025000L)),
+            // date&time
+            arguments("date('1970-1-1')", new Date(0)),
+            arguments("time('00:00:00')", new Time(0)),
+            arguments("timestamp('1970-1-1 00:00:00')", Timestamp.valueOf("1970-01-01 00:00:00")),
+            arguments("timestamp('2022-04-14 00:00:00')", Timestamp.valueOf("2022-04-14 00:00:00")),
+            arguments("timestamp('20220414180215')", Timestamp.valueOf("2022-04-14 18:02:15")),
+            arguments("timestamp('2022/04/14 19:02:15')", Timestamp.valueOf("2022-04-14 19:02:15")),
+            arguments("timestamp('2022/04/14 19:02:15.365')", Timestamp.valueOf("2022-04-14 19:02:15.365")),
+            arguments("date_format(date('1980-2-3'), '%Y:%m:%d')", "1980:02:03"),
+            arguments("time_format(time('23:11:25'), '%H-%i-%s')", "23-11-25"),
+            arguments("datetime_format(timestamp('1980-2-3 23:11:25'), '%Y%m%d %T')", "19800203 23:11:25"),
             arguments(
-                "timestamp('2020-02-20 00:00:20')",
-                new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                    .parse("2020-02-20 00:00:20").getTime())
+                "datetime_format(timestamp('1980-2-3 23:11:25'), 'Date: %Y%m%d Time: %T')",
+                "Date: 19800203 Time: 23:11:25"
             ),
             arguments(
-                "date('1999-09-19', 'yyyy-MM-dd')",
-                new SimpleDateFormat("yyyy-MM-dd")
-                    .parse("1999-09-19")
+                "unix_timestamp(timestamp('2022-04-14 00:00:00'))",
+                Timestamp.valueOf("2022-04-14 00:00:00").getTime()
             ),
-            arguments("time(1609300025000) = time(1609300025000)", true),
-            arguments("time(1609300025000) < time(1609300025001)", true),
-            arguments("time(1609300025000) <= time(1609300025001)", true),
-            arguments("time(1609300025000) >= time(1609300025001)", false),
-            arguments("time(1609300025000) > time(1609300025001)", false),
-            arguments("time(1609300025000) != time(1609300025001)", true),
-            arguments("long(time(1609300025003))", 1609300025003L),
-            arguments("long(time('1970-01-01+0000', 'yyyy-MM-ddZ'))", 0L),
             // type conversion
             arguments("int(5)", 5),
             arguments("int(long(5))", 5),
             arguments("int(5.2)", 5),
+            arguments("int(5.5)", 6),
             arguments("int(decimal(5.2))", 5),
             arguments("int('5')", 5),
             arguments("long(int(6))", 6L),
@@ -197,17 +203,6 @@ public class TestWithoutVar {
         Object result = rtExpr.eval(null);
         if (result instanceof Double) {
             assertThat((Double) result).isCloseTo((Double) value, offset(1e-6));
-        } else if (result instanceof Date) {
-            if (value instanceof Date) {
-                assertThat(((Date) result).toLocalDate())
-                    .isEqualTo(((Date) value).toLocalDate());
-            } else {
-                assertThat(((Date) result).toLocalDate())
-                    .isEqualTo(new Date(((java.util.Date)value).getTime()).toLocalDate());
-            }
-
-        } else if (result instanceof Time) {
-            assertThat(result.toString()).isEqualTo(value);
         } else {
             assertThat(result).isEqualTo(value);
         }

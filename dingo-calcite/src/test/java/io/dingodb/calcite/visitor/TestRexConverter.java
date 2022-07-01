@@ -21,8 +21,10 @@ import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -35,15 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.Date;
 import java.sql.Timestamp;
-import java.text.ParseException;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -61,7 +55,7 @@ public class TestRexConverter {
     }
 
     @Nonnull
-    private static Stream<Arguments> getParameters() throws ParseException {
+    private static Stream<Arguments> getParameters() {
         return Stream.of(
             arguments("1 + 2", "1 + 2"),
             arguments("1 + 2*3", "1 + 2*3"),
@@ -71,7 +65,21 @@ public class TestRexConverter {
             arguments(
                 "name = 'Betty' and name = 'Alice' and amount < 1.0",
                 "AND($[1] == 'Betty', $[1] == 'Alice', $[2] < 1.0)"
-            )
+            ),
+            arguments("unix_timestamp('2022-04-14 00:00:00')", "unix_timestamp(timestamp('2022-04-14 00:00:00'))"),
+            arguments("from_unixtime(123)", "from_unixtime(123)")
+        );
+    }
+
+    @Nonnull
+    private static Stream<Arguments> getEvalParameters() {
+        return Stream.of(
+            arguments("substring('DingoDatabase', 1, 5)", "Dingo"),
+            arguments("substring('DingoDatabase', 1, 100)", "DingoDatabase"),
+            arguments("substring('DingoDatabase', 2, 2.5)", "ing"),
+            arguments("substring('DingoDatabase', 2, -3)", ""),
+            arguments("substring('DingoDatabase', -4, 4)", "base"),
+            arguments("substring('abcde', 1, 6)", "abcde")
         );
     }
 
@@ -89,88 +97,19 @@ public class TestRexConverter {
         assertThat(expr.toString()).isEqualTo(result);
     }
 
-    @Test
-    public void testSubStringCase01() throws Exception {
-        String inputStr = "DingoDatabase";
-        String sql = "select substring('" + inputStr + "',1,5)";
+    @ParameterizedTest
+    @MethodSource("getEvalParameters")
+    public void testEval(String rex, String evalResult)
+        throws SqlParseException, DingoExprCompileException, FailGetEvaluator {
+        String sql = "select " + rex + " from test";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
+        log.info("rexNode = {}", rexNode);
         Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals(inputStr.substring(0, 5)));
-    }
-
-    @Test
-    public void testSubStringCase02() throws Exception {
-        String inputStr = "DingoDatabase";
-        String sql = "select substring('" + inputStr + "',1, 100)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals(inputStr));
-    }
-
-    @Test
-    public void testSubStringCase03() throws Exception {
-        String inputStr = "DingoDatabase";
-        String sql = "select substring('" + inputStr + "', 2, 2.5)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        assertThat(realResult).isEqualTo("ing");
-    }
-
-    @Test
-    public void testSubStringCase04() throws Exception {
-        String inputStr = "DingoDatabase";
-        String sql = "select substring('" + inputStr + "', 2, -3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals(""));
-    }
-
-    @Test
-    public void testSubStringCase05() throws Exception {
-        String inputStr = "DingoDatabase";
-        String sql = "select substring('" + inputStr + "', -4, 4)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals("base"));
-    }
-
-    @Test
-    public void testSubStringCase06() throws Exception {
-        String inputStr = "abcde";
-        String sql = "select substring('" + inputStr + "', 1, 6)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        String realResult = (String) expr.compileIn(null).eval(null);
-        Assert.assrt(realResult.equals("abcde"));
+        assertThat(expr.compileIn(null).eval(null)).isEqualTo(evalResult);
     }
 
     @Test
@@ -528,7 +467,7 @@ public class TestRexConverter {
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
-        Assert.assrt(((String) rtExpr.eval(null)).equals("BC"));
+        Assert.assrt(rtExpr.eval(null).equals("BC"));
     }
 
     @Test
@@ -769,132 +708,21 @@ public class TestRexConverter {
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        String result = rtExpr.eval(null).toString();
-        System.out.println(result);
-
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-            .appendPattern("yyyy-MM-dd HH:mm:ss")
-            .appendFraction(ChronoField.MILLI_OF_SECOND, 0, 3, true).toFormatter();
-        assertThat(Duration.between(LocalDateTime.parse(result, formatter), LocalDateTime.now()))
-            .isLessThan(Duration.ofSeconds(1));
+        assertThat((Timestamp) expr.compileIn(null).eval(null))
+            .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
     }
 
     @Test
     public void formatUnixTime() throws Exception {
-        String sql = "select from_unixtime(1649838034)";
+        String dateTime = "1980-11-12 23:25:12";
+        String sql = "select from_unixtime(" + Timestamp.valueOf(dateTime).getTime() + ")";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);
         LogicalProject project = (LogicalProject) relRoot.rel;
         RexNode rexNode = project.getProjects().get(0);
         Expr expr = RexConverter.convert(rexNode);
-        System.out.println("Result: ");
-        System.out.println(expr.toString());
-        // RtExpr rtExpr = expr.compileIn(null);
-        // Assert.assrt(rtExpr.eval(null).equals("2022-04-13 16:20:34"));
-    }
-
-    @Test
-    public void unixTimestamp01() throws Exception {
-        String sql = "select unix_timestamp('20220414')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        System.out.println("Result: ");
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-        Date date =  DingoDateTimeUtils.convertDateFromLocalDate(localDate);
-        String targetString = String.valueOf((date.getTime() / 1000));
-        System.out.println("targetString: ");
-        System.out.println("rtExpr eval :" + String.valueOf(rtExpr.eval(null)));
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
-    }
-
-    @Test
-    public void unixTimestamp02() throws Exception {
-        String sql = "select unix_timestamp('2022-04-14')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        LocalDate localDate = DingoDateTimeUtils.convertToDate("2022-04-14");
-        Date date =  DingoDateTimeUtils.convertDateFromLocalDate(localDate);
-        String targetString = String.valueOf((date.getTime() / 1000));
-        System.out.println("targetString :");
-        System.out.println(targetString);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
-    }
-
-    @Test
-    public void unixTimestamp03() throws Exception {
-        String sql = "select unix_timestamp('20220414180215')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        Object result = rtExpr.eval(null);
-        System.out.println("Result: ");
-        System.out.println(result);
-        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414180215");
-        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
-        String targetString = String.valueOf((ts.getTime() / 1000));
-        System.out.println("targetString :");
-        System.out.println(targetString);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
-    }
-
-    @Test
-    public void unixTimestamp04() throws Exception {
-        String sql = "select unix_timestamp('2022/04/14 19:02:15')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
-        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
-        String targetString = String.valueOf((ts.getTime() / 1000));
-        System.out.println("targetString :");
-        System.out.println(targetString);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
-    }
-
-    @Test
-    public void unixTimestamp05() throws Exception {
-        String sql = "select unix_timestamp('2022.04.14 19:02:15')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        Expr expr = RexConverter.convert(rexNode);
-        System.out.println(expr.toString());
-        RtExpr rtExpr = expr.compileIn(null);
-        Object result = rtExpr.eval(null);
-        System.out.println("Result: ");
-        System.out.println(result);
-        LocalDateTime localDateTime = DingoDateTimeUtils.convertToDatetime("20220414190215");
-        Timestamp ts = DingoDateTimeUtils.convertTimeStampFromLocalTimeStamp(localDateTime);
-        String targetString = String.valueOf((ts.getTime() / 1000));
-        System.out.println("targetString :");
-        System.out.println(targetString);
-        Assert.assrt(String.valueOf(rtExpr.eval(null)).equals(targetString));
+        assertThat((Timestamp) expr.compileIn(null).eval(null))
+            .isEqualTo(Timestamp.valueOf(dateTime));
     }
 }

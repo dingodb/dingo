@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.expr.runtime.TupleEvalContext;
@@ -33,12 +33,12 @@ public final class ProjectOperator extends SoleOutOperator {
     @JsonProperty("projects")
     private final List<RtExprWithType> projects;
     @JsonProperty("schema")
-    private final TupleSchema schema;
+    private final DingoType schema;
 
     @JsonCreator
     public ProjectOperator(
         @JsonProperty("projects") List<RtExprWithType> projects,
-        @JsonProperty("schema") TupleSchema schema
+        @JsonProperty("schema") DingoType schema
     ) {
         super();
         this.projects = projects;

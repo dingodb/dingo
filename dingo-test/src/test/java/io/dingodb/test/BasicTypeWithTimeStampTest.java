@@ -16,20 +16,18 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.SQLException;
 
 @Slf4j
-@Disabled("Failed to cast to Time.")
 public class BasicTypeWithTimeStampTest {
     private static final String TEST_ALL_DATA
         = "1, Alice, 2020-01-01 00:00:01\n"
@@ -57,11 +55,10 @@ public class BasicTypeWithTimeStampTest {
     }
 
     @Test
-    @Disabled("Failed to encoidng Timestamp.")
     public void testScan() throws SQLException, IOException {
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "TIMESTAMP"),
             TEST_ALL_DATA
         );
     }

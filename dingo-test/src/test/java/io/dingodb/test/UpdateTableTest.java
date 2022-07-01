@@ -16,7 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -52,10 +53,10 @@ public class UpdateTableTest {
         sqlHelper.cleanUp();
     }
 
-    private static void checkDatumInTestTable(String data) throws SQLException {
+    private static void checkDatumInTestTable(String data) throws SQLException, JsonProcessingException {
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             data
         );
     }
@@ -71,7 +72,7 @@ public class UpdateTableTest {
     }
 
     @Test
-    public void testUpdate() throws SQLException {
+    public void testUpdate() throws SQLException, JsonProcessingException {
         String sql = "update test set amount = 100 where id = 1";
         sqlHelper.updateTest(sql, 1);
         checkDatumInTestTable(
@@ -88,7 +89,7 @@ public class UpdateTableTest {
     }
 
     @Test
-    public void testUpdate1() throws SQLException {
+    public void testUpdate1() throws SQLException, JsonProcessingException {
         String sql = "update test set amount = amount + 100";
         sqlHelper.updateTest(sql, 9);
         checkDatumInTestTable(
@@ -105,7 +106,7 @@ public class UpdateTableTest {
     }
 
     @Test
-    public void testDelete() throws SQLException {
+    public void testDelete() throws SQLException, JsonProcessingException {
         String sql = "delete from test where id = 3 or id = 4";
         sqlHelper.updateTest(sql, 2);
         checkDatumInTestTable(
@@ -120,7 +121,7 @@ public class UpdateTableTest {
     }
 
     @Test
-    public void testDelete1() throws SQLException {
+    public void testDelete1() throws SQLException, JsonProcessingException {
         String sql = "delete from test where name = 'Alice'";
         sqlHelper.updateTest(sql, 3);
         checkDatumInTestTable(
@@ -134,7 +135,7 @@ public class UpdateTableTest {
     }
 
     @Test
-    public void testInsert() throws SQLException {
+    public void testInsert() throws SQLException, JsonProcessingException {
         String sql = "insert into test values(10, 'Alice', 8.0), (11, 'Cindy', 8.5)";
         sqlHelper.updateTest(sql, 2);
         checkDatumInTestTable(

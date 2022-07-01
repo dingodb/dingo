@@ -17,7 +17,7 @@
 package io.dingodb.exec.aggregate;
 
 import com.google.common.collect.Iterators;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.tuple.TupleKey;
 import lombok.extern.slf4j.Slf4j;

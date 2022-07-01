@@ -11,7 +11,7 @@
       "name": "name",
       "type": "varchar",
       "precision": 64,
-      "default": "Peso",
+      "default": "'Peso'",
       "notNull": true
     },
     {

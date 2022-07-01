@@ -17,39 +17,16 @@
 package io.dingodb.expr.annotations;
 
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.tools.Diagnostic;
 
 public final class ProcessorUtils {
     static final String INSTANCE_VAR_NAME = "INSTANCE";
 
     private ProcessorUtils() {
-    }
-
-    /**
-     * Get the type code of a type.
-     *
-     * @param type the name of the type
-     * @return the type code
-     */
-    public static int typeCode(@Nonnull String type) {
-        String name = type.replaceAll("<.*>", "");
-        return name.hashCode();
-    }
-
-    /**
-     * Get the type code of a TypeName.
-     *
-     * @param type the TypeName
-     * @return the type code
-     */
-    public static int typeCode(@Nonnull TypeName type) {
-        return typeCode(type.toString());
     }
 
     /**
@@ -63,15 +40,11 @@ public final class ProcessorUtils {
         @Nonnull ProcessingEnvironment processingEnv,
         String packageName,
         TypeSpec typeSpec
-    ) {
+    ) throws IOException {
         JavaFile javaFile = JavaFile.builder(packageName, typeSpec)
             .indent("    ")
             .skipJavaLangImports(true)
             .build();
-        try {
-            javaFile.writeTo(processingEnv.getFiler());
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getLocalizedMessage());
-        }
+        javaFile.writeTo(processingEnv.getFiler());
     }
 }

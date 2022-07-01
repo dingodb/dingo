@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -43,6 +42,10 @@ public class DingoStringConcatOp extends RtStringConversionOp {
         super(paras);
     }
 
+    public static String concat(String str1, String str2) {
+        return str1 + str2;
+    }
+
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
@@ -52,10 +55,6 @@ public class DingoStringConcatOp extends RtStringConversionOp {
         String inputStr1 = (values[0] == null ? "" : values[0].toString());
         String inputStr2 = (values[1] == null ? "" : values[1].toString());
         return concat(inputStr1, inputStr2);
-    }
-
-    public static String concat(String str1, String str2) {
-        return str1 + str2;
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -77,7 +76,7 @@ public class DingoStringConcatOp extends RtStringConversionOp {
                 methods.add(DingoStringConcatOp.class.getMethod("concat", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

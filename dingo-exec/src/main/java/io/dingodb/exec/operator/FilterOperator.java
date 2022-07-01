@@ -20,11 +20,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 @JsonTypeName("filter")
 @JsonPropertyOrder({"filter", "schema", "output"})
@@ -32,12 +31,12 @@ public final class FilterOperator extends SoleOutOperator {
     @JsonProperty("filter")
     private final RtExprWithType filter;
     @JsonProperty("schema")
-    private final TupleSchema schema;
+    private final DingoType schema;
 
     @JsonCreator
     public FilterOperator(
         @JsonProperty("filter") RtExprWithType filter,
-        @JsonProperty("schema") TupleSchema schema
+        @JsonProperty("schema") DingoType schema
     ) {
         super();
         this.filter = filter;
@@ -52,7 +51,7 @@ public final class FilterOperator extends SoleOutOperator {
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
-        if (RtLogicalOp.test(filter.eval(new TupleEvalContext(tuple)))) {
+        if ((boolean) filter.eval(new TupleEvalContext(tuple))) {
             return output.push(tuple);
         }
         return true;

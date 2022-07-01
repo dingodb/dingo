@@ -39,7 +39,6 @@ public class TestTableDefinition {
     @Test
     public void testGetAvroSchemaOfKey() {
         Schema schema = tableDefinition.getAvroSchemaOfKey();
-        assertThat(schema.getFullName()).isEqualTo(TupleSchema.class.getCanonicalName());
         assertThat(schema.getFields().get(0).name()).isEqualTo("_0");
         Schema colSchema = schema.getFields().get(0).schema();
         assertThat(colSchema.getType()).isEqualTo(Schema.Type.INT);
@@ -48,7 +47,6 @@ public class TestTableDefinition {
     @Test
     public void testGetAvroSchemaOfValue() {
         Schema schema = tableDefinition.getAvroSchemaOfValue();
-        assertThat(schema.getFullName()).isEqualTo(TupleSchema.class.getCanonicalName());
         assertThat(schema.getFields().get(0).name()).isEqualTo("_0");
         Schema colSchema = schema.getFields().get(0).schema();
         assertThat(colSchema.getType()).isEqualTo(Schema.Type.STRING);

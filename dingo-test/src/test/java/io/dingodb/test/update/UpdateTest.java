@@ -16,13 +16,12 @@
 
 package io.dingodb.test.update;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -61,7 +60,7 @@ public class UpdateTest {
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "age", "amount", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
             "1, a, 10, 1.0, shanghai"
         );
         sqlHelper.clearTable("strdemo");

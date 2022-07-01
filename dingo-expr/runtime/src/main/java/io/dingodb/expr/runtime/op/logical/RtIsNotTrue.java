@@ -34,6 +34,6 @@ public class RtIsNotTrue extends RtLogicalOp {
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
         Object v = paras[0].eval(etx);
-        return v == null || !test(v);
+        return v == null || !RtLogicalOp.test(v);
     }
 }

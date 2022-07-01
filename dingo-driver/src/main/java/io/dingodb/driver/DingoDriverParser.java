@@ -39,15 +39,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.server.DdlExecutor;
-import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
-import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
@@ -59,7 +54,7 @@ import javax.annotation.Nonnull;
 public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(DingoParserContext context) {
         super(context);
-        parserConfig = SqlParser.config()
+        PARSER_CONFIG = SqlParser.config()
             .withParserFactory(DingoDdlParserFactory.INSTANCE);
     }
 
@@ -136,28 +131,8 @@ public final class DingoDriverParser extends DingoParser {
     public DingoSignature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
         MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
-
-        // Check the precision of time and timestamp
-        if (sqlNode.getKind() == SqlKind.CREATE_TABLE) {
-            SqlNodeList nodeLis = ((SqlCreateTable) sqlNode).columnList;
-            for (SqlNode node : nodeLis) {
-                if (node.getKind() == SqlKind.COLUMN_DECL) {
-                    SqlColumnDeclaration column = (SqlColumnDeclaration) node;
-                    SqlBasicTypeNameSpec typeNameSpec = (SqlBasicTypeNameSpec) column.dataType.getTypeNameSpec();
-                    String simpleType = typeNameSpec.getTypeName().getSimple();
-                    int precision = typeNameSpec.getPrecision();
-                    if ((simpleType.equals(SqlTypeName.TIME.getName())
-                        || simpleType.equals(SqlTypeName.TIMESTAMP.getName())) && precision > 0) {
-                        if (precision > 3) {
-                            throw new RuntimeException("Precision " + precision + " is not support.");
-                        }
-                    }
-                }
-            }
-        }
-
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
-            final DdlExecutor ddlExecutor = parserConfig.parserFactory().getDdlExecutor();
+            final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
             ddlExecutor.executeDdl(context, sqlNode);
             return new DingoSignature(
                 ImmutableList.of(),

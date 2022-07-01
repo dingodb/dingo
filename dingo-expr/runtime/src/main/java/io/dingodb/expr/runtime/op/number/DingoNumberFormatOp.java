@@ -33,11 +33,20 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public class DingoNumberFormatOp extends RtFun  {
+public class DingoNumberFormatOp extends RtFun {
     private static final long serialVersionUID = 4805636716328583550L;
 
     public DingoNumberFormatOp(@Nonnull RtExpr[] paras) {
         super(paras);
+    }
+
+    public static String formatNumber(final double value, int scale) {
+        if (scale < 0) {
+            scale = 0;
+        }
+
+        BigDecimal decimal = new BigDecimal(value).setScale(scale, BigDecimal.ROUND_HALF_UP);
+        return decimal.toString();
     }
 
     @Override
@@ -55,15 +64,6 @@ public class DingoNumberFormatOp extends RtFun  {
     @Override
     public int typeCode() {
         return TypeCode.DOUBLE;
-    }
-
-    public static String formatNumber(final double value, int scale) {
-        if (scale < 0) {
-            scale = 0;
-        }
-
-        BigDecimal decimal = new BigDecimal(value).setScale(scale, BigDecimal.ROUND_HALF_UP);
-        return decimal.toString();
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -85,7 +85,7 @@ public class DingoNumberFormatOp extends RtFun  {
                 methods.add(DingoNumberFormatOp.class.getMethod("formatNumber", double.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

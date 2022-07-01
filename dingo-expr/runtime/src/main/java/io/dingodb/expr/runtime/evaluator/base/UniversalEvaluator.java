@@ -21,9 +21,10 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class UniversalEvaluator extends ObjectEvaluator {
+public class UniversalEvaluator implements Evaluator {
     private static final long serialVersionUID = 8115905605402311713L;
     private final EvaluatorFactory factory;
+    private final int typeCode;
 
     @Override
     public Object eval(Object[] paras) throws FailGetEvaluator {
@@ -33,5 +34,10 @@ public class UniversalEvaluator extends ObjectEvaluator {
             return evaluator.eval(paras);
         }
         throw new FailGetEvaluator(factory, typeCodes);
+    }
+
+    @Override
+    public int typeCode() {
+        return typeCode;
     }
 }

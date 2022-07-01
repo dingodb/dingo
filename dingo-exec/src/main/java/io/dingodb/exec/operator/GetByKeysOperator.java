@@ -22,8 +22,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.expr.RtExprWithType;
+import io.dingodb.expr.runtime.TupleEvalContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -39,6 +41,8 @@ import java.util.stream.Collectors;
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
     @JsonProperty("keys")
     private final List<Object[]> keyTuples;
+    @JsonProperty("filter")
+    private final RtExprWithType filter;
     @JsonProperty("selection")
     private final TupleMapping selection;
 
@@ -46,13 +50,15 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
     public GetByKeysOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
-        @JsonProperty("schema") TupleSchema schema,
+        @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("keys") Collection<Object[]> keyTuple,
+        @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
         super(tableId, partId, schema, keyMapping);
         this.keyTuples = new ArrayList<>(keyTuple);
+        this.filter = filter;
         this.selection = selection;
     }
 
@@ -76,6 +82,13 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
                 .iterator();
         }
         if (iterator != null) {
+            if (filter != null) {
+                filter.compileIn(schema);
+                iterator = Iterators.filter(
+                    iterator,
+                    tuple -> (boolean) filter.eval(new TupleEvalContext(tuple))
+                );
+            }
             if (selection != null) {
                 this.iterator = Iterators.transform(iterator, selection::revMap);
             } else {

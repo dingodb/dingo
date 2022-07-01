@@ -59,11 +59,6 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
         this.sourceExpressionList = sourceExpressionList;
     }
 
-    @Override
-    public RelDataType deriveRowType() {
-        return RelOptUtil.createDmlRowType(SqlKind.INSERT, getCluster().getTypeFactory());
-    }
-
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -87,6 +82,11 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
         pw.item("updateColumnList", updateColumnList);
         pw.item("sourceExpressionList", sourceExpressionList);
         return pw;
+    }
+
+    @Override
+    public RelDataType deriveRowType() {
+        return RelOptUtil.createDmlRowType(SqlKind.INSERT, getCluster().getTypeFactory());
     }
 
     @Override

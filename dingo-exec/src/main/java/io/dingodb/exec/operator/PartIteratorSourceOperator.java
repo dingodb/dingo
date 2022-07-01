@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.Part;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.table.PartInKvStore;
@@ -36,7 +36,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     @JsonProperty("part")
     protected final Object partId;
     @JsonProperty("schema")
-    protected final TupleSchema schema;
+    protected final DingoType schema;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
@@ -45,7 +45,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     protected PartIteratorSourceOperator(
         CommonId tableId,
         Object partId,
-        TupleSchema schema,
+        DingoType schema,
         TupleMapping keyMapping
     ) {
         this.tableId = tableId;

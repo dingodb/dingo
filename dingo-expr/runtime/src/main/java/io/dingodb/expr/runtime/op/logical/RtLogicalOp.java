@@ -18,10 +18,11 @@ package io.dingodb.expr.runtime.op.logical;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import javax.annotation.Nonnull;
 
 public abstract class RtLogicalOp extends RtOp {
@@ -32,30 +33,16 @@ public abstract class RtLogicalOp extends RtOp {
     }
 
     public static boolean test(Object value) {
-        if (value instanceof Boolean) {
-            return (Boolean) value;
-        } else if (value instanceof Number) {
-            if (value instanceof BigDecimal) {
-                throw new RuntimeException("Invalid input parameter.");
-            } else if (value instanceof BigInteger) {
-                if (((BigInteger) value).compareTo(BigInteger.ZERO) < 0) {
-                    throw new RuntimeException("Invalid input parameter.");
-                }
-                return ((BigInteger) value).compareTo(BigInteger.ZERO) != 0;
-            }
-
-            // `Double` is enough to contain integer, long, float, etc.
-            if (((Number) value).doubleValue() < 0) {
-                throw new RuntimeException("Invalid input parameter.");
-            }
-            return ((Number) value).doubleValue() != 0.0;
+        try {
+            return (boolean) new UniversalEvaluator(BooleanCastEvaluatorFactory.INSTANCE, TypeCode.BOOL)
+                .eval(new Object[]{value});
+        } catch (FailGetEvaluator e) {
+            throw new IllegalArgumentException(e);
         }
-
-        throw new RuntimeException("Invalid input parameter.");
     }
 
     @Override
     public final int typeCode() {
-        return TypeCode.BOOLEAN;
+        return TypeCode.BOOL;
     }
 }

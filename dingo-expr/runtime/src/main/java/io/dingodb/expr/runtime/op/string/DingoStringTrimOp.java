@@ -43,27 +43,13 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        if (values.length != 3) {
-            return ((String) values[0]).trim();
-        }
-
-        String opType = (String)values[0];
-        String trimStr = (String)values[1];
-        String inputStr = (String)values[2];
-
-        return trimStr(opType, trimStr, inputStr);
-    }
-
     /**
      * return the last index where trimStr not substr of inputStr.
      * Input: 123123123, Trim:123, return: 9
      * Input: aaaa, Trim:a, return: 4
      *
      * @param inputStr input string
-     * @param trimStr trim string
+     * @param trimStr  trim string
      * @return index
      */
     private static int getLastIndexFromLeft(final String inputStr, final String trimStr) {
@@ -83,7 +69,6 @@ public class DingoStringTrimOp extends RtStringConversionOp {
             return 0;
         }
     }
-
 
     private static int getLastIndexFromRight(final String inputStr, final String trimStr) {
         if (inputStr.length() < trimStr.length()) {
@@ -134,6 +119,20 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         }
     }
 
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        if (values.length != 3) {
+            return ((String) values[0]).trim();
+        }
+
+        String opType = (String) values[0];
+        String trimStr = (String) values[1];
+        String inputStr = (String) values[2];
+
+        return trimStr(opType, trimStr, inputStr);
+    }
+
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
@@ -154,7 +153,7 @@ public class DingoStringTrimOp extends RtStringConversionOp {
                     String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

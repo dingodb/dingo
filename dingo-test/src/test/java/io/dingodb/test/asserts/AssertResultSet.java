@@ -16,11 +16,7 @@
 
 package io.dingodb.test.asserts;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.common.util.CsvUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -76,42 +72,18 @@ public final class AssertResultSet {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet isRecords(List<Object[]> target) throws SQLException {
         ResultSetMetaData metaData = instance.getMetaData();
         int size = metaData.getColumnCount();
         int count = 0;
-        Boolean hasDateType = Boolean.FALSE;
-        if (target.size() != 0) {
-            for (int i = 0; i < target.get(0).length; i++) {
-                if (target.get(0)[i] instanceof Date) {
-                    hasDateType = Boolean.TRUE;
-                    break;
-                }
-            }
-        }
-        int l = 0;
         while (instance.next()) {
             Object[] row = new Object[size];
             for (int i = 0; i < size; ++i) {
                 row[i] = instance.getObject(i + 1);
             }
             log.info("Get tuple {}.", row);
-            if (row.length == 1 && row[0] instanceof Time) {
-                assertThat(row[0].toString()).isEqualTo(target.get(0)[0]);
-            } else if (row.length == 1 && row[0] instanceof Date) {
-                assertThat(((Date) row[0]).toLocalDate()).isEqualTo(((Date)(target.get(0)[0])).toLocalDate());
-            } else if (hasDateType) {
-                for (int i = 0; i < target.get(0).length; i++) {
-                    if (!(target.get(l)[i] instanceof Date)) {
-                        assertThat(target.get(l)[i]).isEqualTo(row[i]);
-                    } else {
-                        assertThat(((Date)(target.get(l)[i])).toLocalDate()).isEqualTo(((Date)(row[i])).toLocalDate());
-                    }
-                }
-                l++;
-            } else {
-                assertThat(row).isIn(target);
-            }
+            assertThat(row).isIn(target);
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -119,15 +91,6 @@ public final class AssertResultSet {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet isRecords(TupleSchema schema, String data) throws SQLException {
-        try {
-            List<Object[]> target = CsvUtils.readCsv(schema, data);
-            return isRecords(target);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
         ResultSetMetaData metaData = instance.getMetaData();
         int size = metaData.getColumnCount();
@@ -137,12 +100,7 @@ public final class AssertResultSet {
             for (int i = 0; i < size; ++i) {
                 row[i] = instance.getObject(i + 1);
             }
-            log.info("Get tuple {}.", row);
-            if (row[0] instanceof Date) {
-                Assertions.assertEquals(((Date) row[0]).toLocalDate(), ((Date)(target.get(count)[0])).toLocalDate());
-            } else {
-                assertThat(row).isEqualTo(target.get(count));
-            }
+            assertThat(row).isEqualTo(target.get(count));
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -150,52 +108,30 @@ public final class AssertResultSet {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet isRecordsInOrder(TupleSchema schema, String data) throws SQLException {
-        try {
-            List<Object[]> target = CsvUtils.readCsv(schema, data);
-            return isRecordsInOrder(target);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public AssertResultSet isRecordsWithTime(List<Object[]> target) throws SQLException {
+    public AssertResultSet isRecordsInOrderWithApproxTime(List<Object[]> target) throws SQLException {
         ResultSetMetaData metaData = instance.getMetaData();
         int size = metaData.getColumnCount();
         int count = 0;
-        // default 5 seconds
-        int timeMistake = 5 * 1000;
-
         while (instance.next()) {
             Object[] expectedRow = target.get(count);
-            Object[] row = new Object[size];
             for (int i = 0; i < size; ++i) {
-                row[i] = instance.getObject(i + 1);
-
-                /**
-                 * in order to compare time in test cases, we change HH:mm:ss to HH
-                 */
-                if (row[i] instanceof java.sql.Time) {
-                    Long expectedTimeMs = Time.valueOf(expectedRow[i].toString()).getTime();
-                    Long realTimeMs = ((java.sql.Time) row[i]).getTime();
-                    Assertions.assertTrue(Math.abs(expectedTimeMs - realTimeMs) < timeMistake);
-                } else if (row[i] instanceof java.sql.Timestamp) {
-                    Long expectedTimeMs = Timestamp.valueOf(expectedRow[i].toString()).getTime();
-                    Long realTimeMs = ((java.sql.Timestamp) row[i]).getTime();
-                    Assertions.assertTrue(Math.abs(expectedTimeMs - realTimeMs) < timeMistake);
-                } else if (row[i] instanceof java.sql.Date) {
-                    String srcResult = row[i].toString();
-                    String destResult = expectedRow[i].toString();
-                    Assertions.assertEquals(srcResult, destResult);
+                Object value = instance.getObject(i + 1);
+                Object expected = expectedRow[i];
+                if (value instanceof Date) {
+                    assertThat(value.toString()).isEqualTo(expected.toString());
+                } else if (value instanceof Time) {
+                    assertThat((Time) value)
+                        .isCloseTo((Time) expected, 5L * 1000L);
+                } else if (value instanceof Timestamp) {
+                    assertThat((Timestamp) value)
+                        .isCloseTo((Timestamp) expected, 5L * 1000L);
                 } else {
-                    Assertions.assertEquals(row[i], expectedRow[i]);
+                    assertThat(value).isEqualTo(expected);
                 }
             }
             count++;
         }
-
         assertThat(count).isEqualTo(target.size());
         return this;
     }
-
 }

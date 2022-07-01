@@ -43,6 +43,14 @@ public class DingoStringLeftOp extends RtStringConversionOp {
         super(paras);
     }
 
+    public static String leftString(final String str, int cnt) {
+        if (str == null || str.equals("") || cnt < 0) {
+            return "";
+        }
+
+        return cnt > str.length() ? str : str.substring(0, cnt);
+    }
+
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
@@ -51,14 +59,6 @@ public class DingoStringLeftOp extends RtStringConversionOp {
             .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
 
         return leftString(str, cnt);
-    }
-
-    public static String leftString(final String str, int cnt) {
-        if (str == null || str.equals("") || cnt < 0) {
-            return "";
-        }
-
-        return cnt > str.length() ? str : str.substring(0, cnt);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -80,7 +80,7 @@ public class DingoStringLeftOp extends RtStringConversionOp {
                 methods.add(DingoStringLeftOp.class.getMethod("leftString", String.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

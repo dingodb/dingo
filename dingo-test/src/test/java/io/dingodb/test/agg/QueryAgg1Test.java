@@ -16,7 +16,8 @@
 
 package io.dingodb.test.agg;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -51,12 +52,12 @@ public class QueryAgg1Test {
     }
 
     @Test
-    public void testCount3() throws SQLException {
+    public void testCount3() throws SQLException, JsonProcessingException {
         String sql = "select count(*) from test";
         sqlHelper.queryTest(
             sql,
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("LONG"),
+            DingoTypeFactory.tuple("LONG"),
             "0\n"
         );
     }

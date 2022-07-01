@@ -17,7 +17,7 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoTableScan;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalProject;

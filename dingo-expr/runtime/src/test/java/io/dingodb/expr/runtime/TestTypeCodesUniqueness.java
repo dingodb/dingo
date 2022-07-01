@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -35,24 +36,30 @@ public class TestTypeCodesUniqueness {
     @Test
     public void testCodeUniqueness() {
         Class<?>[] classes = new Class[]{
+            // scalar types
             Boolean.class,
             Integer.class,
+            BigInteger.class,
             Long.class,
             Float.class,
             Double.class,
             BigDecimal.class,
             String.class,
             Object.class,
+            // array types
             Boolean[].class,
             Integer[].class,
+            BigInteger[].class,
             Long[].class,
             Float[].class,
             Double[].class,
             BigDecimal[].class,
             String[].class,
             Object[].class,
+            // collection types
             List.class,
             Map.class,
+            // date&time types
             Date.class,
             Time.class,
             Timestamp.class,

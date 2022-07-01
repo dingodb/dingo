@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +60,7 @@ public class QueryTest {
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "5, Emily, 5.5"
         );
         sqlHelper.clearTable("test2");

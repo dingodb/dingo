@@ -28,6 +28,6 @@ public final class SchemaBoolean extends Schema {
     @Override
     @Nonnull
     public RtSchema createRtSchema() {
-        return new RtSchemaLeaf(TypeCode.BOOLEAN);
+        return new RtSchemaLeaf(TypeCode.BOOL);
     }
 }

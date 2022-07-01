@@ -29,6 +29,7 @@ import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
+import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -76,7 +77,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public <C> @Nullable C unwrap(@Nonnull Class<C> clazz) {
-        if (clazz.isInstance(DingoInitializerExpressionFactory.INSTANCE)) {
+        if (clazz.isAssignableFrom(InitializerExpressionFactory.class)) {
             return clazz.cast(DingoInitializerExpressionFactory.INSTANCE);
         }
         return super.unwrap(clazz);

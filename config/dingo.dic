@@ -1,5 +1,7 @@
 avatica
 codec
+curdate
+curtime
 datacanvas
 dingodb
 expr

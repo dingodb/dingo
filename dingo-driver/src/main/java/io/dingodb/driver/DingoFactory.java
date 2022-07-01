@@ -71,7 +71,8 @@ public class DingoFactory implements AvaticaFactory {
         return new DingoStatement(
             (DingoConnection) connection,
             handle,
-            resultSetType, resultSetConcurrency,
+            resultSetType,
+            resultSetConcurrency,
             resultSetHoldability
         );
     }

@@ -42,18 +42,18 @@ public class DingoStringUpperOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        return toUpCase((String) values[0]);
-    }
-
     public static String toUpCase(final String str) {
         if (str == null || str.equals("")) {
             return str;
         } else {
             return str.toUpperCase();
         }
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        return toUpCase((String) values[0]);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -75,7 +75,7 @@ public class DingoStringUpperOp extends RtStringConversionOp {
                 methods.add(DingoStringUpperOp.class.getMethod("toUpCase", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.CountAgg;
 import io.dingodb.exec.aggregate.CountAllAgg;
@@ -36,7 +36,7 @@ final class AggFactory {
     }
 
     @Nonnull
-    static Agg getAgg(@Nonnull SqlKind kind, @Nonnull List<Integer> args, TupleSchema schema) {
+    static Agg getAgg(@Nonnull SqlKind kind, @Nonnull List<Integer> args, DingoType schema) {
         if (args.isEmpty() && kind == SqlKind.COUNT) {
             return new CountAllAgg();
         }
@@ -45,13 +45,13 @@ final class AggFactory {
             case COUNT:
                 return new CountAgg(index);
             case SUM:
-                return new SumAgg(index, schema.get(index));
+                return new SumAgg(index, schema.getChild(index));
             case SUM0:
-                return new Sum0Agg(index, schema.get(index));
+                return new Sum0Agg(index, schema.getChild(index));
             case MIN:
-                return new MinAgg(index, schema.get(index));
+                return new MinAgg(index, schema.getChild(index));
             case MAX:
-                return new MaxAgg(index, schema.get(index));
+                return new MaxAgg(index, schema.getChild(index));
             default:
                 break;
         }

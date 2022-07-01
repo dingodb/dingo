@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.Location;
 import io.dingodb.common.hash.HashStrategy;
 import io.dingodb.common.hash.SimpleHashStrategy;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;

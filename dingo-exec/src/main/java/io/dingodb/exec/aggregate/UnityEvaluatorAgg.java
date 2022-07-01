@@ -17,7 +17,7 @@
 package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dingodb.common.table.ElementSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
@@ -28,11 +28,11 @@ import javax.annotation.Nullable;
 
 public abstract class UnityEvaluatorAgg extends UnityAgg {
     @JsonProperty("type")
-    protected final ElementSchema type;
+    protected final DingoType type;
 
     private Evaluator evaluator;
 
-    protected UnityEvaluatorAgg(Integer index, @Nonnull ElementSchema type) {
+    protected UnityEvaluatorAgg(Integer index, @Nonnull DingoType type) {
         super(index);
         this.type = type;
     }

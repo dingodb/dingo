@@ -165,7 +165,7 @@ public class MetaController {
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
-        Object[] keys = def.getKeyMapping().revMap(def.getTupleSchema().parse(def.getColumns().stream()
+        Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
             .map(params::get)
             .toArray(Object[]::new)
@@ -184,7 +184,7 @@ public class MetaController {
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
-        Object[] keys = def.getKeyMapping().revMap(def.getTupleSchema().parse(def.getColumns().stream()
+        Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
             .map(params::get)
             .toArray(Object[]::new)

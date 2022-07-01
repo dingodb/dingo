@@ -20,36 +20,41 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.jackson.DingoValuesSerializer;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.JsonConverter;
 import lombok.Getter;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 @JsonTypeName("values")
 @JsonPropertyOrder({"tuples", "output"})
 public final class ValuesOperator extends IteratorSourceOperator {
-    @JsonSerialize(using = DingoValuesSerializer.class)
     @JsonProperty("tuples")
     @Getter
     private final List<Object[]> tuples;
     @JsonProperty("schema")
     @Getter
-    private final TupleSchema schema;
+    private final DingoType schema;
 
-    @JsonCreator
-    public ValuesOperator(
-        @JsonProperty("tuples") List<Object[]> tuples,
-        @JsonProperty("schema") TupleSchema schema
-    ) {
+    public ValuesOperator(@Nonnull List<Object[]> tuples, @Nonnull DingoType schema) {
         super();
-        // Convert to recover the real type lost in JSON serialization/deserialization.
-        this.tuples = tuples.stream()
-            .map(schema::convert)
-            .collect(Collectors.toList());
+        this.tuples = tuples;
         this.schema = schema;
+    }
+
+    @Nonnull
+    @JsonCreator
+    public static ValuesOperator fromJson(
+        @Nonnull @JsonProperty("tuples") List<Object[]> tuples,
+        @Nonnull @JsonProperty("schema") DingoType schema
+    ) {
+        // Recover the real type lost in JSON serialization/deserialization.
+        List<Object[]> newTuples = tuples.stream()
+            .map(i -> (Object[]) schema.convertFrom(i, JsonConverter.INSTANCE))
+            .collect(Collectors.toList());
+        return new ValuesOperator(newTuples, schema);
     }
 
     @Override
@@ -57,5 +62,4 @@ public final class ValuesOperator extends IteratorSourceOperator {
         super.init();
         iterator = tuples.iterator();
     }
-
 }

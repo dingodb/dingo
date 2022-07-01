@@ -18,7 +18,7 @@ package io.dingodb.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -29,14 +29,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCsvUtils {
-    private static TupleSchema schema;
+    private static DingoType schema;
 
     @BeforeAll
     public static void setupAll() throws IOException {
         TableDefinition tableDefinition = TableDefinition.readJson(
             TestCsvUtils.class.getResourceAsStream("/table-test.json")
         );
-        schema = tableDefinition.getTupleSchema();
+        schema = tableDefinition.getDingoType();
     }
 
     @Test

@@ -45,11 +45,11 @@ import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.base.Id;
@@ -97,13 +97,21 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.common.util.ByteArrayUtils.compare;
 import static io.dingodb.common.util.Utils.sole;
 
 @Slf4j
@@ -136,7 +144,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             if (outputs.size() == 1) {
                 Output output = sole(outputs);
                 Task task = output.getTask();
-                RootOperator root = new RootOperator(TupleSchema.fromRelDataType(input.getRowType()));
+                RootOperator root = new RootOperator(DingoTypeFactory.fromRelDataType(input.getRowType()));
                 root.setId(idGenerator.get());
                 task.putOperator(root);
                 output.setLink(root.getInput(0));
@@ -194,7 +202,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     private static List<Agg> getAggList(
         @Nonnull List<AggregateCall> aggregateCallList,
-        TupleSchema schema
+        DingoType schema
     ) {
         return aggregateCallList.stream()
             .map(c -> AggFactory.getAgg(
@@ -246,7 +254,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return outputs;
     }
 
-    private Output exchange(@Nonnull Output input, @Nonnull Location target, TupleSchema schema) {
+    private Output exchange(@Nonnull Output input, @Nonnull Location target, DingoType schema) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
             return input;
@@ -296,7 +304,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             getAggKeys(rel.getGroupSet()),
             getAggList(
                 rel.getAggCallList(),
-                TupleSchema.fromRelDataType(rel.getInput().getRowType())
+                DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
             )
         ));
     }
@@ -316,15 +324,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
         // Find the first null value attempts insert into non-null column.
         int columnNum = td.getColumns().size();
-        for (Object[] value: rel.getValues()) {
+        for (Object[] value : rel.getValues()) {
             if (columnNum != value.length) {
-                log.error("Inserted value: " + value.toString() +", Row size: " + value.length
+                log.error("Inserted value: " + value.toString() + ", Row size: " + value.length
                     + ", While actual column number needed: " + columnNum);
                 throw new RuntimeException("Inserted columns " + value.length + " not equal " + columnNum);
             }
             for (int i = 0; i < columnNum; i++) {
                 if (td.getColumn(i).isNotNull() && value[i] == null) {
-                    throw new RuntimeException("Column '"+ td.getColumn(i).getName()  + "' has no default "
+                    throw new RuntimeException("Column '" + td.getColumn(i).getName() + "' has no default "
                         + "value and does not allow NULLs");
                 }
             }
@@ -338,7 +346,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             ValuesOperator operator = new ValuesOperator(
                 entry.getValue(),
-                TupleSchema.fromRelDataType(rel.getRowType())
+                DingoTypeFactory.fromRelDataType(rel.getRowType())
             );
             operator.setId(idGenerator.get());
             OutputHint hint = new OutputHint();
@@ -357,7 +365,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoExchange rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
-        TupleSchema schema = TupleSchema.fromRelDataType(rel.getRowType());
+        DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
         for (Output input : inputs) {
             outputs.add(exchange(input, input.getTargetLocation(), schema));
         }
@@ -368,7 +376,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoExchangeRoot rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
-        TupleSchema schema = TupleSchema.fromRelDataType(rel.getRowType());
+        DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
         for (Output input : inputs) {
             outputs.add(exchange(input, currentLocation, schema));
         }
@@ -380,7 +388,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new FilterOperator(
             RexConverter.toRtExprWithType(rel.getCondition()),
-            TupleSchema.fromRelDataType(rel.getInput().getRowType())
+            DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
 
@@ -397,9 +405,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             GetByKeysOperator operator = new GetByKeysOperator(
                 tableId,
                 entry.getKey(),
-                td.getTupleSchema(),
+                td.getDingoType(),
                 td.getKeyMapping(),
                 entry.getValue(),
+                RexConverter.toRtExprWithType(rel.getFilter()),
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -499,7 +508,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     operator = new PartInsertOperator(
                         tableId,
                         input.getHint().getPartId(),
-                        td.getTupleSchema(),
+                        td.getDingoType(),
                         td.getKeyMapping()
                     );
                     break;
@@ -507,7 +516,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     operator = new PartUpdateOperator(
                         tableId,
                         input.getHint().getPartId(),
-                        td.getTupleSchema(),
+                        td.getDingoType(),
                         td.getKeyMapping(),
                         TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
                         rel.getSourceExpressionList().stream()
@@ -519,7 +528,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     operator = new PartDeleteOperator(
                         tableId,
                         input.getHint().getPartId(),
-                        td.getTupleSchema(),
+                        td.getDingoType(),
                         td.getKeyMapping()
                     );
                     break;
@@ -543,21 +552,16 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoPartScan rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        RtExprWithType filter = null;
         List<Location> distributes = this.metaCache.getDistributes(tableName);
         CommonId tableId = this.metaCache.getTableId(tableName);
         List<Output> outputs = new ArrayList<>(distributes.size());
-        String filterStr = null;
-        if (rel.getFilter() != null) {
-            filter = RexConverter.toRtExprWithType(rel.getFilter());
-        }
         for (int i = 0; i < distributes.size(); i++) {
             PartScanOperator operator = new PartScanOperator(
                 tableId,
                 i,
-                td.getTupleSchema(),
+                td.getDingoType(),
                 td.getKeyMapping(),
-                filter,
+                RexConverter.toRtExprWithType(rel.getFilter()),
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -573,7 +577,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new ProjectOperator(
             RexConverter.toRtExprWithType(rel.getProjects()),
-            TupleSchema.fromRelDataType(rel.getInput().getRowType())
+            DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
 
@@ -585,7 +589,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             getAggKeys(rel.getGroupSet()),
             getAggList(
                 rel.getAggregateCallList(),
-                TupleSchema.fromRelDataType(rel.getOriginalInputType())
+                DingoTypeFactory.fromRelDataType(rel.getOriginalInputType())
             )
         );
         operator.setId(idGenerator.get());
@@ -630,9 +634,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoValues rel) {
         Task task = job.getOrCreate(currentLocation, idGenerator);
+        DingoType type = DingoTypeFactory.fromRelDataType(rel.getRowType());
         ValuesOperator operator = new ValuesOperator(
             rel.getValues(),
-            TupleSchema.fromRelDataType(rel.getRowType())
+            DingoTypeFactory.fromRelDataType(rel.getRowType())
         );
         operator.setId(idGenerator.get());
         task.putOperator(operator);
@@ -653,12 +658,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             Operator operator = rel.isDoDeleting() ? new RemovePartOperator(
                 tableId,
                 groupAllPartKeysByAddress.get(node),
-                td.getTupleSchema(),
+                td.getDingoType(),
                 td.getKeyMapping()
             ) : new PartCountOperator(
                 tableId,
                 groupAllPartKeysByAddress.get(node),
-                td.getTupleSchema(),
+                td.getDingoType(),
                 td.getKeyMapping()
             );
             operator.setId(idGenerator.get());
@@ -714,7 +719,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             PartRangeScanOperator operator = new PartRangeScanOperator(
                 tableId,
                 part.getId(),
-                td.getTupleSchema(),
+                td.getDingoType(),
                 td.getKeyMapping(),
                 filter,
                 rel.getSelection(),
@@ -758,7 +763,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
             log.info("group all part start keys by address:{} startKeys:{}",
                 k.toString(),
-                builder.toString());
+                builder);
         });
         return groupStartKeysByAddress;
     }
