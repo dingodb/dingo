@@ -55,20 +55,20 @@ public class ReadIndexRunner {
         @Override
         public void run(Status status, long index, byte[] reqCtx) {
             if (status.isOk()) {
-                future.complete((T) executeFunc.apply(operation));
+                Executors.execute("read-index-exec", () -> future.complete((T) executeFunc.apply(operation)));
                 return;
             }
             executor.execute(() -> {
                 if (node.isLeader()) {
                     log.warn("Fail to [get] with 'ReadIndex': {}, try to applying to the state machine.", status);
                     // If 'read index' read fails, try to applying to the state machine at the leader node
-                    RaftRawKVOperation.sync().applyOnNode(node).whenComplete((r, e) -> {
+                    RaftRawKVOperation.sync().applyOnNode(node).whenCompleteAsync((r, e) -> {
                         if (e == null) {
                             future.complete((T) executeFunc.apply(operation));
                         } else {
                             future.completeExceptionally(e);
                         }
-                    });
+                    }, Executors.executor("read-index-exec"));
                 } else {
                     log.warn("Fail to [get] with 'ReadIndex': {}.", status);
                     // Client will retry to leader node

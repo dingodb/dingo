@@ -230,9 +230,9 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
                 log.warn("Report stats but current node not leader.");
                 execute("cancel-report-stats", () -> scheduledFuture.cancel(true));
             }
-            SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(part.getStart(), part.getEnd()).join();
             List<ApproximateStats> approximateStats = new ArrayList<>();
             if (collectStats) {
+                SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(part.getStart(), part.getEnd()).join();
                 long count = 0;
                 long size = 0;
                 byte[] startKey = null;
