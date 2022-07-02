@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -170,7 +171,7 @@ public class RocksRawKVStore implements RawKVStore {
     public boolean delete(byte[] startKey, byte[] endKey) {
         try {
             if (endKey == null) {
-                try (RocksIterator iterator = this.db.newIterator()) {
+                try (RocksIterator iterator = this.db.newIterator();) {
                     iterator.seekToLast();
                     if (iterator.isValid()) {
                         try (final WriteBatch batch = new WriteBatch()) {
@@ -178,6 +179,8 @@ public class RocksRawKVStore implements RawKVStore {
                             batch.delete(endKey);
                             batch.deleteRange(startKey, endKey);
                             this.db.write(this.writeOptions, batch);
+                            this.db.deleteFilesInRanges(this.db.getDefaultColumnFamily(), Arrays.asList(startKey, endKey), true);
+                            this.db.compactRange(startKey, endKey);
                             return true;
                         }
                     } else {
@@ -186,7 +189,9 @@ public class RocksRawKVStore implements RawKVStore {
                     }
                 }
             } else {
+                this.db.deleteFilesInRanges(this.db.getDefaultColumnFamily(), Arrays.asList(startKey, endKey), true);
                 this.db.deleteRange(this.writeOptions, startKey, endKey);
+                this.db.compactRange(startKey, endKey);
                 return true;
             }
         } catch (final Exception e) {
