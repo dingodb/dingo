@@ -1196,12 +1196,14 @@ public class NodeImpl implements Node, RaftServerService {
     private void resetLeaderId(final PeerId newLeaderId, final Status status) {
         if (newLeaderId.isEmpty()) {
             if (!this.leaderId.isEmpty() && this.state.compareTo(State.STATE_TRANSFERRING) > 0) {
-                this.fsmCaller.onStopFollowing(new LeaderChangeContext(this.leaderId.copy(), this.currTerm, status));
+                this.fsmCaller.onStopFollowing(new LeaderChangeContext(this.leaderId.copy(), this.currTerm, status,
+                    this.getNodeId().getGroupId()));
             }
             this.leaderId = PeerId.emptyPeer();
         } else {
             if (this.leaderId == null || this.leaderId.isEmpty()) {
-                this.fsmCaller.onStartFollowing(new LeaderChangeContext(newLeaderId, this.currTerm, status));
+                this.fsmCaller.onStartFollowing(new LeaderChangeContext(newLeaderId, this.currTerm, status,
+                    this.getNodeId().getGroupId()));
             }
             this.leaderId = newLeaderId.copy();
         }
@@ -1267,7 +1269,7 @@ public class NodeImpl implements Node, RaftServerService {
 
     // should be in writeLock
     private void stepDown(final long term, final boolean wakeupCandidate, final Status status) {
-        LOG.debug("Node {} stepDown, term={}, newTerm={}, wakeupCandidate={}.", getNodeId(), this.currTerm, term,
+        LOG.info("Node {} stepDown, term={}, newTerm={}, wakeupCandidate={}.", getNodeId(), this.currTerm, term,
             wakeupCandidate);
         if (!this.state.isActive()) {
             return;

@@ -287,7 +287,8 @@ public class FSMCallerImpl implements FSMCaller {
     public boolean onStartFollowing(final LeaderChangeContext ctx) {
         return enqueueTask((task, sequence) -> {
             task.type = TaskType.START_FOLLOWING;
-            task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus());
+            task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus(),
+                ctx.getGroupId());
         });
     }
 
@@ -295,7 +296,8 @@ public class FSMCallerImpl implements FSMCaller {
     public boolean onStopFollowing(final LeaderChangeContext ctx) {
         return enqueueTask((task, sequence) -> {
             task.type = TaskType.STOP_FOLLOWING;
-            task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus());
+            task.leaderChangeCtx = new LeaderChangeContext(ctx.getLeaderId(), ctx.getTerm(), ctx.getStatus(),
+                ctx.getGroupId());
         });
     }
 

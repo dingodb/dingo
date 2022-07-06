@@ -23,12 +23,14 @@ public class LeaderChangeContext {
     private PeerId leaderId;
     private long term;
     private Status status;
+    private String groupId;
 
-    public LeaderChangeContext(PeerId leaderId, long term, Status status) {
+    public LeaderChangeContext(PeerId leaderId, long term, Status status, String groupId) {
         super();
         this.leaderId = leaderId;
         this.term = term;
         this.status = status;
+        this.groupId = groupId;
     }
 
     public PeerId getLeaderId() {
@@ -53,6 +55,10 @@ public class LeaderChangeContext {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public String getGroupId() {
+        return this.groupId;
     }
 
     @Override
@@ -96,8 +102,7 @@ public class LeaderChangeContext {
 
     @Override
     public String toString() {
-        return "LeaderChangeContext [leaderId=" + this.leaderId + ", term=" + this.term + ", status=" + this.status
-               + "]";
+        return "LeaderChangeContext [leaderId=" + this.leaderId + ", term=" + this.term + ", groupId=" + this.groupId +
+        ", status=" + this.status + "]";
     }
-
 }
