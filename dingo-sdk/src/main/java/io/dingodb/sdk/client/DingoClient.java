@@ -16,10 +16,11 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.common.Operation;
+import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.operation.StoreOperationType;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,7 @@ public class DingoClient {
 
     /**
      * connection must be init before do operation.
-     * @return
+     * @return ture or false
      */
     public boolean openConnection() {
         try {
@@ -94,13 +95,65 @@ public class DingoClient {
     }
 
 
+    public boolean createTable(TableDefinition tableDef) {
+        if (!isConnected()) {
+            log.error("connection has not been initialized, please call openConnection first");
+            return false;
+        }
+
+        if (tableDef == null || tableDef.getName() == null || tableDef.getName().isEmpty()) {
+            log.error("Invalid TableDefinition:{}", tableDef);
+            return false;
+        }
+
+        /**
+         * define table definition and call create table api.
+         */
+        boolean isSuccess = false;
+        try {
+            connection.getMetaClient().createTable(tableDef.getName(), tableDef);
+            isSuccess = true;
+            storeOpUtils.updateCacheOfTableDefinition(tableDef.getName(), tableDef);
+        } catch (Exception e) {
+            isSuccess = false;
+            log.error("create table: {} definition:{} failed:{}",
+                tableDef.getName(),
+                tableDef,
+                e.toString(), e);
+        }
+        return isSuccess;
+    }
+
+    public boolean dropTable(final String tableName) {
+        if (!isConnected()) {
+            log.error("connection has not been initialized, please call openConnection first");
+            return false;
+        }
+        if (tableName == null || tableName.isEmpty()) {
+            log.error("Invalid table name:{}", tableName);
+            return false;
+        }
+        boolean isSuccess = false;
+        try {
+            connection.getMetaClient().dropTable(tableName);
+            isSuccess = true;
+            storeOpUtils.removeCacheOfTableDefinition(tableName);
+        } catch (Exception e) {
+            isSuccess = false;
+            log.error("drop table: {} failed:{}", tableName, e.toString(), e);
+        }
+        return isSuccess;
+    }
+
+
     public boolean put(Key key, Record record) throws Exception {
         return interalPutRecord(key, record);
     }
 
     public boolean put(Key key, Column[] columns) throws Exception {
         // convert columns to record
-        Record record = null;
+        List<String> columnsInOrder = storeOpUtils.getColumnNamesInOrder(key.getTable());
+        Record record = new Record(columnsInOrder, columns);
         return interalPutRecord(key, record);
     }
 

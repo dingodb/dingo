@@ -41,14 +41,7 @@ public final class Key {
     private final String table;
 
     /**
-     * Original user key. This key is immediately converted to a hash digest.
-     * This key is not used or returned by the server by default. If the user key needs
-     * to persist on the server, use one of the following methods:
-     * <ul>
-     * <li>Set "WritePolicy.sendKey" to true. In this case, the key will be sent to the server for storage on writes
-     * and retrieved on multi-record scans and queries.</li>
-     * <li>Explicitly store and retrieve the key in a bin.</li>
-     * </ul>
+     * Required, user keys for with multiple columns.
      */
     public final List<Value> userKey;
 }

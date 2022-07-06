@@ -69,7 +69,8 @@ public class DeferredObjectLoader {
     }
 
 
-    private static final ThreadLocal<List<DeferredObjectSetter>> threadLocalLoader = ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<DeferredObjectSetter>> threadLocalLoader =
+        ThreadLocal.withInitial(ArrayList::new);
 
     public static void save(DeferredObjectSetter object) {
         threadLocalLoader.get().add(object);
