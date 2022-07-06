@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class ReadIndexClosure implements Closure {
     private static final Logger LOG = LoggerFactory.getLogger(ReadIndexClosure.class);
 
-    private static final long DEFAULT_TIMEOUT = SystemPropertyUtil.getInt("jraft.read-index.timeout", 2 * 1000);
+    private static final long DEFAULT_TIMEOUT = SystemPropertyUtil.getInt("jraft.read-index.timeout", 5 * 1000);
 
     private static final int PENDING = 0;
     private static final int COMPLETE = 1;

@@ -73,7 +73,6 @@ public class RocksConfigration {
     private Boolean adviseRandomOnOpen;
     private Long dbWriteBufferSize;
     private AccessHint accessHintOnCompactionStart;
-    private Boolean newTableReaderForCompactionInputs;
     private Long randomAccessMaxBufferSize;
     private Boolean useAdaptiveMutex;
     private List<AbstractEventListener> listeners;
@@ -94,7 +93,6 @@ public class RocksConfigration {
     private Boolean dumpMallocStats;
     private Boolean avoidFlushDuringRecovery;
     private Boolean allowIngestBehind;
-    private Boolean preserveDeletes;
     private Boolean twoWriteQueues;
     private Boolean manualWalFlush;
     private Boolean atomicFlush;
@@ -108,7 +106,6 @@ public class RocksConfigration {
 
     // mutable
     public Integer maxBackgroundJobs;
-    public Integer baseBackgroundCompactions;
     public Boolean avoidFlushDuringShutdown;
     public Long writableFileMaxBufferSize;
     public Long delayedWriteRate;
@@ -220,9 +217,6 @@ public class RocksConfigration {
         if (accessHintOnCompactionStart != null) {
             options.setAccessHintOnCompactionStart(accessHintOnCompactionStart);
         }
-        if (newTableReaderForCompactionInputs != null) {
-            options.setNewTableReaderForCompactionInputs(newTableReaderForCompactionInputs);
-        }
         if (randomAccessMaxBufferSize != null) {
             options.setRandomAccessMaxBufferSize(randomAccessMaxBufferSize);
         }
@@ -283,9 +277,6 @@ public class RocksConfigration {
         if (allowIngestBehind != null) {
             options.setAllowIngestBehind(allowIngestBehind);
         }
-        if (preserveDeletes != null) {
-            options.setPreserveDeletes(preserveDeletes);
-        }
         if (twoWriteQueues != null) {
             options.setTwoWriteQueues(twoWriteQueues);
         }
@@ -318,9 +309,6 @@ public class RocksConfigration {
         }
         if (maxBackgroundJobs != null) {
             options.setMaxBackgroundJobs(maxBackgroundJobs);
-        }
-        if (baseBackgroundCompactions != null) {
-            options.setBaseBackgroundCompactions(baseBackgroundCompactions);
         }
         if (avoidFlushDuringShutdown != null) {
             options.setAvoidFlushDuringShutdown(avoidFlushDuringShutdown);

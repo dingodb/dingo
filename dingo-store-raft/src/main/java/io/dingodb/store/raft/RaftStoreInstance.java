@@ -165,7 +165,7 @@ public class RaftStoreInstance implements StoreInstance {
     public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
         Part part = getPart(startKey);
         if (part == null) {
-            log.warn("delete store by part start key. but find start key:{} not in any part",
+            log.warn("Count or delete store by part start key. but find start key:{} not in any part",
                 Arrays.toString(startKey));
             return 0;
         }
