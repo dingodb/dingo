@@ -26,8 +26,8 @@ public class DingoClientException extends RuntimeException {
         this.resultCode = resultCode;
     }
 
-    public DingoClientException(int resultCode, Throwable e) {
-        super(e);
+    public DingoClientException(int resultCode, Throwable exception) {
+        super(exception);
         this.resultCode = resultCode;
     }
 
@@ -36,27 +36,27 @@ public class DingoClientException extends RuntimeException {
         this.resultCode = resultCode;
     }
 
-    public DingoClientException(int resultCode, String message, Throwable e) {
-        super(message, e);
+    public DingoClientException(int resultCode, String message, Throwable ex) {
+        super(message, ex);
         this.resultCode = resultCode;
     }
 
-    public DingoClientException(String message, Throwable e) {
-        super(message, e);
+    public DingoClientException(String message, Throwable ex) {
+        super(message, ex);
     }
 
     public DingoClientException(String message) {
         super(message);
     }
 
-    public DingoClientException(Throwable e) {
-        super(e);
+    public DingoClientException(Throwable ex) {
+        super(ex);
     }
 
     @Override
     public String getMessage() {
         StringBuilder sb = new StringBuilder(512);
-        String message = super.getMessage();
+        final String message = super.getMessage();
 
         sb.append("Error ");
         sb.append(resultCode);
@@ -81,8 +81,8 @@ public class DingoClientException extends RuntimeException {
     public static final class Serialize extends DingoClientException {
         private static final long serialVersionUID = 1L;
 
-        public Serialize(Throwable e) {
-            super(ResultCode.SERIALIZE_ERROR, e);
+        public Serialize(Throwable ex) {
+            super(ResultCode.SERIALIZE_ERROR, ex);
         }
     }
 

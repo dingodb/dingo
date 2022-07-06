@@ -64,6 +64,7 @@ public class DingoConnection extends ClientBase {
         this.apiRegistry = super.getNetService().apiRegistry();
     }
 
+
     public MetaClient getMetaClient() {
         return metaClient;
     }

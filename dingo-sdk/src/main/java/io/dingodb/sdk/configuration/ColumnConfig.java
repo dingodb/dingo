@@ -30,11 +30,13 @@ public class ColumnConfig {
     private String getter;
     private String setter;
     private Integer ordinal;
+    private EmbedConfig embed;
     private Boolean exclude;
 
     public void validate(String className) {
         if (StringUtils.isBlank(this.name) && StringUtils.isBlank(this.field)) {
-            throw new DingoClientException("Configuration for class " + className + " defines a bin which contains neither a name nor a field");
+            throw new DingoClientException("Configuration for class " + className
+                + " defines a column which contains neither a name nor a field");
         }
     }
 

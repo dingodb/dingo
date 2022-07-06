@@ -27,21 +27,24 @@ import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.common.Operation;
+import io.dingodb.sdk.common.Record;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StoreOperationUtils {
 
-    private Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
-    private Map<StoreOperationType, IBaseStoreOperation> dingoOperationMap = new ConcurrentHashMap<>(3);
+    private static Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
+    private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
+    private static Map<StoreOperationType, IBaseStoreOperation> dingoOperationMap = new ConcurrentHashMap<>(3);
     private DingoConnection connection;
     private int retryTimes;
 
@@ -52,8 +55,8 @@ public class StoreOperationUtils {
     }
 
     public boolean executeRemoteOperation(StoreOperationType type, String tableName, Key key, Record record) {
-        RouteTable tblRunTimeTop = getAndRefreshRouteTable(tableName, false);
-        if (tblRunTimeTop == null) {
+        RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
+        if (routeTable == null) {
             log.error("table {} not found when do operation:{}", tableName, type);
             return false;
         }
@@ -61,31 +64,33 @@ public class StoreOperationUtils {
         int retryTimes = this.retryTimes;
         do {
             try {
-                KeyValueCodec codec = tblRunTimeTop.getCodec();
+                KeyValueCodec codec = routeTable.getCodec();
                 byte[] keyInBytes = null; // codec.encodeKey(key.getUserKey());
                 byte[] valueInBytes = null; //codec.encode(record.columns.values().toArray(new Object[0]));
                 ExecutorApi executorApi = getExecutor(tableName, keyInBytes);
 
                 IBaseStoreOperation storeOp = getDingoStoreOp(type);
-                isSuccess = storeOp.doOperation(executorApi, tblRunTimeTop.getTableId(), keyInBytes, valueInBytes);
+                isSuccess = storeOp.doOperation(executorApi, routeTable.getTableId(), keyInBytes, valueInBytes);
             } catch (Exception ex) {
                 log.error("executeRemoteOperation error", ex.toString(), ex);
             } finally {
                 if (!isSuccess && retryTimes > 0) {
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException e) {
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
                     }
-                    tblRunTimeTop = getAndRefreshRouteTable(tableName, true);
+                    routeTable = getAndRefreshRouteTable(tableName, true);
                 }
             }
-        } while (!isSuccess && --retryTimes > 0);
+        }
+        while (!isSuccess && --retryTimes > 0);
         return isSuccess;
     }
 
     public Record executeRemoteCompute(StoreOperationType type, String tableName, Key key, Operation operation) {
-        RouteTable tblRunTimeTop = getAndRefreshRouteTable(tableName, false);
-        if (tblRunTimeTop == null) {
+        RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
+        if (routeTable == null) {
             log.error("table {} not found when do operation:{}", tableName, type);
             return null;
         }
@@ -93,13 +98,17 @@ public class StoreOperationUtils {
         int retryTimes = this.retryTimes;
         do {
             try {
-                KeyValueCodec codec = tblRunTimeTop.getCodec();
+                KeyValueCodec codec = routeTable.getCodec();
                 byte[] keyInBytes = null; // codec.encodeKey(key.getUserKey());
                 if (operation.type.isWrite) {
                     ExecutorApi executorApi = getExecutor(tableName, keyInBytes);
 
                     IBaseStoreOperation storeOp = getDingoStoreOp(type);
-                    return storeOp.doCompute(executorApi, tblRunTimeTop.getTableId(), keyInBytes, ProtostuffCodec.write(operation));
+                    return storeOp.doCompute(
+                        executorApi,
+                        routeTable.getTableId(),
+                        keyInBytes,
+                        ProtostuffCodec.write(operation));
 
                 } else {
                     // todo scan --> operation.type.execute() --> record
@@ -112,23 +121,26 @@ public class StoreOperationUtils {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                    tblRunTimeTop = getAndRefreshRouteTable(tableName, true);
+                    routeTable = getAndRefreshRouteTable(tableName, true);
                 }
             }
-        } while (--retryTimes > 0);
+        }
+        while (--retryTimes > 0);
         return null;
     }
 
-    private IBaseStoreOperation getDingoStoreOp(StoreOperationType type) {
-        return dingoOperationMap.get(type);
-    }
-
+    /**
+     * get route table from coordinator or cache, and refresh it if need.
+     * @param tableName input tableName
+     * @param isRefresh if isRefresh == true, then refresh route table
+     * @return RouteTable about table partition leaders and replicas on hosts.
+     */
     public RouteTable getAndRefreshRouteTable(final String tableName, boolean isRefresh) {
         if (isRefresh) {
             dingoRouteTables.remove(tableName);
         }
-
         RouteTable routeTable = dingoRouteTables.get(tableName);
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
@@ -138,6 +150,7 @@ public class StoreOperationUtils {
                 log.error("Cannot find table:{} defination from meta", tableName);
                 return null;
             }
+            tableDefinitionInCache.put(tableName, tableDef);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
             KeyValueCodec keyValueCodec = new KeyValueCodec(tableDef.getTupleSchema(), tableDef.getKeyMapping());
             RangeStrategy rangeStrategy = new RangeStrategy(tableDef, partitions.navigableKeySet());
@@ -154,7 +167,59 @@ public class StoreOperationUtils {
         return routeTable;
     }
 
-    private ExecutorApi getExecutor(final String tableName, byte[] keyInBytes) {
+    /**
+     * get column name in order by index from table definition.
+     * @param tableName input table name.
+     * @return column name in order by index.
+     */
+    public synchronized List<String> getColumnNamesInOrder(String tableName) {
+        TableDefinition tableDef = tableDefinitionInCache.get(tableName);
+        if (tableDef == null) {
+            MetaClient metaClient = connection.getMetaClient();
+            tableDef = metaClient.getTableDefinition(tableName);
+            if (tableDef != null) {
+                tableDefinitionInCache.put(tableName, tableDef);
+            }
+        }
+
+        if (tableDef == null) {
+            log.error("Cannot find table:{} definition from meta", tableName);
+            return null;
+        }
+        return tableDef.getColumns().stream().map(c -> c.getName()).collect(Collectors.toList());
+    }
+
+    /**
+     * update table definition into local cache.
+     * @param tableName table name.
+     * @param tableDef table definition.
+     */
+    public synchronized void updateCacheOfTableDefinition(final String tableName, final TableDefinition tableDef) {
+        if (tableName != null && !tableName.isEmpty() && tableDef != null) {
+            tableDefinitionInCache.put(tableName, tableDef);
+            log.info("update cache of table:{} definition:{}", tableName, tableDef);
+        }
+    }
+
+    public synchronized void initStoreOperation() {
+        dingoOperationMap.put(StoreOperationType.PUT, new PutRecordOperation());
+        dingoOperationMap.put(StoreOperationType.COMPUTE, new ComputeOperation());
+    }
+
+    /**
+     * remove table definition from local cache.
+     * @param tableName input table name.
+     */
+    public void removeCacheOfTableDefinition(String tableName) {
+        if (tableName != null) {
+            TableDefinition tableDefinition = tableDefinitionInCache.remove(tableName);
+            if (tableDefinition != null) {
+                log.info("remove cache of table:{} definition:{}", tableName, tableDefinition);
+            }
+        }
+    }
+
+    private synchronized ExecutorApi getExecutor(final String tableName, byte[] keyInBytes) {
         RouteTable executionTopology = getAndRefreshRouteTable(tableName, false);
         if (executionTopology == null) {
             log.warn("Cannot find execution topology for table:{}", tableName);
@@ -166,8 +231,7 @@ public class StoreOperationUtils {
         return executorApi;
     }
 
-    public void initStoreOperation() {
-        dingoOperationMap.put(StoreOperationType.PUT, new PutRecordOperation());
-        dingoOperationMap.put(StoreOperationType.COMPUTE, new ComputeOperation());
+    private IBaseStoreOperation getDingoStoreOp(StoreOperationType type) {
+        return dingoOperationMap.get(type);
     }
 }
