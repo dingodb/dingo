@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.dingodb.sdk.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,16 +28,15 @@ import io.dingodb.sdk.common.RecordExistsAction;
 import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.Configuration;
+import io.dingodb.sdk.utils.CheckUtils;
 import io.dingodb.sdk.utils.ClassCache;
 import io.dingodb.sdk.utils.ClassCacheEntry;
 import io.dingodb.sdk.utils.DingoClientException;
 import io.dingodb.sdk.utils.GenericTypeMapper;
-import io.dingodb.sdk.utils.CheckUtils;
 import io.dingodb.sdk.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,11 +44,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import javax.validation.constraints.NotNull;
 
 @Slf4j
 public class DingoOpCli implements DingoMapper {
 
-    private final DingoClient mClient;
+    private final DingoClient dingoClient;
     private final MappingConverter mappingConverter;
 
     /**
@@ -50,7 +66,8 @@ public class DingoOpCli implements DingoMapper {
         }
 
         /**
-         * Add in a custom type converter. The converter must have methods which implement the ToDingo and FromDingo annotation.
+         * Add in a custom type converter.
+         * The converter must have methods which implement the ToDingo and FromDingo annotation.
          *
          * @param converter The custom converter
          * @return this object
@@ -95,7 +112,9 @@ public class DingoOpCli implements DingoMapper {
             return this.withConfiguration(configurationYaml, false);
         }
 
-        public Builder withConfiguration(String configurationYaml, boolean allowsInvalid) throws JsonProcessingException {
+        public Builder withConfiguration(
+            String configurationYaml,
+            boolean allowsInvalid) throws JsonProcessingException {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             Configuration configuration = objectMapper.readValue(configurationYaml, Configuration.class);
             this.loadConfiguration(configuration, allowsInvalid);
@@ -137,8 +156,8 @@ public class DingoOpCli implements DingoMapper {
     }
 
     private DingoOpCli(@NotNull DingoClient client) {
-        this.mClient = client;
-        this.mappingConverter = new MappingConverter(this, mClient);
+        this.dingoClient = client;
+        this.mappingConverter = new MappingConverter(this, dingoClient);
     }
 
     @Override
@@ -161,7 +180,7 @@ public class DingoOpCli implements DingoMapper {
         Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
         Column[] columns = entry.getColumns(object, false, binNames);
         try {
-            boolean isSuccess = mClient.put(key, columns);
+            boolean isSuccess = dingoClient.put(key, columns);
             if (!isSuccess) {
                 log.warn("Failed to save object " + object);
             }
@@ -183,7 +202,9 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey, boolean resolveDependencies) throws DingoClientException {
+    public <T> T read(@NotNull Class<T> clazz,
+                      @NotNull Object userKey,
+                      boolean resolveDependencies) throws DingoClientException {
         ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
         String tableName = entry.getTableName();
         /*
@@ -271,7 +292,7 @@ public class DingoOpCli implements DingoMapper {
 
     @Override
     public DingoClient getClient() {
-        return this.mClient;
+        return this.dingoClient;
     }
 
     @Override

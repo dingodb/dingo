@@ -20,17 +20,17 @@ import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoConstructor;
 import io.dingodb.sdk.annotation.DingoExclude;
 import io.dingodb.sdk.annotation.DingoGetter;
-import io.dingodb.sdk.annotation.DingoOrdinal;
-import io.dingodb.sdk.annotation.DingoSetter;
 import io.dingodb.sdk.annotation.DingoKey;
+import io.dingodb.sdk.annotation.DingoOrdinal;
 import io.dingodb.sdk.annotation.DingoRecord;
+import io.dingodb.sdk.annotation.DingoSetter;
 import io.dingodb.sdk.annotation.ParamFrom;
 import io.dingodb.sdk.client.IBaseDingoMapper;
-import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.MapOrder;
 import io.dingodb.sdk.client.PrimitiveDefaults;
 import io.dingodb.sdk.client.PropertyDefinition;
 import io.dingodb.sdk.common.Column;
+import io.dingodb.sdk.common.Key;
+import io.dingodb.sdk.common.MapOrder;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.common.ValueType;
@@ -40,7 +40,6 @@ import io.dingodb.sdk.configuration.KeyConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.validation.constraints.NotNull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -55,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import javax.validation.constraints.NotNull;
 
 @Slf4j
 public class ClassCacheEntry<T> {
@@ -98,8 +98,9 @@ public class ClassCacheEntry<T> {
     private FactoryMethodType factoryConstructorType;
 
     /**
-     * When there are subclasses, we need to store the type information to be able to re-create an instance of the same type. As the
-     * class name can be verbose, we provide the ability to set a string representing the class name. This string must be unique for all classes.
+     * When there are subclasses, need to store type information to be able to re-create an instance of the same type.
+     * As the class name can be verbose, we provide the ability to set a string representing the class name.
+     * This string must be unique for all classes.
      */
     private String shortenedClassName;
     private boolean isChildClass = false;
@@ -136,7 +137,9 @@ public class ClassCacheEntry<T> {
         this.superClazz = ClassCache.getInstance().loadClass(this.clazz.getSuperclass(), this.mapper);
         this.columnCnt = this.values.size() + (superClazz != null ? superClazz.columnCnt : 0);
         if (this.columnCnt == 0) {
-            throw new DingoClientException("Class " + clazz.getSimpleName() + " has no values defined to be stored in the database");
+            throw new DingoClientException("Class "
+                + clazz.getSimpleName()
+                + " has no values defined to be stored in the database");
         }
         this.formOrdinalsFromValues();
         Method factoryConstructorMethod = findConstructorFactoryMethod();
@@ -192,12 +195,16 @@ public class ClassCacheEntry<T> {
 
     private void checkRecordSettingsAgainstSuperClasses() {
         if (!StringUtils.isBlank(this.database) && !StringUtils.isBlank(this.tableName)) {
-            // This class defines it's own namespace + set, it is only a child class if it's closest named superclass is the same as ours.
+            // This class defines it's own database + table,
+            // it is only a child class if it's closest named superclass is the same as ours.
             this.isChildClass = false;
             ClassCacheEntry<?> thisEntry = this.superClazz;
             while (thisEntry != null) {
-                if ((!StringUtils.isBlank(thisEntry.getDatabase())) && (!StringUtils.isBlank(thisEntry.getTableName()))) {
-                    if (this.database.equals(thisEntry.getDatabase()) && this.tableName.equals(thisEntry.getTableName())) {
+                boolean isOK = (!StringUtils.isBlank(thisEntry.getDatabase()))
+                    && (!StringUtils.isBlank(thisEntry.getTableName()));
+                if (isOK) {
+                    if (this.database.equals(thisEntry.getDatabase())
+                        && this.tableName.equals(thisEntry.getTableName())) {
                         this.isChildClass = true;
                     }
                     break;
@@ -209,7 +216,8 @@ public class ClassCacheEntry<T> {
             this.isChildClass = true;
             ClassCacheEntry<?> thisEntry = this.superClazz;
             while (thisEntry != null) {
-                if ((!StringUtils.isBlank(thisEntry.getDatabase())) && (!StringUtils.isBlank(thisEntry.getTableName()))) {
+                if ((!StringUtils.isBlank(thisEntry.getDatabase()))
+                    && (!StringUtils.isBlank(thisEntry.getTableName()))) {
                     this.database = thisEntry.getDatabase();
                     this.tableName = thisEntry.getTableName();
                     break;
@@ -296,7 +304,7 @@ public class ClassCacheEntry<T> {
                 }
                 if (ordinals.containsKey(ordinal)) {
                     throw new DingoClientException(String.format("Class %s has multiple values with the ordinal of %d",
-                            clazz.getSimpleName(), ordinal));
+                        clazz.getSimpleName(), ordinal));
                 }
                 ordinals.put(ordinal, thisValueName);
                 fieldsWithOrdinals.add(thisValueName);
@@ -307,24 +315,30 @@ public class ClassCacheEntry<T> {
             // The ordinals need to be valued from 1..<numOrdinals>
             for (int i = 1; i <= ordinals.size(); i++) {
                 if (!ordinals.containsKey(i)) {
-                    throw new DingoClientException(String.format("Class %s has %d values specifying ordinals." +
-                                    " These should be 1..%d, but %d is missing",
-                            clazz.getSimpleName(), ordinals.size(), ordinals.size(), i));
+                    throw new DingoClientException(String.format("Class %s has %d values specifying ordinals."
+                            + " These should be 1..%d, but %d is missing",
+                        clazz.getSimpleName(), ordinals.size(), ordinals.size(), i));
                 }
             }
         }
     }
 
     private boolean validateFactoryMethod(Method method) {
-        if ((method.getModifiers() & Modifier.STATIC) == Modifier.STATIC && this.factoryMethod.equals(method.getName())) {
+        if ((method.getModifiers() & Modifier.STATIC) == Modifier.STATIC
+            && this.factoryMethod.equals(method.getName())) {
             Parameter[] params = method.getParameters();
             if (params.length == 0) {
                 return true;
             }
-            if (params.length == 1 && ((Class.class.isAssignableFrom(params[0].getType())) || Map.class.isAssignableFrom(params[0].getType()))) {
+            if (params.length == 1
+                && ((Class.class.isAssignableFrom(params[0].getType()))
+                    || Map.class.isAssignableFrom(params[0].getType()))
+            ) {
                 return true;
             }
-            if (params.length == 2 && Class.class.isAssignableFrom(params[0].getType()) && Map.class.isAssignableFrom(params[1].getType())) {
+            if (params.length == 2
+                && Class.class.isAssignableFrom(params[0].getType())
+                && Map.class.isAssignableFrom(params[1].getType())) {
                 return true;
             }
         }
@@ -335,12 +349,14 @@ public class ClassCacheEntry<T> {
         if (!StringUtils.isBlank(this.factoryClass) || !StringUtils.isBlank(this.factoryMethod)) {
             // Both must be specified
             if (StringUtils.isBlank(this.factoryClass)) {
-                throw new DingoClientException("Missing factoryClass definition when factoryMethod is specified on class " +
-                        clazz.getSimpleName());
+                String errorMsg = "Missing factoryClass definition when factoryMethod is specified on class "
+                    + clazz.getSimpleName();
+                throw new DingoClientException(errorMsg);
             }
             if (StringUtils.isBlank(this.factoryClass)) {
-                throw new DingoClientException("Missing factoryMethod definition when factoryClass is specified on class " +
-                        clazz.getSimpleName());
+                String errorMsg = "Missing factoryMethod definition when factoryClass is specified on class "
+                    + clazz.getSimpleName();
+                throw new DingoClientException(errorMsg);
             }
             // Load the class and check for the method
             try {
@@ -349,25 +365,25 @@ public class ClassCacheEntry<T> {
                 for (Method method : factoryClazzType.getDeclaredMethods()) {
                     if (validateFactoryMethod(method)) {
                         if (foundMethod != null) {
-                            throw new DingoClientException(String.format("Factory Class %s defines at least 2 valid " +
-                                            "factory methods (%s, %s) as a factory for class %s",
-                                    this.factoryClass, foundMethod, method, this.clazz.getSimpleName()));
+                            throw new DingoClientException(String.format("Factory Class %s defines at least 2 valid "
+                                    + "factory methods (%s, %s) as a factory for class %s",
+                                this.factoryClass, foundMethod, method, this.clazz.getSimpleName()));
                         }
                         foundMethod = method;
                     }
                 }
                 if (foundMethod == null) {
-                    throw new DingoClientException(String.format("Class %s specified a factory class of %s and a factory" +
-                                    " method of %s, but no valid method with that name exists on the class. A valid" +
-                                    " method must be static, can take no parameters, a single Class parameter, a single" +
-                                    " Map parameter, or a Class and a Map parameter, and must return an object which is" +
-                                    " either an ancestor, descendant or equal to %s",
-                            clazz.getSimpleName(), this.factoryClass, this.factoryMethod, clazz.getSimpleName()));
+                    throw new DingoClientException(String.format("Class %s specified a factory class of %s and "
+                            + "a factory method of %s, but no valid method with that name exists on the class. A valid"
+                            + " method must be static, can take no parameters, a single Class parameter, a single"
+                            + " Map parameter, or a Class and a Map parameter, and must return an object which is"
+                            + " either an ancestor, descendant or equal to %s",
+                        clazz.getSimpleName(), this.factoryClass, this.factoryMethod, clazz.getSimpleName()));
                 }
                 return foundMethod;
             } catch (ClassNotFoundException cnfe) {
                 throw new DingoClientException(String.format("Factory class %s for class %s cannot be loaded",
-                        this.factoryClass, clazz.getSimpleName()));
+                    this.factoryClass, clazz.getSimpleName()));
             }
         }
         return null;
@@ -398,8 +414,8 @@ public class ClassCacheEntry<T> {
     private void findConstructor() {
         Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         if (constructors.length == 0) {
-            throw new DingoClientException("Class " + clazz.getSimpleName() +
-                    " has no constructors and hence cannot be mapped to Dingo");
+            throw new DingoClientException("Class " + clazz.getSimpleName()
+                + " has no constructors and hence cannot be mapped to Dingo");
         }
         Constructor<?> desiredConstructor = null;
         Constructor<?> noArgConstructor = null;
@@ -413,9 +429,9 @@ public class ClassCacheEntry<T> {
                 DingoConstructor dingoConstructor = thisConstructor.getAnnotation(DingoConstructor.class);
                 if (dingoConstructor != null) {
                     if (desiredConstructor != null) {
-                        throw new DingoClientException("Class " + clazz.getSimpleName() +
-                                " has multiple constructors annotated with @DingoConstructor. " +
-                                "Only one constructor can be so annotated.");
+                        throw new DingoClientException("Class " + clazz.getSimpleName()
+                            + " has multiple constructors annotated with @DingoConstructor. "
+                            + "Only one constructor can be so annotated.");
                     } else {
                         desiredConstructor = thisConstructor;
                     }
@@ -428,8 +444,9 @@ public class ClassCacheEntry<T> {
         }
 
         if (desiredConstructor == null) {
-            throw new DingoClientException("Class " + clazz.getSimpleName() + " has neither a no-arg constructor, " +
-                    "nor a constructor annotated with @DingoConstructor so cannot be mapped to Dingo.");
+            throw new DingoClientException("Class " + clazz.getSimpleName()
+                + " has neither a no-arg constructor, "
+                + "nor a constructor annotated with @DingoConstructor so cannot be mapped to Dingo.");
         }
 
         Parameter[] params = desiredConstructor.getParameters();
@@ -460,20 +477,21 @@ public class ClassCacheEntry<T> {
             // Validate that we have such a value
             if (!allValues.containsKey(binName)) {
                 String valueList = String.join(",", values.keySet());
-                String message = String.format("Class %s has a preferred constructor of %s. However, parameter %d is " +
-                                "mapped to bin \"%s\" %s which is not one of the values on the class, which are: %s%s",
-                        clazz.getSimpleName(), desiredConstructor, count, binName,
-                        isFromAnnotation ? "via the @ParamFrom annotation" : "via the argument name",
-                        valueList,
-                        (!isFromAnnotation && binName.startsWith("arg")) ? ". Did you forget to specify '-parameters' to javac when building?" : "");
+                boolean isDefaultAnnotation = (!isFromAnnotation && binName.startsWith("arg"));
+                String message = String.format("Class %s has a preferred constructor of %s. However, parameter %d is "
+                        + "mapped to bin \"%s\" %s which is not one of the values on the class, which are: %s%s",
+                    clazz.getSimpleName(), desiredConstructor, count, binName,
+                    isFromAnnotation ? "via the @ParamFrom annotation" : "via the argument name",
+                    valueList,
+                    (isDefaultAnnotation) ? ". forget to specify '-parameters' to javac when building?" : "");
                 throw new DingoClientException(message);
             }
             Class<?> type = thisParam.getType();
             if (!type.isAssignableFrom(allValues.get(binName).getType())) {
-                throw new DingoClientException("Class " + clazz.getSimpleName() + " has a preferred constructor of " +
-                        desiredConstructor + ". However, parameter " + count +
-                        " is of type " + type + " but assigned from bin \"" + binName + "\" of type " +
-                        values.get(binName).getType() + ". These types are incompatible.");
+                throw new DingoClientException("Class " + clazz.getSimpleName() + " has a preferred constructor of "
+                    + desiredConstructor + ". However, parameter " + count
+                    + " is of type " + type + " but assigned from bin \"" + binName + "\" of type "
+                    + values.get(binName).getType() + ". These types are incompatible.");
             }
             constructorParamBins[count - 1] = binName;
             constructorParamDefaults[count - 1] = PrimitiveDefaults.getDefaultValue(thisParam.getType());
@@ -502,7 +520,8 @@ public class ClassCacheEntry<T> {
             ColumnConfig setterConfig = getColumnFromSetter(methodName);
 
             boolean isKey = false;
-            boolean isKeyViaConfig = keyConfig != null && (keyConfig.isGetter(methodName) || keyConfig.isSetter(methodName));
+            boolean isKeyViaConfig = keyConfig != null
+                && (keyConfig.isGetter(methodName) || keyConfig.isSetter(methodName));
             if (thisMethod.isAnnotationPresent(DingoKey.class) || isKeyViaConfig) {
 
                 if (keyProperty == null) {
@@ -526,7 +545,8 @@ public class ClassCacheEntry<T> {
             }
 
             if (thisMethod.isAnnotationPresent(DingoGetter.class) || getterConfig != null) {
-                String getterName = (getterConfig != null) ? getterConfig.getName() : thisMethod.getAnnotation(DingoGetter.class).name();
+                String getterName = (getterConfig != null)
+                    ? getterConfig.getName() : thisMethod.getAnnotation(DingoGetter.class).name();
 
                 String name = ParserUtils.getInstance().get(ParserUtils.getInstance().get(getterName));
                 PropertyDefinition thisProperty = getOrCreateProperty(name, properties);
@@ -537,7 +557,8 @@ public class ClassCacheEntry<T> {
             }
 
             if (thisMethod.isAnnotationPresent(DingoSetter.class) || setterConfig != null) {
-                String setterName = (setterConfig != null) ? setterConfig.getName() : thisMethod.getAnnotation(DingoSetter.class).name();
+                String setterName = (setterConfig != null)
+                    ? setterConfig.getName() : thisMethod.getAnnotation(DingoSetter.class).name();
                 String name = ParserUtils.getInstance().get(ParserUtils.getInstance().get(setterName));
                 PropertyDefinition thisProperty = getOrCreateProperty(name, properties);
                 thisProperty.setSetter(thisMethod);
@@ -557,8 +578,8 @@ public class ClassCacheEntry<T> {
             PropertyDefinition thisProperty = properties.get(thisPropertyName);
             thisProperty.validate(clazz.getName(), config, false);
             if (this.values.get(thisPropertyName) != null) {
-                throw new DingoClientException("Class " + clazz.getName() + " cannot define the mapped name " +
-                        thisPropertyName + " more than once");
+                throw new DingoClientException("Class " + clazz.getName() + " cannot define the mapped name "
+                    + thisPropertyName + " more than once");
             }
             TypeUtils.AnnotatedType annotatedType = new TypeUtils.AnnotatedType(config, thisProperty.getGetter());
             TypeMapper typeMapper = TypeUtils.getMapper(thisProperty.getType(), annotatedType, this.mapper);
@@ -573,9 +594,12 @@ public class ClassCacheEntry<T> {
         for (Field thisField : this.clazz.getDeclaredFields()) {
             boolean isKey = false;
             ColumnConfig thisBin = getColumnFromField(thisField);
-            if (thisField.isAnnotationPresent(DingoKey.class) || (!StringUtils.isBlank(keyField) && keyField.equals(thisField.getName()))) {
-                if (thisField.isAnnotationPresent(DingoExclude.class) || (thisBin != null && thisBin.isExclude() != null && thisBin.isExclude())) {
-                    throw new DingoClientException("Class " + clazz.getName() + " cannot have a field which is both a key and excluded.");
+            if (thisField.isAnnotationPresent(DingoKey.class)
+                || (!StringUtils.isBlank(keyField) && keyField.equals(thisField.getName()))) {
+                if (thisField.isAnnotationPresent(DingoExclude.class)
+                    || (thisBin != null && thisBin.isExclude() != null && thisBin.isExclude())) {
+                    throw new DingoClientException("Class " + clazz.getName()
+                        + " cannot have a field which is both a key and excluded.");
                 }
                 if (key != null) {
                     throw new DingoClientException("Class " + clazz.getName() + " cannot have a more than one key");
@@ -586,7 +610,8 @@ public class ClassCacheEntry<T> {
                 isKey = true;
             }
 
-            if (thisField.isAnnotationPresent(DingoExclude.class) || (thisBin != null && thisBin.isExclude() != null && thisBin.isExclude())) {
+            if (thisField.isAnnotationPresent(DingoExclude.class)
+                || (thisBin != null && thisBin.isExclude() != null && thisBin.isExclude())) {
                 // This field should be excluded from being stored in the database. Even keys must be stored
                 continue;
             }
@@ -609,9 +634,11 @@ public class ClassCacheEntry<T> {
                 }
 
                 if (this.values.get(name) != null) {
-                    throw new DingoClientException("Class " + clazz.getName() + " cannot define the mapped name " + name + " more than once");
+                    throw new DingoClientException("Class " + clazz.getName()
+                        + " cannot define the mapped name " + name + " more than once");
                 }
-                if ((bin != null && bin.useAccessors()) || (thisBin != null && thisBin.getUseAccessors() != null && thisBin.getUseAccessors())) {
+                if ((bin != null && bin.useAccessors())
+                    || (thisBin != null && thisBin.getUseAccessors() != null && thisBin.getUseAccessors())) {
                     validateAccessorsForField(name, thisField);
                 } else {
                     thisField.setAccessible(true);
@@ -643,11 +670,12 @@ public class ClassCacheEntry<T> {
         Method getter = findMethodWithNameAndParams(getterName);
         if (getter == null) {
             throw new DingoClientException(String.format(
-                    "Expected to find getter for field %s on class %s due to it being configured to useAccessors, but no method with the signature \"%s %s()\" was found",
-                    fieldName,
-                    this.clazz.getSimpleName(),
-                    thisField.getType().getSimpleName(),
-                    getterName));
+                "Expected to find getter for field %s on class %s due to it being configured to useAccessors, "
+                    + "but no method with the signature \"%s %s()\" was found",
+                fieldName,
+                this.clazz.getSimpleName(),
+                thisField.getType().getSimpleName(),
+                getterName));
         }
 
         Method setter = findMethodWithNameAndParams(setterName, thisField.getType());
@@ -659,10 +687,11 @@ public class ClassCacheEntry<T> {
         }
         if (setter == null) {
             throw new DingoClientException(String.format(
-                    "Expected to find setter for field %s on class %s due to it being configured to useAccessors, but no method with the name \"%s\" was found",
-                    fieldName,
-                    this.clazz.getSimpleName(),
-                    setterName));
+                "Expected to find setter for field %s on class %s due to it being configured to useAccessors,"
+                    + " but no method with the name \"%s\" was found",
+                fieldName,
+                this.clazz.getSimpleName(),
+                setterName));
         }
 
         TypeUtils.AnnotatedType annotatedType = new TypeUtils.AnnotatedType(config, thisField);
@@ -680,18 +709,18 @@ public class ClassCacheEntry<T> {
         return this.key.getTypeMapper().toDingoFormat(key);
     }
 
-    private Object _getKey(Object object) throws ReflectiveOperationException {
+    private Object internalGetKey(Object object) throws ReflectiveOperationException {
         if (this.key != null) {
             return this.translateKeyToDingoKey(this.key.get(object));
         } else if (superClazz != null) {
-            return this.superClazz._getKey(object);
+            return this.superClazz.internalGetKey(object);
         }
         return null;
     }
 
     public Object getKey(Object object) {
         try {
-            Object key = this._getKey(object);
+            Object key = this.internalGetKey(object);
             if (key == null) {
                 throw new DingoClientException("Null key from annotated object of class "
                     + this.clazz.getSimpleName() + ". Did you forget an @DingoKey annotation?");
@@ -702,17 +731,17 @@ public class ClassCacheEntry<T> {
         }
     }
 
-    private void _setKey(Object object, Object value) throws ReflectiveOperationException {
+    private void interalSetKey(Object object, Object value) throws ReflectiveOperationException {
         if (this.key != null) {
             this.key.set(object, this.key.getTypeMapper().fromDingoFormat(value));
         } else if (superClazz != null) {
-            this.superClazz._setKey(object, value);
+            this.superClazz.interalSetKey(object, value);
         }
     }
 
     public void setKey(Object object, Object value) {
         try {
-            this._setKey(object, value);
+            this.interalSetKey(object, value);
         } catch (ReflectiveOperationException re) {
             throw new DingoClientException(re);
         }
@@ -759,7 +788,8 @@ public class ClassCacheEntry<T> {
                         if (dingoValue != null || allowNullColumns) {
                             if (dingoValue instanceof TreeMap<?, ?>) {
                                 TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
-                                columns[index++] = new Column(name, new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
+                                columns[index++] = new Column(name,
+                                    new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
                             } else {
                                 columns[index++] = new Column(name, dingoValue);
                             }
@@ -800,7 +830,7 @@ public class ClassCacheEntry<T> {
     }
 
     private void addDataFromValueName(String name, Object instance, ClassCacheEntry<?> thisClass, List<Object> results)
-            throws ReflectiveOperationException {
+        throws ReflectiveOperationException {
         ValueType value = thisClass.values.get(name);
         Object javaValue = value.get(instance);
         Object dingoValue = value.getTypeMapper().toDingoFormat(javaValue);
@@ -856,12 +886,93 @@ public class ClassCacheEntry<T> {
     }
 
     @SuppressWarnings("unchecked")
+    public T constructAndHydrate(List<Object> list, boolean skipKey) {
+        Map<String, Object> valueMap = new HashMap<>();
+        try {
+            ClassCacheEntry<?> thisClass = this;
+            int index = 0;
+            int endIndex = list.size();
+            if (!list.isEmpty()) {
+                // If the object saved in the list was a subclass of the declared type,
+                // it must have the type name as the last element of the list.
+                // Note that there is a performance implication of using subclasses.
+                Object obj = list.get(endIndex - 1);
+                if ((obj instanceof String) && ((String) obj).startsWith(TYPE_PREFIX)) {
+                    String className = ((String) obj).substring(TYPE_PREFIX.length());
+                    thisClass = ClassCache.getInstance().getCacheEntryFromStoredName(className);
+                    if (thisClass == null) {
+                        Class<?> typeClazz = Class.forName(className);
+                        thisClass = ClassCache.getInstance().loadClass(typeClazz, this.mapper);
+                    }
+                    endIndex--;
+                }
+            }
+
+            T result = null;
+            while (thisClass != null) {
+                if (index < endIndex) {
+                    Object lastValue = list.get(endIndex - 1);
+                    int recordVersion = 1;
+                    if ((lastValue instanceof String) && (((String) lastValue).startsWith(VERSION_PREFIX))) {
+                        recordVersion = Integer.parseInt(((String) lastValue).substring(2));
+                        endIndex--;
+                    }
+                    int objectVersion = thisClass.version;
+                    if (thisClass.ordinals != null) {
+                        for (int i = 1; i <= thisClass.ordinals.size(); i++) {
+                            String name = thisClass.ordinals.get(i);
+                            if (!skipKey || !isKeyField(name)) {
+                                index = thisClass.setValueByField(
+                                    name,
+                                    objectVersion,
+                                    recordVersion,
+                                    null,
+                                    index,
+                                    list,
+                                    valueMap);
+                            }
+                        }
+                    }
+                    for (String name : thisClass.values.keySet()) {
+                        if (thisClass.fieldsWithOrdinals == null || !thisClass.fieldsWithOrdinals.contains(name)) {
+                            if (!skipKey || !isKeyField(name)) {
+                                index = thisClass.setValueByField(
+                                    name,
+                                    objectVersion,
+                                    recordVersion,
+                                    null,
+                                    index,
+                                    list,
+                                    valueMap);
+                            }
+                        }
+                    }
+                    if (result == null) {
+                        result = (T) thisClass.constructAndHydrateFromJavaMap(valueMap);
+                    } else {
+                        for (String field : valueMap.keySet()) {
+                            ValueType value = this.values.get(field);
+                            value.set(result, valueMap.get(field));
+                        }
+                    }
+                    valueMap.clear();
+                    thisClass = thisClass.superClazz;
+                }
+            }
+            return result;
+        } catch (ReflectiveOperationException ref) {
+            throw new DingoClientException(ref);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private T constructAndHydrate(Record record, Map<String, Object> map) {
         Map<String, Object> valueMap = new HashMap<>();
         try {
             ClassCacheEntry<?> thisClass = this;
 
-            // If the object saved in the list was a subclass of the declared type, it must have the type name in the map
+            // If the object saved in the list was a subclass of the declared type,
+            // it must have the type name in the map
             // Note that there is a performance implication of using subclasses.
             String className = map == null ? record.getString(TYPE_NAME) : (String) map.get(TYPE_NAME);
             if (className != null) {
@@ -940,6 +1051,57 @@ public class ClassCacheEntry<T> {
         this.hydrateFromList(list, instance, false);
     }
 
+    public void hydrateFromList(List<Object> list, Object instance, boolean skipKey) {
+        try {
+            int index = 0;
+            int endIndex = list.size();
+            ClassCacheEntry<?> thisClass = this;
+            while (thisClass != null) {
+                if (index < endIndex) {
+                    Object lastValue = list.get(endIndex - 1);
+                    int recordVersion = 1;
+                    if ((lastValue instanceof String) && (((String) lastValue).startsWith(VERSION_PREFIX))) {
+                        recordVersion = Integer.parseInt(((String) lastValue).substring(2));
+                        endIndex--;
+                    }
+                    int objectVersion = thisClass.version;
+                    if (ordinals != null) {
+                        for (int i = 1; i <= ordinals.size(); i++) {
+                            String name = ordinals.get(i);
+                            if (!skipKey || !isKeyField(name)) {
+                                index = setValueByField(
+                                    name,
+                                    objectVersion,
+                                    recordVersion,
+                                    instance,
+                                    index,
+                                    list,
+                                    null);
+                            }
+                        }
+                    }
+                    for (String name : this.values.keySet()) {
+                        if (this.fieldsWithOrdinals == null || !thisClass.fieldsWithOrdinals.contains(name)) {
+                            if (!skipKey || !isKeyField(name)) {
+                                index = setValueByField(
+                                    name,
+                                    objectVersion,
+                                    recordVersion,
+                                    instance,
+                                    index,
+                                    list,
+                                    null);
+                            }
+                        }
+                    }
+                    thisClass = thisClass.superClazz;
+                }
+            }
+        } catch (ReflectiveOperationException ref) {
+            throw new DingoClientException(ref);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private T constructAndHydrateFromJavaMap(Map<String, Object> javaValuesMap) throws ReflectiveOperationException {
         // Now form the values which satisfy the constructor
@@ -987,108 +1149,9 @@ public class ClassCacheEntry<T> {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    public T constructAndHydrate(List<Object> list, boolean skipKey) {
-        Map<String, Object> valueMap = new HashMap<>();
-        try {
-            ClassCacheEntry<?> thisClass = this;
-            int index = 0;
-            int endIndex = list.size();
-            if (!list.isEmpty()) {
-                // If the object saved in the list was a subclass of the declared type,
-                // it must have the type name as the last element of the list.
-                // Note that there is a performance implication of using subclasses.
-                Object obj = list.get(endIndex - 1);
-                if ((obj instanceof String) && ((String) obj).startsWith(TYPE_PREFIX)) {
-                    String className = ((String) obj).substring(TYPE_PREFIX.length());
-                    thisClass = ClassCache.getInstance().getCacheEntryFromStoredName(className);
-                    if (thisClass == null) {
-                        Class<?> typeClazz = Class.forName(className);
-                        thisClass = ClassCache.getInstance().loadClass(typeClazz, this.mapper);
-                    }
-                    endIndex--;
-                }
-            }
 
-            T result = null;
-            while (thisClass != null) {
-                if (index < endIndex) {
-                    Object lastValue = list.get(endIndex - 1);
-                    int recordVersion = 1;
-                    if ((lastValue instanceof String) && (((String) lastValue).startsWith(VERSION_PREFIX))) {
-                        recordVersion = Integer.parseInt(((String) lastValue).substring(2));
-                        endIndex--;
-                    }
-                    int objectVersion = thisClass.version;
-                    if (thisClass.ordinals != null) {
-                        for (int i = 1; i <= thisClass.ordinals.size(); i++) {
-                            String name = thisClass.ordinals.get(i);
-                            if (!skipKey || !isKeyField(name)) {
-                                index = thisClass.setValueByField(name, objectVersion, recordVersion, null, index, list, valueMap);
-                            }
-                        }
-                    }
-                    for (String name : thisClass.values.keySet()) {
-                        if (thisClass.fieldsWithOrdinals == null || !thisClass.fieldsWithOrdinals.contains(name)) {
-                            if (!skipKey || !isKeyField(name)) {
-                                index = thisClass.setValueByField(name, objectVersion, recordVersion, null, index, list, valueMap);
-                            }
-                        }
-                    }
-                    if (result == null) {
-                        result = (T) thisClass.constructAndHydrateFromJavaMap(valueMap);
-                    } else {
-                        for (String field : valueMap.keySet()) {
-                            ValueType value = this.values.get(field);
-                            value.set(result, valueMap.get(field));
-                        }
-                    }
-                    valueMap.clear();
-                    thisClass = thisClass.superClazz;
-                }
-            }
-            return result;
-        } catch (ReflectiveOperationException ref) {
-            throw new DingoClientException(ref);
-        }
-    }
 
-    public void hydrateFromList(List<Object> list, Object instance, boolean skipKey) {
-        try {
-            int index = 0;
-            int endIndex = list.size();
-            ClassCacheEntry<?> thisClass = this;
-            while (thisClass != null) {
-                if (index < endIndex) {
-                    Object lastValue = list.get(endIndex - 1);
-                    int recordVersion = 1;
-                    if ((lastValue instanceof String) && (((String) lastValue).startsWith(VERSION_PREFIX))) {
-                        recordVersion = Integer.parseInt(((String) lastValue).substring(2));
-                        endIndex--;
-                    }
-                    int objectVersion = thisClass.version;
-                    if (ordinals != null) {
-                        for (int i = 1; i <= ordinals.size(); i++) {
-                            String name = ordinals.get(i);
-                            if (!skipKey || !isKeyField(name)) {
-                                index = setValueByField(name, objectVersion, recordVersion, instance, index, list, null);
-                            }
-                        }
-                    }
-                    for (String name : this.values.keySet()) {
-                        if (this.fieldsWithOrdinals == null || !thisClass.fieldsWithOrdinals.contains(name)) {
-                            if (!skipKey || !isKeyField(name)) {
-                                index = setValueByField(name, objectVersion, recordVersion, instance, index, list, null);
-                            }
-                        }
-                    }
-                    thisClass = thisClass.superClazz;
-                }
-            }
-        } catch (ReflectiveOperationException ref) {
-            throw new DingoClientException(ref);
-        }
-    }
+
 
     public ValueType getValueFromColumnName(String name) {
         return this.values.get(name);

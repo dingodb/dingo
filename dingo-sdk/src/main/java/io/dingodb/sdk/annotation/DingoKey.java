@@ -26,7 +26,8 @@ import java.lang.annotation.Target;
 public @interface DingoKey {
 
     /**
-     * The setter attribute is used only on Methods where the method is used to set the key on lazy object instantiation
+     * The setter attribute is used only on Methods where
+     * the method is used to set the key on lazy object instantiation.
      */
     boolean setter() default false;
 }

@@ -60,13 +60,19 @@ public class GenericTypeMapper extends TypeMapper {
 
     private Class<?> validateAndGetClass() {
         if (this.toDingo == null) {
-            throw new DingoClientException(String.format("Converter class %s must have a @ToDingo annotated method.", this.converter.getClass()));
+            throw new DingoClientException(
+                String.format("Converter class %s must have a @ToDingo annotated method.", this.converter.getClass())
+            );
         }
         if (this.toDingo.getParameterCount() != 1) {
-            throw new DingoClientException(String.format("@ToDingo method on Converter class %s must take 1 argument", this.converter.getClass()));
+            throw new DingoClientException(
+                String.format("@ToDingo method on Converter class %s must take 1 argument", this.converter.getClass())
+            );
         }
         if (TypeUtils.isVoidType(this.toDingo.getReturnType())) {
-            throw new DingoClientException(String.format("@ToDingo method on Converter class %s cannot return void", this.converter.getClass()));
+            throw new DingoClientException(
+                String.format("@ToDingo method on Converter class %s cannot return void", this.converter.getClass())
+            );
         }
         this.toDingo.setAccessible(true);
 
@@ -91,7 +97,8 @@ public class GenericTypeMapper extends TypeMapper {
 
         if (!this.toDingo.getParameters()[0].getType().equals(this.fromDingo.getReturnType())) {
             throw new DingoClientException(
-                String.format("@FromDingo on Converter class %s returns %s, but the @ToDingo takes %s. These should be same",
+                String.format("@FromDingo on Converter class %s returns %s, "
+                        + "but the @ToDingo takes %s. These should be same",
                 this.converter.getClass().getSimpleName(),
                 this.fromDingo.getReturnType().getSimpleName(),
                 this.toDingo.getParameters()[0].getType().getSimpleName())
@@ -99,7 +106,8 @@ public class GenericTypeMapper extends TypeMapper {
         }
         if (!this.fromDingo.getParameters()[0].getType().equals(this.toDingo.getReturnType())) {
             throw new DingoClientException(
-                String.format("@ToDingo method on Converter class %s returns %s, but the @FromDingo method takes %s. These should be the same class",
+                String.format("@ToDingo method on Converter class %s returns %s, "
+                        + "but the @FromDingo method takes %s. These should be the same class",
                 this.converter.getClass().getSimpleName(),
                 this.toDingo.getReturnType().getSimpleName(),
                 this.fromDingo.getParameters()[0].getType().getSimpleName())

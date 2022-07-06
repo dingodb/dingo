@@ -14,58 +14,46 @@
  * limitations under the License.
  */
 
-package example.model;
+package io.dingodb.sdk.example.model;
 
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
 import io.dingodb.sdk.annotation.DingoRecord;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Date;
 
-@DingoRecord(database="test", table="people")
+@Getter
+@Setter
+@DingoRecord(database = "test", table = "people")
 public class Person {
     @DingoKey
     private String ssn;
-    @DingoColumn(name="frstNme")
+
+    @DingoColumn(name  =  "frstNme")
     private String firstName;
 
-    @DingoColumn(name="lstNme")
+    @DingoColumn(name = "lstNme")
     private String lastName;
+
+    @DingoColumn(name = "age")
     private int age;
-    private Date dob;
 
-    public String getSsn() {
-        return ssn;
-    }
-    public void setSsn(String ssn) {
-        this.ssn = ssn;
-    }
+    @DingoColumn(name = "salary")
+    private double salary;
 
-    public String getFirstName() {
-        return firstName;
-    }
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    @DingoColumn(name = "salary1")
+    private float  salary2;
 
-    public String getLastName() {
-        return lastName;
-    }
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+    @DingoColumn(name = "birthday")
+    private Date birthday;
 
-    public int getAge() {
-        return age;
-    }
-    public void setAge(int age) {
-        this.age = age;
-    }
+    @DingoColumn(name = "birthTime")
+    private Time birthTime;
 
-    public Date getDob() {
-        return dob;
-    }
-    public void setDob(Date dob) {
-        this.dob = dob;
-    }
+    @DingoColumn(name = "birthTimeStamp")
+    private Timestamp birthTimestamp;
 }

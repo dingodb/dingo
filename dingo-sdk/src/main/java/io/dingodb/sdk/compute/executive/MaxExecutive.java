@@ -24,6 +24,7 @@ public class MaxExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> 
 
     @Override
     public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        return ComputeNumber.max(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.max(a, b)).get());
+        // return ComputeNumber.max(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.max(a, b)).get());
+        return null;
     }
 }

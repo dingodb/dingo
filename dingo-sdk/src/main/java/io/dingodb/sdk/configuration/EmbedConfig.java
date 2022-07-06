@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.mappers;
+package io.dingodb.sdk.configuration;
 
 
-import io.dingodb.sdk.utils.TypeMapper;
+import io.dingodb.sdk.annotation.DingoEmbed;
 
-public class DoubleMapper extends TypeMapper {
+public class EmbedConfig {
+    private DingoEmbed.EmbedType type;
+    private DingoEmbed.EmbedType elementType;
+    private Boolean saveKey;
 
-    @Override
-    public Object toDingoFormat(Object value) {
-        return value;
+    public DingoEmbed.EmbedType getType() {
+        return type;
     }
 
-    @Override
-    public Object fromDingoFormat(Object value) {
-        return value;
+    public DingoEmbed.EmbedType getElementType() {
+        return elementType;
+    }
+
+    public Boolean getSaveKey() {
+        return saveKey;
     }
 }

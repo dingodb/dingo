@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.dingodb.sdk.utils;
 
 
@@ -20,47 +21,45 @@ package io.dingodb.sdk.utils;
  * Thread local buffer storage.
  */
 public final class ThreadLocalData {
-	/**
-	 * Initial buffer size on first use of thread local buffer.
-	 */
-	public static int DefaultBufferSize = 8192;
 
-	private static final int THREAD_LOCAL_CUTOFF = 1024 * 128;  // 128 KB
-	//private static final int MAX_BUFFER_SIZE = 1024 * 1024;  // 1 MB
+    /**
+     * Initial buffer size on first use of thread local buffer.
+     */
+    public static int DefaultBufferSize = 8192;
 
-	private static final ThreadLocal<byte[]> BufferThreadLocal = new ThreadLocal<byte[]>() {
-		@Override protected byte[] initialValue() {
-			return new byte[DefaultBufferSize];
-		}
-	};
+    // 128KB
+    private static final int THREAD_LOCAL_CUTOFF = 1024 * 128;
 
-	/**
-	 * Return thread local buffer.
-	 */
-	public static byte[] getBuffer() {
-		return BufferThreadLocal.get();
-	}
+    private static final ThreadLocal<byte[]> BufferThreadLocal = new ThreadLocal<byte[]>() {
+        @Override
+        protected byte[] initialValue() {
+            return new byte[DefaultBufferSize];
+        }
+    };
 
-	/**
-	 * Resize and return thread local buffer if the requested size &lt;= 128 KB.
-	 * Otherwise, the thread local buffer will not be resized and a new
-	 * buffer will be returned from heap memory.
-	 * <p>
-	 * This method should only be called when the current buffer is too small to
-	 * hold the desired data.
-	 */
-	public static byte[] resizeBuffer(int size) {
-		// Do not store extremely large buffers in thread local storage.
-		if (size > THREAD_LOCAL_CUTOFF) {
-			/*
-			if (size > MAX_BUFFER_SIZE) {
-				throw new IllegalArgumentException("Thread " + Thread.currentThread().getId() + " invalid buffer size: " + size);
-			}*/
+    /**
+     * Return thread local buffer.
+     * @return byte array.
+     */
+    public static byte[] getBuffer() {
+        return BufferThreadLocal.get();
+    }
 
-			return new byte[size];
-		}
+    /**
+     * Resize and return thread local buffer if the requested size &lt;= 128 KB.
+     * buffer will be returned from heap memory.
+     * @param buffer input buffer
+     * @param size new buffer size
+     * @return buffer array
+     */
+    public static byte[] resizeBuffer(byte[] buffer, int size) {
+        // Do not store extremely large buffers in thread local storage.
+        if (size > THREAD_LOCAL_CUTOFF) {
+            return new byte[size];
+        }
 
-		BufferThreadLocal.set(new byte[size]);
-		return BufferThreadLocal.get();
-	}
+        BufferThreadLocal.set(new byte[size]);
+        return BufferThreadLocal.get();
+    }
+
 }

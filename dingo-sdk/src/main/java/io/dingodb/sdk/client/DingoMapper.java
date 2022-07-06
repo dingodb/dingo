@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.dingodb.sdk.client;
 
 import io.dingodb.sdk.common.Filter;
@@ -5,9 +21,9 @@ import io.dingodb.sdk.common.Operation;
 import io.dingodb.sdk.common.Processor;
 import io.dingodb.sdk.utils.DingoClientException;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.function.Function;
+import javax.validation.constraints.NotNull;
 
 public interface DingoMapper extends IBaseDingoMapper {
 
@@ -49,7 +65,8 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Read a record from the repository and map it to an instance of the passed class.
      *
      * @param clazz   - The type of be returned.
-     * @param userKey - The key of the record. The database and table will be derived from the values specified on the passed class.
+     * @param userKey - The key of the record.
+     *                The database and table will be derived from the values specified on the passed class.
      * @return The returned mapped record.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
@@ -64,17 +81,20 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Read a batch of records from database and map them to an instance of the passed class.
      *
      * @param clazz    - The type of be returned.
-     * @param userKeys - The keys of the record. The database and table will be derived from the values specified on the passed class.
+     * @param userKeys - The keys of the record.
+     *                 The database and table will be derived from the values specified on the passed class.
      * @return The returned mapped records.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
     <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys);
 
     /**
-     * Read a batch of records from the repository using read operations in one batch call and map them to an instance of the passed class.
+     * Read a batch of records from the repository using read operations in one batch call
+     * and map them to an instance of the passed class.
      *
      * @param clazz      - The type of be returned.
-     * @param userKeys   - The keys of the record. The database and table will be derived from the values specified on the passed class.
+     * @param userKeys   - The keys of the record.
+     *                   The database and table will be derived from the values specified on the passed class.
      * @param operations - array of read operations on record.
      * @return The returned mapped records.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
@@ -85,7 +105,8 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Delete a record by specifying a class and a user key.
      *
      * @param clazz   - The type of the record.
-     * @param userKey - The key of the record. The database and table will be derived from the values specified on the passed class.
+     * @param userKey - The key of the record.
+     *                The database and table will be derived from the values specified on the passed class.
      * @return whether record existed on server before deletion
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
@@ -112,10 +133,13 @@ public interface DingoMapper extends IBaseDingoMapper {
     <T> void find(@NotNull Class<T> clazz, Function<T, Boolean> function);
 
     /**
-     * Scan every record in the set associated with the passed class. Each record will be converted to the appropriate class then passed to the
-     * processor. If the processor returns true, more records will be processed and if the processor returns false, the scan is aborted.
+     * Scan every record in the set associated with the passed class.
+     * Each record will be converted to the appropriate class then passed to the
+     * processor. If the processor returns true, more records will be processed and if the processor returns false,
+     * the scan is aborted.
      * <p/>
-     * Depending on the ScanPolicy set up for this class, it is possible for the processor to be called by multiple different
+     * Depending on the ScanPolicy set up for this class,
+     * it is possible for the processor to be called by multiple different
      * threads concurrently, so the processor should be thread-safe
      *
      * @param clazz     - the class used to determine which set to scan and to convert the returned records to.
@@ -125,11 +149,14 @@ public interface DingoMapper extends IBaseDingoMapper {
 
 
     /**
-     * Scan every record in the set associated with the passed class, limiting the throughput to the specified recordsPerSecond. Each record will be converted
-     * to the appropriate class then passed to the
-     * processor. If the processor returns true, more records will be processed and if the processor returns false, the scan is aborted.
+     * Scan every record in the set associated with the passed class,
+     * limiting the throughput to the specified recordsPerSecond.
+     * Each record will be converted to the appropriate class then passed to the
+     * processor. If the processor returns true, more records will be processed and if the processor returns false,
+     * the scan is aborted.
      * <p/>
-     * Depending on the ScanPolicy set up for this class, it is possible for the processor to be called by multiple different
+     * Depending on the ScanPolicy set up for this class,
+     * it is possible for the processor to be called by multiple different
      * threads concurrently, so the processor should be thread-safe
      *
      * @param clazz            - the class used to determine which set to scan and to convert the returned records to.
@@ -156,7 +183,8 @@ public interface DingoMapper extends IBaseDingoMapper {
      *
      * @param clazz     - the class used to determine which set to scan and to convert the returned records to.
      * @param processor - the Processor used to process each record
-     * @param filter    - the filter used to determine which secondary index to use. If this filter is null, every record in the set
+     * @param filter    - the filter used to determine which secondary index to use.
+     *                  If this filter is null, every record in the set
      *                  associated with the passed classtype will be scanned, effectively turning the query into a scan
      */
     <T> void query(@NotNull Class<T> clazz, @NotNull Processor<T> processor, Filter filter);
@@ -168,7 +196,8 @@ public interface DingoMapper extends IBaseDingoMapper {
      * The query policy used will be the one associated with the passed classtype.
      *
      * @param clazz  - the class used to determine which set to scan and to convert the returned records to.
-     * @param filter - the filter used to determine which secondary index to use. If this filter is null, every record in the set
+     * @param filter - the filter used to determine which secondary index to use.
+     *               If this filter is null, every record in the set
      *               associated with the passed classtype will be scanned, effectively turning the query into a scan
      * @return List of records converted to the appropriate class
      */
