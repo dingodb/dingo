@@ -21,9 +21,9 @@ import io.dingodb.sdk.client.IBaseDingoMapper;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.Configuration;
 
-import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
+import javax.validation.constraints.NotNull;
 
 public class ClassCache {
     private static final ClassCache instance = new ClassCache();
@@ -65,7 +65,7 @@ public class ClassCache {
                         // Construct a class cache entry. This must be done in 2 steps, one creating the entry
                         // and the other finalizing construction of it.
                         // This is to cater for classes  which recursively refer to themselves, such as
-                        // 	public static class A {
+                        // public static class A {
                         //      @DingoKey
                         //      public int id;
                         //      public A a;
@@ -112,7 +112,7 @@ public class ClassCache {
     }
 
     /**
-     * This method is typically only used for testing
+     * This method is typically only used for testing.
      */
     public void clear() {
         this.cacheMap.clear();

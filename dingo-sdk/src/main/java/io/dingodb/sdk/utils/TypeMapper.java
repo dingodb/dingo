@@ -19,12 +19,14 @@ package io.dingodb.sdk.utils;
 public abstract class TypeMapper {
     public abstract Object toDingoFormat(Object value);
 
-    public abstract Object fromDingoFormat(Object value);
 
     /**
-     * Some types need to know if they're mapped to the correct class. If they do, they can override this method to glean that information
+     * Some types need to know if they're mapped to the correct class.
+     * If they do, they can override this method to glean that information
      */
     public Object toDingoFormat(Object value, boolean isUnknownType, boolean isSubclassOfKnownType) {
         return toDingoFormat(value);
     }
+
+    public abstract Object fromDingoFormat(Object value);
 }

@@ -13,29 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.dingodb.sdk.common;
 
 /**
  * Bin type for byte[] values.
  */
 public final class ParticleType {
-	// Server particle types. Unsupported types are commented out.
-	public static final int NULL = 0;
-	public static final int INTEGER = 1;
-	public static final int DOUBLE = 2;
-	public static final int STRING = 3;
-	public static final int BLOB = 4;
-	//public static final int TIMESTAMP = 5;
-	//public static final int DIGEST = 6;
-	public static final int JBLOB = 7;
-	//public static final int CSHARP_BLOB = 8;
-	//public static final int PYTHON_BLOB = 9;
-	//public static final int RUBY_BLOB = 10;
-	//public static final int PHP_BLOB = 11;
-	//public static final int ERLANG_BLOB = 12;
-	public static final int BOOL = 17;
-	public static final int HLL = 18;
-	public static final int MAP = 19;
-	public static final int LIST = 20;
-	public static final int GEOJSON = 23;
+    public static final int NULL = 0;
+    public static final int INTEGER = 1;
+    public static final int DOUBLE = 2;
+    public static final int STRING = 3;
+    public static final int BLOB = 4;
+    public static final int JBLOB = 7;
+    public static final int BOOL = 17;
+    public static final int MAP = 19;
+    public static final int LIST = 20;
 }

@@ -22,7 +22,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * Save the keys. Note that this is effectively a stack of keys, as A can load B which can load C, and C needs B's key, not A's.
+ * Save the keys.
+ * Note that this is effectively a stack of keys, as A can load B which can load C, and C needs B's key, not A's.
  *
  * @author timfaulkes
  */
