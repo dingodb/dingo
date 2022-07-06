@@ -16,21 +16,23 @@
 
 package io.dingodb.sdk.common;
 
-import io.dingodb.sdk.utils.DeferredObjectLoader;
 import io.dingodb.sdk.client.PropertyDefinition;
-import io.dingodb.sdk.utils.ThreadLocalKeySaver;
+import io.dingodb.sdk.utils.DeferredObjectLoader;
+import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObject;
+import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObjectSetter;
+import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredSetter;
 import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.utils.ThreadLocalKeySaver;
 import io.dingodb.sdk.utils.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 
-import javax.validation.constraints.NotNull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import javax.validation.constraints.NotNull;
+
 
 /**
- * Implementation of a value, which can be either a method on a class (getter) or a field
- *
- * @author timfaulkes
+ * Implementation of a value, which can be either a method on a class (getter) or a field.
  */
 public abstract class ValueType {
     private final TypeMapper mapper;
@@ -73,15 +75,17 @@ public abstract class ValueType {
 
         @Override
         public void set(final Object obj, final Object value) throws ReflectiveOperationException {
-            if (value instanceof DeferredObjectLoader.DeferredObject) {
-                DeferredObjectLoader.DeferredSetter setter = object -> {
+            if (value instanceof DeferredObject) {
+                DeferredSetter setter = object -> {
                     try {
                         field.set(obj, object);
                     } catch (IllegalArgumentException | IllegalAccessException e) {
-                        throw new DingoClientException(String.format("Could not set field %s on %s to %s", field, obj, value));
+                        throw new DingoClientException(
+                            String.format("Could not set field %s on %s to %s", field, obj, value)
+                        );
                     }
                 };
-                DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
+                DeferredObjectSetter objectSetter = new DeferredObjectSetter(setter, (DeferredObject) value);
                 DeferredObjectLoader.add(objectSetter);
             } else {
                 this.field.set(obj, value);
@@ -107,7 +111,9 @@ public abstract class ValueType {
     public static class MethodValue extends ValueType {
         private final PropertyDefinition property;
 
-        public MethodValue(PropertyDefinition property, TypeMapper typeMapper, TypeUtils.AnnotatedType annotatedType) {
+        public MethodValue(PropertyDefinition property,
+                           TypeMapper typeMapper,
+                           TypeUtils.AnnotatedType annotatedType) {
             super(typeMapper, annotatedType);
             this.property = property;
         }
@@ -123,20 +129,27 @@ public abstract class ValueType {
         @Override
         public void set(final Object obj, final Object value) throws ReflectiveOperationException {
             if (this.property.getSetter() == null) {
-                throw new DingoClientException("Lazy loading cannot be used on objects with a property key type and no annotated key setter method");
+                throw new DingoClientException(
+                    "Lazy loading cannot be used on objects with a property key type "
+                    + "and no annotated key setter method");
             } else {
                 switch (this.property.getSetterParamType()) {
                     case KEY: {
                         final Key key = ThreadLocalKeySaver.get();
-                        if (value instanceof DeferredObjectLoader.DeferredObject) {
-                            DeferredObjectLoader.DeferredSetter setter = object -> {
+                        if (value instanceof DeferredObject) {
+                            DeferredSetter setter = object -> {
                                 try {
                                     property.getSetter().invoke(obj, value, key);
                                 } catch (ReflectiveOperationException e) {
-                                    throw new DingoClientException(String.format("Could not set field %s on %s to %s", property, obj, value));
+                                    throw new DingoClientException(
+                                        String.format("Could not set field %s on %s to %s", property, obj, value)
+                                    );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
+                            DeferredObjectSetter objectSetter = new DeferredObjectSetter(
+                                setter,
+                                (DeferredObject) value
+                            );
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value, key);
@@ -151,10 +164,14 @@ public abstract class ValueType {
                                 try {
                                     property.getSetter().invoke(obj, value, key.userKey);
                                 } catch (ReflectiveOperationException e) {
-                                    throw new DingoClientException(String.format("Could not set field %s on %s to %s", property, obj, value));
+                                    throw new DingoClientException(
+                                        String.format("Could not set field %s on %s to %s", property, obj, value)
+                                    );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
+                            DeferredObjectSetter objectSetter = new DeferredObjectSetter(
+                                setter,
+                                (DeferredObject) value);
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value, key.userKey);
@@ -164,14 +181,19 @@ public abstract class ValueType {
 
                     default:
                         if (value instanceof DeferredObjectLoader.DeferredObject) {
-                            DeferredObjectLoader.DeferredSetter setter = object -> {
+                            DeferredSetter setter = object -> {
                                 try {
                                     property.getSetter().invoke(obj, value);
                                 } catch (ReflectiveOperationException e) {
-                                    throw new DingoClientException(String.format("Could not set field %s on %s to %s", property, obj, value));
+                                    throw new DingoClientException(
+                                        String.format("Could not set field %s on %s to %s", property, obj, value)
+                                    );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
+                            DeferredObjectSetter objectSetter = new DeferredObjectSetter(
+                                setter,
+                                (DeferredObject) value
+                            );
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value);
@@ -192,7 +214,10 @@ public abstract class ValueType {
 
         @Override
         public String toString() {
-            return String.format("Value(Method): %s/%s (%s)", this.property.getGetter(), this.property.getSetter(), this.property.getType().getSimpleName());
+            return String.format("Value(Method): %s/%s (%s)",
+                this.property.getGetter(),
+                this.property.getSetter(),
+                this.property.getType().getSimpleName());
         }
     }
 }

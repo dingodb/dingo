@@ -29,7 +29,8 @@ public class LoadedObjectResolver {
         private final Map<Key, Object> objectMap = new HashMap<>();
     }
 
-    private static final ThreadLocal<LoadedObjectMap> threadLocalObjects = ThreadLocal.withInitial(LoadedObjectMap::new);
+    private static final ThreadLocal<LoadedObjectMap> threadLocalObjects
+        = ThreadLocal.withInitial(LoadedObjectMap::new);
 
     public static void begin() {
         LoadedObjectMap map = threadLocalObjects.get();

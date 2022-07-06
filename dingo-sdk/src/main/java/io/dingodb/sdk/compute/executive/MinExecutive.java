@@ -24,6 +24,7 @@ public class MinExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> 
 
     @Override
     public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        return ComputeNumber.min(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.min(a, b)).get());
+        // return ComputeNumber.min(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.min(a, b)).get());
+        return null;
     }
 }

@@ -16,6 +16,7 @@
 
 package io.dingodb.sdk.common;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,13 +26,24 @@ import java.util.Objects;
  */
 public final class Record {
     /**
-     * Map of requested name/value bins.
+     * Map of requested name/value columns.
      */
     public final Map<String, Object> columns;
 
+    public Record(final List<String> columnsInTable, final Column[] inputColumns) {
+        columns = new HashMap<String, Object>();
+        for (String columnName: columnsInTable) {
+            for (Column column: inputColumns) {
+                if (Objects.equals(column.name, columnName)) {
+                    columns.put(columnName, column.value);
+                }
+            }
+        }
+    }
 
     /**
      * Initialize record.
+     * input columns is order by column name by TableDefinition.
      */
     public Record(Map<String, Object> columns) {
         this.columns = columns;
@@ -42,7 +54,7 @@ public final class Record {
      * Enter empty string ("") for servers configured as single-bin.
      */
     public Object getValue(String name) {
-        return (columns == null)? null : columns.get(name);
+        return (columns == null) ? null : columns.get(name);
     }
 
     /**
@@ -59,7 +71,8 @@ public final class Record {
         // The server may return number as double or long.
         // Convert bits if returned as long.
         Object result = getValue(name);
-        return (result instanceof Double)? (Double)result : (result != null)? Double.longBitsToDouble((Long)result) : 0.0;
+        return (result instanceof Double)
+            ? (Double)result : (result != null) ? Double.longBitsToDouble((Long)result) : 0.0;
     }
 
     /**
@@ -73,10 +86,10 @@ public final class Record {
      * Get bin value as long.
      */
     public long getLong(String name) {
-        // The server always returns numbers as longs if bin found.
-        // If bin not found, the result will be null.  Convert null to zero.
+        // The server always returns numbers as longs if column found.
+        // If column not found, the result will be null.  Convert null to zero.
         Object result = getValue(name);
-        return (result != null)? (Long)result : 0;
+        return (result != null) ? (Long)result : 0;
     }
 
     /**
@@ -136,26 +149,6 @@ public final class Record {
     }
 
     /**
-     * This method is deprecated. Use {@link #getGeoJSONString(String)} instead.
-     *
-     * Get bin value as GeoJSON (backward compatibility).
-     */
-    @Deprecated
-    public String getGeoJSON(String name) {
-        return getGeoJSONString(name);
-    }
-
-    /**
-     * Get bin value as GeoJSON String.
-     */
-    public String getGeoJSONString(String name) {
-        Object value = getValue(name);
-        return (value != null) ? value.toString() : null;
-    }
-
-
-
-    /**
      * Return String representation of record.
      */
     @Override
@@ -169,8 +162,7 @@ public final class Record {
             for (Map.Entry<String,Object> entry : columns.entrySet()) {
                 if (sep) {
                     sb.append(',');
-                }
-                else {
+                } else {
                     sep = true;
                 }
                 sb.append('(');
@@ -184,8 +176,7 @@ public final class Record {
                     break;
                 }
             }
-        }
-        else {
+        } else {
             sb.append("null");
         }
         sb.append(')');
@@ -202,12 +193,15 @@ public final class Record {
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         Record other = (Record) obj;
         if (columns == null) {
             return other.columns == null;

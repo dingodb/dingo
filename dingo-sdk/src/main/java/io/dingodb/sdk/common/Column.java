@@ -24,12 +24,12 @@ import java.util.Map;
  */
 public final class Column {
     /**
-     * Bin name. Current limit is 14 characters.
+     * The name of the column.
      */
     public final String name;
 
     /**
-     * Bin value.
+     * The value of the column.
      */
     public final Value value;
 
@@ -37,8 +37,8 @@ public final class Column {
      * Constructor, specifying column name and string value.
      * enter a null or empty name.
      *
-     * @param name		the name of the column
-     * @param value		the value of the column with string type
+     * @param name the name of the column
+     * @param value the value of the column with string type
      */
     public Column(String name, String value) {
         this.name = name;
@@ -48,8 +48,8 @@ public final class Column {
     /**
      * Constructor, specifying column name and byte array value.
      *
-     * @param name		the name of the column
-     * @param value		the value of the column with byte array type
+     * @param name the name of the column
+     * @param value the value of the column with byte array type
      */
     public Column(String name, byte[] value) {
         this.name = name;
@@ -59,9 +59,9 @@ public final class Column {
     /**
      * Constructor, specifying column name, byte array value.
      *
-     * @param name		the name of the column
-     * @param value		the value of the column with byte array and type
-     * @param type		column type
+     * @param name the name of the column
+     * @param value the value of the column with byte array and type
+     * @param type column type
      */
     public Column(String name, byte[] value, int type) {
         this.name = name;
@@ -71,10 +71,10 @@ public final class Column {
     /**
      * Constructor, specifying bin name and byte array segment value.
      *
-     * @param name		the name of the column
-     * @param value		the value of the column with byte array and type
-     * @param offset	byte array segment offset
-     * @param length	byte array segment length
+     * @param name the name of the column
+     * @param value the value of the column with byte array and type
+     * @param offset byte array segment offset
+     * @param length byte array segment length
      */
     public Column(String name, byte[] value, int offset, int length) {
         this.name = name;
@@ -84,8 +84,8 @@ public final class Column {
     /**
      * Constructor, specifying column name and byte value.
      *
-     * @param name		the name of the column
-     * @param value		the value of the column with byte
+     * @param name the name of the column
+     * @param value the value of the column with byte
      */
     public Column(String name, byte value) {
         this.name = name;
@@ -96,8 +96,8 @@ public final class Column {
      * Constructor, specifying column name and integer value.
      * The server will convert all integers to longs.
      *
-     * @param name		name of the column
-     * @param value		value of the column
+     * @param name name of the column
+     * @param value value of the column
      */
     public Column(String name, int value) {
         this.name = name;
@@ -107,8 +107,8 @@ public final class Column {
     /**
      * Constructor, specifying bin name and long value.
      *
-     * @param name		name of the column
-     * @param value		value of the column with long type
+     * @param name name of the column
+     * @param value value of the column with long type
      */
     public Column(String name, long value) {
         this.name = name;
@@ -118,8 +118,8 @@ public final class Column {
     /**
      * Constructor, specifying bin name and double value.
      *
-     * @param name		name of the column
-     * @param value		value of the column with double type
+     * @param name name of the column
+     * @param value value of the column with double type
      */
     public Column(String name, double value) {
         this.name = name;
@@ -129,8 +129,8 @@ public final class Column {
     /**
      * Constructor, specifying bin name and float value.
      *
-     * @param name		name of the column
-     * @param value		value of the column with float type
+     * @param name name of the column
+     * @param value value of the column with float type
      */
     public Column(String name, float value) {
         this.name = name;
@@ -141,8 +141,8 @@ public final class Column {
      * Constructor, specifying column name and boolean value.
      * a boolean column is sent to the server.
      *
-     * @param name		name of the column
-     * @param value		value of the column with boolean type
+     * @param name name of the column
+     * @param value value of the column with boolean type
      */
     public Column(String name, boolean value) {
         this.name = name;
@@ -152,8 +152,8 @@ public final class Column {
     /**
      * Create column with a list value.  The list value will be serialized as a server list type.
      *
-     * @param name		name of the column
-     * @param value		value of the column with list type
+     * @param name name of the column
+     * @param value value of the column with list type
      */
     public Column(String name, List<?> value) {
         this.name = name;
@@ -163,8 +163,8 @@ public final class Column {
     /**
      * Create bin with a map value.  The map value will be serialized as a server map type.
      *
-     * @param name		name of the column
-     * @param value		value of the column with list type
+     * @param name  name of the column
+     * @param value  value of the column with list type
      */
     public Column(String name, Map<?,?> value) {
         this.name = name;
@@ -174,37 +174,33 @@ public final class Column {
     /**
      * Create column with a map value and order.  The map value will be serialized as a server map type.
      *
-     * @param name		name of the column
-     * @param value		value of the column, pass in a {@link java.util.SortedMap} instance if map order is sorted.
-     * @param mapOrder	map sorted order.
+     * @param name  name of the column
+     * @param value  value of the column, pass in a {@link java.util.SortedMap} instance if map order is sorted.
+     * @param mapOrder  map sorted order.
      */
     public Column(String name, Map<?,?> value, MapOrder mapOrder) {
         this.name = name;
-        // this.value = Value.get(value, mapOrder);
-        // todo Huzx
-        this.value = null;
+        this.value = Value.get(value, mapOrder);
     }
 
     /**
      * Create a map column from a list of key/value entries.  The value will be serialized as a
      * server map type with specified mapOrder.
      *
-     * @param name		name of the column
-     * @param value		list of key/value entries already in desired sorted order
-     * @param mapOrder	map sorted order
+     * @param name  name of the column
+     * @param value  list of key/value entries already in desired sorted order
+     * @param mapOrder  map sorted order
      */
     public Column(String name, List<? extends Map.Entry<?,?>> value, MapOrder mapOrder) {
         this.name = name;
-        // this.value = Value.get(value, mapOrder);
-        // todo Huzx
-        this.value = null;
+        this.value = Value.get(value, mapOrder);
     }
 
     /**
      * Constructor, specifying bin name and value.
      *
-     * @param name		name of the column
-     * @param value		value is Value type
+     * @param name  name of the column
+     * @param value  value is Value type
      */
     public Column(String name, Value value) {
         this.name = name;
@@ -216,8 +212,8 @@ public final class Column {
      * This is the slowest of the Column constructors because the type
      * must be determined using multiple "instanceof" checks.
      *
-     * @param name		name of the column
-     * @param value		value of the bin
+     * @param name name of the column
+     * @param value the value of the column with object type
      */
     public Column(String name, Object value) {
         this.name = name;
@@ -229,8 +225,8 @@ public final class Column {
      * This method is faster than the Column Object constructor because the blob is converted
      * directly instead of using multiple "instanceof" type checks with a blob default.
      *
-     * @param name		name of the column
-     * @param value		value of the column
+     * @param name name of the column
+     * @param value value of the column
      */
     public static Column asBlob(String name, Object value) {
         return new Column(name, Value.getAsBlob(value));
@@ -239,7 +235,7 @@ public final class Column {
     /**
      * Create column with a null value. This is useful for column deletions within a record.
      *
-     * @param name		name of the column
+     * @param name name of the column
      */
     public static Column asNull(String name) {
         return new Column(name, Value.getAsNull());
@@ -258,23 +254,30 @@ public final class Column {
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         Column other = (Column) obj;
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (value == null) {
-            if (other.value != null)
+            if (other.value != null) {
                 return false;
-        } else if (!value.equals(other.value))
+            }
+        } else if (!value.equals(other.value)) {
             return false;
+        }
         return true;
     }
 
