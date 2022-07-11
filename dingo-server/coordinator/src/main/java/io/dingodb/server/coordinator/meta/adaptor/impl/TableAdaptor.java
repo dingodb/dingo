@@ -200,6 +200,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     public TableDefinition getDefinition(CommonId id) {
+        if (get(id) == null) {
+            return null;
+        }
         return metaToDefinition(get(id));
     }
 

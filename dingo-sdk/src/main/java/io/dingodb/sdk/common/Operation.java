@@ -16,141 +16,75 @@
 
 package io.dingodb.sdk.common;
 
-/**
- * Database operation definition.  The class is used in client's operate() method.
- */
-public final class Operation {
-    /**
-     * Create read bin database operation.
-     */
-    public static Operation get(String binName) {
-        return new Operation(Type.READ, binName);
+import io.dingodb.sdk.compute.Executive;
+import io.dingodb.sdk.compute.executive.AddExecutive;
+import io.dingodb.sdk.compute.executive.AppendExecutive;
+import io.dingodb.sdk.compute.executive.CountExecutive;
+import io.dingodb.sdk.compute.executive.MaxExecutive;
+import io.dingodb.sdk.compute.executive.MinExecutive;
+import io.dingodb.sdk.compute.executive.ReplaceExecutive;
+import io.dingodb.sdk.compute.executive.SumExecutive;
+
+import java.io.Serializable;
+
+public class Operation implements Serializable {
+
+    private static final long serialVersionUID = 8603290191302531535L;
+
+    public final Type type;
+    public final Column[] columns;
+
+    public Operation(Type type, Column[] columns) {
+        this.type = type;
+        this.columns = columns;
     }
 
-    /**
-     * Create read all record bins database operation.
-     */
-    public static Operation get() {
-        return new Operation(Type.READ);
+    public static Operation add(Column... columns) {
+        return new Operation(Type.ADD, columns);
     }
 
-    /**
-     * Create read record header database operation.
-     */
-    public static Operation getHeader() {
-        return new Operation(Type.READ_HEADER);
+    public static Operation max(Column... columns) {
+        return new Operation(Type.MAX, columns);
     }
 
-    /**
-     * Create set database operation.
-     */
-    public static Operation put(Column column) {
-        return new Operation(Type.WRITE, column.name, column.value);
+    public static Operation min(Column... columns) {
+        return new Operation(Type.MIN, columns);
     }
 
-    /**
-     * Create string append database operation.
-     */
-    public static Operation append(Column column) {
-        return new Operation(Type.APPEND, column.name, column.value);
+    public static Operation sum(Column... columns) {
+        return new Operation(Type.SUM, columns);
     }
 
-    /**
-     * Create string prepend database operation.
-     */
-    public static Operation prepend(Column column) {
-        return new Operation(Type.PREPEND, column.name, column.value);
+    public static Operation count(Column... columns) {
+        return new Operation(Type.COUNT, columns);
     }
 
-    /**
-     * Create integer/double add database operation.
-     */
-    public static Operation add(Column column) {
-        return new Operation(Type.ADD, column.name, column.value);
+    public static Operation append(Column... columns) {
+        return new Operation(Type.APPEND, columns);
     }
 
-    /**
-     * Create touch record database operation.
-     */
-    public static Operation touch() {
-        return new Operation(Type.TOUCH);
-    }
-
-    /**
-     * Create delete record database operation.
-     */
-    public static Operation delete() {
-        return new Operation(Type.DELETE);
-    }
-
-    /**
-     * Create array of operations from varargs. This method can be useful when
-     * its important to save identical array pointer references. Using varargs
-     * directly always generates new references.
-     */
-    public static Operation[] array(Operation... ops) {
-        return ops;
+    public static Operation replace(Column... columns) {
+        return new Operation(Type.REPLACE, columns);
     }
 
     public static enum Type {
-        READ(1, false),
-        READ_HEADER(1, false),
-        WRITE(2, true),
-        CDT_READ(3, false),
-        CDT_MODIFY(4, true),
-        MAP_READ(3, false),
-        MAP_MODIFY(4, true),
-        ADD(5, true),
-        EXP_READ(7, false),
-        EXP_MODIFY(8, true),
-        APPEND(9, true),
-        PREPEND(10, true),
-        TOUCH(11, true),
-        BIT_READ(12, false),
-        BIT_MODIFY(13, true),
-        DELETE(14, true),
-        HLL_READ(15, false),
-        HLL_MODIFY(16, true);
+        ADD(new AddExecutive(), true),
+        MAX(new MaxExecutive(), false),
+        MIN(new MinExecutive(), false),
+        SUM(new SumExecutive(), false),
+        COUNT(new CountExecutive(), false),
 
-        public final int protocolType;
+        APPEND(new AppendExecutive(), true),
+        REPLACE(new ReplaceExecutive(), true),
+        ;
+
+        public final transient Executive executive;
         public final boolean isWrite;
 
-        private Type(int protocolType, boolean isWrite) {
-            this.protocolType = protocolType;
+        Type(Executive<?, ?> executive, boolean isWrite) {
+            this.executive = executive;
             this.isWrite = isWrite;
         }
     }
 
-    /**
-     * Type of operation.
-     */
-    public final Type type;
-
-    /**
-     * Optional bin name used in operation.
-     */
-    public final String binName;
-
-    /**
-     * Optional argument to operation.
-     */
-    public final Value value;
-
-    public Operation(Type type, String binName, Value value) {
-        this.type = type;
-        this.binName = binName;
-        this.value = value;
-    }
-
-    private Operation(Type type, String binName) {
-        this.type = type;
-        this.binName = binName;
-        this.value = Value.getAsNull();
-    }
-
-    private Operation(Type type) {
-        this.type = type;
-        this.binName = null;
-        this.value = Value.getAsNull();
-    }
 }

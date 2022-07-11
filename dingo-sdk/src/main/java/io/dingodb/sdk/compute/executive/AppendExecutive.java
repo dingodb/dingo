@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.str.ComputeString;
+
+import java.util.Arrays;
+
+public class AppendExecutive extends KVExecutive<ComputeString, ComputeString> {
+
+    @Override
+    public ComputeString execute(ComputeString first, ComputeString... second) {
+        return first.append(Arrays.stream(second).reduce((a, b) -> a.append(b)).get());
+    }
 }

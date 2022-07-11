@@ -268,6 +268,13 @@ public class RocksRawKVStore implements RawKVStore {
     }
 
     @Override
+    public byte[] compute(byte[] key, byte[] computes) {
+        // todo The field type in the table is converted to ComputeNumber
+        // compute.type.compute(ComputeLong.of(col), ComputeLong.of(compute.columns[0].value)).value to table
+        return new byte[0];
+    }
+
+    @Override
     public CompletableFuture<Checksum> snapshotSave(String path) {
         return snapshotSave(path, null, null);
     }

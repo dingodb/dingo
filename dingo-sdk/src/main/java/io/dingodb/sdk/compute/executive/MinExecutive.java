@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.number.ComputeNumber;
+
+import java.util.Arrays;
+
+public class MinExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+
+    @Override
+    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
+        return ComputeNumber.min(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.min(a, b)).get());
+    }
 }

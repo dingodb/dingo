@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+public interface Cloneable<C extends Cloneable<C>> {
+    C fastClone();
 }
+

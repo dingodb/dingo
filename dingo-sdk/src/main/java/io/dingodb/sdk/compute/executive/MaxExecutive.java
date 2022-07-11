@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.number.ComputeNumber;
+
+import java.util.Arrays;
+
+public class MaxExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+
+    @Override
+    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
+        return ComputeNumber.max(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.max(a, b)).get());
+    }
 }

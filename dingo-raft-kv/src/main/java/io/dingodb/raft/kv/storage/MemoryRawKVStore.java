@@ -157,6 +157,11 @@ public class MemoryRawKVStore implements RawKVStore {
     }
 
     @Override
+    public byte[] compute(byte[] key, byte[] computes) {
+        return null;
+    }
+
+    @Override
     public CompletableFuture<Checksum> snapshotSave(String path) {
         return snapshotSave(path, null, null);
     }

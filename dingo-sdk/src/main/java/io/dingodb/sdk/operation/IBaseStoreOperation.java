@@ -17,8 +17,11 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.sdk.common.Record;
 import io.dingodb.server.api.ExecutorApi;
 
 public interface IBaseStoreOperation {
     boolean doOperation(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] recordInBytes);
+
+    Record doCompute(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] computes);
 }
