@@ -18,6 +18,7 @@ package io.dingodb.sdk.common;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -349,18 +350,8 @@ public abstract class Value {
     public abstract LuaValue getLuaValue(LuaInstance instance);
      */
 
-    /**
-     * Return value as an integer.
-     */
-    public int toInteger() {
-        return 0;
-    }
-
-    /**
-     * Return value as a long.
-     */
-    public long toLong() {
-        return 0;
+    public Number value() {
+        return null;
     }
 
     /**
@@ -655,12 +646,7 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return value;
-        }
-
-        @Override
-        public long toLong() {
+        public Number value() {
             return value;
         }
     }
@@ -788,12 +774,7 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return value;
-        }
-
-        @Override
-        public long toLong() {
+        public Number value() {
             return value;
         }
     }
@@ -859,12 +840,7 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return (int)value;
-        }
-
-        @Override
-        public long toLong() {
+        public Number value() {
             return value;
         }
     }
@@ -931,13 +907,8 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return (int)value;
-        }
-
-        @Override
-        public long toLong() {
-            return (long)value;
+        public Number value() {
+            return value;
         }
     }
 
@@ -1002,13 +973,8 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return (int)value;
-        }
-
-        @Override
-        public long toLong() {
-            return (long)value;
+        public Number value() {
+            return value;
         }
     }
 
@@ -1078,13 +1044,8 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return value? 1 : 0;
-        }
-
-        @Override
-        public long toLong() {
-            return value? 1L : 0L;
+        public Number value() {
+            return value ? 1 : 0;
         }
     }
 
@@ -1157,13 +1118,8 @@ public abstract class Value {
         }
 
         @Override
-        public int toInteger() {
-            return value? 1 : 0;
-        }
-
-        @Override
-        public long toLong() {
-            return value? 1L : 0L;
+        public Number value() {
+            return value ? 1 : 0;
         }
     }
 

@@ -282,6 +282,16 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
+    public byte[] compute(byte[] primaryKey, byte[] computes) {
+        Part part = getPart(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance.");
+        }
+        return parts.get(part.getId()).compute(primaryKey, computes);
+    }
+
+    @Override
     public boolean delete(byte[] primaryKey) {
         Part part = getPart(primaryKey);
         if (part == null) {
