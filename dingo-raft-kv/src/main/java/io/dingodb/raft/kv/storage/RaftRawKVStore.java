@@ -145,6 +145,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         this.kvStore.put(entries);
     }
 
+    protected byte[] localCompute(byte[] key, byte[] operations) {
+        return this.kvStore.compute(key, operations);
+    }
+
     protected Boolean localDelete(final byte[] key) {
         return this.kvStore.delete(key);
     }
@@ -211,6 +215,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         return write(RaftRawKVOperation.put(entries));
     }
 
+    public CompletableFuture<byte[]> compute(byte[] key, byte[] operations) {
+        return write(RaftRawKVOperation.compute(key, operations));
+    }
+
     public CompletableFuture<Boolean> delete(byte[] key) {
         return write(RaftRawKVOperation.delete(key));
     }
@@ -255,6 +263,8 @@ public class RaftRawKVStore implements Lifecycle<Void> {
                 return snapshotSave(operation);
             case SNAPSHOT_LOAD:
                 return snapshotLoad(operation);
+            case COMPUTE:
+                return localCompute(operation.getKey(), operation.ext1());
             default:
                 throw new IllegalStateException("Unexpected value: " + operation.getOp());
         }

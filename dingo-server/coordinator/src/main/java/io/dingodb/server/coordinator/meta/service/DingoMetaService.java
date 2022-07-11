@@ -164,6 +164,11 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
+    public TableDefinition getTableDefinition(@Nonnull CommonId commonId) {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getDefinition(commonId);
+    }
+
+    @Override
     public Location currentLocation() {
         return CURRENT_LOCATION;
     }

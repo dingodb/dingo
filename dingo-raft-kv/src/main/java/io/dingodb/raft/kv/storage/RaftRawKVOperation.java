@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.COMPUTE;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.CONTAINS_KEY;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.COUNT;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.DELETE;
@@ -62,6 +63,8 @@ public class RaftRawKVOperation {
         SNAPSHOT_LOAD,
         BACKUP,
         RESTORE,
+
+        COMPUTE;
         ;
     }
 
@@ -142,6 +145,14 @@ public class RaftRawKVOperation {
         return RaftRawKVOperation.builder()
             .ext1(entries)
             .op(PUT_LIST)
+            .build();
+    }
+
+    public static RaftRawKVOperation compute(final byte[] key, final byte[] operations) {
+        return RaftRawKVOperation.builder()
+            .key(key)
+            .op(COMPUTE)
+            .ext1(operations)
             .build();
     }
 

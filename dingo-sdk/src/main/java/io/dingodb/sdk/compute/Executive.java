@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+public interface Executive<D, R> {
+
+    R execute(D first, D... second);
 }
