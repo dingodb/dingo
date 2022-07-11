@@ -49,4 +49,7 @@ public interface ExecutorApi {
 
     @ApiDeclaration
     public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+
+    @ApiDeclaration
+    public byte[] operator(CommonId tableId, byte[] key, byte[] computes);
 }

@@ -54,4 +54,6 @@ public interface MetaServiceApi {
     @ApiDeclaration
     List<Location> getDistributes(String name);
 
+    @ApiDeclaration
+    TableDefinition getTableDefinition(@Nonnull CommonId commonId);
 }

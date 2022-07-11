@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.number.ComputeLong;
+import io.dingodb.sdk.compute.number.ComputeNumber;
+import io.dingodb.sdk.compute.number.ComputeZero;
+
+public class CountExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+
+    @Override
+    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
+        return first.add(second == null ? new ComputeZero() : ComputeLong.of(second.length));
+    }
 }

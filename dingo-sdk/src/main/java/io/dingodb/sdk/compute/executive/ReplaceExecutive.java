@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.str.ComputeString;
+
+public class ReplaceExecutive extends KVExecutive<ComputeString, ComputeString> {
+
+    @Override
+    public ComputeString execute(ComputeString first, ComputeString... second) {
+        return second.length == 2 ? first.replace(second[0], second[1]) : first;
+    }
 }
