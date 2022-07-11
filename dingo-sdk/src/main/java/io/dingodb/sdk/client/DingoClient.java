@@ -19,6 +19,7 @@ package io.dingodb.sdk.client;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.common.Operation;
 import io.dingodb.sdk.operation.StoreOperationType;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -131,4 +132,12 @@ public class DingoClient {
         return false;
     }
 
+    public Record operate(Key key, Operation operation) {
+        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    public Record updateCol(Key key, Column... column) {
+
+        return null;
+    }
 }

@@ -50,6 +50,8 @@ public interface RawKVStore {
 
     long count(byte[] startKey, byte[] endKey);
 
+    byte[] compute(byte[] key, byte[] computes);
+
     CompletableFuture<Checksum> snapshotSave(String path);
 
     CompletableFuture<Checksum> snapshotSave(String path, byte[] startKey, byte[] endKey);

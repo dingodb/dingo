@@ -17,27 +17,22 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class PutRecordOperation implements IBaseStoreOperation {
+public class ComputeOperation implements IBaseStoreOperation {
 
     @Override
     public boolean doOperation(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] recordInBytes) {
-        try {
-            KeyValue keyValues = new KeyValue(keyInBytes, recordInBytes);
-            return executorApi.upsertKeyValue(tableId, keyValues);
-        } catch (Exception e) {
-            log.error("insert KeyValue error, tableId:{}, exception:{}", tableId, e.toString(), e);
-            throw e;
-        }
+        return false;
     }
 
     @Override
     public Record doCompute(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] computes) {
-        return null;
+        byte[] bytes = executorApi.operator(tableId, keyInBytes, computes);
+        return ProtostuffCodec.read(bytes);
     }
 }

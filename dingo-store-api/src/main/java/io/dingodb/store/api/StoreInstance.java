@@ -94,6 +94,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default byte[] compute(byte[] primaryKey, byte[] computes) {
+        throw new UnsupportedOperationException();
+    }
+
     default boolean delete(byte[] primaryKey) {
         throw new UnsupportedOperationException();
     }

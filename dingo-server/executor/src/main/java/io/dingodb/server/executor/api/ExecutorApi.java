@@ -95,4 +95,9 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
         }
         return keyValues;
     }
+
+    @Override
+    public byte[] operator(CommonId tableId, byte[] key, byte[] computes) {
+        return new byte[0];
+    }
 }

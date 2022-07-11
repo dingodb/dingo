@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.compute.executive;
 
-public enum StoreOperationType {
-    PUT,
-    GET,
-    DELETE,
-    COMPUTE;
+import io.dingodb.sdk.compute.Executive;
+import io.dingodb.sdk.compute.str.ComputeString;
+
+public abstract class KVExecutive<D extends ComputeString, R extends ComputeString> implements Executive<D, R> {
 }

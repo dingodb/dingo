@@ -17,16 +17,18 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoConnection;
-import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.client.MetaClient;
+import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.common.Operation;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,6 +83,43 @@ public class StoreOperationUtils {
         return isSuccess;
     }
 
+    public Record executeRemoteCompute(StoreOperationType type, String tableName, Key key, Operation operation) {
+        RouteTable tblRunTimeTop = getAndRefreshRouteTable(tableName, false);
+        if (tblRunTimeTop == null) {
+            log.error("table {} not found when do operation:{}", tableName, type);
+            return null;
+        }
+
+        int retryTimes = this.retryTimes;
+        do {
+            try {
+                KeyValueCodec codec = tblRunTimeTop.getCodec();
+                byte[] keyInBytes = null; // codec.encodeKey(key.getUserKey());
+                if (operation.type.isWrite) {
+                    ExecutorApi executorApi = getExecutor(tableName, keyInBytes);
+
+                    IBaseStoreOperation storeOp = getDingoStoreOp(type);
+                    return storeOp.doCompute(executorApi, tblRunTimeTop.getTableId(), keyInBytes, ProtostuffCodec.write(operation));
+
+                } else {
+                    // todo scan --> operation.type.execute() --> record
+                    // collection --> for - operation.type.execute()
+                }
+            } catch (Exception ex) {
+                log.error("executeRemoteOperation error", ex.toString(), ex);
+            } finally {
+                if (retryTimes > 0) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                    }
+                    tblRunTimeTop = getAndRefreshRouteTable(tableName, true);
+                }
+            }
+        } while (--retryTimes > 0);
+        return null;
+    }
+
     private IBaseStoreOperation getDingoStoreOp(StoreOperationType type) {
         return dingoOperationMap.get(type);
     }
@@ -129,5 +168,6 @@ public class StoreOperationUtils {
 
     public void initStoreOperation() {
         dingoOperationMap.put(StoreOperationType.PUT, new PutRecordOperation());
+        dingoOperationMap.put(StoreOperationType.COMPUTE, new ComputeOperation());
     }
 }
