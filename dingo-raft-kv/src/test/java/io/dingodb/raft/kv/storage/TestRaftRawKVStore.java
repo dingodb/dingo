@@ -23,7 +23,6 @@ import io.dingodb.common.util.Files;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.option.NodeOptions;
-import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
@@ -89,7 +88,6 @@ public class TestRaftRawKVStore {
         final RocksDBLogStore logStore = new RocksDBLogStore();
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
         logStoreOptions.setDataPath(logUri);
-        logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
         LogStorage logStorage = new RocksDBLogStorage(CommonId.prefix((byte) 'T', new byte[] {'T', 'T'}), logStore);

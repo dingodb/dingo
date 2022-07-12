@@ -18,7 +18,6 @@ package io.dingodb.raft.storage.impl;
 
 import io.dingodb.raft.entity.codec.LogEntryDecoder;
 import io.dingodb.raft.entity.codec.LogEntryEncoder;
-import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.util.DebugStatistics;
@@ -30,7 +29,9 @@ import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.ConfigOptions;
 import org.rocksdb.DBOptions;
+import org.rocksdb.OptionsUtil;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -41,10 +42,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Getter
 @Setter
@@ -68,6 +72,8 @@ public class RocksDBLogStore implements LogStore<RaftLogStoreOptions> {
 
     private LogEntryEncoder logEntryEncoder;
     private LogEntryDecoder logEntryDecoder;
+
+    private static final byte[] CONFIGURATION_COLUMN_FAMILY = "Configuration".getBytes(UTF_8);;
 
     static {
         RocksDB.loadLibrary();
@@ -93,7 +99,6 @@ public class RocksDBLogStore implements LogStore<RaftLogStoreOptions> {
         this.openStatistics = opts.isOpenStatistics();
         Requires.requireNonNull(opts.getLogEntryCodecFactory(), "Null log entry codec factory");
         this.writeLock.lock();
-        boolean isInputRaftLogEmpty = false;
 
         try {
             if (this.db != null) {
@@ -116,60 +121,15 @@ public class RocksDBLogStore implements LogStore<RaftLogStoreOptions> {
             this.totalOrderReadOptions.setTotalOrderSeek(true);
 
             this.dbOptions.setMaxTotalWalSize(4 << 30L);
-            RaftLogStorageOptions raftLogStorageOptions = opts.getRaftLogStorageOptions();
-            if (raftLogStorageOptions == null) {
-                raftLogStorageOptions = new RaftLogStorageOptions();
-                isInputRaftLogEmpty = true;
-            }
-
-            if (raftLogStorageOptions.getDbMaxTotalWalSize() != 0) {
-                this.dbOptions.setMaxTotalWalSize(raftLogStorageOptions.getDbMaxTotalWalSize());
-            }
-
             this.dbOptions.setMaxSubcompactions(4);
-            if (raftLogStorageOptions.getDbMaxSubCompactions() != 0) {
-                this.dbOptions.setMaxSubcompactions(raftLogStorageOptions.getDbMaxSubCompactions());
-            }
-
             this.dbOptions.setRecycleLogFileNum(4);
-            if (raftLogStorageOptions.getDbRecycleLogFileNum() != 0) {
-                this.dbOptions.setRecycleLogFileNum(raftLogStorageOptions.getDbRecycleLogFileNum());
-            }
-
             this.dbOptions.setKeepLogFileNum(4);
-            if (raftLogStorageOptions.getDbKeepLogFileNum() != 0) {
-                this.dbOptions.setKeepLogFileNum(raftLogStorageOptions.getDbKeepLogFileNum());
-            }
-
             this.dbOptions.setDbWriteBufferSize(20 << 30L);
-            if (raftLogStorageOptions.getDbWriteBufferSize() != 0) {
-                this.dbOptions.setDbWriteBufferSize(raftLogStorageOptions.getDbWriteBufferSize());
-            }
-
             this.dbOptions.setMaxBackgroundJobs(16);
-            if (raftLogStorageOptions.getDbMaxBackGroupJobs() != 0) {
-                this.dbOptions.setMaxBackgroundJobs(raftLogStorageOptions.getDbMaxBackGroupJobs());
-            }
-
             this.dbOptions.setMaxBackgroundCompactions(8);
-            if (raftLogStorageOptions.getDbMaxBackGroupCompactions() != 0) {
-                this.dbOptions.setMaxBackgroundCompactions(raftLogStorageOptions.getDbMaxBackGroupCompactions());
-            }
-
             this.dbOptions.setMaxBackgroundFlushes(8);
-            if (raftLogStorageOptions.getDbMaxBackGroupFlushes() != 0) {
-                this.dbOptions.setMaxBackgroundFlushes(raftLogStorageOptions.getDbMaxBackGroupFlushes());
-            }
-
             this.dbOptions.setMaxManifestFileSize(256 * 1024 * 1024L);
-            if (raftLogStorageOptions.getDbMaxManifestFileSize() != 0) {
-                this.dbOptions.setMaxManifestFileSize(raftLogStorageOptions.getDbMaxManifestFileSize());
-            }
-            opts.setRaftLogStorageOptions(raftLogStorageOptions);
-            LOG.info("Init raft log dbPath:{}, raft log options:{}, default options:{}",
-                this.path,
-                raftLogStorageOptions.toString(),
-                isInputRaftLogEmpty);
+            LOG.info("Init raft log dbPath:{}", this.path);
             return initDB(opts);
         } catch (final RocksDBException e) {
             LOG.error("Fail to init RocksDBLogStorage, path={}.", this.path, e);
@@ -180,71 +140,70 @@ public class RocksDBLogStore implements LogStore<RaftLogStoreOptions> {
 
     }
 
-    private boolean initDB(final RaftLogStoreOptions lopts) throws RocksDBException {
+    private boolean initDB(final RaftLogStoreOptions opts) throws RocksDBException {
         final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
-        final ColumnFamilyOptions cfOption = createColumnFamilyOptions();
-
-        BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
-        tableConfig.setBlockSize(128 * 1024);
-
-        RaftLogStorageOptions raftLogStorageOptions = lopts.getRaftLogStorageOptions();
-        if (raftLogStorageOptions.getCfBlockSize() != 0) {
-            tableConfig.setBlockSize(raftLogStorageOptions.getCfBlockSize());
+        final String optionsFile = opts.getLogRocksOptionsFile();
+        boolean useDefaultOptions = true;
+        try {
+            if (optionsFile != null && (new File(optionsFile)).exists()) {
+                LOG.info("rocksdb options file found: {}.", optionsFile);
+                ConfigOptions configOptions = new ConfigOptions();
+                OptionsUtil.loadOptionsFromFile(configOptions, optionsFile, this.dbOptions, columnFamilyDescriptors);
+                useDefaultOptions = false;
+            } else {
+                LOG.info("rocksdb options file not found: {}, use default options.", optionsFile);
+            }
+        } catch (RocksDBException re) {
+            LOG.warn("RocksDBLogStore openDB, load {} exception, use default options.", optionsFile, re);
         }
 
-        tableConfig.setBlockCacheSize(200 / 4  * 1024 * 1024 * 1024L);
-        if (raftLogStorageOptions.getCfBlockCacheSize() != 0) {
-            tableConfig.setBlockSize(raftLogStorageOptions.getCfBlockCacheSize());
-        }
-        cfOption.setTableFormatConfig(tableConfig);
+        if (useDefaultOptions) {
+            final ColumnFamilyOptions cfOption = createColumnFamilyOptions();
+            BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
+            tableConfig.setBlockSize(128 * 1024);
+            tableConfig.setBlockCacheSize(200 / 4 * 1024 * 1024 * 1024L);
+            cfOption.setTableFormatConfig(tableConfig);
+            cfOption.setArenaBlockSize(128 * 1024 * 1024);
+            cfOption.setMinWriteBufferNumberToMerge(4);
+            cfOption.setMaxWriteBufferNumber(5);
+            cfOption.setMaxCompactionBytes(512 * 1024 * 1024);
+            cfOption.setWriteBufferSize(1 * 1024 * 1024 * 1024);
 
-        cfOption.setArenaBlockSize(128 * 1024 * 1024);
-        if (raftLogStorageOptions.getCfArenaBlockSize() != 0) {
-            cfOption.setArenaBlockSize(raftLogStorageOptions.getCfArenaBlockSize());
-        }
-
-        cfOption.setMinWriteBufferNumberToMerge(4);
-        if (raftLogStorageOptions.getCfMinWriteBufferNumberToMerge() != 0) {
-            cfOption.setMinWriteBufferNumberToMerge(raftLogStorageOptions.getCfMinWriteBufferNumberToMerge());
-        }
-
-        cfOption.setMaxWriteBufferNumber(5);
-        if (raftLogStorageOptions.getCfMaxWriteBufferNumber() != 0) {
-            cfOption.setMaxWriteBufferNumber(raftLogStorageOptions.getCfMaxWriteBufferNumber());
+            this.cfOptions.add(cfOption);
+            // Column family to store configuration log entry.
+            columnFamilyDescriptors.add(new ColumnFamilyDescriptor(CONFIGURATION_COLUMN_FAMILY, cfOption));
+            // Default column family to store user data log entry.
+            columnFamilyDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOption));
         }
 
-        cfOption.setMaxCompactionBytes(512 * 1024 * 1024);
-        if (raftLogStorageOptions.getCfMaxCompactionBytes() != 0) {
-            cfOption.setMaxCompactionBytes(raftLogStorageOptions.getCfMaxCompactionBytes());
-        }
-
-        cfOption.setWriteBufferSize(1 * 1024 * 1024 * 1024);
-        if (raftLogStorageOptions.getCfWriteBufferSize() != 0) {
-            cfOption.setWriteBufferSize(raftLogStorageOptions.getCfWriteBufferSize());
-        }
-
-        this.cfOptions.add(cfOption);
-        // Column family to store configuration log entry.
-        columnFamilyDescriptors.add(new ColumnFamilyDescriptor("Configuration".getBytes(), cfOption));
-        // Default column family to store user data log entry.
-        columnFamilyDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOption));
-
-        openDB(columnFamilyDescriptors);
+        this.dbOptions.setCreateIfMissing(true);
+        openDB(columnFamilyDescriptors, optionsFile);
         return true;
     }
 
-    private void openDB(final List<ColumnFamilyDescriptor> columnFamilyDescriptors) throws RocksDBException {
+    private void openDB(final List<ColumnFamilyDescriptor> columnFamilyDescriptors, final String optionsFile)
+        throws RocksDBException {
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
 
         final File dir = new File(this.path);
         if (dir.exists() && !dir.isDirectory()) {
             throw new IllegalStateException("Invalid log path, it's a regular file: " + this.path);
         }
+
         this.db = RocksDB.open(this.dbOptions, this.path, columnFamilyDescriptors, columnFamilyHandles);
+        LOG.info("RocksDBLogStore RocksDB open, path: {}, options file: {}, columnFamilyHandles size: {}.",
+            this.path, optionsFile, columnFamilyHandles.size());
 
         assert (columnFamilyHandles.size() == 2);
-        this.confHandle = columnFamilyHandles.get(0);
-        this.defaultHandle = columnFamilyHandles.get(1);
+        for (int i = 0; i < columnFamilyHandles.size(); i++) {
+            if (Arrays.equals(columnFamilyHandles.get(i).getName(), RocksDB.DEFAULT_COLUMN_FAMILY)) {
+                this.defaultHandle = columnFamilyHandles.get(i);
+            } else if (Arrays.equals(columnFamilyHandles.get(i).getName(), CONFIGURATION_COLUMN_FAMILY)) {
+                this.confHandle = columnFamilyHandles.get(i);
+            }
+        }
+        assert (this.confHandle != null);
+        assert (this.defaultHandle != null);
     }
 
     public boolean close() {

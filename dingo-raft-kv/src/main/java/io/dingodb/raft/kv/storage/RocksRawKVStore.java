@@ -19,11 +19,17 @@ package io.dingodb.raft.kv.storage;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.raft.kv.Constants;
-import io.dingodb.raft.kv.config.RocksConfigration;
 import io.dingodb.raft.util.BytesUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.ConfigOptions;
+import org.rocksdb.DBOptions;
 import org.rocksdb.EnvOptions;
 import org.rocksdb.Options;
+import org.rocksdb.OptionsUtil;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -48,6 +54,7 @@ import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
+import static io.dingodb.raft.storage.impl.RocksDBLogStore.createColumnFamilyOptions;
 
 @Slf4j
 public class RocksRawKVStore implements RawKVStore {
@@ -59,10 +66,35 @@ public class RocksRawKVStore implements RawKVStore {
     private RocksDB db;
     private WriteOptions writeOptions;
 
-    public RocksRawKVStore(String dataPath, RocksConfigration rocksConfigration) throws RocksDBException {
+    public RocksRawKVStore(final String dataPath, final String optionsFile) throws RocksDBException {
         this.writeOptions = new WriteOptions();
-        Options options = rocksConfigration.toRocksDBOptions();
-        this.db = RocksDB.open(options, dataPath);
+        DBOptions options = new DBOptions();
+        final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
+
+        boolean useDefaultOptions = true;
+        try {
+            if (optionsFile != null && (new File(optionsFile)).exists()) {
+                log.info("RocksRawKVStore rocksdb config file found: {}.", optionsFile);
+                ConfigOptions configOptions = new ConfigOptions();
+                OptionsUtil.loadOptionsFromFile(configOptions, optionsFile, options, columnFamilyDescriptors);
+                useDefaultOptions = false;
+            } else {
+                log.info("RocksRawKVStore rocksdb options file not found: {}, use default options.", optionsFile);
+            }
+        } catch (RocksDBException re) {
+            log.warn("RocksRawKVStore, load {} exception, use default options.", optionsFile, re);
+        }
+
+        options.setCreateIfMissing(true);
+        if (useDefaultOptions) {
+            final ColumnFamilyOptions cfOption = createColumnFamilyOptions();
+            columnFamilyDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOption));
+        }
+
+        final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+        this.db = RocksDB.open(options, dataPath, columnFamilyDescriptors, columnFamilyHandles);
+        log.info("RocksRawKVStore RocksDB open, path: {}, options file: {}, columnFamilyHandles size: {}.",
+            dataPath, optionsFile, columnFamilyHandles.size());
     }
 
     @Override

@@ -73,8 +73,7 @@ public class CoordinatorServer {
 
         RawKVStore memoryStore = new MemoryRawKVStore();
         RawKVStore rocksStore = new RocksRawKVStore(
-            Paths.get(configuration.getDataPath(), "db").toString(), configuration.getRocks()
-        );
+            Paths.get(configuration.getDataPath(), "db").toString(), configuration.getDbRocksOptionsFile());
 
         Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(endpoint);
@@ -104,7 +103,7 @@ public class CoordinatorServer {
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
         logStoreOptions.setDataPath(logPath.toString());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
-        logStoreOptions.setRaftLogStorageOptions(configuration.getRaftLogStorageOptions());
+        logStoreOptions.setLogRocksOptionsFile(configuration.getLogRocksOptionsFile());
         RocksDBLogStore logStore = new RocksDBLogStore();
         if (!logStore.init(logStoreOptions)) {
             log.error("Fail to init [RocksDBLogStore]");
