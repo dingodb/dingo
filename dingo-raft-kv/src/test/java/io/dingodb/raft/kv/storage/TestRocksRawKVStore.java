@@ -17,7 +17,6 @@
 package io.dingodb.raft.kv.storage;
 
 import io.dingodb.common.util.Files;
-import io.dingodb.raft.kv.config.RocksConfigration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +38,7 @@ public class TestRocksRawKVStore {
     @BeforeAll
     public static void beforeAll() throws Exception {
         afterAll();
-        store = new RocksRawKVStore(DB_PATH.toString(), new RocksConfigration());
+        store = new RocksRawKVStore(DB_PATH.toString(), "");
     }
 
     @AfterAll

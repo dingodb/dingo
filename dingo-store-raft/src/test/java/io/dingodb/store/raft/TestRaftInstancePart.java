@@ -24,7 +24,6 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.util.Files;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
-import io.dingodb.raft.option.RaftLogStorageOptions;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import org.junit.jupiter.api.AfterAll;
@@ -70,7 +69,6 @@ public class TestRaftInstancePart {
         Files.createDirectories(raftLogPath);
         logStoreOptions.setDataPath(raftLogPath.toString());
         Files.createDirectories(raftLogPath);
-        logStoreOptions.setRaftLogStorageOptions(new RaftLogStorageOptions());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
         storeInstancePart = new RaftStoreInstancePart(

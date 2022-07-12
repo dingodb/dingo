@@ -17,8 +17,6 @@
 package io.dingodb.store.raft.config;
 
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.raft.kv.config.RocksConfigration;
-import io.dingodb.raft.option.RaftLogStorageOptions;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -50,10 +48,10 @@ public class StoreConfiguration {
     }
 
     private String dbPath;
+    private String dbRocksOptionsFile;
+    private String logRocksOptionsFile;
     private int collectStatsInterval = -1;
     private int approximateCount = 10_000;
-    private RocksConfigration rocks = new RocksConfigration();
-    private RaftLogStorageOptions raftLogStorageOptions;
     private RaftConfiguration raft;
     private boolean collectMetric = false;   // default false, current collect is invalid
 
@@ -65,8 +63,12 @@ public class StoreConfiguration {
         return INSTANCE.dbPath;
     }
 
-    public static RocksConfigration rocks() {
-        return INSTANCE.rocks;
+    public static String dbRocksOptionsFile() {
+        return INSTANCE.dbRocksOptionsFile;
+    }
+
+    public static String logRocksOptionsFile() {
+        return INSTANCE.logRocksOptionsFile;
     }
 
     public static RaftConfiguration raft() {

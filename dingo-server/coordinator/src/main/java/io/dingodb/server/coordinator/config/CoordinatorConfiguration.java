@@ -17,12 +17,9 @@
 package io.dingodb.server.coordinator.config;
 
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.raft.kv.config.RocksConfigration;
-import io.dingodb.raft.option.RaftLogStorageOptions;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.Accessors;
 
 @Getter
 @Setter
@@ -48,10 +45,10 @@ public class CoordinatorConfiguration {
     }
 
     private String dataPath;
+    private String dbRocksOptionsFile;
+    private String logRocksOptionsFile;
 
-    private RaftLogStorageOptions raftLogStorageOptions  = new RaftLogStorageOptions();
     private RaftConfiguration raft;
-    private RocksConfigration rocks = new RocksConfigration();
     private ScheduleConfiguration schedule = new ScheduleConfiguration();
     private Integer monitorPort = 9088;
 
@@ -61,10 +58,6 @@ public class CoordinatorConfiguration {
 
     public static RaftConfiguration raft() {
         return INSTANCE.raft;
-    }
-
-    public static RocksConfigration rocks() {
-        return INSTANCE.rocks;
     }
 
     public static ScheduleConfiguration schedule() {

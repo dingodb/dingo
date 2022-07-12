@@ -76,10 +76,11 @@ public class RaftStoreInstance implements StoreInstance {
             Files.createDirectories(path);
             Files.createDirectories(dbPath = Paths.get(path.toString(), "db"));
             Files.createDirectories(logPath = Paths.get(path.toString(), "log"));
-            this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.rocks());
+            this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.dbRocksOptionsFile());
             this.logStore = new RocksDBLogStore();
             RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
             logStoreOptions.setDataPath(logPath.toString());
+            logStoreOptions.setLogRocksOptionsFile(StoreConfiguration.logRocksOptionsFile());
             logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory
                 .newInstance().createLogEntryCodecFactory());
             if (!this.logStore.init(logStoreOptions)) {

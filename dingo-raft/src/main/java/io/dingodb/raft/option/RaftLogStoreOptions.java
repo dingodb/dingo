@@ -26,8 +26,8 @@ import lombok.ToString;
 @ToString
 public class RaftLogStoreOptions {
     private String dataPath;
+    private String logRocksOptionsFile;
     private boolean sync = true;
     private boolean openStatistics = false;
     private LogEntryCodecFactory logEntryCodecFactory;
-    private RaftLogStorageOptions raftLogStorageOptions;
 }
