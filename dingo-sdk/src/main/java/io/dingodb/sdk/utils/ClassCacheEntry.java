@@ -16,6 +16,8 @@
 
 package io.dingodb.sdk.utils;
 
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoConstructor;
 import io.dingodb.sdk.annotation.DingoExclude;
@@ -32,6 +34,7 @@ import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.MapOrder;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.common.SqlTypeInfo;
 import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.common.ValueType;
 import io.dingodb.sdk.configuration.ClassConfig;
@@ -47,7 +50,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,6 +57,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import javax.validation.constraints.NotNull;
+
+import static io.dingodb.sdk.utils.TypeUtils.getSqlType;
 
 @Slf4j
 public class ClassCacheEntry<T> {
@@ -238,9 +242,9 @@ public class ClassCacheEntry<T> {
         if (this.classConfig == null || this.classConfig.getColumns() == null) {
             return null;
         }
-        for (ColumnConfig thisBin : this.classConfig.getColumns()) {
-            if (thisBin.getDerivedName().equals(name)) {
-                return thisBin;
+        for (ColumnConfig thisColumn: this.classConfig.getColumns()) {
+            if (thisColumn.getDerivedName().equals(name)) {
+                return thisColumn;
             }
         }
         return null;
@@ -286,8 +290,8 @@ public class ClassCacheEntry<T> {
         for (String thisValueName : this.values.keySet()) {
             ValueType thisValue = this.values.get(thisValueName);
 
-            ColumnConfig binConfig = getColumnFromName(thisValueName);
-            Integer ordinal = binConfig == null ? null : binConfig.getOrdinal();
+            ColumnConfig columnConfig = getColumnFromName(thisValueName);
+            Integer ordinal = columnConfig == null ? null : columnConfig.getOrdinal();
 
             if (ordinal == null) {
                 for (Annotation thisAnnotation : thisValue.getAnnotations()) {
@@ -466,34 +470,34 @@ public class ClassCacheEntry<T> {
         for (Parameter thisParam : params) {
             count++;
             boolean isFromAnnotation = false;
-            String binName = thisParam.getName();
+            String columnName = thisParam.getName();
             ParamFrom parameterDetails = thisParam.getAnnotation(ParamFrom.class);
 
             if (parameterDetails != null) {
-                binName = parameterDetails.value();
+                columnName = parameterDetails.value();
                 isFromAnnotation = true;
             }
 
             // Validate that we have such a value
-            if (!allValues.containsKey(binName)) {
+            if (!allValues.containsKey(columnName)) {
                 String valueList = String.join(",", values.keySet());
-                boolean isDefaultAnnotation = (!isFromAnnotation && binName.startsWith("arg"));
+                boolean isDefaultAnnotation = (!isFromAnnotation && columnName.startsWith("arg"));
                 String message = String.format("Class %s has a preferred constructor of %s. However, parameter %d is "
-                        + "mapped to bin \"%s\" %s which is not one of the values on the class, which are: %s%s",
-                    clazz.getSimpleName(), desiredConstructor, count, binName,
+                        + "mapped to column \"%s\" %s which is not one of the values on the class, which are: %s%s",
+                    clazz.getSimpleName(), desiredConstructor, count, columnName,
                     isFromAnnotation ? "via the @ParamFrom annotation" : "via the argument name",
                     valueList,
                     (isDefaultAnnotation) ? ". forget to specify '-parameters' to javac when building?" : "");
                 throw new DingoClientException(message);
             }
             Class<?> type = thisParam.getType();
-            if (!type.isAssignableFrom(allValues.get(binName).getType())) {
+            if (!type.isAssignableFrom(allValues.get(columnName).getType())) {
                 throw new DingoClientException("Class " + clazz.getSimpleName() + " has a preferred constructor of "
                     + desiredConstructor + ". However, parameter " + count
-                    + " is of type " + type + " but assigned from bin \"" + binName + "\" of type "
-                    + values.get(binName).getType() + ". These types are incompatible.");
+                    + " is of type " + type + " but assigned from column \"" + columnName + "\" of type "
+                    + values.get(columnName).getType() + ". These types are incompatible.");
             }
-            constructorParamBins[count - 1] = binName;
+            constructorParamBins[count - 1] = columnName;
             constructorParamDefaults[count - 1] = PrimitiveDefaults.getDefaultValue(thisParam.getType());
         }
         this.constructor = (Constructor<T>) desiredConstructor;
@@ -618,16 +622,16 @@ public class ClassCacheEntry<T> {
 
             if (this.mapAll || thisField.isAnnotationPresent(DingoColumn.class) || thisBin != null) {
                 // This field needs to be mapped
-                DingoColumn bin = thisField.getAnnotation(DingoColumn.class);
-                String binName = bin == null ? null : ParserUtils.getInstance().get(bin.name());
+                DingoColumn dingoColumn = thisField.getAnnotation(DingoColumn.class);
+                String columnName = dingoColumn == null ? null : ParserUtils.getInstance().get(dingoColumn.name());
                 if (thisBin != null && !StringUtils.isBlank(thisBin.getDerivedName())) {
-                    binName = thisBin.getDerivedName();
+                    columnName = thisBin.getDerivedName();
                 }
                 String name;
-                if (StringUtils.isBlank(binName)) {
+                if (StringUtils.isBlank(columnName)) {
                     name = thisField.getName();
                 } else {
-                    name = binName;
+                    name = columnName;
                 }
                 if (isKey) {
                     this.keyName = name;
@@ -637,7 +641,7 @@ public class ClassCacheEntry<T> {
                     throw new DingoClientException("Class " + clazz.getName()
                         + " cannot define the mapped name " + name + " more than once");
                 }
-                if ((bin != null && bin.useAccessors())
+                if ((dingoColumn != null && dingoColumn.useAccessors())
                     || (thisBin != null && thisBin.getUseAccessors() != null && thisBin.getUseAccessors())) {
                     validateAccessorsForField(name, thisField);
                 } else {
@@ -661,7 +665,7 @@ public class ClassCacheEntry<T> {
         }
     }
 
-    private void validateAccessorsForField(String binName, Field thisField) {
+    private void validateAccessorsForField(String columnName, Field thisField) {
         String fieldName = thisField.getName();
         String methodNameBase = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
         String getterName = "get" + methodNameBase;
@@ -696,13 +700,13 @@ public class ClassCacheEntry<T> {
 
         TypeUtils.AnnotatedType annotatedType = new TypeUtils.AnnotatedType(config, thisField);
         TypeMapper typeMapper = TypeUtils.getMapper(thisField.getType(), annotatedType, this.mapper);
-        PropertyDefinition property = new PropertyDefinition(binName, mapper);
+        PropertyDefinition property = new PropertyDefinition(columnName, mapper);
         property.setGetter(getter);
         property.setSetter(setter);
         property.validate(clazz.getName(), config, false);
 
         ValueType value = new ValueType.MethodValue(property, typeMapper, annotatedType);
-        values.put(binName, value);
+        values.put(columnName, value);
     }
 
     public Object translateKeyToDingoKey(Object key) {
@@ -770,8 +774,46 @@ public class ClassCacheEntry<T> {
         return false;
     }
 
+    /**
+     * get all columns from the record by instance of Object.
+     * @param instance input object
+     * @param allowNullColumns if true, null columns will be included in the result.
+     * @return the whole columns of the record.
+     */
+    public Column[] getColumns(Object instance, boolean allowNullColumns) {
+        Column[] columns = new Column[this.columnCnt];
+        try {
+            int index = 0;
+            ClassCacheEntry thisClass = this;
+            while (thisClass != null) {
+                Set<String> keys = thisClass.values.keySet();
+                for (String name : keys) {
+                    ValueType value = (ValueType) thisClass.values.get(name);
+                    Object javaValue = value.get(instance);
+                    Object dingoValue = value.getTypeMapper().toDingoFormat(javaValue);
+                    if (dingoValue != null || allowNullColumns) {
+                        if (dingoValue instanceof TreeMap<?, ?>) {
+                            TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
+                            columns[index++] = new Column(name,
+                                new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
+                        } else {
+                            columns[index++] = new Column(name, dingoValue);
+                        }
+                    }
+                }
+                thisClass = thisClass.superClazz;
+            }
+            return columns;
+        } catch (ReflectiveOperationException ref) {
+            throw new DingoClientException(ref);
+        }
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public Column[] getColumns(Object instance, boolean allowNullColumns, String[] binNames) {
+    public Column[] getColumns(Object newInstance,
+                               Record oldRecord,
+                               boolean allowNullColumns,
+                               String[] includeColumns) {
         try {
             Column[] columns = new Column[this.columnCnt];
             int index = 0;
@@ -779,32 +821,106 @@ public class ClassCacheEntry<T> {
             while (thisClass != null) {
                 Set<String> keys = thisClass.values.keySet();
                 for (String name : keys) {
-                    if (contains(binNames, name)) {
+                    Object dingoValue = null;
+                    if (!contains(includeColumns, name)) {
+                        dingoValue = oldRecord.getValue(name);
+                    } else {
                         ValueType value = (ValueType) thisClass.values.get(name);
-                        Object javaValue = value.get(instance);
-                        Object dingoValue = value.getTypeMapper().toDingoFormat(javaValue);
+                        Object javaValue = value.get(newInstance);
+                        dingoValue = value.getTypeMapper().toDingoFormat(javaValue);
+                    }
 
-                        // currently the allowNullColumns is false
-                        if (dingoValue != null || allowNullColumns) {
-                            if (dingoValue instanceof TreeMap<?, ?>) {
-                                TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
-                                columns[index++] = new Column(name,
-                                    new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
-                            } else {
-                                columns[index++] = new Column(name, dingoValue);
-                            }
+                    if (dingoValue != null || allowNullColumns) {
+                        if (dingoValue instanceof TreeMap<?, ?>) {
+                            TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
+                            columns[index++] = new Column(name,
+                                new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
+                        } else {
+                            columns[index++] = new Column(name, dingoValue);
                         }
                     }
                 }
                 thisClass = thisClass.superClazz;
             }
-            if (index != this.columnCnt) {
-                columns = Arrays.copyOf(columns, index);
-            }
             return columns;
         } catch (ReflectiveOperationException ref) {
             throw new DingoClientException(ref);
         }
+    }
+
+    /**
+     * check current input columns is all valid.
+     * @param includeColumns input columns to check.
+     * @return true if all columns are valid, otherwise false.
+     */
+    public boolean isAllColumnsValid(String[] includeColumns) {
+        Set<String> keys = this.values.keySet();
+        for (String inColumn : includeColumns) {
+            if (!keys.contains(inColumn)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private SqlTypeInfo getSqlTypeInfo(final String inputJavaType,
+                                       Integer precision,
+                                       Integer scale,
+                                       Object defaultValue) {
+        String typeName = getSqlType(inputJavaType);
+        return new SqlTypeInfo(typeName, precision, scale, defaultValue);
+    }
+
+    private SqlTypeInfo getSqlTypeInfo(final String inputJavaType) {
+        String typeName = getSqlType(inputJavaType);
+        return new SqlTypeInfo(typeName);
+    }
+
+    public TableDefinition getTableDefinition(String tableName) {
+        TableDefinition tableDefinition = new TableDefinition(tableName);
+        for (Field thisField : this.clazz.getDeclaredFields()) {
+            boolean isKey = false;
+            if (thisField.isAnnotationPresent(DingoKey.class)) {
+                if (thisField.isAnnotationPresent(DingoExclude.class)) {
+                    throw new DingoClientException("Class " + clazz.getName()
+                        + " cannot have a field which is both a key and excluded.");
+                }
+                if (key != null) {
+                    isKey = true;
+                }
+            }
+
+            if (thisField.isAnnotationPresent(DingoExclude.class)) {
+                // This field should be excluded from being stored in the database. Even keys must be stored
+                continue;
+            }
+
+            String javaTypeName = thisField.getType().getSimpleName();
+            SqlTypeInfo sqlTypeInfo = getSqlTypeInfo(javaTypeName);
+
+            String columnName = thisField.getName();
+            if (thisField.isAnnotationPresent(DingoColumn.class)) {
+                DingoColumn dingoColumn = thisField.getAnnotation(DingoColumn.class);
+                String sqlTypeName = getSqlType(javaTypeName);
+                sqlTypeInfo = new SqlTypeInfo(sqlTypeName, dingoColumn);
+                if (dingoColumn.name() != null && !dingoColumn.name().isEmpty()) {
+                    columnName = dingoColumn.name();
+                }
+            }
+
+            ColumnDefinition columnDefinition = ColumnDefinition.getInstance(
+                columnName,
+                sqlTypeInfo.getSqlTypeName(),
+                sqlTypeInfo.getPrecision(),
+                sqlTypeInfo.getScale(),
+                isKey ? true : false,
+                isKey,
+                sqlTypeInfo.getDefaultValue()
+            );
+            tableDefinition.addColumn(columnDefinition);
+        }
+        return tableDefinition;
     }
 
     public Map<String, Object> getMap(Object instance, boolean needsType) {
@@ -988,7 +1104,7 @@ public class ClassCacheEntry<T> {
                 for (String name : thisClass.values.keySet()) {
                     ValueType value = thisClass.values.get(name);
                     Object dingoValue = record == null ? map.get(name) : record.getValue(name);
-                    valueMap.put(name, value.getTypeMapper().toDingoFormat(dingoValue));
+                    valueMap.put(name, value.getTypeMapper().fromDingoFormat(dingoValue));
                 }
                 if (result == null) {
                     result = (T) thisClass.constructAndHydrateFromJavaMap(valueMap);

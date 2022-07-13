@@ -1,0 +1,285 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.sdk;
+
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.annotation.DingoRecord;
+import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoConnection;
+import io.dingodb.sdk.client.DingoOpCli;
+import io.dingodb.sdk.common.Column;
+import io.dingodb.sdk.common.Key;
+import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.example.model.ConstructedClass;
+import io.dingodb.sdk.mock.MockApiRegistry;
+import io.dingodb.sdk.mock.MockMetaClient;
+import io.dingodb.sdk.operation.StoreOperationUtils;
+import io.dingodb.sdk.utils.DingoClientException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.lang.reflect.Field;
+import java.util.Date;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class TestDingoCliWithConstruct {
+    private DingoClient dingoClient;
+
+    private MockMetaClient metaClient = new MockMetaClient("src/test/resources/config.yaml");
+
+    private MockApiRegistry apiRegistry = new MockApiRegistry();
+
+    @BeforeEach
+    public void init() {
+        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        initConnectionInMockMode();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        if (dingoClient != null) {
+            dingoClient.closeConnection();
+        }
+    }
+
+    @Test
+    public void testTableOperationUsingConstruct() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        Map<String, TableDefinition> storeOperations = StoreOperationUtils.getTableDefinitionInCache();
+        Assertions.assertEquals(1, storeOperations.size());
+        String tableName = ConstructedClass.class.getAnnotation(DingoRecord.class).table();
+        Assertions.assertTrue(storeOperations.containsKey(tableName));
+
+        TableDefinition tableDefinition = storeOperations.get(tableName);
+        for (Field thisField: ConstructedClass.class.getDeclaredFields()) {
+            String columnName = thisField.getName();
+            Assertions.assertTrue(
+                tableDefinition.getColumns().stream()
+                    .anyMatch(column -> column.getName().equals(columnName)));
+        }
+
+        isOK = dingoCli.dropTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+        storeOperations = StoreOperationUtils.getTableDefinitionInCache();
+        Assertions.assertEquals(0, storeOperations.size());
+    }
+
+    @Test
+    public void testTableOperation() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
+        Record expectedRecord = new Record(constructedInstance, false);
+
+        try {
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(expectedRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            dingoCli.save(constructedInstance);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            Assertions.assertEquals(constructedInstance.id, actualObject.id);
+            Assertions.assertEquals(constructedInstance.age, actualObject.age);
+            Assertions.assertEquals(constructedInstance.name, actualObject.name);
+            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            isOK = dingoCli.delete(constructedInstance);
+            Assertions.assertTrue(isOK);
+        } catch (DingoClientException e) {
+            Assertions.fail(e.getMessage());
+        } catch (Exception e) {
+            Assertions.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void getTestTableOperationWithNull() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
+        constructedInstance.birthday = null;
+        Record expectedRecord = new Record(constructedInstance, false);
+
+        try {
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(expectedRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            dingoCli.save(constructedInstance);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            Assertions.assertEquals(constructedInstance.id, actualObject.id);
+            Assertions.assertEquals(constructedInstance.age, actualObject.age);
+            Assertions.assertEquals(constructedInstance.name, actualObject.name);
+            Assertions.assertEquals(constructedInstance.birthday, null);
+            isOK = dingoCli.delete(constructedInstance);
+            Assertions.assertTrue(isOK);
+        } catch (DingoClientException e) {
+            Assertions.fail(e.getMessage());
+        } catch (Exception e) {
+            Assertions.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testTableOperationUsingUpdate01() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
+        Record expectedRecord = new Record(constructedInstance, false);
+
+        try {
+            doReturn(null).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(expectedRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            isOK = dingoCli.update(constructedInstance, "name", "birthday");
+            Assertions.assertTrue(isOK);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            Assertions.assertEquals(constructedInstance.id, actualObject.id);
+            Assertions.assertEquals(constructedInstance.age, actualObject.age);
+            Assertions.assertEquals(constructedInstance.name, actualObject.name);
+            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            isOK = dingoCli.delete(constructedInstance);
+            Assertions.assertTrue(isOK);
+        } catch (DingoClientException e) {
+            Assertions.fail(e.getMessage());
+        } catch (Exception e) {
+            Assertions.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testTableOperationUsingUpdate02() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        ConstructedClass constructedInstance = new ConstructedClass(1, 10, "Jonny", new Date());
+        ConstructedClass oldConstructedInstance = new ConstructedClass(1, 10, "Huzx", null);
+        Record oldRecord = new Record(oldConstructedInstance, false);
+        Record newRecord = new Record(constructedInstance, false);
+
+        try {
+            doReturn(oldRecord).doReturn(newRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            isOK = dingoCli.update(constructedInstance, "name", "birthday");
+            Assertions.assertTrue(isOK);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            Assertions.assertEquals(constructedInstance.id, actualObject.id);
+            Assertions.assertEquals(constructedInstance.name, actualObject.name);
+            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            isOK = dingoCli.delete(constructedInstance);
+            Assertions.assertTrue(isOK);
+        } catch (DingoClientException e) {
+            Assertions.fail(e.getMessage());
+        } catch (Exception e) {
+            Assertions.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testTableOperationUsingUpdate03() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(ConstructedClass.class);
+        Assertions.assertTrue(isOK);
+
+        ConstructedClass constructedInstance = new ConstructedClass(1, 10, "Jonny", new Date());
+        ConstructedClass oldConstructedInstance = new ConstructedClass(1, 10, "Huzx", null);
+        Record oldRecord = new Record(oldConstructedInstance, false);
+        Record newRecord = new Record(constructedInstance, false);
+
+        // using invalid columns
+        String invalidColumn = "invalidColumn";
+        try {
+            doReturn(oldRecord).doReturn(newRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            isOK = dingoCli.update(constructedInstance, "name", "birthday", invalidColumn);
+        } catch (DingoClientException e) {
+            Assertions.assertTrue(e.getMessage().contains(invalidColumn));
+        } catch (Exception e) {
+            Assertions.fail(e.getMessage());
+        }
+    }
+
+    private void initConnectionInMockMode() {
+        DingoConnection connection = mock(DingoConnection.class);
+        when(connection.getMetaClient()).thenReturn(metaClient);
+        when(connection.getApiRegistry()).thenReturn(apiRegistry);
+
+        try {
+            Field metaClientField = DingoConnection.class.getDeclaredField("metaClient");
+            metaClientField.setAccessible(true);
+            metaClientField.set(connection, metaClient);
+
+            Field apiRegistryField = DingoConnection.class.getDeclaredField("apiRegistry");
+            apiRegistryField.setAccessible(true);
+            apiRegistryField.set(connection, apiRegistry);
+
+            Field connectionField = DingoClient.class.getDeclaredField("connection");
+            connectionField.setAccessible(true);
+            connectionField.set(dingoClient, connection);
+        } catch (NoSuchFieldException e) {
+            Assertions.fail("DingoConnection.metaClient field not found");
+        } catch (SecurityException e) {
+            Assertions.fail("DingoConnection.metaClient field not accessible");
+        } catch (IllegalAccessException e) {
+            Assertions.fail("Invalid Runtime Exception");
+        }
+    }
+
+
+}
