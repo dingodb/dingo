@@ -210,13 +210,22 @@ public class StoreOperationUtils {
      * remove table definition from local cache.
      * @param tableName input table name.
      */
-    public void removeCacheOfTableDefinition(String tableName) {
+    public synchronized void removeCacheOfTableDefinition(String tableName) {
         if (tableName != null) {
             TableDefinition tableDefinition = tableDefinitionInCache.remove(tableName);
             if (tableDefinition != null) {
                 log.info("remove cache of table:{} definition:{}", tableName, tableDefinition);
             }
         }
+    }
+
+    public static Map<String, TableDefinition> getTableDefinitionInCache() {
+        return tableDefinitionInCache;
+    }
+
+    public synchronized void clearTableDefinitionInCache() {
+        tableDefinitionInCache.clear();
+        return;
     }
 
     private synchronized ExecutorApi getExecutor(final String tableName, byte[] keyInBytes) {

@@ -16,6 +16,12 @@
 
 package io.dingodb.sdk.common;
 
+import io.dingodb.sdk.annotation.DingoColumn;
+
+import java.lang.reflect.Field;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +36,12 @@ public final class Record {
      */
     public final Map<String, Object> columns;
 
+
+    /**
+     * Constructor Record by TableDefinition and columns.
+     * @param columnsInTable columns defined in table definition(sequential as create table).
+     * @param inputColumns   real record columns(the column order is not important)
+     */
     public Record(final List<String> columnsInTable, final Column[] inputColumns) {
         columns = new HashMap<String, Object>();
         for (String columnName: columnsInTable) {
@@ -42,12 +54,41 @@ public final class Record {
     }
 
     /**
-     * Initialize record.
-     * input columns is order by column name by TableDefinition.
+     * Constructor a record from a object instance.
+     * @param instance input object value
+     * @param isOriginalValue when true, the original type is keeped;
+     *                        otherwise, some types such as Date, Time, Timestamp is converted to long.
+     *                        when isOriginalValue is false, the use case is from UnitTest(such as read object value
+     *                        from dingo database).
      */
-    public Record(Map<String, Object> columns) {
-        this.columns = columns;
+    public Record(Object instance, boolean isOriginalValue) {
+        columns = new HashMap<String, Object>();
+        for (Field field: instance.getClass().getDeclaredFields()) {
+            String fieldName = field.getName();
+            if (field.isAnnotationPresent(DingoColumn.class)) {
+                fieldName = field.getAnnotation(DingoColumn.class).name();
+            }
+            field.setAccessible(true);
+            try {
+                Object value = field.get(instance);
+                if (value != null) {
+                    if (!isOriginalValue) {
+                        if (value instanceof Date) {
+                            value = ((Date) value).getTime();
+                        } else if (value instanceof Time) {
+                            value = ((Time) value).getTime();
+                        } else if (value instanceof Timestamp) {
+                            value = ((Timestamp) value).getTime();
+                        }
+                    }
+                }
+                columns.put(fieldName, value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
+
 
     /**
      * Get bin value given bin name.

@@ -19,11 +19,13 @@ package io.dingodb.sdk.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Filter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Operation;
 import io.dingodb.sdk.common.Processor;
+import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.common.RecordExistsAction;
 import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.configuration.ClassConfig;
@@ -33,6 +35,8 @@ import io.dingodb.sdk.utils.ClassCache;
 import io.dingodb.sdk.utils.ClassCacheEntry;
 import io.dingodb.sdk.utils.DingoClientException;
 import io.dingodb.sdk.utils.GenericTypeMapper;
+import io.dingodb.sdk.utils.LoadedObjectResolver;
+import io.dingodb.sdk.utils.ThreadLocalKeySaver;
 import io.dingodb.sdk.utils.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,11 +56,6 @@ public class DingoOpCli implements DingoMapper {
 
     private final DingoClient dingoClient;
     private final MappingConverter mappingConverter;
-
-    /**
-     * will do retry when operation is failed.
-     */
-    boolean isRetryable = false;
 
     public static class Builder {
         private final DingoOpCli mapper;
@@ -160,6 +160,65 @@ public class DingoOpCli implements DingoMapper {
         this.mappingConverter = new MappingConverter(this, dingoClient);
     }
 
+    public boolean createTable(Class<?> clazz) throws DingoClientException {
+        ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+        String tableName = entry.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Cannot find table name for class " + clazz.getName());
+        }
+        TableDefinition tableDefinition = entry.getTableDefinition(tableName);
+        if (tableDefinition == null || tableDefinition.getColumns().isEmpty()) {
+            throw new DingoClientException("Cannot find table definition for class " + clazz.getName());
+        }
+
+        boolean hasPrimaryKey = false;
+        hasPrimaryKey = tableDefinition.getColumns().stream().anyMatch(col -> col.isPrimary());
+        if (!hasPrimaryKey) {
+            throw new DingoClientException("Table " + tableName + " does not have a primary key");
+        }
+
+        boolean isSuccess = false;
+        try {
+            isSuccess = dingoClient.createTable(tableDefinition);
+            if (!isSuccess) {
+                log.warn("Failed to create table:{}", tableName);
+            }
+        } catch (DingoClientException ex) {
+            log.error("Failed to create table:{} define:{} catch exception:{}",
+                tableName,
+                tableDefinition,
+                ex.toString(), ex);
+            throw ex;
+        } catch (Exception e) {
+            throw new DingoClientException("Failed to create table:" + tableName);
+        }
+        return isSuccess;
+    }
+
+    public boolean dropTable(Class<?> clazz) {
+        ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+        String tableName = entry.getTableName();
+        return dropTable(tableName);
+    }
+
+    public boolean dropTable(String tableName) {
+        boolean isSuccess = false;
+        try {
+            isSuccess = dingoClient.dropTable(tableName);
+            if (!isSuccess) {
+                log.warn("Failed to drop table:{}", tableName);
+            }
+        } catch (DingoClientException ex) {
+            log.error("Failed to drop table:{} catch exception:{}",
+                tableName,
+                ex.toString(), ex);
+            throw ex;
+        } catch (Exception e) {
+            throw new DingoClientException("Failed to drop table:" + tableName);
+        }
+        return isSuccess;
+    }
+
     @Override
     public void save(@NotNull Object... objects) throws DingoClientException {
         for (Object thisObject : objects) {
@@ -168,55 +227,102 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public void save(@NotNull Object object, String... binNames) throws DingoClientException {
-        save(object, RecordExistsAction.REPLACE, binNames);
+    public void save(@NotNull Object object) throws DingoClientException {
+        save(object, RecordExistsAction.REPLACE);
     }
 
-    private <T> void save(@NotNull T object, RecordExistsAction recordExistsAction, String[] binNames) {
+    private <T> void save(@NotNull T object, RecordExistsAction recordExistsAction) {
         Class<T> clazz = (Class<T>) object.getClass();
         ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
 
         String tableName = entry.getTableName();
         Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
-        Column[] columns = entry.getColumns(object, false, binNames);
+        Column[] columns = entry.getColumns(object, true);
         try {
             boolean isSuccess = dingoClient.put(key, columns);
             if (!isSuccess) {
-                log.warn("Failed to save object " + object);
+                log.warn("Failed to save object:{} on table:{}", object, tableName);
             }
-        } catch (DingoClientException e) {
-            throw e;
+        } catch (DingoClientException ex) {
+            log.error("Put Key:{} Columns:{} on table:{} catch exception:{}",
+                key, columns,
+                tableName,
+                ex.toString(), ex);
+            throw ex;
         } catch (Exception e) {
-            throw new DingoClientException("Failed to save object " + object, e);
+            throw new DingoClientException("Failed to save object:{}" + object, e);
         }
     }
 
     @Override
-    public void update(Object object, String... columnNames) {
-        // todo
+    public boolean update(Object object, String... columnNames) {
+        Class<?> clazz = (Class<?>) object.getClass();
+        ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+
+        /**
+         * check input column name is valid.
+         */
+        if (entry == null || entry.isAllColumnsValid(columnNames)) {
+            throw new DingoClientException("Invalid column name:" + Arrays.toString(columnNames));
+        }
+
+        boolean isSuccess = false;
+        String tableName = entry.getTableName();
+        Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
+        try {
+            Record oldRecord = dingoClient.get(key);
+            if (oldRecord != null) {
+                Column[] columns = entry.getColumns(object, oldRecord, true, columnNames);
+                isSuccess = dingoClient.put(key, columns);
+            } else {
+                log.warn("Check key:{} not existed on table:{}. Write whole record directly", key, tableName);
+                Column[] writeColumns = entry.getColumns(object, true);
+                isSuccess = dingoClient.put(key, writeColumns);
+            }
+            return isSuccess;
+        } catch (Exception e) {
+            log.error("Failed to update key:{} on table:{}", key, tableName, e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey) throws DingoClientException {
-        return this.read(clazz, userKey, true);
-    }
-
-    @Override
-    public <T> T read(@NotNull Class<T> clazz,
-                      @NotNull Object userKey,
-                      boolean resolveDependencies) throws DingoClientException {
+        if (clazz == null || userKey == null) {
+            throw new DingoClientException("Class or Key is null");
+        }
         ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
         String tableName = entry.getTableName();
-        /*
-        Key key = new Key(entry.getDatabase(), tableName);
-        return read(clazz, key, entry, resolveDependencies);
-        */
-        return null;
+        Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(userKey)));
+        try {
+            Record record = dingoClient.get(key);
+            ThreadLocalKeySaver.save(key);
+            LoadedObjectResolver.begin();
+            return mappingConverter.convertToObject(clazz, record, entry, true);
+        } catch (DingoClientException ex) {
+            log.error("Get Key:{} on table:{} catch exception:{}",
+                key, tableName,
+                ex.toString(), ex);
+            throw ex;
+        } catch (Exception e) {
+            throw new DingoClientException("Failed to get object:{}" + userKey, e);
+        } finally {
+            LoadedObjectResolver.end();
+            ThreadLocalKeySaver.clear();
+        }
     }
 
     @Override
     public <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys) throws DingoClientException {
-        return read(clazz, userKeys);
+        if (clazz == null || userKeys == null || userKeys.length == 0) {
+            throw new DingoClientException("Class or keys is null");
+        }
+
+        T [] result = (T[]) Array.newInstance(clazz, userKeys.length);
+        for (int i = 0; i < userKeys.length; i++) {
+            result[i] = read(clazz, userKeys[i]);
+        }
+        return result;
     }
 
     @Override
@@ -225,13 +331,39 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> boolean delete(@NotNull Class<T> clazz, @NotNull Object userKey) throws DingoClientException {
-        return this.delete(clazz, userKey);
+    public boolean delete(Key userKey) throws DingoClientException {
+        String tableName = "";
+        try {
+            if (userKey == null) {
+                log.warn("Delete Key:{} is empty on table:{}", userKey, tableName);
+            }
+            tableName = userKey.getTable();
+            boolean isSuccess = dingoClient.delete(userKey);
+            if (!isSuccess) {
+                log.warn("Failed to delete object:{} on table:{}", userKey, tableName);
+            }
+            return isSuccess;
+        } catch (DingoClientException ex) {
+            log.error("Delete Key:{} on table:{} catch exception:{}",
+                userKey,
+                tableName,
+                ex.toString(), ex);
+            throw ex;
+        } catch (Exception e) {
+            throw new DingoClientException("Failed to delete object:{}" + userKey);
+        }
     }
 
     @Override
     public boolean delete(@NotNull Object object) throws DingoClientException {
-        return this.delete(object);
+        Class<Object> clazz = (Class<Object>) object.getClass();
+        ClassCacheEntry<Object> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+        String tableName = entry.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Table name is null");
+        }
+        Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
+        return delete(key);
     }
 
     @Override
