@@ -17,6 +17,7 @@
 package io.dingodb.sdk.client;
 
 import io.dingodb.sdk.common.Filter;
+import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Operation;
 import io.dingodb.sdk.common.Processor;
 import io.dingodb.sdk.utils.DingoClientException;
@@ -50,7 +51,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * @param object The object to save.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    void save(@NotNull Object object, String... columnNames);
+    void save(@NotNull Object object);
 
 
     /**
@@ -59,7 +60,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * @param object The object to update.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    void update(@NotNull Object object, String... columnNames);
+    boolean update(@NotNull Object object, String... columnNames);
 
     /**
      * Read a record from the repository and map it to an instance of the passed class.
@@ -72,10 +73,6 @@ public interface DingoMapper extends IBaseDingoMapper {
      */
     <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey);
 
-    /**
-     * This method should not be used: It is used by mappers to correctly resolved dependencies.
-     */
-    <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey, boolean resolveDependencies);
 
     /**
      * Read a batch of records from database and map them to an instance of the passed class.
@@ -102,24 +99,23 @@ public interface DingoMapper extends IBaseDingoMapper {
     <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys, Operation... operations);
 
     /**
-     * Delete a record by specifying a class and a user key.
+     * Delete a record by a user Key.
      *
-     * @param clazz   - The type of the record.
      * @param userKey - The key of the record.
-     *                The database and table will be derived from the values specified on the passed class.
      * @return whether record existed on server before deletion
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    <T> boolean delete(@NotNull Class<T> clazz, @NotNull Object userKey);
+    boolean delete(Key userKey);
 
     /**
      * Delete a record by specifying an object.
      *
-     * @param object The object to delete.
+     * @param record The record to delete.
      * @return whether record existed on server before deletion
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    boolean delete(@NotNull Object object);
+    boolean delete(@NotNull Object record);
+
 
     /**
      * Find a record by specifying a class and a Boolean function.
