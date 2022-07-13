@@ -182,6 +182,16 @@ public final class RaftStoreInstancePart implements StoreInstance {
     }
 
     @Override
+    public Iterator<KeyValue> keyValueScan(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        if (!stateMachine.isEnable()) {
+            throw new UnsupportedOperationException("State machine not available");
+        }
+        return new KeyValueIterator(raftStore.scan(startPrimaryKey, endPrimaryKey, includeStart, includeEnd).join());
+    }
+
+    @Override
     public boolean delete(byte[] key) {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");

@@ -28,6 +28,7 @@ import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
+import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
@@ -48,6 +49,7 @@ import io.dingodb.common.table.TupleMapping;
 import io.dingodb.common.table.TupleSchema;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.base.Id;
@@ -68,6 +70,7 @@ import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.PartCountOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
+import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.PartScanOperator;
 import io.dingodb.exec.operator.PartUpdateOperator;
 import io.dingodb.exec.operator.PartitionOperator;
@@ -94,20 +97,13 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.common.util.ByteArrayUtils.compare;
 import static io.dingodb.common.util.Utils.sole;
 
 @Slf4j
@@ -673,6 +669,67 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             operator.getSoleOutput().setHint(hint);
             outputs.addAll(operator.getOutputs());
         }
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoPartRangeScan rel) {
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        RtExprWithType filter = null;
+        if (rel.getFilter() != null) {
+            filter = RexConverter.toRtExprWithType(rel.getFilter());
+        }
+        CommonId tableId = this.metaCache.getTableId(tableName);
+
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        byte[] startKey = rel.getStartKey();
+        byte[] endKey = rel.getEndKey();
+        ComparableByteArray startByteArray = parts.floorKey(new ComparableByteArray(startKey));
+        if (startByteArray == null) {
+            log.warn("Get part from table:{} by startKey:{}, result is null", td.getName(), startKey);
+            return null;
+        }
+
+        List<Output> outputs = new ArrayList<>();
+
+        parts = parts.subMap(startByteArray, true, new ComparableByteArray(endKey), true);
+        Iterator<Part> iterator = parts.values().iterator();
+        byte[] start = startKey;
+        byte[] end;
+        boolean includeEnd = false;
+        while (iterator.hasNext()) {
+            Part part = iterator.next();
+
+            if (start == null) {
+                start = part.getStartKey();
+            }
+            if (iterator.hasNext()) {
+                end = null;
+            } else {
+                end = endKey;
+                includeEnd = rel.isIncludeEnd();
+            }
+
+            PartRangeScanOperator operator = new PartRangeScanOperator(
+                tableId,
+                part.getId(),
+                td.getTupleSchema(),
+                td.getKeyMapping(),
+                filter,
+                rel.getSelection(),
+                start,
+                end,
+                rel.isIncludeStart(),
+                includeEnd
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(part.getLeader(), idGenerator);
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
+            start = null;
+        }
+
         return outputs;
     }
 

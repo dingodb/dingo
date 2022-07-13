@@ -144,8 +144,23 @@ public class MemoryStoreInstance implements StoreInstance {
 
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (endPrimaryKey == null) {
+            endPrimaryKey = db.lastKey();
+        }
         return new KeyValueIterator(
             new TreeMap<>(db.subMap(startPrimaryKey, true, endPrimaryKey, false)).entrySet().iterator()
+        );
+    }
+
+    @Override
+    public Iterator<KeyValue> keyValueScan(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        if (endPrimaryKey == null) {
+            endPrimaryKey = db.lastKey();
+        }
+        return new KeyValueIterator(
+            new TreeMap<>(db.subMap(startPrimaryKey, includeStart, endPrimaryKey, includeEnd)).entrySet().iterator()
         );
     }
 }

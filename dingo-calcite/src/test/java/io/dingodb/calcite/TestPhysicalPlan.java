@@ -29,6 +29,7 @@ import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
+import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
@@ -579,5 +580,19 @@ public class TestPhysicalPlan {
         Long offsetMilli = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000L;
         assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{new Date(0L - offsetMilli
             + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE)});
+    }
+
+    @Test
+    public void testBetweenAnd() throws SqlParseException {
+        String sql = "select * from test where id between 2 and 5";
+        RelNode relNode = parse(sql);
+        RelOptNode r = Assert.relNode(relNode)
+            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
+            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
+            .singleInput().isA(DingoPartRangeScan.class).convention(DingoConventions.DISTRIBUTED)
+            .getInstance();
+        DingoPartRangeScan scan = (DingoPartRangeScan) r;
+        assertThat((scan).getFilter()).isNotNull();
+        assertThat((scan).getSelection()).isNull();
     }
 }

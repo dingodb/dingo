@@ -68,6 +68,25 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
+    @Nonnull
+    public Iterator<Object[]> getIteratorByRange(
+        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
+        final long startTime = System.currentTimeMillis();
+        log.error("start {} end {}", includeStart, includeEnd);
+        try {
+            return Iterators.transform(
+                store.keyValueScan(startKey, endKey, includeStart, includeEnd),
+                wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+            );
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
+        }
+    }
+
+    @Override
     public boolean insert(@Nonnull Object[] tuple) {
         final long startTime = System.currentTimeMillis();
         try {

@@ -115,20 +115,32 @@ public class MetaTestService implements MetaService {
     @Override
     public NavigableMap<ComparableByteArray, Part> getParts(String name) {
         TreeMap<ComparableByteArray, Part> result = new TreeMap<>();
-        result.put(new ComparableByteArray(ByteArrayUtils.EMPTY_BYTES), new Part(
-            ByteArrayUtils.EMPTY_BYTES,
+        ComparableByteArray startKey = new ComparableByteArray(ByteArrayUtils.EMPTY_BYTES);
+        ComparableByteArray endKey = new ComparableByteArray(PrimitiveCodec.encodeVarInt(3));
+        result.put(startKey, new Part(
+            startKey.getBytes(),
             new Location("localhost", 0),
-            Arrays.asList(new Location("localhost", 0))
+            Arrays.asList(new Location("localhost", 0)),
+            startKey.getBytes(),
+            endKey.getBytes()
         ));
-        result.put(new ComparableByteArray(PrimitiveCodec.encodeVarInt(3)), new Part(
-            ByteArrayUtils.EMPTY_BYTES,
+        startKey = endKey;
+        endKey = new ComparableByteArray(PrimitiveCodec.encodeVarInt(6));
+        result.put(startKey, new Part(
+            startKey.getBytes(),
             new Location("localhost", 0),
-            Arrays.asList(new Location("localhost", 0))
+            Arrays.asList(new Location("localhost", 0)),
+            startKey.getBytes(),
+            endKey.getBytes()
         ));
-        result.put(new ComparableByteArray(PrimitiveCodec.encodeVarInt(6)), new Part(
-            ByteArrayUtils.EMPTY_BYTES,
+        startKey = endKey;
+        endKey = null;
+        result.put(startKey, new Part(
+            startKey.getBytes(),
             new Location("localhost", 0),
-            Arrays.asList(new Location("localhost", 0))
+            Arrays.asList(new Location("localhost", 0)),
+            startKey.getBytes(),
+            null
         ));
         return result;
     }

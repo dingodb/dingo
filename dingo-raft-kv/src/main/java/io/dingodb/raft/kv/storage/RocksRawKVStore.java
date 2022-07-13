@@ -16,7 +16,9 @@
 
 package io.dingodb.raft.kv.storage;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.StackTraces;
 import io.dingodb.common.util.Utils;
 import io.dingodb.raft.kv.Constants;
 import io.dingodb.raft.util.BytesUtil;
@@ -50,9 +52,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.codec.PrimitiveCodec.readZigZagInt;
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.raft.storage.impl.RocksDBLogStore.createColumnFamilyOptions;
 
@@ -108,7 +112,8 @@ public class RocksRawKVStore implements RawKVStore {
         try (ReadOptions readOptions = new ReadOptions()) {
             try (Snapshot snapshot = this.db.getSnapshot()) {
                 readOptions.setSnapshot(snapshot);
-                return new ByteArrayEntryIterator(db.newIterator(readOptions), null, null);
+                return new ByteArrayEntryIterator(
+                    db.newIterator(readOptions), null, null, true, true);
             }
         }
     }
@@ -147,10 +152,17 @@ public class RocksRawKVStore implements RawKVStore {
 
     @Override
     public SeekableIterator<byte[], ByteArrayEntry> scan(byte[] startKey, byte[] endKey) {
+        return scan(startKey, endKey, true, false);
+    }
+
+    public SeekableIterator<byte[], ByteArrayEntry> scan(
+        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
         try (ReadOptions readOptions = new ReadOptions()) {
             try (Snapshot snapshot = this.db.getSnapshot()) {
                 readOptions.setSnapshot(snapshot);
-                return new ByteArrayEntryIterator(db.newIterator(readOptions), startKey, endKey);
+                return new ByteArrayEntryIterator(
+                    db.newIterator(readOptions), startKey, endKey, includeStart, includeEnd);
             }
         }
     }
@@ -388,6 +400,8 @@ public class RocksRawKVStore implements RawKVStore {
 
         private final byte[] startKey;
         private final byte[] endKey;
+        private final Predicate<byte[]> compareWithStart;
+        private final Predicate<byte[]> compareWithEnd;
         private final RocksIterator iterator;
         private final int buffSize;
         private Iterator<ByteArrayEntry> buffer;
@@ -395,11 +409,25 @@ public class RocksRawKVStore implements RawKVStore {
         private boolean hasMore = true;
         private ByteArrayEntry currentEntry;
 
-        public ByteArrayEntryIterator(RocksIterator iterator, byte[] startKey, byte[] endKey) {
+        public ByteArrayEntryIterator(
+            RocksIterator iterator, byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+        ) {
             this.iterator = iterator;
             this.startKey = startKey;
             this.endKey = endKey;
             this.buffSize = 100;
+
+            if (includeStart) {
+                compareWithStart = start -> startKey == null || ByteArrayUtils.greatThanOrEqual(start, startKey);
+            } else {
+                compareWithStart = start -> startKey == null || ByteArrayUtils.greatThan(start, startKey);
+            }
+
+            if (includeEnd) {
+                compareWithEnd = end -> endKey == null || ByteArrayUtils.lessThanOrEqual(end, endKey);
+            } else {
+                compareWithEnd = end -> endKey == null || ByteArrayUtils.lessThan(end, endKey);
+            }
             seekToFirst();
         }
 
@@ -408,8 +436,9 @@ public class RocksRawKVStore implements RawKVStore {
                 return;
             }
             ArrayList<ByteArrayEntry> list = new ArrayList<>();
+            byte[] key = ByteArrayUtils.EMPTY_BYTES;
             for (int i = 0; i < buffSize; i++, iterator.next()) {
-                if (!iterator.isValid() || (endKey != null && ByteArrayUtils.compare(iterator.key(), endKey) >= 0)) {
+                if (!iterator.isValid() || !compareWithEnd.test(key = iterator.key())) {
                     hasMore = false;
                     break;
                 }
@@ -425,17 +454,19 @@ public class RocksRawKVStore implements RawKVStore {
 
         @Override
         public void seek(byte[] position) {
-            if (startKey != null && ByteArrayUtils.compare(position, startKey) < 0) {
+            if ((startKey == null || ByteArrayUtils.greatThanOrEqual(position, startKey))
+                && (endKey == null || ByteArrayUtils.lessThanOrEqual(position, endKey))) {
+                iterator.seek(position);
+                if (iterator.isValid() && !compareWithStart.test(position)) {
+                    iterator.next();
+                }
+                if (iterator.isValid() && !compareWithEnd.test(position)) {
+                    iterator.prev();
+                }
+                load();
+            } else {
                 throw new IllegalArgumentException("Position out of range.");
             }
-            if (endKey != null && ByteArrayUtils.compare(position, endKey) > 0) {
-                throw new IllegalArgumentException("Position out of range.");
-            }
-            if (iterator == null || position == null) {
-                throw new RuntimeException("Iterator is empty or position is null.");
-            }
-            iterator.seek(position);
-            load();
         }
 
         @Override
@@ -446,7 +477,7 @@ public class RocksRawKVStore implements RawKVStore {
             if (startKey == null) {
                 iterator.seekToFirst();
             } else {
-                iterator.seek(startKey);
+                seek(startKey);
             }
             load();
         }

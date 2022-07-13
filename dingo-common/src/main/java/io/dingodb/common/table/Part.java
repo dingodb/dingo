@@ -27,6 +27,9 @@ public interface Part {
     @Nonnull
     Iterator<Object[]> getIterator();
 
+    @Nonnull
+    Iterator<Object[]> getIteratorByRange(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd);
+
     boolean insert(@Nonnull Object[] tuple);
 
     void upsert(@Nonnull Object[] tuple);

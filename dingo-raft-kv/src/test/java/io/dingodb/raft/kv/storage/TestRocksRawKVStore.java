@@ -69,6 +69,23 @@ public class TestRocksRawKVStore {
     }
 
     @Test
+    public void testRangeScan1() {
+        SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(new byte[] {2}, new byte[] {4}, false, true);
+        assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {3}, new byte[] {3}));
+        assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {4}, new byte[] {4}));
+        assertThat(iterator.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testRangeScan2() {
+        SeekableIterator<byte[], ByteArrayEntry> iterator = store.scan(new byte[] {2}, new byte[] {4}, true, true);
+        assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {2}, new byte[] {2}));
+        assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {3}, new byte[] {3}));
+        assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {4}, new byte[] {4}));
+        assertThat(iterator.hasNext()).isFalse();
+    }
+
+    @Test
     public void testDeleteRange() {
         store.delete(new byte[] {2}, new byte[] {4});
         assertThat(store.containsKey(new byte[] {1})).isTrue();

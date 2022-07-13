@@ -163,6 +163,12 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Iterator<KeyValue> keyValueScan(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
     default Iterator<byte[]> columnScan(int columnIndex) {
         throw new UnsupportedOperationException();
     }

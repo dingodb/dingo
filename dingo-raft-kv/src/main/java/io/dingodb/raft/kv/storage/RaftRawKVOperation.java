@@ -204,6 +204,18 @@ public class RaftRawKVOperation {
             .build();
     }
 
+    public static RaftRawKVOperation scan(
+        final byte[] startKey, final byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
+        return RaftRawKVOperation.builder()
+            .key(startKey)
+            .extKey(endKey)
+            .ext1(includeStart)
+            .ext2(includeEnd)
+            .op(SCAN)
+            .build();
+    }
+
     public static RaftRawKVOperation iterator() {
         return RaftRawKVOperation.builder().op(SCAN).build();
     }

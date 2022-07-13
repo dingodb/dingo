@@ -44,6 +44,14 @@ public class Part implements Serializable {
     @JsonProperty("locations")
     private List<Location> replicates;
 
+    @JsonProperty("startKey")
+    private byte[] startKey;
+
+    @JsonProperty("endKey")
+    private byte[] endKey;
+
+
+
     @JsonCreator
     public Part(
         @JsonProperty("leader") byte[] id,
@@ -53,6 +61,21 @@ public class Part implements Serializable {
         this.id = id;
         this.leader = leader;
         this.replicates = replicates;
+    }
+
+    @JsonCreator
+    public Part(
+        @JsonProperty("leader") byte[] id,
+        @JsonProperty("leader") Location leader,
+        @JsonProperty("locations") List<Location> replicates,
+        @JsonProperty("startKey") byte[] startKey,
+        @JsonProperty("endKey") byte[] endKey
+    ) {
+        this.id = id;
+        this.leader = leader;
+        this.replicates = replicates;
+        this.startKey = startKey;
+        this.endKey = endKey;
     }
 
 }
