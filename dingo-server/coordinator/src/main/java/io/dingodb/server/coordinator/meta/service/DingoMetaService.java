@@ -143,7 +143,9 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
                     new Part(
                         part.getId().encode(),
                         executorAdaptor.getLocation(stats.getLeader()),
-                        replicaAdaptor.getLocationsByDomain(part.getId().seqContent()))
+                        replicaAdaptor.getLocationsByDomain(part.getId().seqContent()),
+                        part.getStart(),
+                        part.getEnd())
                 );
             });
         });

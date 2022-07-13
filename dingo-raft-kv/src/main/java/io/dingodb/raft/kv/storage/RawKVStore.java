@@ -38,6 +38,9 @@ public interface RawKVStore {
 
     SeekableIterator<byte[], ByteArrayEntry> scan(byte[] startKey, byte[] endKey);
 
+    SeekableIterator<byte[], ByteArrayEntry> scan(byte[] startKey, byte[] endKey, boolean includeStart,
+                                                  boolean includeEnd);
+
     void put(byte[] key, byte[] value);
 
     void put(List<ByteArrayEntry> entries);

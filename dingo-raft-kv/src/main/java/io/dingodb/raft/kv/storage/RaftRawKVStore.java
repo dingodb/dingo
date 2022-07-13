@@ -19,6 +19,7 @@ package io.dingodb.raft.kv.storage;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.util.Files;
+import io.dingodb.common.util.PreParameters;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
@@ -37,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 
+import static io.dingodb.common.util.PreParameters.cleanNull;
 import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
 
 @Slf4j
@@ -133,6 +135,12 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         return this.kvStore.scan(startKey, endKey);
     }
 
+    protected SeekableIterator<byte[], ByteArrayEntry> localScan(
+        final byte[] startKey, final byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
+        return this.kvStore.scan(startKey, endKey, includeStart, includeEnd);
+    }
+
     protected long localCount(final byte[] startKey, final byte[] endKey) {
         return this.kvStore.count(startKey, endKey);
     }
@@ -203,6 +211,12 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         return read(RaftRawKVOperation.scan(startKey, endKey));
     }
 
+    public CompletableFuture<SeekableIterator<byte[], ByteArrayEntry>> scan(
+        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
+        return read(RaftRawKVOperation.scan(startKey, endKey, includeStart, includeEnd));
+    }
+
     public CompletableFuture<Boolean> put(byte[] key, byte[] value) {
         return write(RaftRawKVOperation.put(key, value));
     }
@@ -246,7 +260,12 @@ public class RaftRawKVStore implements Lifecycle<Void> {
             case ITERATOR:
                 return localIterator();
             case SCAN:
-                return localScan(operation.getKey(), operation.getExtKey());
+                return localScan(
+                    operation.getKey(),
+                    operation.getExtKey(),
+                    cleanNull(operation.ext1(), true),
+                    cleanNull(operation.ext2(), false)
+                );
             case COUNT:
                 return localCount(operation.getKey(), operation.getExtKey());
             case CONTAINS_KEY:

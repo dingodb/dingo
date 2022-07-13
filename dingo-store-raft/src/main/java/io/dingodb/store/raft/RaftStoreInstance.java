@@ -51,8 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
-import static io.dingodb.common.util.ByteArrayUtils.compare;
+import static io.dingodb.common.util.ByteArrayUtils.*;
 
 @Slf4j
 public class RaftStoreInstance implements StoreInstance {
@@ -474,6 +473,23 @@ public class RaftStoreInstance implements StoreInstance {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
         return parts.get(part.getId()).keyValueScan(startPrimaryKey, endPrimaryKey);
+    }
+
+    @Override
+    public Iterator<KeyValue> keyValueScan(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        Part part = getPart(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPart(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+
+        return parts.get(part.getId()).keyValueScan(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
     class FullScanRawIterator extends KeyValueIterator {

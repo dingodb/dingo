@@ -105,6 +105,24 @@ public class MemoryRawKVStore implements RawKVStore {
         return new ByteArrayEntryIterator(defaultDB.subMap(startKey, true, endKey, false));
     }
 
+    public SeekableIterator<byte[], ByteArrayEntry> scan(
+        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+    ) {
+        if (defaultDB.isEmpty()) {
+            return ByteArrayEntryIterator.EMPTY;
+        }
+        if (startKey == null && endKey == null) {
+            return iterator();
+        }
+        if (startKey == null) {
+            return new ByteArrayEntryIterator(defaultDB.headMap(endKey, includeEnd));
+        }
+        if (endKey == null) {
+            return new ByteArrayEntryIterator(defaultDB.tailMap(startKey, includeStart));
+        }
+        return new ByteArrayEntryIterator(defaultDB.subMap(startKey, includeStart, endKey, includeEnd));
+    }
+
     @Override
     public void put(byte[] key, byte[] value) {
         defaultDB.put(key, new ByteArrayEntry(key, value));
