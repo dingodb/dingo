@@ -91,6 +91,9 @@ public class DingoClient {
 
     public void closeConnection() {
         // todo Huzx
+        if (storeOpUtils != null) {
+            storeOpUtils.clearTableDefinitionInCache();
+        }
         isConnectionInit = false;
     }
 
@@ -135,8 +138,7 @@ public class DingoClient {
         }
         boolean isSuccess = false;
         try {
-            connection.getMetaClient().dropTable(tableName);
-            isSuccess = true;
+            isSuccess = connection.getMetaClient().dropTable(tableName);
             storeOpUtils.removeCacheOfTableDefinition(tableName);
         } catch (Exception e) {
             isSuccess = false;
@@ -176,10 +178,6 @@ public class DingoClient {
         return false;
     }
 
-    public boolean delete(List<Key> keyList) throws Exception {
-        return false;
-    }
-
     private boolean interalPutRecord(Key key, Record record) {
         storeOpUtils.executeRemoteOperation(StoreOperationType.PUT, key.getTable(), key, record);
         return false;
@@ -190,7 +188,6 @@ public class DingoClient {
     }
 
     public Record updateCol(Key key, Column... column) {
-
         return null;
     }
 }

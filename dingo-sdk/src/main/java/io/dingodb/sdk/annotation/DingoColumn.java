@@ -32,5 +32,11 @@ public @interface DingoColumn {
      */
     String name() default "";
 
+    String precision() default "";
+
+    String scale() default "";
+
+    String defaultValue() default "";
+
     boolean useAccessors() default false;
 }

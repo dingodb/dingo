@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.example.model;
+package io.dingodb.sdk.model.basic;
 
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
@@ -29,8 +29,7 @@ import java.util.Date;
 @Getter
 @Setter
 @DingoRecord(database = "test", table = "people")
-public class Person {
-    @DingoKey
+public class PersonWithOutKey {
     private String ssn;
 
     @DingoColumn(name  =  "frstNme")

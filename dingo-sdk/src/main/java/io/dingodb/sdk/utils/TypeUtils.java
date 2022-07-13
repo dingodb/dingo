@@ -37,12 +37,16 @@ import io.dingodb.sdk.mappers.ListMapper;
 import io.dingodb.sdk.mappers.MapMapper;
 import io.dingodb.sdk.mappers.ObjectEmbedMapper;
 import io.dingodb.sdk.mappers.ShortMapper;
+import io.dingodb.sdk.mappers.TimeMapper;
+import io.dingodb.sdk.mappers.TimestampMapper;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -147,8 +151,15 @@ public class TypeUtils {
         boolean addToMap = true;
         if (typeMapper == null) {
             if (Date.class.isAssignableFrom(clazz)) {
-                typeMapper = new DateMapper();
+                if (Time.class.isAssignableFrom(clazz)) {
+                    typeMapper = new TimeMapper();
+                } else if (Timestamp.class.isAssignableFrom(clazz)) {
+                    typeMapper = new TimestampMapper();
+                } else {
+                    typeMapper = new DateMapper();
+                }
             }
+
             if (Instant.class.isAssignableFrom(clazz)) {
                 typeMapper = new InstantMapper();
             } else if (Byte.class.isAssignableFrom(clazz) || Byte.TYPE.isAssignableFrom(clazz)) {
@@ -355,6 +366,50 @@ public class TypeUtils {
 
     public static void clear() {
         mappers.clear();
+    }
+
+    public static String getSqlType(final String inputJavaType) {
+        switch (inputJavaType.toLowerCase()) {
+            case "boolean":
+            case "bool": {
+                return "BOOLEAN";
+            }
+            case "int":
+            case "integer": {
+                return "INTEGER";
+            }
+
+            case "long": {
+                return "BIGINT";
+            }
+
+            case "double": {
+                return "DOUBLE";
+            }
+
+            case "float": {
+                return "FLOAT";
+            }
+
+            case "date": {
+                return "DATE";
+            }
+
+            case "time": {
+                return "TIME";
+            }
+
+            case "timestamp": {
+                return "TIMESTAMP";
+            }
+
+            case "string": {
+                return "VARCHAR";
+            }
+            default: {
+                return "VARCHAR";
+            }
+        }
     }
 
     /*
