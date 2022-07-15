@@ -48,7 +48,7 @@ public class Starter {
         ClientConfiguration.instance()
             .setCoordinatorExchangeSvrList(ExecutorConfiguration.coordinatorExchangeSvrList());
 
-        HTTPServer httpServer = new HTTPServer(ExecutorConfiguration.monitorPort());
+        HTTPServer httpServer = new HTTPServer(Integer.parseInt(ExecutorConfiguration.monitorPort().toString()));
         ExecutorServer server = new ExecutorServer();
         server.start();
     }
