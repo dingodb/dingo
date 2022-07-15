@@ -46,10 +46,6 @@ public class MetaCache {
 
     private static MetaService metaService;
 
-    private Map<String, CommonId> tableIdMap;
-
-    private Map<String, NavigableMap<ByteArrayUtils.ComparableByteArray, Part>> tablePartMap;
-
     static {
         for (MetaService ms : Services.metaServices.values()) {
             log.info("MetaCache, static, metaservice name: {}.",
@@ -65,9 +61,36 @@ public class MetaCache {
         tableDefinitionsMap = definitions;
     }
 
+    private final Map<String, CommonId> tableIdMap;
+    private final Map<String, NavigableMap<ByteArrayUtils.ComparableByteArray, Part>> tablePartMap;
+
     public MetaCache() {
         tableIdMap = new HashMap<>();
         tablePartMap = new HashMap<>();
+    }
+
+    public static void initTableDefinitions() {
+        Map<String, TableDefinition> tdMap = metaService.getTableDefinitions();
+        writeLock.lock();
+        try {
+            tableDefinitionsMap = tdMap;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    public static Map<String, TableDefinition> getTableDefinitionsMap() {
+        readLock.lock();
+        try {
+            return tableDefinitionsMap;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public static String getTableName(@Nonnull RelOptTable table) {
+        List<String> fullName = table.getQualifiedName();
+        return fullName.stream().skip(2).collect(Collectors.joining("."));
     }
 
     public TableDefinition getTableDefinition(final String tableName) {
@@ -97,29 +120,5 @@ public class MetaCache {
         CommonId cId = metaService.getTableId(tableName);
         this.tableIdMap.put(tableName, cId);
         return cId;
-    }
-
-    public static void initTableDefinitions() {
-        Map<String, TableDefinition> tdMap = metaService.getTableDefinitions();
-        writeLock.lock();
-        try {
-            tableDefinitionsMap = tdMap;
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    public static Map<String, TableDefinition> getTableDefinitionsMap() {
-        readLock.lock();
-        try {
-            return tableDefinitionsMap;
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    public static String getTableName(@Nonnull RelOptTable table) {
-        List<String> fullName = table.getQualifiedName();
-        return fullName.stream().skip(2).collect(Collectors.joining("."));
     }
 }

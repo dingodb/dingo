@@ -43,23 +43,6 @@ public class DingoStringMidOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String inputStr = ((String)values[0]);
-
-        BigDecimal decimal = new BigDecimal(values[1].toString());
-        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
-
-        if (values.length == 2) {
-            return midString(inputStr, startIndex);
-        }
-
-        decimal = new BigDecimal(values[2].toString());
-        Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
-        return midString(inputStr, startIndex, cnt);
-    }
-
     public static String midString(final String inputStr, int startIndex) {
         if (inputStr == null || inputStr.length() == 0) {
             return "";
@@ -93,6 +76,23 @@ public class DingoStringMidOp extends RtStringConversionOp {
         return inputStr.substring(startIndex - 1, endIndex);
     }
 
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        String inputStr = ((String) values[0]);
+
+        BigDecimal decimal = new BigDecimal(values[1].toString());
+        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+
+        if (values.length == 2) {
+            return midString(inputStr, startIndex);
+        }
+
+        decimal = new BigDecimal(values[2].toString());
+        Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        return midString(inputStr, startIndex, cnt);
+    }
+
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
 
@@ -113,7 +113,7 @@ public class DingoStringMidOp extends RtStringConversionOp {
                 methods.add(DingoStringMidOp.class.getMethod("midString", String.class, int.class, int.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

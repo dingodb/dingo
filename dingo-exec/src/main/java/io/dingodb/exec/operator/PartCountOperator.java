@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.Part;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.PartInKvStore;
@@ -45,7 +45,7 @@ public final class PartCountOperator extends SourceOperator {
     @JsonProperty("startKeyList")
     private final List<String> startKeyLists;
     @JsonProperty("schema")
-    private final TupleSchema schema;
+    private final DingoType schema;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
 
@@ -55,7 +55,7 @@ public final class PartCountOperator extends SourceOperator {
     public PartCountOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("startKeyList") List<String> partStartKey,
-        @JsonProperty("schema") TupleSchema schema,
+        @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         this.tableId = tableId;

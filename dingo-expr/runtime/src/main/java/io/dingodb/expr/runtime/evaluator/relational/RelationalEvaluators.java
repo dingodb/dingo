@@ -17,7 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.relational;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.BooleanEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
@@ -28,7 +28,7 @@ import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = BooleanEvaluator.class,
+    evaluatorBase = Evaluator.class,
     evaluatorFactory = EvaluatorFactory.class,
     universalEvaluator = UniversalEvaluator.class,
     induceSequence = {BigDecimal.class, Double.class, Long.class, Integer.class}

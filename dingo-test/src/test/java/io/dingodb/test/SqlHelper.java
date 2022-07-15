@@ -16,15 +16,16 @@
 
 package io.dingodb.test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import io.dingodb.calcite.Connections;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.CsvUtils;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.exec.Services;
-import io.dingodb.meta.test.MetaTestService;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,11 +55,14 @@ public class SqlHelper {
     public SqlHelper() throws Exception {
         if (DingoConfiguration.instance() == null) {
             System.out.println(StackTraces.lineNumber());
-            DingoConfiguration.parse(SqlHelper.class.getResource("/config.yaml").getPath());
+            DingoConfiguration.parse(
+                Objects.requireNonNull(SqlHelper.class.getResource("/config.yaml")).getPath()
+            );
             System.out.println(StackTraces.lineNumber());
         }
         Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
+        Services.NET.listenPort(FakeLocation.PORT);
         connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
     }
 
@@ -73,6 +77,21 @@ public class SqlHelper {
 
     public DatabaseMetaData metaData() throws SQLException {
         return connection.getMetaData();
+    }
+
+    public Object querySimpleValue(String sql) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                int count = 0;
+                Object value = null;
+                while (resultSet.next()) {
+                    ++count;
+                    value = resultSet.getObject(1);
+                }
+                assertThat(count).isEqualTo(1);
+                return value;
+            }
+        }
     }
 
     public void queryTest(
@@ -92,66 +111,70 @@ public class SqlHelper {
     public void queryTest(
         String sql,
         String[] columns,
-        TupleSchema schema,
+        DingoType schema,
         String data
-    ) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet)
-                    .columnLabels(columns)
-                    .isRecords(schema, data);
-            }
-        }
+    ) throws SQLException, JsonProcessingException {
+        queryTest(sql, columns, CsvUtils.readCsv(schema, data));
     }
 
     public void queryTest(String sql, InputStream resultFile) throws IOException, SQLException {
         Iterator<String[]> it = CsvUtils.readCsv(resultFile);
-        String[] columnNames = null;
-        if (it.hasNext()) {
-            columnNames = it.next();
-        }
-        TupleSchema schema = null;
-        if (it.hasNext()) {
-            schema = TupleSchema.ofTypes(it.next());
-        }
+        final String[] columnNames = it.hasNext() ? it.next() : null;
+        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
         if (columnNames == null || schema == null) {
-            throw new IllegalArgumentException("Result file must be csv, "
-                + "and its first two rows are column names and schema definitions.");
+            throw new IllegalArgumentException(
+                "Result file must be csv and its first two rows are column names and schema definitions."
+            );
         }
-        List<Object[]> tuples = ImmutableList.copyOf(Iterators.transform(it, schema::parse));
+        List<Object[]> tuples = ImmutableList.copyOf(Iterators.transform(it, i -> (Object[]) schema.parse(i)));
         queryTest(sql, columnNames, tuples);
     }
 
-    public void queryTestOrder(
+    public void queryTestInOrder(
         String sql,
         String[] columns,
-        TupleSchema schema,
-        String data
-    ) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet)
-                    .columnLabels(columns)
-                    .isRecordsInOrder(schema, data);
-            }
-        }
-    }
-
-
-    // compare time in hours
-    public void queryTestWithTime(
-        String sql,
-        String[] columns,
-        TupleSchema schema,
         List<Object[]> data
     ) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
                 AssertResultSet.of(resultSet)
                     .columnLabels(columns)
-                    .isRecordsWithTime(data);
+                    .isRecordsInOrder(data);
             }
         }
+    }
+
+    public void queryTestInOrder(
+        String sql,
+        String[] columns,
+        DingoType schema,
+        String data
+    ) throws SQLException, JsonProcessingException {
+        queryTestInOrder(sql, columns, CsvUtils.readCsv(schema, data));
+    }
+
+    // compare time in hours
+    public void queryTestInOrderWithApproxTime(
+        String sql,
+        String[] columns,
+        List<Object[]> data
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                AssertResultSet.of(resultSet)
+                    .columnLabels(columns)
+                    .isRecordsInOrderWithApproxTime(data);
+            }
+        }
+    }
+
+    public void queryTestInOrderWithApproxTime(
+        String sql,
+        String[] columns,
+        DingoType schema,
+        String data
+    ) throws SQLException, JsonProcessingException {
+        queryTestInOrderWithApproxTime(sql, columns, CsvUtils.readCsv(schema, data));
     }
 
     public void explainTest(String sql, String... data) throws SQLException {
@@ -190,7 +213,7 @@ public class SqlHelper {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public int execSqlCmd(@Nonnull String sqlCmd) throws IOException, SQLException {
+    public int execSqlCmd(@Nonnull String sqlCmd) throws SQLException {
         int result = -1;
         try (Statement statement = connection.createStatement()) {
             if (!sqlCmd.trim().isEmpty()) {
@@ -206,7 +229,13 @@ public class SqlHelper {
         }
     }
 
-    public void doTest(
+    public void dropTable(String tableName) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("drop table " + tableName);
+        }
+    }
+
+    public void doQueryTest(
         @Nonnull Class<?> testClass,
         String sqlFileName,
         String resultFileName
@@ -218,7 +247,7 @@ public class SqlHelper {
         queryTest(sql, testClass.getResourceAsStream(resultFileName + ".csv"));
     }
 
-    public void doTest(Class<?> testClass, String fileName) throws SQLException, IOException {
-        doTest(testClass, fileName, fileName);
+    public void doQueryTest(Class<?> testClass, String fileName) throws SQLException, IOException {
+        doQueryTest(testClass, fileName, fileName);
     }
 }

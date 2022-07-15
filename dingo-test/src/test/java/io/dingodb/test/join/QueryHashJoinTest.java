@@ -55,41 +55,41 @@ public class QueryHashJoinTest {
 
     @Test
     public void testSongsArtistsInner() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-inner-join");
     }
 
     @Test
     public void testSongsArtistsInnerFilter() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join-filter");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-inner-join-filter");
     }
 
     @Test
     public void testSongsArtistsLeft() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-left-join");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-left-join");
     }
 
     @Test
     public void testSongsArtistsLeftFilter() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-left-join-filter", "songs-artists-inner-join");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-left-join-filter", "songs-artists-inner-join");
     }
 
     @Test
     public void testSongsArtistsRight() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-right-join");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-right-join");
     }
 
     @Test
     public void testSongsArtistsFull() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-full-join");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-full-join");
     }
 
     @Test
     public void testSongsArtistsCartesian() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-join-cartesian");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-join-cartesian");
     }
 
     @Test
     public void testSongsArtistsInnerNonEq() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "songs-artists-inner-join-non-eq");
+        sqlHelper.doQueryTest(this.getClass(), "songs-artists-inner-join-non-eq");
     }
 }

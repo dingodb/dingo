@@ -42,6 +42,10 @@ public class DingoCharLengthOp extends RtStringConversionOp {
         super(paras);
     }
 
+    public static int charLength(String str) {
+        return str.length();
+    }
+
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
@@ -49,10 +53,6 @@ public class DingoCharLengthOp extends RtStringConversionOp {
             return 0;
         }
         return charLength((String) values[0]);
-    }
-
-    public static int charLength(String str) {
-        return str.length();
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -74,7 +74,7 @@ public class DingoCharLengthOp extends RtStringConversionOp {
                 methods.add(DingoCharLengthOp.class.getMethod("charLength", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

@@ -17,9 +17,11 @@
 package io.dingodb.calcite.rule;
 
 import com.google.common.collect.Range;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -38,17 +40,19 @@ import javax.annotation.Nullable;
 
 class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
     private final TupleMapping keyMapping;
-    private final TupleSchema keySchema;
+    private final DingoType keySchema;
     // reverse indices mapping from column index to key index.
     private final TupleMapping revKeyMapping;
+    private final RexBuilder rexBuilder;
     private boolean operandHasNonPrimaryKey = false;
 
-    public KeyTuplesRexVisitor(@Nonnull TableDefinition tableDefinition) {
+    public KeyTuplesRexVisitor(@Nonnull TableDefinition tableDefinition, RexBuilder rexBuilder) {
         super(true);
         keyMapping = tableDefinition.getKeyMapping();
-        keySchema = tableDefinition.getTupleSchema(true);
+        keySchema = tableDefinition.getDingoType(true);
         int columnsCount = tableDefinition.getColumnsCount();
         revKeyMapping = keyMapping.reverse(columnsCount);
+        this.rexBuilder = rexBuilder;
     }
 
     // `null` means conflict.
@@ -106,6 +110,11 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
         tuples.add(tuple);
     }
 
+    @Override
+    public Set<Object[]> visitInputRef(@Nonnull RexInputRef inputRef) {
+        return getOneWithEntry(inputRef.getIndex(), rexBuilder.makeLiteral(true));
+    }
+
     // `null` means the RexNode is not related to primary column
     @Override
     public Set<Object[]> visitCall(@Nonnull RexCall call) {
@@ -122,7 +131,10 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
                         tuples = new HashSet<>();
                         for (Range<?> range : value.rangeSet.asRanges()) {
                             Object s = range.lowerEndpoint();
-                            add(tuples, makeTuple(inputRef.getIndex(), s));
+                            add(tuples, makeTuple(
+                                inputRef.getIndex(),
+                                rexBuilder.makeLiteral(s, inputRef.getType())
+                            ));
                         }
                         return tuples;
                     }
@@ -154,17 +166,12 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
             case NOT:
                 if (operands.get(0).isA(SqlKind.INPUT_REF)) {
                     RexInputRef inputRef = (RexInputRef) operands.get(0);
-                    return getOneWithEntry(inputRef.getIndex(), false);
+                    return getOneWithEntry(inputRef.getIndex(), rexBuilder.makeLiteral(false));
                 }
                 return null;
             default:
-                return super.visitCall(call);
+                return null;
         }
-    }
-
-    @Override
-    public Set<Object[]> visitInputRef(@Nonnull RexInputRef inputRef) {
-        return getOneWithEntry(inputRef.getIndex(), true);
     }
 
     @Nullable
@@ -172,18 +179,18 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
         if (op0.isA(SqlKind.INPUT_REF) && op1.isA(SqlKind.LITERAL)) {
             RexInputRef inputRef = (RexInputRef) op0;
             RexLiteral literal = (RexLiteral) op1;
-            return getOneWithEntry(inputRef.getIndex(), literal.getValue());
+            return getOneWithEntry(inputRef.getIndex(), literal);
         }
         return null;
     }
 
     @Nonnull
-    private Object[] makeTuple(int index, Object value) {
+    private Object[] makeTuple(int index, RexLiteral rexLiteral) {
         Object[] tuple = new Object[keyMapping.size()];
         if (0 <= index && index < revKeyMapping.size()) {
             int i = revKeyMapping.get(index);
             if (i >= 0) {
-                tuple[i] = keySchema.get(i).convert(value);
+                tuple[i] = RexConverter.convertFromRexLiteral(rexLiteral);
             } else {
                 this.operandHasNonPrimaryKey = true;
             }
@@ -192,9 +199,9 @@ class KeyTuplesRexVisitor extends RexVisitorImpl<Set<Object[]>> {
     }
 
     @Nonnull
-    private Set<Object[]> getOneWithEntry(int index, Object value) {
+    private Set<Object[]> getOneWithEntry(int index, RexLiteral rexLiteral) {
         Set<Object[]> tuples = new HashSet<>();
-        tuples.add(makeTuple(index, value));
+        tuples.add(makeTuple(index, rexLiteral));
         return tuples;
     }
 

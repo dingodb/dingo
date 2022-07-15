@@ -242,7 +242,7 @@ public class DingoClient extends ClientBase {
             System.exit(1);
         }
         this.parts = metaClient.getParts(tableName);
-        this.codec = new KeyValueCodec(tableDefinition.getTupleSchema(), tableDefinition.getKeyMapping());
+        this.codec = new KeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
         this.ps = new RangeStrategy(tableDefinition, parts.navigableKeySet());
         this.partsApi = new TreeMap<ByteArrayUtils.ComparableByteArray, ExecutorApi>();
     }

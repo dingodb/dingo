@@ -51,6 +51,6 @@ public class QueryHashJoin2Test {
 
     @Test
     public void testEmployeesJobsInner() throws SQLException, IOException {
-        sqlHelper.doTest(this.getClass(), "mytest-self-join");
+        sqlHelper.doQueryTest(this.getClass(), "mytest-self-join");
     }
 }

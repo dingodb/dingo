@@ -43,13 +43,6 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String str = (String)values[0];
-        return trimRight(str);
-    }
-
     public static String trimRight(final String str) {
         if (str == null || str.equals("")) {
             return str;
@@ -63,6 +56,13 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
             }
             return str.substring(startIndex, endIndex + 1);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        String str = (String) values[0];
+        return trimRight(str);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -84,7 +84,7 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
                 methods.add(DingoStringRTrimOp.class.getMethod("trimRight", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

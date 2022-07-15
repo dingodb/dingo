@@ -57,14 +57,6 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         );
     }
 
-    @Override
-    public void register(RelOptPlanner planner) {
-        // this is crucial to import new rule.
-        for (RelOptRule rule : DingoRules.rules()) {
-            planner.addRule(rule);
-        }
-    }
-
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -79,6 +71,14 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             getSourceExpressionList(),
             isFlattened()
         );
+    }
+
+    @Override
+    public void register(RelOptPlanner planner) {
+        // this is crucial to import new rule.
+        for (RelOptRule rule : DingoRules.rules()) {
+            planner.addRule(rule);
+        }
     }
 
     @Override

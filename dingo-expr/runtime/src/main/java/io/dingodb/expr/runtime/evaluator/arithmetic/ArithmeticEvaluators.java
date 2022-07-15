@@ -17,19 +17,10 @@
 package io.dingodb.expr.runtime.evaluator.arithmetic;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.DateEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.DecimalEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.DoubleEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.IntegerEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.LongEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.StringEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.TimeEvaluator;
-import io.dingodb.expr.runtime.evaluator.base.TimestampEvaluator;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
-import io.dingodb.expr.runtime.evaluator.utils.Time2StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -55,43 +46,35 @@ final class ArithmeticEvaluators {
     // Unary operators
     //
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int pos(int value) {
         return value;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long pos(long value) {
         return value;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double pos(double value) {
         return value;
     }
 
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal pos(BigDecimal value) {
         return value;
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int neg(int value) {
         return -value;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long neg(long value) {
         return -value;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double neg(double value) {
         return -value;
     }
 
     @Nonnull
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal neg(@Nonnull BigDecimal value) {
         return value.negate();
     }
@@ -100,23 +83,19 @@ final class ArithmeticEvaluators {
     // Binary operators
     //
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int add(int value0, int value1) {
         return value0 + value1;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long add(long value0, long value1) {
         return value0 + value1;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double add(double value0, double value1) {
         return value0 + value1;
     }
 
     @Nonnull
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal add(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.add(value1);
     }
@@ -127,184 +106,139 @@ final class ArithmeticEvaluators {
         return s0 + s1;
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int sub(int value0, int value1) {
         return value0 - value1;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long sub(long value0, long value1) {
         return value0 - value1;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double sub(double value0, double value1) {
         return value0 - value1;
     }
 
     @Nonnull
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal sub(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.subtract(value1);
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int mul(int value0, int value1) {
         return value0 * value1;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long mul(long value0, long value1) {
         return value0 * value1;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double mul(double value0, double value1) {
         return value0 * value1;
     }
 
     @Nonnull
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal mul(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.multiply(value1);
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int div(int value0, int value1) {
         return value0 / value1;
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long div(long value0, long value1) {
         return value0 / value1;
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double div(double value0, double value1) {
         return value0 / value1;
     }
 
     @Nonnull
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal div(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.divide(value1, RoundingMode.HALF_EVEN);
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int abs(int num) {
         return Math.abs(num);
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long abs(long num) {
         return Math.abs(num);
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double abs(double num) {
         return Math.abs(num);
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int min(int value0, int value1) {
         return Math.min(value0, value1);
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long min(long value0, long value1) {
         return Math.min(value0, value1);
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double min(double value0, double value1) {
         return Math.min(value0, value1);
     }
 
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal min(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(StringEvaluator.class)
     static String min(@Nonnull String value0, String value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(DateEvaluator.class)
     static Date min(@Nonnull Date value0, Date value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
     @Nonnull
-    @Evaluators.Base(TimeEvaluator.class)
     static Time min(@Nonnull Time value0, @Nonnull Time value1) {
-        if (log.isDebugEnabled()) {
-            log.debug(
-                "min({}, {}):Time called.",
-                Time2StringUtils.toGmtString(value0),
-                Time2StringUtils.toGmtString(value1)
-            );
-        }
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(TimestampEvaluator.class)
     static Timestamp min(@Nonnull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) < 0 ? value0 : value1;
     }
 
-    @Evaluators.Base(IntegerEvaluator.class)
     static int max(int value0, int value1) {
         return Math.max(value0, value1);
     }
 
-    @Evaluators.Base(LongEvaluator.class)
     static long max(long value0, long value1) {
         return Math.max(value0, value1);
     }
 
-    @Evaluators.Base(DoubleEvaluator.class)
     static double max(double value0, double value1) {
         return Math.max(value0, value1);
     }
 
-    @Evaluators.Base(DecimalEvaluator.class)
     static BigDecimal max(@Nonnull BigDecimal value0, BigDecimal value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(StringEvaluator.class)
     static String max(@Nonnull String value0, String value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(DateEvaluator.class)
     static Date max(@Nonnull Date value0, Date value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
     @Nonnull
-    @Evaluators.Base(TimeEvaluator.class)
     static Time max(@Nonnull Time value0, @Nonnull Time value1) {
-        if (log.isDebugEnabled()) {
-            log.debug(
-                "max({}, {}):Time called.",
-                Time2StringUtils.toGmtString(value0),
-                Time2StringUtils.toGmtString(value1)
-            );
-        }
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Evaluators.Base(TimestampEvaluator.class)
     static Timestamp max(@Nonnull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }

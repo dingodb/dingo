@@ -17,7 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -34,8 +34,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
     @Getter

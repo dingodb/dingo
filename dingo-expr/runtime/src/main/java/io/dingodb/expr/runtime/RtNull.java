@@ -19,9 +19,8 @@ package io.dingodb.expr.runtime;
 import javax.annotation.Nullable;
 
 public final class RtNull implements RtExpr {
-    private static final long serialVersionUID = 1563157485672910844L;
-
     public static final RtNull INSTANCE = new RtNull();
+    private static final long serialVersionUID = 1563157485672910844L;
 
     private RtNull() {
     }

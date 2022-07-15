@@ -17,7 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
@@ -29,6 +29,7 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
@@ -41,6 +42,8 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
     @Getter
     private final Collection<Object[]> keyTuples;
     @Getter
+    private final RexNode filter;
+    @Getter
     private final TupleMapping selection;
 
     public DingoGetByKeys(
@@ -48,11 +51,13 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
         RelTraitSet traitSet,
         RelOptTable table,
         Collection<Object[]> keyTuples,
+        RexNode filter,
         @Nullable TupleMapping selection
     ) {
         super(cluster, traitSet);
         this.table = table;
         this.keyTuples = keyTuples;
+        this.filter = filter;
         this.selection = selection;
     }
 

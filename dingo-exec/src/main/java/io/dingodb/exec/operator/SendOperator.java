@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.codec.AvroTxRxCodec;
@@ -50,11 +50,10 @@ public final class SendOperator extends SinkOperator {
     @JsonProperty("receiveId")
     private final Id receiveId;
     @JsonProperty("schema")
-    private final TupleSchema schema;
-
+    private final DingoType schema;
+    private final ByteBuffer sendBuffer;
     private TxRxCodec codec;
     private SendEndpoint endpoint;
-    private ByteBuffer sendBuffer;
     private int tupleCount;
 
     @JsonCreator
@@ -62,7 +61,7 @@ public final class SendOperator extends SinkOperator {
         @JsonProperty("host") String host,
         @JsonProperty("port") int port,
         @JsonProperty("receiveId") Id receiveId,
-        @JsonProperty("schema") TupleSchema schema
+        @JsonProperty("schema") DingoType schema
     ) {
         super();
         this.host = host;
@@ -92,7 +91,7 @@ public final class SendOperator extends SinkOperator {
             byte[] array = PrimitiveCodec.encodeArray(encodeArr);
             if (log.isDebugEnabled()) {
                 log.debug("Will send tuple ({}) to ({}, {}, {}), arr len: {}, total len: {}, buff pos: {}, "
-                        + "hashcode: {}", schema.formatTuple(tuple), host, port, receiveId, encodeArr.length,
+                        + "hashcode: {}", schema.format(tuple), host, port, receiveId, encodeArr.length,
                     array.length, this.sendBuffer.position(), this.hashCode());
             }
 

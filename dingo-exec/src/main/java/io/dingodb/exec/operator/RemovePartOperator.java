@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.Part;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.PartInKvStore;
@@ -47,7 +47,7 @@ public final class RemovePartOperator extends SourceOperator {
     protected final List<String> startKeyLists;
 
     @JsonProperty("schema")
-    protected final TupleSchema schema;
+    protected final DingoType schema;
 
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
@@ -57,8 +57,8 @@ public final class RemovePartOperator extends SourceOperator {
     @JsonCreator
     public RemovePartOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("startKeyList")  List<String> partStartKey,
-        @JsonProperty("schema") TupleSchema schema,
+        @JsonProperty("startKeyList") List<String> partStartKey,
+        @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         this.tableId = tableId;
@@ -84,7 +84,7 @@ public final class RemovePartOperator extends SourceOperator {
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
         long count = part.getEntryCntAndDeleteByPart(startKeyLists);
-        output.push(new Object[] {count});
+        output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("delete table by partition, get count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);

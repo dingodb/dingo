@@ -18,9 +18,6 @@ package io.dingodb.ddl;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprParseException;
-import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -29,20 +26,17 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
@@ -71,23 +65,27 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         List<String> primaryKeyList
     ) {
         SqlDataTypeSpec typeSpec = scd.dataType;
-        SqlTypeNameSpec typeNameSpec = typeSpec.getTypeNameSpec();
-        if (!(typeNameSpec instanceof SqlBasicTypeNameSpec)) {
-            throw SqlUtil.newContextException(
-                typeNameSpec.getParserPos(),
-                RESOURCE.typeNotSupported(typeNameSpec.toString())
-            );
-        }
         RelDataType dataType = typeSpec.deriveType(validator, true);
         SqlTypeName typeName = dataType.getSqlTypeName();
         int precision = typeName.allowsPrec() ? dataType.getPrecision() : RelDataType.PRECISION_NOT_SPECIFIED;
+        if ((typeName == SqlTypeName.TIME || typeName == SqlTypeName.TIMESTAMP)) {
+            if (precision > 3) {
+                throw new RuntimeException("Precision " + precision + " is not support.");
+            }
+        }
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
-        String defaultValue = "";
+        String defaultValue = null;
         ColumnStrategy strategy = scd.strategy;
         if (strategy == ColumnStrategy.DEFAULT) {
             SqlNode expr = scd.expression;
             if (expr != null) {
-                defaultValue = expr.toString();
+                defaultValue = expr.toSqlString(c -> c.withDialect(AnsiSqlDialect.DEFAULT)
+                    .withAlwaysUseParentheses(false)
+                    .withSelectListItemsOnSeparateLines(false)
+                    .withUpdateSetListNewline(false)
+                    .withIndentation(0)
+                    .withQuoteAllIdentifiers(false)
+                ).getSql();
             }
         }
 
@@ -141,11 +139,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlCreateTable create, CalcitePrepare.Context context) {
+
         log.info("DDL execute: {}", create);
         final Pair<MutableSchema, String> schemaTableName
             = getSchemaAndTableName(create.name, context);
-        final String tableName = schemaTableName.right;
-        TableDefinition td = new TableDefinition(tableName);
         List<String> keyList = null;
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
@@ -164,9 +161,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
             }
         }
+        final String tableName = schemaTableName.right;
+        TableDefinition td = new TableDefinition(tableName);
         SqlValidator validator = new ContextSqlValidator(context, true);
         for (SqlNode sqlNode : create.columnList) {
             if (sqlNode.getKind() == SqlKind.COLUMN_DECL) {
+                // Check the precision of time and timestamp
                 SqlColumnDeclaration scd = (SqlColumnDeclaration) sqlNode;
                 ColumnDefinition cd = fromSqlColumnDeclaration(scd, validator, keyList);
                 td.addColumn(cd);

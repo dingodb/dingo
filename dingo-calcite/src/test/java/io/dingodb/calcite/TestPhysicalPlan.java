@@ -36,24 +36,20 @@ import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.List;
 
@@ -280,15 +276,16 @@ public class TestPhysicalPlan {
     public void testInsertValues1() throws SqlParseException {
         String sql = "insert into test values(1, 'Alice', 1.0), (2, 'Betty', 1.0 + 1.0)";
         RelNode relNode = parse(sql);
-        Values values = (Values) Assert.relNode(relNode)
+        DingoValues values = (DingoValues) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        List<? extends List<RexLiteral>> tuples = values.getTuples();
+        List<Object[]> tuples = values.getValues();
         assertThat(tuples).size().isEqualTo(2);
-        assertThat(DataUtils.fromRexLiteral(tuples.get(1).get(2))).isEqualTo(BigDecimal.valueOf(2));
+        assertThat(tuples).element(0).isEqualTo(new Object[]{1, "Alice", 1.0});
+        assertThat(tuples).element(1).isEqualTo(new Object[]{2, "Betty", 2.0});
     }
 
     @Test
@@ -552,34 +549,27 @@ public class TestPhysicalPlan {
     }
 
     @Test
-    @Disabled
     public void testInsertDateValues() throws Exception {
-        String sql = "insert into `table-with-date`"
-            + " values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";
+        String sql = "insert into `table-with-date` values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";
         RelNode relNode = parse(sql);
-        RelOptNode values = Assert.relNode(relNode)
+        DingoValues values = (DingoValues) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        Long offsetMilli = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000L;
-        assertThat(((DingoDistributedValues) values).getValues()).containsExactly(
-            new Object[]{1, "Peso", new Date(0L - offsetMilli + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE)},
-            new Object[]{2, "Alice", new Date(24L * 60 * 60 * 1000 - offsetMilli
-                + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE)}
+        assertThat(values.getValues()).containsExactly(
+            new Object[]{1, "Peso", new Date(0L)},
+            new Object[]{2, "Alice", new Date(24L * 60L * 60L * 1000L)}
         );
     }
 
     @Test
-    @Disabled
     public void testDateValues() throws Exception {
         String sql = "select cast(a as date) from (values('1970-1-1')) as t (a)";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(DingoValues.class);
-        Long offsetMilli = DingoDateTimeUtils.getLocalZoneOffset(0L).getTotalSeconds() * 1000L;
-        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{new Date(0L - offsetMilli
-            + DingoDateTimeUtils.MILLI_SECONDS_FOR_ADJUST_TIMEZONE)});
+        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{new Date(0L)});
     }
 
     @Test

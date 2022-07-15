@@ -19,6 +19,7 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -48,7 +49,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         final DingoTableScan rel = call.rel(0);
         RexNode rexNode = RexUtil.toDnf(rel.getCluster().getRexBuilder(), rel.getFilter());
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
-        KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td);
+        KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td, rel.getCluster().getRexBuilder());
         AvroCodec codec = new AvroCodec(td.getAvroSchemaOfKey());
         rexNode.accept(visitor);
 
@@ -70,7 +71,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                 if (opKind == SqlKind.LESS_THAN_OR_EQUAL || opKind == SqlKind.LESS_THAN) {
                     RexLiteral literal = (RexLiteral) rexCall.operands.get(1);
                     try {
-                        right = codec.encode(new Object[]{literal.getValue()});
+                        right = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(literal)});
                         if (opKind == SqlKind.LESS_THAN) {
                             includeEnd = false;
                         } else {
@@ -84,7 +85,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                 if (opKind == SqlKind.GREATER_THAN_OR_EQUAL || opKind == SqlKind.GREATER_THAN) {
                     RexLiteral literal = (RexLiteral) rexCall.operands.get(1);
                     try {
-                        left = codec.encode(new Object[]{literal.getValue()});
+                        left = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(literal)});
                         if (opKind == SqlKind.GREATER_THAN) {
                             includeStart = false;
                         } else {

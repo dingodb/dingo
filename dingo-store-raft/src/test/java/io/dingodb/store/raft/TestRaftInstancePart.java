@@ -30,6 +30,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -45,6 +46,7 @@ import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled
 public class TestRaftInstancePart {
 
     public static final Path TEST_PATH = Paths.get(TestRaftInstancePart.class.getName());

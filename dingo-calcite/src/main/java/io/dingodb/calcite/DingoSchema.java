@@ -31,11 +31,6 @@ public class DingoSchema extends MutableSchema {
     }
 
     @Override
-    protected Map<String, Schema> getSubSchemaMap() {
-        return super.getSubSchemaMap();
-    }
-
-    @Override
     protected Map<String, Table> getTableMap() {
         Map<String, TableDefinition> tds = MetaCache.getTableDefinitionsMap();
         if (tds == null) {
@@ -44,5 +39,10 @@ public class DingoSchema extends MutableSchema {
         Map<String, Table> tableMap = new LinkedHashMap<>();
         tds.forEach((name, td) -> tableMap.put(name, new DingoTable(td)));
         return tableMap;
+    }
+
+    @Override
+    protected Map<String, Schema> getSubSchemaMap() {
+        return super.getSubSchemaMap();
     }
 }

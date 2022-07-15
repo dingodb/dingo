@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.Part;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
@@ -37,7 +37,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonProperty("part")
     protected final Object partId;
     @JsonProperty("schema")
-    protected final TupleSchema schema;
+    protected final DingoType schema;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
@@ -47,7 +47,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     protected PartModifyOperator(
         CommonId tableId,
         Object partId,
-        TupleSchema schema,
+        DingoType schema,
         TupleMapping keyMapping
     ) {
         super();
@@ -71,7 +71,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        if (!(fin != null && fin instanceof FinWithException)) {
+        if (!(fin instanceof FinWithException)) {
             output.push(new Object[]{count});
         }
         output.fin(fin);

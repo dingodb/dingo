@@ -17,8 +17,10 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DataUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.Values;
@@ -69,11 +71,10 @@ public class DingoValues extends Values implements DingoRel {
     }
 
     public List<Object[]> getValues() {
+        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
         return tuples.stream()
-            .map(row -> row.stream()
-                .map(DataUtils::fromRexLiteral)
-                .toArray(Object[]::new)
-            ).collect(Collectors.toList());
+            .map(RexConverter::convertFromRexLiteralList)
+            .collect(Collectors.toList());
     }
 
     @Override

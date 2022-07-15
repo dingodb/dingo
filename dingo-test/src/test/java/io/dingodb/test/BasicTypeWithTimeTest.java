@@ -16,15 +16,14 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.common.util.StackTraces;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -35,7 +34,6 @@ import java.sql.Statement;
 
 
 @Slf4j
-@Disabled("Failed to convert string to time")
 public class BasicTypeWithTimeTest {
     private static final String TEST_ALL_DATA
         = "1, Alice, 00:00:01\n"
@@ -67,10 +65,10 @@ public class BasicTypeWithTimeTest {
     }
 
     @Test
-    public void testScan() throws SQLException {
+    public void testScan() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "TIME"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "TIME"),
             TEST_ALL_DATA
         );
     }

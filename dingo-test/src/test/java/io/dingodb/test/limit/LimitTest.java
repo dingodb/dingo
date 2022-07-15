@@ -17,7 +17,7 @@
 package io.dingodb.test.limit;
 
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -57,7 +57,7 @@ public class LimitTest {
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "age", "amount", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
             ""
         );
         sqlHelper.clearTable("strdemo");

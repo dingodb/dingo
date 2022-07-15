@@ -16,9 +16,10 @@
 
 package io.dingodb.test.type;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.Services;
-import io.dingodb.meta.test.MetaTestService;
+import io.dingodb.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,34 +47,34 @@ public class BooleanTest {
     }
 
     @Test
-    public void testFullScan() throws SQLException {
+    public void testFullScan() throws SQLException, JsonProcessingException {
         String sql = "select id, name, sex from Test4 where id = 1";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "sex"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "BOOLEAN"),
             "1, Jimmy, true"
         );
     }
 
     @Test
-    public void testFilter() throws SQLException {
+    public void testFilter() throws SQLException, JsonProcessingException {
         String sql = "SELECT * from Test4 where sex = true";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "sex"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "BOOLEAN"),
             "1, Jimmy, true"
         );
     }
 
     @Test
-    public void testNot() throws SQLException {
+    public void testNot() throws SQLException, JsonProcessingException {
         String sql = "SELECT * from Test4 where sex <> true";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "sex"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "BOOLEAN"),
             "2, Alex, false"
         );
     }

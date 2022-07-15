@@ -34,7 +34,7 @@ public class LocalServerConnection extends AbstractServerConnection {
 
     public LocalServerConnection() {
         super(LOCATION, LOCATION);
-        channel.close();
+        channel.shutdown();
     }
 
     @Override

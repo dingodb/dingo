@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DataUtils;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
@@ -111,11 +110,7 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         Expr expr = RexConverter.convert(in);
         try {
             Object value = expr.compileIn(null).eval(null);
-            if (value == null) {
-                return rexBuilder.makeNullLiteral(type);
-            } else {
-                return rexBuilder.makeLiteral(DataUtils.toCalcite(value, type.getSqlTypeName()), type);
-            }
+            return RexConverter.convertToRexLiteral(value, rexBuilder, type);
         } catch (FailGetEvaluator | DingoExprCompileException e) {
             throw new RuntimeException(e);
         }

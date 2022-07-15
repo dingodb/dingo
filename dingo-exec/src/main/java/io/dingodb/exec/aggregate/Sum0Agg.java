@@ -19,7 +19,7 @@ package io.dingodb.exec.aggregate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.table.ElementSchema;
+import io.dingodb.common.type.DingoType;
 
 import javax.annotation.Nonnull;
 
@@ -28,7 +28,7 @@ public class Sum0Agg extends SumAgg {
     @JsonCreator
     public Sum0Agg(
         @JsonProperty("index") int index,
-        @Nonnull @JsonProperty("type") ElementSchema type
+        @Nonnull @JsonProperty("type") DingoType type
     ) {
         super(index, type);
     }

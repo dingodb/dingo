@@ -21,18 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.op.time.utils.DingoDateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Time;
-import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -49,7 +44,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     public PartUpdateOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
-        @JsonProperty("schema") TupleSchema schema,
+        @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<RtExprWithType> updates
@@ -68,34 +63,27 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         TupleEvalContext etx = new TupleEvalContext(Arrays.copyOf(tuple, tuple.length));
-        boolean update = false;
+        boolean updated = false;
         int i = 0;
         try {
             for (i = 0; i < mapping.size(); ++i) {
                 Object newValue = updates.get(i).eval(etx);
                 int index = mapping.get(i);
-                boolean isUpdate = (tuple[index] == null && newValue != null)
-                    || (tuple[index] != null && newValue == null)
-                    || (tuple[index] != null && !tuple[index].equals(newValue));
-                if (isUpdate) {
-                    // update table columns when column is time
-                    if (newValue != null && schema.getElementSchemas()[index].getTypeCode() == TypeCode.TIME) {
-                        // disable timezone
-                        LocalTime localTime = LocalTime.parse(newValue.toString());
-                        newValue = DingoDateTimeUtils.getTimeByLocalDateTime(localTime);
-                    }
+                if ((tuple[index] == null && newValue != null)
+                    || (tuple[index] != null && !tuple[index].equals(newValue))
+                ) {
                     tuple[index] = newValue;
-                    update = true;
+                    updated = true;
                 }
             }
-            if (update) {
-                part.upsert(Arrays.copyOf(tuple, schema.getElementSchemas().length));
+            if (updated) {
+                part.upsert(Arrays.copyOf(tuple, schema.fieldCount()));
                 count++;
             }
         } catch (Exception ex) {
             log.error("update operator with expr:{}, exception:{}",
                 updates.get(i) == null ? "None" : updates.get(i).getExprString(),
-                ex.toString(), ex);
+                ex, ex);
             throw new RuntimeException("Update Operator catch Exception");
         }
         return true;

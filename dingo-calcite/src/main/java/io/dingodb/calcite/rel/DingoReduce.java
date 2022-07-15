@@ -52,11 +52,6 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         this.originalInputType = originalInputType;
     }
 
-    @Override
-    protected RelDataType deriveRowType() {
-        return input.getRowType();
-    }
-
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -78,6 +73,11 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         pw.item("aggregateCallList", aggregateCallList);
         pw.item("originalInputType", originalInputType);
         return pw;
+    }
+
+    @Override
+    protected RelDataType deriveRowType() {
+        return input.getRowType();
     }
 
     @Override

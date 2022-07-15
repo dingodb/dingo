@@ -17,8 +17,8 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.common.codec.AvroCodec;
-import io.dingodb.common.table.KeyValueCodec;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.AvroConverter;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
@@ -26,7 +26,6 @@ import io.dingodb.exec.fin.FinWithProfiles;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.sql.SQLException;
 import javax.annotation.Nonnull;
 
 public final class AvroTxRxCodec implements TxRxCodec {
@@ -35,11 +34,11 @@ public final class AvroTxRxCodec implements TxRxCodec {
     public static final int ABNORMAL_FIN_FLAG = 2;
 
     private final AvroCodec avroCodec;
-    private final TupleSchema schema;
+    private final DingoType schema;
 
-    public AvroTxRxCodec(@Nonnull TupleSchema schema) {
+    public AvroTxRxCodec(@Nonnull DingoType schema) {
         this.schema = schema;
-        this.avroCodec = new AvroCodec(schema.getAvroSchema());
+        this.avroCodec = new AvroCodec(schema.toAvroSchema());
     }
 
     @Nonnull
@@ -47,12 +46,9 @@ public final class AvroTxRxCodec implements TxRxCodec {
     public byte[] encode(Object[] tuple) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         os.write(TUPLE_FLAG);
-        try {
-            Object[] converted = KeyValueCodec.convertToAvro(tuple, schema);
-            avroCodec.encode(os, converted);
-        } catch (SQLException e) {
-            throw new IOException(e);
-        }
+        Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
+        assert converted != null;
+        avroCodec.encode(os, converted);
         return os.toByteArray();
     }
 
@@ -74,7 +70,7 @@ public final class AvroTxRxCodec implements TxRxCodec {
         int flag = is.read();
         switch (flag) {
             case TUPLE_FLAG:
-                return avroCodec.decode(is);
+                return (Object[]) schema.convertFrom(avroCodec.decode(is), AvroConverter.INSTANCE);
             case NORMAL_FIN_FLAG:
                 return new Object[]{FinWithProfiles.deserialize(is)};
             case ABNORMAL_FIN_FLAG:
@@ -83,5 +79,4 @@ public final class AvroTxRxCodec implements TxRxCodec {
         }
         throw new IllegalStateException("Unexpected data message flag \"" + flag + "\".");
     }
-
 }

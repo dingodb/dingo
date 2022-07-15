@@ -21,6 +21,15 @@ import io.dingodb.expr.runtime.evaluator.arithmetic.AbsEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DecimalCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DoubleCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.IntegerCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.LongCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.StringCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.TimeCastEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.TimestampCastEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AcosEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AsinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.AtanEvaluatorFactory;
@@ -32,16 +41,6 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.BigIntegerTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.BooleanTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.DateTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.DecimalTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.DoubleTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.IntTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.LongTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.StringTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.TimeTypeEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.type.TimestampTypeEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
@@ -63,14 +62,15 @@ import io.dingodb.expr.runtime.op.string.RtContainsOp;
 import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
 import io.dingodb.expr.runtime.op.string.RtMatchesOp;
 import io.dingodb.expr.runtime.op.string.RtStartsWithOp;
-import io.dingodb.expr.runtime.op.time.DingoCurrentDateOp;
-import io.dingodb.expr.runtime.op.time.DingoCurrentTimeOp;
-import io.dingodb.expr.runtime.op.time.DingoCurrentTimeStampOp;
-import io.dingodb.expr.runtime.op.time.DingoDateDiffOp;
-import io.dingodb.expr.runtime.op.time.DingoDateFormatOp;
-import io.dingodb.expr.runtime.op.time.DingoDateFromUnixTimeOp;
-import io.dingodb.expr.runtime.op.time.DingoDateUnixTimestampOp;
-import io.dingodb.expr.runtime.op.time.DingoTimeFormatOp;
+import io.dingodb.expr.runtime.op.time.DateFormatFun;
+import io.dingodb.expr.runtime.op.time.DateTimeFormatFun;
+import io.dingodb.expr.runtime.op.time.CurrentDateFun;
+import io.dingodb.expr.runtime.op.time.CurrentTimeFun;
+import io.dingodb.expr.runtime.op.time.CurrentTimestampFun;
+import io.dingodb.expr.runtime.op.time.DateDiffFun;
+import io.dingodb.expr.runtime.op.time.FromUnixTimeFun;
+import io.dingodb.expr.runtime.op.time.UnixTimestampFun;
+import io.dingodb.expr.runtime.op.time.TimeFormatFun;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -101,6 +101,7 @@ public final class FunFactory {
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
         registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);
+
         // Mathematical
         registerEvaluator("abs", AbsEvaluatorFactory.INSTANCE);
         registerEvaluator("sin", SinEvaluatorFactory.INSTANCE);
@@ -115,25 +116,16 @@ public final class FunFactory {
         registerEvaluator("log", LogEvaluatorFactory.INSTANCE);
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
 
-        // Time
-        registerUdf("current_date", DingoCurrentDateOp::new);
-        registerUdf("curdate", DingoCurrentDateOp::new);
-        registerUdf("current_time", DingoCurrentTimeOp::new);
-        registerUdf("curtime", DingoCurrentTimeOp::new);
-        registerUdf("current_timestamp", DingoCurrentTimeStampOp::new);
-        registerUdf("now", DingoCurrentTimeStampOp::new);
-
         // Type conversion
-        registerEvaluator("int", IntTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("bigint", BigIntegerTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("long", LongTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("double", DoubleTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("decimal", DecimalTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("string", StringTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("date", DateTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("time", TimeTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("timestamp", TimestampTypeEvaluatorFactory.INSTANCE);
-        registerEvaluator("boolean", BooleanTypeEvaluatorFactory.INSTANCE);
+        registerEvaluator("int", IntegerCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("long", LongCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("double", DoubleCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("decimal", DecimalCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("string", StringCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("date", DateCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("time", TimeCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("timestamp", TimestampCastEvaluatorFactory.INSTANCE);
+        registerEvaluator("boolean", BooleanCastEvaluatorFactory.INSTANCE);
 
         // String
         registerUdf("char_length", DingoCharLengthOp::new);
@@ -152,7 +144,6 @@ public final class FunFactory {
         registerUdf("repeat", DingoStringRepeatOp::new);
         registerUdf("mid", DingoStringMidOp::new);
         registerUdf("locate", DingoStringLocateOp::new);
-        registerUdf("||", DingoStringConcatOp::new);
         registerUdf("concat", DingoStringConcatOp::new);
         registerUdf("startswith", RtStartsWithOp::new);
         registerUdf("endswith", RtEndsWithOp::new);
@@ -161,11 +152,20 @@ public final class FunFactory {
 
         // number format function
         registerUdf("format", DingoNumberFormatOp::new);
-        registerUdf("from_unixtime", DingoDateFromUnixTimeOp::new);
-        registerUdf("unix_timestamp", DingoDateUnixTimestampOp::new);
-        registerUdf("date_format", DingoDateFormatOp::new);
-        registerUdf("time_format", DingoTimeFormatOp::new);
-        registerUdf("datediff", DingoDateDiffOp::new);
+
+        // Date & time
+        registerUdf("current_date", CurrentDateFun::new);
+        registerUdf("curdate", CurrentDateFun::new);
+        registerUdf("current_time", CurrentTimeFun::new);
+        registerUdf("curtime", CurrentTimeFun::new);
+        registerUdf("current_timestamp", CurrentTimestampFun::new);
+        registerUdf("now", CurrentTimestampFun::new);
+        registerUdf("from_unixtime", FromUnixTimeFun::new);
+        registerUdf("unix_timestamp", UnixTimestampFun::new);
+        registerUdf("date_format", DateFormatFun::new);
+        registerUdf("time_format", TimeFormatFun::new);
+        registerUdf("datetime_format", DateTimeFormatFun::new);
+        registerUdf("datediff", DateDiffFun::new);
     }
 
     private void registerEvaluator(

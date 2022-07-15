@@ -42,15 +42,6 @@ public class DingoStringLocateOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String subString = (String) (values[0]);
-        String inputStr = (String) (values[1]);
-
-        return locateString(subString, inputStr);
-    }
-
     public static long locateString(final String subString, final String inputStr) {
         if (subString.equals("")) {
             return Long.valueOf(1);
@@ -61,6 +52,15 @@ public class DingoStringLocateOp extends RtStringConversionOp {
         } else {
             return new Long(inputStr.indexOf(subString) + 1);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        String subString = (String) (values[0]);
+        String inputStr = (String) (values[1]);
+
+        return locateString(subString, inputStr);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -82,7 +82,7 @@ public class DingoStringLocateOp extends RtStringConversionOp {
                 methods.add(DingoStringLocateOp.class.getMethod("locateString", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

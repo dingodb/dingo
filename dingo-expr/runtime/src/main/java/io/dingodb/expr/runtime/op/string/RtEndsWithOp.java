@@ -42,14 +42,14 @@ public final class RtEndsWithOp extends RtStringRelationOp {
         super(paras);
     }
 
+    public static boolean endsStr(final String str1, final String str2) {
+        return str1.endsWith(str2);
+    }
+
     @Nonnull
     @Override
     protected Object fun(@Nonnull Object[] values) {
         return endsStr((String) values[0], (String) values[1]);
-    }
-
-    public static boolean endsStr(final String str1, final String str2) {
-        return str1.endsWith(str2);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -71,7 +71,7 @@ public final class RtEndsWithOp extends RtStringRelationOp {
                 methods.add(RtEndsWithOp.class.getMethod("endsStr", String.class, String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

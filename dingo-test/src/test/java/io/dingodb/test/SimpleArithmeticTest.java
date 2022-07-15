@@ -17,7 +17,6 @@
 package io.dingodb.test;
 
 import io.dingodb.exec.Services;
-import io.dingodb.meta.test.MetaTestService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

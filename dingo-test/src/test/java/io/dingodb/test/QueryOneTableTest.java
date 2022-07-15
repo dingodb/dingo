@@ -16,21 +16,16 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class QueryOneTableTest {
@@ -67,55 +62,55 @@ public class QueryOneTableTest {
     }
 
     @Test
-    public void testScan() throws SQLException {
+    public void testScan() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select * from test",
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             TEST_ALL_DATA
         );
     }
 
     @Test
-    public void testScan1() throws SQLException {
+    public void testScan1() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select * from test.test",
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             TEST_ALL_DATA
         );
     }
 
     @Test
-    public void testGetByKey() throws SQLException {
+    public void testGetByKey() throws SQLException, JsonProcessingException {
         String sql = "select * from test where id = 1";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "1, Alice, 3.5\n"
         );
     }
 
     @Test
-    public void testGetByKey1() throws SQLException {
+    public void testGetByKey1() throws SQLException, JsonProcessingException {
         String sql = "select * from test where id = 1 or id = 2";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "1, Alice, 3.5\n"
                 + "2, Betty, 4.0\n"
         );
     }
 
     @Test
-    public void testGetByKey2() throws SQLException {
+    public void testGetByKey2() throws SQLException, JsonProcessingException {
         String sql = "select * from test where id in (1, 2, 3)";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "1, Alice, 3.5\n"
                 + "2, Betty, 4.0\n"
                 + "3, Cindy, 4.5\n"
@@ -123,36 +118,36 @@ public class QueryOneTableTest {
     }
 
     @Test
-    public void testScanRecordsWithNotInCause() throws SQLException {
+    public void testScanRecordsWithNotInCause() throws SQLException, JsonProcessingException {
         String sql = "select * from test where id not in (3, 4, 5, 6, 7, 8, 9)";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "1, Alice, 3.5\n"
                 + "2, Betty, 4.0\n"
         );
     }
 
     @Test
-    public void testScanWithMultiCondition() throws SQLException {
+    public void testScanWithMultiCondition() throws SQLException, JsonProcessingException {
         String sql = "select * from test where id > 1 and name = 'Alice' and amount > 6";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "8, Alice, 7.0\n"
         );
     }
 
 
     @Test
-    public void testFilterScan() throws SQLException {
+    public void testFilterScan() throws SQLException, JsonProcessingException {
         String sql = "select * from test where amount > 4.0";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "3, Cindy, 4.5\n"
                 + "4, Doris, 5.0\n"
                 + "5, Emily, 5.5\n"
@@ -164,12 +159,12 @@ public class QueryOneTableTest {
     }
 
     @Test
-    public void testProjectScan() throws SQLException {
+    public void testProjectScan() throws SQLException, JsonProcessingException {
         String sql = "select name as label, amount * 10.0 as score from test";
         sqlHelper.queryTest(
             sql,
             new String[]{"label", "score"},
-            TupleSchema.ofTypes("STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("STRING", "DOUBLE"),
             "Alice, 35\n"
                 + "Betty, 40\n"
                 + "Cindy, 45\n"
@@ -183,31 +178,31 @@ public class QueryOneTableTest {
     }
 
     @Test
-    public void testCast() throws SQLException {
+    public void testCast() throws SQLException, JsonProcessingException {
         String sql = "select id, name, cast(amount as int) as amount from test";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER"),
-            "1, Alice, 3\n"
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER"),
+            "1, Alice, 4\n"
                 + "2, Betty, 4\n"
-                + "3, Cindy, 4\n"
+                + "3, Cindy, 5\n"
                 + "4, Doris, 5\n"
-                + "5, Emily, 5\n"
+                + "5, Emily, 6\n"
                 + "6, Alice, 6\n"
-                + "7, Betty, 6\n"
+                + "7, Betty, 7\n"
                 + "8, Alice, 7\n"
-                + "9, Cindy, 7\n"
+                + "9, Cindy, 8\n"
         );
     }
 
     @Test
-    public void testCaseFun() throws SQLException {
+    public void testCaseFun() throws SQLException, JsonProcessingException {
         String sql = "select id, name, case when amount >= 6.0 then 'Y' else 'N' end as flag from test";
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "flag"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             "1, Alice, N\n"
                 + "2, Betty, N\n"
                 + "3, Cindy, N\n"
@@ -221,7 +216,7 @@ public class QueryOneTableTest {
     }
 
     @Test
-    public void testCaseFun1() throws SQLException {
+    public void testCaseFun1() throws SQLException, JsonProcessingException {
         String sql = "select id, name, case"
             + " when amount >= 7.0 then 'A' "
             + " when amount >= 6.0 then 'Y'"
@@ -230,7 +225,7 @@ public class QueryOneTableTest {
         sqlHelper.queryTest(
             sql,
             new String[]{"id", "name", "flag"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             "1, Alice, N\n"
                 + "2, Betty, N\n"
                 + "3, Cindy, N\n"
@@ -241,20 +236,5 @@ public class QueryOneTableTest {
                 + "8, Alice, A\n"
                 + "9, Cindy, A\n"
         );
-    }
-
-    @Test
-    public void testCountOfTable() throws SQLException {
-        Connection connection = sqlHelper.getConnection();
-        String sql = "select count(*) from test";
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet rs = statement.executeQuery(sql)) {
-                System.out.println("Result: ");
-                while (rs.next()) {
-                    System.out.println(rs.getInt(1));
-                    Assertions.assertEquals(rs.getInt(1), 9);
-                }
-            }
-        }
     }
 }

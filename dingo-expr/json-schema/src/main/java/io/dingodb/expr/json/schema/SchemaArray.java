@@ -51,7 +51,7 @@ public final class SchemaArray extends Schema {
                 case STRING:
                     return new RtSchemaLeaf(TypeCode.STRING_ARRAY);
                 case BOOLEAN:
-                    return new RtSchemaLeaf(TypeCode.BOOLEAN_ARRAY);
+                    return new RtSchemaLeaf(TypeCode.BOOL_ARRAY);
                 case OBJECT:
                     return new RtSchemaLeaf(TypeCode.OBJECT_ARRAY);
                 case ARRAY:

@@ -16,10 +16,8 @@
 
 package io.dingodb.test.agg;
 
-import io.dingodb.common.table.TupleSchema;
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.SqlHelper;
-import org.apache.calcite.avatica.AvaticaSqlException;
 import org.apache.calcite.rel.core.Aggregate;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -60,15 +58,14 @@ public class QueryAgg2Test {
         Aggregate.class.getClassLoader().clearAssertionStatus();
         Aggregate.class.getClassLoader().setClassAssertionStatus(Aggregate.class.getName(), false);
         assertFalse(Aggregate.class.desiredAssertionStatus());
-        assertThrows(AssertionError.class, () -> {
-            assertThrows(AvaticaSqlException.class, () -> {
-                sqlHelper.queryTest(
-                    "select avg(name) from people",
-                    new String[]{"expr$0"},
-                    TupleSchema.ofTypes(TypeCode.DECIMAL),
-                    "107803.547\n"
-                );
-            });
+        // Seems the assertion status does not take effects.
+        assertThrows(Throwable.class, () -> {
+            sqlHelper.queryTest(
+                "select avg(name) from people",
+                new String[]{"expr$0"},
+                DingoTypeFactory.tuple("DECIMAL"),
+                "107803.547\n"
+            );
         });
     }
 }

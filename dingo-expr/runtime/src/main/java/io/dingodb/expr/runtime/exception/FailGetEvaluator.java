@@ -16,9 +16,14 @@
 
 package io.dingodb.expr.runtime.exception;
 
+import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
 @Getter
@@ -27,4 +32,14 @@ public final class FailGetEvaluator extends Exception {
 
     private final EvaluatorFactory factory;
     private final int[] paraTypeCodes;
+
+    @Nonnull
+    @Override
+    public String getMessage() {
+        return "Cannot find evaluator in \""
+            + factory.getClass().getSimpleName()
+            + "\" for parameter types ("
+            + Arrays.stream(paraTypeCodes).mapToObj(TypeCode::nameOf).collect(Collectors.joining(", "))
+            + ").";
+    }
 }

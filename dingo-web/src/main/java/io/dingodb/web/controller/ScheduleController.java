@@ -58,13 +58,17 @@ import static java.util.stream.Collectors.toMap;
 @RequestMapping("/schedule")
 public class ScheduleController {
 
-    @Autowired private MetaApi metaApi;
+    @Autowired
+    private MetaApi metaApi;
 
-    @Autowired private MetaServiceApi metaServiceApi;
+    @Autowired
+    private MetaServiceApi metaServiceApi;
 
-    @Autowired private ScheduleApi scheduleApi;
+    @Autowired
+    private ScheduleApi scheduleApi;
 
-    @Autowired private DTOMapper mapper;
+    @Autowired
+    private DTOMapper mapper;
 
     private CommonId tableId(String name) {
         return metaApi.tableId(name.toUpperCase());
@@ -156,7 +160,7 @@ public class ScheduleController {
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
-        Object[] keys = def.getKeyMapping().revMap(def.getTupleSchema().parse(def.getColumns().stream()
+        Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
             .map(params::get)
             .toArray(Object[]::new)
@@ -188,7 +192,7 @@ public class ScheduleController {
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
         byte[] keys = new AvroCodec(def.getAvroSchemaOfKey()).encode(
-            def.getKeyMapping().revMap(def.getTupleSchema().parse(def.getColumns().stream()
+            def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
                 .map(ColumnDefinition::getName)
                 .map(params::get)
                 .toArray(Object[]::new)

@@ -45,3 +45,4 @@ hs_err_*
 
 # Files left by testing
 dingo-raft-kv/io.dingodb.raft.kv.storage.TestRaftRawKVStore/
+dingo-store-raft/io.dingodb.store.raft.TestRaftInstancePart/

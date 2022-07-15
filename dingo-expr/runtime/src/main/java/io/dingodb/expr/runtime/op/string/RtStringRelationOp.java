@@ -31,6 +31,6 @@ public abstract class RtStringRelationOp extends RtFun {
 
     @Override
     public final int typeCode() {
-        return TypeCode.BOOLEAN;
+        return TypeCode.BOOL;
     }
 }

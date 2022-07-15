@@ -83,7 +83,7 @@ public final class DataParser extends Parser {
         JsonNodeType type = jsonNode.getNodeType();
         switch (type) {
             case NUMBER:
-                if (jsonNode.isInt()) {
+                if (jsonNode.isInt() || jsonNode.isLong()) {
                     return jsonNode.asLong();
                 }
                 return jsonNode.asDouble();
@@ -142,7 +142,7 @@ public final class DataParser extends Parser {
                     }
                 }
                 return;
-            case TypeCode.INTEGER:
+            case TypeCode.INT:
                 tuple[rtSchema.getIndex()] = jsonNode.asInt();
                 return;
             case TypeCode.LONG:
@@ -154,13 +154,13 @@ public final class DataParser extends Parser {
             case TypeCode.STRING:
                 tuple[rtSchema.getIndex()] = jsonNode.asText();
                 return;
-            case TypeCode.BOOLEAN:
+            case TypeCode.BOOL:
                 tuple[rtSchema.getIndex()] = jsonNode.asBoolean();
                 return;
             case TypeCode.DECIMAL:
                 tuple[rtSchema.getIndex()] = jsonNode.decimalValue();
                 return;
-            case TypeCode.INTEGER_ARRAY:
+            case TypeCode.INT_ARRAY:
                 Integer[] integerArray = new Integer[jsonNode.size()];
                 for (int i = 0; i < jsonNode.size(); i++) {
                     integerArray[i] = jsonNode.get(i).asInt();
@@ -188,7 +188,7 @@ public final class DataParser extends Parser {
                 }
                 tuple[rtSchema.getIndex()] = stringArray;
                 return;
-            case TypeCode.BOOLEAN_ARRAY:
+            case TypeCode.BOOL_ARRAY:
                 Boolean[] booleanArray = new Boolean[jsonNode.size()];
                 for (int i = 0; i < jsonNode.size(); i++) {
                     booleanArray[i] = jsonNode.get(i).asBoolean();

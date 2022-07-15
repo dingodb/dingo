@@ -18,7 +18,7 @@ package io.dingodb.cli.source.impl;
 
 import io.dingodb.cli.source.Parser;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,14 +36,13 @@ public abstract class AbstractParser implements Parser {
         for (Object[] arr : records) {
             if (arr.length == tableDefinition.getColumns().size()) {
                 try {
-                    TupleSchema schema = tableDefinition.getTupleSchema();
-                    Object[] row = schema.parse(arr);
+                    DingoType schema = tableDefinition.getDingoType();
+                    Object[] row = (Object[]) schema.parse(arr);
                     long nullCount = Arrays.stream(row).filter(Objects::isNull).count();
                     if (nullCount > 0) {
                         continue;
                     }
-                    Object[] record = schema.convertTimeZone(row);
-                    result.add(record);
+                    result.add(row);
                 } catch (Exception e) {
                     log.warn("Data:{} parsing failed", arr);
                 }

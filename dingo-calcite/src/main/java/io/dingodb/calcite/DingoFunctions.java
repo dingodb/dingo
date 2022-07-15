@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 public class DingoFunctions {
+    private static DingoFunctions instance;
+    private final List<NameMethodMapping> dingoUserFunctions = new ArrayList<>();
+
     private DingoFunctions() {
     }
-
-    private static DingoFunctions instance;
-
-    private List<NameMethodMapping> dingoUserFunctions = new ArrayList<>();
 
     public static synchronized DingoFunctions getInstance() {
         if (instance == null) {
@@ -44,7 +43,7 @@ public class DingoFunctions {
     private void initNameMethodMapping() {
         ServiceLoader.load(DingoFuncProvider.class).iterator().forEachRemaining(
             f -> f.methods().forEach(m -> {
-                for (String name: f.name()) {
+                for (String name : f.name()) {
                     NameMethodMapping value = new NameMethodMapping(name, m);
                     dingoUserFunctions.add(value);
                 }
@@ -57,7 +56,7 @@ public class DingoFunctions {
 
     public List<Method> getDingoFunction(String name) {
         List<Method> methods = new ArrayList<>();
-        for (NameMethodMapping value: dingoUserFunctions) {
+        for (NameMethodMapping value : dingoUserFunctions) {
             if (value.getName().equalsIgnoreCase(name)) {
                 methods.add(value.getMethod());
             }

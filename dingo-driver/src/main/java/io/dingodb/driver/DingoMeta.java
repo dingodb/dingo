@@ -21,6 +21,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.MetaCache;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.operator.RootOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaClientRuntimeException;
@@ -47,19 +50,13 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.DatabaseMetaData;
-import java.sql.Date;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.error.DingoException.CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
@@ -167,8 +164,9 @@ public class DingoMeta extends MetaImpl {
                     Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
                     Collections.singletonList(""), null);
             } else if (throwable instanceof RuntimeException) {
-                if (((RuntimeException) throwable).getCause() == null) {
-                    exceptMessage = throwable.getMessage() != null ? ((RuntimeException) throwable).getMessage() : "Null pointer";
+                if (throwable.getCause() == null) {
+                    exceptMessage = throwable.getMessage() != null ? ((RuntimeException) throwable).getMessage() :
+                        "Null pointer";
                 } else {
                     exceptMessage = ((RuntimeException) throwable).getCause().getMessage();
                 }
@@ -187,10 +185,12 @@ public class DingoMeta extends MetaImpl {
                     Service.ErrorResponse.UNKNOWN_SQL_STATE, AvaticaSeverity.ERROR,
                     Collections.singletonList(""), null);
             } else if (throwable instanceof SQLException) {
-                throw new AvaticaClientRuntimeException(throwable.toString(), 12, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+                throw new AvaticaClientRuntimeException(throwable.toString(), 12,
+                    Service.ErrorResponse.UNKNOWN_SQL_STATE,
                     AvaticaSeverity.ERROR, Collections.singletonList(""), null);
             } else {
-                throw new AvaticaClientRuntimeException(throwable.toString(), 13, Service.ErrorResponse.UNKNOWN_SQL_STATE,
+                throw new AvaticaClientRuntimeException(throwable.toString(), 13,
+                    Service.ErrorResponse.UNKNOWN_SQL_STATE,
                     AvaticaSeverity.ERROR, Collections.singletonList(""), null);
             }
 
@@ -228,18 +228,14 @@ public class DingoMeta extends MetaImpl {
         try {
             DingoStatement stmt = getStatement(sh);
             DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
-            if (resultSet == null) {
-                throw new MissingResultsException(sh);
-            }
             final Iterator<Object[]> iterator = resultSet.getIterator();
             final List rows = new ArrayList(fetchMaxRowCount);
+            DingoSignature signature = (DingoSignature) stmt.getSignature();
+            DingoType dingoType = DingoTypeFactory.fromColumnMetaDataList(signature.columns);
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
-                List result = Arrays.asList(iterator.next());
-                rows.add(this.convertRowsByColumnTypes(result, stmt.getSignature().columns));
+                rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
-
-            DingoSignature signature = (DingoSignature) stmt.getSignature();
             checkJobHasFailed(signature);
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
@@ -253,7 +249,7 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
-    private void checkJobHasFailed(DingoSignature signature) throws SQLException {
+    private void checkJobHasFailed(@Nonnull DingoSignature signature) throws SQLException {
         /**
          * when the operation is `Create` or `Drop`, then the signature.getJob is null.
          */
@@ -268,72 +264,6 @@ public class DingoMeta extends MetaImpl {
                 throw new SQLException(errorMsg);
             }
         }
-    }
-
-    private List convertRowsByColumnTypes(final List<Object> inputs, final List<ColumnMetaData> columns) {
-        if (inputs.size() != columns.size()) {
-            log.error("Dingo Meta convert Failed. invalid columns between row:{} and column:{}",
-                inputs.size(), columns.size());
-            return inputs;
-        }
-
-        IntStream.rangeClosed(0, inputs.size() - 1)
-                 .forEach(x -> {
-                     Object valueBeforeCvt = inputs.get(x);
-                     Object valueAfterCvt = inputs.get(x);
-                     String columnClassName = columns.get(x).columnClassName.toLowerCase();
-                     valueAfterCvt = getValueAfterCvt(columnClassName, valueBeforeCvt, valueAfterCvt);
-                     inputs.set(x, valueAfterCvt);
-                     if (log.isDebugEnabled()) {
-                         log.debug("Convert column:{} from type:{} to type:{} value:{}",
-                             columns.get(x).columnName,
-                             valueBeforeCvt != null ? valueBeforeCvt.getClass() : "null",
-                             columns.get(x).columnClassName,
-                             valueAfterCvt != null ? valueAfterCvt.toString() : "null");
-                     }
-                 });
-        return inputs;
-    }
-
-    private Object getValueAfterCvt(final String columnClassName, final Object input, Object defaultValue) {
-        Object valueAfterCvt = defaultValue;
-        if (input == null) {
-            return valueAfterCvt;
-        }
-        switch (columnClassName) {
-            case "java.sql.date": {
-                if (input instanceof Date) {
-                    valueAfterCvt = ((Date) input).toLocalDate().toEpochDay();
-                } else if (input instanceof Long) {
-                    valueAfterCvt = new Date((Long) input).toLocalDate().toEpochDay();
-                }
-                break;
-            }
-            case "java.sql.time": {
-                if (input instanceof Time) {
-                    valueAfterCvt = ((Time) input).getTime();
-                } else if (input instanceof Long) {
-                    valueAfterCvt = new Time((Long) input).getTime();
-                }
-                break;
-            }
-            case "java.sql.timestamp": {
-                if (input instanceof Timestamp) {
-                    valueAfterCvt = ((Timestamp) input).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli();
-                } else if (input instanceof Long) {
-                    valueAfterCvt = new Timestamp((Long) input).toLocalDateTime().toInstant(ZoneOffset.UTC)
-                        .toEpochMilli();
-                }
-                break;
-            }
-            case "java.lang.integer": {
-                valueAfterCvt = Integer.valueOf(input.toString());
-                break;
-            }
-            default:
-                break;
-        }
-        return valueAfterCvt;
     }
 
     @Deprecated

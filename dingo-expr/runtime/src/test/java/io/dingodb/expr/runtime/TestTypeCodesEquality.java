@@ -44,20 +44,23 @@ public class TestTypeCodesEquality {
     @Nonnull
     private static Stream<Arguments> getParameters() {
         return Stream.of(
-            arguments(Boolean.class, TypeCode.BOOLEAN),
-            arguments(Integer.class, TypeCode.INTEGER),
+            // scalar types
+            arguments(Boolean.class, TypeCode.BOOL),
+            arguments(Integer.class, TypeCode.INT),
             arguments(Long.class, TypeCode.LONG),
             arguments(Double.class, TypeCode.DOUBLE),
             arguments(BigDecimal.class, TypeCode.DECIMAL),
             arguments(String.class, TypeCode.STRING),
             arguments(Object.class, TypeCode.OBJECT),
-            arguments(Boolean[].class, TypeCode.BOOLEAN_ARRAY),
-            arguments(Integer[].class, TypeCode.INTEGER_ARRAY),
+            // array types
+            arguments(Boolean[].class, TypeCode.BOOL_ARRAY),
+            arguments(Integer[].class, TypeCode.INT_ARRAY),
             arguments(Long[].class, TypeCode.LONG_ARRAY),
             arguments(Double[].class, TypeCode.DOUBLE_ARRAY),
             arguments(BigDecimal[].class, TypeCode.DECIMAL_ARRAY),
             arguments(String[].class, TypeCode.STRING_ARRAY),
             arguments(Object[].class, TypeCode.OBJECT_ARRAY),
+            // collection types
             arguments(List.class, TypeCode.LIST),
             arguments(LinkedList.class, TypeCode.LIST),
             arguments(ArrayList.class, TypeCode.LIST),
@@ -65,6 +68,7 @@ public class TestTypeCodesEquality {
             arguments(HashMap.class, TypeCode.MAP),
             arguments(TreeMap.class, TypeCode.MAP),
             arguments(LinkedHashMap.class, TypeCode.MAP),
+            // date&time types
             arguments(Date.class, TypeCode.DATE),
             arguments(Time.class, TypeCode.TIME),
             arguments(Timestamp.class, TypeCode.TIMESTAMP)

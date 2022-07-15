@@ -16,13 +16,13 @@
 
 package io.dingodb.test.agg;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -50,66 +50,62 @@ public class QueryAgg3Test {
     public void cleanUp() throws Exception {
     }
 
-    // 1949-01-01 => 1948-12-31 in (utc -6 timezone).
-    // All new Date("xxx") will be error in (negative zone)
     @Test
-    @Disabled
-    public void testMinDate() throws SQLException {
-        sqlHelper.queryTest(
+    public void testMinDate() throws SQLException, JsonProcessingException {
+        sqlHelper.queryTestInOrderWithApproxTime(
             "select min(birthday) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("DATE"),
+            DingoTypeFactory.tuple("DATE"),
             "1949-01-01"
         );
     }
 
-    // 2022-03-04T00:00:00 => 2022-03-03T23:00:00 in negative timezone. DST problem.
     @Test
-    public void testMaxDate() throws SQLException {
-        sqlHelper.queryTest(
+    public void testMaxDate() throws SQLException, JsonProcessingException {
+        sqlHelper.queryTestInOrderWithApproxTime(
             "select max(birthday) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("DATE"),
+            DingoTypeFactory.tuple("DATE"),
             "2022-03-04"
         );
     }
 
     @Test
-    public void testMinTime() throws SQLException {
+    public void testMinTime() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select min(create_time) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("TIME"),
+            DingoTypeFactory.tuple("TIME"),
             "00:30:08"
         );
     }
 
     @Test
-    public void testMaxTime() throws SQLException {
+    public void testMaxTime() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select max(create_time) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("TIME"),
+            DingoTypeFactory.tuple("TIME"),
             "19:00:00"
         );
     }
 
     @Test
-    public void testMinTimeStamp() throws SQLException {
+    public void testMinTimeStamp() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select min(update_time) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("TIMESTAMP"),
+            DingoTypeFactory.tuple("TIMESTAMP"),
             "1952-12-31 12:12:12"
         );
     }
 
     @Test
-    public void testMaxTimeStamp() throws SQLException {
+    public void testMaxTimeStamp() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
             "select max(update_time) from datetest",
             new String[]{"expr$0"},
-            TupleSchema.ofTypes("TIMESTAMP"),
+            DingoTypeFactory.tuple("TIMESTAMP"),
             "2022-12-01 01:02:03"
         );
     }

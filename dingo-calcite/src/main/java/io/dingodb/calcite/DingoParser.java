@@ -47,6 +47,7 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -63,6 +64,19 @@ import javax.annotation.Nonnull;
 // Each sql parsing requires a new instance.
 @Slf4j
 public class DingoParser {
+    public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
+        .withLex(Lex.MYSQL)
+        .withCaseSensitive(false)
+        .withConformance(new SqlDelegatingConformance(SqlConformanceEnum.MYSQL_5) {
+            // Allows some system functions with no parameters to be used with Parentheses.
+            // for example, `CURRENT_DATE`.
+            @Override
+            public boolean allowNiladicParentheses() {
+                return true;
+            }
+        });
+    public static SqlValidator.Config VALIDATOR_CONFIG = SqlValidator.Config.DEFAULT
+        .withConformance(PARSER_CONFIG.conformance());
     @Getter
     private final DingoParserContext context;
     @Getter
@@ -74,14 +88,6 @@ public class DingoParser {
     @Getter
     private final CalciteCatalogReader catalogReader;
 
-    protected SqlParser.Config parserConfig = SqlParser.config()
-        .withLex(Lex.MYSQL)
-        .withCaseSensitive(false)
-        .withConformance(SqlConformanceEnum.MYSQL_5);
-
-    protected SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
-        .withSqlConformance(parserConfig.conformance());
-
     public DingoParser(@Nonnull DingoParserContext context) {
         this.context = context;
         planner = new VolcanoPlanner();
@@ -92,7 +98,7 @@ public class DingoParser {
 
         Properties properties = new Properties();
         properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
-            String.valueOf(parserConfig.caseSensitive()));
+            String.valueOf(PARSER_CONFIG.caseSensitive()));
 
         catalogReader = new CalciteCatalogReader(
             context.getRootSchema(),
@@ -107,12 +113,12 @@ public class DingoParser {
             SqlOperatorTables.chain(tableInstance, catalogReader),
             catalogReader,
             context.getTypeFactory(),
-            validatorConfig
+            VALIDATOR_CONFIG
         );
     }
 
     public SqlNode parse(String sql) throws SqlParseException {
-        SqlParser parser = SqlParser.create(sql, parserConfig);
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
         if (log.isDebugEnabled()) {
             log.debug("==DINGO==>:[Input Query]: {}", sql);

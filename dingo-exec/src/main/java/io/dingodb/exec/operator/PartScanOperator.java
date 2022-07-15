@@ -22,11 +22,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TupleMapping;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -44,7 +43,7 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
     public PartScanOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
-        @JsonProperty("schema") TupleSchema schema,
+        @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
@@ -63,7 +62,7 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
             filter.compileIn(schema);
             iterator = Iterators.filter(
                 iterator,
-                tuple -> RtLogicalOp.test(filter.eval(new TupleEvalContext(tuple)))
+                tuple -> (boolean) filter.eval(new TupleEvalContext(tuple))
             );
         }
         if (selection != null) {

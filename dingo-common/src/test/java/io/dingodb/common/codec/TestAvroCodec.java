@@ -17,6 +17,7 @@
 package io.dingodb.common.codec;
 
 import io.dingodb.common.table.TableDefinition;
+import org.apache.avro.util.Utf8;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +33,7 @@ public class TestAvroCodec {
         TableDefinition tableDefinition = TableDefinition.readJson(
             TestAvroCodec.class.getResourceAsStream("/table-test.json")
         );
-        codec = new AvroCodec(tableDefinition.getAvroSchema());
+        codec = new AvroCodec(tableDefinition.getDingoType().toAvroSchema());
     }
 
     @Test
@@ -41,7 +42,7 @@ public class TestAvroCodec {
         byte[] bytes = codec.encode(tuple);
         Object[] result = codec.decode(bytes);
         assertThat(result[0]).isEqualTo(1);
-        assertThat(result[1]).isEqualTo("Alice");
+        assertThat(result[1]).isEqualTo(new Utf8("Alice"));
         assertThat(result[2]).isEqualTo(1.0);
     }
 }

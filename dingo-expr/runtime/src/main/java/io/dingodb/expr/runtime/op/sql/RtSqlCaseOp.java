@@ -33,11 +33,6 @@ public final class RtSqlCaseOp extends RtOp {
         super(paras);
     }
 
-    @Override
-    public int typeCode() {
-        return TypeCode.OBJECT;
-    }
-
     @Nullable
     @Override
     public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
@@ -51,5 +46,10 @@ public final class RtSqlCaseOp extends RtOp {
         }
         // There will be a `null` if you missed `ELSE` in SQL.
         return paras[size - 1].eval(etx);
+    }
+
+    @Override
+    public int typeCode() {
+        return TypeCode.OBJECT;
     }
 }

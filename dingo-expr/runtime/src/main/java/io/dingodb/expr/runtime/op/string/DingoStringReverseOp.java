@@ -42,19 +42,19 @@ public class DingoStringReverseOp extends RtStringConversionOp {
         super(paras);
     }
 
-    @Nonnull
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        String inputStr = ((String) values[0]);
-        return reverseString(inputStr);
-    }
-
     public static String reverseString(final String inputStr) {
         if (inputStr == null || inputStr.equals("")) {
             return inputStr;
         } else {
             return new StringBuilder(inputStr).reverse().toString();
         }
+    }
+
+    @Nonnull
+    @Override
+    protected Object fun(@Nonnull Object[] values) {
+        String inputStr = ((String) values[0]);
+        return reverseString(inputStr);
     }
 
     @AutoService(DingoFuncProvider.class)
@@ -76,7 +76,7 @@ public class DingoStringReverseOp extends RtStringConversionOp {
                 methods.add(DingoStringReverseOp.class.getMethod("reverseString", String.class));
                 return methods;
             } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e.toString(), e);
+                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
                 throw new RuntimeException(e);
             }
         }

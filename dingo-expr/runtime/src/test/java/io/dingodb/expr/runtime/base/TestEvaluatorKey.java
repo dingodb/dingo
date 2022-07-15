@@ -27,23 +27,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestEvaluatorKey {
     @Test
     public void testGeneralize() {
-        EvaluatorKey key = EvaluatorKey.of(TypeCode.INTEGER);
+        EvaluatorKey key = EvaluatorKey.of(TypeCode.INT);
         List<EvaluatorKey> keys = key.generalize();
         assertThat(keys.size()).isEqualTo(3);
         assertThat(keys)
-            .contains(EvaluatorKey.of(TypeCode.INTEGER))
+            .contains(EvaluatorKey.of(TypeCode.INT))
             .contains(EvaluatorKey.of(TypeCode.OBJECT))
             .contains(EvaluatorKey.UNIVERSAL);
     }
 
     @Test
     public void testGeneralize2() {
-        EvaluatorKey key = EvaluatorKey.of(TypeCode.INTEGER, TypeCode.LONG);
+        EvaluatorKey key = EvaluatorKey.of(TypeCode.INT, TypeCode.LONG);
         List<EvaluatorKey> keys = key.generalize();
         assertThat(keys.size()).isEqualTo(5);
         assertThat(keys)
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.LONG))
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.OBJECT))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.LONG))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.OBJECT))
             .contains(EvaluatorKey.of(TypeCode.OBJECT, TypeCode.LONG))
             .contains(EvaluatorKey.of(TypeCode.OBJECT, TypeCode.OBJECT))
             .contains(EvaluatorKey.UNIVERSAL);
@@ -51,14 +51,14 @@ public class TestEvaluatorKey {
 
     @Test
     public void testGeneralize3() {
-        EvaluatorKey key = EvaluatorKey.of(TypeCode.INTEGER, TypeCode.LONG, TypeCode.DECIMAL);
+        EvaluatorKey key = EvaluatorKey.of(TypeCode.INT, TypeCode.LONG, TypeCode.DECIMAL);
         List<EvaluatorKey> keys = key.generalize();
         assertThat(keys.size()).isEqualTo(9);
         assertThat(keys)
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.LONG, TypeCode.DECIMAL))
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.LONG, TypeCode.OBJECT))
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.OBJECT, TypeCode.DECIMAL))
-            .contains(EvaluatorKey.of(TypeCode.INTEGER, TypeCode.OBJECT, TypeCode.OBJECT))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.LONG, TypeCode.DECIMAL))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.LONG, TypeCode.OBJECT))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.OBJECT, TypeCode.DECIMAL))
+            .contains(EvaluatorKey.of(TypeCode.INT, TypeCode.OBJECT, TypeCode.OBJECT))
             .contains(EvaluatorKey.of(TypeCode.OBJECT, TypeCode.LONG, TypeCode.DECIMAL))
             .contains(EvaluatorKey.of(TypeCode.OBJECT, TypeCode.LONG, TypeCode.OBJECT))
             .contains(EvaluatorKey.of(TypeCode.OBJECT, TypeCode.OBJECT, TypeCode.DECIMAL))

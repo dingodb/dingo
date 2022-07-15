@@ -16,7 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -51,12 +52,12 @@ public class QuerySortTest {
     }
 
     @Test
-    public void testSort() throws SQLException {
+    public void testSort() throws SQLException, JsonProcessingException {
         String sql = "select * from test order by id asc";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "1, Alice, 3.5\n"
                 + "2, Betty, 4.0\n"
                 + "3, Cindy, 4.5\n"
@@ -70,12 +71,12 @@ public class QuerySortTest {
     }
 
     @Test
-    public void testSort1() throws SQLException {
+    public void testSort1() throws SQLException, JsonProcessingException {
         String sql = "select * from test order by name desc, amount";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "5, Emily, 5.5\n"
                 + "4, Doris, 5.0\n"
                 + "3, Cindy, 4.5\n"
@@ -89,12 +90,12 @@ public class QuerySortTest {
     }
 
     @Test
-    public void testSortLimitOffset() throws SQLException {
+    public void testSortLimitOffset() throws SQLException, JsonProcessingException {
         String sql = "select * from test order by name desc, amount limit 3 offset 2";
-        sqlHelper.queryTestOrder(
+        sqlHelper.queryTestInOrder(
             sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "3, Cindy, 4.5\n"
                 + "9, Cindy, 7.5\n"
                 + "2, Betty, 4.0\n"

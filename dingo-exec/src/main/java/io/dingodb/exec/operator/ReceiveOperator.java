@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ControlStatus;
@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonPropertyOrder({"host", "port", "schema", "output"})
@@ -52,7 +53,7 @@ public final class ReceiveOperator extends SourceOperator {
     @JsonProperty("port")
     private final int port;
     @JsonProperty("schema")
-    private final TupleSchema schema;
+    private final DingoType schema;
 
     private String tag;
     private TxRxCodec codec;
@@ -65,7 +66,7 @@ public final class ReceiveOperator extends SourceOperator {
     public ReceiveOperator(
         @JsonProperty("host") String host,
         @JsonProperty("port") int port,
-        @JsonProperty("schema") TupleSchema schema
+        @JsonProperty("schema") DingoType schema
     ) {
         super();
         this.host = host;
@@ -99,7 +100,7 @@ public final class ReceiveOperator extends SourceOperator {
             if (!(tuple[0] instanceof Fin)) {
                 ++count;
                 if (log.isDebugEnabled()) {
-                    log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.formatTuple(tuple));
+                    log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
                 }
                 output.push(tuple);
             } else {
@@ -137,13 +138,13 @@ public final class ReceiveOperator extends SourceOperator {
         try {
             endpoint.close();
         } catch (Exception e) {
-            log.error("Fin pin:{} catch exception:{}", pin, e.toString(), e);
+            log.error("Fin pin:{} catch exception:{}", pin, e, e);
         }
     }
 
     private class ReceiveMessageListener implements MessageListener {
         @Override
-        public void onMessage(Message message, Channel channel) {
+        public void onMessage(@Nonnull Message message, Channel channel) {
             try {
                 final byte[] content = message.content();
                 int count = 0;
@@ -157,11 +158,10 @@ public final class ReceiveOperator extends SourceOperator {
                     }
                     int arrLen = pair.getKey().length;
                     Object[] tuple = codec.decode(pair.getKey());
-                    tuple = schema.convert(tuple);
                     if (log.isDebugEnabled()) {
                         if (!(tuple[0] instanceof Fin)) {
                             log.debug("ReceiveMessageListener (tag = {}) Received tuple {}, arr len: {}, "
-                                    + "total len: {}, offset: {}, hashCode: {}.", tag, schema.formatTuple(tuple),
+                                    + "total len: {}, offset: {}, hashCode: {}.", tag, schema.format(tuple),
                                 arrLen, pair.getValue(), offset, this.hashCode());
                         } else {
                             log.debug("ReceiveMessageListener (tag = {}) Received FIN, arr len: {}, "
@@ -178,7 +178,7 @@ public final class ReceiveOperator extends SourceOperator {
                 }
             } catch (IOException e) {
                 log.error("ReceiveMessageListener ({}:{} tag = {}) catch exception:{}",
-                    host, port, tag, e.toString(), e);
+                    host, port, tag, e, e);
                 throw new RuntimeException(e);
             }
         }

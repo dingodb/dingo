@@ -16,22 +16,22 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.text.SimpleDateFormat;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.Collections;
+import java.util.UUID;
 
 @Slf4j
 public class TableWithDefaultValueTest {
@@ -47,6 +47,9 @@ public class TableWithDefaultValueTest {
         sqlHelper.cleanUp();
     }
 
+    private static String randomTableName() {
+        return UUID.randomUUID().toString().replace('-', '_');
+    }
 
     @Test
     public void testCase00() throws Exception {
@@ -60,7 +63,7 @@ public class TableWithDefaultValueTest {
         sqlHelper.execSqlCmd(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -79,16 +82,16 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "100, lala, NULL");
 
         sql = "select id, name from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name"},
-            TupleSchema.ofTypes("INTEGER", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
             "100, lala");
 
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -104,19 +107,18 @@ public class TableWithDefaultValueTest {
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
-
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             "100, lala, 1.1");
 
         sql = "select id, name from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name"},
-            TupleSchema.ofTypes("INTEGER", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
             "100, lala");
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -137,15 +139,15 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "score"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER"),
             "100, lala, 90");
 
         sql = "select score from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"score"},
-            TupleSchema.ofTypes("INTEGER"),
+            DingoTypeFactory.tuple("INTEGER"),
             "90");
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -166,9 +168,9 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "age", "amount", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
             "100, lala, NULL, NULL, NULL");
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -187,125 +189,89 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "age"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "DOUBLE", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER"),
             "100, lala, 20");
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
-    @Test
-    public void testCase05() throws Exception {
-        List<String> inputDateFuncList = Arrays.asList(
-            "current_date",
-            "current_date()",
-            "curdate",
-            "curdate()",
-            "CURDATE",
-            "CURRENT_DATE()");
-
-        int index = 0;
-        String tableNamePrefix = "table05";
-        for (String funcName: inputDateFuncList) {
-            String tableName = tableNamePrefix + index++;
-            final String sqlCmd = "create table " + tableName + " (\n"
-                + "    id int,\n"
-                + "    name varchar(32) not null,\n"
-                + "    birth date default " + funcName + " ,\n"
-                + "    primary key(id)\n"
-                + ")\n";
-            sqlHelper.execSqlCmd(sqlCmd);
-            String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-            sqlHelper.updateTest(sql, 1);
-            sql = "select * from " + tableName;
-
-            LocalDate nowDate = LocalDate.now();
-            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String expectDateResult = nowDate.format(dateTimeFormatter);
-
-            List<Object[]> expectedResult = new ArrayList<>();
-            expectedResult.add(new Object[] {100, "lala", expectDateResult});
-            sqlHelper.queryTestWithTime(sql,
-                new String[]{"id", "name", "birth"},
-                TupleSchema.ofTypes("INTEGER", "STRING", "DATE"),
-                expectedResult);
-            sqlHelper.clearTable(tableName);
-        }
-    }
-
-    @Test
-    public void testCase06() throws Exception {
-        List<String> inputTimeFuncList = Arrays.asList(
-            "current_time",
-            "curtime",
-            "current_time()",
-            "curtime()",
-            "CURTIME",
-            "CURRENT_TIME()"
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "current_date",
+        "current_date()",
+        "curdate()",
+        "CURRENT_DATE()",
+    })
+    public void testDefaultCurrentDate(String fun) throws SQLException {
+        String tableName = "table_curdate_" + randomTableName();
+        String sql = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    birth date default " + fun + " ,\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sql);
+        sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+        sql = "select * from " + tableName;
+        sqlHelper.queryTestInOrderWithApproxTime(
+            sql,
+            new String[]{"id", "name", "birth"},
+            Collections.singletonList(new Object[]{100, "lala", Date.valueOf(LocalDate.now())})
         );
-
-        int index = 0;
-        String tableNamePrefix = "table06";
-        for (String funcName: inputTimeFuncList) {
-            String tableName = tableNamePrefix + index++;
-            final String sqlCmd = "create table " + tableName + " (\n"
-                + "    id int,\n"
-                + "    name varchar(32) not null,\n"
-                + "    birth time default " + funcName + " ,\n"
-                + "    primary key(id)\n"
-                + ")\n";
-            sqlHelper.execSqlCmd(sqlCmd);
-            String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-            sqlHelper.updateTest(sql, 1);
-
-            sql = "select * from " + tableName;
-            LocalTime localTime = LocalTime.now();
-            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-            String formatTime = localTime.format(timeFormatter);
-            System.out.println("=====Current time is: " + formatTime);
-            List<Object[]> expectedResult = new ArrayList<>();
-            expectedResult.add(new Object[] {100, "lala", formatTime});
-            sqlHelper.queryTestWithTime(sql,
-                new String[]{"id", "name", "birth"},
-                TupleSchema.ofTypes("INTEGER", "STRING", "TIME"),
-                expectedResult);
-            sqlHelper.clearTable(tableName);
-        }
+        sqlHelper.dropTable(tableName);
     }
 
-    @Test
-    public void testCase07() throws Exception {
-        List<String> inputTimeFuncList = Arrays.asList(
-            "current_timestamp",
-            "current_timestamp()"
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "current_time",
+        "current_time()",
+        "curtime()",
+        "CURRENT_TIME()"
+    })
+    public void testDefaultCurrentTime(String fun) throws Exception {
+        String tableName = "table_curtime_" + randomTableName();
+        String sql = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    birth time default " + fun + " ,\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sql);
+        sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+        sql = "select * from " + tableName;
+        sqlHelper.queryTestInOrderWithApproxTime(
+            sql,
+            new String[]{"id", "name", "birth"},
+            Collections.singletonList(new Object[]{100, "lala", DateTimeUtils.currentTime()})
         );
+        sqlHelper.dropTable(tableName);
+    }
 
-        int index = 0;
-        String tableNamePrefix = "table07";
-        for (String funcName: inputTimeFuncList) {
-            String tableName = tableNamePrefix + index++;
-            final String sqlCmd = "create table " + tableName + " (\n"
-                + "    id int,\n"
-                + "    name varchar(32) not null,\n"
-                + "    birth timestamp default " + funcName + " ,\n"
-                + "    primary key(id)\n"
-                + ")\n";
-            sqlHelper.execSqlCmd(sqlCmd);
-            String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-            sqlHelper.updateTest(sql, 1);
-
-            sql = "select * from " + tableName;
-            LocalDateTime localDateTime = LocalDateTime.now();
-            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String formatTime = localDateTime.format(dateTimeFormatter);
-            System.out.println("=====Current time is: " + formatTime);
-
-            List<Object[]> expectedResult = new ArrayList<>();
-            expectedResult.add(new Object[] {100, "lala", formatTime});
-            sqlHelper.queryTestWithTime(sql,
-                new String[]{"id", "name", "birth"},
-                TupleSchema.ofTypes("INTEGER", "STRING", "TIMESTAMP"),
-                expectedResult);
-            sqlHelper.clearTable(tableName);
-        }
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "now()",
+        "current_timestamp",
+        "current_timestamp()",
+    })
+    public void testDefaultCurrentTimestamp(String fun) throws Exception {
+        String tableName = "table_now_" + randomTableName();
+        String sql = "create table " + tableName + " (\n"
+            + "    id int,\n"
+            + "    name varchar(32) not null,\n"
+            + "    birth timestamp default " + fun + " ,\n"
+            + "    primary key(id)\n"
+            + ")\n";
+        sqlHelper.execSqlCmd(sql);
+        sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.updateTest(sql, 1);
+        sql = "select * from " + tableName;
+        sqlHelper.queryTestInOrderWithApproxTime(
+            sql,
+            new String[]{"id", "name", "birth"},
+            Collections.singletonList(new Object[]{100, "lala", Timestamp.valueOf(LocalDateTime.now())})
+        );
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -325,9 +291,9 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             expectRecord);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -347,9 +313,9 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             expectRecord);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -370,9 +336,9 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "age", "address"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING"),
             expectRecord);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
@@ -394,13 +360,12 @@ public class TableWithDefaultValueTest {
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
             new String[]{"id", "name", "age", "address", "birthday"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "TIMESTAMP"),
             expectRecord);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
-    @Disabled
     public void testCase12() throws Exception {
         String tableName = "testCase12";
         String sqlCmd = "create table " + tableName + " (\n"
@@ -419,15 +384,14 @@ public class TableWithDefaultValueTest {
 
         String expectRecord = "100, lala, null, null, 2020-01-01, 10:30:30, 2020-01-01 10:30:30";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTestInOrderWithApproxTime(sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord);
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
-    @Disabled
     public void testCase13() throws Exception {
         String tableName = "testCase13";
         String sqlCmd = "create table " + tableName + " (\n"
@@ -448,54 +412,55 @@ public class TableWithDefaultValueTest {
         sqlHelper.updateTest(sql, 1);
         String expectRecord01 = "100, lala, null, beijing, null, null, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTestInOrderWithApproxTime(sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord01);
 
         sql = "update " + tableName + " set birth1 = '2020-11-11' where id = 100";
         sqlHelper.updateTest(sql, 1);
         String expectRecord02 = "100, lala, null, beijing, 2020-11-11, null, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTestInOrderWithApproxTime(sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord02);
 
         sql = "update " + tableName + " set birth2 = '11:11:11' where id = 100";
         sqlHelper.updateTest(sql, 1);
         String expectRecord03 = "100, lala, null, beijing, 2020-11-11, 11:11:11, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTestInOrderWithApproxTime(sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord03);
 
         sql = "update " + tableName + " set birth3 = '2022-11-11 11:11:11' where id = 100";
         sqlHelper.updateTest(sql, 1);
         String expectRecord04 = "100, lala, null, beijing, 2020-11-11, 11:11:11, 2022-11-11 11:11:11";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTestInOrderWithApproxTime(sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
             expectRecord04);
 
-        sqlHelper.clearTable(tableName);
+        sqlHelper.dropTable(tableName);
     }
 
     @Test
     public void testCase14() throws Exception {
         String tableName = "testCase14";
-        String sqlCmd = "create table " + tableName + " (\n"
+        String sql = "create table " + tableName + " (\n"
             + "    id int,\n"
             + "    name varchar(32),\n"
             + "    birth1 date, \n"
             + "    birth2 time, \n"
             + "    birth3 timestamp, \n"
-            + "    primary key(id))\n";
+            + "    primary key(id)\n"
+            + ")\n";
 
-        sqlHelper.execSqlCmd(sqlCmd);
-        String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
+        sqlHelper.execSqlCmd(sql);
+        sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
         sql = "update " + tableName + " set birth1 = current_date() where id = 100";
@@ -507,27 +472,20 @@ public class TableWithDefaultValueTest {
         sql = "update " + tableName + " set birth3 = now() where id = 100";
         sqlHelper.updateTest(sql, 1);
 
-        LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String currentTimeStamp = localDateTime.format(dateTimeFormatter);
-        System.out.println("=====Current time is: " + currentTimeStamp);
-        LocalTime localTime = LocalTime.now();
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        String currentTime = localTime.format(timeFormatter);
-        System.out.println("=====Current time is: " + currentTime);
-
-        List<Object[]> expectedResult02 = new ArrayList<>();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String currentDate = simpleDateFormat.format(new Date());
-        expectedResult02.add(new Object[] {100, "lala", currentDate, currentTime, currentTimeStamp});
-
         sql = "select * from " + tableName;
-        sqlHelper.queryTestWithTime(
+        sqlHelper.queryTestInOrderWithApproxTime(
             sql,
             new String[]{"id", "name", "birth1", "birth2", "birth3"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectedResult02);
-        sqlHelper.clearTable(tableName);
+            Collections.singletonList(
+                new Object[]{
+                    100,
+                    "lala",
+                    Date.valueOf(LocalDate.now()),
+                    DateTimeUtils.currentTime(),
+                    Timestamp.valueOf(LocalDateTime.now())
+                }
+            )
+        );
+        sqlHelper.dropTable(tableName);
     }
-
 }

@@ -18,7 +18,7 @@ package io.dingodb.exec.impl;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.Location;
-import io.dingodb.common.table.TupleSchema;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.RootOperator;
@@ -37,11 +37,11 @@ public class TestTaskImpl {
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
             ),
-            TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE")
+            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE")
         );
         values.setId(new Id("0"));
         task.putOperator(values);
-        RootOperator root = new RootOperator(TupleSchema.ofTypes("INTEGER", "STRING", "DOUBLE"));
+        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"));
         root.setId(new Id("1"));
         task.putOperator(root);
         values.getOutputs().get(0).setLink(root.getInput(0));

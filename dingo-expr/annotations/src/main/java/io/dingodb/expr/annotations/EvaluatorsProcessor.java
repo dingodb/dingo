@@ -26,6 +26,7 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -255,25 +256,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         return codeBuilder.build();
     }
 
-    @Nonnull
-    private static CodeBlock codeCreateEvaluatorKey(
-        TypeElement evaluatorKey,
-        @Nonnull List<TypeName> paraTypeNames
-    ) {
-        CodeBlock.Builder builder = CodeBlock.builder();
-        builder.add("$T.of(", evaluatorKey);
-        boolean addComma = false;
-        for (TypeName paraTypeName : paraTypeNames) {
-            if (addComma) {
-                builder.add(", ");
-            }
-            builder.add("$L", ProcessorUtils.typeCode(paraTypeName));
-            addComma = true;
-        }
-        builder.add(")");
-        return builder.build();
-    }
-
     private List<TypeElement> findSuperTypes(@Nonnull TypeElement element) {
         return processingEnv.getTypeUtils().directSupertypes(element.asType()).stream()
             .filter(i -> i.getKind() == TypeKind.DECLARED)
@@ -359,7 +341,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         @Nonnull TypeElement base,
         @Nonnull MethodSpec evalSpec,
         MethodSpec typeCodeSpec
-    ) {
+    ) throws IOException {
         TypeSpec.Builder builder = TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addField(serialVersionUid())
@@ -383,7 +365,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         @Nonnull final List<TypeName> paras,
         @Nonnull final List<TypeName> newParas,
         @Nonnull final EvaluatorsInfo info
-    ) {
+    ) throws IOException {
         String methodName = element.getSimpleName().toString();
         Pattern pattern = Pattern.compile("^([a-zA-Z]+)\\d*$");
         Matcher matcher = pattern.matcher(methodName);
@@ -422,9 +404,10 @@ public class EvaluatorsProcessor extends AbstractProcessor {
             null
         );
         MethodSpec typeCodeSpec = null;
+        TypeCodeInfo typeCodeInfo = info.getTypeCodeInfo();
         if (typeCodeMethod != null) {
             typeCodeSpec = MethodSpec.overriding(typeCodeMethod)
-                .addStatement("return $L", ProcessorUtils.typeCode(returnType))
+                .addStatement("return $L", typeCodeInfo.typeOf(returnType))
                 .build();
         }
         String className = getClassName(evaluatorName, newParas);
@@ -436,7 +419,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         );
     }
 
-    private void induceEvaluators(ExecutableElement element, EvaluatorsInfo info) {
+    private void induceEvaluators(ExecutableElement element, EvaluatorsInfo info) throws IOException {
         List<TypeName> paras = getParaTypeList(element);
         // must make a copy of paras
         List<TypeName> newParas = paras.stream()
@@ -451,7 +434,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         @Nonnull List<TypeName> newParas,
         @Nonnull final EvaluatorsInfo info,
         int pos
-    ) {
+    ) throws IOException {
         List<TypeName> induceSequence = info.getInduceSequence();
         TypeName type = paras.get(pos);
         int index = induceSequence.indexOf(type.box());
@@ -472,7 +455,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         @Nonnull List<TypeName> newParas,
         @Nonnull final EvaluatorsInfo info,
         int pos
-    ) {
+    ) throws IOException {
         if (pos >= newParas.size()) {
             generateEvaluator(element, paras, newParas, info);
             return;
@@ -481,7 +464,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         tryDescentType(element, paras, newParas, info, pos);
     }
 
-    private void generateEvaluatorFactories(@Nonnull EvaluatorsInfo info) {
+    private void generateEvaluatorFactories(@Nonnull EvaluatorsInfo info) throws IOException {
         String packageName = info.getPackageName();
         TypeElement evaluatorKey = info.getEvaluatorKey();
         TypeElement evaluatorFactory = info.getEvaluatorFactory();
@@ -490,17 +473,29 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         for (String m : multiEvaluatorMap.keySet()) {
             Map<String, EvaluatorInfo> evaluatorMap = multiEvaluatorMap.get(m);
             CodeBlock.Builder initBuilder = CodeBlock.builder();
+            TypeName generalReturnType = null;
             for (Map.Entry<String, EvaluatorInfo> entry : evaluatorMap.entrySet()) {
                 EvaluatorInfo evaluatorInfo = entry.getValue();
+                TypeName returnType = evaluatorInfo.getReturnTypeName();
+                if (generalReturnType == null) {
+                    generalReturnType = returnType;
+                } else if (generalReturnType != TypeName.OBJECT) {
+                    if (!returnType.equals(generalReturnType)) {
+                        generalReturnType = TypeName.OBJECT;
+                    }
+                }
                 List<TypeName> paraTypeNames = evaluatorInfo.getParaTypeNames();
                 initBuilder.addStatement("$L.put($L, new $T())",
                     EVALUATORS_VAR,
-                    codeCreateEvaluatorKey(evaluatorKey, paraTypeNames),
+                    info.getTypeCodeInfo().evaluatorKeyOf(evaluatorKey, paraTypeNames),
                     ClassName.get(packageName, evaluatorInfo.getClassName())
                 );
             }
-            initBuilder.addStatement("$L.put($T.UNIVERSAL, new $T(this))",
-                EVALUATORS_VAR, evaluatorKey, ClassName.get(universalEvaluator)
+            initBuilder.addStatement("$L.put($T.UNIVERSAL, new $T(this, $L))",
+                EVALUATORS_VAR,
+                evaluatorKey,
+                ClassName.get(universalEvaluator),
+                info.getTypeCodeInfo().typeOf(generalReturnType)
             );
             ClassName className = ClassName.get(packageName, getFactoryClassName(m));
             TypeSpec typeSpec = TypeSpec.classBuilder(className)
@@ -521,7 +516,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         }
     }
 
-    private void generateEvaluators(@Nonnull Element element, EvaluatorsInfo info) {
+    private void generateEvaluators(@Nonnull Element element, EvaluatorsInfo info) throws IOException {
         Element pkg = element.getEnclosingElement();
         if (pkg.getKind() != ElementKind.PACKAGE) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -532,7 +527,9 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         info.setEvaluatorMap(new HashMap<>());
         List<ExecutableElement> executableElements = ElementFilter.methodsIn(element.getEnclosedElements());
         executableElements.sort(Comparator.comparingInt(e -> -methodWeight(e, info.getInduceSequence())));
-        executableElements.forEach(e -> induceEvaluators(e, info));
+        for (ExecutableElement executableElement : executableElements) {
+            induceEvaluators(executableElement, info);
+        }
         generateEvaluatorFactories(info);
     }
 
@@ -555,37 +552,43 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         }
         for (TypeElement annotation : annotations) {
             if (annotation.getQualifiedName().contentEquals(Evaluators.class.getCanonicalName())) {
-                Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotation);
-                for (Element element : elements) {
-                    AnnotationMirror annotationMirror = getAnnotationMirror(element, Evaluators.class);
-                    TypeElement evaluatorKey = getTypeElementFromAnnotationValue(
-                        Objects.requireNonNull(annotationMirror),
-                        "evaluatorKey"
-                    );
-                    TypeElement evaluator = getTypeElementFromAnnotationValue(
-                        Objects.requireNonNull(annotationMirror),
-                        "evaluatorBase"
-                    );
-                    TypeElement evaluatorFactory = getTypeElementFromAnnotationValue(
-                        Objects.requireNonNull(annotationMirror),
-                        "evaluatorFactory"
-                    );
-                    TypeElement universalEvaluator = getTypeElementFromAnnotationValue(
-                        Objects.requireNonNull(annotationMirror),
-                        "universalEvaluator"
-                    );
-                    List<TypeName> induceSequence = getTypeNamesFromAnnotationValue(
-                        annotationMirror,
-                        "induceSequence"
-                    );
-                    EvaluatorsInfo info = new EvaluatorsInfo(
-                        evaluatorKey,
-                        evaluator,
-                        evaluatorFactory,
-                        universalEvaluator,
-                        induceSequence
-                    );
-                    generateEvaluators(element, info);
+                try {
+                    TypeCodeInfo typeCodeInfo = TypeCodeInfo.createFromEnv(roundEnv);
+                    Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotation);
+                    for (Element element : elements) {
+                        AnnotationMirror annotationMirror = getAnnotationMirror(element, Evaluators.class);
+                        TypeElement evaluatorKey = getTypeElementFromAnnotationValue(
+                            Objects.requireNonNull(annotationMirror),
+                            "evaluatorKey"
+                        );
+                        TypeElement evaluator = getTypeElementFromAnnotationValue(
+                            Objects.requireNonNull(annotationMirror),
+                            "evaluatorBase"
+                        );
+                        TypeElement evaluatorFactory = getTypeElementFromAnnotationValue(
+                            Objects.requireNonNull(annotationMirror),
+                            "evaluatorFactory"
+                        );
+                        TypeElement universalEvaluator = getTypeElementFromAnnotationValue(
+                            Objects.requireNonNull(annotationMirror),
+                            "universalEvaluator"
+                        );
+                        List<TypeName> induceSequence = getTypeNamesFromAnnotationValue(
+                            annotationMirror,
+                            "induceSequence"
+                        );
+                        EvaluatorsInfo info = new EvaluatorsInfo(
+                            typeCodeInfo,
+                            evaluatorKey,
+                            evaluator,
+                            evaluatorFactory,
+                            universalEvaluator,
+                            induceSequence
+                        );
+                        generateEvaluators(element, info);
+                    }
+                } catch (Exception e) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getLocalizedMessage());
                 }
             }
         }

@@ -24,7 +24,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.jackson.PrecisionSerializer;
 import io.dingodb.common.jackson.ScaleSerializer;
 import io.dingodb.common.jackson.SqlTypeNameSerializer;
-import io.dingodb.common.util.TypeMapping;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.expr.runtime.TypeCode;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -79,6 +81,7 @@ public class ColumnDefinition {
     @Builder.Default
     private final boolean primary = false;
 
+    @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("default")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
@@ -93,7 +96,7 @@ public class ColumnDefinition {
         @JsonProperty("scale") Integer scale,
         @JsonProperty("notNull") boolean notNull,
         @JsonProperty("primary") boolean primary,
-        @JsonProperty("default") Object defaultValue
+        @JsonProperty("default") String defaultValue
     ) {
         SqlTypeName type = SqlTypeName.get(typeName.toUpperCase());
         if (type != null) {
@@ -104,20 +107,10 @@ public class ColumnDefinition {
                 .scale(scale != null ? scale : RelDataType.SCALE_NOT_SPECIFIED)
                 .notNull(notNull)
                 .primary(primary)
-                .defaultValue(defaultValue != null ? defaultValue.toString() : null)
+                .defaultValue(defaultValue)
                 .build();
         }
         throw new AssertionError("Invalid type name \"" + typeName + "\".");
-    }
-
-    public static ColumnDefinition fromRelDataType(String name, @Nonnull RelDataType relDataType) {
-        return ColumnDefinition.builder()
-            .name(name)
-            .type(relDataType.getSqlTypeName())
-            .precision(relDataType.getPrecision())
-            .scale(relDataType.getScale())
-            .notNull(!relDataType.isNullable())
-            .build();
     }
 
     public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
@@ -132,14 +125,11 @@ public class ColumnDefinition {
         return typeFactory.createTypeWithNullability(result, !this.notNull);
     }
 
-    public int getTypeCode() {
-        return TypeMapping.formSqlTypeName(type);
+    public DingoType getElementType() {
+        return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
     }
 
-    public ElementSchema getElementType() {
-        return new ElementSchema(getTypeCode(), !notNull);
-    }
-
+    @SuppressWarnings("ConstantConditions")
     public ColumnStrategy getColumnStrategy() {
         if (defaultValue != null) {
             return ColumnStrategy.DEFAULT;

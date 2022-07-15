@@ -16,7 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.table.TupleSchema;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -63,13 +64,13 @@ public class TransferTableTest {
     }
 
     @Test
-    public void testTransfer() throws SQLException {
+    public void testTransfer() throws SQLException, JsonProcessingException {
         String sql = "insert into test1 select id, name, amount > 6.0, name, amount+1.0 from test where amount > 5.0";
         sqlHelper.updateTest(sql, 5);
         sqlHelper.queryTest(
             "select * from test1",
             new String[]{"id0", "id1", "id2", "name", "amount"},
-            TupleSchema.ofTypes("INTEGER", "STRING", "BOOLEAN", "STRING", "DOUBLE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "BOOLEAN", "STRING", "DOUBLE"),
             "5, Emily, false, Emily, 6.5\n"
                 + "6, Alice, false, Alice, 7.0\n"
                 + "7, Betty, true, Betty, 7.5\n"

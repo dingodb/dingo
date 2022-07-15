@@ -21,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -64,15 +67,6 @@ public class TableDefinition {
 
     public static TableDefinition readJson(InputStream is) throws IOException {
         return PARSER.parse(is, TableDefinition.class);
-    }
-
-    @Nonnull
-    public static TableDefinition fromRelDataType(String name, @Nonnull RelDataType relDataType) {
-        TableDefinition td = new TableDefinition(name);
-        relDataType.getFieldList().forEach(f ->
-            td.addColumn(ColumnDefinition.fromRelDataType(f.getName(), f.getType()))
-        );
-        return td;
     }
 
     public TableDefinition addColumn(ColumnDefinition column) {
@@ -162,33 +156,29 @@ public class TableDefinition {
     }
 
     public Schema getAvroSchemaOfKey() {
-        return getTupleSchema(true).getAvroSchema();
+        return getDingoType(true).toAvroSchema();
     }
 
     public Schema getAvroSchemaOfValue() {
-        return getTupleSchema(false).getAvroSchema();
-    }
-
-    public Schema getAvroSchema() {
-        return getTupleSchema().getAvroSchema();
+        return getDingoType(false).toAvroSchema();
     }
 
     @Nonnull
-    public TupleSchema getTupleSchema() {
-        return new TupleSchema(
+    public DingoType getDingoType() {
+        return DingoTypeFactory.tuple(
             columns.stream()
                 .map(ColumnDefinition::getElementType)
-                .toArray(ElementSchema[]::new)
+                .toArray(DingoType[]::new)
         );
     }
 
     @Nonnull
-    public TupleSchema getTupleSchema(boolean keyOrValue) {
-        return new TupleSchema(
+    public DingoType getDingoType(boolean keyOrValue) {
+        return DingoTypeFactory.tuple(
             getColumnMapping(keyOrValue).stream()
                 .mapToObj(columns::get)
                 .map(ColumnDefinition::getElementType)
-                .toArray(ElementSchema[]::new)
+                .toArray(DingoType[]::new)
         );
     }
 
@@ -202,21 +192,6 @@ public class TableDefinition {
 
     public void writeJson(OutputStream os) throws IOException {
         PARSER.writeStream(os, this);
-    }
-
-    public String formatTuple(Object[] tuple) {
-        StringBuilder b = new StringBuilder();
-        b.append("{");
-        int i = 0;
-        for (ColumnDefinition column : columns) {
-            if (i > 0) {
-                b.append(", ");
-            }
-            b.append(column.getName()).append(": ").append(tuple[i]);
-            ++i;
-        }
-        b.append("}");
-        return b.toString();
     }
 
     @Override

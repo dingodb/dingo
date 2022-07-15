@@ -17,6 +17,7 @@
 package io.dingodb.expr.json.runtime;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -75,6 +76,8 @@ public class Parser implements Serializable {
         mapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
         mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.enable(DeserializationFeature.USE_LONG_FOR_INTS);
     }
 
     @Nonnull

@@ -19,7 +19,7 @@ package io.dingodb.common.partition;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dingodb.common.hash.SimpleHashStrategy;
-import io.dingodb.common.table.TupleMapping;
+import io.dingodb.common.type.TupleMapping;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
