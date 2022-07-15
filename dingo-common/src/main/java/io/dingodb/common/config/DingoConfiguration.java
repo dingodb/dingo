@@ -78,7 +78,7 @@ public class DingoConfiguration {
     }
 
     public static int port() {
-        return INSTANCE == null ? 0 : INSTANCE.getPort();
+        return INSTANCE == null ? 0 : (INSTANCE.getPort().intValue());
     }
 
     public static int raftPort() {
@@ -139,8 +139,9 @@ public class DingoConfiguration {
             log.error("Miss configuration store->raft->port");
             return 0;
         }
-        if (raftPort instanceof Integer) {
-            return (Integer) raftPort;
+
+        if (raftPort instanceof Number) {
+            return ((Number) raftPort).intValue();
         } else if (raftPort instanceof String) {
             return Integer.parseInt((String) raftPort);
         }

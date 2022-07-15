@@ -60,7 +60,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
             StoreConfiguration.raft().getNode(),
             path,
             new RocksDBLogStorage(id, (RocksDBLogStore) logStore),
-            new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort()),
+            new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort().intValue()),
             part.getReplicates()
         );
         this.stateMachine = new PartStateMachine(id, raftStore, part);

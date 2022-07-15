@@ -50,12 +50,12 @@ public class StoreConfiguration {
     private String dbPath;
     private String dbRocksOptionsFile;
     private String logRocksOptionsFile;
-    private int collectStatsInterval = -1;
+    private long collectStatsInterval = -1;
     private int approximateCount = 10_000;
     private RaftConfiguration raft;
     private boolean collectMetric = false;   // default false, current collect is invalid
 
-    public static Integer collectStatsInterval() {
+    public static Long collectStatsInterval() {
         return INSTANCE.collectStatsInterval;
     }
 

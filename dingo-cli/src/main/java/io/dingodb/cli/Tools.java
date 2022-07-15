@@ -88,7 +88,7 @@ public class Tools {
             case "DRIVER":
                 Services.initControlMsgService();
                 netService.listenPort(port);
-                DingoConfiguration.instance().setPort(port);
+                DingoConfiguration.instance().setPort(port.longValue());
                 DriverProxyService driverProxyService = new DriverProxyService();
                 driverProxyService.start();
                 break;
@@ -117,7 +117,7 @@ public class Tools {
             try {
                 DatagramSocket datagramSocket = new DatagramSocket();
                 netService.listenPort(datagramSocket.getLocalPort());
-                DingoConfiguration.instance().getExchange().setPort(datagramSocket.getLocalPort());
+                DingoConfiguration.instance().getExchange().setPort(Long.valueOf(datagramSocket.getLocalPort()));
                 datagramSocket.close();
                 return datagramSocket.getLocalPort();
             } catch (Exception e) {
