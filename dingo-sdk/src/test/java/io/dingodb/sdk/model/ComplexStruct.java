@@ -16,32 +16,34 @@
 
 package io.dingodb.sdk.model;
 
+import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
 import io.dingodb.sdk.annotation.DingoRecord;
-import io.dingodb.sdk.annotation.ParamFrom;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
-@DingoRecord(database = "test", table = "testSet")
-public class ConstructedClass {
+@DingoRecord(database = "test", table = "complexStruct")
+public class ComplexStruct {
     @DingoKey
-    public final int id;
-    public final int age;
-    public final String name;
-    public Date birthday;
+    private String ssn;
 
-    public ConstructedClass(@ParamFrom("id") int id,
-                            @ParamFrom("age") int age,
-                            @ParamFrom("name") String name,
-                            @ParamFrom("birthday") Date birthday) {
-        super();
-        this.id  =  id;
-        this.age  =  age;
-        this.name  =  name;
-        this.birthday  =  birthday;
-    }
+    @DingoColumn(name = "values")
+    private List<Integer> values;
+
+    @DingoColumn(name = "address")
+    private List<Address> addresses;
+
+    @DingoColumn(name = "home")
+    private Map<String, String> home;
+
+    @DingoColumn(name = "work")
+    private Map<String, Address> work;
+
+    @DingoColumn
+    private Integer[] integerValues;
 }

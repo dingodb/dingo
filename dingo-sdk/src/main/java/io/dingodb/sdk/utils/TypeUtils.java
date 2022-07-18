@@ -406,8 +406,21 @@ public class TypeUtils {
             case "string": {
                 return "VARCHAR";
             }
+
+            case "list": {
+                return "ARRAY";
+            }
+
+            case "map": {
+                return "MAP";
+            }
+
             default: {
-                return "VARCHAR";
+                if (inputJavaType.contains("[]")) {
+                    return "ARRAY";
+                } else {
+                    return "VARCHAR";
+                }
             }
         }
     }

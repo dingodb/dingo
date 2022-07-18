@@ -14,34 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.model;
+package io.dingodb.sdk.model.embeded;
 
+
+import io.dingodb.sdk.annotation.DingoEmbed;
 import io.dingodb.sdk.annotation.DingoKey;
 import io.dingodb.sdk.annotation.DingoRecord;
-import io.dingodb.sdk.annotation.ParamFrom;
-import lombok.Getter;
-import lombok.Setter;
 
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
-@Getter
-@Setter
 @DingoRecord(database = "test", table = "testSet")
-public class ConstructedClass {
+public class OwningClass {
     @DingoKey
-    public final int id;
-    public final int age;
-    public final String name;
-    public Date birthday;
+    public int id;
+    @DingoEmbed(elementType = DingoEmbed.EmbedType.LIST)
+    public final List<OwnedClass> children;
 
-    public ConstructedClass(@ParamFrom("id") int id,
-                            @ParamFrom("age") int age,
-                            @ParamFrom("name") String name,
-                            @ParamFrom("birthday") Date birthday) {
-        super();
-        this.id  =  id;
-        this.age  =  age;
-        this.name  =  name;
-        this.birthday  =  birthday;
+    public OwningClass() {
+        children = new ArrayList<>();
     }
 }
+
+
+
