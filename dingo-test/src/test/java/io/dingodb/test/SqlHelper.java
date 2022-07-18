@@ -42,6 +42,7 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -68,6 +69,11 @@ public class SqlHelper {
 
     public SqlHelper(Connection connection) {
         this.connection = connection;
+    }
+
+    @Nonnull
+    public static String randomTableName() {
+        return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
     }
 
     public void cleanUp() throws SQLException {

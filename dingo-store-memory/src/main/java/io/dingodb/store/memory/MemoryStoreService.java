@@ -19,7 +19,6 @@ package io.dingodb.store.memory;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
@@ -38,19 +37,6 @@ public class MemoryStoreService implements StoreService {
     @Override
     public String name() {
         return "MEMORY";
-    }
-
-    private Part createPart(@Nonnull CommonId id, byte[] start, byte[] end) {
-        return Part.builder()
-            .id(id)
-            .instanceId(id)
-            .start(start)
-            .end(end)
-            .type(Part.PartType.ROW_STORE)
-            .replicates(Collections.emptyList())
-            .leader(new Location("localhost", 0))
-            .version(0)
-            .build();
     }
 
     @Override
@@ -74,5 +60,18 @@ public class MemoryStoreService implements StoreService {
     @Override
     public void deleteInstance(CommonId id) {
         store.remove(id);
+    }
+
+    private Part createPart(@Nonnull CommonId id, byte[] start, byte[] end) {
+        return Part.builder()
+            .id(id)
+            .instanceId(id)
+            .start(start)
+            .end(end)
+            .type(Part.PartType.ROW_STORE)
+            .replicates(Collections.emptyList())
+            .leader(new Location("localhost", 0))
+            .version(0)
+            .build();
     }
 }

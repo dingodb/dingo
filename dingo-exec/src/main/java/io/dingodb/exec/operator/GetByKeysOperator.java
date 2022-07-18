@@ -34,35 +34,57 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("get")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "selection", "output"})
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
-    @JsonProperty("keys")
     private final List<Object[]> keyTuples;
     @JsonProperty("filter")
     private final RtExprWithType filter;
     @JsonProperty("selection")
     private final TupleMapping selection;
 
-    @JsonCreator
     public GetByKeysOperator(
+        CommonId tableId,
+        Object partId,
+        DingoType schema,
+        TupleMapping keyMapping,
+        @Nonnull List<Object[]> keyTuples,
+        RtExprWithType filter,
+        TupleMapping selection
+    ) {
+        super(tableId, partId, schema, keyMapping);
+        this.keyTuples = keyTuples;
+        this.filter = filter;
+        this.selection = selection;
+    }
+
+    @Nonnull
+    @JsonCreator
+    public static GetByKeysOperator fromJson(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("keys") Collection<Object[]> keyTuples,
+        @Nonnull @JsonProperty("keys") Collection<Object[]> keyTuples,
         @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
-        super(tableId, partId, schema, keyMapping);
         // crucial, recover types from json values.
-        this.keyTuples = keyTuples.stream()
+        List<Object[]> newKeyTuples = keyTuples.stream()
             .map(i -> (Object[]) schema.select(keyMapping).convertFrom(i, JsonConverter.INSTANCE))
             .collect(Collectors.toList());
-        this.filter = filter;
-        this.selection = selection;
+        return new GetByKeysOperator(tableId, partId, schema, keyMapping, newKeyTuples, filter, selection);
+    }
+
+    // This method is only used by json serialization.
+    @JsonProperty("keys")
+    public List<Object[]> getJsonKeyTuples() {
+        return keyTuples.stream()
+            .map(i -> (Object[]) schema.select(keyMapping).convertTo(i, JsonConverter.INSTANCE))
+            .collect(Collectors.toList());
     }
 
     @Override

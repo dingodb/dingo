@@ -76,7 +76,6 @@ public class Parser implements Serializable {
         mapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
         mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.enable(DeserializationFeature.USE_LONG_FOR_INTS);
     }
 

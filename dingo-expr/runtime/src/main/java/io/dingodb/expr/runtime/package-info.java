@@ -22,7 +22,7 @@
     @GenerateTypeCodes.TypeCode(name = "LONG", type = "java.lang.Long",
         aliases = {"BIGINT"}),
     @GenerateTypeCodes.TypeCode(name = "DOUBLE", type = "java.lang.Double",
-        aliases = {"REAL"}),
+        aliases = {"FLOAT", "REAL"}),
     @GenerateTypeCodes.TypeCode(name = "STRING", type = "java.lang.String",
         aliases = {"CHAR", "VARCHAR"}),
     @GenerateTypeCodes.TypeCode(name = "DECIMAL", type = "java.math.BigDecimal"),
