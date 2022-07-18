@@ -30,6 +30,21 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
+    public Long convert(@Nonnull Date value) {
+        return value.getTime();
+    }
+
+    @Override
+    public Long convert(@Nonnull Time value) {
+        return value.getTime();
+    }
+
+    @Override
+    public Long convert(@Nonnull Timestamp value) {
+        return value.getTime();
+    }
+
+    @Override
     public Integer convertIntegerFrom(@Nonnull Object value) {
         if (value instanceof Long) {
             return ((Long) value).intValue();

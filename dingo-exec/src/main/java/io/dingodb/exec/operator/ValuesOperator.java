@@ -31,7 +31,6 @@ import javax.annotation.Nonnull;
 @JsonTypeName("values")
 @JsonPropertyOrder({"tuples", "output"})
 public final class ValuesOperator extends IteratorSourceOperator {
-    @JsonProperty("tuples")
     @Getter
     private final List<Object[]> tuples;
     @JsonProperty("schema")
@@ -55,6 +54,14 @@ public final class ValuesOperator extends IteratorSourceOperator {
             .map(i -> (Object[]) schema.convertFrom(i, JsonConverter.INSTANCE))
             .collect(Collectors.toList());
         return new ValuesOperator(newTuples, schema);
+    }
+
+    // This method is only used by json serialization.
+    @JsonProperty("tuples")
+    public List<Object[]> getJsonTuples() {
+        return tuples.stream()
+            .map(i -> (Object[]) schema.convertTo(i, JsonConverter.INSTANCE))
+            .collect(Collectors.toList());
     }
 
     @Override

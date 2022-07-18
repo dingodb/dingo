@@ -27,7 +27,6 @@ import io.dingodb.meta.Part;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -107,39 +106,39 @@ public class MetaTestService implements MetaService {
     @Override
     public NavigableMap<ComparableByteArray, Part> getParts(String name) {
         TreeMap<ComparableByteArray, Part> result = new TreeMap<>();
-        ComparableByteArray startKey = new ComparableByteArray(ByteArrayUtils.EMPTY_BYTES);
-        ComparableByteArray endKey = new ComparableByteArray(ByteArrayUtils.MAX_BYTES);
-        result.put(startKey, new Part(
-            startKey.getBytes(),
-            new FakeLocation(0),
-            Arrays.asList(new FakeLocation(0)),
-            startKey.getBytes(),
-            endKey.getBytes()
+        byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
+        byte[] endKey = ByteArrayUtils.MAX_BYTES;
+        result.put(new ComparableByteArray(startKey), new Part(
+            startKey,
+            new FakeLocation(1),
+            Collections.singletonList(new FakeLocation(1)),
+            startKey,
+            endKey
         ));
 //        startKey = endKey;
-//        endKey = new ComparableByteArray(PrimitiveCodec.encodeVarInt(6));
-//        result.put(startKey, new Part(
-//            startKey.getBytes(),
+//        endKey = PrimitiveCodec.encodeVarInt(6);
+//        result.put(new ComparableByteArray(startKey), new Part(
+//            startKey,
 //            new FakeLocation(1),
-//            Arrays.asList(new FakeLocation(1)),
-//            startKey.getBytes(),
-//            endKey.getBytes()
+//            Collections.singletonList(new FakeLocation(1)),
+//            startKey,
+//            endKey
 //        ));
 //        startKey = endKey;
-//        endKey = null;
-//        result.put(startKey, new Part(
-//            startKey.getBytes(),
+//        endKey = ByteArrayUtils.MAX_BYTES;
+//        result.put(new ComparableByteArray(startKey), new Part(
+//            startKey,
 //            new FakeLocation(2),
-//            Arrays.asList(new FakeLocation(2)),
-//            startKey.getBytes(),
-//            null
+//            Collections.singletonList(new FakeLocation(2)),
+//            startKey,
+//            endKey
 //        ));
         return result;
     }
 
     @Override
     public List<Location> getDistributes(String name) {
-        return Collections.singletonList(new FakeLocation(0));
+        return Collections.singletonList(new FakeLocation(1));
     }
 
     @Override
