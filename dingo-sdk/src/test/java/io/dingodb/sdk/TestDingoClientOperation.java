@@ -45,39 +45,13 @@ public class TestDingoClientOperation {
     @BeforeEach
     public void init() {
         dingoClient = new DingoClient("src/test/resources/config/config.yaml");
-        initConnectionInMockMode();
+        MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
     }
 
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
             dingoClient.closeConnection();
-        }
-    }
-
-    private void initConnectionInMockMode() {
-        DingoConnection connection = mock(DingoConnection.class);
-        when(connection.getMetaClient()).thenReturn(metaClient);
-        when(connection.getApiRegistry()).thenReturn(apiRegistry);
-
-        try {
-            Field metaClientField = DingoConnection.class.getDeclaredField("metaClient");
-            metaClientField.setAccessible(true);
-            metaClientField.set(connection, metaClient);
-
-            Field apiRegistryField = DingoConnection.class.getDeclaredField("apiRegistry");
-            apiRegistryField.setAccessible(true);
-            apiRegistryField.set(connection, apiRegistry);
-
-            Field connectionField = DingoClient.class.getDeclaredField("connection");
-            connectionField.setAccessible(true);
-            connectionField.set(dingoClient, connection);
-        } catch (NoSuchFieldException e) {
-            Assertions.fail("DingoConnection.metaClient field not found");
-        } catch (SecurityException e) {
-            Assertions.fail("DingoConnection.metaClient field not accessible");
-        } catch (IllegalAccessException e) {
-            Assertions.fail("Invalid Runtime Exception");
         }
     }
 
