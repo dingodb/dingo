@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @Disabled
-public class QueryWithMultiCondition {
+public class QueryWithMultiConditionTest {
     @Test
     public void testCaseWithOutPrimaryKeys() throws Exception {
         SqlHelper sqlHelper = new SqlHelper();

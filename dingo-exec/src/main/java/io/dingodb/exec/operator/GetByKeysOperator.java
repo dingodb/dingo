@@ -24,11 +24,11 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.converter.JsonConverter;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -52,12 +52,15 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("keys") Collection<Object[]> keyTuple,
+        @JsonProperty("keys") Collection<Object[]> keyTuples,
         @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
         super(tableId, partId, schema, keyMapping);
-        this.keyTuples = new ArrayList<>(keyTuple);
+        // crucial, recover types from json values.
+        this.keyTuples = keyTuples.stream()
+            .map(i -> (Object[]) schema.select(keyMapping).convertFrom(i, JsonConverter.INSTANCE))
+            .collect(Collectors.toList());
         this.filter = filter;
         this.selection = selection;
     }
