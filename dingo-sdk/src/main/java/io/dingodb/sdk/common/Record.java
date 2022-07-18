@@ -17,10 +17,12 @@
 package io.dingodb.sdk.common;
 
 import io.dingodb.sdk.annotation.DingoColumn;
+import io.dingodb.sdk.annotation.DingoEmbed;
 
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +36,7 @@ public final class Record {
     /**
      * Map of requested name/value columns.
      */
-    public final Map<String, Object> columns;
+    private final Map<String, Object> columns;
 
 
     /**
@@ -66,7 +68,11 @@ public final class Record {
         for (Field field: instance.getClass().getDeclaredFields()) {
             String fieldName = field.getName();
             if (field.isAnnotationPresent(DingoColumn.class)) {
-                fieldName = field.getAnnotation(DingoColumn.class).name();
+                String localFieldName = field.getAnnotation(DingoColumn.class).name();
+                boolean isOK = localFieldName != null && !localFieldName.isEmpty();
+                if (isOK) {
+                    fieldName = localFieldName;
+                }
             }
             field.setAccessible(true);
             try {

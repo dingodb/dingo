@@ -16,32 +16,31 @@
 
 package io.dingodb.sdk.model;
 
+import io.dingodb.sdk.annotation.DingoEmbed;
 import io.dingodb.sdk.annotation.DingoKey;
 import io.dingodb.sdk.annotation.DingoRecord;
-import io.dingodb.sdk.annotation.ParamFrom;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
-
-@Getter
-@Setter
 @DingoRecord(database = "test", table = "testSet")
-public class ConstructedClass {
+@Setter
+@Getter
+public class AnnotatedArrayClass {
     @DingoKey
-    public final int id;
-    public final int age;
-    public final String name;
-    public Date birthday;
+    private int key;
+    private byte[] bytes;
+    private short[] shorts;
+    private int[] ints;
+    private long[] longs;
+    private float[] floats;
+    private double[] doubles;
+    private String[] strings;
+    @DingoEmbed
+    private ChildClass[] children;
 
-    public ConstructedClass(@ParamFrom("id") int id,
-                            @ParamFrom("age") int age,
-                            @ParamFrom("name") String name,
-                            @ParamFrom("birthday") Date birthday) {
-        super();
-        this.id  =  id;
-        this.age  =  age;
-        this.name  =  name;
-        this.birthday  =  birthday;
-    }
+    @DingoEmbed(elementType = DingoEmbed.EmbedType.LIST)
+    private ChildClass[] listChildren;
+
+    @DingoEmbed(elementType = DingoEmbed.EmbedType.MAP)
+    private ChildClass[] mapChildren;
 }

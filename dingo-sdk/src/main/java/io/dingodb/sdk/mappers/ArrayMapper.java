@@ -22,6 +22,7 @@ import io.dingodb.sdk.utils.TypeUtils;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ArrayMapper extends TypeMapper {
@@ -60,7 +61,13 @@ public class ArrayMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        List<?> list = (List<?>) value;
+        List<?> list = null;
+        if (value.getClass().isArray()) {
+            list = Arrays.asList((Object[]) value);
+        } else {
+            list = (List<?>) value;
+        }
+
         if (this.supportedWithoutTranslation) {
             return value;
         }
