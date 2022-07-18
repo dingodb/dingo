@@ -1,0 +1,216 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.sdk;
+
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.annotation.DingoRecord;
+import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoOpCli;
+import io.dingodb.sdk.common.Column;
+import io.dingodb.sdk.common.Key;
+import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.mock.MockApiRegistry;
+import io.dingodb.sdk.mock.MockMetaClient;
+import io.dingodb.sdk.model.AnnotatedArrayClass;
+import io.dingodb.sdk.model.ChildClass;
+import io.dingodb.sdk.model.ComplexStruct;
+import io.dingodb.sdk.model.ConstructedClass;
+import io.dingodb.sdk.operation.StoreOperationUtils;
+import io.dingodb.sdk.utils.MetaServiceUtils;
+import org.checkerframework.checker.units.qual.A;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+
+
+public class TestDingoArrayType {
+
+    private DingoClient dingoClient;
+
+    private MockMetaClient metaClient = new MockMetaClient("src/test/resources/config.yaml");
+
+    private MockApiRegistry apiRegistry = new MockApiRegistry();
+
+    private AnnotatedArrayClass arrayClass;
+    private Column[] columns;
+
+    @BeforeEach
+    public void init() {
+        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+
+        int columnCnt = 11;
+        columns = new Column[columnCnt];
+
+        int index = 0;
+        MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
+        arrayClass = new AnnotatedArrayClass();
+        int value = 1;
+        arrayClass.setKey(value);
+        columns[index] = new Column("key", value);
+
+        byte[] bytes = new byte[]{1, 2, 3, 4, 5};
+        arrayClass.setBytes(bytes);
+        columns[++index] = new Column("bytes", Arrays.asList(bytes));
+
+        short[] shortArray = new short[]{1,2,3,4,5};
+        arrayClass.setShorts(shortArray);
+        columns[++index] = new Column("shorts", Arrays.asList(shortArray));
+
+        int [] intArray = new int[]{1,2,3,4,5};
+        arrayClass.setInts(intArray);
+        columns[++index] = new Column("ints", Arrays.asList(intArray));
+
+        long [] longArray = new long[]{1L,2L,3L,4L,5L};
+        arrayClass.setLongs(longArray);
+        columns[++index] = new Column("longs", Arrays.asList(longArray));
+
+        float [] floatArray = new float[]{1.0f,2.0f,3.0f,4.0f,5.0f};
+        arrayClass.setFloats(floatArray);
+        columns[++index] = new Column("floats", Arrays.asList(floatArray));
+
+        double[] doubleArray = new double[]{1.0,2.0,3.0,4.0,5.0};
+        arrayClass.setDoubles(doubleArray);
+        columns[++index] = new Column("doubles", Arrays.asList(doubleArray));
+
+        arrayClass.setStrings(Arrays.asList("1","2","3","4","5").toArray(new String[0]));
+        columns[++index] = new Column("strings", Arrays.asList("1","2","3","4","5"));
+
+        List<ChildClass> childClassList = Arrays.asList(
+            new ChildClass(1, "1", 1.0f),
+            new ChildClass(2, "2", 2.0f),
+            new ChildClass(3, "3", 3.0f)
+        );
+        arrayClass.setChildren(childClassList.toArray(new ChildClass[0]));
+        List<HashMap<String, Object>> childClassMapList = childClassList.stream().map(childClass -> {
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("valueOfInt", childClass.getValueOfInt());
+            map.put("valueOfStr", childClass.getValueOfStr());
+            map.put("valueOfFloat", childClass.getValueOfFloat());
+            return map;
+        }).collect(Collectors.toList());
+        columns[++index] = new Column("children", Arrays.asList(childClassMapList));
+
+        arrayClass.setListChildren(childClassList.toArray(new ChildClass[0]));
+        columns[++index] = new Column("listChildren", Arrays.asList(childClassMapList));
+
+        arrayClass.setMapChildren(childClassList.toArray(new ChildClass[0]));
+        columns[++index] = new Column("mapChildren", Arrays.asList(childClassMapList));
+    }
+
+    @AfterEach
+    public void tearDown() {
+        if (dingoClient != null) {
+            dingoClient.closeConnection();
+        }
+    }
+
+    @Test
+    public void testDingoArrayType01() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
+        isOK = dingoCli.createTable(AnnotatedArrayClass.class);
+        Assertions.assertTrue(isOK);
+        Map<String, TableDefinition> storeOperations = StoreOperationUtils.getTableDefinitionInCache();
+        Assertions.assertEquals(1, storeOperations.size());
+
+        isOK = dingoCli.dropTable(AnnotatedArrayClass.class);
+        Assertions.assertTrue(isOK);
+        storeOperations = StoreOperationUtils.getTableDefinitionInCache();
+        Assertions.assertEquals(0, storeOperations.size());
+    }
+
+    @Test
+    public void testDingoArrayType02() {
+        boolean isOK = dingoClient.openConnection();
+        Assertions.assertTrue(isOK);
+
+        DingoClient spyClient = Mockito.spy(dingoClient);
+        DingoOpCli dingoCli = new DingoOpCli.Builder(spyClient).build();
+        isOK = dingoCli.createTable(AnnotatedArrayClass.class);
+        Assertions.assertTrue(isOK);
+
+        Map<String, TableDefinition> storeOperations = StoreOperationUtils.getTableDefinitionInCache();
+        Assertions.assertEquals(1, storeOperations.size());
+
+        DingoRecord record = AnnotatedArrayClass.class.getAnnotation(DingoRecord.class);
+        String tableName = record.table();
+        TableDefinition tableDefinition = storeOperations.get(tableName);
+        Assertions.assertTrue(tableDefinition != null);
+
+        List<String> columnsInTable = tableDefinition.getColumns()
+            .stream().map(x -> x.getName()).collect(Collectors.toList());
+
+        Record expectedRecord = new Record(columnsInTable, columns);
+
+        try {
+            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(expectedRecord).when(spyClient).get((Key) any());
+            doReturn(true).when(spyClient).delete((Key) any());
+            doReturn(true).when(spyClient).dropTable(anyString());
+        } catch (Exception e) {
+            Assertions.fail("Mock catch Unexpected exception");
+        }
+        dingoCli.save(arrayClass);
+
+        /*
+        AnnotatedArrayClass localArray = dingoCli.read(AnnotatedArrayClass.class, 1);
+        Assertions.assertEquals(arrayClass.getKey(), localArray.getKey());
+        Assertions.assertEquals(
+            Arrays.toString(arrayClass.getBytes()),
+            Arrays.toString(localArray.getBytes())
+        );
+        Assertions.assertEquals(
+            Arrays.toString(arrayClass.getShorts()),
+            Arrays.toString(localArray.getShorts())
+        );
+        Assertions.assertEquals(
+            Arrays.toString(arrayClass.getInts()),
+            Arrays.toString(localArray.getInts())
+        );
+        Assertions.assertEquals(
+            Arrays.toString(arrayClass.getLongs()),
+            Arrays.toString(localArray.getLongs())
+        );
+        Assertions.assertEquals(
+            Arrays.toString(arrayClass.getFloats()),
+            Arrays.toString(localArray.getFloats())
+        );
+
+
+        isOK = dingoCli.delete(localArray);
+        Assertions.assertTrue(isOK);
+
+        isOK = dingoCli.dropTable(ComplexStruct.class);
+        Assertions.assertTrue(isOK);
+        */
+    }
+
+}
