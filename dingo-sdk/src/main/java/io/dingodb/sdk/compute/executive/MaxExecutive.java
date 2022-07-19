@@ -17,14 +17,16 @@
 package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.number.ComputeNumber;
+import io.dingodb.sdk.context.BasicContext;
 
 import java.util.Arrays;
 
-public class MaxExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+public class MaxExecutive extends NumberExecutive<BasicContext, ComputeNumber, ComputeNumber> {
 
     @Override
-    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        // return ComputeNumber.max(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.max(a, b)).get());
+    public ComputeNumber execute(BasicContext context, ComputeNumber... second) {
+        Arrays.sort(second);
+        // return ComputeNumber.max(first, second[second.length - 1]);
         return null;
     }
 }

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.compute.executive;
+package io.dingodb.sdk.context;
 
-import io.dingodb.sdk.compute.Executive;
-import io.dingodb.sdk.compute.str.ComputeString;
-import io.dingodb.sdk.context.OperationContext;
+import io.dingodb.sdk.common.Column;
 
-public abstract class KVExecutive<D extends OperationContext, T extends ComputeString, R extends ComputeString>
-    implements Executive<D, T, R> {
+public class BasicContext extends OperationContext {
+
+    public Object[] record;
+
+    public BasicContext(Column[] columns) {
+        super(columns);
+    }
 }

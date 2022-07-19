@@ -16,75 +16,49 @@
 
 package io.dingodb.sdk.common;
 
-import io.dingodb.sdk.compute.Executive;
-import io.dingodb.sdk.compute.executive.AddExecutive;
-import io.dingodb.sdk.compute.executive.AppendExecutive;
-import io.dingodb.sdk.compute.executive.CountExecutive;
-import io.dingodb.sdk.compute.executive.MaxExecutive;
-import io.dingodb.sdk.compute.executive.MinExecutive;
-import io.dingodb.sdk.compute.executive.ReplaceExecutive;
-import io.dingodb.sdk.compute.executive.SumExecutive;
+import io.dingodb.sdk.context.BasicContext;
+import io.dingodb.sdk.context.OperationContext;
 
 import java.io.Serializable;
 
-public class Operation implements Serializable {
+public final class Operation implements Serializable {
 
     private static final long serialVersionUID = 8603290191302531535L;
 
-    public final Type type;
-    public final Column[] columns;
+    public final OperationType operationType;
+    public final OperationContext operationContext;
 
-    public Operation(Type type, Column[] columns) {
-        this.type = type;
-        this.columns = columns;
+    public Operation(OperationType operationType, OperationContext operationContext) {
+        this.operationType = operationType;
+        this.operationContext = operationContext;
     }
 
     public static Operation add(Column... columns) {
-        return new Operation(Type.ADD, columns);
+        return new Operation(NumericType.ADD, new BasicContext(columns));
     }
 
     public static Operation max(Column... columns) {
-        return new Operation(Type.MAX, columns);
+        return new Operation(NumericType.MAX, new BasicContext(columns));
     }
 
     public static Operation min(Column... columns) {
-        return new Operation(Type.MIN, columns);
+        return new Operation(NumericType.MIN, new BasicContext(columns));
     }
 
     public static Operation sum(Column... columns) {
-        return new Operation(Type.SUM, columns);
+        return new Operation(NumericType.SUM, new BasicContext(columns));
     }
 
     public static Operation count(Column... columns) {
-        return new Operation(Type.COUNT, columns);
+        return new Operation(NumericType.COUNT, new BasicContext(columns));
     }
 
     public static Operation append(Column... columns) {
-        return new Operation(Type.APPEND, columns);
+        return new Operation(StringType.APPEND, new BasicContext(columns));
     }
 
     public static Operation replace(Column... columns) {
-        return new Operation(Type.REPLACE, columns);
-    }
-
-    public static enum Type {
-        ADD(new AddExecutive(), true),
-        MAX(new MaxExecutive(), false),
-        MIN(new MinExecutive(), false),
-        SUM(new SumExecutive(), false),
-        COUNT(new CountExecutive(), false),
-
-        APPEND(new AppendExecutive(), true),
-        REPLACE(new ReplaceExecutive(), true),
-        ;
-
-        public final transient Executive executive;
-        public final boolean isWrite;
-
-        Type(Executive<?, ?> executive, boolean isWrite) {
-            this.executive = executive;
-            this.isWrite = isWrite;
-        }
+        return new Operation(StringType.REPLACE, new BasicContext(columns));
     }
 
 }

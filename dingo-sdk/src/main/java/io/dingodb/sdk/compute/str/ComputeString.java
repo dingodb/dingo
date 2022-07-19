@@ -33,13 +33,17 @@ public class ComputeString implements Cloneable, Serializable {
         return new ComputeString(value == null ? "" : value);
     }
 
+    public static ComputeString of(Object value) {
+        return new ComputeString(value == null ? "" : value.toString());
+    }
+
     public ComputeString append(ComputeString str) {
         value = value.concat(str.value().toString());
         return this;
     }
 
-    public ComputeString replace(ComputeString str, ComputeString s) {
-        value = value.replace(str.value, s.value);
+    public ComputeString replace(ComputeString target, ComputeString replacement) {
+        value = value.replace(target.value, replacement.value);
         return this;
     }
 

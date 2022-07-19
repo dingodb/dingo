@@ -18,6 +18,7 @@ package io.dingodb.sdk.mock;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
@@ -47,7 +48,12 @@ public class MockMetaServiceAPI implements MetaServiceApi {
 
     @Override
     public CommonId getTableId(@Nonnull String tableName) {
-        return null;
+        return new CommonId(
+            (byte) 'T',
+            new byte[] {'D', 'T'},
+            PrimitiveCodec.encodeInt(0),
+            PrimitiveCodec.encodeInt(tableName.hashCode())
+        );
     }
 
     @Override
