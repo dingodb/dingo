@@ -103,27 +103,34 @@ public class TestDingoEmbeddedType {
 
         OwningClass owner = new OwningClass();
         owner.id = 1;
-        owner.children.add(new OwnedClass("a", 1, new Date()));
-        owner.children.add(new OwnedClass("b", 2, new Date(new Date().getTime() - 5000)));
-        owner.children.add(new OwnedClass("c", 3, new Date(new Date().getTime() - 10000)));
+        owner.children.add(new OwnedClass("a", 1, new Date().getTime()));
+        owner.children.add(new OwnedClass("b", 2, new Date(new Date().getTime() - 5000).getTime()));
+        owner.children.add(new OwnedClass("c", 3, new Date(new Date().getTime() - 10000).getTime()));
+
+        Record expectedRecord = Record.toDingoRecord(new Record(owner));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             doReturn(true).when(spyClient).dropTable(anyString());
         } catch (Exception e) {
             Assertions.fail("Mock catch Unexpected exception");
         }
         dingoCli.save(owner);
-
+        /*
+        OwningClass readObj = dingoCli.read(OwningClass.class, 1);
+        Assertions.assertEquals(owner.id, readObj.id);
+        Assertions.assertEquals(owner.children.size(), readObj.children.size());
+        */
     }
 
     @Test
     public void testEmbedType03() {
         OwningClass owner = new OwningClass();
         owner.id = 1;
-        owner.children.add(new OwnedClass("a", 1, new Date()));
-        owner.children.add(new OwnedClass("b", 2, new Date(new Date().getTime() - 5000)));
-        owner.children.add(new OwnedClass("c", 3, new Date(new Date().getTime() - 10000)));
+        owner.children.add(new OwnedClass("a", 1, new Date().getTime()));
+        owner.children.add(new OwnedClass("b", 2, new Date(new Date().getTime() - 5000).getTime()));
+        owner.children.add(new OwnedClass("c", 3, new Date(new Date().getTime() - 10000).getTime()));
     }
 }

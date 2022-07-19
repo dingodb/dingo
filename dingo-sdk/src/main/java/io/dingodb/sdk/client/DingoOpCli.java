@@ -226,6 +226,24 @@ public class DingoOpCli implements DingoMapper {
         }
     }
 
+    /**
+     * get the stored format of the object.
+     * @param object input Object
+     * @return columns about the table
+     * @throws DingoClientException dingo client exception
+     * Use case: TestCases to get the stored format of the object.
+     */
+    public Column[] getSavedColumn(Object object) throws DingoClientException {
+        Class<?> clazz = object.getClass();
+        ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+        String tableName = entry.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Cannot find table name for class " + clazz.getName());
+        }
+        Column[] columns = entry.getColumns(object, true);
+        return columns;
+    }
+
     @Override
     public void save(@NotNull Object object) throws DingoClientException {
         save(object, RecordExistsAction.REPLACE);
