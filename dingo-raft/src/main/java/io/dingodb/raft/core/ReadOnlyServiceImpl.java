@@ -327,24 +327,12 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
                 event.requestContext = new Bytes(reqCtx);
                 event.startTime = Utils.monotonicMs();
             };
-            switch(this.node.getOptions().getApplyTaskMode()) {
-                case Blocking:
-                    this.readIndexQueue.publishEvent(translator);
-                    break;
-                case NonBlocking:
-                default:
-                    if (!this.readIndexQueue.tryPublishEvent(translator)) {
-                        final String errorMsg = "Node is busy, has too many read-index requests, queue is full and bufferSize="+ this.readIndexQueue.getBufferSize();
-                        Utils.runClosureInThread(closure,
-                            new Status(RaftError.EBUSY, errorMsg));
-                        this.nodeMetrics.recordTimes("read-index-overload-times", 1);
-                        LOG.warn("Node {} ReadOnlyServiceImpl readIndexQueue is overload.", this.node.getNodeId());
-                        if(closure == null) {
-                            throw new OverloadException(errorMsg);
-                        }
-                    }
-                    break;
+
+            if(this.readIndexQueue.remainingCapacity() * 100 / this.readIndexQueue.getBufferSize() < 30) {
+                LOG.warn("remaining capacity: {}, buffer size: {}.", this.readIndexQueue.remainingCapacity(),
+                    this.readIndexQueue.getBufferSize());
             }
+            this.readIndexQueue.publishEvent(translator);
         } catch (final Exception e) {
             Utils.runClosureInThread(closure, new Status(RaftError.EPERM, "Node is down."));
         }

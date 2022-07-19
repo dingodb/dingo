@@ -348,6 +348,10 @@ public class LogManagerImpl implements LogManager {
             event.done = done;
         });
 
+        if(this.diskQueue.remainingCapacity() * 100 / this.diskQueue.getBufferSize() < 30) {
+            LOG.warn("remaining capacity: {}, buffer size: {}.", this.diskQueue.remainingCapacity(),
+                this.diskQueue.getBufferSize());
+        }
         this.diskQueue.publishEvent(translator);
     }
 
