@@ -29,6 +29,7 @@ import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.ConstructedClass;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +55,7 @@ public class TestDingoCliWithConstruct {
     @BeforeEach
     public void init() {
         dingoClient = new DingoClient("src/test/resources/config/config.yaml");
-        initConnectionInMockMode();
+        MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
     }
 
     @AfterEach
@@ -104,7 +105,7 @@ public class TestDingoCliWithConstruct {
         Assertions.assertTrue(isOK);
 
         ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
-        Record expectedRecord = new Record(constructedInstance, false);
+        Record expectedRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
@@ -137,7 +138,7 @@ public class TestDingoCliWithConstruct {
 
         ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
         constructedInstance.birthday = null;
-        Record expectedRecord = new Record(constructedInstance, false);
+        Record expectedRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
@@ -169,7 +170,7 @@ public class TestDingoCliWithConstruct {
         Assertions.assertTrue(isOK);
 
         ConstructedClass constructedInstance = new ConstructedClass(1, 10, "John", new Date());
-        Record expectedRecord = new Record(constructedInstance, false);
+        Record expectedRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
             doReturn(null).when(spyClient).get((Key) any());
@@ -203,9 +204,9 @@ public class TestDingoCliWithConstruct {
         Assertions.assertTrue(isOK);
 
         ConstructedClass constructedInstance = new ConstructedClass(1, 10, "Jonny", new Date());
-        ConstructedClass oldConstructedInstance = new ConstructedClass(1, 10, "Huzx", null);
-        Record oldRecord = new Record(oldConstructedInstance, false);
-        Record newRecord = new Record(constructedInstance, false);
+        ConstructedClass oldConstructedInstance = new ConstructedClass(1, 10, "xyz", null);
+        Record oldRecord = Record.toDingoRecord(new Record(oldConstructedInstance));
+        Record newRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
             doReturn(oldRecord).doReturn(newRecord).when(spyClient).get((Key) any());
@@ -238,8 +239,8 @@ public class TestDingoCliWithConstruct {
 
         ConstructedClass constructedInstance = new ConstructedClass(1, 10, "Jonny", new Date());
         ConstructedClass oldConstructedInstance = new ConstructedClass(1, 10, "Huzx", null);
-        Record oldRecord = new Record(oldConstructedInstance, false);
-        Record newRecord = new Record(constructedInstance, false);
+        Record oldRecord = Record.toDingoRecord(new Record(oldConstructedInstance));
+        Record newRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         // using invalid columns
         String invalidColumn = "invalidColumn";
@@ -254,32 +255,5 @@ public class TestDingoCliWithConstruct {
             Assertions.fail(e.getMessage());
         }
     }
-
-    private void initConnectionInMockMode() {
-        DingoConnection connection = mock(DingoConnection.class);
-        when(connection.getMetaClient()).thenReturn(metaClient);
-        when(connection.getApiRegistry()).thenReturn(apiRegistry);
-
-        try {
-            Field metaClientField = DingoConnection.class.getDeclaredField("metaClient");
-            metaClientField.setAccessible(true);
-            metaClientField.set(connection, metaClient);
-
-            Field apiRegistryField = DingoConnection.class.getDeclaredField("apiRegistry");
-            apiRegistryField.setAccessible(true);
-            apiRegistryField.set(connection, apiRegistry);
-
-            Field connectionField = DingoClient.class.getDeclaredField("connection");
-            connectionField.setAccessible(true);
-            connectionField.set(dingoClient, connection);
-        } catch (NoSuchFieldException e) {
-            Assertions.fail("DingoConnection.metaClient field not found");
-        } catch (SecurityException e) {
-            Assertions.fail("DingoConnection.metaClient field not accessible");
-        } catch (IllegalAccessException e) {
-            Assertions.fail("Invalid Runtime Exception");
-        }
-    }
-
 
 }
