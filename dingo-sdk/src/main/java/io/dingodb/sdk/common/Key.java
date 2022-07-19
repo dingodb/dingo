@@ -16,24 +16,17 @@
 
 package io.dingodb.sdk.common;
 
-import io.dingodb.sdk.common.Value;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
-@Getter
-@Setter
 @Data
-@AllArgsConstructor
 public final class Key {
 
     /**
      * Optional database for the key.
      */
-    private String database;
+    private final String database;
 
     /**
      * Required table name.

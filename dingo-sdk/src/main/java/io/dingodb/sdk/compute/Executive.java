@@ -16,7 +16,7 @@
 
 package io.dingodb.sdk.compute;
 
-public interface Executive<D, R> {
+public interface Executive<D, T, R> {
 
-    R execute(D first, D... second);
+    R execute(D context, T... second);
 }

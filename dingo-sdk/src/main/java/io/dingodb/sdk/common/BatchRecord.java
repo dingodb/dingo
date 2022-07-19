@@ -14,12 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.compute.executive;
+package io.dingodb.sdk.common;
 
-import io.dingodb.sdk.compute.Executive;
-import io.dingodb.sdk.compute.str.ComputeString;
-import io.dingodb.sdk.context.OperationContext;
+public class BatchRecord {
 
-public abstract class KVExecutive<D extends OperationContext, T extends ComputeString, R extends ComputeString>
-    implements Executive<D, T, R> {
+    public final Key key;
+
+    public Record record;
+
+    public final boolean hasWrite;
+
+    public final Operation[] ops;
+
+    public BatchRecord(Key key, Operation[] ops, boolean hasWrite) {
+        this.key = key;
+        this.ops = ops;
+        this.hasWrite = hasWrite;
+    }
+
+    public BatchRecord(Key key, Record record, Operation[] ops, boolean hasWrite) {
+        this.key = key;
+        this.record = record;
+        this.ops = ops;
+        this.hasWrite = hasWrite;
+    }
 }

@@ -183,11 +183,57 @@ public class DingoClient {
         return false;
     }
 
-    public Record operate(Key key, Operation operation) {
+    public final void add(Key key, Column... columns) {
+        Operation operation = Operation.add(columns);
+
+        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    public final Record max(Key key, Column... columns) {
+        Operation operation = Operation.max(columns);
         return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
     }
 
-    public Record updateCol(Key key, Column... column) {
+    public final Record min(Key key, Column... columns) {
+        Operation operation = Operation.min(columns);
+        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    public final Record sum(Key key, Column... columns) {
+        Operation operation = Operation.sum(columns);
+        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    public final void append(Key key, Column... columns) {
+        Operation operation = Operation.append(columns);
+
+        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    public final void replace(Key key, Column... columns) {
+        Operation operation = Operation.replace(columns);
+
+        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+    }
+
+    /**
+     * Perform multiple read/write operations on a single key in one batch call.
+     *<p>
+     *     Operation and ListOperation, MapOperation can be performed in same call.
+     *</p>
+     *
+     * @param key unique record identifier
+     * @param operations database operations to perform
+     * @return .
+     */
+    public final Record operate(Key key, List<Operation> operations) {
+        /*operations.stream()
+            .map(op -> op.operationType.executive().execute(null, op.context));*/
+
+        return null;
+    }
+
+    public final Record updateCol(Key key, Column... column) {
         return null;
     }
 }

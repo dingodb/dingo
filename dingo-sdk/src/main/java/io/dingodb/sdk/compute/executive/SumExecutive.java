@@ -17,13 +17,15 @@
 package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.number.ComputeNumber;
+import io.dingodb.sdk.context.BasicContext;
 
 import java.util.Arrays;
 
-public class SumExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+public class SumExecutive extends NumberExecutive<BasicContext, ComputeNumber, ComputeNumber> {
 
     @Override
-    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        return first.add(Arrays.stream(second).reduce((a, b) -> a.add(b)).get());
+    public ComputeNumber execute(BasicContext context, ComputeNumber... second) {
+        // return first.add(Arrays.stream(second).reduce((a, b) -> a.add(b)).get());
+        return null;
     }
 }

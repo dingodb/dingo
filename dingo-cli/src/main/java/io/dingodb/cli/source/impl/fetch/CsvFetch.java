@@ -43,7 +43,11 @@ public class CsvFetch extends AbstractParser implements Fetch {
 
     @Override
     public void fetch(
-            String localFile, String separator, boolean state, DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
+        String localFile,
+        String separator,
+        boolean state,
+        DingoOldClient dingoOldClient,
+        TableDefinition tableDefinition) {
         try {
             List<Object[]> records = new ArrayList<>();
             separator = Optional.of(separator.trim()).orElse(",");
@@ -80,11 +84,11 @@ public class CsvFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
-        super.parse(tableDefinition, records, dingoOldClient);
+    public void fetch(Properties props, String topic, DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
     }
 
     @Override
-    public void fetch(Properties props, String topic, DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
+        super.parse(tableDefinition, records, dingoOldClient);
     }
 }
