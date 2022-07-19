@@ -133,19 +133,19 @@ public class ComputeFloat implements ComputeNumber<ComputeFloat> {
     }
 
     @Override
-    public int compareTo(ComputeFloat o) {
-        return Float.compare(value, o.floatValue());
+    public int compareTo(ComputeFloat that) {
+        return Float.compare(value, that.floatValue());
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        ComputeFloat that = (ComputeFloat) o;
+        ComputeFloat that = (ComputeFloat) obj;
         return Objects.equals(value, that.value);
     }
 

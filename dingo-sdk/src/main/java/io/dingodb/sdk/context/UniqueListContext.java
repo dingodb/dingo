@@ -14,12 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.compute.executive;
+package io.dingodb.sdk.context;
 
-import io.dingodb.sdk.compute.Executive;
-import io.dingodb.sdk.compute.str.ComputeString;
-import io.dingodb.sdk.context.OperationContext;
+import io.dingodb.sdk.common.Column;
+import io.dingodb.sdk.common.Value;
 
-public abstract class KVExecutive<D extends OperationContext, T extends ComputeString, R extends ComputeString>
-    implements Executive<D, T, R> {
+public class UniqueListContext extends OperationContext {
+
+    public final Value value;
+
+    public UniqueListContext(Column... columns) {
+        super(columns);
+        this.value = Value.getAsNull();
+    }
+
+    public UniqueListContext(Value value, Column... column) {
+        super(column);
+        this.value = value;
+    }
 }

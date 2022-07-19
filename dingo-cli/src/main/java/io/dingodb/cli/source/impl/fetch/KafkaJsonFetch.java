@@ -73,13 +73,12 @@ public class KafkaJsonFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
-        super.parse(tableDefinition, records, dingoOldClient);
+    public void fetch(String localFile, String separatorOrPattern, boolean state,
+                      DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
     }
 
     @Override
-    public void fetch(String localFile, String separatorOrPattern, boolean state,
-                      DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
-
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
+        super.parse(tableDefinition, records, dingoOldClient);
     }
 }

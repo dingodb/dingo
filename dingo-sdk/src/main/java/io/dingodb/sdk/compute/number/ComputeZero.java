@@ -104,8 +104,8 @@ public class ComputeZero<N extends ComputeNumber<N>> implements ComputeNumber<N>
     }
 
     @Override
-    public int compareTo(ComputeNumber o) {
-        return o.signum();
+    public int compareTo(ComputeNumber that) {
+        return that.signum();
     }
 
     @Override

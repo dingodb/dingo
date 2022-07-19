@@ -40,7 +40,8 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
 
     @Override
     public void fetch(Properties props, String topic, DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
-        deserializer.configure(Collections.singletonMap("schema.registry.url", props.getProperty("schema.registry.url")), false);
+        deserializer.configure(
+            Collections.singletonMap("schema.registry.url", props.getProperty("schema.registry.url")), false);
 
         KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
@@ -76,13 +77,13 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
     }
 
     @Override
+    public void fetch(String localFile, String separatorOrPattern, boolean state,
+                      DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
+    }
+
+    @Override
     public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
         super.parse(tableDefinition, records, dingoOldClient);
     }
 
-    @Override
-    public void fetch(String localFile, String separatorOrPattern, boolean state,
-                      DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
-
-    }
 }

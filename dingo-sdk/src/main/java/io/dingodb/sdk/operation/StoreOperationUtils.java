@@ -72,7 +72,7 @@ public class StoreOperationUtils {
                 IBaseStoreOperation storeOp = getDingoStoreOp(type);
                 isSuccess = storeOp.doOperation(executorApi, routeTable.getTableId(), keyInBytes, valueInBytes);
             } catch (Exception ex) {
-                log.error("executeRemoteOperation error", ex.toString(), ex);
+                log.error("executeRemoteOperation error", ex);
             } finally {
                 if (!isSuccess && retryTimes > 0) {
                     try {
@@ -100,7 +100,7 @@ public class StoreOperationUtils {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
                 byte[] keyInBytes = null; // codec.encodeKey(key.getUserKey());
-                if (operation.type.isWrite) {
+                if (operation.operationType.isWriteable()) {
                     ExecutorApi executorApi = getExecutor(tableName, keyInBytes);
 
                     IBaseStoreOperation storeOp = getDingoStoreOp(type);

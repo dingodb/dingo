@@ -17,11 +17,14 @@
 package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.str.ComputeString;
+import io.dingodb.sdk.context.BasicContext;
 
-public class ReplaceExecutive extends KVExecutive<ComputeString, ComputeString> {
+public class ReplaceExecutive extends KVExecutive<BasicContext, ComputeString, ComputeString> {
 
     @Override
-    public ComputeString execute(ComputeString first, ComputeString... second) {
-        return second.length == 2 ? first.replace(second[0], second[1]) : first;
+    public ComputeString execute(BasicContext context, ComputeString... second) {
+        Object[] records = context.record;
+        return records.length == 2
+            ? second[0].replace(ComputeString.of(records[0]), ComputeString.of(records[1])) : second[0];
     }
 }

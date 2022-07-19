@@ -72,6 +72,9 @@ public interface ComputeNumber<N extends ComputeNumber<N>> extends Cloneable<N>,
      */
     N negate();
 
+    @Override
+    N fastClone();
+
     /**
      * Return int value.
      */
