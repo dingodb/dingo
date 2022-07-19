@@ -19,10 +19,12 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NONE,
@@ -61,6 +63,9 @@ public interface DingoType extends CompileContext {
     @Nonnull
     Schema toAvroSchema();
 
+    List<DingoSchema> toDingoSchemas();
+
+    DingoSchema toDingoSchema(int index);
     /**
      * Parse string(s) into value(s) of this type. Specially, {@code "NULL"} is parsed to null.
      *

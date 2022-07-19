@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.LongSchema;
 import org.apache.avro.Schema;
 
 import java.sql.Date;
@@ -31,6 +33,11 @@ public class DateType extends AbstractScalarType {
     @Override
     public DateType copy() {
         return new DateType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new LongSchema(index);
     }
 
     @Override

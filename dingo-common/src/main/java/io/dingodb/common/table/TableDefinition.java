@@ -25,6 +25,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.json.runtime.Parser;
+import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,6 +37,7 @@ import org.apache.calcite.schema.ColumnStrategy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -153,6 +155,36 @@ public class TableDefinition {
             ++index;
         }
         return TupleMapping.of(indices);
+    }
+
+    public List<DingoSchema> getDingoSchemaOfKey() {
+        List<DingoSchema> keySchema = new ArrayList<>();
+        int index = 0;
+        for (ColumnDefinition column : columns) {
+            if (column.isPrimary()) {
+                keySchema.add(column.getElementType().toDingoSchema(index++));
+            }
+        }
+        return keySchema;
+    }
+
+    public List<DingoSchema> getDingoSchemaOfValue() {
+        List<DingoSchema> valueSchema = new ArrayList<>();
+        int index = 0;
+        for (ColumnDefinition column : columns) {
+            if (!column.isPrimary()) {
+                valueSchema.add(column.getElementType().toDingoSchema(index++));
+            }
+        }
+        return valueSchema;
+    }
+
+    public List<DingoSchema> getDingoSchema() {
+        List<DingoSchema> schema = new ArrayList<>();
+        for (int i = 0; i < columns.size(); i++) {
+            schema.add(columns.get(i).getElementType().toDingoSchema(i));
+        }
+        return schema;
     }
 
     public Schema getAvroSchemaOfKey() {

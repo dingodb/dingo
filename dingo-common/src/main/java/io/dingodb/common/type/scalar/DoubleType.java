@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.DoubleSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
@@ -30,6 +32,11 @@ public class DoubleType extends AbstractScalarType {
     @Override
     public DoubleType copy() {
         return new DoubleType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new DoubleSchema(index);
     }
 
     @Override

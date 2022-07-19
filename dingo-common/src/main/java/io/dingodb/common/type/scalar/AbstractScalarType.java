@@ -22,10 +22,12 @@ import io.dingodb.common.type.DataConverter;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 @EqualsAndHashCode(of = {"nullable"}, callSuper = true)
 public abstract class AbstractScalarType extends AbstractDingoType {
@@ -61,6 +63,11 @@ public abstract class AbstractScalarType extends AbstractDingoType {
         } else {
             return Schema.create(t);
         }
+    }
+
+    @Override
+    public List<DingoSchema> toDingoSchemas() {
+        return null;
     }
 
     @Override

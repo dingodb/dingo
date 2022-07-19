@@ -17,6 +17,8 @@
 package io.dingodb.common.type.scalar;
 
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.BytesSchema;
+import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 public class ObjectType extends AbstractScalarType {
@@ -27,6 +29,11 @@ public class ObjectType extends AbstractScalarType {
     @Override
     public ObjectType copy() {
         return new ObjectType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new BytesSchema(index);
     }
 
     @Override

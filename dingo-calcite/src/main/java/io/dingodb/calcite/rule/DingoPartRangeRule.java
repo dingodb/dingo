@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.codec.AvroCodec;
+import io.dingodb.common.codec.Codec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         RexNode rexNode = RexUtil.toDnf(rel.getCluster().getRexBuilder(), rel.getFilter());
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td, rel.getCluster().getRexBuilder());
-        AvroCodec codec = new AvroCodec(td.getAvroSchemaOfKey());
+        Codec codec = new AvroCodec(td.getAvroSchemaOfKey());
         rexNode.accept(visitor);
 
         if (!visitor.isOperandHasNotPrimaryKey()) {

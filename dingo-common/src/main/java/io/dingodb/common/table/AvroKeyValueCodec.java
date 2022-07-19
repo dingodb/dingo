@@ -17,6 +17,7 @@
 package io.dingodb.common.table;
 
 import io.dingodb.common.codec.AvroCodec;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -28,14 +29,14 @@ import javax.annotation.Nonnull;
 
 
 @Slf4j
-public class KeyValueCodec {
+public class AvroKeyValueCodec implements KeyValueCodec {
     private final AvroCodec keyCodec;
     private final AvroCodec valueCodec;
     private final TupleMapping keyMapping;
     private final TupleMapping valueMapping;
     private final DingoType schema;
 
-    public KeyValueCodec(@Nonnull DingoType schema, @Nonnull TupleMapping keyMapping) {
+    public AvroKeyValueCodec(@Nonnull DingoType schema, @Nonnull TupleMapping keyMapping) {
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
@@ -43,6 +44,7 @@ public class KeyValueCodec {
         valueCodec = new AvroCodec(schema.select(valueMapping).toAvroSchema());
     }
 
+    @Override
     public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyCodec.decode(result, keyValue.getKey(), keyMapping);
@@ -50,6 +52,7 @@ public class KeyValueCodec {
         return (Object[]) schema.convertFrom(result, AvroConverter.INSTANCE);
     }
 
+    @Override
     public KeyValue encode(@Nonnull Object[] tuple) throws IOException {
         Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
         return new KeyValue(
@@ -58,10 +61,12 @@ public class KeyValueCodec {
         );
     }
 
+    @Override
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
         return keyCodec.encode(keys);
     }
 
+    @Override
     public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyMapping.map(result, keys);

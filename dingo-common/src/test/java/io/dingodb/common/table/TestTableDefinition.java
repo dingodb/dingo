@@ -16,6 +16,8 @@
 
 package io.dingodb.common.table;
 
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.Type;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,6 +61,33 @@ public class TestTableDefinition {
             .map(Schema::getType)
             .containsExactly(Schema.Type.DOUBLE, Schema.Type.NULL);
         assertThat(schema.getFields().get(1).defaultVal()).isNull();
+    }
+
+    @Test
+    public void testGetDingoSchema() {
+        List<DingoSchema> schemaList = tableDefinition.getDingoSchema();
+        assertThat(schemaList.get(0).getType()).isEqualTo(Type.INTEGER);
+        assertThat(schemaList.get(0).getIndex()).isEqualTo(0);
+        assertThat(schemaList.get(1).getType()).isEqualTo(Type.STRING);
+        assertThat(schemaList.get(1).getIndex()).isEqualTo(1);
+        assertThat(schemaList.get(2).getType()).isEqualTo(Type.DOUBLE);
+        assertThat(schemaList.get(2).getIndex()).isEqualTo(2);
+    }
+
+    @Test
+    public void testGetDingoSchemaOfKey() {
+        List<DingoSchema> schemaList = tableDefinition.getDingoSchemaOfKey();
+        assertThat(schemaList.get(0).getType()).isEqualTo(Type.INTEGER);
+        assertThat(schemaList.get(0).getIndex()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGetDingoSchemaOfValue() {
+        List<DingoSchema> schemaList = tableDefinition.getDingoSchemaOfValue();
+        assertThat(schemaList.get(0).getType()).isEqualTo(Type.STRING);
+        assertThat(schemaList.get(0).getIndex()).isEqualTo(0);
+        assertThat(schemaList.get(1).getType()).isEqualTo(Type.DOUBLE);
+        assertThat(schemaList.get(1).getIndex()).isEqualTo(1);
     }
 
     @Test

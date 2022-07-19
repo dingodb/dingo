@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.IntegerSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
@@ -35,6 +37,11 @@ public class IntegerType extends AbstractScalarType {
     @Override
     protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
         return converter.convertIntegerFrom(value);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new IntegerSchema(index);
     }
 
     @Override
