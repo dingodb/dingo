@@ -19,11 +19,14 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.avro.Schema;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -86,6 +89,20 @@ class TupleType extends AbstractDingoType {
                 .mapToObj(i -> new Schema.Field("_" + i, fields[i].toAvroSchema()))
                 .collect(Collectors.toList())
         );
+    }
+
+    @Override
+    public List<DingoSchema> toDingoSchemas() {
+        List<DingoSchema> schemas = new ArrayList<>(fields.length);
+        for (int i = 0; i < fields.length; i++) {
+            schemas.add(fields[i].toDingoSchema(i));
+        }
+        return schemas;
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return null;
     }
 
     @Override

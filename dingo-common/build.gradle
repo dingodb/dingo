@@ -24,6 +24,7 @@ dependencies {
     api project(':dingo-expr:dingo-expr-parser')
     api project(':dingo-expr:dingo-expr-json-runtime')
     api project(':dingo-expr:dingo-expr-runtime')
+    api project(':dingo-serial')
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
     compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()

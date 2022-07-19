@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.BooleanSchema;
+import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
@@ -30,6 +32,11 @@ public class BooleanType extends AbstractScalarType {
     @Override
     public BooleanType copy() {
         return new BooleanType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new BooleanSchema(index);
     }
 
     @Override

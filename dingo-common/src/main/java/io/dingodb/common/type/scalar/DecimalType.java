@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.BytesSchema;
+import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
@@ -30,6 +32,11 @@ public class DecimalType extends AbstractScalarType {
     @Override
     public DecimalType copy() {
         return new DecimalType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new BytesSchema(index);
     }
 
     @Override

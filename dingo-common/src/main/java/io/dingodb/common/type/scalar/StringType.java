@@ -18,6 +18,8 @@ package io.dingodb.common.type.scalar;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.StringSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
@@ -30,6 +32,11 @@ public class StringType extends AbstractScalarType {
     @Override
     public StringType copy() {
         return new StringType(nullable);
+    }
+
+    @Override
+    public DingoSchema toDingoSchema(int index) {
+        return new StringSchema(index, 0);
     }
 
     @Override

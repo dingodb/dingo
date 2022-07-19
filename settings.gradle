@@ -66,4 +66,5 @@ include 'dingo-store-memory'
 include 'dingo-func-api'
 include 'dingo-sdk'
 include 'dingo-example'
+include 'dingo-serial'
 

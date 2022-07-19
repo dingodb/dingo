@@ -36,7 +36,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import javax.annotation.Nonnull;
 
-public class AvroCodec {
+public class AvroCodec implements Codec {
     private static final ThreadLocal<BinaryDecoder> decoderLocal = ThreadLocal.withInitial(() -> null);
     private static final ThreadLocal<BinaryEncoder> encoderLocal = ThreadLocal.withInitial(() -> null);
 
@@ -82,12 +82,19 @@ public class AvroCodec {
     }
 
     public Object[] decode(@Nonnull byte[] bytes) throws IOException {
-        return decode(new ByteArrayInputStream(bytes));
+        return decode(bytes);
     }
 
-    public void decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
+    @Override
+    public Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
         Object[] tuple = decode(bytes);
         mapping.map(result, tuple);
+        return result;
+    }
+
+    @Override
+    public Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
+        return new Object[0];
     }
 
     public void encode(OutputStream os, @Nonnull Object[] tuple) throws IOException {
@@ -113,12 +120,17 @@ public class AvroCodec {
     public byte[] encode(@Nonnull Object[] tuple) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple);
-        return os.toByteArray();
+        return encode(tuple);
     }
 
     public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple, mapping);
-        return os.toByteArray();
+        return encode(tuple, mapping);
+    }
+
+    @Override
+    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex) throws IOException, ClassCastException {
+        return new byte[0];
     }
 }
