@@ -17,6 +17,7 @@
 package io.dingodb.sdk.mappers;
 
 
+import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.utils.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 
@@ -64,6 +65,8 @@ public class ArrayMapper extends TypeMapper {
         List<?> list = null;
         if (value.getClass().isArray()) {
             list = Arrays.asList((Object[]) value);
+        } else if (value instanceof Value.ListValue) {
+            list = (List<?>) ((Value.ListValue) value).getObject();
         } else {
             list = (List<?>) value;
         }

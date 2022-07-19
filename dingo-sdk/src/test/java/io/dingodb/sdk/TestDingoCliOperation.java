@@ -220,7 +220,7 @@ public class TestDingoCliOperation {
         String tableName = record.table();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
-        Record expectedRecord = new Record(person, false);
+        Record expectedRecord = Record.toDingoRecord(new Record(person));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
@@ -258,10 +258,10 @@ public class TestDingoCliOperation {
         Assertions.assertTrue(tableDefinition != null);
         String key1 = "123456789";
         person.setSsn(key1);
-        Record expectedRecord01 = new Record(person, false);
+        Record expectedRecord01 = Record.toDingoRecord(new Record(person));
         String key2 = "234567891";
         person.setSsn(key2);
-        Record expectedRecord02 = new Record(person, false);
+        Record expectedRecord02 = Record.toDingoRecord(new Record(person));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());

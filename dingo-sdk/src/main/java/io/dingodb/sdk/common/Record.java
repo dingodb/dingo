@@ -18,10 +18,14 @@ package io.dingodb.sdk.common;
 
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoEmbed;
+import sun.reflect.annotation.AnnotationType;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,15 +59,15 @@ public final class Record {
         }
     }
 
+    private Record(final Map<String, Object> columns) {
+        this.columns = columns;
+    }
+
     /**
      * Constructor a record from a object instance.
      * @param instance input object value
-     * @param isOriginalValue when true, the original type is keeped;
-     *                        otherwise, some types such as Date, Time, Timestamp is converted to long.
-     *                        when isOriginalValue is false, the use case is from UnitTest(such as read object value
-     *                        from dingo database).
      */
-    public Record(Object instance, boolean isOriginalValue) {
+    public Record(Object instance) {
         columns = new HashMap<String, Object>();
         for (Field field: instance.getClass().getDeclaredFields()) {
             String fieldName = field.getName();
@@ -77,22 +81,46 @@ public final class Record {
             field.setAccessible(true);
             try {
                 Object value = field.get(instance);
-                if (value != null) {
-                    if (!isOriginalValue) {
-                        if (value instanceof Date) {
-                            value = ((Date) value).getTime();
-                        } else if (value instanceof Time) {
-                            value = ((Time) value).getTime();
-                        } else if (value instanceof Timestamp) {
-                            value = ((Timestamp) value).getTime();
+                columns.put(fieldName, value);
+                /*
+                for (Annotation annotation: field.getAnnotations()) {
+                    if (annotation instanceof DingoEmbed) {
+                        if (value instanceof List) {
+                            List<Object> list = (List<Object>) value;
+                            List<Object> result = new ArrayList<>();
+                            for (Object item: list) {
+                                result.add(item);
+                            }
+                            columns.put(fieldName, Arrays.asList(result));
+                        } else {
+                            columns.put(fieldName, value);
                         }
                     }
                 }
-                columns.put(fieldName, value);
+                */
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public static Record toDingoRecord(Record record) {
+        Map<String, Object> columns = new HashMap<String, Object>();
+        for (Map.Entry<String, Object> entry: record.columns.entrySet()) {
+            Object value = entry.getValue();
+            if (entry.getValue() instanceof Value) {
+                value = ((Value) entry.getValue()).getObject();
+            }
+            if (value instanceof Date) {
+                value = ((Date) value).getTime();
+            } else if (value instanceof Time) {
+                value = ((Time) value).getTime();
+            } else if (value instanceof Timestamp) {
+                value = ((Timestamp) value).getTime();
+            }
+            columns.put(entry.getKey(), value);
+        }
+        return new Record(columns);
     }
 
 
@@ -201,7 +229,7 @@ public final class Record {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(500);
-        sb.append("(bins:");
+        sb.append("(columns:");
 
         if (columns != null) {
             boolean sep = false;
