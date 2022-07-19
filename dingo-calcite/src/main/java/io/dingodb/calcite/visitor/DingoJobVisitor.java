@@ -106,6 +106,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -691,48 +692,69 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         byte[] startKey = rel.getStartKey();
         byte[] endKey = rel.getEndKey();
         ComparableByteArray startByteArray = parts.floorKey(new ComparableByteArray(startKey));
-        if (startByteArray == null) {
+
+        Map<byte[], byte[]> map = new TreeMap<>(ByteArrayUtils::compare);
+        if (rel.isNotBetween()) {
+            map.put(parts.firstKey().getBytes(), startKey);
+            map.put(endKey, parts.lastKey().getBytes());
+        } else {
+            map.put(startKey, endKey);
+        }
+
+        if (!rel.isNotBetween() && startByteArray == null) {
             log.warn("Get part from table:{} by startKey:{}, result is null", td.getName(), startKey);
             return null;
         }
 
         List<Output> outputs = new ArrayList<>();
 
-        parts = parts.subMap(startByteArray, true, new ComparableByteArray(endKey), true);
-        Iterator<Part> iterator = parts.values().iterator();
-        byte[] start = startKey;
-        byte[] end;
-        boolean includeEnd = false;
-        while (iterator.hasNext()) {
-            Part part = iterator.next();
+        Iterator<Map.Entry<byte[], byte[]>> iter = map.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<byte[], byte[]> entry = iter.next();
+            startKey = entry.getKey();
+            endKey = entry.getValue();
+            startByteArray = parts.floorKey(new ComparableByteArray(startKey));
+            ComparableByteArray endByteArray = parts.floorKey(new ComparableByteArray(endKey));
 
-            if (start == null) {
-                start = part.getStartKey();
+            parts = parts.subMap(startByteArray, true, endByteArray, true);
+            Iterator<Part> iterator = parts.values().iterator();
+            byte[] start = startKey;
+            byte[] end;
+            if (rel.isNotBetween() && !iter.hasNext()) {
+                endKey = null;
             }
-            if (iterator.hasNext()) {
-                end = null;
-            } else {
-                end = endKey;
-                includeEnd = rel.isIncludeEnd();
-            }
+            boolean includeEnd = false;
+            while (iterator.hasNext()) {
+                Part part = iterator.next();
 
-            PartRangeScanOperator operator = new PartRangeScanOperator(
-                tableId,
-                part.getId(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                filter,
-                rel.getSelection(),
-                start,
-                end,
-                rel.isIncludeStart(),
-                includeEnd
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(part.getLeader(), idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-            start = null;
+                if (start == null) {
+                    start = part.getStartKey();
+                }
+                if (iterator.hasNext()) {
+                    end = null;
+                } else {
+                    end = endKey;
+                    includeEnd = rel.isIncludeEnd();
+                }
+
+                PartRangeScanOperator operator = new PartRangeScanOperator(
+                    tableId,
+                    part.getId(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    filter,
+                    rel.getSelection(),
+                    start,
+                    end,
+                    rel.isIncludeStart(),
+                    includeEnd
+                );
+                operator.setId(idGenerator.get());
+                Task task = job.getOrCreate(part.getLeader(), idGenerator);
+                task.putOperator(operator);
+                outputs.addAll(operator.getOutputs());
+                start = null;
+            }
         }
 
         return outputs;
