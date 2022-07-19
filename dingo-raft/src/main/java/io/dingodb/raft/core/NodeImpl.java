@@ -1631,6 +1631,11 @@ public class NodeImpl implements Node, RaftServerService {
                 event.entry = entry;
                 event.expectedTerm = task.getExpectedTerm();
             };
+
+            if(this.applyQueue.remainingCapacity() * 100 / this.applyQueue.getBufferSize() < 30) {
+                LOG.warn("remaining capacity: {}, buffer size: {}.", this.applyQueue.remainingCapacity(),
+                    this.applyQueue.getBufferSize());
+            }
             // Blocking
             this.applyQueue.publishEvent(translator);
         } catch (final Exception e) {

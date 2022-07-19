@@ -225,6 +225,10 @@ public class FSMCallerImpl implements FSMCaller {
             return false;
         }
 
+        if(this.taskQueue.remainingCapacity() * 100 / this.taskQueue.getBufferSize() < 30) {
+            LOG.warn("remaining capacity: {}, buffer size: {}.", this.taskQueue.remainingCapacity(),
+                this.taskQueue.getBufferSize());
+        }
         // publish Event(if the queue is full, this operation will block)
         this.taskQueue.publishEvent(tpl);
         return true;

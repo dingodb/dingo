@@ -556,7 +556,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
             }
             return true;
         } catch (final RocksDBException | IOException e) {
-            LOG.error("Fail to truncateSuffix {} in {}.", lastIndexKept, id, e);
+            LOG.error("Fail to truncateSuffix {} in {}, last log index: {}.", lastIndexKept, id, getLastLogIndex(), e);
         } finally {
             this.dbStore.getReadLock().unlock();
         }
