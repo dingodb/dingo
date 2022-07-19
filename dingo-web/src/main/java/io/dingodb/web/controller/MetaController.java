@@ -18,7 +18,7 @@ package io.dingodb.web.controller;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.codec.AvroCodec;
+import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -171,7 +171,7 @@ public class MetaController {
             .toArray(Object[]::new)
         ));
         return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(CommonId.decode(parts.floorEntry(
-            new ComparableByteArray(new AvroCodec(def.getAvroSchemaOfKey()).encode(keys))
+            new ComparableByteArray(new DingoCodec(def.getDingoSchemaOfKey()).encode(keys))
         ).getValue().getId()))));
     }
 
@@ -189,7 +189,7 @@ public class MetaController {
             .map(params::get)
             .toArray(Object[]::new)
         ));
-        return ResponseEntity.ok(mapper.mapping(new AvroCodec(def.getAvroSchemaOfKey()).encode(keys)));
+        return ResponseEntity.ok(mapper.mapping(new DingoCodec(def.getDingoSchemaOfKey()).encode(keys)));
     }
 
     @ApiOperation("Decode primary key.")
@@ -199,7 +199,7 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         TableDefinition def = metaApi.tableDefinition(table);
-        Object[] keys = new AvroCodec(def.getAvroSchemaOfKey()).decode(mapper.mapping(input));
+        Object[] keys = new DingoCodec(def.getDingoSchemaOfKey()).decode(mapper.mapping(input));
         int[] mappings = def.getKeyMapping().getMappings();
         Map<String, Object> result = new HashMap<>();
         for (int i = 0; i < mappings.length; i++) {

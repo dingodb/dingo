@@ -58,7 +58,7 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
         }
         TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
         byte[] key0 = {};
-        byte[] keyA = {4};
+        byte[] keyA = {1,0,0,1,0,0,0,2};
         rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
         rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
         when(metaService.getParts(TABLE_NAME)).thenReturn(rangeSegments);

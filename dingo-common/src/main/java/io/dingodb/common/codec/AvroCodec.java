@@ -82,7 +82,7 @@ public class AvroCodec implements Codec {
     }
 
     public Object[] decode(@Nonnull byte[] bytes) throws IOException {
-        return decode(bytes);
+        return decode(new ByteArrayInputStream(bytes));
     }
 
     @Override
@@ -120,13 +120,13 @@ public class AvroCodec implements Codec {
     public byte[] encode(@Nonnull Object[] tuple) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple);
-        return encode(tuple);
+        return os.toByteArray();
     }
 
     public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple, mapping);
-        return encode(tuple, mapping);
+        return os.toByteArray();
     }
 
     @Override

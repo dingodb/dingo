@@ -18,7 +18,7 @@ package io.dingodb.web.controller;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.codec.AvroCodec;
+import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -165,7 +165,7 @@ public class ScheduleController {
             .map(params::get)
             .toArray(Object[]::new)
         ));
-        scheduleApi.splitPart(tableId, partId, new AvroCodec(def.getAvroSchemaOfKey()).encode(keys));
+        scheduleApi.splitPart(tableId, partId, new DingoCodec(def.getDingoSchemaOfKey()).encode(keys));
         return ResponseEntity.ok("ok");
     }
 
@@ -191,7 +191,7 @@ public class ScheduleController {
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
-        byte[] keys = new AvroCodec(def.getAvroSchemaOfKey()).encode(
+        byte[] keys = new DingoCodec(def.getDingoSchemaOfKey()).encode(
             def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
                 .map(ColumnDefinition::getName)
                 .map(params::get)
