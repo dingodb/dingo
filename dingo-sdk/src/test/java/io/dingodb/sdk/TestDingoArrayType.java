@@ -58,48 +58,37 @@ public class TestDingoArrayType {
     private MockApiRegistry apiRegistry = new MockApiRegistry();
 
     private AnnotatedArrayClass arrayClass;
-    private Column[] columns;
 
     @BeforeEach
     public void init() {
         dingoClient = new DingoClient("src/test/resources/config/config.yaml");
 
-        int columnCnt = 11;
-        columns = new Column[columnCnt];
 
         int index = 0;
         MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
         arrayClass = new AnnotatedArrayClass();
         int value = 1;
         arrayClass.setKey(value);
-        columns[index] = new Column("key", value);
 
         byte[] bytes = new byte[]{1, 2, 3, 4, 5};
         arrayClass.setBytes(bytes);
-        columns[++index] = new Column("bytes", Arrays.asList(bytes));
 
         short[] shortArray = new short[]{1,2,3,4,5};
         arrayClass.setShorts(shortArray);
-        columns[++index] = new Column("shorts", Arrays.asList(shortArray));
 
         int [] intArray = new int[]{1,2,3,4,5};
         arrayClass.setInts(intArray);
-        columns[++index] = new Column("ints", Arrays.asList(intArray));
 
         long [] longArray = new long[]{1L,2L,3L,4L,5L};
         arrayClass.setLongs(longArray);
-        columns[++index] = new Column("longs", Arrays.asList(longArray));
 
         float [] floatArray = new float[]{1.0f,2.0f,3.0f,4.0f,5.0f};
         arrayClass.setFloats(floatArray);
-        columns[++index] = new Column("floats", Arrays.asList(floatArray));
 
         double[] doubleArray = new double[]{1.0,2.0,3.0,4.0,5.0};
         arrayClass.setDoubles(doubleArray);
-        columns[++index] = new Column("doubles", Arrays.asList(doubleArray));
 
         arrayClass.setStrings(Arrays.asList("1","2","3","4","5").toArray(new String[0]));
-        columns[++index] = new Column("strings", Arrays.asList("1","2","3","4","5"));
 
         List<ChildClass> childClassList = Arrays.asList(
             new ChildClass(1, "1", 1.0f),
@@ -114,13 +103,9 @@ public class TestDingoArrayType {
             map.put("valueOfFloat", childClass.getValueOfFloat());
             return map;
         }).collect(Collectors.toList());
-        columns[++index] = new Column("children", Arrays.asList(childClassMapList));
 
         arrayClass.setListChildren(childClassList.toArray(new ChildClass[0]));
-        columns[++index] = new Column("listChildren", Arrays.asList(childClassMapList));
-
         arrayClass.setMapChildren(childClassList.toArray(new ChildClass[0]));
-        columns[++index] = new Column("mapChildren", Arrays.asList(childClassMapList));
     }
 
     @AfterEach
@@ -168,7 +153,9 @@ public class TestDingoArrayType {
         List<String> columnsInTable = tableDefinition.getColumns()
             .stream().map(x -> x.getName()).collect(Collectors.toList());
 
-        Record expectedRecord = new Record(columnsInTable, columns);
+
+        Column[] columns = dingoCli.getSavedColumn(arrayClass);
+        Record expectedRecord = Record.toDingoRecord(new Record(columnsInTable, columns));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
@@ -180,7 +167,6 @@ public class TestDingoArrayType {
         }
         dingoCli.save(arrayClass);
 
-        /*
         AnnotatedArrayClass localArray = dingoCli.read(AnnotatedArrayClass.class, 1);
         Assertions.assertEquals(arrayClass.getKey(), localArray.getKey());
         Assertions.assertEquals(
@@ -210,7 +196,6 @@ public class TestDingoArrayType {
 
         isOK = dingoCli.dropTable(ComplexStruct.class);
         Assertions.assertTrue(isOK);
-        */
     }
 
 }

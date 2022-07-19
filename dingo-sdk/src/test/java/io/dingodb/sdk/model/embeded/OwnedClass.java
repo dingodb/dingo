@@ -27,9 +27,9 @@ public class OwnedClass {
     public String name;
     @DingoKey
     public int id;
-    public Date date;
+    public long date;
 
-    public OwnedClass(@ParamFrom("name") String name, @ParamFrom("id") int id, @ParamFrom("date") Date date) {
+    public OwnedClass(@ParamFrom("name") String name, @ParamFrom("id") int id, @ParamFrom("date") long date) {
         this.name = name;
         this.id = id;
         this.date = date;

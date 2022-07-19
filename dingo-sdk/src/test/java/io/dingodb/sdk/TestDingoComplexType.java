@@ -124,7 +124,7 @@ public class TestDingoComplexType {
         String tableName = record.table();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
-        Record expectedRecord = new Record(complexStruct, false);
+        Record expectedRecord = Record.toDingoRecord(new Record(complexStruct));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
