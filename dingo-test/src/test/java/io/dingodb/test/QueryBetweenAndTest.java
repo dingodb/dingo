@@ -67,6 +67,13 @@ public class QueryBetweenAndTest {
         + "14, b\n"
         + "15, c\n";
 
+    private static final String TEST_ALL_DATA4
+        = "1, a\n"
+        + "2, b\n"
+        + "3, c\n"
+        + "14, b\n"
+        + "15, c\n";
+
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -114,6 +121,15 @@ public class QueryBetweenAndTest {
             new String[]{"id", "name"},
             DingoTypeFactory.tuple("INTEGER", "STRING"),
             TEST_ALL_DATA3
+        );
+    }
+
+    @Test
+    public void testScan4() throws SQLException, IOException {
+        sqlHelper.queryTest("select * from t_ba where id not between 4 and 13",
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            TEST_ALL_DATA4
         );
     }
 }

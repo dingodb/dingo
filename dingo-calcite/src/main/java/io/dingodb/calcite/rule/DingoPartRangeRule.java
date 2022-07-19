@@ -19,7 +19,6 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
-import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -34,6 +33,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.immutables.value.Value;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 
@@ -57,9 +58,19 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
             RexCall filter = (RexCall) rel.getFilter();
             byte[] left = null;
             byte[] right = null;
+            boolean isNotBetween = false;
             boolean includeStart = true;
             boolean includeEnd = true;
-            for (RexNode operand : filter.operands) {
+            List<RexNode> operands = Collections.emptyList();
+            // Not between and
+            if (filter.op.kind == SqlKind.NOT) {
+                operands = ((RexCall) filter.getOperands().get(0)).getOperands();
+                isNotBetween = true;
+            } else if (filter.op.kind == SqlKind.AND) {
+                operands = filter.operands;
+            }
+
+            for (RexNode operand : operands) {
                 RexCall rexCall;
                 if (operand instanceof RexCall) {
                     rexCall = (RexCall) operand;
@@ -71,7 +82,13 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                 if (opKind == SqlKind.LESS_THAN_OR_EQUAL || opKind == SqlKind.LESS_THAN) {
                     RexLiteral literal = (RexLiteral) rexCall.operands.get(1);
                     try {
-                        right = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(literal)});
+                        byte[] encode = codec.encode(new Object[]{literal.getValue()});
+                        if (right == null ) {
+                            right = encode;
+                        } else  if (ByteArrayUtils.greatThan(right, encode)) {
+                            right = encode;
+                        }
+
                         if (opKind == SqlKind.LESS_THAN) {
                             includeEnd = false;
                         } else {
@@ -85,7 +102,12 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                 if (opKind == SqlKind.GREATER_THAN_OR_EQUAL || opKind == SqlKind.GREATER_THAN) {
                     RexLiteral literal = (RexLiteral) rexCall.operands.get(1);
                     try {
-                        left = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(literal)});
+                        byte[] encode = codec.encode(new Object[]{literal.getValue()});
+                        if (left == null) {
+                            left = encode;
+                        } else if (ByteArrayUtils.lessThan(left, encode)) {
+                            left = encode;
+                        }
                         if (opKind == SqlKind.GREATER_THAN) {
                             includeStart = false;
                         } else {
@@ -108,6 +130,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         rel.getSelection(),
                         left,
                         right,
+                        isNotBetween,
                         includeStart,
                         includeEnd
                     )
@@ -122,8 +145,26 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
             .operandSupplier(
                 b0 -> b0.operand(DingoTableScan.class).predicate(r -> {
                     RexCall filter = (RexCall) r.getFilter();
-                    if (filter != null && filter.op.kind == SqlKind.AND) {
-                        return true;
+                    if (filter != null) {
+                        if (filter.op.kind == SqlKind.AND) {
+                            return true;
+                        }
+
+                        // Support not between and
+                        if (filter.op.kind == SqlKind.NOT) {
+                            for (RexNode operand : filter.operands) {
+                                RexCall rexCall;
+                                if (operand instanceof RexCall) {
+                                    rexCall = (RexCall) operand;
+                                } else {
+                                    return false;
+                                }
+                                if (rexCall.op.kind != SqlKind.AND) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        }
                     }
                     return false;
                 }).noInputs()
