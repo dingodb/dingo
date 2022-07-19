@@ -24,6 +24,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +43,24 @@ public final class AssertResultSet {
     @Nonnull
     public static AssertResultSet of(ResultSet obj) {
         return new AssertResultSet(obj);
+    }
+
+    @Nonnull
+    public static Object[] getRow(@Nonnull ResultSet resultSet) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int size = metaData.getColumnCount();
+        Object[] row = new Object[size];
+        for (int i = 0; i < size; ++i) {
+            int type = metaData.getColumnType(i + 1);
+            if (type == Types.DATE || type == Types.TIME) {
+                // Compare Date & Time type by string.
+                // NOTE: Milliseconds are lost.
+                row[i] = resultSet.getString(i + 1);
+            } else {
+                row[i] = resultSet.getObject(i + 1);
+            }
+        }
+        return row;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -74,16 +93,9 @@ public final class AssertResultSet {
 
     @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet isRecords(List<Object[]> target) throws SQLException {
-        ResultSetMetaData metaData = instance.getMetaData();
-        int size = metaData.getColumnCount();
         int count = 0;
         while (instance.next()) {
-            Object[] row = new Object[size];
-            for (int i = 0; i < size; ++i) {
-                row[i] = instance.getObject(i + 1);
-            }
-            log.info("Get tuple {}.", row);
-            assertThat(row).isIn(target);
+            assertThat(getRow(instance)).isIn(target);
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -92,15 +104,9 @@ public final class AssertResultSet {
 
     @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
-        ResultSetMetaData metaData = instance.getMetaData();
-        int size = metaData.getColumnCount();
         int count = 0;
         while (instance.next()) {
-            Object[] row = new Object[size];
-            for (int i = 0; i < size; ++i) {
-                row[i] = instance.getObject(i + 1);
-            }
-            assertThat(row).isEqualTo(target.get(count));
+            assertThat(getRow(instance)).isEqualTo(target.get(count));
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -120,8 +126,11 @@ public final class AssertResultSet {
                 if (value instanceof Date) {
                     assertThat(value.toString()).isEqualTo(expected.toString());
                 } else if (value instanceof Time) {
-                    assertThat((Time) value)
-                        .isCloseTo((Time) expected, 5L * 1000L);
+                    if (expected instanceof String) {
+                        assertThat(value.toString()).isEqualTo(expected);
+                    } else {
+                        assertThat((Time) value).isCloseTo((Time) expected, 5L * 1000L);
+                    }
                 } else if (value instanceof Timestamp) {
                     assertThat((Timestamp) value)
                         .isCloseTo((Timestamp) expected, 5L * 1000L);

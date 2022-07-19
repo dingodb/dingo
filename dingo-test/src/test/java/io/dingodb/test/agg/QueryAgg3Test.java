@@ -52,20 +52,20 @@ public class QueryAgg3Test {
 
     @Test
     public void testMinDate() throws SQLException, JsonProcessingException {
-        sqlHelper.queryTestInOrderWithApproxTime(
+        sqlHelper.queryTest(
             "select min(birthday) from datetest",
             new String[]{"expr$0"},
-            DingoTypeFactory.tuple("DATE"),
+            DingoTypeFactory.tuple("STRING"),
             "1949-01-01"
         );
     }
 
     @Test
     public void testMaxDate() throws SQLException, JsonProcessingException {
-        sqlHelper.queryTestInOrderWithApproxTime(
+        sqlHelper.queryTest(
             "select max(birthday) from datetest",
             new String[]{"expr$0"},
-            DingoTypeFactory.tuple("DATE"),
+            DingoTypeFactory.tuple("STRING"),
             "2022-03-04"
         );
     }
@@ -75,7 +75,7 @@ public class QueryAgg3Test {
         sqlHelper.queryTest(
             "select min(create_time) from datetest",
             new String[]{"expr$0"},
-            DingoTypeFactory.tuple("TIME"),
+            DingoTypeFactory.tuple("STRING"),
             "00:30:08"
         );
     }
@@ -85,7 +85,7 @@ public class QueryAgg3Test {
         sqlHelper.queryTest(
             "select max(create_time) from datetest",
             new String[]{"expr$0"},
-            DingoTypeFactory.tuple("TIME"),
+            DingoTypeFactory.tuple("STRING"),
             "19:00:00"
         );
     }

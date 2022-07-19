@@ -26,11 +26,11 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.SQLException;
 
-public class QueryTimestampWithPrecision {
+public class QueryTimestampWithPrecisionTest {
     private static final String TEST_ALL_DATA
-        = "1, 2022-06-20 11:49:05.632, 11:50:05.740\n"
-        + "2, 2022-06-20 11:51:23.770, 11:52:23.620\n"
-        + "3, 2022-06-20 11:52:43.800, 11:53:43.800\n";
+        = "1, 2022-06-20 11:49:05.632, 11:50:05\n"
+        + "2, 2022-06-20 11:51:23.770, 11:52:23\n"
+        + "3, 2022-06-20 11:52:43.800, 11:53:43\n";
 
     private static SqlHelper sqlHelper;
 
@@ -59,7 +59,7 @@ public class QueryTimestampWithPrecision {
     public void testScan() throws SQLException, IOException {
         sqlHelper.queryTest("select * from t_test",
             new String[]{"id", "create_datetime", "update_time"},
-            DingoTypeFactory.tuple("INTEGER", "TIMESTAMP", "TIME"),
+            DingoTypeFactory.tuple("INTEGER", "TIMESTAMP", "STRING"),
             TEST_ALL_DATA
         );
     }

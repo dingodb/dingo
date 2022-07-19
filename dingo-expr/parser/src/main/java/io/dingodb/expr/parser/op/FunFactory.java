@@ -62,15 +62,15 @@ import io.dingodb.expr.runtime.op.string.RtContainsOp;
 import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
 import io.dingodb.expr.runtime.op.string.RtMatchesOp;
 import io.dingodb.expr.runtime.op.string.RtStartsWithOp;
-import io.dingodb.expr.runtime.op.time.DateFormatFun;
-import io.dingodb.expr.runtime.op.time.DateTimeFormatFun;
 import io.dingodb.expr.runtime.op.time.CurrentDateFun;
 import io.dingodb.expr.runtime.op.time.CurrentTimeFun;
 import io.dingodb.expr.runtime.op.time.CurrentTimestampFun;
 import io.dingodb.expr.runtime.op.time.DateDiffFun;
+import io.dingodb.expr.runtime.op.time.DateFormatFun;
 import io.dingodb.expr.runtime.op.time.FromUnixTimeFun;
-import io.dingodb.expr.runtime.op.time.UnixTimestampFun;
 import io.dingodb.expr.runtime.op.time.TimeFormatFun;
+import io.dingodb.expr.runtime.op.time.TimestampFormatFun;
+import io.dingodb.expr.runtime.op.time.UnixTimestampFun;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
@@ -164,7 +164,7 @@ public final class FunFactory {
         registerUdf("unix_timestamp", UnixTimestampFun::new);
         registerUdf("date_format", DateFormatFun::new);
         registerUdf("time_format", TimeFormatFun::new);
-        registerUdf("datetime_format", DateTimeFormatFun::new);
+        registerUdf("timestamp_format", TimestampFormatFun::new);
         registerUdf("datediff", DateDiffFun::new);
     }
 

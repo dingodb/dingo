@@ -32,20 +32,20 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public class DateTimeFormatFun extends RtFun {
+public class TimestampFormatFun extends RtFun {
     private static final long serialVersionUID = -4046571111287193650L;
 
-    public DateTimeFormatFun(@Nonnull RtExpr[] paras) {
+    public TimestampFormatFun(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
     @Nonnull
-    public static String dateTimeFormat(@Nonnull Timestamp value, @Nonnull String format) {
+    public static String timestampFormat(@Nonnull Timestamp value, @Nonnull String format) {
         return DateTimeUtils.dateTimeFormat(value, format);
     }
 
     @Nonnull
-    public static String dateTimeFormat(@Nonnull Timestamp value) {
+    public static String timestampFormat(@Nonnull Timestamp value) {
         return DateTimeUtils.dateTimeFormat(value);
     }
 
@@ -58,25 +58,25 @@ public class DateTimeFormatFun extends RtFun {
     protected Object fun(@Nonnull Object[] values) {
         Timestamp value = (Timestamp) values[0];
         if (values.length < 2) {
-            return dateTimeFormat(value);
+            return timestampFormat(value);
         }
         String format = (String) values[1];
-        return dateTimeFormat(value, format);
+        return timestampFormat(value, format);
     }
 
     @AutoService(DingoFuncProvider.class)
     public static class Provider implements DingoFuncProvider {
         @Override
         public List<String> name() {
-            return Collections.singletonList("datetime_format");
+            return Collections.singletonList("timestamp_format");
         }
 
         @Override
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DateTimeFormatFun.class.getMethod("dateTimeFormat", Timestamp.class, String.class));
-                methods.add(DateTimeFormatFun.class.getMethod("dateTimeFormat", Timestamp.class));
+                methods.add(TimestampFormatFun.class.getMethod("timestampFormat", Timestamp.class, String.class));
+                methods.add(TimestampFormatFun.class.getMethod("timestampFormat", Timestamp.class));
                 return methods;
             } catch (NoSuchMethodException e) {
                 log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);

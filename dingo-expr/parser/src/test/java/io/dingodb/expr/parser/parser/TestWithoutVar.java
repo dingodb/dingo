@@ -152,14 +152,14 @@ public class TestWithoutVar {
             arguments("timestamp('2022/04/14 19:02:15.365')", Timestamp.valueOf("2022-04-14 19:02:15.365")),
             arguments("date_format(date('1980-2-3'), '%Y:%m:%d')", "1980:02:03"),
             arguments("time_format(time('23:11:25'), '%H-%i-%s')", "23-11-25"),
-            arguments("datetime_format(timestamp('1980-2-3 23:11:25'), '%Y%m%d %T')", "19800203 23:11:25"),
+            arguments("timestamp_format(timestamp('1980-2-3 23:11:25'), '%Y%m%d %T')", "19800203 23:11:25"),
             arguments(
-                "datetime_format(timestamp('1980-2-3 23:11:25'), 'Date: %Y%m%d Time: %T')",
+                "timestamp_format(timestamp('1980-2-3 23:11:25'), 'Date: %Y%m%d Time: %T')",
                 "Date: 19800203 Time: 23:11:25"
             ),
             arguments(
                 "unix_timestamp(timestamp('2022-04-14 00:00:00'))",
-                Timestamp.valueOf("2022-04-14 00:00:00").getTime()
+                Timestamp.valueOf("2022-04-14 00:00:00").getTime() / 1000L
             ),
             // type conversion
             arguments("int(5)", 5),

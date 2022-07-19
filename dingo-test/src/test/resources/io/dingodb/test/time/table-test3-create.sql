@@ -1,5 +1,4 @@
-CREATE table test3
-(
+CREATE table test3 (
     date_column      varchar(32),
     timestamp_column  int,
     datetime_column  varchar(32),

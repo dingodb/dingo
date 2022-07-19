@@ -39,8 +39,8 @@ public class FromUnixTimeFun extends RtFun {
     }
 
     @Nonnull
-    public static Timestamp fromUnixTime(final long millis) {
-        return new Timestamp(millis);
+    public static Timestamp fromUnixTime(final long seconds) {
+        return new Timestamp(seconds * 1000L);
     }
 
     @Override

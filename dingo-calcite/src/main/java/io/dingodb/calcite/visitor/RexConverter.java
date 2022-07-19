@@ -136,6 +136,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return value != null ? Value.of(value) : Null.INSTANCE;
     }
 
+    private static int typeCodeOf(@Nonnull RelDataType type) {
+        return TypeCode.codeOf(type.getSqlTypeName().getName());
+    }
+
     @Nonnull
     @Override
     public Expr visitCall(@Nonnull RexCall call) {
@@ -208,7 +212,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = FunFactory.INS.getFun("is_not_false");
                 break;
             case CAST:
-                switch (TypeCode.codeOf(call.getType().getSqlTypeName().getName())) {
+                switch (typeCodeOf(call.getType())) {
                     case TypeCode.INT:
                         op = FunFactory.INS.getFun("int");
                         break;
@@ -225,6 +229,9 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                         op = FunFactory.INS.getFun("decimal");
                         break;
                     case TypeCode.BOOL:
+                        if (typeCodeOf(call.getOperands().get(0).getType()) == TypeCode.STRING) {
+                            throw new IllegalArgumentException("It is not allowed to cast a STRING to BOOL type.");
+                        }
                         op = FunFactory.INS.getFun("boolean");
                         break;
                     case TypeCode.DATE:
