@@ -17,13 +17,15 @@
 package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.str.ComputeString;
+import io.dingodb.sdk.context.BasicContext;
 
 import java.util.Arrays;
 
-public class AppendExecutive extends KVExecutive<ComputeString, ComputeString> {
+public class AppendExecutive extends KVExecutive<BasicContext, ComputeString, ComputeString> {
 
     @Override
-    public ComputeString execute(ComputeString first, ComputeString... second) {
-        return first.append(Arrays.stream(second).reduce((a, b) -> a.append(b)).get());
+    public ComputeString execute(BasicContext context, ComputeString... second) {
+        ComputeString record = ComputeString.of(context.record[0].toString());
+        return record.append(Arrays.stream(second).reduce((a, b) -> a.append(b)).get());
     }
 }

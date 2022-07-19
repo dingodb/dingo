@@ -16,8 +16,8 @@
 
 package io.dingodb.cli.source.impl;
 
-import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.Factory;
+import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.fetch.CsvFetch;
 import io.dingodb.cli.source.impl.fetch.JsonFetch;
 import io.dingodb.cli.source.impl.fetch.KafkaAvroFetch;

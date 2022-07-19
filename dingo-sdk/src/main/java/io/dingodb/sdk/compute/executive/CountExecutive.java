@@ -19,11 +19,13 @@ package io.dingodb.sdk.compute.executive;
 import io.dingodb.sdk.compute.number.ComputeLong;
 import io.dingodb.sdk.compute.number.ComputeNumber;
 import io.dingodb.sdk.compute.number.ComputeZero;
+import io.dingodb.sdk.context.BasicContext;
 
-public class CountExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+public class CountExecutive extends NumberExecutive<BasicContext, ComputeNumber, ComputeNumber> {
 
     @Override
-    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        return first.add(second == null ? new ComputeZero() : ComputeLong.of(second.length));
+    public ComputeNumber execute(BasicContext context, ComputeNumber... second) {
+        // return first.add(second == null ? new ComputeZero() : ComputeLong.of(second.length));
+        return null;
     }
 }

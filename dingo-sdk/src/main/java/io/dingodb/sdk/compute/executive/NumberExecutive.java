@@ -18,7 +18,9 @@ package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.Executive;
 import io.dingodb.sdk.compute.number.ComputeNumber;
+import io.dingodb.sdk.context.OperationContext;
 
-public abstract class NumberExecutive<D extends ComputeNumber, R extends ComputeNumber> implements Executive<D, R> {
+public abstract class NumberExecutive<D extends OperationContext, T extends ComputeNumber, R extends ComputeNumber>
+    implements Executive<D, T, R> {
 
 }

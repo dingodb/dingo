@@ -17,14 +17,16 @@
 package io.dingodb.sdk.compute.executive;
 
 import io.dingodb.sdk.compute.number.ComputeNumber;
+import io.dingodb.sdk.context.BasicContext;
 
 import java.util.Arrays;
 
-public class MinExecutive extends NumberExecutive<ComputeNumber, ComputeNumber> {
+public class MinExecutive extends NumberExecutive<BasicContext, ComputeNumber, ComputeNumber> {
 
     @Override
-    public ComputeNumber execute(ComputeNumber first, ComputeNumber... second) {
-        // return ComputeNumber.min(first, Arrays.stream(second).reduce((a, b) -> ComputeNumber.min(a, b)).get());
+    public ComputeNumber execute(BasicContext context, ComputeNumber... second) {
+        Arrays.sort(second);
+        // return ComputeNumber.min(first, second[second.length - 1]);
         return null;
     }
 }
