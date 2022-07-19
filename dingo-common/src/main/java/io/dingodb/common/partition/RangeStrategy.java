@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.AvroCodec;
 import io.dingodb.common.codec.Codec;
+import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
@@ -47,7 +47,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     ) {
         this.ranges = ranges;
         this.definition = definition;
-        this.codec = new AvroCodec(definition.getAvroSchemaOfKey());
+        this.codec = new DingoCodec(definition.getDingoSchemaOfKey());
     }
 
     @Override

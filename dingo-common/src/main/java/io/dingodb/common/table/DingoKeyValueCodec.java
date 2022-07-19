@@ -75,8 +75,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
-        Object[] converted = (Object[]) schema.convertTo(keys, AvroConverter.INSTANCE);
-        return keyCodec.encode(converted);
+        return keyCodec.encode(keys);
     }
 
     @Override
@@ -89,6 +88,6 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         for (int i = 0; i < value.length; i++) {
             record[valueMapping.get(i)] = value[i];
         }
-        return (Object[]) schema.convertTo(record, AvroConverter.INSTANCE);
+        return (Object[]) schema.convertFrom(record, AvroConverter.INSTANCE);
     }
 }
