@@ -33,5 +33,5 @@ import lombok.ToString;
 public class RaftConfiguration {
     private NodeOptions node;
     private String raftPath;
-    private Long port;
+    private Integer port;
 }

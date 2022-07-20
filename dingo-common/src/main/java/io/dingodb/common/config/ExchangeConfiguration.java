@@ -28,5 +28,5 @@ import lombok.ToString;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ExchangeConfiguration {
     private String host;
-    private Long port;
+    private Integer port;
 }

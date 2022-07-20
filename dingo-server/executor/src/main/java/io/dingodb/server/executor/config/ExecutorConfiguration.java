@@ -50,7 +50,7 @@ public class ExecutorConfiguration {
     private String coordinatorExchangeSvrList;
     private String dataPath;
     private String store;
-    private Long monitorPort = 9099L;
+    private Integer monitorPort = 9099;
 
     public static String coordinatorExchangeSvrList() {
         return INSTANCE.coordinatorExchangeSvrList;
@@ -64,7 +64,7 @@ public class ExecutorConfiguration {
         return INSTANCE.store;
     }
 
-    public static Long monitorPort() {
+    public static Integer monitorPort() {
         return INSTANCE.monitorPort;
     }
 }

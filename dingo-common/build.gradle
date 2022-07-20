@@ -21,12 +21,12 @@ plugins {
 
 dependencies {
     api group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
-    api project(':dingo-expr:dingo-expr-parser')
     api project(':dingo-expr:dingo-expr-json-runtime')
-    api project(':dingo-expr:dingo-expr-runtime')
     api project(':dingo-serial')
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
+    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
     compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
     compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
     compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()

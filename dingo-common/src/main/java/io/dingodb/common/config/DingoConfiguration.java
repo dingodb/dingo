@@ -18,6 +18,13 @@ package io.dingodb.common.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import lombok.Getter;
@@ -27,14 +34,14 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import javax.annotation.Nonnull;
-
-import static io.dingodb.expr.json.runtime.Parser.YAML;
 
 @Getter
 @Setter
@@ -45,8 +52,24 @@ public class DingoConfiguration {
 
     private static DingoConfiguration INSTANCE;
 
+    public static <T> T parse(InputStream is, Class<T> clazz) throws IOException {
+        YAMLFactory yamlFactory = new YAMLFactory()
+            .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
+        final ObjectMapper mapper = JsonMapper.builder(yamlFactory)
+            .addModule(new AfterburnerModule())
+            .build();
+        mapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
+        mapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
+        mapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
+        mapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
+        mapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
+        mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        return mapper.readValue(is, clazz);
+    }
+
     public static synchronized void parse(final String configPath) throws Exception {
-        INSTANCE = YAML.parse(new FileInputStream(configPath), DingoConfiguration.class);
+        INSTANCE = parse(new FileInputStream(configPath), DingoConfiguration.class);
     }
 
     public static DingoConfiguration instance() {
@@ -78,7 +101,7 @@ public class DingoConfiguration {
     }
 
     public static int port() {
-        return INSTANCE == null ? 0 : (INSTANCE.getPort().intValue());
+        return INSTANCE == null ? 0 : INSTANCE.getPort();
     }
 
     public static int raftPort() {
@@ -140,8 +163,8 @@ public class DingoConfiguration {
             return 0;
         }
 
-        if (raftPort instanceof Number) {
-            return ((Number) raftPort).intValue();
+        if (raftPort instanceof Integer) {
+            return (Integer) raftPort;
         } else if (raftPort instanceof String) {
             return Integer.parseInt((String) raftPort);
         }
@@ -225,5 +248,4 @@ public class DingoConfiguration {
         }
         return obj;
     }
-
 }
