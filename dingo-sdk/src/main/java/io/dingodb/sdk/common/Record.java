@@ -16,11 +16,16 @@
 
 package io.dingodb.sdk.common;
 
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
+import io.dingodb.sdk.annotation.DingoKey;
+import io.dingodb.sdk.utils.DingoClientException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,33 +33,48 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Container object for records.  Records are equivalent to rows.
+ * Container object for records.
+ * Records are equivalent to rows.
  */
+@Slf4j
 public final class Record {
     /**
      * Map of requested name/value columns.
      */
-    private final Map<String, Object> columns;
+    private final Map<String, Object> columnsInOrderMapping;
+
+    private final List<String> keyColumns;
 
 
     /**
      * Constructor Record by TableDefinition and columns.
-     * @param columnsInTable columns defined in table definition(sequential as create table).
+     * @param columnDefinitions defined in table definition(sequential as create table).
      * @param inputColumns   real record columns(the column order is not important)
      */
-    public Record(final List<String> columnsInTable, final Column[] inputColumns) {
-        columns = new HashMap<String, Object>();
-        for (String columnName: columnsInTable) {
+    public Record(final List<ColumnDefinition> columnDefinitions, final Column[] inputColumns) {
+        keyColumns = new ArrayList<>();
+        columnsInOrderMapping = new HashMap<String, Object>();
+
+        if (columnDefinitions.size() != inputColumns.length) {
+            String errMsg = "Input Column Count mismatch. Table of Meta:"
+                + columnDefinitions.size() + ", input real:" + inputColumns.length;
+            throw new DingoClientException(errMsg);
+        }
+
+
+        for (ColumnDefinition columnDefinition: columnDefinitions) {
+            String columnName = columnDefinition.getName();
+            if (columnDefinition.isPrimary()) {
+                keyColumns.add(columnName);
+            }
+
             for (Column column: inputColumns) {
                 if (Objects.equals(column.name, columnName)) {
-                    columns.put(columnName, column.value);
+                    columnsInOrderMapping.put(columnName, column.value);
+                    break;
                 }
             }
         }
-    }
-
-    private Record(final Map<String, Object> columns) {
-        this.columns = columns;
     }
 
     /**
@@ -62,9 +82,16 @@ public final class Record {
      * @param instance input object value
      */
     public Record(Object instance) {
-        columns = new HashMap<String, Object>();
+        keyColumns = new ArrayList<>();
+        columnsInOrderMapping = new HashMap<String, Object>();
+
         for (Field field: instance.getClass().getDeclaredFields()) {
             String fieldName = field.getName();
+
+            if (field.isAnnotationPresent(DingoKey.class)) {
+                keyColumns.add(fieldName);
+            }
+
             if (field.isAnnotationPresent(DingoColumn.class)) {
                 String localFieldName = field.getAnnotation(DingoColumn.class).name();
                 boolean isOK = localFieldName != null && !localFieldName.isEmpty();
@@ -72,35 +99,53 @@ public final class Record {
                     fieldName = localFieldName;
                 }
             }
-            field.setAccessible(true);
+
             try {
+                field.setAccessible(true);
                 Object value = field.get(instance);
-                columns.put(fieldName, value);
-                /*
-                for (Annotation annotation: field.getAnnotations()) {
-                    if (annotation instanceof DingoEmbed) {
-                        if (value instanceof List) {
-                            List<Object> list = (List<Object>) value;
-                            List<Object> result = new ArrayList<>();
-                            for (Object item: list) {
-                                result.add(item);
-                            }
-                            columns.put(fieldName, Arrays.asList(result));
-                        } else {
-                            columns.put(fieldName, value);
-                        }
-                    }
-                }
-                */
+                columnsInOrderMapping.put(fieldName, value);
             } catch (IllegalAccessException e) {
+                log.warn("Visit table columns using reflection failed.", e);
                 throw new RuntimeException(e);
             }
         }
     }
 
+    public Record(final List<String> keyColumns, final Map<String, Object> columns) {
+        this.keyColumns = new ArrayList<>(keyColumns.size());
+        this.columnsInOrderMapping = new HashMap<>(columns.size());
+
+        boolean isValid = true;
+        for (String keyColumn: keyColumns) {
+            if (!columns.containsKey(keyColumn)) {
+                isValid = false;
+                break;
+            }
+        }
+
+        if (!isValid) {
+            log.error("Key columns:{} are not in the record:{}.",
+                keyColumns, columns.keySet());
+            throw new DingoClientException("Key columns are not in the record.");
+        }
+
+        for (String key: keyColumns) {
+            this.keyColumns.add(key);
+        }
+
+        for (Map.Entry<String, Object> entry: columns.entrySet()) {
+            this.columnsInOrderMapping.put(entry.getKey(), entry.getValue());
+        }
+    }
+
     public static Record toDingoRecord(Record record) {
-        Map<String, Object> columns = new HashMap<String, Object>();
-        for (Map.Entry<String, Object> entry: record.columns.entrySet()) {
+        List<String> keyColumns = new ArrayList<>();
+        for (String key: record.getKeyColumns()) {
+            keyColumns.add(key);
+        }
+
+        Map<String, Object> columnsInOrder = new HashMap<String, Object>();
+        for (Map.Entry<String, Object> entry: record.columnsInOrderMapping.entrySet()) {
             Object value = entry.getValue();
             if (entry.getValue() instanceof Value) {
                 value = ((Value) entry.getValue()).getObject();
@@ -112,29 +157,31 @@ public final class Record {
             } else if (value instanceof Timestamp) {
                 value = ((Timestamp) value).getTime();
             }
-            columns.put(entry.getKey(), value);
+            columnsInOrder.put(entry.getKey(), value);
         }
-        return new Record(columns);
+        return new Record(keyColumns, columnsInOrder);
     }
 
+    public List<String> getKeyColumns() {
+        return keyColumns;
+    }
 
     /**
-     * Get bin value given bin name.
-     * Enter empty string ("") for servers configured as single-bin.
+     * Get column value given column name.
      */
     public Object getValue(String name) {
-        return (columns == null) ? null : columns.get(name);
+        return (columnsInOrderMapping == null) ? null : columnsInOrderMapping.get(name);
     }
 
     /**
-     * Get bin value as String.
+     * Get column value as String.
      */
     public String getString(String name) {
         return (String)getValue(name);
     }
 
     /**
-     * Get bin value as double.
+     * Get column value as double.
      */
     public double getDouble(String name) {
         // The server may return number as double or long.
@@ -145,14 +192,14 @@ public final class Record {
     }
 
     /**
-     * Get bin value as float.
+     * Get column value as float.
      */
     public float getFloat(String name) {
         return (float)getDouble(name);
     }
 
     /**
-     * Get bin value as long.
+     * Get column value as long.
      */
     public long getLong(String name) {
         // The server always returns numbers as longs if column found.
@@ -162,7 +209,7 @@ public final class Record {
     }
 
     /**
-     * Get bin value as int.
+     * Get column value as int.
      */
     public int getInt(String name) {
         // The server always returns numbers as longs, so get long and cast.
@@ -170,26 +217,23 @@ public final class Record {
     }
 
     /**
-     * Get bin value as short.
+     * Get column value as short.
      */
     public short getShort(String name) {
-        // The server always returns numbers as longs, so get long and cast.
         return (short)getLong(name);
     }
 
     /**
-     * Get bin value as byte.
+     * Get column value as byte.
      */
     public byte getByte(String name) {
-        // The server always returns numbers as longs, so get long and cast.
         return (byte)getLong(name);
     }
 
     /**
-     * Get bin value as boolean.
+     * Get column value as boolean.
      */
     public boolean getBoolean(String name) {
-        // The server may return boolean as boolean or long (created by older clients).
         Object result = getValue(name);
 
         if (result instanceof Boolean) {
@@ -204,14 +248,14 @@ public final class Record {
     }
 
     /**
-     * Get bin value as list.
+     * Get column value as list.
      */
     public List<?> getList(String name) {
         return (List<?>)getValue(name);
     }
 
     /**
-     * Get bin value as map.
+     * Get column value as map.
      */
     public Map<?,?> getMap(String name) {
         return (Map<?,?>)getValue(name);
@@ -225,10 +269,10 @@ public final class Record {
         StringBuilder sb = new StringBuilder(500);
         sb.append("(columns:");
 
-        if (columns != null) {
+        if (columnsInOrderMapping != null) {
             boolean sep = false;
 
-            for (Map.Entry<String,Object> entry : columns.entrySet()) {
+            for (Map.Entry<String,Object> entry : columnsInOrderMapping.entrySet()) {
                 if (sep) {
                     sb.append(',');
                 } else {
@@ -254,7 +298,7 @@ public final class Record {
 
     @Override
     public int hashCode() {
-        return Objects.hash(columns);
+        return Objects.hash(keyColumns, columnsInOrderMapping);
     }
 
     /**
@@ -262,20 +306,17 @@ public final class Record {
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj.getClass() != getClass()) {
             return false;
         }
-        Record other = (Record) obj;
-        if (columns == null) {
-            return other.columns == null;
-        } else {
-            return columns.equals(other.columns);
-        }
+        Record other = (Record)obj;
+        return Objects.equals(keyColumns, other.keyColumns)
+            && Objects.equals(columnsInOrderMapping, other.columnsInOrderMapping);
     }
 }

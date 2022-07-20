@@ -16,21 +16,9 @@
 
 package io.dingodb.sdk.operation;
 
-public enum StoreOperationType {
-    PUT,
+import io.dingodb.common.CommonId;
+import io.dingodb.server.api.ExecutorApi;
 
-    GET,
-
-    DELETE,
-
-    /**
-     * Execute Query to get resultSet, and do compute on resultSet.
-     * Without update resultSet to database.
-     */
-    GET_COMPUTE,
-
-    /**
-     * do compute on resultSet and update result to database.
-     */
-    COMPUTE_UPDATE;
+public interface IStoreOperation {
+    ResultForStore doOperation(ExecutorApi executorApi, CommonId tableId, ContextForStore paramContext);
 }

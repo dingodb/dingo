@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.operation.impl;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.ContextForStore;
+import io.dingodb.sdk.operation.IStoreOperation;
+import io.dingodb.sdk.operation.ResultForStore;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class PutRecordOperation implements IBaseStoreOperation {
+public class ComputeGetOperation implements IStoreOperation {
+    private static final ComputeGetOperation INSTANCE = new ComputeGetOperation();
 
-    @Override
-    public boolean doOperation(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] recordInBytes) {
-        try {
-            KeyValue keyValues = new KeyValue(keyInBytes, recordInBytes);
-            return executorApi.upsertKeyValue(tableId, keyValues);
-        } catch (Exception e) {
-            log.error("insert KeyValue error, tableId:{}, exception:{}", tableId, e.toString(), e);
-            throw e;
-        }
+    private ComputeGetOperation() {
+    }
+
+    public static ComputeGetOperation getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public Record doCompute(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] computes) {
+    public ResultForStore doOperation(ExecutorApi executorApi, CommonId tableId, ContextForStore paramContext) {
         return null;
     }
 }
