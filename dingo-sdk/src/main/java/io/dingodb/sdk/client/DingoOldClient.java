@@ -18,10 +18,11 @@ package io.dingodb.sdk.client;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.KeyValueCodec;
+import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
@@ -258,7 +259,7 @@ public class DingoOldClient extends ClientBase {
             System.exit(1);
         }
         this.parts = metaClient.getParts(tableName);
-        this.codec = new KeyValueCodec(tableDefinition.getTupleSchema(), tableDefinition.getKeyMapping());
+        this.codec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
         this.ps = new RangeStrategy(tableDefinition, parts.navigableKeySet());
         this.partsApi = new TreeMap<ByteArrayUtils.ComparableByteArray, ExecutorApi>();
     }

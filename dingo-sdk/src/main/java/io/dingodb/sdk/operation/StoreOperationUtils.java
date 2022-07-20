@@ -17,18 +17,23 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.partition.RangeStrategy;
-import io.dingodb.common.table.KeyValueCodec;
+import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
+import io.dingodb.sdk.common.BatchRecord;
+import io.dingodb.sdk.common.Filter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Operation;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.compute.Executive;
+import io.dingodb.sdk.context.BasicContext;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
@@ -88,6 +93,49 @@ public class StoreOperationUtils {
         return isSuccess;
     }
 
+    public List<Record> executeFetch(String tableName, List<Key> keys) {
+        // 1. get route table using tableName
+        // 2. group all keys by Executor
+        // 3. for (executor: Executors)
+        // 4. get result and merge
+        return null;
+    }
+
+    public List<Record> executeFetch(String tableName, Filter filter) {
+        // 1. get route table using tableName
+        // 2. group all keys by Executor
+        // 3. for (executor: Executors)
+        // 4. get result and merge
+        return null;
+    }
+
+    // 1. Commands without update such as min, max
+    public List<Record> executeCompute(StoreOperationType type, String tableName, List<Key> keys, Operation operation) {
+        //  1. executeFetch => Records
+        //  2. execute command
+        //  3. return record
+        return null;
+    }
+
+    // 2. Commands with update command such as add
+    public boolean executeCompute(String tableName, List<Key> keys, Operation operation) {
+        // 1. get route table using tableName
+        // 2. group all keys by Executor
+        // 3. for (executor: Executors)
+        // 4. execute Remote Compute on Raft Node
+        return true;
+    }
+
+    /**
+     * Execute delete command on keys.
+     * @param tableName
+     * @param keys
+     * @return
+     */
+    public boolean executeDelete(String tableName, List<Key> keys) {
+        return false;
+    }
+
     public Record executeRemoteCompute(StoreOperationType type, String tableName, Key key, Operation operation) {
         RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
         if (routeTable == null) {
@@ -111,6 +159,8 @@ public class StoreOperationUtils {
                         ProtostuffCodec.write(operation));
 
                 } else {
+                    // Executive<BasicContext, Key, Record> result = operation.operationType.executive();
+                    // Record record = result.execute((BasicContext) null, key);
                     // todo scan --> operation.type.execute() --> record
                     // collection --> for - operation.type.execute()
                 }
@@ -152,7 +202,7 @@ public class StoreOperationUtils {
             }
             tableDefinitionInCache.put(tableName, tableDef);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
-            KeyValueCodec keyValueCodec = new KeyValueCodec(tableDef.getTupleSchema(), tableDef.getKeyMapping());
+            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDef.getDingoType(), tableDef.getKeyMapping());
             RangeStrategy rangeStrategy = new RangeStrategy(tableDef, partitions.navigableKeySet());
             TreeMap<ByteArrayUtils.ComparableByteArray, ExecutorApi> partitionExecutor = new TreeMap<>();
             routeTable = new RouteTable(

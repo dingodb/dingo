@@ -23,7 +23,7 @@ import lombok.Getter;
 @Getter
 public class SqlTypeInfo {
     String sqlTypeName;
-    Object defaultValue;
+    String defaultValue;
     Integer scale;
     Integer precision;
 
@@ -31,7 +31,7 @@ public class SqlTypeInfo {
         this(sqlTypeName, null, null, null);
     }
 
-    public SqlTypeInfo(String sqlTypeName, Integer precision, Integer scale, Object defaultValue) {
+    public SqlTypeInfo(String sqlTypeName, Integer precision, Integer scale, String defaultValue) {
         this.sqlTypeName = sqlTypeName;
         this.precision = precision;
         this.scale = scale;
@@ -47,7 +47,7 @@ public class SqlTypeInfo {
         Integer scale = dingoColumn.scale().trim().isEmpty() ? null : Integer.parseInt(dingoColumn.scale());
         this.scale = scale;
 
-        Object defaultValue = dingoColumn.defaultValue().trim().isEmpty() ?  null : dingoColumn.defaultValue();
+        String defaultValue = dingoColumn.defaultValue().trim().isEmpty() ?  null : dingoColumn.defaultValue();
         this.defaultValue = defaultValue;
     }
 }
