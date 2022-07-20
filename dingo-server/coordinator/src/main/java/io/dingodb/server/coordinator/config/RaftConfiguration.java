@@ -26,7 +26,7 @@ import lombok.ToString;
 @ToString
 public class RaftConfiguration {
     private String group = "COORDINATOR_RAFT";
-    private Long port;
+    private int port;
     private String initRaftSvrList;
     private NodeOptions node;
 }

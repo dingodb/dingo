@@ -75,7 +75,7 @@ public class CoordinatorServer {
         RawKVStore rocksStore = new RocksRawKVStore(
             Paths.get(configuration.getDataPath(), "db").toString(), configuration.getDbRocksOptionsFile());
 
-        Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort().intValue());
+        Endpoint endpoint = new Endpoint(DingoConfiguration.host(), configuration.getRaft().getPort());
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(endpoint);
         rpcServer.init(null);
         NodeManager.getInstance().addAddress(endpoint);
