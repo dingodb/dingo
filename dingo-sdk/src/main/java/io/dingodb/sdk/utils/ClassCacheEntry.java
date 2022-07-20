@@ -1266,9 +1266,6 @@ public class ClassCacheEntry<T> {
     }
 
 
-
-
-
     public ValueType getValueFromColumnName(String name) {
         return this.values.get(name);
     }

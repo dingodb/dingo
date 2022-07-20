@@ -16,21 +16,14 @@
 
 package io.dingodb.sdk.operation;
 
-public enum StoreOperationType {
-    PUT,
+import io.dingodb.common.codec.KeyValueCodec;
 
-    GET,
+public final class ConvertUtils {
+    public static ResultForClient getResultCode(ResultForStore inputCode, KeyValueCodec codec) {
+        return null;
+    }
 
-    DELETE,
-
-    /**
-     * Execute Query to get resultSet, and do compute on resultSet.
-     * Without update resultSet to database.
-     */
-    GET_COMPUTE,
-
-    /**
-     * do compute on resultSet and update result to database.
-     */
-    COMPUTE_UPDATE;
+    public static ContextForStore getStoreContext(ContextForClient inputContext, KeyValueCodec codec) {
+        return null;
+    }
 }

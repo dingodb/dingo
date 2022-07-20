@@ -16,12 +16,15 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.sdk.common.Record;
-import io.dingodb.server.api.ExecutorApi;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-public interface IBaseStoreOperation {
-    boolean doOperation(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] recordInBytes);
+import java.util.List;
 
-    Record doCompute(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] computes);
+@Getter
+@AllArgsConstructor
+public final class ContextForStore {
+    private final List<byte[]> keyListInBytes;
+    private final List<byte[]> recordListInBytes;
+    private final List<byte[]> operationListInBytes;
 }

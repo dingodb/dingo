@@ -20,11 +20,16 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Operation;
+import io.dingodb.sdk.common.OperationType;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.ContextForClient;
+import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
 import io.dingodb.sdk.operation.StoreOperationUtils;
+import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -139,81 +144,176 @@ public class DingoClient {
         boolean isSuccess = false;
         try {
             isSuccess = connection.getMetaClient().dropTable(tableName);
-            storeOpUtils.removeCacheOfTableDefinition(tableName);
         } catch (Exception e) {
             isSuccess = false;
             log.error("drop table: {} failed:{}", tableName, e.toString(), e);
+        } finally {
+            storeOpUtils.removeCacheOfTableDefinition(tableName);
         }
         return isSuccess;
     }
 
 
-    public boolean put(Key key, Record record) throws Exception {
-        return interalPutRecord(key, record);
+    public boolean put(Key key, Record record) throws DingoClientException {
+        return doPut(Arrays.asList(key), Arrays.asList(record));
     }
 
-    public boolean put(Key key, Column[] columns) throws Exception {
-        // convert columns to record
-        List<String> columnsInOrder = storeOpUtils.getColumnNamesInOrder(key.getTable());
-        Record record = new Record(columnsInOrder, columns);
-        return interalPutRecord(key, record);
+    public boolean put(Key key, Column[] columns) throws DingoClientException {
+        TableDefinition tableDefinition = storeOpUtils.getTableDefinition(key.getTable());
+        Record record = new Record(tableDefinition.getColumns(), columns);
+        return doPut(Arrays.asList(key), Arrays.asList(record));
     }
 
-    public boolean put(List<Key> keyList, List<Record> recordList) throws Exception {
-        /**
-         * should group by key, and then do batch put.
-         */
-        return true;
+    public boolean put(List<Key> keyList, List<Record> recordList) throws DingoClientException {
+        return doPut(keyList, recordList);
     }
 
     public Record get(Key key) throws Exception {
-        return null;
+        List<Record> records = doGet(Arrays.asList(key));
+        if (records == null || records.isEmpty()) {
+            return null;
+        }
+        return records.get(0);
     }
 
     public List<Record> get(List<Key> keyList) throws Exception {
-        return null;
+        return doGet(keyList);
     }
 
     public boolean delete(Key key) throws Exception {
-        return false;
+        return doDelete(Arrays.asList(key));
     }
 
-    private boolean interalPutRecord(Key key, Record record) {
-        storeOpUtils.executeRemoteOperation(StoreOperationType.PUT, key.getTable(), key, record);
-        return false;
+    public boolean delete(List<Key> keyList) throws Exception {
+        return doDelete(keyList);
+    }
+
+    private List<Record> doGet(List<Key> keyList) throws Exception {
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.GET,
+            keyList.get(0).getTable(),
+            new ContextForClient(keyList, null, null));
+        if (!result.getStatus()) {
+            log.error("Execute get command failed:{}", result.getErrorMessage());
+            return null;
+        } else {
+            return result.getRecords();
+        }
+    }
+
+    private boolean doPut(List<Key> keyList, List<Record> recordList) {
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.PUT,
+            keyList.get(0).getTable(),
+            new ContextForClient(keyList, recordList, null));
+        if (!result.getStatus()) {
+            log.error("Execute put command failed:{}", result.getErrorMessage());
+            return false;
+        }
+        return true;
+    }
+
+    private boolean doDelete(List<Key> keyList) {
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.DELETE,
+            keyList.get(0).getTable(),
+            new ContextForClient(keyList, null, null));
+        if (!result.getStatus()) {
+            log.error("Execute put command failed:{}", result.getErrorMessage());
+            return false;
+        }
+        return true;
     }
 
     public final void add(Key key, Column... columns) {
         Operation operation = Operation.add(columns);
-
-        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.COMPUTE_UPDATE,
+            key.getTable(),
+            contextForClient);
+        if (result.getStatus() != true) {
+            log.error("add operation failed, key:{}, columns:{}", key, columns);
+        }
+        return;
     }
 
     public final Record max(Key key, Column... columns) {
         Operation operation = Operation.max(columns);
-        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.GET_COMPUTE,
+            key.getTable(),
+            contextForClient);
+        return result.getRecords() != null ? result.getRecords().get(0) : null;
     }
 
     public final Record min(Key key, Column... columns) {
         Operation operation = Operation.min(columns);
-        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.GET_COMPUTE,
+            key.getTable(),
+            contextForClient);
+        return result.getRecords() != null ? result.getRecords().get(0) : null;
     }
 
     public final Record sum(Key key, Column... columns) {
         Operation operation = Operation.sum(columns);
-        return storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.GET_COMPUTE,
+            key.getTable(),
+            contextForClient);
+        return result.getRecords() != null ? result.getRecords().get(0) : null;
     }
 
     public final void append(Key key, Column... columns) {
         Operation operation = Operation.append(columns);
-
-        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.COMPUTE_UPDATE,
+            key.getTable(),
+            contextForClient);
+        if (!result.getStatus()) {
+            log.error("append operation failed, key:{}, columns:{}", key, columns);
+        }
     }
 
     public final void replace(Key key, Column... columns) {
         Operation operation = Operation.replace(columns);
-
-        storeOpUtils.executeRemoteCompute(StoreOperationType.COMPUTE, key.getTable(), key, operation);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(key),
+            null,
+            Arrays.asList(operation)
+        );
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.COMPUTE_UPDATE,
+            key.getTable(),
+            contextForClient);
+        if (!result.getStatus()) {
+            log.error("append operation failed, key:{}, columns:{}", key, columns);
+        }
     }
 
     /**

@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.sdk.operation.impl;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.ContextForStore;
+import io.dingodb.sdk.operation.IStoreOperation;
+import io.dingodb.sdk.operation.ResultForStore;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ComputeOperation implements IBaseStoreOperation {
+public class ComputeUpdateOperation implements IStoreOperation {
+    private static final ComputeUpdateOperation INSTANCE = new ComputeUpdateOperation();
 
-    @Override
-    public boolean doOperation(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] recordInBytes) {
-        return false;
+    private ComputeUpdateOperation() {
+    }
+
+    public static ComputeUpdateOperation getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public Record doCompute(ExecutorApi executorApi, CommonId tableId, byte[] keyInBytes, byte[] computes) {
-        byte[] bytes = executorApi.operator(tableId, keyInBytes, computes);
-        return ProtostuffCodec.read(bytes);
+    public ResultForStore doOperation(ExecutorApi executorApi, CommonId tableId, ContextForStore paramContext) {
+        return null;
     }
 }
