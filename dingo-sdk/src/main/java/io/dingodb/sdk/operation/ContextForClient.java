@@ -16,21 +16,18 @@
 
 package io.dingodb.sdk.operation;
 
-public enum StoreOperationType {
-    PUT,
+import io.dingodb.sdk.common.Key;
+import io.dingodb.sdk.common.Operation;
+import io.dingodb.sdk.common.Record;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-    GET,
+import java.util.List;
 
-    DELETE,
-
-    /**
-     * Execute Query to get resultSet, and do compute on resultSet.
-     * Without update resultSet to database.
-     */
-    GET_COMPUTE,
-
-    /**
-     * do compute on resultSet and update result to database.
-     */
-    COMPUTE_UPDATE;
+@Getter
+@AllArgsConstructor
+public final class ContextForClient {
+    private final List<Key> keyList;
+    private final List<Record> recordList;
+    private final List<Operation> operationList;
 }

@@ -150,12 +150,8 @@ public class TestDingoArrayType {
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
 
-        List<String> columnsInTable = tableDefinition.getColumns()
-            .stream().map(x -> x.getName()).collect(Collectors.toList());
-
-
         Column[] columns = dingoCli.getSavedColumn(arrayClass);
-        Record expectedRecord = Record.toDingoRecord(new Record(columnsInTable, columns));
+        Record expectedRecord = Record.toDingoRecord(new Record(tableDefinition.getColumns(), columns));
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());

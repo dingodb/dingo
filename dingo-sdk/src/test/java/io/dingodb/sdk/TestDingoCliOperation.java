@@ -265,9 +265,9 @@ public class TestDingoCliOperation {
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
-            when(spyClient.get((Key) any()))
-                .thenReturn(expectedRecord01)
-                .thenReturn(expectedRecord02);
+            doReturn(expectedRecord01).
+                doReturn(expectedRecord02)
+                .when(spyClient).get((Key) any());
         } catch (Exception e) {
             Assertions.fail("Mock catch Unexpected exception");
         }
