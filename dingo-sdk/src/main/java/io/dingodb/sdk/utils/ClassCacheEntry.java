@@ -867,7 +867,7 @@ public class ClassCacheEntry<T> {
     private SqlTypeInfo getSqlTypeInfo(final String inputJavaType,
                                        Integer precision,
                                        Integer scale,
-                                       Object defaultValue) {
+                                       String defaultValue) {
         String typeName = getSqlType(inputJavaType);
         return new SqlTypeInfo(typeName, precision, scale, defaultValue);
     }

@@ -18,8 +18,8 @@ package io.dingodb.sdk.client;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.partition.PartitionStrategy;
-import io.dingodb.common.table.KeyValueCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
