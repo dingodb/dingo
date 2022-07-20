@@ -16,29 +16,9 @@
 
 package io.dingodb.sdk.client;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import io.dingodb.common.partition.PartitionStrategy;
-import io.dingodb.common.partition.RangeStrategy;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.KeyValueCodec;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Part;
-import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.sdk.common.Column;
-import io.dingodb.sdk.common.Key;
-import io.dingodb.server.api.ExecutorApi;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import io.dingodb.net.api.ApiRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DingoConnection extends ClientBase {

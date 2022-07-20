@@ -17,16 +17,10 @@
 package io.dingodb.sdk.common;
 
 import io.dingodb.sdk.annotation.DingoColumn;
-import io.dingodb.sdk.annotation.DingoEmbed;
-import sun.reflect.annotation.AnnotationType;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
