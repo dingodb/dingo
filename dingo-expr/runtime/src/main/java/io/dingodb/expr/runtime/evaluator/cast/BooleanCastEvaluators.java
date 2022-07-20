@@ -55,8 +55,4 @@ final class BooleanCastEvaluators {
     static boolean booleanCast(@Nonnull BigDecimal value) {
         return value.compareTo(BigDecimal.ZERO) != 0;
     }
-
-    static boolean booleanCast(@Nonnull String ignoredValue) {
-        return false;
-    }
 }

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -63,12 +62,11 @@ public class BasicTypeWithDateTest {
         sqlHelper.clearTable("test");
     }
 
-    @Disabled
     @Test
     public void testScan() throws SQLException, IOException {
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "DATE"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             TEST_ALL_DATA
         );
     }

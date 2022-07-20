@@ -39,11 +39,11 @@ public class UnixTimestampFun extends RtFun {
     }
 
     public static long unixTimestamp() {
-        return DateTimeUtils.currentTimestamp().getTime();
+        return unixTimestamp(DateTimeUtils.currentTimestamp());
     }
 
     public static long unixTimestamp(@Nonnull Timestamp value) {
-        return value.getTime();
+        return Math.floorDiv(value.getTime(), 1000L);
     }
 
     @Override

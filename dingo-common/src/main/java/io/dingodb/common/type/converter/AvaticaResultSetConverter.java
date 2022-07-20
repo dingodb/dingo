@@ -41,7 +41,7 @@ public class AvaticaResultSetConverter implements DataConverter {
 
     @Override
     public Long convert(@Nonnull Time value) {
-        return value.getTime() + TimeZone.getDefault().getRawOffset();
+        return value.getTime();// + TimeZone.getDefault().getRawOffset();
     }
 
     @Override

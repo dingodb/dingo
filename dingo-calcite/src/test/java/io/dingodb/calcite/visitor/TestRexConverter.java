@@ -715,7 +715,7 @@ public class TestRexConverter {
     @Test
     public void formatUnixTime() throws Exception {
         String dateTime = "1980-11-12 23:25:12";
-        String sql = "select from_unixtime(" + Timestamp.valueOf(dateTime).getTime() + ")";
+        String sql = "select from_unixtime(" + Timestamp.valueOf(dateTime).getTime() / 1000L + ")";
         SqlNode sqlNode = parser.parse(sql);
         sqlNode = parser.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode);

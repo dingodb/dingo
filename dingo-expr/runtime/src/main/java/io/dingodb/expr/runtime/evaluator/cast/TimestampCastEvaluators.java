@@ -39,7 +39,7 @@ final class TimestampCastEvaluators {
 
     @Nonnull
     static Timestamp timestampCast(long value) {
-        return new Timestamp(value);
+        return new Timestamp(value * 1000L);
     }
 
     @Nonnull

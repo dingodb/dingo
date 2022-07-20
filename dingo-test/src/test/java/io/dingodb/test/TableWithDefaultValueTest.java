@@ -17,7 +17,6 @@
 package io.dingodb.test;
 
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,9 +26,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -243,7 +244,7 @@ public class TableWithDefaultValueTest {
         sqlHelper.queryTestInOrderWithApproxTime(
             sql,
             new String[]{"id", "name", "birth"},
-            Collections.singletonList(new Object[]{100, "lala", DateTimeUtils.currentTime()})
+            Collections.singletonList(new Object[]{100, "lala", Time.valueOf(LocalTime.now())})
         );
         sqlHelper.dropTable(tableName);
     }
@@ -356,12 +357,13 @@ public class TableWithDefaultValueTest {
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
-        String expectRecord = "100, lala, null, null, 2020-01-01 00:00:00";
         sql = "select * from " + tableName;
-        sqlHelper.queryTest(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birthday"},
             DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "TIMESTAMP"),
-            expectRecord);
+            "100, lala, null, null, 2020-01-01 00:00:00"
+        );
         sqlHelper.dropTable(tableName);
     }
 
@@ -382,12 +384,13 @@ public class TableWithDefaultValueTest {
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
-        String expectRecord = "100, lala, null, null, 2020-01-01, 10:30:30, 2020-01-01 10:30:30";
         sql = "select * from " + tableName;
-        sqlHelper.queryTestInOrderWithApproxTime(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectRecord);
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "STRING", "STRING", "TIMESTAMP"),
+            "100, lala, null, null, 2020-01-01, 10:30:30, 2020-01-01 10:30:30"
+        );
         sqlHelper.dropTable(tableName);
     }
 
@@ -410,39 +413,43 @@ public class TableWithDefaultValueTest {
 
         sql = "update " + tableName + " set address = 'beijing' where id = 100";
         sqlHelper.updateTest(sql, 1);
-        String expectRecord01 = "100, lala, null, beijing, null, null, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTestInOrderWithApproxTime(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectRecord01);
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "STRING", "STRING", "TIMESTAMP"),
+            "100, lala, null, beijing, null, null, null"
+        );
 
         sql = "update " + tableName + " set birth1 = '2020-11-11' where id = 100";
         sqlHelper.updateTest(sql, 1);
-        String expectRecord02 = "100, lala, null, beijing, 2020-11-11, null, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTestInOrderWithApproxTime(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectRecord02);
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "STRING", "STRING", "TIMESTAMP"),
+            "100, lala, null, beijing, 2020-11-11, null, null"
+        );
 
         sql = "update " + tableName + " set birth2 = '11:11:11' where id = 100";
         sqlHelper.updateTest(sql, 1);
-        String expectRecord03 = "100, lala, null, beijing, 2020-11-11, 11:11:11, null";
         sql = "select * from " + tableName;
-        sqlHelper.queryTestInOrderWithApproxTime(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectRecord03);
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "STRING", "STRING", "TIMESTAMP"),
+            "100, lala, null, beijing, 2020-11-11, 11:11:11, null"
+        );
 
         sql = "update " + tableName + " set birth3 = '2022-11-11 11:11:11' where id = 100";
         sqlHelper.updateTest(sql, 1);
-        String expectRecord04 = "100, lala, null, beijing, 2020-11-11, 11:11:11, 2022-11-11 11:11:11";
         sql = "select * from " + tableName;
-        sqlHelper.queryTestInOrderWithApproxTime(sql,
+        sqlHelper.queryTest(
+            sql,
             new String[]{"id", "name", "age", "address", "birth1", "birth2", "birth3"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "DATE", "TIME", "TIMESTAMP"),
-            expectRecord04);
+            DingoTypeFactory.tuple("INTEGER", "STRING", "INTEGER", "STRING", "STRING", "STRING", "TIMESTAMP"),
+            "100, lala, null, beijing, 2020-11-11, 11:11:11, 2022-11-11 11:11:11"
+        );
 
         sqlHelper.dropTable(tableName);
     }
@@ -481,7 +488,7 @@ public class TableWithDefaultValueTest {
                     100,
                     "lala",
                     Date.valueOf(LocalDate.now()),
-                    DateTimeUtils.currentTime(),
+                    Time.valueOf(LocalTime.now()),
                     Timestamp.valueOf(LocalDateTime.now())
                 }
             )

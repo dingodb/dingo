@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class QueryBooleanTest {
     private static SqlHelper sqlHelper;
 
@@ -64,5 +66,13 @@ public class QueryBooleanTest {
                 + "6, c6, 11, 3.6, zhengzhou, true\n"
                 + "7, c7, 19, 223.18, shanghai, true\n"
         );
+    }
+
+    @Test
+    public void testInsertStringAsBoolean() throws SQLException {
+        String sql = "insert into bldemo values(1, 'c1', 28, 109.325, 'beijing', 'true')";
+        assertThrows(SQLException.class, () -> {
+            sqlHelper.execSqlCmd(sql);
+        });
     }
 }

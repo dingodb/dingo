@@ -68,7 +68,7 @@ public class BasicTypeWithTimeTest {
     public void testScan() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest("select * from test",
             new String[]{"id", "name", "birth"},
-            DingoTypeFactory.tuple("INTEGER", "STRING", "TIME"),
+            DingoTypeFactory.tuple("INTEGER", "STRING", "STRING"),
             TEST_ALL_DATA
         );
     }

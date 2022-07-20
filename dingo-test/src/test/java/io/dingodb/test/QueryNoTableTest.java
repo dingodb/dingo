@@ -53,6 +53,6 @@ public class QueryNoTableTest {
     public void testSimpleValues() throws SQLException {
         // Queries like 'select 1' is bypassed by Calcite.
         String sql = "select 'hello'";
-        assertThat(sqlHelper.querySimpleValue(sql)).isEqualTo("hello");
+        assertThat(sqlHelper.querySingleValue(sql)).isEqualTo("hello");
     }
 }

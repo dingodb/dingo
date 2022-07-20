@@ -65,9 +65,12 @@ public class DdlTest {
         "boolean, true",
         "float, 3.5",
         "double, 2.7",
-        "date, 1970-1-1",
+        "date, 1970-01-01",
+        "date, 2022-11-01",
         "time, 00:00:00",
-        "timestamp, 1970-1-1 00:00:00",
+        "time, 04:30:02",
+        "timestamp, 1970-01-01 00:00:00",
+        "timestamp, 2022-11-01 11:01:01",
     })
     public void testCreateTable(@Nonnull String type, String value) throws SQLException {
         String tableName = SqlHelper.randomTableName();
@@ -89,11 +92,11 @@ public class DdlTest {
         }
         sql = "insert into " + tableName + " values(1, " + valueLiteral + ")";
         sqlHelper.execSqlCmd(sql);
-        Object result = sqlHelper.querySimpleValue("select data from " + tableName);
-        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
-        if (typeCode == TypeCode.DATE) {
-            assertThat(result.toString()).isEqualTo(expected.toString());
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        if (typeCode == TypeCode.DATE || typeCode == TypeCode.TIME) {
+            assertThat(result.toString()).isEqualTo(value);
         } else {
+            Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
             assertThat(result).isEqualTo(expected);
         }
         sqlHelper.dropTable(tableName);

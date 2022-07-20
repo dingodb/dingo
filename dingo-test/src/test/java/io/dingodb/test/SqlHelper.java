@@ -85,19 +85,25 @@ public class SqlHelper {
         return connection.getMetaData();
     }
 
-    public Object querySimpleValue(String sql) throws SQLException {
+    public Object[] querySingleRow(String sql) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
                 int count = 0;
-                Object value = null;
+                Object[] row = null;
                 while (resultSet.next()) {
                     ++count;
-                    value = resultSet.getObject(1);
+                    row = AssertResultSet.getRow(resultSet);
                 }
                 assertThat(count).isEqualTo(1);
-                return value;
+                return row;
             }
         }
+    }
+
+    public Object querySingleValue(String sql) throws SQLException {
+        Object[] row = querySingleRow(sql);
+        assertThat(row).hasSize(1);
+        return row[0];
     }
 
     public void queryTest(
