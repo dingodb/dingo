@@ -54,4 +54,10 @@ public class RouteTable {
         partitionLocation.put(byteArray, executor);
         return executor;
     }
+
+    public ByteArrayUtils.ComparableByteArray getStartPartitionKey(ApiRegistry apiRegistry, byte[] keyInBytes) {
+        ByteArrayUtils.ComparableByteArray byteArray = partitionStrategy.calcPartId(keyInBytes);
+        Part part = partitionRange.get(byteArray);
+        return new ByteArrayUtils.ComparableByteArray(part.getStartKey());
+    }
 }

@@ -143,7 +143,7 @@ public class DingoClient {
         }
         boolean isSuccess = false;
         try {
-            isSuccess = connection.getMetaClient().dropTable(tableName);
+            isSuccess = connection.getMetaClient().dropTable(tableName.toUpperCase());
         } catch (Exception e) {
             isSuccess = false;
             log.error("drop table: {} failed:{}", tableName, e.toString(), e);

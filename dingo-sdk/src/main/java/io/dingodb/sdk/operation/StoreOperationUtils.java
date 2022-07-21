@@ -19,6 +19,7 @@ package io.dingodb.sdk.operation;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.partition.RangeStrategy;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -26,9 +27,13 @@ import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
+import io.dingodb.sdk.utils.DingoClientException;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -55,24 +60,46 @@ public class StoreOperationUtils {
             log.error("table {} not found when do operation:{}", tableName, type);
             return new ResultForClient(false, null);
         }
+
         boolean isSuccess = false;
+        String errorMsg = "";
         int retryTimes = this.retryTimes;
-        ResultForClient resultCode = null;
+        ResultForClient result4Client = null;
         do {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
-                byte[] keyInBytes = null; // codec.encodeKey(key.getUserKey());
-                byte[] valueInBytes = null; //codec.encode(record.columns.values().toArray(new Object[0]));
-                ExecutorApi executorApi = getExecutor(tableName, keyInBytes);
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
-                ContextForStore storeContext = ConvertUtils.getStoreContext(storeParameters, codec);
-                ResultForStore resultForStore = storeOperation.doOperation(
-                    executorApi, routeTable.getTableId(), storeContext);
-                resultCode = ConvertUtils.getResultCode(resultForStore, codec);
+                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec);
+                Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor =
+                    groupKeysByExecutor(type, tableName, context4Store);
+
+                List<KeyValue> keyValueList = new ArrayList<>();
+                // FIXME: will be execute in parallel(Huzx)
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, ContextForStore> entry : keys2Executor.entrySet()) {
+                    byte[] startKeyInBytes = entry.getValue().getKeyListInBytes().get(0);
+                    ExecutorApi executorApi = getExecutor(tableName, startKeyInBytes);
+                    ResultForStore subResult = storeOperation.doOperation(
+                        executorApi, routeTable.getTableId(), entry.getValue());
+                    isSuccess = subResult.getStatus();
+                    if (!isSuccess) {
+                        errorMsg = subResult.getErrorMessage();
+                        log.error("do operation:{} failed, table:{}, executor:{}, result:{}",
+                            type, tableName, executorApi, subResult);
+                    } else {
+                        if (subResult.getRecords() != null) {
+                            keyValueList.addAll(subResult.getRecords());
+                        }
+                    }
+                }
+                ResultForStore result4Store = new ResultForStore(isSuccess, errorMsg, keyValueList);
+                result4Client = ConvertUtils.getResultCode(
+                    result4Store,
+                    codec,
+                    getTableDefinition(tableName).getColumns());
             } catch (Exception ex) {
-                String errorMsg = "Execute operation:" + type + " failed, retry times:" + retryTimes;
+                errorMsg = "Execute operation:" + type + " failed, retry times:" + retryTimes;
                 log.error(errorMsg, ex);
-                resultCode = new ResultForClient(false, errorMsg);
+                result4Client = new ResultForClient(false, errorMsg);
             } finally {
                 if (!isSuccess && retryTimes > 0) {
                     try {
@@ -85,57 +112,56 @@ public class StoreOperationUtils {
             }
         }
         while (!isSuccess && --retryTimes > 0);
-        return resultCode;
-    }
-
-    /*
-    public List<Record> executeFetch(List<Key> keys) {
-        // 1. get route table using tableName
-        // 2. group all keys by Executor
-        // 3. for (executor: Executors)
-        // 4. get result and merge
-        return null;
-    }
-
-    public List<Record> executeFetch(String tableName, Filter filter) {
-        // 1. get route table using tableName
-        // 2. group all keys by Executor
-        // 3. for (executor: Executors)
-        // 4. get result and merge
-        return null;
-    }
-
-    // 1. Commands without update such as min, max
-    public List<Record> executeCompute(StoreOperationType type, List<Key> keys, Operation operation) {
-        //  1. executeFetch => Records
-        //  2. execute command
-        //  3. return record
-        return null;
-    }
-
-    // 2. Commands with update command such as add
-    public boolean executeCompute(List<Key> keys, Operation operation) {
-        // 1. get route table using tableName
-        // 2. group all keys by Executor
-        // 3. for (executor: Executors)
-        // 4. execute Remote Compute on Raft Node
-        return true;
-    }
-
-    public boolean executeUpdate(List<Key> keys, List<Record> records) {
-        return false;
+        return result4Client;
     }
 
     /**
-     * Execute delete command on keys.
-     * @param keys
-     * @return
+     * group all keys by Executor.
+     * @param type operation type.
+     * @param tableName tableName
+     * @param wholeContext  all records contains key and other columns.
+     * @return Executor(HashCode only used for group by)->ContextForStore
      */
-    /*
-    public boolean executeDelete(List<Key> keys) {
-        return false;
+    private Map<ByteArrayUtils.ComparableByteArray, ContextForStore> groupKeysByExecutor(
+        StoreOperationType type, String tableName, ContextForStore wholeContext) {
+        Map<ByteArrayUtils.ComparableByteArray, List<byte[]>> keyListByExecutor = new TreeMap<>();
+        for (int index = 0; index < wholeContext.getKeyListInBytes().size(); index++) {
+            byte[] keyInBytes = wholeContext.getKeyListInBytes().get(index);
+            ByteArrayUtils.ComparableByteArray startKeyOfPart = getPartitionStartKey(tableName, keyInBytes);
+            if (startKeyOfPart == null) {
+                log.error("Cannot find partition, table {} key:{} not found when do operation:{}",
+                    tableName,
+                    Arrays.toString(keyInBytes),
+                    type);
+                throw new DingoClientException("table " + tableName + " key:" + Arrays.toString(keyInBytes)
+                    + " not found when do operation:" + type);
+            }
+            List<byte[]> keyList = keyListByExecutor.get(startKeyOfPart);
+            if (keyList == null) {
+                keyList = new java.util.ArrayList<>();
+                keyListByExecutor.put(startKeyOfPart, keyList);
+            }
+            keyList.add(keyInBytes);
+        }
+
+        Map<ByteArrayUtils.ComparableByteArray, ContextForStore> contextByExecutor = new TreeMap<>();
+        for (Map.Entry<ByteArrayUtils.ComparableByteArray, List<byte[]>> entry : keyListByExecutor.entrySet()) {
+            ByteArrayUtils.ComparableByteArray partitionStartKey = entry.getKey();
+            List<byte[]> keys = entry.getValue();
+            List<KeyValue> records = new java.util.ArrayList<>();
+            for (byte[] key : keys) {
+                KeyValue keyValue = wholeContext.getRecordByKey(key);
+                records.add(wholeContext.getRecordByKey(key));
+            }
+            ContextForStore subStoreContext = new ContextForStore(
+                keys,
+                records,
+                wholeContext.getOperationListInBytes());
+            contextByExecutor.put(partitionStartKey, subStoreContext);
+            log.info("After Group Keys by Executor: subGroup=>keyCnt:{} reocordCnt:{}", keys.size(), records.size());
+        }
+        return contextByExecutor;
     }
-    */
 
     /**
      * get route table from coordinator or cache, and refresh it if need.
@@ -239,5 +265,15 @@ public class StoreOperationUtils {
             connection.getApiRegistry(),
             keyInBytes);
         return executorApi;
+    }
+
+    private synchronized ByteArrayUtils.ComparableByteArray getPartitionStartKey(final String tableName,
+                                                                                 byte[] keyInBytes) {
+        RouteTable executionTopology = getAndRefreshRouteTable(tableName, false);
+        if (executionTopology == null) {
+            log.warn("Cannot find execution topology for table:{}", tableName);
+            return null;
+        }
+        return executionTopology.getStartPartitionKey(connection.getApiRegistry(), keyInBytes);
     }
 }

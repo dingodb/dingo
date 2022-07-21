@@ -77,7 +77,7 @@ public class TestDingoCliWithConstruct {
 
         Map<String, TableDefinition> storeOperations = StoreOperationUtils.getTableDefinitionInCache();
         Assertions.assertEquals(1, storeOperations.size());
-        String tableName = ConstructedClass.class.getAnnotation(DingoRecord.class).table();
+        String tableName = ConstructedClass.class.getAnnotation(DingoRecord.class).table().toUpperCase();
         Assertions.assertTrue(storeOperations.containsKey(tableName));
 
         TableDefinition tableDefinition = storeOperations.get(tableName);

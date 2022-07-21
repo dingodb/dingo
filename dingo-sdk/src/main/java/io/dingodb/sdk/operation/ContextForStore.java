@@ -16,15 +16,28 @@
 
 package io.dingodb.sdk.operation;
 
+import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
 @AllArgsConstructor
 public final class ContextForStore {
     private final List<byte[]> keyListInBytes;
-    private final List<byte[]> recordListInBytes;
+    private final List<KeyValue> recordList;
     private final List<byte[]> operationListInBytes;
+
+    public KeyValue getRecordByKey(byte[] key) {
+        KeyValue result = null;
+        for (KeyValue record : recordList) {
+            if (Arrays.equals(record.getKey(), key)) {
+                result = record;
+                break;
+            }
+        }
+        return result;
+    }
 }

@@ -41,6 +41,7 @@ public class DingoConnection extends ClientBase {
     @Override
     public void initConnection() throws Exception {
         super.initConnection();
+        this.metaClient.init(null);
         this.apiRegistry = super.getNetService().apiRegistry();
     }
 
