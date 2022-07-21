@@ -16,6 +16,7 @@
 
 package io.dingodb.sdk.common;
 
+import com.google.common.collect.Maps;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
@@ -53,7 +54,7 @@ public final class Record {
      */
     public Record(final List<ColumnDefinition> columnDefinitions, final Column[] inputColumns) {
         keyColumns = new ArrayList<>();
-        columnsInOrderMapping = new HashMap<String, Object>();
+        columnsInOrderMapping = Maps.newLinkedHashMap();
 
         if (columnDefinitions.size() != inputColumns.length) {
             String errMsg = "Input Column Count mismatch. Table of Meta:"
@@ -83,7 +84,7 @@ public final class Record {
      */
     public Record(Object instance) {
         keyColumns = new ArrayList<>();
-        columnsInOrderMapping = new HashMap<String, Object>();
+        columnsInOrderMapping = Maps.newLinkedHashMap();
 
         for (Field field: instance.getClass().getDeclaredFields()) {
             String fieldName = field.getName();
@@ -113,7 +114,7 @@ public final class Record {
 
     public Record(final List<String> keyColumns, final Map<String, Object> columns) {
         this.keyColumns = new ArrayList<>(keyColumns.size());
-        this.columnsInOrderMapping = new HashMap<>(columns.size());
+        this.columnsInOrderMapping = Maps.newLinkedHashMap();
 
         boolean isValid = true;
         for (String keyColumn: keyColumns) {
@@ -140,7 +141,7 @@ public final class Record {
 
     public static Record toDingoRecord(Record record) {
         List<String> keyColumns = new ArrayList<>();
-        for (String key: record.getKeyColumns()) {
+        for (String key: record.getKeyColumnNames()) {
             keyColumns.add(key);
         }
 
@@ -162,8 +163,16 @@ public final class Record {
         return new Record(keyColumns, columnsInOrder);
     }
 
-    public List<String> getKeyColumns() {
+    public List<String> getKeyColumnNames() {
         return keyColumns;
+    }
+
+    public List<Object> getColumnValuesInOrder() {
+        List<Object> values = new ArrayList<>();
+        for (Map.Entry<String, Object> entry: columnsInOrderMapping.entrySet()) {
+            values.add(((Value)entry.getValue()).getObject());
+        }
+        return values;
     }
 
     /**

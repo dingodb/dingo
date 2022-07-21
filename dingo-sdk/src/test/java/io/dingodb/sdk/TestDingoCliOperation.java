@@ -157,7 +157,7 @@ public class TestDingoCliOperation {
         Assertions.assertEquals(1, storeOperations.size());
 
         DingoRecord record = PersonWithoutColumnAnnotation.class.getAnnotation(DingoRecord.class);
-        String tableName = record.table();
+        String tableName = record.table().toUpperCase();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
 
@@ -184,7 +184,7 @@ public class TestDingoCliOperation {
         Assertions.assertEquals(1, storeOperations.size());
 
         DingoRecord record = Person.class.getAnnotation(DingoRecord.class);
-        String tableName = record.table();
+        String tableName = record.table().toUpperCase();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
 
@@ -217,7 +217,7 @@ public class TestDingoCliOperation {
         Assertions.assertEquals(1, storeOperations.size());
 
         DingoRecord record = Person.class.getAnnotation(DingoRecord.class);
-        String tableName = record.table();
+        String tableName = record.table().toUpperCase();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
         Record expectedRecord = Record.toDingoRecord(new Record(person));
@@ -253,7 +253,7 @@ public class TestDingoCliOperation {
         Assertions.assertEquals(1, storeOperations.size());
 
         DingoRecord record = Person.class.getAnnotation(DingoRecord.class);
-        String tableName = record.table();
+        String tableName = record.table().toUpperCase();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
         String key1 = "123456789";
@@ -265,8 +265,8 @@ public class TestDingoCliOperation {
 
         try {
             doReturn(true).when(spyClient).put(any(), (Column[]) any());
-            doReturn(expectedRecord01).
-                doReturn(expectedRecord02)
+            doReturn(expectedRecord01)
+                .doReturn(expectedRecord02)
                 .when(spyClient).get((Key) any());
         } catch (Exception e) {
             Assertions.fail("Mock catch Unexpected exception");

@@ -123,7 +123,7 @@ public class ClassCacheEntry<T> {
                 + " is not augmented by the @DingoRecord annotation");
         } else if (recordDescription != null) {
             this.database = ParserUtils.getInstance().get(recordDescription.database());
-            this.tableName = ParserUtils.getInstance().get(recordDescription.table());
+            this.tableName = ParserUtils.getInstance().get(recordDescription.table().toUpperCase());
             this.factoryClass = recordDescription.factoryClass();
             this.factoryMethod = recordDescription.factoryMethod();
         }
@@ -756,7 +756,7 @@ public class ClassCacheEntry<T> {
     }
 
     public String getTableName() {
-        return tableName;
+        return tableName.toUpperCase();
     }
 
     private boolean contains(String[] names, String thisName) {

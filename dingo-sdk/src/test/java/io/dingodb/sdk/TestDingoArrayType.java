@@ -146,7 +146,7 @@ public class TestDingoArrayType {
         Assertions.assertEquals(1, storeOperations.size());
 
         DingoRecord record = AnnotatedArrayClass.class.getAnnotation(DingoRecord.class);
-        String tableName = record.table();
+        String tableName = record.table().toUpperCase();
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
 

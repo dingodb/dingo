@@ -19,6 +19,7 @@ package io.dingodb.sdk.common;
 import lombok.Data;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public final class Key {
@@ -37,4 +38,8 @@ public final class Key {
      * Required, user keys for with multiple columns.
      */
     public final List<Value> userKey;
+
+    public List<Object> getUserKey() {
+        return userKey.stream().map(Value::getObject).collect(Collectors.toList());
+    }
 }

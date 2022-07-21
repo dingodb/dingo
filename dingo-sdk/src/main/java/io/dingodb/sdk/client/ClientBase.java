@@ -56,7 +56,7 @@ public class ClientBase {
     public void initConnection() throws Exception {
         String connectionMode = "Property Files";
         try {
-            if (!this.configPath.trim().isEmpty()) {
+            if (this.configPath != null && !this.configPath.trim().isEmpty()) {
                 // configuration mode
                 DingoConfiguration.parse(this.configPath);
                 this.currentHost = DingoConfiguration.host();

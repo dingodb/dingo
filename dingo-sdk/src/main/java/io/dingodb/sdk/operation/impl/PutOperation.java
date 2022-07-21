@@ -24,7 +24,6 @@ import io.dingodb.sdk.operation.ResultForStore;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -45,20 +44,12 @@ public class PutOperation implements IStoreOperation {
                                       ContextForStore parameters) {
         try {
             if (parameters == null
-                || parameters.getKeyListInBytes().size() != parameters.getOperationListInBytes().size()) {
+                || parameters.getKeyListInBytes().size() != parameters.getRecordList().size()) {
                 log.error("Parameters is null || table:{} has non key columns", tableId);
                 String errorMsg = "Invalid parameters for put operation";
                 return new ResultForStore(false, errorMsg);
             }
-            int keyListSize = parameters.getKeyListInBytes().size();
-            List<KeyValue> keyValueList = new ArrayList<>(parameters.getKeyListInBytes().size());
-            for (int i = 0; i < keyListSize; i++) {
-                KeyValue keyValue = new KeyValue(
-                    parameters.getKeyListInBytes().get(i),
-                    parameters.getRecordListInBytes().get(i)
-                );
-                keyValueList.add(keyValue);
-            }
+            List<KeyValue> keyValueList = parameters.getRecordList();
             boolean isSuccess = executorApi.upsertKeyValue(tableId, keyValueList);
             return new ResultForStore(isSuccess, "OK");
         } catch (Exception e) {
