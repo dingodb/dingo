@@ -137,8 +137,8 @@ public class MetaServiceUtils {
 
 
     public static void initConnectionInMockMode(DingoClient dingoClient,
-                                          MetaClient metaClient,
-                                          ApiRegistry apiRegistry) {
+                                                MetaClient metaClient,
+                                                ApiRegistry apiRegistry) {
         DingoConnection connection = mock(DingoConnection.class);
         when(connection.getMetaClient()).thenReturn(metaClient);
         when(connection.getApiRegistry()).thenReturn(apiRegistry);

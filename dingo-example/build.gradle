@@ -5,6 +5,7 @@ plugins {
 
 
 dependencies {
+    implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver-client')
     implementation project(':dingo-sdk')
 }

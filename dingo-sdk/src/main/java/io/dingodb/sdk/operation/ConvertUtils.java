@@ -99,8 +99,6 @@ public final class ConvertUtils {
                 .map(ProtostuffCodec::write)
                 .collect(Collectors.toList());
         }
-        log.info("==>Key Count: {}, record Count:{}", keyListInBytes.size(),
-            keyValueList == null ? 0 : keyValueList.size());
         return new ContextForStore(keyListInBytes, keyValueList, operationListInBytes);
     }
 }
