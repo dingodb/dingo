@@ -24,12 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MockMetaClient extends MetaClient {
-    public MockMetaClient(String configPath) {
-        super(configPath);
-    }
-
-    public MockMetaClient(String coordinatorExchangeSvrList, String currentHost, Integer currentPort) {
-        super(coordinatorExchangeSvrList, currentHost, currentPort);
+    public MockMetaClient(String coordinatorExchangeSvrList) {
+        super(coordinatorExchangeSvrList);
     }
 
     @Override

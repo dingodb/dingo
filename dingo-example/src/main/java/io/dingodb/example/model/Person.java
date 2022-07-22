@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli.source;
+package io.dingodb.example.model;
 
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.annotation.DingoKey;
+import io.dingodb.sdk.annotation.DingoRecord;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.util.List;
-
-public interface Parser {
-
-    void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient);
+@DingoRecord(table = "person")
+@Getter
+@Setter
+@ToString
+public class Person {
+    @DingoKey
+    private int id;
+    private String name;
+    private int age;
+    private double salary;
 }

@@ -28,12 +28,8 @@ public class MetaClient extends ClientBase implements MetaService {
     @Delegate
     private MetaServiceApi metaServiceApi;
 
-    public MetaClient(String configPath) {
-        super(configPath);
-    }
-
-    public MetaClient(String coordinatorExchangeSvrList, String currentHost, Integer currentPort) {
-        super(coordinatorExchangeSvrList, currentHost, currentPort);
+    public MetaClient(String coordinatorExchangeSvrList) {
+        super(coordinatorExchangeSvrList);
     }
 
     @Override
@@ -54,6 +50,6 @@ public class MetaClient extends ClientBase implements MetaService {
 
     @Override
     public Location currentLocation() {
-        return super.getCurrentLocation();
+        return null;
     }
 }

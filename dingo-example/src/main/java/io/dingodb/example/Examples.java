@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli;
+package io.dingodb.example;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.sdk.client.DingoOldClient;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.driver.client.DingoDriverClient;
+import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.server.client.config.ClientConfiguration;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,7 +35,6 @@ import java.util.Random;
 import java.util.StringJoiner;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.driver.client.DingoDriverClient.CONNECT_STRING_PREFIX;
 
 public class Examples {
 
@@ -114,11 +116,16 @@ public class Examples {
                 Class.forName("io.dingodb.driver.client.DingoDriverClient");
                 runOperation(new JDBCRunner(
                     table.toUpperCase(),
-                    DriverManager.getConnection(CONNECT_STRING_PREFIX + "url=" + jdbcUrl)
+                    DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + jdbcUrl)
                 ));
                 break;
             case "SDK":
-                runOperation(new SDKRunner(new DingoOldClient(config, table.toUpperCase(), 10)));
+                DingoConfiguration.parse(config);
+                String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
+                runOperation(new SDKRunner(
+                    table.toUpperCase(),
+                    new DingoClient(coordinatorServerList, 10))
+                );
                 break;
             case "SCHEMA":
                 System.out.println(TABLE_SCHEMA);
@@ -158,14 +165,15 @@ public class Examples {
                 runner.insert(records);
                 break;
             }
-            case "QUERY":
+            case "QUERY": {
                 long total = 0;
                 long elapsed;
                 switch (queryMode.toUpperCase()) {
-                    case "ALL":
+                    case "ALL": {
                         runner.query();
                         break;
-                    case "LOOP":
+                    }
+                    case "LOOP": {
                         for (int i = sequence; i <= count; i++) {
                             try {
                                 total += elapsed = runner.query(i);
@@ -179,7 +187,8 @@ public class Examples {
                             System.out.printf("Query %d use %dms, current %dms\n", i - sequence + 1, total, elapsed);
                         }
                         break;
-                    case "RANDOM":
+                    }
+                    case "RANDOM": {
                         long n = 1;
                         while (true) {
                             int id = Math.abs(RANDOM.nextInt() % (count - sequence)) + sequence;
@@ -192,28 +201,31 @@ public class Examples {
                             if (elapsed == -1) {
                                 return;
                             }
-                            System.out.printf("Query %d use %dms, current %dms, id: %s\n", n++ , total, elapsed, id);
+                            System.out.printf("Query %d use %dms, current %dms, id: %s\n", n++, total, elapsed, id);
                         }
+                    }
                     default:
                         throw new IllegalStateException("Unexpected value: " + queryMode);
                 }
                 break;
+            }
             case "COUNT": {
                 runner.count();
                 break;
             }
-            default:
+            default: {
                 throw new IllegalStateException("Unexpected value: " + operation.toUpperCase());
+            }
         };
     }
 
     @Nonnull
-    private Object[] generateRecord(int n) {
+    private Object[] generateRecord(int seed) {
         return new Object[] {
-            String.valueOf(n),
-            "name-" + n,
+            String.valueOf(seed),
+            "name-" + seed,
             Math.abs(RANDOM.nextInt()) % 99,
-            n * 0.1,
+            seed * 0.1,
             RANDOM.nextBoolean()};
     }
 
@@ -227,17 +239,23 @@ public class Examples {
 
         void query() throws Exception;
 
-        long query(int i) throws Exception;
+        long query(int seed) throws Exception;
 
         void count() throws Exception;
     }
 
     static class SDKRunner implements Runner {
 
-        private final DingoOldClient dingoOldClient;
+        private final DingoClient dingoClient;
+        private final String tableName;
 
-        SDKRunner(DingoOldClient dingoOldClient) {
-            this.dingoOldClient = dingoOldClient;
+        SDKRunner(String tableName, DingoClient dingoClient) {
+            this.tableName = tableName;
+            this.dingoClient = dingoClient;
+            boolean isOK = dingoClient.openConnection();
+            if (!isOK) {
+                throw new RuntimeException("Open connection failed");
+            }
         }
 
         @Override
@@ -248,14 +266,14 @@ public class Examples {
         @Override
         public long insert(Object[] record) throws Exception {
             long start = System.currentTimeMillis();
-            dingoOldClient.insert(record);
+            dingoClient.insert(tableName, record);
             return System.currentTimeMillis() - start;
         }
 
         @Override
         public long insert(List<Object[]> records) throws Exception {
             long start = System.currentTimeMillis();
-            dingoOldClient.insert(records);
+            dingoClient.insert(tableName, records);
             return System.currentTimeMillis() - start;
         }
 
@@ -265,9 +283,9 @@ public class Examples {
         }
 
         @Override
-        public long query(int n) throws Exception {
+        public long query(int index) throws Exception {
             long start = System.currentTimeMillis();
-            Object[] objects = dingoOldClient.get(new Object[] {String.valueOf(n)});
+            Object[] objects = dingoClient.get(tableName, new Object[] {String.valueOf(index)});
             System.out.printf(
                 "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
                 objects[0], objects[1], objects[2], objects[3], objects[4]
@@ -283,11 +301,11 @@ public class Examples {
 
     static class JDBCRunner implements Runner {
 
-        private final String table;
+        private final String tableName;
         private final Connection connection;
 
-        JDBCRunner(String table, Connection connection) {
-            this.table = table;
+        JDBCRunner(String tableName, Connection connection) {
+            this.tableName = tableName;
             this.connection = connection;
         }
 
@@ -295,7 +313,7 @@ public class Examples {
         public void create() throws Exception {
             try (Statement statement = connection.createStatement()) {
                 StringBuilder sqlBuilder = new StringBuilder()
-                    .append("create table ").append(table).append(" (\n")
+                    .append("create table ").append(tableName).append(" (\n")
                     .append("u_id       varchar(32) not null,\n")
                     .append("u_name     varchar(32),\n")
                     .append("u_age      int,\n")
@@ -318,7 +336,7 @@ public class Examples {
         public long insert(List<Object[]> records) throws Exception {
             try (Statement statement = connection.createStatement()) {
                 StringBuilder sqlBuilder = new StringBuilder();
-                sqlBuilder.append("insert into ").append(table).append(" values");
+                sqlBuilder.append("insert into ").append(tableName).append(" values");
                 StringJoiner joiner = new StringJoiner(",").setEmptyValue("");
                 for (Object[] record : records) {
                     joiner
@@ -338,7 +356,7 @@ public class Examples {
 
         @Override
         public void query() throws Exception {
-            String sql = "select * from " + table;
+            String sql = "select * from " + tableName;
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
                     ResultSetMetaData metaData = resultSet.getMetaData();
@@ -363,8 +381,8 @@ public class Examples {
         }
 
         @Override
-        public long query(int i) throws Exception {
-            String sql = "select * from " + table + " where u_id = '" + i + "'";
+        public long query(int index) throws Exception {
+            String sql = "select * from " + tableName + " where u_id = '" + index + "'";
             long time = System.currentTimeMillis();
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
@@ -390,7 +408,7 @@ public class Examples {
         @Override
         public void count() throws Exception {
             long start = System.currentTimeMillis();
-            String sql = "select count(*) cnt from " + table;
+            String sql = "select count(*) cnt from " + tableName;
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery(sql);
                 resultSet.next();

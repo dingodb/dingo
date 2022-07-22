@@ -19,8 +19,10 @@ package io.dingodb.cli.source;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.cli.source.impl.DefaultFactory;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoOldClient;
+import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.server.client.config.ClientConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
@@ -80,8 +82,17 @@ public class Import {
             commander.usage();
             return;
         }
-        DingoOldClient dingoOldClient = new DingoOldClient(config, tableName.toUpperCase(), 10);
-        TableDefinition tableDefinition = dingoOldClient.getMetaClient().getTableDefinition(tableName.toUpperCase());
+
+        DingoConfiguration.parse(config);
+        String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
+        DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
+        boolean isConnected = dingoClient.openConnection();
+        if (!isConnected) {
+            log.error("Failed to connect to dingo server");
+            return;
+        }
+
+        TableDefinition tableDefinition = dingoClient.getTableDefinition(tableName);
         Factory factory = new DefaultFactory();
         Fetch fetch = factory.getFetch(recordType.toUpperCase());
         switch (cmd.toUpperCase()) {
@@ -89,7 +100,7 @@ public class Import {
                 if (localFile == null) {
                     System.out.println("File-path cannot be empty \n");
                 }
-                fetch.fetch(localFile, separator, state, dingoOldClient, tableDefinition);
+                fetch.fetch(localFile, separator, state, dingoClient, tableDefinition);
                 break;
             case "KAFKA":
                 Properties props = buildProp();
@@ -101,7 +112,7 @@ public class Import {
                     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                         "org.apache.kafka.common.serialization.ByteArrayDeserializer");
                 }
-                fetch.fetch(props, topic, dingoOldClient, tableDefinition);
+                fetch.fetch(props, topic, dingoClient, tableDefinition);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);

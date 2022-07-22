@@ -27,8 +27,6 @@ import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.Address;
 import io.dingodb.sdk.model.ComplexStruct;
-import io.dingodb.sdk.model.ConstructedClass;
-import io.dingodb.sdk.model.basic.Person;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -57,7 +55,7 @@ public class TestDingoComplexType {
 
     @BeforeEach
     public void init() {
-        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        dingoClient = new DingoClient("127.0.0.1:19191");
         MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
 
         complexStruct = new ComplexStruct();

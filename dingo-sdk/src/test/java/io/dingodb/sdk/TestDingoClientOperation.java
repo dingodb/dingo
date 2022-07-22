@@ -18,7 +18,6 @@ package io.dingodb.sdk;
 
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
-import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.operation.StoreOperationUtils;
@@ -28,11 +27,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TestDingoClientOperation {
 
@@ -44,7 +41,7 @@ public class TestDingoClientOperation {
 
     @BeforeEach
     public void init() {
-        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        dingoClient = new DingoClient("127.0.0.1:19191");
         MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
     }
 

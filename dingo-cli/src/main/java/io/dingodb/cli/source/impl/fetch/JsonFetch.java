@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoOldClient;
+import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -44,7 +44,7 @@ public class JsonFetch extends AbstractParser implements Fetch {
             String localFile,
             String separator,
             boolean state,
-            DingoOldClient dingoOldClient,
+            DingoClient dingoClient,
             TableDefinition tableDefinition) {
         try {
             List<Object[]> records = new ArrayList<>();
@@ -64,12 +64,12 @@ public class JsonFetch extends AbstractParser implements Fetch {
                 while ((line = br.readLine()) != null) {
                     records.add(readLine(line).values().toArray());
                     if (records.size() >= 1000) {
-                        this.parse(tableDefinition, records, dingoOldClient);
+                        this.parse(tableDefinition, records, dingoClient);
                     }
                 }
             }
             if (records.size() != 0) {
-                this.parse(tableDefinition, records, dingoOldClient);
+                this.parse(tableDefinition, records, dingoClient);
             }
         } catch (IOException e) {
             log.error("Error reading file:{}", localFile, e);
@@ -77,12 +77,12 @@ public class JsonFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void fetch(Properties props, String topic, DingoOldClient dingoOldClient, TableDefinition tableDefinition) {
+    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
     }
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoOldClient dingoOldClient) {
-        super.parse(tableDefinition, records, dingoOldClient);
+    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        super.parse(tableDefinition, records, dingoClient);
     }
 
     private LinkedHashMap<String, Object> readLine(String line) throws JsonProcessingException {

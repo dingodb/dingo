@@ -16,12 +16,13 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Operation;
-import io.dingodb.sdk.common.OperationType;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.common.Value;
 import io.dingodb.sdk.operation.ContextForClient;
 import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
@@ -29,8 +30,11 @@ import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class DingoClient {
@@ -49,24 +53,12 @@ public class DingoClient {
     public static volatile boolean isConnectionInit = false;
 
 
-    public DingoClient(String configPath) {
-        this(configPath, retryTimes);
+    public DingoClient(String coordinatorExchangeSvrList) {
+        this(coordinatorExchangeSvrList, retryTimes);
     }
 
-    public DingoClient(String coordinatorExchangeSvrList, String currentHost) {
-        this(coordinatorExchangeSvrList, currentHost, 9999, retryTimes);
-    }
-
-    public DingoClient(String configPath, int retryTimes) {
-        connection = new DingoConnection(configPath);
-        this.retryTimes = retryTimes;
-    }
-
-    public DingoClient(String coordinatorExchangeSvrList,
-                       String currentHost,
-                       Integer currentPort,
-                       Integer retryTimes) {
-        connection = new DingoConnection(coordinatorExchangeSvrList, currentHost, currentPort);
+    public DingoClient(String coordinatorExchangeSvrList, Integer retryTimes) {
+        connection = new DingoConnection(coordinatorExchangeSvrList);
         this.retryTimes = retryTimes;
     }
 
@@ -153,9 +145,81 @@ public class DingoClient {
         return isSuccess;
     }
 
+    public TableDefinition getTableDefinition(final String tableName) {
+        if (!isConnected()) {
+            log.error("connection has not been initialized, please call openConnection first");
+            return null;
+        }
+        if (tableName == null || tableName.isEmpty()) {
+            log.error("Invalid table name:{}", tableName);
+            return null;
+        }
+        TableDefinition tableDef = storeOpUtils.getTableDefinition(tableName);
+        return tableDef;
+    }
 
-    public boolean put(Key key, Record record) throws DingoClientException {
-        return doPut(Arrays.asList(key), Arrays.asList(record));
+    public boolean insert(String tableName, List<Object[]> records) {
+        if (!isConnected()) {
+            log.error("connection has not been initialized, please call openConnection first");
+            return false;
+        }
+        if (records == null || records.size() == 0) {
+            log.error("Invalid input rowList{}", records);
+            return false;
+        }
+
+        HashMap<Key, Record> resultList = convertObjectArray2Record(tableName, records);
+        List<Key> keyList = new ArrayList<>();
+        List<Record> recordList = new ArrayList<>();
+        for (Map.Entry<Key, Record> recordEntry: resultList.entrySet()) {
+            keyList.add(recordEntry.getKey());
+            recordList.add(recordEntry.getValue());
+        }
+        return doPut(keyList, recordList);
+    }
+
+    public boolean insert(String tableName, Object[] row) {
+        List<Object[]> inputRecords = new ArrayList<>();
+        inputRecords.add(row);
+        return insert(tableName, inputRecords);
+    }
+
+    private HashMap<Key, Record> convertObjectArray2Record(String tableName, List<Object[]> recordList) {
+        TableDefinition tableDefinition = storeOpUtils.getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            log.warn("table:{} definition not found", tableName);
+            return null;
+        }
+        HashMap<Key, Record>  recordResults = new HashMap<>(recordList.size());
+        for (Object[] record: recordList) {
+            if (record == null || record.length == 0
+                || tableDefinition.getColumnsCount() != record.length) {
+                log.error("Invalid record:{}, count: expect:{}, real:{}",
+                    record, tableDefinition.getColumnsCount(), record != null ? record.length : 0);
+                return null;
+            }
+            List<Value> userKeys = new ArrayList<>();
+            List<String> columnNames = new ArrayList<>();
+
+            int index = 0;
+            for (ColumnDefinition column : tableDefinition.getColumns()) {
+                if (column.isPrimary()) {
+                    userKeys.add(Value.get(record[index]));
+                }
+                columnNames.add(column.getName());
+                index++;
+            }
+
+            int columnCnt = tableDefinition.getColumnsCount();
+            Column[] columns = new Column[columnCnt];
+            for (int i = 0; i < columnCnt; i++) {
+                columns[i] = new Column(columnNames.get(i), Value.get(record[i]));
+            }
+            Key key = new Key("DINGO", tableName, userKeys);
+            Record record1 = new Record(tableDefinition.getColumns(), columns);
+            recordResults.put(key, record1);
+        }
+        return recordResults;
     }
 
     public boolean put(Key key, Column[] columns) throws DingoClientException {
@@ -168,6 +232,10 @@ public class DingoClient {
         return doPut(keyList, recordList);
     }
 
+    public Object[] get(String tableName, Object[] key) {
+        return null;
+    }
+
     public Record get(Key key) throws Exception {
         List<Record> records = doGet(Arrays.asList(key));
         if (records == null || records.isEmpty()) {
@@ -178,6 +246,10 @@ public class DingoClient {
 
     public List<Record> get(List<Key> keyList) throws Exception {
         return doGet(keyList);
+    }
+
+    public boolean delete(String tableName, Object[] key) {
+        return true;
     }
 
     public boolean delete(Key key) throws Exception {

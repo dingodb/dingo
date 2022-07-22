@@ -19,7 +19,6 @@ package io.dingodb.sdk;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
-import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.DingoOpCli;
 import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
@@ -43,7 +42,6 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TestDingoCliWithConstruct {
     private DingoClient dingoClient;
@@ -54,7 +52,7 @@ public class TestDingoCliWithConstruct {
 
     @BeforeEach
     public void init() {
-        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        dingoClient = new DingoClient("127.0.0.1:19191");
         MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
     }
 

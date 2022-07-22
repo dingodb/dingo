@@ -17,7 +17,6 @@
 package io.dingodb.sdk;
 
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
 import io.dingodb.sdk.common.Column;
@@ -25,9 +24,6 @@ import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
-import io.dingodb.sdk.model.AnnotatedArrayClass;
-import io.dingodb.sdk.model.ChildClass;
-import io.dingodb.sdk.model.ComplexStruct;
 import io.dingodb.sdk.model.embeded.OwnedClass;
 import io.dingodb.sdk.model.embeded.OwningClass;
 import io.dingodb.sdk.operation.StoreOperationUtils;
@@ -38,12 +34,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -60,7 +52,7 @@ public class TestDingoEmbeddedType {
 
     @BeforeEach
     public void init() {
-        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        dingoClient = new DingoClient("127.0.0.1:19191");
         MetaServiceUtils.initConnectionInMockMode(dingoClient, metaClient, apiRegistry);
     }
 
