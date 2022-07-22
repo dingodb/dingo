@@ -73,7 +73,7 @@ public class DingoValues extends Values implements DingoRel {
     public List<Object[]> getValues() {
         DingoType type = DingoTypeFactory.fromRelDataType(rowType);
         return tuples.stream()
-            .map(RexConverter::convertFromRexLiteralList)
+            .map(t -> RexConverter.convertFromRexLiteralList(t, type))
             .collect(Collectors.toList());
     }
 

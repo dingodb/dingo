@@ -214,6 +214,26 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Nonnull
+    public static List<Object[]> getTuplesFromKeyItems(
+        @Nonnull Collection<Map<Integer, RexLiteral>> items,
+        @Nonnull TableDefinition td
+    ) {
+        final TupleMapping revMapping = td.getRevKeyMapping();
+        return items.stream()
+            .map(item -> {
+                Object[] tuple = new Object[item.size()];
+                for (Map.Entry<Integer, RexLiteral> entry : item.entrySet()) {
+                    tuple[revMapping.get(entry.getKey())] = RexConverter.convertFromRexLiteral(
+                        entry.getValue(),
+                        td.getColumn(entry.getKey()).getElementType()
+                    );
+                }
+                return tuple;
+            })
+            .collect(Collectors.toList());
+    }
+
+    @Nonnull
     private List<Output> coalesceInputsByTask(@Nonnull Collection<Output> inputs) {
         // Coalesce inputs from the same task. taskId --> list of inputs
         Map<Id, List<Output>> inputsMap = new HashMap<>();
@@ -399,7 +419,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final TableDefinition td = this.metaCache.getTableDefinition(tableName);
         final CommonId tableId = this.metaCache.getTableId(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
-        Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(rel.getKeyTuples());
+        List<Object[]> keyTuples = getTuplesFromKeyItems(rel.getKeyItems(), td);
+        Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
         List<Output> outputs = new LinkedList<>();
         for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysOperator operator = new GetByKeysOperator(

@@ -36,6 +36,7 @@ import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.visitor.DingoJobVisitor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.Date;
 import java.util.List;
 
+import static io.dingodb.calcite.DingoTable.dingo;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.NullDirection.FIRST;
@@ -146,12 +148,16 @@ public class TestPhysicalPlan {
     public void testGetByKeys1() throws SqlParseException {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and id2 = true";
         RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
+        DingoGetByKeys r = (DingoGetByKeys) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        assertThat((((DingoGetByKeys) r).getKeyTuples()))
+        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
+            r.getKeyItems(),
+            dingo(r.getTable()).getTableDefinition()
+        );
+        assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", true});
     }
 
@@ -159,12 +165,16 @@ public class TestPhysicalPlan {
     public void testGetByKeys2() throws SqlParseException {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and not id2";
         RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
+        DingoGetByKeys r = (DingoGetByKeys) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        assertThat((((DingoGetByKeys) r).getKeyTuples()))
+        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
+            r.getKeyItems(),
+            dingo(r.getTable()).getTableDefinition()
+        );
+        assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", false});
     }
 
@@ -172,12 +182,16 @@ public class TestPhysicalPlan {
     public void testGetByKeys3() throws SqlParseException {
         String sql = "select * from test1 where (id0 = 1 or id0 = 2) and (id1 = 'A' or id1 = 'B') and id2";
         RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
+        DingoGetByKeys r = (DingoGetByKeys) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoGetByKeys.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        assertThat((((DingoGetByKeys) r).getKeyTuples()))
+        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
+            r.getKeyItems(),
+            dingo(r.getTable()).getTableDefinition()
+        );
+        assertThat(keyTuples)
             .containsExactlyInAnyOrder(
                 new Object[]{1, "A", true},
                 new Object[]{1, "B", true},

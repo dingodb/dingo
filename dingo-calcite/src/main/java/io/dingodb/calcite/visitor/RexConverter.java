@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -58,19 +59,18 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     }
 
     @Nullable
-    public static Object convertFromRexLiteral(@Nonnull Object value) {
-        RexLiteral rexLiteral = (RexLiteral) value;
+    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nonnull DingoType type) {
         if (!rexLiteral.isNull()) {
-            return DingoTypeFactory.fromRelDataType(rexLiteral.getType())
-                .convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
+            // `rexLiteral.getType()` is not always the required type.
+            return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
         }
         return null;
     }
 
     @Nonnull
-    public static Object[] convertFromRexLiteralList(@Nonnull List<RexLiteral> values) {
-        return values.stream()
-            .map(RexConverter::convertFromRexLiteral)
+    public static Object[] convertFromRexLiteralList(@Nonnull List<RexLiteral> values, @Nonnull DingoType type) {
+        return IntStream.range(0, values.size())
+            .mapToObj(i -> convertFromRexLiteral(values.get(i), Objects.requireNonNull(type.getChild(i))))
             .toArray(Object[]::new);
     }
 
@@ -110,6 +110,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             .collect(Collectors.toList());
     }
 
+    private static int typeCodeOf(@Nonnull RelDataType type) {
+        return TypeCode.codeOf(type.getSqlTypeName().getName());
+    }
+
     @Nonnull
     @Override
     public Expr visitInputRef(@Nonnull RexInputRef inputRef) {
@@ -130,14 +134,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             value = Objects.requireNonNull(literal.getValue()).toString();
         } else {
             DingoType type = DingoTypeFactory.fromRelDataType(literal.getType());
-            value = convertFromRexLiteral(literal);
+            value = convertFromRexLiteral(literal, type);
         }
         // `null` is implemented by Var in dingo-expr.
         return value != null ? Value.of(value) : Null.INSTANCE;
-    }
-
-    private static int typeCodeOf(@Nonnull RelDataType type) {
-        return TypeCode.codeOf(type.getSqlTypeName().getName());
     }
 
     @Nonnull
