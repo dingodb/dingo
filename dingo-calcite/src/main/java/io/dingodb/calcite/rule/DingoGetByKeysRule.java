@@ -23,12 +23,12 @@ import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.immutables.value.Value;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
@@ -41,38 +41,19 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         super(config);
     }
 
-    /**
-     * Check the keys set to see if a full scan needed.
-     *
-     * @param keyTuples key tuples to be checked
-     * @return <code>true</code> means the primary columns are all set for each row
-     *     <code>false</code> means some columns are not set for any row, so full scan is needed
-     */
-    private static boolean checkKeyTuples(Set<Object[]> keyTuples) {
-        if (keyTuples == null) {
-            return false;
-        }
-        for (Object[] t : keyTuples) {
-            if (Arrays.stream(t).anyMatch(Objects::isNull)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
         RexNode rexNode = RexUtil.toDnf(rel.getCluster().getRexBuilder(), rel.getFilter());
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
-        KeyTuplesRexVisitor visitor = new KeyTuplesRexVisitor(td, rel.getCluster().getRexBuilder());
-        Set<Object[]> keyTuples = rexNode.accept(visitor);
-        if (!visitor.isOperandHasNotPrimaryKey() && checkKeyTuples(keyTuples)) {
+        KeyFilterRexVisitor visitor = new KeyFilterRexVisitor(td, rel.getCluster().getRexBuilder());
+        Set<Map<Integer, RexLiteral>> items = rexNode.accept(visitor);
+        if (visitor.checkKeyItems(items)) {
             call.transformTo(new DingoGetByKeys(
                 rel.getCluster(),
                 rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                 rel.getTable(),
-                keyTuples,
+                items,
                 rel.getFilter(),
                 rel.getSelection()
             ));

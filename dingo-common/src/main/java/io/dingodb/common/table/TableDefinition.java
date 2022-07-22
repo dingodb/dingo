@@ -130,6 +130,10 @@ public class TableDefinition {
         return getColumnMapping(true);
     }
 
+    public TupleMapping getRevKeyMapping() {
+        return getKeyMapping().reverse(getColumnsCount());
+    }
+
     public TupleMapping getValueMapping() {
         return getColumnMapping(false);
     }
@@ -142,6 +146,17 @@ public class TableDefinition {
             ++index;
         }
         return TupleMapping.of(indices);
+    }
+
+    public int getFirstPrimaryColumnIndex() {
+        int index = 0;
+        for (ColumnDefinition column : columns) {
+            if (column.isPrimary()) {
+                return index;
+            }
+            ++index;
+        }
+        return -1;
     }
 
     @Nonnull

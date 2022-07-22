@@ -35,7 +35,6 @@ public class RexLiteralConverter implements DataConverter {
     public static final RexLiteralConverter INSTANCE = new RexLiteralConverter();
 
     private RexLiteralConverter() {
-
     }
 
     @Override

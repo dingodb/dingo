@@ -29,10 +29,12 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
+import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -40,7 +42,7 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
     @Getter
     private final RelOptTable table;
     @Getter
-    private final Collection<Object[]> keyTuples;
+    private final Collection<Map<Integer, RexLiteral>> keyItems;
     @Getter
     private final RexNode filter;
     @Getter
@@ -50,13 +52,13 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelOptTable table,
-        Collection<Object[]> keyTuples,
+        Collection<Map<Integer, RexLiteral>> keyItems,
         RexNode filter,
         @Nullable TupleMapping selection
     ) {
         super(cluster, traitSet);
         this.table = table;
-        this.keyTuples = keyTuples;
+        this.keyItems = keyItems;
         this.filter = filter;
         this.selection = selection;
     }
@@ -68,7 +70,7 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
 
     @Override
     public RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = keyTuples.size();
+        double rowCount = keyItems.size();
         double cpu = rowCount + 1;
         double io = 0;
         return planner.getCostFactory().makeCost(rowCount, cpu, io);
@@ -79,7 +81,7 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table);
-        pw.item("keyTuples", keyTuples);
+        pw.item("keyItems", keyItems);
         pw.item("selection", selection);
         return pw;
     }

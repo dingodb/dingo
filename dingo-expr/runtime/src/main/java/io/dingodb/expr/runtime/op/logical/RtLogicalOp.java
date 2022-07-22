@@ -18,7 +18,7 @@ package io.dingodb.expr.runtime.op.logical;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
@@ -34,7 +34,8 @@ public abstract class RtLogicalOp extends RtOp {
 
     public static boolean test(Object value) {
         try {
-            return (boolean) new UniversalEvaluator(BooleanCastEvaluatorFactory.INSTANCE, TypeCode.BOOL)
+            return (boolean) BooleanCastEvaluatorFactory.INSTANCE
+                .getEvaluator(EvaluatorKey.UNIVERSAL)
                 .eval(new Object[]{value});
         } catch (FailGetEvaluator e) {
             throw new IllegalArgumentException(e);
