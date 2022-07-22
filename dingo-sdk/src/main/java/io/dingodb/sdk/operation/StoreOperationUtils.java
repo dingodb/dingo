@@ -120,7 +120,7 @@ public class StoreOperationUtils {
      * @param type operation type.
      * @param tableName tableName
      * @param wholeContext  all records contains key and other columns.
-     * @return Executor(HashCode only used for group by)->ContextForStore
+     * @return Executor(StartKey of Partition only used for group by)->ContextForStore
      */
     private Map<ByteArrayUtils.ComparableByteArray, ContextForStore> groupKeysByExecutor(
         StoreOperationType type, String tableName, ContextForStore wholeContext) {
@@ -150,7 +150,6 @@ public class StoreOperationUtils {
             List<byte[]> keys = entry.getValue();
             List<KeyValue> records = new java.util.ArrayList<>();
             for (byte[] key : keys) {
-                KeyValue keyValue = wholeContext.getRecordByKey(key);
                 records.add(wholeContext.getRecordByKey(key));
             }
             ContextForStore subStoreContext = new ContextForStore(

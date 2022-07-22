@@ -41,6 +41,7 @@ import java.util.Objects;
 public final class Record {
     /**
      * Map of requested name/value columns.
+     * The value is Java original type is not `Value` type.
      */
     private final Map<String, Object> columnsInOrderMapping;
 
@@ -71,7 +72,7 @@ public final class Record {
 
             for (Column column: inputColumns) {
                 if (Objects.equals(column.name, columnName)) {
-                    columnsInOrderMapping.put(columnName, column.value);
+                    columnsInOrderMapping.put(columnName, column.value.getObject());
                     break;
                 }
             }
@@ -170,7 +171,7 @@ public final class Record {
     public List<Object> getColumnValuesInOrder() {
         List<Object> values = new ArrayList<>();
         for (Map.Entry<String, Object> entry: columnsInOrderMapping.entrySet()) {
-            values.add(((Value)entry.getValue()).getObject());
+            values.add(entry.getValue());
         }
         return values;
     }
