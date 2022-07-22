@@ -162,8 +162,8 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         DingoPartRangeRule.Config DEFAULT = ImmutableDingoPartRangeRule.Config.builder()
             .operandSupplier(
                 b0 -> b0.operand(DingoTableScan.class).predicate(r -> {
-                    RexCall filter = (RexCall) r.getFilter();
-                    return filter != null && filter.op.kind == SqlKind.AND;
+                    RexNode filter = r.getFilter();
+                    return filter != null && filter.getKind() == SqlKind.AND;
                 }).noInputs()
             )
             .description("DingoPartRangeRule")
