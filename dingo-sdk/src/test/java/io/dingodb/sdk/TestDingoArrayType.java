@@ -28,10 +28,8 @@ import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.AnnotatedArrayClass;
 import io.dingodb.sdk.model.ChildClass;
 import io.dingodb.sdk.model.ComplexStruct;
-import io.dingodb.sdk.model.ConstructedClass;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.MetaServiceUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +59,7 @@ public class TestDingoArrayType {
 
     @BeforeEach
     public void init() {
-        dingoClient = new DingoClient("src/test/resources/config/config.yaml");
+        dingoClient = new DingoClient("127.0.0.1:19191");
 
 
         int index = 0;
