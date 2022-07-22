@@ -21,8 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.CharacterIterator;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.text.StringCharacterIterator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +38,7 @@ import java.time.format.ResolverStyle;
 import java.time.format.SignStyle;
 import java.util.TimeZone;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -142,8 +145,11 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the date
      */
-    @Nonnull
-    public static Date parseDate(String value) {
+    @Nullable
+    public static Date parseDate(@Nonnull String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         for (DateTimeFormatter dtf : DATE_FORMATTERS) {
             try {
                 LocalDateTime t = LocalDate.parse(value, dtf).atStartOfDay();
@@ -163,8 +169,11 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the time
      */
-    @Nonnull
-    public static Time parseTime(String value) {
+    @Nullable
+    public static Time parseTime(@Nonnull String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         for (DateTimeFormatter dtf : TIME_FORMATTERS) {
             try {
                 LocalDateTime t = LocalTime.parse(value, dtf).atDate(LocalDate.of(1970, 1, 1));
@@ -184,8 +193,11 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the timestamp
      */
-    @Nonnull
-    public static Timestamp parseTimestamp(String value) {
+    @Nullable
+    public static Timestamp parseTimestamp(@Nonnull String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         for (DateTimeFormatter dtf : DATETIME_FORMATTERS) {
             try {
                 LocalDateTime t = LocalDateTime.parse(value, dtf);
@@ -287,17 +299,66 @@ public final class DateTimeUtils {
     }
 
     @Nonnull
-    private static String convertFormat(@Nonnull String mysqlFormat) {
-        return mysqlFormat.replaceAll("(?<!%)(\\w+)", "'$1'")
-            .replaceAll("%([^YmdHisST])", "'$1'")
-            .replace("%Y", "uuuu")
-            .replace("%m", "MM")
-            .replace("%d", "dd")
-            .replace("%H", "HH")
-            .replace("%i", "mm")
-            .replace("%s", "ss")
-            .replace("%S", "ss")
-            .replace("%T", "HH:mm:ss");
+    static String convertFormat(@Nonnull String mysqlFormat) {
+        StringBuilder builder = new StringBuilder();
+        CharacterIterator it = new StringCharacterIterator(mysqlFormat);
+        boolean literalStarted = false;
+        for (char ch = it.first(); ch != CharacterIterator.DONE; ch = it.next()) {
+            if (ch == '%') {
+                ch = it.next();
+                String fmt = null;
+                switch (ch) {
+                    case 'Y':
+                        fmt = "uuuu";
+                        break;
+                    case 'm':
+                        fmt = "MM";
+                        break;
+                    case 'd':
+                        fmt = "dd";
+                        break;
+                    case 'H':
+                        fmt = "HH";
+                        break;
+                    case 'i':
+                        fmt = "mm";
+                        break;
+                    case 's':
+                    case 'S':
+                        fmt = "ss";
+                        break;
+                    case 'T':
+                        fmt = "HH:mm:ss";
+                        break;
+                    case CharacterIterator.DONE:
+                        continue;
+                    default:
+                        if (!literalStarted) {
+                            builder.append('\'');
+                            literalStarted = true;
+                        }
+                        builder.append(ch);
+                        break;
+                }
+                if (fmt != null) {
+                    if (literalStarted) {
+                        builder.append('\'');
+                        literalStarted = false;
+                    }
+                    builder.append(fmt);
+                }
+            } else {
+                if (!literalStarted) {
+                    builder.append('\'');
+                    literalStarted = true;
+                }
+                builder.append(ch);
+            }
+        }
+        if (literalStarted) {
+            builder.append('\'');
+        }
+        return builder.toString();
     }
 
     // Get Zone offset for timestamp at this instant. work for Date/Timestamp.

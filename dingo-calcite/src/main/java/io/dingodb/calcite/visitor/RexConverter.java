@@ -59,12 +59,17 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     }
 
     @Nullable
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nonnull DingoType type) {
-        if (!rexLiteral.isNull()) {
+    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nullable DingoType type) {
+        if (!rexLiteral.isNull() && type != null) {
             // `rexLiteral.getType()` is not always the required type.
             return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
         }
         return null;
+    }
+
+    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral) {
+        DingoType type = DingoTypeFactory.fromRelDataType(rexLiteral.getType());
+        return convertFromRexLiteral(rexLiteral, type);
     }
 
     @Nonnull
@@ -80,10 +85,13 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         @Nonnull RelDataType targetType
     ) {
         if (value != null) {
-            return rexBuilder.makeLiteral(
-                DingoTypeFactory.fromRelDataType(targetType).convertTo(value, RexLiteralConverter.INSTANCE),
-                targetType
-            );
+            DingoType type = DingoTypeFactory.fromRelDataType(targetType);
+            if (type != null) {
+                return rexBuilder.makeLiteral(
+                    type.convertTo(value, RexLiteralConverter.INSTANCE),
+                    targetType
+                );
+            }
         }
         return rexBuilder.makeNullLiteral(targetType);
     }
@@ -133,8 +141,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             // TODO: should consider the symbol enum, not the string, to avoid misunderstand from a real string.
             value = Objects.requireNonNull(literal.getValue()).toString();
         } else {
-            DingoType type = DingoTypeFactory.fromRelDataType(literal.getType());
-            value = convertFromRexLiteral(literal, type);
+            value = convertFromRexLiteral(literal);
         }
         // `null` is implemented by Var in dingo-expr.
         return value != null ? Value.of(value) : Null.INSTANCE;

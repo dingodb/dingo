@@ -32,7 +32,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
-import java.util.UUID;
 
 @Slf4j
 public class TableWithDefaultValueTest {
@@ -46,10 +45,6 @@ public class TableWithDefaultValueTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         sqlHelper.cleanUp();
-    }
-
-    private static String randomTableName() {
-        return UUID.randomUUID().toString().replace('-', '_');
     }
 
     @Test
@@ -203,7 +198,7 @@ public class TableWithDefaultValueTest {
         "CURRENT_DATE()",
     })
     public void testDefaultCurrentDate(String fun) throws SQLException {
-        String tableName = "table_curdate_" + randomTableName();
+        String tableName = SqlHelper.randomTableName();
         String sql = "create table " + tableName + " (\n"
             + "    id int,\n"
             + "    name varchar(32) not null,\n"
@@ -230,7 +225,7 @@ public class TableWithDefaultValueTest {
         "CURRENT_TIME()"
     })
     public void testDefaultCurrentTime(String fun) throws Exception {
-        String tableName = "table_curtime_" + randomTableName();
+        String tableName = SqlHelper.randomTableName();
         String sql = "create table " + tableName + " (\n"
             + "    id int,\n"
             + "    name varchar(32) not null,\n"
@@ -256,7 +251,7 @@ public class TableWithDefaultValueTest {
         "current_timestamp()",
     })
     public void testDefaultCurrentTimestamp(String fun) throws Exception {
-        String tableName = "table_now_" + randomTableName();
+        String tableName = SqlHelper.randomTableName();
         String sql = "create table " + tableName + " (\n"
             + "    id int,\n"
             + "    name varchar(32) not null,\n"

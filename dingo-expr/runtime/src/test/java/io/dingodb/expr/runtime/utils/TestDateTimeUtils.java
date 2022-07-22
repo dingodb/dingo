@@ -14,49 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.expr.runtime.utils;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.SQLException;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@Slf4j
-public class QueryNoTableTest {
-    private static SqlHelper sqlHelper;
-
-    @BeforeAll
-    public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
-    }
-
-    @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
+public class TestDateTimeUtils {
     @Nonnull
-    public static Stream<Arguments> getSimpleValuesTestParameters() {
+    public static Stream<Arguments> getTestConvertFormatParameters() {
         return Stream.of(
-            arguments("select 'hello'", "hello"),
-            arguments("select 'abc' || null", null),
-            arguments("select date_format('', '%Y-%m-%d')", null)
+            arguments("%Y", "uuuu"),
+            arguments("%Y-%m-%d", "uuuu'-'MM'-'dd"),
+            arguments("%A%B%C", "'ABC'"),
+            arguments("Year: %Y, Month: %m", "'Year: 'uuuu', Month: 'MM")
         );
     }
 
     @ParameterizedTest
-    @MethodSource("getSimpleValuesTestParameters")
-    public void testSimpleValues(String sql, Object result) throws SQLException {
-        // Queries like 'select 1' is bypassed by Calcite.
-        assertThat(sqlHelper.querySingleValue(sql)).isEqualTo(result);
+    @MethodSource("getTestConvertFormatParameters")
+    public void testConvertFormat(String mysqlFormat, String result) {
+        assertThat(DateTimeUtils.convertFormat(mysqlFormat)).isEqualTo(result);
     }
 }
