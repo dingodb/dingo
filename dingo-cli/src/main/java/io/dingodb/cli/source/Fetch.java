@@ -17,15 +17,15 @@
 package io.dingodb.cli.source;
 
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoOldClient;
+import io.dingodb.sdk.client.DingoClient;
 
 import java.util.Properties;
 
 public interface Fetch {
 
-    void fetch(String localFile, String separatorOrPattern, boolean state, DingoOldClient dingoOldClient,
+    void fetch(String localFile, String separatorOrPattern, boolean state, DingoClient dingoClient,
                TableDefinition tableDefinition);
 
-    void fetch(Properties props, String topic, DingoOldClient dingoOldClient, TableDefinition tableDefinition);
+    void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition);
 
 }

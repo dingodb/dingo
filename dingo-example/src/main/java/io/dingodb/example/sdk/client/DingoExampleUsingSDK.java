@@ -16,7 +16,9 @@
 
 package io.dingodb.example.sdk.client;
 
-import io.dingodb.sdk.client.DingoOldClient;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.server.client.config.ClientConfiguration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class DingoExampleUsingSDK {
-    private static DingoOldClient dingoOldClient;
+    private static DingoClient dingoClient;
     private static int  insertBatchCnt = 1000;
     private static int  insertTotalCnt = 20000;
 
@@ -62,31 +64,35 @@ public class DingoExampleUsingSDK {
             + ", insertTotalCnt: " + insertTotalCnt
             + ", insertBatchCnt: " + insertBatchCnt);
 
-        dingoOldClient = new DingoOldClient(coordinatorCfg, tableName);
+        DingoConfiguration.parse(coordinatorCfg);
+        String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
+        dingoClient = new DingoClient(coordinatorServerList);
+        boolean isOK = dingoClient.openConnection();
+        if (!isOK) {
+            System.out.println("Failed to open connection");
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
         switch (cmd) {
             case "insert": {
-                insert();
+                insert(tableName);
                 break;
             }
             case "insertBatch": {
-                insertBatch();
+                insertBatch(tableName);
                 break;
             }
             case "scan": {
-                scanAllRecords();
+                scanAllRecords(tableName);
                 break;
             }
 
-            case "getByRange": {
-                getByRange(startScanKey, endScanKey);
-                break;
-            }
             default: {
-                insert();
-                insertBatch();
-                scanAllRecords();
-                delete();
+                insert(tableName);
+                insertBatch(tableName);
+                scanAllRecords(tableName);
+                delete(tableName);
                 break;
             }
         }
@@ -95,15 +101,15 @@ public class DingoExampleUsingSDK {
         return;
     }
 
-    public static void insert() throws Exception {
+    public static void insert(String tableName) throws Exception {
         for (int i = 0; i < insertTotalCnt; i++) {
             String uuid = UUID.randomUUID().toString();
             Object[] record = new Object[]{i, "k-" + uuid, "v-" + uuid};
-            dingoOldClient.insert(record);
+            dingoClient.insert(tableName, record);
         }
     }
 
-    public static void insertBatch() throws Exception {
+    public static void insertBatch(String tableName) throws Exception {
         do {
             long startTime = System.currentTimeMillis();
             while (totalRealInsertCnt < insertTotalCnt) {
@@ -113,24 +119,14 @@ public class DingoExampleUsingSDK {
                         break;
                     }
                     String uuid = UUID.randomUUID().toString();
-                    Object[] record = new Object[]{totalRealInsertCnt, "k-" + uuid, "v-" + uuid};
+                    Object[] record = new Object[] {
+                        Long.valueOf(totalRealInsertCnt).intValue(),
+                        "k-" + uuid,
+                        "v-" + uuid };
                     records.add(record);
                     totalRealInsertCnt++;
                 }
-                boolean isOK = true;
-                do {
-                    try {
-                        isOK = dingoOldClient.insert(records);
-                    } catch (Exception ex) {
-                        try {
-                            isOK = false;
-                            Thread.sleep(4000);
-                        } catch (Exception ex1) {
-                            ex1.printStackTrace();
-                        }
-                        dingoOldClient.refreshTableMeta();
-                    }
-                } while (!isOK);
+                boolean isOK = dingoClient.insert(tableName, records);
                 long totalTimeCost = System.currentTimeMillis() - startTime;
                 System.out.println("inserted record: " + totalRealInsertCnt
                     + ", TotalCost: " + totalTimeCost + "ms"
@@ -139,30 +135,33 @@ public class DingoExampleUsingSDK {
         }
         while (true);
     }
-    public static void scanAllRecords() throws Exception {
+
+    @SuppressWarnings("unchecked")
+    public static void scanAllRecords(String tableName) throws Exception {
         long loopCnt = 0L;
         long totalTimeCost = 0L;
         long warmCnt = 0L;
         String stringResult = "";
+        long startTime = 0L;
         for (int i = 0; i < insertTotalCnt; i++) {
             stringResult = "";
-            long startTime = System.currentTimeMillis();
+            startTime = System.currentTimeMillis();
             Object[] key = new Object[]{i};
             try {
-                Object[] record = dingoOldClient.get(key);
+                Object[] record = dingoClient.get(tableName, key);
                 for (Object r : record) {
                     stringResult += r.toString();
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
-            long endTime = System.currentTimeMillis();
             warmCnt++;
             if (warmCnt < 1000) {
                 continue;
             }
-            loopCnt++;
+            long endTime = System.currentTimeMillis();
             totalTimeCost += (endTime - startTime);
+            loopCnt++;
             if (loopCnt % 100 == 0) {
                 System.out.println("AvgTimeCost:" + totalTimeCost * 1.0 / loopCnt
                     + ", LoopCnt:" + loopCnt
@@ -172,21 +171,10 @@ public class DingoExampleUsingSDK {
         }
     }
 
-    public static void getByRange(int start, int end) throws Exception {
-        Object[] startKey = new Object[]{start};
-        Object[] endKey = new Object[]{end};
-        List<Object[]> records = dingoOldClient.get(startKey, endKey);
-        records.forEach(record -> {
-            String rowInStr = Arrays.asList(record)
-                .stream().map(Object::toString).collect(Collectors.joining(","));
-            System.out.println(rowInStr);
-        });
-    }
-
-    public static void delete() throws Exception {
+    public static void delete(String tableName) throws Exception {
         for (int i = 0; i < insertTotalCnt; i++) {
             Object[] key = new Object[]{i};
-            dingoOldClient.delete(key);
+            dingoClient.delete(tableName, key);
         }
     }
 }

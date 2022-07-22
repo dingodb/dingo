@@ -26,16 +26,11 @@ public class DingoConnection extends ClientBase {
 
     private ApiRegistry apiRegistry;
 
-    public DingoConnection(String configPath) {
-        super(configPath);
-        this.metaClient = new MetaClient(configPath);
-    }
 
-    public DingoConnection(String coordinatorExchangeSvrList,
-                           String currentHost,
-                           Integer currentPort) {
-        super(coordinatorExchangeSvrList, currentHost, currentPort);
-        this.metaClient = new MetaClient(coordinatorExchangeSvrList, currentHost, currentPort);
+
+    public DingoConnection(String coordinatorExchangeSvrList) {
+        super(coordinatorExchangeSvrList);
+        this.metaClient = new MetaClient(coordinatorExchangeSvrList);
     }
 
     @Override
