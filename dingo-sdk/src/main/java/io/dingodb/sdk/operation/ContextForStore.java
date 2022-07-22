@@ -31,6 +31,10 @@ public final class ContextForStore {
     private final List<byte[]> operationListInBytes;
 
     public KeyValue getRecordByKey(byte[] key) {
+        if (recordList == null) {
+            return null;
+        }
+
         KeyValue result = null;
         for (KeyValue record : recordList) {
             if (Arrays.equals(record.getKey(), key)) {
