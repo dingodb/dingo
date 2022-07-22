@@ -476,10 +476,10 @@ public class RocksRawKVStore implements RawKVStore {
             }
             if (startKey == null) {
                 iterator.seekToFirst();
+                load();
             } else {
                 seek(startKey);
             }
-            load();
         }
 
         @Override
