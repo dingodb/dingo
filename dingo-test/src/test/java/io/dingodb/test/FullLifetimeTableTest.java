@@ -21,8 +21,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 
-public class InsertIntoTableTest {
+public class FullLifetimeTableTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -37,20 +39,28 @@ public class InsertIntoTableTest {
 
     @Test
     public void testInsertDoubleAndNull() throws SQLException {
-        String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
-            "create table " + tableName + "("
-                + "id int not null,"
-                + "data double,"
-                + "primary key(id)"
-                + ")"
+        sqlHelper.doTest(
+            "create table {table} (id int not null, data double, primary key(id))",
+            "insert into {table} values (1, 2), (2, null)",
+            2,
+            "select * from {table}",
+            new String[]{"id", "data"},
+            Arrays.asList(
+                new Object[]{1, 2.0},
+                new Object[]{2, null}
+            )
         );
-        sqlHelper.updateTest(
-            "insert into " + tableName + " values"
-                + "(1, 2),"
-                + "(2, null)",
-            2
+    }
+
+    @Test
+    public void testQueryBoolean() throws SQLException {
+        sqlHelper.doTest(
+            "create table {table} (id int not null, data boolean, primary key(id))",
+            "insert into {table} values (1, 0), (2, 1)",
+            2,
+            "select * from {table} where data",
+            new String[]{"id", "data"},
+            Collections.singletonList(new Object[]{2, true})
         );
-        sqlHelper.dropTable(tableName);
     }
 }

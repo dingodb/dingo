@@ -50,6 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class SqlHelper {
+    private static final String TABLE_NAME_PLACEHOLDER = "{table}";
+
     @Getter
     private final Connection connection;
 
@@ -74,6 +76,21 @@ public class SqlHelper {
     @Nonnull
     public static String randomTableName() {
         return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
+    }
+
+    public void doTest(
+        @Nonnull String createSql,
+        @Nonnull String insertSql,
+        int affectedRows,
+        @Nonnull String querySql,
+        String[] columnLabels,
+        List<Object[]> results
+    ) throws SQLException {
+        String tableName = randomTableName();
+        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        updateTest(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName), affectedRows);
+        queryTest(querySql.replace(TABLE_NAME_PLACEHOLDER, tableName), columnLabels, results);
+        dropTable(tableName);
     }
 
     public void cleanUp() throws SQLException {
