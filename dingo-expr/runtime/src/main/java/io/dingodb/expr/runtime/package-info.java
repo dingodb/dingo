@@ -26,6 +26,8 @@
     @GenerateTypeCodes.TypeCode(name = "STRING", type = "java.lang.String",
         aliases = {"CHAR", "VARCHAR"}),
     @GenerateTypeCodes.TypeCode(name = "DECIMAL", type = "java.math.BigDecimal"),
+    @GenerateTypeCodes.TypeCode(name = "BINARY", type = "byte[]",
+        aliases = {"VARBINARY", "BLOB"}),
     @GenerateTypeCodes.TypeCode(name = "OBJECT", type = "java.lang.Object",
         aliases = {"ANY"}),
     // array types

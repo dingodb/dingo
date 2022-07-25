@@ -60,38 +60,40 @@ public class DdlTest {
     @CsvSource({
         "int, 100",
         "bigint, 10000",
-        "char, abc",
-        "varchar, def",
         "boolean, true",
         "float, 3.5",
         "double, 2.7",
+    })
+    public void testCreateTable(@Nonnull String type, String value) throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data " + type + ", primary key(id))",
+            "insert into {table} values(1, " + value + ")"
+        );
+        int typeCode = TypeCode.codeOf(type.toUpperCase());
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
+        assertThat(result).isEqualTo(expected);
+        sqlHelper.dropTable(tableName);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "char, abc",
+        "varchar, def",
         "date, 1970-01-01",
         "date, 2022-11-01",
         "time, 00:00:00",
         "time, 04:30:02",
         "timestamp, 1970-01-01 00:00:00",
         "timestamp, 2022-11-01 11:01:01",
+//        "binary, abc",
     })
-    public void testCreateTable(@Nonnull String type, String value) throws SQLException {
-        String tableName = SqlHelper.randomTableName();
-        String sql = "create table " + tableName + "(\n"
-            + "    id int,\n"
-            + "    data " + type + ",\n"
-            + "    primary key(id)\n"
-            + ")";
-        sqlHelper.execSqlCmd(sql);
+    public void testCreateTableStringLiteral(@Nonnull String type, String value) throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data " + type + ", primary key(id))",
+            "insert into {table} values(1, '" + value + "')"
+        );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
-        String valueLiteral = value;
-        if (
-            typeCode == TypeCode.STRING
-                || typeCode == TypeCode.DATE
-                || typeCode == TypeCode.TIME
-                || typeCode == TypeCode.TIMESTAMP
-        ) {
-            valueLiteral = "'" + value + "'";
-        }
-        sql = "insert into " + tableName + " values(1, " + valueLiteral + ")";
-        sqlHelper.execSqlCmd(sql);
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         if (typeCode == TypeCode.DATE || typeCode == TypeCode.TIME) {
             assertThat(result.toString()).isEqualTo(value);

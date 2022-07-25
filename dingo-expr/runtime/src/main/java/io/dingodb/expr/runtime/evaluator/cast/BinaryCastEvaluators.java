@@ -22,6 +22,9 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 
+import java.nio.charset.StandardCharsets;
+import javax.annotation.Nonnull;
+
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
     evaluatorBase = Evaluator.class,
@@ -29,19 +32,12 @@ import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
     universalEvaluator = UniversalEvaluator.class,
     induceSequence = {}
 )
-final class BooleanCastEvaluators {
-    private BooleanCastEvaluators() {
+final class BinaryCastEvaluators {
+    private BinaryCastEvaluators() {
     }
 
-    static boolean booleanCast(int value) {
-        return value != 0;
-    }
-
-    static boolean booleanCast(long value) {
-        return value != 0L;
-    }
-
-    static boolean booleanCast(boolean value) {
-        return value;
+    @Nonnull
+    static byte[] binaryCast(@Nonnull String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 }

@@ -23,10 +23,12 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtEvaluatorOp;
 import io.dingodb.expr.runtime.op.RtOp;
+import lombok.Getter;
 
 import java.util.Arrays;
 
 public class OpWithEvaluator extends Op {
+    @Getter
     private final EvaluatorFactory factory;
 
     public OpWithEvaluator(OpType type, EvaluatorFactory factory) {

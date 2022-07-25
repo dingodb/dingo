@@ -20,6 +20,7 @@ import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -83,5 +84,10 @@ public class CsvConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         return DateTimeUtils.parseTimestamp((String) value);
+    }
+
+    @Override
+    public byte[] convertBinaryFrom(@Nonnull Object value) {
+        return ((String) value).getBytes(StandardCharsets.UTF_8);
     }
 }
