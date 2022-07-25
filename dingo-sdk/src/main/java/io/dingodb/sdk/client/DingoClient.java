@@ -49,7 +49,7 @@ public class DingoClient {
      */
     private StoreOperationUtils storeOpUtils;
 
-    public static Integer retryTimes = 10;
+    public static Integer retryTimes = 100;
     public static volatile boolean isConnectionInit = false;
 
 
@@ -232,8 +232,14 @@ public class DingoClient {
         return doPut(keyList, recordList);
     }
 
-    public Object[] get(String tableName, Object[] key) {
-        return null;
+    public Object[] get(String tableName, Object[] key) throws Exception {
+        List<Value> userKeys = new ArrayList<>();
+        for (Object keyValue: key) {
+            userKeys.add(Value.get(keyValue));
+        }
+        Key dingoKey = new Key("DINGO", tableName, userKeys);
+        Record dingoRecord = get(dingoKey);
+        return dingoRecord.getDingoColumnValuesInOrder();
     }
 
     public Record get(Key key) throws Exception {
@@ -249,7 +255,12 @@ public class DingoClient {
     }
 
     public boolean delete(String tableName, Object[] key) {
-        return true;
+        List<Value> userKeys = new ArrayList<>();
+        for (Object keyValue: key) {
+            userKeys.add(Value.get(keyValue));
+        }
+        Key dingoKey = new Key("DINGO", tableName, userKeys);
+        return doDelete(Arrays.asList(dingoKey));
     }
 
     public boolean delete(Key key) throws Exception {

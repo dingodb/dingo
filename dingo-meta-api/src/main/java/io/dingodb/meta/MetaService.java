@@ -50,8 +50,13 @@ public interface MetaService {
 
     Map<String, TableDefinition> getTableDefinitions();
 
+    /**
+     * get table definition by table name.
+     * @param name the input table name must be upper case.
+     * @return TableDefinition or null if not found.
+     */
     default TableDefinition getTableDefinition(String name) {
-        return getTableDefinitions().get(name);
+        return getTableDefinitions().get(name.toUpperCase());
     }
 
     NavigableMap<ComparableByteArray, Part> getParts(String name);

@@ -60,5 +60,4 @@ public class Table implements Meta {
     private boolean autoSplit;
 
     private int version;
-
 }
