@@ -16,21 +16,24 @@ dependency-reduced-pom.xml
 # IntelliJ IDEA Files
 *.iml
 !.idea
-.idea/dictionaries/
-.idea/libraries/
 .idea/CodeReadingNote.xml
+.idea/checkstyle-idea.xml
 .idea/compiler.xml
 .idea/csv-plugin.xml
 .idea/dbnavigator.xml
+.idea/dictionaries/
+.idea/git_toolbox_prj.xml
 .idea/gradle.xml
 .idea/jarRepositories.xml
 .idea/libraries-with-intellij-classes.xml
+.idea/libraries/
 .idea/misc.xml
 .idea/modules.xml
 .idea/runConfigurations.xml
 .idea/thriftCompiler.xml
 .idea/uiDesigner.xml
-.idea/checkstyle-idea.xml
+
+# VSCode files
 .vscode/
 
 # Ignore Gradle project-specific cache directory

@@ -31,11 +31,13 @@ import io.dingodb.expr.runtime.TypeCode;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public final class DingoTypeFactory {
     private DingoTypeFactory() {
@@ -84,13 +86,17 @@ public final class DingoTypeFactory {
         return new TupleType(types);
     }
 
-    @Nonnull
+    @Nullable
     public static DingoType fromRelDataType(@Nonnull RelDataType relDataType) {
         if (!relDataType.isStruct()) {
-            return scalar(
-                TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
-                relDataType.isNullable()
-            );
+            SqlTypeName sqlTypeName = relDataType.getSqlTypeName();
+            if (sqlTypeName != SqlTypeName.NULL) {
+                return scalar(
+                    TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
+                    relDataType.isNullable()
+                );
+            }
+            return null;
         } else {
             return new TupleType(
                 relDataType.getFieldList().stream()
