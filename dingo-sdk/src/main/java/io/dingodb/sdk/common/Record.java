@@ -140,6 +140,16 @@ public final class Record {
         }
     }
 
+    public Object[] getDingoColumnValuesInOrder() {
+        Object[] values = new Object[columnsInOrderMapping.size()];
+        int i = 0;
+        for (Map.Entry<String, Object> entry: columnsInOrderMapping.entrySet()) {
+            values[i] = entry.getValue();
+            i++;
+        }
+        return values;
+    }
+
     public static Record toDingoRecord(Record record) {
         List<String> keyColumns = new ArrayList<>();
         for (String key: record.getKeyColumnNames()) {

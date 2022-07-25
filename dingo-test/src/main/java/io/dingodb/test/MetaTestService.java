@@ -115,24 +115,26 @@ public class MetaTestService implements MetaService {
             startKey,
             endKey
         ));
-//        startKey = endKey;
-//        endKey = PrimitiveCodec.encodeVarInt(6);
-//        result.put(new ComparableByteArray(startKey), new Part(
-//            startKey,
-//            new FakeLocation(1),
-//            Collections.singletonList(new FakeLocation(1)),
-//            startKey,
-//            endKey
-//        ));
-//        startKey = endKey;
-//        endKey = ByteArrayUtils.MAX_BYTES;
-//        result.put(new ComparableByteArray(startKey), new Part(
-//            startKey,
-//            new FakeLocation(2),
-//            Collections.singletonList(new FakeLocation(2)),
-//            startKey,
-//            endKey
-//        ));
+        /*
+        startKey = endKey;
+        endKey = PrimitiveCodec.encodeVarInt(6);
+        result.put(new ComparableByteArray(startKey), new Part(
+            startKey,
+            new FakeLocation(1),
+            Collections.singletonList(new FakeLocation(1)),
+            startKey,
+            endKey
+        ));
+        startKey = endKey;
+        endKey = ByteArrayUtils.MAX_BYTES;
+        result.put(new ComparableByteArray(startKey), new Part(
+            startKey,
+            new FakeLocation(2),
+            Collections.singletonList(new FakeLocation(2)),
+            startKey,
+            endKey
+        ));
+         */
         return result;
     }
 

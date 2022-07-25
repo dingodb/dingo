@@ -87,6 +87,10 @@ public class DingoExampleUsingSDK {
                 scanAllRecords(tableName);
                 break;
             }
+            case "delete": {
+                delete(tableName);
+                break;
+            }
 
             default: {
                 insert(tableName);
@@ -151,7 +155,9 @@ public class DingoExampleUsingSDK {
                 Object[] record = dingoClient.get(tableName, key);
                 for (Object r : record) {
                     stringResult += r.toString();
+                    stringResult += ",";
                 }
+                stringResult.substring(0, stringResult.length() - 1);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -174,6 +180,7 @@ public class DingoExampleUsingSDK {
     public static void delete(String tableName) throws Exception {
         for (int i = 0; i < insertTotalCnt; i++) {
             Object[] key = new Object[]{i};
+            System.out.println("delete key: " + Arrays.toString(key));
             dingoClient.delete(tableName, key);
         }
     }

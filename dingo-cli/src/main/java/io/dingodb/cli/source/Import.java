@@ -85,7 +85,7 @@ public class Import {
 
         DingoConfiguration.parse(config);
         String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
-        DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
+        DingoClient dingoClient = new DingoClient(coordinatorServerList, 100);
         boolean isConnected = dingoClient.openConnection();
         if (!isConnected) {
             log.error("Failed to connect to dingo server");

@@ -38,18 +38,26 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 public class StoreOperationUtils {
 
     private static Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
     private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
+
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(8);
     private DingoConnection connection;
     private int retryTimes;
 
     public StoreOperationUtils(DingoConnection connection, int retryTimes) {
         this.connection = connection;
         this.retryTimes = retryTimes;
+    }
+
+    private List<KeyValue> parallismCompute(Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor) {
+        return null;
     }
 
     public ResultForClient doOperation(StoreOperationType type,
@@ -103,7 +111,7 @@ public class StoreOperationUtils {
             } finally {
                 if (!isSuccess && retryTimes > 0) {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(2000);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
@@ -157,7 +165,10 @@ public class StoreOperationUtils {
                 records,
                 wholeContext.getOperationListInBytes());
             contextByExecutor.put(partitionStartKey, subStoreContext);
-            log.info("After Group Keys by Executor: subGroup=>keyCnt:{} reocordCnt:{}", keys.size(), records.size());
+            if (log.isDebugEnabled()) {
+                log.debug("After Group Keys by Executor: subGroup=>keyCnt:{} reocordCnt:{}",
+                    keys.size(), records.size());
+            }
         }
         return contextByExecutor;
     }
