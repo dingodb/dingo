@@ -23,10 +23,15 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.NavigableSet;
+import java.util.SortedSet;
+import java.util.TreeMap;
 import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"definition", "ranges"})
@@ -69,4 +74,35 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         return ranges.floor(new ComparableByteArray(keyBytes));
     }
 
+    @Override
+    public Map<byte[], byte[]> calcPartitionRange(
+            @Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd
+    ) {
+        Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
+
+        SortedSet<ComparableByteArray> subSet = ranges.subSet(
+                ranges.floor(new ComparableByteArray(startKey)), true, new ComparableByteArray(endKey), includeEnd
+        );
+
+        byte[] start = startKey;
+        byte[] end;
+        Iterator<ComparableByteArray> iterator = subSet.iterator();
+        while (iterator.hasNext()) {
+            ComparableByteArray sKey = iterator.next();
+
+            if (start == null) {
+                start = sKey.getBytes();
+            }
+            if (iterator.hasNext()) {
+                end = null;
+            } else {
+                end = endKey;
+            }
+
+            keyMap.put(start, end);
+            start = null;
+        }
+
+        return keyMap;
+    }
 }

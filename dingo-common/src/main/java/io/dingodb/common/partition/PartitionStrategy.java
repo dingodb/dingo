@@ -44,6 +44,9 @@ public abstract class PartitionStrategy<I> {
 
     public abstract I calcPartId(@Nonnull final byte[] keyBytes);
 
+    public abstract Map<byte[], byte[]> calcPartitionRange(
+        @Nonnull final byte[] startKey, @Nonnull final byte[] endKey, boolean includeEnd);
+
     public I calcPartId(@Nonnull final Object[] tuple, @Nonnull TupleMapping keyMapping) {
         Object[] keyTuple = keyMapping.revMap(tuple);
         return calcPartId(keyTuple);

@@ -106,6 +106,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -684,54 +685,60 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         if (rel.getFilter() != null) {
             filter = RexConverter.toRtExprWithType(rel.getFilter());
         }
-        CommonId tableId = this.metaCache.getTableId(tableName);
 
         NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
         byte[] startKey = rel.getStartKey();
         byte[] endKey = rel.getEndKey();
+
         ComparableByteArray startByteArray = parts.floorKey(new ComparableByteArray(startKey));
-        if (startByteArray == null) {
+        if (!rel.isNotBetween() && startByteArray == null) {
             log.warn("Get part from table:{} by startKey:{}, result is null", td.getName(), startKey);
             return null;
         }
 
+        // Get all ranges that need to be queried
+        Map<byte[], byte[]> allRangeMap = new TreeMap<>(ByteArrayUtils::compare);
+        if (rel.isNotBetween()) {
+            allRangeMap.put(parts.firstKey().getBytes(), startKey);
+            allRangeMap.put(endKey, parts.lastKey().getBytes());
+        } else {
+            allRangeMap.put(startKey, endKey);
+        }
+
         List<Output> outputs = new ArrayList<>();
 
-        parts = parts.subMap(startByteArray, true, new ComparableByteArray(endKey), true);
-        Iterator<Part> iterator = parts.values().iterator();
-        byte[] start = startKey;
-        byte[] end;
-        boolean includeEnd = false;
-        while (iterator.hasNext()) {
-            Part part = iterator.next();
+        Iterator<Map.Entry<byte[], byte[]>> allRangeIterator = allRangeMap.entrySet().iterator();
+        while (allRangeIterator.hasNext()) {
+            Map.Entry<byte[], byte[]> entry = allRangeIterator.next();
+            startKey = entry.getKey();
+            endKey = entry.getValue();
 
-            if (start == null) {
-                start = part.getStartKey();
-            }
-            if (iterator.hasNext()) {
-                end = null;
-            } else {
-                end = endKey;
-                includeEnd = rel.isIncludeEnd();
-            }
+            // Get all partitions based on startKey and endKey
+            final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+            Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, rel.isIncludeEnd());
 
-            PartRangeScanOperator operator = new PartRangeScanOperator(
-                tableId,
-                part.getId(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                filter,
-                rel.getSelection(),
-                start,
-                end,
-                rel.isIncludeStart(),
-                includeEnd
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(part.getLeader(), idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-            start = null;
+            Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
+            while (partIterator.hasNext()) {
+                Map.Entry<byte[], byte[]> next = partIterator.next();
+                PartRangeScanOperator operator = new PartRangeScanOperator(
+                    this.metaCache.getTableId(tableName),
+                    next.getKey(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    filter,
+                    rel.getSelection(),
+                    next.getKey(),
+                    next.getValue(),
+                    rel.isIncludeStart(),
+                    next.getValue() != null && rel.isIncludeEnd()
+                );
+                operator.setId(idGenerator.get());
+                Task task = job.getOrCreate(
+                    parts.get(parts.floorKey(new ComparableByteArray(next.getKey()))).getLeader(), idGenerator
+                );
+                task.putOperator(operator);
+                outputs.addAll(operator.getOutputs());
+            }
         }
 
         return outputs;

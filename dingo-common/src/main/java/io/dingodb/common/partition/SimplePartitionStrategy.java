@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Getter;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -52,5 +54,10 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
     public String calcPartId(@Nonnull byte[] keyBytes) {
         int hash = Objects.hash(keyBytes);
         return Integer.toString(Math.abs(hash) % partNum);
+    }
+
+    @Override
+    public Map<byte[], byte[]> calcPartitionRange(@Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd) {
+        return Collections.emptyMap();
     }
 }
