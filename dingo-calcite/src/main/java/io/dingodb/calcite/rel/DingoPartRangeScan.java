@@ -49,6 +49,8 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
     @Getter
     private final byte[] endKey;
     @Getter
+    private final boolean isNotBetween;
+    @Getter
     private final boolean includeStart;
     @Getter
     private final boolean includeEnd;
@@ -62,6 +64,7 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
         @javax.annotation.Nullable TupleMapping selection,
         byte[] startKey,
         byte[] endKey,
+        boolean isNotBetween,
         boolean includeStart,
         boolean includeEnd
     ) {
@@ -71,6 +74,7 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
         this.selection = selection;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.isNotBetween = isNotBetween;
         this.includeStart = includeStart;
         this.includeEnd = includeEnd;
     }

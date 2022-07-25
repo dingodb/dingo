@@ -74,7 +74,6 @@ public final class PartInKvStore implements Part {
         byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
     ) {
         final long startTime = System.currentTimeMillis();
-        log.error("start {} end {}", includeStart, includeEnd);
         try {
             return Iterators.transform(
                 store.keyValueScan(startKey, endKey, includeStart, includeEnd),
