@@ -62,6 +62,9 @@ public class RecordEncoder {
                 case STRING:
                     be.writeString(Utils.processNullColumn(schema, record[schema.getIndex()]), schema.getLength());
                     break;
+                case BYTES:
+                    be.writeBytes(Utils.processNullColumn(schema, record[schema.getIndex()]), schema.getLength());
+                    break;
                 default:
             }
         }
@@ -97,6 +100,10 @@ public class RecordEncoder {
                             break;
                         case STRING:
                             be.updateString(Utils
+                                .processNullColumn(schema, columns[columnIndex]), schema.getMaxLength());
+                            break;
+                        case BYTES:
+                            be.updateBytes(Utils
                                 .processNullColumn(schema, columns[columnIndex]), schema.getMaxLength());
                             break;
                         default:

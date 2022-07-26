@@ -63,6 +63,9 @@ public class RecordDecoder {
                     case STRING:
                         result[schema.getIndex()] = bd.readString();
                         break;
+                    case BYTES:
+                        result[schema.getIndex()] = bd.readBytes().array();
+                        break;
                     default:
                 }
             }
@@ -101,6 +104,9 @@ public class RecordDecoder {
                             break;
                         case STRING:
                             result[resultIndex] = bd.readString();
+                            break;
+                        case BYTES:
+                            result[resultIndex] = bd.readBytes().array();
                             break;
                         default:
                             result[resultIndex] = null;
