@@ -24,6 +24,7 @@ import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -83,5 +84,10 @@ final class StringCastEvaluators {
     @Nonnull
     static String stringCast(@Nonnull Timestamp value) {
         return DateTimeUtils.dateTimeFormat(value);
+    }
+
+    @Nonnull
+    static String stringCast(@Nonnull byte[] value) {
+        return new String(value, StandardCharsets.UTF_8);
     }
 }

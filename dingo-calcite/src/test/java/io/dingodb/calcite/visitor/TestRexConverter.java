@@ -66,7 +66,7 @@ public class TestRexConverter {
                 "name = 'Betty' and name = 'Alice' and amount < 1.0",
                 "AND($[1] == 'Betty', $[1] == 'Alice', $[2] < 1.0)"
             ),
-            arguments("unix_timestamp('2022-04-14 00:00:00')", "unix_timestamp(timestamp('2022-04-14 00:00:00'))"),
+            arguments("unix_timestamp('2022-04-14 00:00:00')", "unix_timestamp(TIMESTAMP('2022-04-14 00:00:00'))"),
             arguments("from_unixtime(123)", "from_unixtime(123)")
         );
     }

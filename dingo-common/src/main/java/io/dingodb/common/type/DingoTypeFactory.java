@@ -17,6 +17,7 @@
 package io.dingodb.common.type;
 
 import io.dingodb.common.type.scalar.AbstractScalarType;
+import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -64,6 +65,8 @@ public final class DingoTypeFactory {
                 return new TimeType(nullable);
             case TypeCode.TIMESTAMP:
                 return new TimestampType(nullable);
+            case TypeCode.BINARY:
+                return new BinaryType(nullable);
             case TypeCode.OBJECT:
                 return new ObjectType(nullable);
             default:
@@ -142,6 +145,8 @@ public final class DingoTypeFactory {
                 return TypeCode.TIME;
             case Types.TIMESTAMP:
                 return TypeCode.TIMESTAMP;
+            case Types.BINARY:
+                return TypeCode.BINARY;
             default:
                 break;
         }

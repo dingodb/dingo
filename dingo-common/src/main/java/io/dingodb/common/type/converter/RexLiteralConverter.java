@@ -18,6 +18,7 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.TimeString;
@@ -50,6 +51,11 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public Object convert(@Nonnull Timestamp value) {
         return TimestampString.fromMillisSinceEpoch(value.getTime());
+    }
+
+    @Override
+    public Object convert(@Nonnull byte[] value) {
+        return new ByteString(value);
     }
 
     @Override
@@ -92,5 +98,10 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         return new Timestamp(((Calendar) value).getTimeInMillis());
+    }
+
+    @Override
+    public byte[] convertBinaryFrom(@Nonnull Object value) {
+        return ((ByteString) value).getBytes();
     }
 }

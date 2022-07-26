@@ -19,13 +19,11 @@ package io.dingodb.expr.runtime.exception;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-@RequiredArgsConstructor
 @Getter
 public final class FailGetEvaluator extends Exception {
     private static final long serialVersionUID = -3103060977223789004L;
@@ -33,13 +31,15 @@ public final class FailGetEvaluator extends Exception {
     private final EvaluatorFactory factory;
     private final int[] paraTypeCodes;
 
-    @Nonnull
-    @Override
-    public String getMessage() {
-        return "Cannot find evaluator in \""
-            + factory.getClass().getSimpleName()
-            + "\" for parameter types ("
-            + Arrays.stream(paraTypeCodes).mapToObj(TypeCode::nameOf).collect(Collectors.joining(", "))
-            + ").";
+    public FailGetEvaluator(@Nonnull EvaluatorFactory factory, int[] paraTypeCodes) {
+        super(
+            "Cannot find evaluator in \""
+                + factory.getClass().getSimpleName()
+                + "\" for parameter types ("
+                + Arrays.stream(paraTypeCodes).mapToObj(TypeCode::nameOf).collect(Collectors.joining(", "))
+                + ")."
+        );
+        this.factory = factory;
+        this.paraTypeCodes = paraTypeCodes;
     }
 }

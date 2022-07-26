@@ -239,7 +239,7 @@ public class DingoMeta extends MetaImpl {
             checkJobHasFailed(signature);
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
-            log.error("Fetch catch exception:{}", e.toString(), e);
+            log.error("Fetch catch exception:{}", e, e);
             // TODO AvaticaClientRuntimeException
             throw new RuntimeException(e.getMessage());
         } finally {

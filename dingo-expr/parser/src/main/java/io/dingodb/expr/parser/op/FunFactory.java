@@ -16,11 +16,14 @@
 
 package io.dingodb.expr.parser.op;
 
+import io.dingodb.expr.parser.exception.UndefinedFunctionName;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.arithmetic.AbsEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.BinaryCastEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DecimalCastEvaluatorFactory;
@@ -71,7 +74,6 @@ import io.dingodb.expr.runtime.op.time.FromUnixTimeFun;
 import io.dingodb.expr.runtime.op.time.TimeFormatFun;
 import io.dingodb.expr.runtime.op.time.TimestampFormatFun;
 import io.dingodb.expr.runtime.op.time.UnixTimestampFun;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -116,16 +118,17 @@ public final class FunFactory {
         registerEvaluator("log", LogEvaluatorFactory.INSTANCE);
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
 
-        // Type conversion
-        registerEvaluator("int", IntegerCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("long", LongCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("double", DoubleCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("decimal", DecimalCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("string", StringCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("date", DateCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("time", TimeCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("timestamp", TimestampCastEvaluatorFactory.INSTANCE);
-        registerEvaluator("boolean", BooleanCastEvaluatorFactory.INSTANCE);
+        // Cast functions
+        registerEvaluator(TypeCode.nameOf(TypeCode.INT), IntegerCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.LONG), LongCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.DOUBLE), DoubleCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.DECIMAL), DecimalCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.STRING), StringCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.DATE), DateCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.TIME), TimeCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.TIMESTAMP), TimestampCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.BOOL), BooleanCastEvaluatorFactory.INSTANCE);
+        registerEvaluator(TypeCode.nameOf(TypeCode.BINARY), BinaryCastEvaluatorFactory.INSTANCE);
 
         // String
         registerUdf("char_length", DingoCharLengthOp::new);
@@ -200,6 +203,11 @@ public final class FunFactory {
         if (supplier != null) {
             return supplier.get();
         }
-        throw new ParseCancellationException("Invalid fun name: \"" + funName + "\".");
+        throw new UndefinedFunctionName(funName);
+    }
+
+    @Nonnull
+    public Op getCastFun(int typeCode) {
+        return getFun(TypeCode.nameOf(typeCode));
     }
 }

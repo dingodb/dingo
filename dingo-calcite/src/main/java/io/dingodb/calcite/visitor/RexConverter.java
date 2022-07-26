@@ -22,14 +22,19 @@ import io.dingodb.common.type.converter.RexLiteralConverter;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.UndefinedFunctionName;
 import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpFactory;
+import io.dingodb.expr.parser.op.OpWithEvaluator;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
@@ -219,39 +224,18 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = FunFactory.INS.getFun("is_not_false");
                 break;
             case CAST:
-                switch (typeCodeOf(call.getType())) {
-                    case TypeCode.INT:
-                        op = FunFactory.INS.getFun("int");
-                        break;
-                    case TypeCode.STRING:
-                        op = FunFactory.INS.getFun("string");
-                        break;
-                    case TypeCode.LONG:
-                        op = FunFactory.INS.getFun("long");
-                        break;
-                    case TypeCode.DOUBLE:
-                        op = FunFactory.INS.getFun("double");
-                        break;
-                    case TypeCode.DECIMAL:
-                        op = FunFactory.INS.getFun("decimal");
-                        break;
-                    case TypeCode.BOOL:
-                        if (typeCodeOf(call.getOperands().get(0).getType()) == TypeCode.STRING) {
-                            throw new IllegalArgumentException("It is not allowed to cast a STRING to BOOL type.");
-                        }
-                        op = FunFactory.INS.getFun("boolean");
-                        break;
-                    case TypeCode.DATE:
-                        op = FunFactory.INS.getFun("date");
-                        break;
-                    case TypeCode.TIME:
-                        op = FunFactory.INS.getFun("time");
-                        break;
-                    case TypeCode.TIMESTAMP:
-                        op = FunFactory.INS.getFun("timestamp");
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
+                try {
+                    op = FunFactory.INS.getCastFun(typeCodeOf(call.getType()));
+                    if (op instanceof OpWithEvaluator) {
+                        EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
+                        int[] typeCodes = call.getOperands().stream()
+                            .map(RexNode::getType)
+                            .mapToInt(RexConverter::typeCodeOf)
+                            .toArray();
+                        factory.getEvaluator(EvaluatorKey.of(typeCodes));
+                    }
+                } catch (FailGetEvaluator | UndefinedFunctionName e) {
+                    throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
                 }
                 break;
             case TRIM:

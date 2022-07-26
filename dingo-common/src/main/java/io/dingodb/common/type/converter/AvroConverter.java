@@ -19,6 +19,7 @@ package io.dingodb.common.type.converter;
 import io.dingodb.common.type.DataConverter;
 import org.apache.avro.util.Utf8;
 
+import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -46,6 +47,11 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
+    public ByteBuffer convert(@Nonnull byte[] value) {
+        return ByteBuffer.wrap(value);
+    }
+
+    @Override
     public String convertStringFrom(@Nonnull Object value) {
         if (value instanceof Utf8) {
             return value.toString();
@@ -66,5 +72,10 @@ public class AvroConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         return new Timestamp((long) value);
+    }
+
+    @Override
+    public byte[] convertBinaryFrom(@Nonnull Object value) {
+        return ((ByteBuffer) value).array();
     }
 }

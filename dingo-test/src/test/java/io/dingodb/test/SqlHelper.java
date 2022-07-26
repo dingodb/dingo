@@ -78,6 +78,27 @@ public class SqlHelper {
         return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
     }
 
+    public String prepareTable(
+        @Nonnull String createSql,
+        @Nonnull String insertSql
+    ) throws SQLException {
+        String tableName = randomTableName();
+        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        execSqlCmd(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        return tableName;
+    }
+
+    public String prepareTable(
+        @Nonnull String createSql,
+        @Nonnull String insertSql,
+        int affectedRows
+    ) throws SQLException {
+        String tableName = randomTableName();
+        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        updateTest(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName), affectedRows);
+        return tableName;
+    }
+
     public void doTest(
         @Nonnull String createSql,
         @Nonnull String insertSql,
@@ -86,9 +107,7 @@ public class SqlHelper {
         String[] columnLabels,
         List<Object[]> results
     ) throws SQLException {
-        String tableName = randomTableName();
-        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
-        updateTest(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName), affectedRows);
+        String tableName = prepareTable(createSql, insertSql, affectedRows);
         queryTest(querySql.replace(TABLE_NAME_PLACEHOLDER, tableName), columnLabels, results);
         dropTable(tableName);
     }

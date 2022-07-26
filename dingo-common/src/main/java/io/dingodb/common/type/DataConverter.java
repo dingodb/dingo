@@ -40,6 +40,10 @@ public interface DataConverter {
         return value;
     }
 
+    default Object convert(@Nonnull byte[] value) {
+        return value;
+    }
+
     default Integer convertIntegerFrom(@Nonnull Object value) {
         return (Integer) value;
     }
@@ -74,6 +78,10 @@ public interface DataConverter {
 
     default Timestamp convertTimestampFrom(@Nonnull Object value) {
         return (Timestamp) value;
+    }
+
+    default byte[] convertBinaryFrom(@Nonnull Object value) {
+        return (byte[]) value;
     }
 
     default Object collectTuple(@Nonnull Stream<Object> stream) {

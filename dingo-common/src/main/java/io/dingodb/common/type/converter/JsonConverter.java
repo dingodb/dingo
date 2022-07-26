@@ -17,7 +17,9 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
+import org.apache.calcite.avatica.util.Base64;
 
+import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -45,6 +47,11 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
+    public String convert(@Nonnull byte[] value) {
+        return Base64.encodeBytes(value);
+    }
+
+    @Override
     public Integer convertIntegerFrom(@Nonnull Object value) {
         if (value instanceof Long) {
             return ((Long) value).intValue();
@@ -65,5 +72,14 @@ public class JsonConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         return new Timestamp((long) value);
+    }
+
+    @Override
+    public byte[] convertBinaryFrom(@Nonnull Object value) {
+        try {
+            return Base64.decode((String) value);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

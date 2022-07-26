@@ -24,8 +24,8 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.AvroConverter;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 public class DingoKeyValueCodec implements KeyValueCodec {
 
@@ -39,6 +39,8 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
+//        keyCodec = new AvroCodec(schema.select(keyMapping).toAvroSchema());
+//        valueCodec = new AvroCodec(schema.select(valueMapping).toAvroSchema());
         keyCodec = new DingoCodec(schema.select(keyMapping).toDingoSchemas(), keyMapping);
         valueCodec = new DingoCodec(schema.select(valueMapping).toDingoSchemas(), valueMapping);
     }
