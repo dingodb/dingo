@@ -160,41 +160,46 @@ public final class DataParser extends Parser {
             case TypeCode.DECIMAL:
                 tuple[rtSchema.getIndex()] = jsonNode.decimalValue();
                 return;
-            case TypeCode.INT_ARRAY:
-                Integer[] integerArray = new Integer[jsonNode.size()];
-                for (int i = 0; i < jsonNode.size(); i++) {
-                    integerArray[i] = jsonNode.get(i).asInt();
+            case TypeCode.ARRAY:
+                int elementType = ((RtSchemaArray) rtSchema).getElementTypeCode();
+                switch (elementType) {
+                    case TypeCode.INT:
+                        Integer[] integerArray = new Integer[jsonNode.size()];
+                        for (int i = 0; i < jsonNode.size(); i++) {
+                            integerArray[i] = jsonNode.get(i).asInt();
+                        }
+                        tuple[rtSchema.getIndex()] = integerArray;
+                        return;
+                    case TypeCode.LONG:
+                        Long[] longArray = new Long[jsonNode.size()];
+                        for (int i = 0; i < jsonNode.size(); i++) {
+                            longArray[i] = jsonNode.get(i).asLong();
+                        }
+                        tuple[rtSchema.getIndex()] = longArray;
+                        return;
+                    case TypeCode.DOUBLE:
+                        Double[] doubleArray = new Double[jsonNode.size()];
+                        for (int i = 0; i < jsonNode.size(); i++) {
+                            doubleArray[i] = jsonNode.get(i).asDouble();
+                        }
+                        tuple[rtSchema.getIndex()] = doubleArray;
+                        return;
+                    case TypeCode.BOOL:
+                        Boolean[] booleanArray = new Boolean[jsonNode.size()];
+                        for (int i = 0; i < jsonNode.size(); i++) {
+                            booleanArray[i] = jsonNode.get(i).asBoolean();
+                        }
+                        tuple[rtSchema.getIndex()] = booleanArray;
+                        return;
+                    case TypeCode.STRING:
+                    default:
+                        String[] stringArray = new String[jsonNode.size()];
+                        for (int i = 0; i < jsonNode.size(); i++) {
+                            stringArray[i] = jsonNode.get(i).asText();
+                        }
+                        tuple[rtSchema.getIndex()] = stringArray;
+                        return;
                 }
-                tuple[rtSchema.getIndex()] = integerArray;
-                return;
-            case TypeCode.LONG_ARRAY:
-                Long[] longArray = new Long[jsonNode.size()];
-                for (int i = 0; i < jsonNode.size(); i++) {
-                    longArray[i] = jsonNode.get(i).asLong();
-                }
-                tuple[rtSchema.getIndex()] = longArray;
-                return;
-            case TypeCode.DOUBLE_ARRAY:
-                Double[] doubleArray = new Double[jsonNode.size()];
-                for (int i = 0; i < jsonNode.size(); i++) {
-                    doubleArray[i] = jsonNode.get(i).asDouble();
-                }
-                tuple[rtSchema.getIndex()] = doubleArray;
-                return;
-            case TypeCode.STRING_ARRAY:
-                String[] stringArray = new String[jsonNode.size()];
-                for (int i = 0; i < jsonNode.size(); i++) {
-                    stringArray[i] = jsonNode.get(i).asText();
-                }
-                tuple[rtSchema.getIndex()] = stringArray;
-                return;
-            case TypeCode.BOOL_ARRAY:
-                Boolean[] booleanArray = new Boolean[jsonNode.size()];
-                for (int i = 0; i < jsonNode.size(); i++) {
-                    booleanArray[i] = jsonNode.get(i).asBoolean();
-                }
-                tuple[rtSchema.getIndex()] = booleanArray;
-                return;
             case TypeCode.LIST:
                 if (jsonNode.isArray()) {
                     tuple[rtSchema.getIndex()] = jsonNodeValue(jsonNode);

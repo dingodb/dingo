@@ -16,13 +16,10 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
@@ -75,14 +72,6 @@ public final class DingoTableScan extends TableScan implements DingoRel {
         pw.itemIf("filter", filter, filter != null);
         pw.itemIf("selection", selection, selection != null);
         return pw;
-    }
-
-    @Override
-    public void register(RelOptPlanner planner) {
-        // this is crucial to import new rule.
-        for (RelOptRule rule : DingoRules.rules()) {
-            planner.addRule(rule);
-        }
     }
 
     @Override

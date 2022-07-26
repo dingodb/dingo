@@ -39,12 +39,6 @@ public final class IsFalseOp extends Op {
 
     @Nonnull
     @Override
-    protected RtIsFalse createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtIsFalse(rtExprArray);
-    }
-
-    @Nonnull
-    @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         RtExpr rtExpr = rtExprArray[0];
         try {
@@ -56,5 +50,11 @@ public final class IsFalseOp extends Op {
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected RtIsFalse createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtIsFalse(rtExprArray);
     }
 }

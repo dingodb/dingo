@@ -16,65 +16,22 @@
 
 package io.dingodb.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.calcite.visitor.RexConverter;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLiteral;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
-public class DingoValues extends Values implements DingoRel {
+public class DingoValues extends LogicalDingoValues implements DingoRel {
     public DingoValues(
         RelOptCluster cluster,
+        RelTraitSet traits,
         RelDataType rowType,
-        ImmutableList<ImmutableList<RexLiteral>> tuples,
-        RelTraitSet traits
+        List<Object[]> tuples
     ) {
-        super(cluster, rowType, tuples, traits);
-    }
-
-    public DingoValues(
-        RelOptCluster cluster,
-        RelDataType rowType,
-        List<Object[]> tuples,
-        RelTraitSet traits
-    ) {
-        this(cluster, rowType, toImmutableList(rowType, cluster.getRexBuilder(), tuples), traits);
-    }
-
-    private static ImmutableList<ImmutableList<RexLiteral>> toImmutableList(
-        @Nonnull RelDataType rowType,
-        RexBuilder rexBuilder,
-        @Nonnull List<Object[]> tuples
-    ) {
-        List<RelDataTypeField> fields = rowType.getFieldList();
-        return ImmutableList.copyOf(
-            tuples.stream()
-                .map(tuple -> ImmutableList.copyOf(
-                    IntStream.range(0, fields.size())
-                        .mapToObj(i -> rexBuilder.makeLiteral(tuple[i], fields.get(i).getType()))
-                        .collect(Collectors.toList())
-                ))
-                .collect(Collectors.toList())
-        );
-    }
-
-    public List<Object[]> getValues() {
-        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
-        return tuples.stream()
-            .map(t -> RexConverter.convertFromRexLiteralList(t, type))
-            .collect(Collectors.toList());
+        super(cluster, traits, rowType, tuples);
     }
 
     @Override

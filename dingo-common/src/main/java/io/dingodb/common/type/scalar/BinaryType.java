@@ -16,6 +16,9 @@
 
 package io.dingodb.common.type.scalar;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
@@ -24,8 +27,10 @@ import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
 
+@JsonTypeName("binary")
 public class BinaryType extends AbstractScalarType {
-    public BinaryType(boolean nullable) {
+    @JsonCreator
+    public BinaryType(@JsonProperty("nullable") boolean nullable) {
         super(TypeCode.BINARY, nullable);
     }
 

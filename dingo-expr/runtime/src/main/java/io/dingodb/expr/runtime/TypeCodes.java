@@ -33,7 +33,12 @@ public final class TypeCodes implements Serializable {
      * @return the type code
      */
     public static int getTypeCode(@Nonnull Class<?> type) {
-        if (List.class.isAssignableFrom(type)) {
+        if (type.isArray()) {
+            // `byte[]` is looked on as a scalar type.
+            if (!type.equals(byte[].class)) {
+                return TypeCode.ARRAY;
+            }
+        } else if (List.class.isAssignableFrom(type)) {
             return TypeCode.LIST;
         } else if (Map.class.isAssignableFrom(type)) {
             return TypeCode.MAP;

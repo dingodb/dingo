@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite;
+package io.dingodb.expr.json.runtime;
 
-import io.dingodb.calcite.rel.DingoRel;
-import org.apache.calcite.plan.Convention;
+import io.dingodb.expr.runtime.TypeCode;
+import lombok.Getter;
 
-public final class DingoConventions {
-    // This is not a physical node traits.
-    public static Convention DISTRIBUTED = new Convention.Impl("DINGO_DISTRIBUTED", DingoRel.class);
-    public static Convention PARTITIONED = new Convention.Impl("DINGO_PARTITIONED", DingoRel.class);
-    public static Convention ROOT = new Convention.Impl("DINGO_ROOT", DingoRel.class);
+public class RtSchemaArray extends RtSchemaLeaf {
+    private static final long serialVersionUID = -8528750806274500575L;
 
-    private DingoConventions() {
+    @Getter
+    private final int elementTypeCode;
+
+    public RtSchemaArray(int elementTypeCode) {
+        super(TypeCode.ARRAY);
+        this.elementTypeCode = elementTypeCode;
     }
 }

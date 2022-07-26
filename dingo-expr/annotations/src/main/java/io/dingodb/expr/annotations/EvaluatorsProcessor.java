@@ -18,6 +18,7 @@ package io.dingodb.expr.annotations;
 
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableSet;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -71,9 +72,12 @@ public class EvaluatorsProcessor extends AbstractProcessor {
 
     @Nonnull
     private static String getSimpleName(@Nonnull TypeName type) {
-        String name = type.box().toString()
-            .replaceAll("<.*>", "")
-            .replace("[]", "Array");
+        String name;
+        if (type instanceof ArrayTypeName) {
+            name = ((ArrayTypeName) type).componentType.box().toString() + "Array";
+        } else {
+            name = type.toString().replaceAll("<.*>", "");
+        }
         return name.substring(name.lastIndexOf('.') + 1);
     }
 

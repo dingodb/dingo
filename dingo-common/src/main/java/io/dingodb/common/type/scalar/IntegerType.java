@@ -16,6 +16,9 @@
 
 package io.dingodb.common.type.scalar;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
@@ -24,8 +27,10 @@ import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
 
+@JsonTypeName("int")
 public class IntegerType extends AbstractScalarType {
-    public IntegerType(boolean nullable) {
+    @JsonCreator
+    public IntegerType(@JsonProperty("nullable") boolean nullable) {
         super(TypeCode.INT, nullable);
     }
 
@@ -35,13 +40,13 @@ public class IntegerType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
-        return converter.convertIntegerFrom(value);
+    public DingoSchema toDingoSchema(int index) {
+        return new IntegerSchema(index);
     }
 
     @Override
-    public DingoSchema toDingoSchema(int index) {
-        return new IntegerSchema(index);
+    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+        return converter.convertIntegerFrom(value);
     }
 
     @Override

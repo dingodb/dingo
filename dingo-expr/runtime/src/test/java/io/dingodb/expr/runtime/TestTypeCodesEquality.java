@@ -52,15 +52,9 @@ public class TestTypeCodesEquality {
             arguments(BigDecimal.class, TypeCode.DECIMAL),
             arguments(String.class, TypeCode.STRING),
             arguments(Object.class, TypeCode.OBJECT),
-            // array types
-            arguments(Boolean[].class, TypeCode.BOOL_ARRAY),
-            arguments(Integer[].class, TypeCode.INT_ARRAY),
-            arguments(Long[].class, TypeCode.LONG_ARRAY),
-            arguments(Double[].class, TypeCode.DOUBLE_ARRAY),
-            arguments(BigDecimal[].class, TypeCode.DECIMAL_ARRAY),
-            arguments(String[].class, TypeCode.STRING_ARRAY),
-            arguments(Object[].class, TypeCode.OBJECT_ARRAY),
+            arguments(byte[].class, TypeCode.BINARY),
             // collection types
+            arguments(Object[].class, TypeCode.ARRAY),
             arguments(List.class, TypeCode.LIST),
             arguments(LinkedList.class, TypeCode.LIST),
             arguments(ArrayList.class, TypeCode.LIST),
@@ -71,7 +65,9 @@ public class TestTypeCodesEquality {
             // date&time types
             arguments(Date.class, TypeCode.DATE),
             arguments(Time.class, TypeCode.TIME),
-            arguments(Timestamp.class, TypeCode.TIMESTAMP)
+            arguments(Timestamp.class, TypeCode.TIMESTAMP),
+            // null
+            arguments(Void.class, TypeCode.NULL)
         );
     }
 

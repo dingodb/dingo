@@ -38,12 +38,6 @@ public final class IsNotNullOp extends Op {
 
     @Nonnull
     @Override
-    protected RtIsNotNull createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtIsNotNull(rtExprArray);
-    }
-
-    @Nonnull
-    @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         RtExpr rtExpr = rtExprArray[0];
         try {
@@ -55,5 +49,11 @@ public final class IsNotNullOp extends Op {
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected RtIsNotNull createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtIsNotNull(rtExprArray);
     }
 }

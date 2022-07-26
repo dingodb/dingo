@@ -37,22 +37,6 @@ final class IndexEvaluators {
     private IndexEvaluators() {
     }
 
-    static Integer index(@Nonnull Integer[] array, int index) {
-        return array[index];
-    }
-
-    static Long index(@Nonnull Long[] array, int index) {
-        return array[index];
-    }
-
-    static Boolean index(@Nonnull Boolean[] array, int index) {
-        return array[index];
-    }
-
-    static String index(@Nonnull String[] array, int index) {
-        return array[index];
-    }
-
     static Object index(@Nonnull Object[] array, int index) {
         return array[index];
     }

@@ -50,7 +50,7 @@ public class DingoPartScanRule extends RelRule<DingoPartScanRule.Config> {
         Config DEFAULT = ImmutableDingoPartScanRule.Config.builder()
             .description("DingoPartScanRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoTableScan.class).trait(DingoConventions.DINGO).noInputs()
+                b0.operand(DingoTableScan.class).noInputs()
             )
             .build();
 

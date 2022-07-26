@@ -25,7 +25,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @RequiredArgsConstructor
-public final class RtSchemaLeaf extends RtSchema {
+public class RtSchemaLeaf extends RtSchema {
     private static final long serialVersionUID = -3661328042239398475L;
     @Getter
     private final int typeCode;

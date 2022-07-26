@@ -91,9 +91,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         String name = scd.name.getSimple();
         boolean isPrimary = (primaryKeyList != null && primaryKeyList.contains(name));
+        RelDataType elementType = dataType.getComponentType();
+        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()
             .name(name)
             .type(typeName)
+            .elementType(elementTypeName)
             .precision(precision)
             .scale(scale)
             .notNull(isPrimary || !dataType.isNullable())

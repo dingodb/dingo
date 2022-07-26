@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 @GenerateTypeCodes({
     // scalar types
     @GenerateTypeCodes.TypeCode(name = "BOOL", type = "java.lang.Boolean",
@@ -30,29 +31,18 @@
         aliases = {"VARBINARY", "BLOB"}),
     @GenerateTypeCodes.TypeCode(name = "OBJECT", type = "java.lang.Object",
         aliases = {"ANY"}),
-    // array types
-    @GenerateTypeCodes.TypeCode(name = "BOOL_ARRAY", type = "java.lang.Boolean[]",
-        aliases = {"BOOLEAN_ARRAY"}),
-    @GenerateTypeCodes.TypeCode(name = "INT_ARRAY", type = "java.lang.Integer[]",
-        aliases = {"INTEGER_ARRAY"}),
-    @GenerateTypeCodes.TypeCode(name = "LONG_ARRAY", type = "java.lang.Long[]",
-        aliases = {"BIGINT_ARRAY"}),
-    @GenerateTypeCodes.TypeCode(name = "DOUBLE_ARRAY", type = "java.lang.Double[]"),
-    @GenerateTypeCodes.TypeCode(name = "STRING_ARRAY", type = "java.lang.String[]",
-        aliases = {"CHAR_ARRAY", "VARCHAR_ARRAY"}),
-    @GenerateTypeCodes.TypeCode(name = "DECIMAL_ARRAY", type = "java.math.BigDecimal[]"),
-    @GenerateTypeCodes.TypeCode(name = "OBJECT_ARRAY", type = "java.lang.Object[]",
-        aliases = {"ANY_ARRAY"}),
-    // collection types
-    @GenerateTypeCodes.TypeCode(name = "LIST", type = "java.util.List"),
-    @GenerateTypeCodes.TypeCode(name = "MAP", type = "java.util.Map"),
     // date&time types
     @GenerateTypeCodes.TypeCode(name = "DATE", type = "java.sql.Date"),
     @GenerateTypeCodes.TypeCode(name = "TIME", type = "java.sql.Time"),
     @GenerateTypeCodes.TypeCode(name = "TIMESTAMP", type = "java.sql.Timestamp"),
+    // collection types
+    @GenerateTypeCodes.TypeCode(name = "ARRAY", type = "java.lang.Object[]"),
+    @GenerateTypeCodes.TypeCode(name = "LIST", type = "java.util.List"),
+    @GenerateTypeCodes.TypeCode(name = "MAP", type = "java.util.Map"),
     // pseudo types
     @GenerateTypeCodes.TypeCode(name = "TUPLE", type = "tuple"),
     @GenerateTypeCodes.TypeCode(name = "DICT", type = "dict"),
+    @GenerateTypeCodes.TypeCode(name = "NULL", type = "java.lang.Void"),
 })
 package io.dingodb.expr.runtime;
 

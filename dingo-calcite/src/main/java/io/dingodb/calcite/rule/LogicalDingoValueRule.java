@@ -16,42 +16,45 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
-import io.dingodb.calcite.rel.DingoTableModify;
+import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.apache.calcite.rel.logical.LogicalValues;
+import org.apache.calcite.rel.type.RelDataType;
 
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-public class DingoTableModifyRule extends ConverterRule {
+import static io.dingodb.calcite.visitor.RexConverter.convertFromRexLiteralList;
+
+public class LogicalDingoValueRule extends ConverterRule {
     public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(
-            LogicalTableModify.class,
+            LogicalValues.class,
             Convention.NONE,
-            DingoConventions.DINGO,
-            "DingoTableModifyRule"
+            Convention.NONE,
+            "DingoLogicalValuesRule"
         )
-        .withRuleFactory(DingoTableModifyRule::new);
+        .withRuleFactory(LogicalDingoValueRule::new);
 
-    protected DingoTableModifyRule(Config config) {
+    protected LogicalDingoValueRule(Config config) {
         super(config);
     }
 
     @Override
     public RelNode convert(@Nonnull RelNode rel) {
-        LogicalTableModify modify = (LogicalTableModify) rel;
-        return new DingoTableModify(
+        RelDataType rowType = rel.getRowType();
+        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
+        return new LogicalDingoValues(
             rel.getCluster(),
-            rel.getTraitSet().replace(DingoConventions.DINGO),
-            rel.getTable(),
-            modify.getCatalogReader(),
-            modify.getInput(),
-            modify.getOperation(),
-            modify.getUpdateColumnList(),
-            modify.getSourceExpressionList(),
-            modify.isFlattened()
+            rel.getTraitSet(),
+            rowType,
+            ((LogicalValues) rel).getTuples().stream()
+                .map(t -> convertFromRexLiteralList(t, type))
+                .collect(Collectors.toList())
         );
     }
 }

@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -29,7 +31,6 @@ import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.runtime.TupleEvalContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -68,15 +69,20 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @Nonnull @JsonProperty("keys") Collection<Object[]> keyTuples,
+        @JsonDeserialize(using = TuplesDeserializer.class)
+        @Nonnull @JsonProperty("keys") JsonNode jsonNode,
         @JsonProperty("filter") RtExprWithType filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
-        // crucial, recover types from json values.
-        List<Object[]> newKeyTuples = keyTuples.stream()
-            .map(i -> (Object[]) schema.select(keyMapping).convertFrom(i, JsonConverter.INSTANCE))
-            .collect(Collectors.toList());
-        return new GetByKeysOperator(tableId, partId, schema, keyMapping, newKeyTuples, filter, selection);
+        return new GetByKeysOperator(
+            tableId,
+            partId,
+            schema,
+            keyMapping,
+            TuplesDeserializer.convertBySchema(jsonNode, schema.select(keyMapping)),
+            filter,
+            selection
+        );
     }
 
     // This method is only used by json serialization.

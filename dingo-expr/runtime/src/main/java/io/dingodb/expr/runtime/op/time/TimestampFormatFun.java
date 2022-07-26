@@ -41,12 +41,12 @@ public class TimestampFormatFun extends RtFun {
 
     @Nonnull
     public static String timestampFormat(@Nonnull Timestamp value, @Nonnull String format) {
-        return DateTimeUtils.dateTimeFormat(value, format);
+        return DateTimeUtils.timestampFormat(value, format);
     }
 
     @Nonnull
     public static String timestampFormat(@Nonnull Timestamp value) {
-        return DateTimeUtils.dateTimeFormat(value);
+        return DateTimeUtils.timestampFormat(value);
     }
 
     @Override

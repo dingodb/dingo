@@ -132,4 +132,10 @@ public final class TupleMapping {
         revMap(dst, src);
         return dst;
     }
+
+    @Nonnull
+    @Override
+    public String toString() {
+        return Arrays.toString(mappings);
+    }
 }

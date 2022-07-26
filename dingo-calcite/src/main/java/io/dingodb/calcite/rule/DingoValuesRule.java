@@ -18,17 +18,17 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.rel.LogicalDingoValues;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.logical.LogicalValues;
 
 import javax.annotation.Nonnull;
 
 public class DingoValuesRule extends ConverterRule {
     public static final Config DEFAULT_CONFIG = Config.INSTANCE
         .withConversion(
-            LogicalValues.class,
+            LogicalDingoValues.class,
             Convention.NONE,
             DingoConventions.ROOT,
             "DingoValuesRule"
@@ -43,9 +43,9 @@ public class DingoValuesRule extends ConverterRule {
     public RelNode convert(@Nonnull RelNode rel) {
         return new DingoValues(
             rel.getCluster(),
+            rel.getTraitSet().replace(DingoConventions.ROOT),
             rel.getRowType(),
-            ((LogicalValues) rel).getTuples(),
-            rel.getTraitSet().replace(DingoConventions.ROOT)
+            ((LogicalDingoValues) rel).getTuples()
         );
     }
 }

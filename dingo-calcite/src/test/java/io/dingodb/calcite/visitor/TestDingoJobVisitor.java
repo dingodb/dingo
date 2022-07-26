@@ -84,18 +84,18 @@ public class TestDingoJobVisitor {
         );
         values = new DingoValues(
             cluster,
+            cluster.traitSetOf(DingoConventions.ROOT),
             rowType,
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
-            ),
-            cluster.traitSetOf(DingoConventions.ROOT)
+            )
         );
         distributedValues = new DingoDistributedValues(
             cluster,
+            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
             rowType,
             values.getTuples(),
-            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
             table
         );
     }

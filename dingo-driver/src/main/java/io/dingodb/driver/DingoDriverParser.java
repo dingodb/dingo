@@ -43,11 +43,13 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -86,6 +88,24 @@ public final class DingoDriverParser extends DingoParser {
         return columns;
     }
 
+    public static ColumnMetaData.AvaticaType avaticaType(
+        @Nonnull JavaTypeFactory typeFactory,
+        @Nonnull RelDataType type
+    ) {
+        if (type.getSqlTypeName() == SqlTypeName.ARRAY) {
+            return ColumnMetaData.array(
+                avaticaType(typeFactory, Objects.requireNonNull(type.getComponentType())),
+                type.getSqlTypeName().getName(),
+                ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
+            );
+        }
+        return ColumnMetaData.scalar(
+            type.getSqlTypeName().getJdbcOrdinal(),
+            type.getSqlTypeName().getName(),
+            ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
+        );
+    }
+
     @Nonnull
     private static ColumnMetaData metaData(
         @Nonnull JavaTypeFactory typeFactory,
@@ -94,11 +114,7 @@ public final class DingoDriverParser extends DingoParser {
         @Nonnull RelDataType type,
         @Nullable List<String> origins
     ) {
-        final ColumnMetaData.AvaticaType aType = ColumnMetaData.scalar(
-            type.getSqlTypeName().getJdbcOrdinal(),
-            fieldName,
-            ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
-        );
+        ColumnMetaData.AvaticaType avaticaType = avaticaType(typeFactory, type);
         return new ColumnMetaData(
             ordinal,
             false,
@@ -115,11 +131,12 @@ public final class DingoDriverParser extends DingoParser {
             type.getScale(),
             origin(origins, 1),
             null,
-            aType,
+            avaticaType,
             true,
             false,
             false,
-            aType.columnClassName());
+            avaticaType.columnClassName()
+        );
     }
 
     private static @Nullable String origin(@Nullable List<String> origins, int offsetFromEnd) {

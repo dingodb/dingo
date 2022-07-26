@@ -16,21 +16,19 @@
 
 package io.dingodb.calcite.rule;
 
-import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.rel.LogicalDingoValues;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
-import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.rules.SubstitutionRule;
-import org.apache.calcite.rex.RexLiteral;
 import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Value.Enclosing
@@ -42,43 +40,28 @@ public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> i
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         Union union = call.rel(0);
-        ImmutableList.Builder<ImmutableList<RexLiteral>> builder = ImmutableList.builder();
-        List<RelNode> notValues = new LinkedList<>();
-        for (RelNode node : union.getInputs()) {
-            boolean added = false;
-            // Always a `RelSubset`?
-            if (node instanceof RelSubset) {
-                for (RelNode n : ((RelSubset) node).getRels()) {
-                    if (n instanceof Values) {
-                        builder.addAll(((Values) n).getTuples());
-                        added = true;
-                        break;
-                    }
-                }
-            } else if (node instanceof Values) {
-                builder.addAll(((Values) node).getTuples());
-                added = true;
-            }
-            if (!added) {
-                notValues.add(node);
-            }
-        }
-        ImmutableList<ImmutableList<RexLiteral>> tuples = builder.build();
-        if (!tuples.isEmpty()) {
-            LogicalValues values = LogicalValues.create(
-                union.getCluster(),
-                union.getRowType(),
-                tuples
-            );
-            if (notValues.isEmpty()) {
-                call.transformTo(values);
-            } else {
-                notValues.add(values);
-                call.transformTo(LogicalUnion.create(
-                    notValues,
-                    union.all
-                ));
-            }
+        LogicalDingoValues value0 = call.rel(1);
+        LogicalDingoValues value1 = call.rel(2);
+        List<Object[]> tuples = new LinkedList<>(value0.getTuples());
+        tuples.addAll(value1.getTuples());
+        LogicalDingoValues values = new LogicalDingoValues(
+            union.getCluster(),
+            union.getTraitSet(),
+            union.getRowType(),
+            tuples
+        );
+        List<RelNode> otherInputs = union.getInputs().stream()
+            .filter(n -> !((RelSubset) n).getRelList().contains(value0)
+                && !((RelSubset) n).getRelList().contains(value1))
+            .collect(Collectors.toList());
+        if (otherInputs.isEmpty()) {
+            call.transformTo(values);
+        } else {
+            otherInputs.add(values);
+            call.transformTo(LogicalUnion.create(
+                otherInputs,
+                union.all
+            ));
         }
     }
 
@@ -92,7 +75,11 @@ public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> i
         Config DEFAULT = ImmutableDingoUnionValuesRule.Config.builder()
             .description("DingoUnionValuesRule")
             .operandSupplier(b0 ->
-                b0.operand(Union.class).predicate(union -> union.all).anyInputs()
+                b0.operand(LogicalUnion.class).predicate(union -> union.all)
+                    .inputs( // Two values can be combined.
+                        b1 -> b1.operand(LogicalDingoValues.class).noInputs(),
+                        b2 -> b2.operand(LogicalDingoValues.class).noInputs()
+                    )
             )
             .build();
 

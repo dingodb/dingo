@@ -16,19 +16,31 @@
 
 package io.dingodb.common.type.converter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.dingodb.common.type.DataConverter;
+import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.Base64;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Objects;
+import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
 public class JsonConverter implements DataConverter {
     public static final JsonConverter INSTANCE = new JsonConverter();
 
     private JsonConverter() {
+    }
+
+    @Override
+    public boolean isNull(@Nonnull Object value) {
+        return value instanceof NullNode;
     }
 
     @Override
@@ -53,33 +65,73 @@ public class JsonConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@Nonnull Object value) {
-        if (value instanceof Long) {
-            return ((Long) value).intValue();
-        }
-        return (Integer) value;
+        return ((JsonNode) value).intValue();
+    }
+
+    @Override
+    public Long convertLongFrom(@Nonnull Object value) {
+        return ((JsonNode) value).longValue();
+    }
+
+    @Override
+    public Double convertDoubleFrom(@Nonnull Object value) {
+        return ((JsonNode) value).doubleValue();
+    }
+
+    @Override
+    public Boolean convertBooleanFrom(@Nonnull Object value) {
+        return ((JsonNode) value).booleanValue();
+    }
+
+    @Override
+    public String convertStringFrom(@Nonnull Object value) {
+        return ((JsonNode) value).asText();
+    }
+
+    @Override
+    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+        return ((JsonNode) value).decimalValue();
     }
 
     @Override
     public Date convertDateFrom(@Nonnull Object value) {
-        return new Date((long) value);
+        return new Date(((JsonNode) value).longValue());
     }
 
     @Override
     public Time convertTimeFrom(@Nonnull Object value) {
-        return new Time((long) value);
+        return new Time(((JsonNode) value).longValue());
     }
 
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
-        return new Timestamp((long) value);
+        return new Timestamp(((JsonNode) value).longValue());
     }
 
     @Override
     public byte[] convertBinaryFrom(@Nonnull Object value) {
         try {
-            return Base64.decode((String) value);
+            return Base64.decode(((JsonNode) value).asText());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Object[] convertTupleFrom(@Nonnull Object value, @Nonnull DingoType type) {
+        ArrayNode arrayNode = (ArrayNode) value;
+        return IntStream.range(0, arrayNode.size())
+            .mapToObj(i -> Objects.requireNonNull(type.getChild(i)).convertFrom(arrayNode.get(i), this))
+            .toArray(Object[]::new);
+    }
+
+    @Override
+    public Object[] convertArrayFrom(@Nonnull Object value, DingoType elementType) {
+        ArrayNode arrayNode = (ArrayNode) value;
+        Object[] tuple = new Object[arrayNode.size()];
+        for (int i = 0; i < tuple.length; ++i) {
+            tuple[i] = elementType.convertFrom(arrayNode.get(i), this);
+        }
+        return tuple;
     }
 }

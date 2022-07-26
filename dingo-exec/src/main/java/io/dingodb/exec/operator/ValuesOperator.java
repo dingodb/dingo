@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.JsonConverter;
 import lombok.Getter;
@@ -46,14 +48,11 @@ public final class ValuesOperator extends IteratorSourceOperator {
     @Nonnull
     @JsonCreator
     public static ValuesOperator fromJson(
-        @Nonnull @JsonProperty("tuples") List<Object[]> tuples,
+        @JsonDeserialize(using = TuplesDeserializer.class)
+        @Nonnull @JsonProperty("tuples") JsonNode jsonNode,
         @Nonnull @JsonProperty("schema") DingoType schema
     ) {
-        // Recover the real type lost in JSON serialization/deserialization.
-        List<Object[]> newTuples = tuples.stream()
-            .map(i -> (Object[]) schema.convertFrom(i, JsonConverter.INSTANCE))
-            .collect(Collectors.toList());
-        return new ValuesOperator(newTuples, schema);
+        return new ValuesOperator(TuplesDeserializer.convertBySchema(jsonNode, schema), schema);
     }
 
     // This method is only used by json serialization.

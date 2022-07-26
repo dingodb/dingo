@@ -23,6 +23,16 @@ import org.apache.calcite.rel.rules.CoreRules;
 import java.util.List;
 
 public final class DingoRules {
+    public static final LogicalDingoValueRule LOGICAL_DINGO_VALUE_RULE
+        = LogicalDingoValueRule.DEFAULT_CONFIG.toRule(LogicalDingoValueRule.class);
+    // Substitution rules
+    public static final DingoValuesReduceRule DINGO_PROJECT_VALUES_MERGE
+        = DingoValuesReduceRule.Config.PROJECT.toRule();
+    public static final DingoValuesReduceRule DINGO_FILTER_VALUES_MERGE
+        = DingoValuesReduceRule.Config.FILTER.toRule();
+    public static final DingoUnionValuesRule DINGO_UNION_VALUES_RULE
+        = DingoUnionValuesRule.Config.DEFAULT.toRule();
+
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
         = DingoAggregateRule.Config.DEFAULT.toRule();
     public static final DingoAggregate2AggRootRule DINGO_AGGREGATE_SINGLE_RULE
@@ -57,8 +67,6 @@ public final class DingoRules {
         = DingoProjectScanRule.Config.DEFAULT.toRule();
     public static final DingoSortRule DINGO_SORT_RULE
         = DingoSortRule.DEFAULT_CONFIG.toRule(DingoSortRule.class);
-    public static final DingoTableModifyRule DINGO_TABLE_MODIFY_RULE
-        = DingoTableModifyRule.DEFAULT_CONFIG.toRule(DingoTableModifyRule.class);
     public static final DingoToEnumerableRule DINGO_TO_ENUMERABLE_RULE
         = DingoToEnumerableRule.Config.DEFAULT.toRule();
     public static final DingoUnionRule DINGO_UNION_RULE
@@ -68,14 +76,6 @@ public final class DingoRules {
     public static final DingoPartRangeRule DINGO_PART_RANGE_RULE
         = DingoPartRangeRule.Config.DEFAULT.toRule();
 
-    // Transformation rules
-    public static final DingoValuesReduceRule DINGO_PROJECT_VALUES_MERGE
-        = DingoValuesReduceRule.Config.PROJECT.toRule();
-    public static final DingoValuesReduceRule DINGO_FILTER_VALUES_MERGE
-        = DingoValuesReduceRule.Config.FILTER.toRule();
-    public static final DingoUnionValuesRule DINGO_UNION_VALUES_RULE
-        = DingoUnionValuesRule.Config.DEFAULT.toRule();
-
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.PROJECT_REMOVE,
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
@@ -83,6 +83,7 @@ public final class DingoRules {
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.FILTER_INTO_JOIN,
+        LOGICAL_DINGO_VALUE_RULE,
         DINGO_FILTER_VALUES_MERGE,
         DINGO_PROJECT_VALUES_MERGE,
         DINGO_UNION_VALUES_RULE,
@@ -103,7 +104,6 @@ public final class DingoRules {
         DINGO_PROJECT_RULE_ROOT,
         DINGO_PROJECT_SCAN_RULE,
         DINGO_SORT_RULE,
-        DINGO_TABLE_MODIFY_RULE,
         DINGO_UNION_RULE,
         DINGO_VALUES_RULE,
         DINGO_PART_RANGE_RULE

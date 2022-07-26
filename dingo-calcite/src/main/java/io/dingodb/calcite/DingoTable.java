@@ -60,7 +60,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     public RelNode toRel(@Nonnull RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         return new DingoTableScan(
             context.getCluster(),
-            context.getCluster().traitSet().replace(DingoConventions.DINGO),
+            context.getCluster().traitSet(),
             context.getTableHints(),
             relOptTable
         );

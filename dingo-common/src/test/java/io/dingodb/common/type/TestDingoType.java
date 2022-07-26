@@ -16,7 +16,7 @@
 
 package io.dingodb.common.type;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -45,52 +45,46 @@ public class TestDingoType {
     @Nonnull
     public static Stream<Arguments> getParametersForScalar() {
         return Stream.of(
-            arguments(new BooleanType(false), "\"BOOL\""),
-            arguments(new BooleanType(true), "\"BOOL|NULL\""),
-            arguments(new DecimalType(false), "\"DECIMAL\""),
-            arguments(new DecimalType(true), "\"DECIMAL|NULL\""),
-            arguments(new DoubleType(false), "\"DOUBLE\""),
-            arguments(new DoubleType(true), "\"DOUBLE|NULL\""),
-            arguments(new IntegerType(false), "\"INT\""),
-            arguments(new IntegerType(true), "\"INT|NULL\""),
-            arguments(new LongType(false), "\"LONG\""),
-            arguments(new LongType(true), "\"LONG|NULL\""),
-            arguments(new ObjectType(false), "\"OBJECT\""),
-            arguments(new ObjectType(true), "\"OBJECT|NULL\""),
-            arguments(new StringType(false), "\"STRING\""),
-            arguments(new StringType(true), "\"STRING|NULL\""),
-            arguments(new DateType(false), "\"DATE\""),
-            arguments(new DateType(true), "\"DATE|NULL\""),
-            arguments(new TimeType(false), "\"TIME\""),
-            arguments(new TimeType(true), "\"TIME|NULL\""),
-            arguments(new TimestampType(false), "\"TIMESTAMP\""),
-            arguments(new TimestampType(true), "\"TIMESTAMP|NULL\"")
+            arguments(new BinaryType(false)),
+            arguments(new BinaryType(true)),
+            arguments(new BooleanType(false)),
+            arguments(new BooleanType(true)),
+            arguments(new DecimalType(false)),
+            arguments(new DecimalType(true)),
+            arguments(new DoubleType(false)),
+            arguments(new DoubleType(true)),
+            arguments(new IntegerType(false)),
+            arguments(new IntegerType(true)),
+            arguments(new LongType(false)),
+            arguments(new LongType(true)),
+            arguments(new ObjectType(false)),
+            arguments(new ObjectType(true)),
+            arguments(new StringType(false)),
+            arguments(new StringType(true)),
+            arguments(new DateType(false)),
+            arguments(new DateType(true)),
+            arguments(new TimeType(false)),
+            arguments(new TimeType(true)),
+            arguments(new TimestampType(false)),
+            arguments(new TimestampType(true))
         );
     }
 
     @Nonnull
-    public static Stream<Arguments> getParametersForTuple() {
+    public static Stream<Arguments> getParametersForComposite() {
         return Stream.of(
-            arguments(
-                DingoTypeFactory.tuple("INT", "DOUBLE"),
-                "[ \"INT\", \"DOUBLE\" ]"
-            ),
-            arguments(
-                DingoTypeFactory.tuple("INT|NULL", "TIME"),
-                "[ \"INT|NULL\", \"TIME\" ]"
-            )
+            arguments(DingoTypeFactory.tuple("INT", "DOUBLE")),
+            arguments(DingoTypeFactory.tuple("INT|NULL", "TIME")),
+            arguments(DingoTypeFactory.array("INT", false)),
+            arguments(DingoTypeFactory.array("INT", true))
         );
     }
 
     @ParameterizedTest
-    @MethodSource({"getParametersForScalar", "getParametersForTuple"})
-    public void testSerialize(DingoType type, String typeString) throws IOException {
-        assertThat(PARSER.stringify(type)).isEqualTo(typeString);
-    }
-
-    @ParameterizedTest
-    @MethodSource({"getParametersForScalar", "getParametersForTuple"})
-    public void testDeserialize(DingoType type, String typeString) throws JsonProcessingException {
-        assertThat(PARSER.parse(typeString, DingoType.class)).isEqualTo(type);
+    @MethodSource({"getParametersForScalar", "getParametersForComposite"})
+    public void testSerDes(DingoType type) throws IOException {
+        String json = PARSER.stringify(type);
+        DingoType newType = PARSER.parse(json, AbstractDingoType.class);
+        assertThat(newType).isEqualTo(type);
     }
 }

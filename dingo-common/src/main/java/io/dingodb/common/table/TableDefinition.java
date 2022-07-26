@@ -29,7 +29,6 @@ import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.avro.Schema;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ColumnStrategy;
@@ -177,7 +176,7 @@ public class TableDefinition {
         int index = 0;
         for (ColumnDefinition column : columns) {
             if (column.isPrimary()) {
-                keySchema.add(column.getElementType().toDingoSchema(index++));
+                keySchema.add(column.getDingoType().toDingoSchema(index++));
             }
         }
         return keySchema;
@@ -188,7 +187,7 @@ public class TableDefinition {
         int index = 0;
         for (ColumnDefinition column : columns) {
             if (!column.isPrimary()) {
-                valueSchema.add(column.getElementType().toDingoSchema(index++));
+                valueSchema.add(column.getDingoType().toDingoSchema(index++));
             }
         }
         return valueSchema;
@@ -197,24 +196,16 @@ public class TableDefinition {
     public List<DingoSchema> getDingoSchema() {
         List<DingoSchema> schema = new ArrayList<>();
         for (int i = 0; i < columns.size(); i++) {
-            schema.add(columns.get(i).getElementType().toDingoSchema(i));
+            schema.add(columns.get(i).getDingoType().toDingoSchema(i));
         }
         return schema;
-    }
-
-    public Schema getAvroSchemaOfKey() {
-        return getDingoType(true).toAvroSchema();
-    }
-
-    public Schema getAvroSchemaOfValue() {
-        return getDingoType(false).toAvroSchema();
     }
 
     @Nonnull
     public DingoType getDingoType() {
         return DingoTypeFactory.tuple(
             columns.stream()
-                .map(ColumnDefinition::getElementType)
+                .map(ColumnDefinition::getDingoType)
                 .toArray(DingoType[]::new)
         );
     }
@@ -224,7 +215,7 @@ public class TableDefinition {
         return DingoTypeFactory.tuple(
             getColumnMapping(keyOrValue).stream()
                 .mapToObj(columns::get)
-                .map(ColumnDefinition::getElementType)
+                .map(ColumnDefinition::getDingoType)
                 .toArray(DingoType[]::new)
         );
     }

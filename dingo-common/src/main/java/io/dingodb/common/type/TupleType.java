@@ -17,7 +17,8 @@
 package io.dingodb.common.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
@@ -30,15 +31,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
+@JsonTypeName("tuple")
 @EqualsAndHashCode(of = {"fields"}, callSuper = true)
-class TupleType extends AbstractDingoType {
-    @JsonValue
+public class TupleType extends AbstractDingoType {
+    @JsonProperty("fields")
     @Getter
     private final DingoType[] fields;
 
     @JsonCreator
-    public TupleType(DingoType[] fields) {
+    TupleType(
+        @JsonProperty("fields") DingoType[] fields
+    ) {
         super(TypeCode.TUPLE);
         this.fields = fields;
         setElementIds();
@@ -51,12 +56,18 @@ class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public DingoType copy() {
-        return new TupleType(
-            Arrays.stream(fields)
-                .map(DingoType::copy)
-                .toArray(DingoType[]::new)
+    public Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+        Object[] tuple = (Object[]) value;
+        checkFieldCount(tuple);
+        return converter.collectTuple(
+            IntStream.range(0, tuple.length)
+                .mapToObj(i -> fields[i].convertTo(tuple[i], converter))
         );
+    }
+
+    @Override
+    public Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+        return checkFieldCount(converter.convertTupleFrom(value, this));
     }
 
     @Override
@@ -75,6 +86,15 @@ class TupleType extends AbstractDingoType {
         // Must do deep copying here
         mapping.revMap(newElements, fields, DingoType::copy);
         return new TupleType(newElements);
+    }
+
+    @Override
+    public DingoType copy() {
+        return new TupleType(
+            Arrays.stream(fields)
+                .map(DingoType::copy)
+                .toArray(DingoType[]::new)
+        );
     }
 
     @Nonnull
@@ -106,46 +126,22 @@ class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public String format(@Nonnull Object value) {
-        Object[] tuple = (Object[]) value;
-        checkFieldCount(tuple.length);
-        StringBuilder b = new StringBuilder();
-        b.append("{ ");
-        for (int i = 0; i < tuple.length; ++i) {
-            if (i > 0) {
-                b.append(", ");
+    public String format(@Nullable Object value) {
+        if (value != null) {
+            Object[] tuple = (Object[]) value;
+            checkFieldCount(tuple);
+            StringBuilder b = new StringBuilder();
+            b.append("{ ");
+            for (int i = 0; i < tuple.length; ++i) {
+                if (i > 0) {
+                    b.append(", ");
+                }
+                b.append(fields[i].format(tuple[i]));
             }
-            b.append(fields[i].format(tuple[i]));
+            b.append(" }");
+            return b.toString();
         }
-        b.append(" }");
-        return b.toString();
-    }
-
-    @Override
-    public Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
-        Object[] tuple = (Object[]) value;
-        checkFieldCount(tuple.length);
-        return converter.collectTuple(
-            IntStream.range(0, tuple.length)
-                .mapToObj(i -> fields[i].convertTo(tuple[i], converter))
-        );
-    }
-
-    @Override
-    public Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
-        Object[] tuple = (Object[]) value;
-        checkFieldCount(tuple.length);
-        return IntStream.range(0, tuple.length)
-            .mapToObj(i -> fields[i].convertFrom(tuple[i], converter))
-            .toArray(Object[]::new);
-    }
-
-    private void checkFieldCount(int count) {
-        if (count != fieldCount()) {
-            throw new IllegalArgumentException(
-                "Required " + fieldCount() + " elements, but " + count + " provided."
-            );
-        }
+        return NullType.NULL.format(null);
     }
 
     @Override
@@ -160,5 +156,15 @@ class TupleType extends AbstractDingoType {
         }
         b.append(" ]");
         return b.toString();
+    }
+
+    @Nonnull
+    private Object[] checkFieldCount(@Nonnull Object[] tuple) {
+        if (tuple.length == fieldCount()) {
+            return tuple;
+        }
+        throw new IllegalArgumentException(
+            "Required " + fieldCount() + " elements, but " + tuple.length + " provided."
+        );
     }
 }
