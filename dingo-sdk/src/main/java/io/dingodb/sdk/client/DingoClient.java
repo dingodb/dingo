@@ -16,13 +16,16 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.context.FilterContext;
+import io.dingodb.common.operation.filter.Filter;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.common.Column;
+import io.dingodb.common.operation.Column;
 import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Operation;
+import io.dingodb.common.operation.Operation;
 import io.dingodb.sdk.common.Record;
-import io.dingodb.sdk.common.Value;
+import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.operation.ContextForClient;
 import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
@@ -30,8 +33,10 @@ import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -264,7 +269,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, null, null));
+            new ContextForClient(keyList, Collections.emptyList(), null, null));
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -277,7 +282,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, recordList, null));
+            new ContextForClient(keyList, Collections.emptyList(), recordList, null));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -289,7 +294,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, null, null));
+            new ContextForClient(keyList, Collections.emptyList(),null, null));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -297,95 +302,125 @@ public class DingoClient {
         return true;
     }
 
-    public final void add(Key key, Column... columns) {
+    public final List<ExecutiveResult> add(@Nonnull Key start, @Nonnull Column... columns) {
+        return add(start, null, columns);
+    }
+
+    public final List<ExecutiveResult> add(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return Arrays.asList(new ExecutiveResult(null, false));
+        }
         Operation operation = Operation.add(columns);
         ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (result.getStatus() != true) {
-            log.error("add operation failed, key:{}, columns:{}", key, columns);
-        }
-        return;
+        return storeOpUtils.doOperation(start.getTable(), contextForClient);
     }
 
-    public final Record max(Key key, Column... columns) {
+    public final List<ExecutiveResult> max(@Nonnull Key start, @Nonnull Column... columns) {
+        return max(start, null, columns);
+    }
+
+    public final List<ExecutiveResult> max(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.max(columns);
         ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return storeOpUtils.doOperation(start.getTable(), contextForClient);
     }
 
-    public final Record min(Key key, Column... columns) {
+    public final List<ExecutiveResult> min(@Nonnull Key start, @Nonnull Column... columns) {
+        return min(start, null, columns);
+    }
+
+    public final List<ExecutiveResult> min(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.min(columns);
         ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return storeOpUtils.doOperation(start.getTable(), contextForClient);
     }
 
-    public final Record sum(Key key, Column... columns) {
+    public final List<ExecutiveResult> sum(@Nonnull Key start, @Nonnull Column... columns) {
+        return sum(start, null, null, columns);
+    }
+
+    // todo modify filter
+    public final List<ExecutiveResult> sum(@Nonnull Key start, Key end, FilterContext context, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.sum(columns);
+        operation.operationContext.filterContext(context);
         ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
-    public final void append(Key key, Column... columns) {
+    public final List<ExecutiveResult> count(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
+        Operation operation = Operation.count(columns);
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(start),
+            Arrays.asList(end),
+            null,
+            Arrays.asList(operation)
+        );
+
+        return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
+    }
+
+    public final List<ExecutiveResult> append(@Nonnull Key key, @Nonnull Column... columns) {
         Operation operation = Operation.append(columns);
         ContextForClient contextForClient = new ContextForClient(
             Arrays.asList(key),
+            Collections.emptyList(),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (!result.getStatus()) {
-            log.error("append operation failed, key:{}, columns:{}", key, columns);
-        }
+
+        return storeOpUtils.doOperation(key.getTable().toUpperCase(), contextForClient);
     }
 
-    public final void replace(Key key, Column... columns) {
+    public final List<ExecutiveResult> replace(@Nonnull Key key, @Nonnull Column... columns) {
         Operation operation = Operation.replace(columns);
         ContextForClient contextForClient = new ContextForClient(
             Arrays.asList(key),
+            Collections.emptyList(),
             null,
             Arrays.asList(operation)
         );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (!result.getStatus()) {
-            log.error("append operation failed, key:{}, columns:{}", key, columns);
-        }
+        return storeOpUtils.doOperation(key.getTable().toUpperCase(), contextForClient);
+    }
+
+    public final List<ExecutiveResult> operate(Key start, List<Operation> operations) {
+        return operate(start, null, operations);
     }
 
     /**
@@ -394,18 +429,16 @@ public class DingoClient {
      *     Operation and ListOperation, MapOperation can be performed in same call.
      *</p>
      *
-     * @param key unique record identifier
+     * @param start unique record identifier
      * @param operations database operations to perform
      * @return .
      */
-    public final Record operate(Key key, List<Operation> operations) {
-        /*operations.stream()
-            .map(op -> op.operationType.executive().execute(null, op.context));*/
-
-        return null;
-    }
-
-    public final Record updateCol(Key key, Column... column) {
-        return null;
+    public final List<ExecutiveResult> operate(Key start, Key end, List<Operation> operations) {
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
+            null,
+            operations);
+        return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 }

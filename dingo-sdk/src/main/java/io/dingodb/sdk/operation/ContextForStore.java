@@ -26,7 +26,8 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public final class ContextForStore {
-    private final List<byte[]> keyListInBytes;
+    private final List<byte[]> startKeyListInBytes;
+    private final List<byte[]> endKeyListInBytes;
     private final List<KeyValue> recordList;
     private final List<byte[]> operationListInBytes;
 

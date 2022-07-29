@@ -36,6 +36,15 @@ public class ComputeUpdateOperation implements IStoreOperation {
 
     @Override
     public ResultForStore doOperation(ExecutorApi executorApi, CommonId tableId, ContextForStore paramContext) {
+        try {
+            if (paramContext == null || paramContext.getStartKeyListInBytes().size() < 1
+                || paramContext.getOperationListInBytes().isEmpty()) {
+                log.error("Parameters is null || table:{} has non key columns || compute operation is null", tableId);
+            }
+
+        } catch (Exception e) {
+
+        }
         return null;
     }
 }

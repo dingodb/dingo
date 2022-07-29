@@ -16,14 +16,14 @@
 
 package io.dingodb.raft.kv.storage;
 
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.operation.Operation;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.StackTraces;
 import io.dingodb.common.util.Utils;
 import io.dingodb.raft.kv.Constants;
 import io.dingodb.raft.util.BytesUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -51,12 +51,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.common.codec.PrimitiveCodec.readZigZagInt;
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.raft.storage.impl.RocksDBLogStore.createColumnFamilyOptions;
 
@@ -268,10 +268,49 @@ public class RocksRawKVStore implements RawKVStore {
     }
 
     @Override
-    public byte[] compute(byte[] key, byte[] computes) {
-        // todo The field type in the table is converted to ComputeNumber
-        // compute.type.compute(ComputeLong.of(col), ComputeLong.of(compute.columns[0].value)).value to table
-        return new byte[0];
+    public boolean compute(byte[] start, byte[] end, byte[] op) {
+        Operation operation = ProtostuffCodec.read(op);
+        try (ReadOptions readOptions = new ReadOptions()) {
+            try (Snapshot snapshot = this.db.getSnapshot()) {
+                readOptions.setSnapshot(snapshot);
+                ByteArrayEntryIterator entryIterator = new ByteArrayEntryIterator(
+                    db.newIterator(readOptions), start, end, true, false);
+
+                Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
+
+                List<KeyValue> result = (List<KeyValue>) operation.operationType.executive().execute(
+                    operation.operationContext, iterator);
+
+                result.forEach(kv -> {
+                    try {
+                        db.put(kv.getKey(), kv.getValue());
+                    } catch (RocksDBException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                return true;
+            }
+        }
+    }
+
+    private class KeyValueIterator implements Iterator<KeyValue> {
+
+        protected Iterator<ByteArrayEntry> iterator;
+
+        public KeyValueIterator(Iterator<ByteArrayEntry> iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public KeyValue next() {
+            ByteArrayEntry entry = iterator.next();
+            return new KeyValue(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override

@@ -18,6 +18,8 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.Operation;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.DingoKeyValueCodec;
@@ -44,12 +46,55 @@ public class StoreOperationUtils {
 
     private static Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
     private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
+    private TableDefinition tableDefinition;
     private DingoConnection connection;
     private int retryTimes;
 
     public StoreOperationUtils(DingoConnection connection, int retryTimes) {
         this.connection = connection;
         this.retryTimes = retryTimes;
+    }
+
+    public List<ExecutiveResult> doOperation(String tableName,
+                                             ContextForClient storeParameters) {
+        RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
+        if (routeTable == null) {
+            log.error("table {} not found when do operation", tableName);
+            return null;
+        }
+
+        boolean isSuccess = false;
+        int retryTimes = this.retryTimes;
+        List<ExecutiveResult> results = new ArrayList<>();
+        do {
+            try {
+                KeyValueCodec codec = routeTable.getCodec();
+                ContextForStore storeContext = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
+                Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor =
+                    groupKeysByExecutor(null, tableName, storeContext);
+
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, ContextForStore> entry : keys2Executor.entrySet()) {
+                    byte[] startKeyBytes = entry.getValue().getStartKeyListInBytes().get(0);
+                    ExecutorApi executorApi = getExecutor(tableName, startKeyBytes);
+
+                    if (storeParameters.getOperationList() != null) {
+                        for (Operation operation : storeParameters.getOperationList()) {
+                            executorApi.addLuajFunction(operation.operationContext.filter.getFunction());
+                        }
+                    }
+                    List<ExecutiveResult> executiveResults = executorApi.operator(
+                        routeTable.getTableId(),
+                        entry.getValue().getStartKeyListInBytes(),
+                        entry.getValue().getEndKeyListInBytes(),
+                        entry.getValue().getOperationListInBytes());
+                    results.addAll(executiveResults);
+                }
+                isSuccess = true;
+            } catch (Exception e) {
+                log.error("operation fail.", e);
+            }
+        } while (!isSuccess && --retryTimes > 0);
+        return results;
     }
 
     public ResultForClient doOperation(StoreOperationType type,
@@ -69,14 +114,14 @@ public class StoreOperationUtils {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
-                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec);
+                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor =
                     groupKeysByExecutor(type, tableName, context4Store);
 
                 List<KeyValue> keyValueList = new ArrayList<>();
                 // FIXME: will be execute in parallel(Huzx)
                 for (Map.Entry<ByteArrayUtils.ComparableByteArray, ContextForStore> entry : keys2Executor.entrySet()) {
-                    byte[] startKeyInBytes = entry.getValue().getKeyListInBytes().get(0);
+                    byte[] startKeyInBytes = entry.getValue().getStartKeyListInBytes().get(0);
                     ExecutorApi executorApi = getExecutor(tableName, startKeyInBytes);
                     ResultForStore subResult = storeOperation.doOperation(
                         executorApi, routeTable.getTableId(), entry.getValue());
@@ -125,8 +170,8 @@ public class StoreOperationUtils {
     private Map<ByteArrayUtils.ComparableByteArray, ContextForStore> groupKeysByExecutor(
         StoreOperationType type, String tableName, ContextForStore wholeContext) {
         Map<ByteArrayUtils.ComparableByteArray, List<byte[]>> keyListByExecutor = new TreeMap<>();
-        for (int index = 0; index < wholeContext.getKeyListInBytes().size(); index++) {
-            byte[] keyInBytes = wholeContext.getKeyListInBytes().get(index);
+        for (int index = 0; index < wholeContext.getStartKeyListInBytes().size(); index++) {
+            byte[] keyInBytes = wholeContext.getStartKeyListInBytes().get(index);
             ByteArrayUtils.ComparableByteArray startKeyOfPart = getPartitionStartKey(tableName, keyInBytes);
             if (startKeyOfPart == null) {
                 log.error("Cannot find partition, table {} key:{} not found when do operation:{}",
@@ -154,6 +199,7 @@ public class StoreOperationUtils {
             }
             ContextForStore subStoreContext = new ContextForStore(
                 keys,
+                wholeContext.getEndKeyListInBytes(),
                 records,
                 wholeContext.getOperationListInBytes());
             contextByExecutor.put(partitionStartKey, subStoreContext);
@@ -176,15 +222,15 @@ public class StoreOperationUtils {
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
             CommonId tableId = metaClient.getTableId(tableName);
-            TableDefinition tableDef = metaClient.getTableDefinition(tableName);
-            if (tableDef == null) {
+            tableDefinition = metaClient.getTableDefinition(tableName);
+            if (tableDefinition == null) {
                 log.error("Cannot find table:{} defination from meta", tableName);
                 return null;
             }
-            tableDefinitionInCache.put(tableName, tableDef);
+            tableDefinitionInCache.put(tableName, tableDefinition);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
-            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDef.getDingoType(), tableDef.getKeyMapping());
-            RangeStrategy rangeStrategy = new RangeStrategy(tableDef, partitions.navigableKeySet());
+            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+            RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
             TreeMap<ByteArrayUtils.ComparableByteArray, ExecutorApi> partitionExecutor = new TreeMap<>();
             routeTable = new RouteTable(
                 tableName,

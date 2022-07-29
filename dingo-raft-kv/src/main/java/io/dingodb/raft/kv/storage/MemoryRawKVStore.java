@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -157,8 +156,8 @@ public class MemoryRawKVStore implements RawKVStore {
     }
 
     @Override
-    public byte[] compute(byte[] key, byte[] computes) {
-        return null;
+    public boolean compute(byte[] startKey, byte[] endkey, byte[] computes) {
+        return true;
     }
 
     @Override

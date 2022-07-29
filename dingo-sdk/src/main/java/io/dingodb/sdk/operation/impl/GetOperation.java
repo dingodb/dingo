@@ -44,11 +44,11 @@ public class GetOperation implements IStoreOperation {
                                       ContextForStore parameters) {
         try {
             if (parameters == null
-                || parameters.getKeyListInBytes().size() < 1) {
+                || parameters.getStartKeyListInBytes().size() < 1) {
                 log.error("Parameters is null || table:{} has non key columns", tableId);
                 return new ResultForStore(false, "Invalid parameters for get operation");
             }
-            List<byte[]> keyList = parameters.getKeyListInBytes();
+            List<byte[]> keyList = parameters.getStartKeyListInBytes();
             List<KeyValue> recordList = executorApi.getKeyValueByPrimaryKeys(tableId, keyList);
             return new ResultForStore(true, "OK", recordList);
         } catch (Exception e) {

@@ -148,10 +148,11 @@ public class RaftRawKVOperation {
             .build();
     }
 
-    public static RaftRawKVOperation compute(final byte[] key, final byte[] operations) {
+    public static RaftRawKVOperation compute(final byte[] start, final byte[] end, final byte[] operations) {
         return RaftRawKVOperation.builder()
-            .key(key)
+            .key(start)
             .op(COMPUTE)
+            .extKey(end)
             .ext1(operations)
             .build();
     }

@@ -36,6 +36,7 @@ dependencies {
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-server:dingo-server-driver-proxy")
+    implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
 
 }
 
