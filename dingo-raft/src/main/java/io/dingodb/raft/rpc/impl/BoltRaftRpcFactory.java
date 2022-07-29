@@ -72,16 +72,6 @@ public class BoltRaftRpcFactory implements RaftRpcFactory {
     }
 
     @Override
-    public ConfigHelper<RpcClient> defaultJRaftClientConfigHelper(final RpcOptions opts) {
-        return ins -> {
-            final BoltRpcClient client = (BoltRpcClient) ins;
-            final InvokeContext ctx = new InvokeContext();
-            ctx.put(InvokeContext.BOLT_CRC_SWITCH, opts.isEnableRpcChecksum());
-            client.setDefaultInvokeCtx(ctx);
-        };
-    }
-
-    @Override
     public void ensurePipeline() {
         // enable `bolt.rpc.dispatch-msg-list-in-default-executor` system property
         if (RpcConfigManager.dispatch_msg_list_in_default_executor()) {

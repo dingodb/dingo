@@ -179,7 +179,7 @@ public final class Utils {
             closeable.close();
             return 0;
         } catch (final IOException e) {
-            LOG.error("Fail to close", e);
+            LOG.error("Fail to close {}.", closeable, e);
             return RaftError.EIO.getNumber();
         }
     }
@@ -326,7 +326,7 @@ public final class Utils {
             if (e instanceof AtomicMoveNotSupportedException) {
                 LOG.warn("Atomic move not supported, falling back to non-atomic move, error: {}.", e.getMessage());
             } else {
-                LOG.warn("Unable to move atomically, falling back to non-atomic move, error: {}.", e.getMessage());
+                LOG.error("Unable to move atomically, falling back to non-atomic move, error: {}.", e.getMessage());
             }
 
             if (target.exists()) {
@@ -337,13 +337,13 @@ public final class Utils {
                 success = Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING) != null;
             } catch (final IOException e1) {
                 e1.addSuppressed(e);
-                LOG.warn("Unable to move {} to {}. Attempting to delete {} and abandoning.", sourcePath, targetPath,
-                    sourcePath);
+                LOG.error("Unable to move {} to {}. Attempting to delete {} and abandoning.", sourcePath, targetPath,
+                    sourcePath, e1);
                 try {
                     Files.deleteIfExists(sourcePath);
                 } catch (final IOException e2) {
                     e2.addSuppressed(e1);
-                    LOG.warn("Unable to delete {}, good bye then!", sourcePath);
+                    LOG.error("Unable to delete {}, good bye then!", sourcePath, e2);
                     throw e2;
                 }
 
