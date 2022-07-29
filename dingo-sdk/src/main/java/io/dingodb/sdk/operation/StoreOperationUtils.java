@@ -40,6 +40,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 @Slf4j
 public class StoreOperationUtils {
@@ -47,7 +48,7 @@ public class StoreOperationUtils {
     private static Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
     private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
 
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private DingoConnection connection;
     private int retryTimes;
 
@@ -56,8 +57,9 @@ public class StoreOperationUtils {
         this.retryTimes = retryTimes;
     }
 
-    private List<KeyValue> parallismCompute(Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor) {
-        return null;
+    public void shutdown() {
+        executorService.shutdown();
+        clearTableDefinitionInCache();
     }
 
     public ResultForClient doOperation(StoreOperationType type,
@@ -78,25 +80,38 @@ public class StoreOperationUtils {
                 KeyValueCodec codec = routeTable.getCodec();
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
                 ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec);
-                Map<ByteArrayUtils.ComparableByteArray, ContextForStore> keys2Executor =
-                    groupKeysByExecutor(type, tableName, context4Store);
+                Map<String, ContextForStore> keys2Executor = groupKeysByExecutor(
+                    routeTable,
+                    type,
+                    tableName,
+                    context4Store);
+
+                List<Future<ResultForStore>> futureArrayList = new ArrayList<>();
+                for (Map.Entry<String, ContextForStore> entry : keys2Executor.entrySet()) {
+                    String leaderAddress = entry.getKey();
+                    ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+                    futureArrayList.add(
+                        executorService.submit(
+                            new CallableTask(
+                                executorApi,
+                                storeOperation,
+                                routeTable.getTableId(),
+                                entry.getValue()
+                            )
+                        )
+                    );
+                }
 
                 List<KeyValue> keyValueList = new ArrayList<>();
-                // FIXME: will be execute in parallel(Huzx)
-                for (Map.Entry<ByteArrayUtils.ComparableByteArray, ContextForStore> entry : keys2Executor.entrySet()) {
-                    byte[] startKeyInBytes = entry.getValue().getKeyListInBytes().get(0);
-                    ExecutorApi executorApi = getExecutor(tableName, startKeyInBytes);
-                    ResultForStore subResult = storeOperation.doOperation(
-                        executorApi, routeTable.getTableId(), entry.getValue());
-                    isSuccess = subResult.getStatus();
+                for (Future<ResultForStore> subFutureResult: futureArrayList) {
+                    ResultForStore subResult4Store = subFutureResult.get();
+                    isSuccess = subResult4Store.getStatus();
                     if (!isSuccess) {
-                        errorMsg = subResult.getErrorMessage();
-                        log.error("do operation:{} failed, table:{}, executor:{}, result:{}",
-                            type, tableName, executorApi, subResult);
-                    } else {
-                        if (subResult.getRecords() != null) {
-                            keyValueList.addAll(subResult.getRecords());
-                        }
+                        errorMsg = subResult4Store.getErrorMessage();
+                        throw new DingoClientException(errorMsg);
+                    }
+                    if (subResult4Store.getRecords() != null && subResult4Store.getRecords().size() > 0) {
+                        keyValueList.addAll(subResult4Store.getRecords());
                     }
                 }
                 ResultForStore result4Store = new ResultForStore(isSuccess, errorMsg, keyValueList);
@@ -120,6 +135,10 @@ public class StoreOperationUtils {
             }
         }
         while (!isSuccess && --retryTimes > 0);
+
+        if (retryTimes == 0 || !isSuccess) {
+            log.error("Execute operation:{} on table:{} failed, retry times:{}", type, tableName, retryTimes);
+        }
         return result4Client;
     }
 
@@ -130,13 +149,16 @@ public class StoreOperationUtils {
      * @param wholeContext  all records contains key and other columns.
      * @return Executor(StartKey of Partition only used for group by)->ContextForStore
      */
-    private Map<ByteArrayUtils.ComparableByteArray, ContextForStore> groupKeysByExecutor(
-        StoreOperationType type, String tableName, ContextForStore wholeContext) {
-        Map<ByteArrayUtils.ComparableByteArray, List<byte[]>> keyListByExecutor = new TreeMap<>();
+    private Map<String, ContextForStore> groupKeysByExecutor(
+        RouteTable routeTable,
+        StoreOperationType type,
+        String tableName,
+        ContextForStore wholeContext) {
+        Map<String, List<byte[]>> keyListByExecutor = new TreeMap<>();
         for (int index = 0; index < wholeContext.getKeyListInBytes().size(); index++) {
             byte[] keyInBytes = wholeContext.getKeyListInBytes().get(index);
-            ByteArrayUtils.ComparableByteArray startKeyOfPart = getPartitionStartKey(tableName, keyInBytes);
-            if (startKeyOfPart == null) {
+            String leaderAddress = getLeaderAddressByStartKey(routeTable, keyInBytes);
+            if (leaderAddress == null) {
                 log.error("Cannot find partition, table {} key:{} not found when do operation:{}",
                     tableName,
                     Arrays.toString(keyInBytes),
@@ -144,17 +166,17 @@ public class StoreOperationUtils {
                 throw new DingoClientException("table " + tableName + " key:" + Arrays.toString(keyInBytes)
                     + " not found when do operation:" + type);
             }
-            List<byte[]> keyList = keyListByExecutor.get(startKeyOfPart);
+            List<byte[]> keyList = keyListByExecutor.get(leaderAddress);
             if (keyList == null) {
                 keyList = new java.util.ArrayList<>();
-                keyListByExecutor.put(startKeyOfPart, keyList);
+                keyListByExecutor.put(leaderAddress, keyList);
             }
             keyList.add(keyInBytes);
         }
 
-        Map<ByteArrayUtils.ComparableByteArray, ContextForStore> contextByExecutor = new TreeMap<>();
-        for (Map.Entry<ByteArrayUtils.ComparableByteArray, List<byte[]>> entry : keyListByExecutor.entrySet()) {
-            ByteArrayUtils.ComparableByteArray partitionStartKey = entry.getKey();
+        Map<String, ContextForStore> contextGroupyByExecutor = new TreeMap<>();
+        for (Map.Entry<String, List<byte[]>> entry : keyListByExecutor.entrySet()) {
+            String leaderAddress = entry.getKey();
             List<byte[]> keys = entry.getValue();
             List<KeyValue> records = new java.util.ArrayList<>();
             for (byte[] key : keys) {
@@ -164,13 +186,9 @@ public class StoreOperationUtils {
                 keys,
                 records,
                 wholeContext.getOperationListInBytes());
-            contextByExecutor.put(partitionStartKey, subStoreContext);
-            if (log.isDebugEnabled()) {
-                log.debug("After Group Keys by Executor: subGroup=>keyCnt:{} reocordCnt:{}",
-                    keys.size(), records.size());
-            }
+            contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }
-        return contextByExecutor;
+        return contextGroupyByExecutor;
     }
 
     /**
@@ -179,7 +197,7 @@ public class StoreOperationUtils {
      * @param isRefresh if isRefresh == true, then refresh route table
      * @return RouteTable about table partition leaders and replicas on hosts.
      */
-    public RouteTable getAndRefreshRouteTable(final String tableName, boolean isRefresh) {
+    public synchronized RouteTable getAndRefreshRouteTable(final String tableName, boolean isRefresh) {
         if (isRefresh) {
             dingoRouteTables.remove(tableName);
         }
@@ -196,15 +214,14 @@ public class StoreOperationUtils {
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
             KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDef.getDingoType(), tableDef.getKeyMapping());
             RangeStrategy rangeStrategy = new RangeStrategy(tableDef, partitions.navigableKeySet());
-            TreeMap<ByteArrayUtils.ComparableByteArray, ExecutorApi> partitionExecutor = new TreeMap<>();
             routeTable = new RouteTable(
                 tableName,
                 tableId,
                 keyValueCodec,
                 partitions,
-                partitionExecutor,
                 rangeStrategy);
             dingoRouteTables.put(tableName, routeTable);
+            log.info("Refresh route table:{}, tableDef:{}", tableName, tableDef);
         }
         return routeTable;
     }
@@ -260,30 +277,17 @@ public class StoreOperationUtils {
         return tableDefinitionInCache;
     }
 
-    public synchronized void clearTableDefinitionInCache() {
+    private synchronized void clearTableDefinitionInCache() {
         tableDefinitionInCache.clear();
         return;
     }
 
-    private synchronized ExecutorApi getExecutor(final String tableName, byte[] keyInBytes) {
-        RouteTable executionTopology = getAndRefreshRouteTable(tableName, false);
-        if (executionTopology == null) {
-            log.warn("Cannot find execution topology for table:{}", tableName);
-            return null;
-        }
-        ExecutorApi executorApi = executionTopology.getOrUpdateLocationByKey(
-            connection.getApiRegistry(),
-            keyInBytes);
+    private synchronized ExecutorApi getExecutor(final RouteTable routeTable, String leaderAddress) {
+        ExecutorApi executorApi = routeTable.getLeaderAddress(connection.getApiRegistry(), leaderAddress);
         return executorApi;
     }
 
-    private synchronized ByteArrayUtils.ComparableByteArray getPartitionStartKey(final String tableName,
-                                                                                 byte[] keyInBytes) {
-        RouteTable executionTopology = getAndRefreshRouteTable(tableName, false);
-        if (executionTopology == null) {
-            log.warn("Cannot find execution topology for table:{}", tableName);
-            return null;
-        }
-        return executionTopology.getStartPartitionKey(connection.getApiRegistry(), keyInBytes);
+    private synchronized String getLeaderAddressByStartKey(final RouteTable routeTable, byte[] keyInBytes) {
+        return routeTable.getStartPartitionKey(connection.getApiRegistry(), keyInBytes);
     }
 }

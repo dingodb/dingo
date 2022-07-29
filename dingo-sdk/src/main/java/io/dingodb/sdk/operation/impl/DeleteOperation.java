@@ -51,7 +51,7 @@ public class DeleteOperation implements IStoreOperation {
             boolean result = executorApi.delete(tableId, keyList);
             return new ResultForStore(result, "OK");
         } catch (Exception e) {
-            log.error("insert KeyValue error, tableId:{}, exception:{}", tableId, e.toString(), e);
+            log.error("delete KeyValue error, tableId:{}, exception:{}", tableId, e.toString(), e);
             throw e;
         }
     }

@@ -124,8 +124,8 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         if (node.isLeader()) {
             Map<Location, PeerId> peers = node.listPeers().stream()
                 .collect(Collectors.toMap(PeerId::toLocation, Function.identity()));
-            if (part.getLeader() != null &&
-                (!part.getLeader().getHost().equals(DingoConfiguration.host())
+            if (part.getLeader() != null
+                && (!part.getLeader().getHost().equals(DingoConfiguration.host())
                     || part.getLeader().getRaftPort() != DingoConfiguration.raftPort())) {
                 log.info("Transfer leader to [{}].", part.getLeader().getUrl());
                 node.transferLeadershipTo(PeerId.of(part.getLeader()));

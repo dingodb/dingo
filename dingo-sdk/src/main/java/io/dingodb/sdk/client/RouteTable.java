@@ -37,27 +37,22 @@ public class RouteTable {
     @Getter
     private KeyValueCodec codec;
     private NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitionRange;
-    private NavigableMap<ByteArrayUtils.ComparableByteArray, ExecutorApi> partitionLocation;
     private PartitionStrategy<ByteArrayUtils.ComparableByteArray> partitionStrategy;
 
-    public ExecutorApi getOrUpdateLocationByKey(ApiRegistry apiRegistry,
-                                                byte[] keyInBytes) {
-        ByteArrayUtils.ComparableByteArray byteArray = partitionStrategy.calcPartId(keyInBytes);
-        ExecutorApi executorApi = partitionLocation.get(byteArray);
-        if (executorApi != null) {
-            return executorApi;
-        }
-        Part part = partitionRange.get(byteArray);
+    public ExecutorApi getLeaderAddress(ApiRegistry apiRegistry,
+                                        String leaderAddress) {
+
+        String hostName = leaderAddress.split(":")[0];
+        String port = leaderAddress.split(":")[1];
         ExecutorApi executor = apiRegistry.proxy(
             ExecutorApi.class,
-            () -> new Location(part.getLeader().getHost(), part.getLeader().getPort()));
-        partitionLocation.put(byteArray, executor);
+            () -> new Location(hostName, Integer.valueOf(port)));
         return executor;
     }
 
-    public ByteArrayUtils.ComparableByteArray getStartPartitionKey(ApiRegistry apiRegistry, byte[] keyInBytes) {
+    public String getStartPartitionKey(ApiRegistry apiRegistry, byte[] keyInBytes) {
         ByteArrayUtils.ComparableByteArray byteArray = partitionStrategy.calcPartId(keyInBytes);
         Part part = partitionRange.get(byteArray);
-        return new ByteArrayUtils.ComparableByteArray(part.getStartKey());
+        return part.getLeader().getHost() + ":" + part.getLeader().getPort();
     }
 }

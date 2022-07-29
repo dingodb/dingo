@@ -53,7 +53,7 @@ public class PutOperation implements IStoreOperation {
             boolean isSuccess = executorApi.upsertKeyValue(tableId, keyValueList);
             return new ResultForStore(isSuccess, "OK");
         } catch (Exception e) {
-            log.error("delete table:{} by KeyValue catch exception:{}", tableId, e.toString(), e);
+            log.error("put table:{} by KeyValue catch exception:{}", tableId, e.toString(), e);
             throw e;
         }
     }
