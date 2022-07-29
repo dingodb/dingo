@@ -80,7 +80,7 @@ public class RocksStoreInstance implements StoreInstance {
     @Override
     public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
         long count = 0;
-        List<byte[]> keyList = new ArrayList<>(1024);
+        List<byte[]> keyList = new ArrayList<>();
         try (ReadOptions readOptions = new ReadOptions()) {
             try (Snapshot snapshot = this.db.getSnapshot()) {
                 readOptions.setSnapshot(snapshot);

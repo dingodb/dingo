@@ -30,6 +30,7 @@ import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.ConfigOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.EnvOptions;
+import org.rocksdb.FlushOptions;
 import org.rocksdb.Options;
 import org.rocksdb.OptionsUtil;
 import org.rocksdb.ReadOptions;
@@ -246,6 +247,15 @@ public class RocksRawKVStore implements RawKVStore {
     @Override
     public long count(byte[] startKey, byte[] endKey) {
         long count = 0;
+
+        /*
+        try {
+            db.flush(new FlushOptions());
+        } catch (RocksDBException e) {
+            log.warn("RocksRawKVStore, flush exception, {}", e);
+        }
+        */
+
         try (
             ReadOptions readOptions = new ReadOptions();
             Snapshot snapshot = this.db.getSnapshot();
