@@ -97,7 +97,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getElementType().toDingoSchema(0)
+            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)
         ));
         if (rel.getFilter().getKind() == SqlKind.AND) {
             RexCall filter = (RexCall) rel.getFilter();

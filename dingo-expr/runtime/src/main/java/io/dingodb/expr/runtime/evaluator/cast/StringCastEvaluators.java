@@ -83,7 +83,7 @@ final class StringCastEvaluators {
 
     @Nonnull
     static String stringCast(@Nonnull Timestamp value) {
-        return DateTimeUtils.dateTimeFormat(value);
+        return DateTimeUtils.timestampFormat(value);
     }
 
     @Nonnull

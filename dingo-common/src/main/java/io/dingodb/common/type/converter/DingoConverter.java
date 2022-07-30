@@ -17,22 +17,16 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
-import io.dingodb.common.type.DingoType;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.util.Utf8;
 
-import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
 import javax.annotation.Nonnull;
 
-public class AvroConverter implements DataConverter {
-    public static final AvroConverter INSTANCE = new AvroConverter();
+public class DingoConverter implements DataConverter {
+    public static final DingoConverter INSTANCE = new DingoConverter();
 
-    private AvroConverter() {
+    private DingoConverter() {
     }
 
     @Override
@@ -51,24 +45,6 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
-    public ByteBuffer convert(@Nonnull byte[] value) {
-        return ByteBuffer.wrap(value);
-    }
-
-    @Override
-    public List<Object> convert(@Nonnull Object[] value) {
-        return Arrays.asList(value);
-    }
-
-    @Override
-    public String convertStringFrom(@Nonnull Object value) {
-        if (value instanceof Utf8) {
-            return value.toString();
-        }
-        return (String) value;
-    }
-
-    @Override
     public Date convertDateFrom(@Nonnull Object value) {
         return new Date((long) value);
     }
@@ -81,18 +57,5 @@ public class AvroConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         return new Timestamp((long) value);
-    }
-
-    @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
-        return ((ByteBuffer) value).array();
-    }
-
-    @Override
-    public Object[] convertArrayFrom(@Nonnull Object value, DingoType elementType) {
-        GenericData.Array<?> array = (GenericData.Array<?>) value;
-        return array.stream()
-            .map(o -> elementType.convertFrom(o, this))
-            .toArray(Object[]::new);
     }
 }

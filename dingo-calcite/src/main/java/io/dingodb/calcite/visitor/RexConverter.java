@@ -36,12 +36,12 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.ArrayList;
@@ -64,8 +64,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     }
 
     @Nullable
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nullable DingoType type) {
-        if (!rexLiteral.isNull() && type != null) {
+    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nonnull DingoType type) {
+        if (!rexLiteral.isNull()) {
             // `rexLiteral.getType()` is not always the required type.
             return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
         }
@@ -82,23 +82,6 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return IntStream.range(0, values.size())
             .mapToObj(i -> convertFromRexLiteral(values.get(i), Objects.requireNonNull(type.getChild(i))))
             .toArray(Object[]::new);
-    }
-
-    public static RexLiteral convertToRexLiteral(
-        @Nullable Object value,
-        @Nonnull RexBuilder rexBuilder,
-        @Nonnull RelDataType targetType
-    ) {
-        if (value != null) {
-            DingoType type = DingoTypeFactory.fromRelDataType(targetType);
-            if (type != null) {
-                return rexBuilder.makeLiteral(
-                    type.convertTo(value, RexLiteralConverter.INSTANCE),
-                    targetType
-                );
-            }
-        }
-        return rexBuilder.makeNullLiteral(targetType);
     }
 
     public static Expr convert(@Nonnull RexNode rexNode) {
@@ -156,7 +139,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Override
     public Expr visitCall(@Nonnull RexCall call) {
         Op op;
-        switch (call.getKind()) {
+        SqlKind kind = call.getKind();
+        switch (kind) {
             case PLUS_PREFIX:
                 op = OpFactory.getUnary(DingoExprParser.ADD);
                 break;
@@ -193,35 +177,22 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case NOT_EQUALS:
                 op = OpFactory.getBinary(DingoExprParser.NE);
                 break;
-            case AND:
-                op = FunFactory.INS.getFun("and");
-                break;
-            case OR:
-                op = FunFactory.INS.getFun("or");
-                break;
             case NOT:
                 op = OpFactory.getUnary(DingoExprParser.NOT);
                 break;
+            case AND:
+            case OR:
             case CASE:
-                op = FunFactory.INS.getFun("case");
-                break;
             case IS_NULL:
-                op = FunFactory.INS.getFun("is_null");
-                break;
             case IS_NOT_NULL:
-                op = FunFactory.INS.getFun("is_not_null");
-                break;
             case IS_TRUE:
-                op = FunFactory.INS.getFun("is_true");
-                break;
             case IS_NOT_TRUE:
-                op = FunFactory.INS.getFun("is_not_true");
-                break;
             case IS_FALSE:
-                op = FunFactory.INS.getFun("is_false");
-                break;
             case IS_NOT_FALSE:
-                op = FunFactory.INS.getFun("is_not_false");
+            case TRIM:
+            case LTRIM:
+            case RTRIM:
+                op = FunFactory.INS.getFun(kind.name());
                 break;
             case CAST:
                 try {
@@ -238,15 +209,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                     throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
                 }
                 break;
-            case TRIM:
-                op = FunFactory.INS.getFun("trim");
-                break;
-            case LTRIM:
-                op = FunFactory.INS.getFun("ltrim");
-                break;
-            case RTRIM:
-                op = FunFactory.INS.getFun("rtrim");
-                break;
+            case ARRAY_VALUE_CONSTRUCTOR:
             case OTHER:
                 if (call.op.getName().equals("||")) {
                     op = FunFactory.INS.getFun("concat");

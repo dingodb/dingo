@@ -18,7 +18,6 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.Range;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;

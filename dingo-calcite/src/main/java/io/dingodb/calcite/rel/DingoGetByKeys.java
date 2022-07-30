@@ -65,7 +65,7 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
 
     @Override
     protected RelDataType deriveRowType() {
-        return table.getRowType();
+        return mapRowType(table.getRowType(), selection);
     }
 
     @Override

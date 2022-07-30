@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.expr.json.runtime.RtSchema;
+import io.dingodb.expr.json.runtime.RtSchemaArray;
 import io.dingodb.expr.json.runtime.RtSchemaLeaf;
 import io.dingodb.expr.json.runtime.RtSchemaTuple;
 import io.dingodb.expr.runtime.TypeCode;
@@ -45,18 +46,15 @@ public final class SchemaArray extends Schema {
             SchemaType type = items.getType();
             switch (type) {
                 case INTEGER:
-                    return new RtSchemaLeaf(TypeCode.LONG_ARRAY);
+                    return new RtSchemaArray(TypeCode.LONG);
                 case NUMBER:
-                    return new RtSchemaLeaf(TypeCode.DOUBLE_ARRAY);
+                    return new RtSchemaArray(TypeCode.DOUBLE);
                 case STRING:
-                    return new RtSchemaLeaf(TypeCode.STRING_ARRAY);
+                    return new RtSchemaArray(TypeCode.STRING);
                 case BOOLEAN:
-                    return new RtSchemaLeaf(TypeCode.BOOL_ARRAY);
-                case OBJECT:
-                    return new RtSchemaLeaf(TypeCode.OBJECT_ARRAY);
-                case ARRAY:
+                    return new RtSchemaArray(TypeCode.BOOL);
                 default:
-                    throw new IllegalArgumentException("Invalid schema type \"" + type + "\".");
+                    return new RtSchemaArray(TypeCode.OBJECT);
             }
         }
         Schema[] schemas = items.getSchemas();

@@ -36,7 +36,7 @@ public class TestProtoStuffCodec {
         students.add(null);
         students.add(stu3);
         School school = new School("abc", students);
-        System.out.println("Before:==> " + school.toString());
+        System.out.println("Before:==> " + school);
 
         byte[] bytes = ProtostuffCodec.write(school);
         School deserialValue = ProtostuffCodec.read(bytes);

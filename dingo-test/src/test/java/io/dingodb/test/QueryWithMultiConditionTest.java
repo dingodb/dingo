@@ -17,10 +17,8 @@
 package io.dingodb.test;
 
 import io.dingodb.common.type.DingoTypeFactory;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 public class QueryWithMultiConditionTest {
     @Test
     public void testCaseWithOutPrimaryKeys() throws Exception {

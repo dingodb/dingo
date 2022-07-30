@@ -37,8 +37,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class DingoTypeFactory {
     private DingoTypeFactory() {
@@ -76,32 +76,59 @@ public final class DingoTypeFactory {
     }
 
     @Nonnull
+    public static AbstractDingoType scalar(@Nonnull String typeString) {
+        String[] v = typeString.split("\\|", 2);
+        boolean nullable = v.length > 1 && v[1].equals(NullType.NULL.toString());
+        return scalar(TypeCode.codeOf(v[0]), nullable);
+    }
+
+    @Nonnull
+    public static TupleType tuple(DingoType[] fields) {
+        return new TupleType(fields);
+    }
+
+    @Nonnull
     public static TupleType tuple(String... types) {
-        return new TupleType(
+        return tuple(
             Arrays.stream(types)
-                .map(AbstractDingoType::scalar)
+                .map(DingoTypeFactory::scalar)
                 .toArray(DingoType[]::new)
         );
     }
 
     @Nonnull
-    public static TupleType tuple(DingoType[] types) {
-        return new TupleType(types);
+    public static ArrayType array(DingoType elementType, boolean nullable) {
+        return new ArrayType(elementType, nullable);
     }
 
-    @Nullable
+    @Nonnull
+    public static ArrayType array(int elementTypeCode, boolean nullable) {
+        return new ArrayType(scalar(elementTypeCode, false), nullable);
+    }
+
+    @Nonnull
+    public static ArrayType array(String type, boolean nullable) {
+        return array(scalar(type), nullable);
+    }
+
+    @Nonnull
     public static DingoType fromRelDataType(@Nonnull RelDataType relDataType) {
         if (!relDataType.isStruct()) {
             SqlTypeName sqlTypeName = relDataType.getSqlTypeName();
-            if (sqlTypeName != SqlTypeName.NULL) {
-                return scalar(
-                    TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
-                    relDataType.isNullable()
-                );
+            switch (sqlTypeName) {
+                case NULL:
+                    return NullType.NULL;
+                case ARRAY:
+                    DingoType elementType = fromRelDataType(Objects.requireNonNull(relDataType.getComponentType()));
+                    return array(elementType, relDataType.isNullable());
+                default:
+                    return scalar(
+                        TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
+                        relDataType.isNullable()
+                    );
             }
-            return null;
         } else {
-            return new TupleType(
+            return tuple(
                 relDataType.getFieldList().stream()
                     .map(RelDataTypeField::getType)
                     .map(DingoTypeFactory::fromRelDataType)
@@ -111,7 +138,28 @@ public final class DingoTypeFactory {
     }
 
     @Nonnull
+    private static DingoType fromAvaticaType(ColumnMetaData.AvaticaType avaticaType) {
+        if (avaticaType instanceof ColumnMetaData.ScalarType) {
+            return scalar(convertSqlTypeId(avaticaType.id), false);
+        } else if (avaticaType instanceof ColumnMetaData.ArrayType) {
+            ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) avaticaType;
+            return array(fromAvaticaType(arrayType.getComponent()), false);
+        } else if (avaticaType instanceof ColumnMetaData.StructType) {
+            ColumnMetaData.StructType structType = (ColumnMetaData.StructType) avaticaType;
+            return fromColumnMetaDataList(structType.columns);
+        }
+        throw new IllegalStateException("Unsupported avatica type \"" + avaticaType + "\".");
+    }
+
+    @Nonnull
     public static DingoType fromColumnMetaData(@Nonnull ColumnMetaData colMeta) {
+        if (colMeta.type.id == Types.ARRAY) {
+            ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
+            return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
+        } else if (colMeta.type.id == Types.STRUCT) {
+            ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
+            return fromColumnMetaDataList(structType.columns);
+        }
         return scalar(convertSqlTypeId(colMeta.type.id), colMeta.nullable != 0);
     }
 

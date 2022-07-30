@@ -16,21 +16,47 @@
 
 package io.dingodb.common.type;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.ObjectType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.List;
 
 @JsonTypeInfo(
-    use = JsonTypeInfo.Id.NONE,
-    defaultImpl = AbstractDingoType.class
+    use = JsonTypeInfo.Id.NAME,
+    property = "type"
 )
-@JsonDeserialize(as = AbstractDingoType.class)
+@JsonSubTypes({
+    @JsonSubTypes.Type(BinaryType.class),
+    @JsonSubTypes.Type(BooleanType.class),
+    @JsonSubTypes.Type(DateType.class),
+    @JsonSubTypes.Type(DecimalType.class),
+    @JsonSubTypes.Type(DoubleType.class),
+    @JsonSubTypes.Type(IntegerType.class),
+    @JsonSubTypes.Type(LongType.class),
+    @JsonSubTypes.Type(ObjectType.class),
+    @JsonSubTypes.Type(StringType.class),
+    @JsonSubTypes.Type(TimestampType.class),
+    @JsonSubTypes.Type(TimeType.class),
+    @JsonSubTypes.Type(ArrayType.class),
+    @JsonSubTypes.Type(NullType.class),
+    @JsonSubTypes.Type(TupleType.class),
+})
 public interface DingoType extends CompileContext {
     void setId(@Nonnull Integer id);
 
@@ -66,6 +92,7 @@ public interface DingoType extends CompileContext {
     List<DingoSchema> toDingoSchemas();
 
     DingoSchema toDingoSchema(int index);
+
     /**
      * Parse string(s) into value(s) of this type. Specially, {@code "NULL"} is parsed to null.
      *
@@ -80,5 +107,5 @@ public interface DingoType extends CompileContext {
      * @param value the data to format
      * @return the formatted {@link String}
      */
-    String format(@Nonnull Object value);
+    String format(@Nullable Object value);
 }

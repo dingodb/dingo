@@ -47,12 +47,6 @@ public final class OrOp extends Op {
 
     @Nonnull
     @Override
-    protected RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtOrOp(rtExprArray);
-    }
-
-    @Nonnull
-    @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         int size = rtExprArray.length;
         try {
@@ -83,5 +77,11 @@ public final class OrOp extends Op {
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtOrOp(rtExprArray);
     }
 }

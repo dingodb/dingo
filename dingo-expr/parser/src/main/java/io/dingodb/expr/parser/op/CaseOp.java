@@ -41,12 +41,6 @@ public final class CaseOp extends Op {
 
     @Nonnull
     @Override
-    protected RtSqlCaseOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtSqlCaseOp(rtExprArray);
-    }
-
-    @Nonnull
-    @Override
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         int size = rtExprArray.length;
         List<RtExpr> nonConstExprs = new ArrayList<>(size);
@@ -74,5 +68,11 @@ public final class CaseOp extends Op {
         } catch (FailGetEvaluator e) {
             throw new DingoExprCompileException(e);
         }
+    }
+
+    @Nonnull
+    @Override
+    protected RtSqlCaseOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtSqlCaseOp(rtExprArray);
     }
 }

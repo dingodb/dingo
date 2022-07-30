@@ -50,6 +50,11 @@ public class AvaticaResultSetConverter implements DataConverter {
     }
 
     @Override
+    public Object convert(@Nonnull Object[] value) {
+        return DataConverter.super.convert(value);
+    }
+
+    @Override
     public Object collectTuple(@Nonnull Stream<Object> stream) {
         return stream.collect(Collectors.toList());
     }

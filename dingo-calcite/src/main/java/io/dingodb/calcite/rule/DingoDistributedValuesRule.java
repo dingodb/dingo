@@ -19,12 +19,12 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoTableModify;
+import io.dingodb.calcite.rel.LogicalDingoValues;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.core.Values;
+import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
@@ -37,8 +37,8 @@ public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRu
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        DingoTableModify modify = call.rel(0);
-        Values values = call.rel(1);
+        LogicalTableModify modify = call.rel(0);
+        LogicalDingoValues values = call.rel(1);
         RelOptCluster cluster = modify.getCluster();
         RelOptTable table = modify.getTable();
         call.transformTo(
@@ -47,9 +47,9 @@ public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRu
                 modify.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                 new DingoDistributedValues(
                     cluster,
+                    values.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                     values.getRowType(),
                     values.getTuples(),
-                    values.getTraitSet().replace(DingoConventions.DISTRIBUTED),
                     table
                 ),
                 table,
@@ -64,8 +64,8 @@ public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRu
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoDistributedValuesRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(DingoTableModify.class).trait(DingoConventions.DINGO).oneInput(b1 ->
-                    b1.operand(Values.class).noInputs()
+                b0.operand(LogicalTableModify.class).oneInput(b1 ->
+                    b1.operand(LogicalDingoValues.class).noInputs()
                 )
             )
             .description("DingoDistributedValuesRule")

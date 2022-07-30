@@ -33,7 +33,6 @@ import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
-import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
@@ -70,8 +69,6 @@ public interface DingoRelVisitor<T> {
     T visit(@Nonnull DingoReduce rel);
 
     T visit(@Nonnull DingoSort rel);
-
-    T visit(@Nonnull DingoTableModify rel);
 
     T visit(@Nonnull DingoTableScan rel);
 

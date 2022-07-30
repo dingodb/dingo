@@ -16,41 +16,30 @@
 
 package io.dingodb.common.type.scalar;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.AbstractDingoType;
 import io.dingodb.common.type.DataConverter;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.NullType;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
 
-import javax.annotation.Nonnull;
 import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 @EqualsAndHashCode(of = {"nullable"}, callSuper = true)
 public abstract class AbstractScalarType extends AbstractDingoType {
-    protected final boolean nullable;
+    @JsonProperty(value = "nullable", defaultValue = "false")
+    @JsonInclude(value = JsonInclude.Include.NON_DEFAULT)
+    protected final Boolean nullable;
 
     protected AbstractScalarType(int typeCode, boolean nullable) {
-        super(typeCode);
+        super();
+        this.typeCode = typeCode;
         this.nullable = nullable;
-    }
-
-    @Override
-    public int fieldCount() {
-        return -1;
-    }
-
-    @Override
-    public DingoType getChild(@Nonnull Object index) {
-        return null;
-    }
-
-    @Override
-    public DingoType select(@Nonnull TupleMapping mapping) {
-        throw new IllegalStateException("Selecting fields from a scalar type is stupid.");
     }
 
     @Nonnull
@@ -71,8 +60,8 @@ public abstract class AbstractScalarType extends AbstractDingoType {
     }
 
     @Override
-    public String format(@Nonnull Object value) {
-        return value + ":" + this;
+    public String format(@Nullable Object value) {
+        return value != null ? value + ":" + this : NullType.NULL.format(null);
     }
 
     @Override
@@ -85,12 +74,16 @@ public abstract class AbstractScalarType extends AbstractDingoType {
         return value;
     }
 
-    protected abstract Schema.Type getAvroSchemaType();
+    @Override
+    public int fieldCount() {
+        return -1;
+    }
 
-    @JsonValue
     @Override
     public String toString() {
         String name = TypeCode.nameOf(typeCode);
-        return nullable ? name + "|" + AbstractDingoType.NULLABLE : name;
+        return nullable ? name + "|" + NullType.NULL : name;
     }
+
+    protected abstract Schema.Type getAvroSchemaType();
 }

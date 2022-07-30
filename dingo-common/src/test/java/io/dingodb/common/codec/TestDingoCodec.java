@@ -31,7 +31,7 @@ public class TestDingoCodec {
 
     private static KeyValueCodec codec;
 
-    private Object[] record = new Object[] {1, "name", 0.5d};
+    private final Object[] record = new Object[]{1, "name", 0.5d};
 
     @BeforeAll
     public static void setupAll() throws IOException {
@@ -59,7 +59,7 @@ public class TestDingoCodec {
     @Test
     public void testValue() throws IOException {
         KeyValue keyValue = codec.encode(record);
-        Object[] key = new Object[] {record[0]};
+        Object[] key = new Object[]{record[0]};
         Object[] result = codec.mapKeyAndDecodeValue(key, keyValue.getValue());
         Assertions.assertArrayEquals(result, record);
     }
@@ -71,7 +71,7 @@ public class TestDingoCodec {
         Object[] value1 = valueCodec.decode(keyValue.getValue(), new int[]{1});
         Assertions.assertEquals(value1[0], record[2]);
 
-        Object[] value01 = valueCodec.decode(keyValue.getValue(), new int[]{0,1});
+        Object[] value01 = valueCodec.decode(keyValue.getValue(), new int[]{0, 1});
         Assertions.assertEquals(value01[0], record[1]);
         Assertions.assertEquals(value01[1], record[2]);
     }
@@ -80,12 +80,12 @@ public class TestDingoCodec {
     public void testValueUpdate() throws IOException {
         KeyValue keyValue = codec.encode(record);
         Codec valueCodec = new DingoCodec(tableDefinition.getDingoSchemaOfValue());
-        byte[] updated1 = valueCodec.encode(keyValue.getValue(), new Object[] {1d}, new int[]{1});
+        byte[] updated1 = valueCodec.encode(keyValue.getValue(), new Object[]{1d}, new int[]{1});
         Object[] result1 = valueCodec.decode(updated1);
         Assertions.assertEquals(result1[0], record[1]);
         Assertions.assertEquals(result1[1], 1d);
 
-        byte[] updated2 = valueCodec.encode(keyValue.getValue(), new Object[] {"test", 1d}, new int[]{0, 1});
+        byte[] updated2 = valueCodec.encode(keyValue.getValue(), new Object[]{"test", 1d}, new int[]{0, 1});
         Object[] result2 = valueCodec.decode(updated2);
         Assertions.assertEquals(result2[0], "test");
         Assertions.assertEquals(result2[1], 1d);

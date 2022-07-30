@@ -24,12 +24,14 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.io.IOException;
+import java.sql.Array;
 import java.sql.SQLException;
+import java.sql.Types;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,13 +82,9 @@ public class DdlTest {
     @CsvSource({
         "char, abc",
         "varchar, def",
-        "date, 1970-01-01",
-        "date, 2022-11-01",
-        "time, 00:00:00",
-        "time, 04:30:02",
         "timestamp, 1970-01-01 00:00:00",
         "timestamp, 2022-11-01 11:01:01",
-//        "binary, abc",
+        "binary, abc",
     })
     public void testCreateTableStringLiteral(@Nonnull String type, String value) throws SQLException {
         String tableName = sqlHelper.prepareTable(
@@ -95,17 +93,74 @@ public class DdlTest {
         );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
-        if (typeCode == TypeCode.DATE || typeCode == TypeCode.TIME) {
-            assertThat(result.toString()).isEqualTo(value);
-        } else {
-            Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
-            assertThat(result).isEqualTo(expected);
-        }
+        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
+        assertThat(result).isEqualTo(expected);
+        sqlHelper.dropTable(tableName);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "timestamp, 1970-01-01 00:00:00",
+        "timestamp, 2022-11-01 11:01:01",
+    })
+    public void testCreateTableTimestampLiteral(@Nonnull String type, String value) throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data " + type + ", primary key(id))",
+            "insert into {table} values(1, " + type + "'" + value + "')"
+        );
+        int typeCode = TypeCode.codeOf(type.toUpperCase());
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
+        assertThat(result).isEqualTo(expected);
+        sqlHelper.dropTable(tableName);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "date, 1970-01-01",
+        "date, 2022-11-01",
+        "time, 00:00:00",
+        "time, 04:30:02",
+    })
+    public void testCreateTableDateTimeCastString(@Nonnull String type, String value) throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data " + type + ", primary key(id))",
+            "insert into {table} values(1, '" + value + "')"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result.toString()).isEqualTo(value);
+        sqlHelper.dropTable(tableName);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "date, 1970-01-01",
+        "date, 2022-11-01",
+        "time, 00:00:00",
+        "time, 04:30:02",
+    })
+    public void testCreateTableDateTimeLiteral(@Nonnull String type, String value) throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data " + type + ", primary key(id))",
+            "insert into {table} values(1, " + type + "'" + value + "')"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result.toString()).isEqualTo(value);
         sqlHelper.dropTable(tableName);
     }
 
     @Test
-    public void test() throws SQLException, IOException {
-        sqlHelper.execFile(DdlTest.class.getResourceAsStream("table-non-scalar-create.sql"));
+    @Disabled
+    public void testCreateTableWithArray() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data int array, primary key(id))",
+            "insert into {table} values(1, array[1, 2, 3])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
+        assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        sqlHelper.dropTable(tableName);
     }
 }

@@ -17,12 +17,8 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
-import org.apache.calcite.util.TimeString;
-import org.apache.calcite.util.TimestampString;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,32 +26,40 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
 public class RexLiteralConverter implements DataConverter {
     public static final RexLiteralConverter INSTANCE = new RexLiteralConverter();
+    private static final RuntimeException NEVER_CONVERT_BACK
+        = new IllegalStateException("Convert back to RexLiteral should be avoided.");
 
     private RexLiteralConverter() {
     }
 
     @Override
     public Object convert(@Nonnull Date value) {
-        return new DateString(DateTimeUtils.dateFormat(value));
+        throw NEVER_CONVERT_BACK;
     }
 
     @Override
     public Object convert(@Nonnull Time value) {
-        return TimeString.fromMillisOfDay((int) value.getTime());
+        throw NEVER_CONVERT_BACK;
     }
 
     @Override
     public Object convert(@Nonnull Timestamp value) {
-        return TimestampString.fromMillisSinceEpoch(value.getTime());
+        throw NEVER_CONVERT_BACK;
     }
 
     @Override
     public Object convert(@Nonnull byte[] value) {
-        return new ByteString(value);
+        throw NEVER_CONVERT_BACK;
+    }
+
+    @Override
+    public Object convert(@Nonnull Object[] value) {
+        throw NEVER_CONVERT_BACK;
     }
 
     @Override
@@ -97,7 +101,8 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
-        return new Timestamp(((Calendar) value).getTimeInMillis());
+        // Calcite's timestamp are shifted to UTC.
+        return new Timestamp(((Calendar) value).getTimeInMillis() - TimeZone.getDefault().getRawOffset());
     }
 
     @Override

@@ -16,42 +16,46 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-public class DingoDistributedValues extends LogicalDingoValues implements DingoRel {
+public class LogicalDingoValues extends AbstractRelNode {
     @Getter
-    private final RelOptTable table;
+    private final List<Object[]> tuples;
+    private final RelDataType rowType;
 
-    public DingoDistributedValues(
+    public LogicalDingoValues(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelDataType rowType,
-        List<Object[]> tuples,
-        RelOptTable table
+        List<Object[]> tuples
     ) {
-        super(cluster, traits, rowType, tuples);
-        this.table = table;
+        super(cluster, traits);
+        this.rowType = rowType;
+        this.tuples = tuples;
+    }
+
+    @Override
+    protected RelDataType deriveRowType() {
+        return rowType;
     }
 
     @Nonnull
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
+        pw.item("tuples", tuples.stream().map(type::format).collect(Collectors.joining(", ")));
         return pw;
-    }
-
-    @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
-        return visitor.visit(this);
     }
 }

@@ -21,17 +21,19 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartition;
-import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.common.table.TableDefinition;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+
+import static io.dingodb.calcite.DingoTable.dingo;
 
 @Value.Enclosing
 public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
@@ -39,8 +41,8 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
         super(config);
     }
 
-    private static void checkUpdateInPart(@Nonnull DingoTableModify rel) {
-        DingoTable table = rel.getTable().unwrap(DingoTable.class);
+    private static void checkUpdateInPart(@Nonnull LogicalTableModify rel) {
+        DingoTable table = dingo(rel.getTable());
         assert table != null;
         TableDefinition td = table.getTableDefinition();
         List<String> updateList = rel.getUpdateColumnList();
@@ -55,7 +57,7 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        DingoTableModify rel = call.rel(0);
+        LogicalTableModify rel = call.rel(0);
         RelNode input = rel.getInput();
         RelNode convertedInput = null;
         RelOptCluster cluster = rel.getCluster();
@@ -100,7 +102,7 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoPartModifyRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(DingoTableModify.class).trait(DingoConventions.DINGO).anyInputs()
+                b0.operand(LogicalTableModify.class).anyInputs()
             )
             .description("DingoPartModifyRule")
             .build();

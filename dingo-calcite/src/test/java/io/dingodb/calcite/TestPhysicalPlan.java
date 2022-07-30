@@ -36,6 +36,7 @@ import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.rel.LogicalDingoValues;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptNode;
@@ -78,14 +79,6 @@ public class TestPhysicalPlan {
         RelNode relNode = parser.optimize(relRoot.rel);
         log.info("relNode = {}", relNode);
         return relNode;
-    }
-
-    @Test
-    public void testSimple() throws SqlParseException {
-        String sql = "select 1";
-        RelNode relNode = parse(sql);
-        Assert.relNode(relNode)
-            .isA(DingoValues.class).convention(DingoConventions.ROOT);
     }
 
     @Test
@@ -290,16 +283,17 @@ public class TestPhysicalPlan {
     public void testInsertValues1() throws SqlParseException {
         String sql = "insert into test values(1, 'Alice', 1.0), (2, 'Betty', 1.0 + 1.0)";
         RelNode relNode = parse(sql);
-        DingoValues values = (DingoValues) Assert.relNode(relNode)
+        LogicalDingoValues values = (LogicalDingoValues) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        List<Object[]> tuples = values.getValues();
-        assertThat(tuples).size().isEqualTo(2);
-        assertThat(tuples).element(0).isEqualTo(new Object[]{1, "Alice", 1.0});
-        assertThat(tuples).element(1).isEqualTo(new Object[]{2, "Betty", 2.0});
+        List<Object[]> tuples = values.getTuples();
+        assertThat(tuples).hasSize(2).containsExactlyInAnyOrder(
+            new Object[]{1, "Alice", 1.0},
+            new Object[]{2, "Betty", 2.0}
+        );
     }
 
     @Test
@@ -543,7 +537,7 @@ public class TestPhysicalPlan {
         String sql = "select a - b from (values (1, 2), (3, 5), (7, 11)) as t (a, b) where a + b > 4";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(DingoValues.class);
-        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{-2}, new Object[]{-4});
+        assertThat(((DingoValues) relNode).getTuples()).containsExactly(new Object[]{-2}, new Object[]{-4});
     }
 
     @Test
@@ -551,7 +545,7 @@ public class TestPhysicalPlan {
         String sql = "select b from (values (1, 2), (null, 5), (7, 11)) as t (a, b) where a is null";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(DingoValues.class);
-        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{5});
+        assertThat(((DingoValues) relNode).getTuples()).containsExactly(new Object[]{5});
     }
 
     @Test
@@ -559,20 +553,20 @@ public class TestPhysicalPlan {
         String sql = "select b from (values (1, 2), (null, 5), (7, 11)) as t (a, b) where a is not null";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(DingoValues.class);
-        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{2}, new Object[]{11});
+        assertThat(((DingoValues) relNode).getTuples()).containsExactly(new Object[]{2}, new Object[]{11});
     }
 
     @Test
     public void testInsertDateValues() throws Exception {
         String sql = "insert into `table-with-date` values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";
         RelNode relNode = parse(sql);
-        DingoValues values = (DingoValues) Assert.relNode(relNode)
+        LogicalDingoValues values = (LogicalDingoValues) Assert.relNode(relNode)
             .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
             .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
             .singleInput().isA(DingoPartModify.class).convention(DingoConventions.DISTRIBUTED)
             .singleInput().isA(DingoDistributedValues.class).convention(DingoConventions.DISTRIBUTED)
             .getInstance();
-        assertThat(values.getValues()).containsExactly(
+        assertThat(values.getTuples()).containsExactly(
             new Object[]{1, "Peso", new Date(0L)},
             new Object[]{2, "Alice", new Date(24L * 60L * 60L * 1000L)}
         );
@@ -583,7 +577,7 @@ public class TestPhysicalPlan {
         String sql = "select cast(a as date) from (values('1970-1-1')) as t (a)";
         RelNode relNode = parse(sql);
         Assert.relNode(relNode).isA(DingoValues.class);
-        assertThat(((DingoValues) relNode).getValues()).containsExactly(new Object[]{new Date(0L)});
+        assertThat(((DingoValues) relNode).getTuples()).containsExactly(new Object[]{new Date(0L)});
     }
 
     @Test

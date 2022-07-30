@@ -81,22 +81,6 @@ public class AvroCodec implements Codec {
         return tuple;
     }
 
-    public Object[] decode(@Nonnull byte[] bytes) throws IOException {
-        return decode(new ByteArrayInputStream(bytes));
-    }
-
-    @Override
-    public Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
-        Object[] tuple = decode(bytes);
-        mapping.map(result, tuple);
-        return result;
-    }
-
-    @Override
-    public Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
-        return new Object[0];
-    }
-
     public void encode(OutputStream os, @Nonnull Object[] tuple) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < tuple.length; ++i) {
@@ -132,5 +116,21 @@ public class AvroCodec implements Codec {
     @Override
     public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex) throws IOException, ClassCastException {
         return new byte[0];
+    }
+
+    public Object[] decode(@Nonnull byte[] bytes) throws IOException {
+        return decode(new ByteArrayInputStream(bytes));
+    }
+
+    @Override
+    public Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
+        Object[] tuple = decode(bytes);
+        mapping.map(result, tuple);
+        return result;
+    }
+
+    @Override
+    public Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
+        return new Object[0];
     }
 }

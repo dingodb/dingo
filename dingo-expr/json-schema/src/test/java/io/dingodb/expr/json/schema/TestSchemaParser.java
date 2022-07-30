@@ -17,6 +17,7 @@
 package io.dingodb.expr.json.schema;
 
 import io.dingodb.expr.json.runtime.RtSchema;
+import io.dingodb.expr.json.runtime.RtSchemaArray;
 import io.dingodb.expr.json.runtime.RtSchemaRoot;
 import io.dingodb.expr.runtime.TypeCode;
 import org.junit.jupiter.api.Test;
@@ -46,8 +47,10 @@ public class TestSchemaParser {
         );
         assertThat(root.getMaxIndex()).isEqualTo(8);
         RtSchema schema = root.getSchema();
-        assertThat(schema.getChild("arrA").getTypeCode()).isEqualTo(TypeCode.LONG_ARRAY);
-        assertThat(schema.getChild("arrB").getTypeCode()).isEqualTo(TypeCode.STRING_ARRAY);
+        assertThat(schema.getChild("arrA").getTypeCode()).isEqualTo(TypeCode.ARRAY);
+        assertThat(((RtSchemaArray) schema.getChild("arrA")).getElementTypeCode()).isEqualTo(TypeCode.LONG);
+        assertThat(schema.getChild("arrB").getTypeCode()).isEqualTo(TypeCode.ARRAY);
+        assertThat(((RtSchemaArray) schema.getChild("arrB")).getElementTypeCode()).isEqualTo(TypeCode.STRING);
         assertThat(schema.getChild("arrC").getTypeCode()).isEqualTo(TypeCode.LIST);
         assertThat(schema.getChild("arrD").getTypeCode()).isEqualTo(TypeCode.TUPLE);
         assertThat(schema.getChild("arrD").getChild(0).getTypeCode()).isEqualTo(TypeCode.LONG);

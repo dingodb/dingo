@@ -34,7 +34,6 @@ import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoSort;
-import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
@@ -106,6 +105,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -225,7 +225,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 for (Map.Entry<Integer, RexLiteral> entry : item.entrySet()) {
                     tuple[revMapping.get(entry.getKey())] = RexConverter.convertFromRexLiteral(
                         entry.getValue(),
-                        td.getColumn(entry.getKey()).getElementType()
+                        td.getColumn(entry.getKey()).getDingoType()
                     );
                 }
                 return tuple;
@@ -341,32 +341,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         String tableName = MetaCache.getTableName(rel.getTable());
         final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
         final TableDefinition td = this.metaCache.getTableDefinition(tableName);
-
-        // Find the first null value attempts insert into non-null column.
-        int columnNum = td.getColumns().size();
-        for (Object[] value : rel.getValues()) {
-            if (columnNum != value.length) {
-                log.error("Inserted value: " + value.toString() + ", Row size: " + value.length
-                    + ", While actual column number needed: " + columnNum);
-                throw new RuntimeException("Inserted columns " + value.length + " not equal " + columnNum);
-            }
-            for (int i = 0; i < columnNum; i++) {
-                if (td.getColumn(i).isNotNull() && value[i] == null) {
-                    throw new RuntimeException("Column '" + td.getColumn(i).getName() + "' has no default "
-                        + "value and does not allow NULLs");
-                }
-            }
-        }
-
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
-            rel.getValues(),
+            rel.getTuples(),
             td.getKeyMapping()
         );
         for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             ValuesOperator operator = new ValuesOperator(
                 entry.getValue(),
-                DingoTypeFactory.fromRelDataType(rel.getRowType())
+                Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
             );
             operator.setId(idGenerator.get());
             OutputHint hint = new OutputHint();
@@ -634,11 +617,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoTableModify rel) {
-        return illegalRelNode(rel);
-    }
-
-    @Override
     public Collection<Output> visit(@Nonnull DingoTableScan rel) {
         return illegalRelNode(rel);
     }
@@ -657,8 +635,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Task task = job.getOrCreate(currentLocation, idGenerator);
         DingoType type = DingoTypeFactory.fromRelDataType(rel.getRowType());
         ValuesOperator operator = new ValuesOperator(
-            rel.getValues(),
-            DingoTypeFactory.fromRelDataType(rel.getRowType())
+            rel.getTuples(),
+            Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
         );
         operator.setId(idGenerator.get());
         task.putOperator(operator);

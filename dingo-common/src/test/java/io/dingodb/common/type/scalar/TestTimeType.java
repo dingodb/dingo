@@ -23,7 +23,6 @@ import io.dingodb.expr.runtime.TypeCode;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,17 +55,5 @@ public class TestTimeType {
         DingoType type = DingoTypeFactory.scalar(TypeCode.TIME, false);
         Time result = (Time) type.convertFrom(literal.getValue(), RexLiteralConverter.INSTANCE);
         assertThat(result).isEqualTo(time);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getParameters")
-    public void testConvertToRexLiteral(String jdbcString, Time time) {
-        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
-        RelDataType relDataType = typeFactory.createSqlType(SqlTypeName.TIME, 3);
-        RexLiteral literal = RexLiteral.fromJdbcString(relDataType, SqlTypeName.TIME, jdbcString);
-        DingoType type = DingoTypeFactory.scalar(TypeCode.TIME, false);
-        RexBuilder rexBuilder = new RexBuilder(typeFactory);
-        RexLiteral result = rexBuilder.makeLiteral(type.convertTo(time, RexLiteralConverter.INSTANCE), relDataType);
-        assertThat(result).isEqualTo(literal);
     }
 }

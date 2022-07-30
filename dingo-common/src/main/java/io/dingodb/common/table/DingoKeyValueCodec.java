@@ -22,14 +22,14 @@ import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.converter.AvroConverter;
+import io.dingodb.common.type.converter.DingoConverter;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
 
 public class DingoKeyValueCodec implements KeyValueCodec {
 
-    private DingoType schema;
+    private final DingoType schema;
     TupleMapping keyMapping;
     TupleMapping valueMapping;
     Codec keyCodec;
@@ -39,8 +39,6 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
-//        keyCodec = new AvroCodec(schema.select(keyMapping).toAvroSchema());
-//        valueCodec = new AvroCodec(schema.select(valueMapping).toAvroSchema());
         keyCodec = new DingoCodec(schema.select(keyMapping).toDingoSchemas(), keyMapping);
         valueCodec = new DingoCodec(schema.select(valueMapping).toDingoSchemas(), valueMapping);
     }
@@ -56,12 +54,12 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         for (int i = 0; i < value.length; i++) {
             record[valueMapping.get(i)] = value[i];
         }
-        return (Object[]) schema.convertFrom(record, AvroConverter.INSTANCE);
+        return (Object[]) schema.convertFrom(record, DingoConverter.INSTANCE);
     }
 
     @Override
     public KeyValue encode(@Nonnull Object[] tuple) throws IOException {
-        Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
+        Object[] converted = (Object[]) schema.convertTo(tuple, DingoConverter.INSTANCE);
         Object[] key = new Object[keyMapping.size()];
         Object[] value = new Object[valueMapping.size()];
         for (int i = 0; i < keyMapping.size(); i++) {
@@ -90,6 +88,6 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         for (int i = 0; i < value.length; i++) {
             record[valueMapping.get(i)] = value[i];
         }
-        return (Object[]) schema.convertFrom(record, AvroConverter.INSTANCE);
+        return (Object[]) schema.convertFrom(record, DingoConverter.INSTANCE);
     }
 }

@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -53,7 +52,11 @@ public final class DateTimeUtils {
     public static final long ONE_DAY_IN_MILLI = 24L * 60L * 60L * 1000L;
     public static final DateTimeFormatter STD_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     public static final DateTimeFormatter STD_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME;
-    public static final DateTimeFormatter STD_DATETIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    public static final DateTimeFormatter STD_DATETIME_FORMATTER = new DateTimeFormatterBuilder()
+        .append(STD_DATE_FORMATTER)
+        .appendLiteral(' ')
+        .append(STD_TIME_FORMATTER)
+        .toFormatter();
     private static final String[] DATE_FORMATTER_PATTERNS = {
         "%Y-%m-%d",
         "%Y/%m/%d",
@@ -248,21 +251,21 @@ public final class DateTimeUtils {
     }
 
     @Nonnull
-    public static String dateTimeFormat(@Nonnull Timestamp value, @Nonnull DateTimeFormatter formatter) {
+    public static String timestampFormat(@Nonnull Timestamp value, @Nonnull DateTimeFormatter formatter) {
         return value.toLocalDateTime().format(formatter);
     }
 
     @Nonnull
-    public static String dateTimeFormat(@Nonnull Timestamp timestamp, @Nonnull String format) {
-        return dateTimeFormat(
+    public static String timestampFormat(@Nonnull Timestamp timestamp, @Nonnull String format) {
+        return timestampFormat(
             timestamp,
             DateTimeFormatter.ofPattern(convertFormat(format)).withResolverStyle(ResolverStyle.STRICT)
         );
     }
 
     @Nonnull
-    public static String dateTimeFormat(@Nonnull Timestamp value) {
-        return dateTimeFormat(value, STD_DATETIME_FORMATTER);
+    public static String timestampFormat(@Nonnull Timestamp value) {
+        return timestampFormat(value, STD_DATETIME_FORMATTER);
     }
 
     @Nonnull
@@ -359,13 +362,6 @@ public final class DateTimeUtils {
             builder.append('\'');
         }
         return builder.toString();
-    }
-
-    // Get Zone offset for timestamp at this instant. work for Date/Timestamp.
-    public static ZoneOffset getLocalZoneOffset(long epochSeconds) {
-        Instant instant = Instant.ofEpochSecond(epochSeconds); //can be LocalDateTime
-        ZoneId systemZone = ZoneId.systemDefault(); // my timezone
-        return systemZone.getRules().getOffset(instant);
     }
 
     // For Debugging

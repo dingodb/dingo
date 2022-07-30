@@ -16,13 +16,18 @@
 
 package io.dingodb.common.type.scalar;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
+@JsonTypeName("object")
 public class ObjectType extends AbstractScalarType {
-    public ObjectType(boolean nullable) {
+    @JsonCreator
+    public ObjectType(@JsonProperty("nullable") boolean nullable) {
         super(TypeCode.OBJECT, nullable);
     }
 

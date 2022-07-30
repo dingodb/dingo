@@ -53,6 +53,12 @@ public class ColumnDefinition {
     @Getter
     private final SqlTypeName type;
 
+    // Element type of ARRAY
+    @JsonProperty(value = "elementType")
+    @JsonSerialize(using = SqlTypeNameSerializer.class)
+    @Getter
+    private final SqlTypeName elementType;
+
     @JsonProperty(value = "precision")
     @JsonSerialize(using = PrecisionSerializer.class)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -114,19 +120,28 @@ public class ColumnDefinition {
     }
 
     public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
-        RelDataType result = typeFactory.createSqlType(type);
-        if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
-            if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
-                result = typeFactory.createSqlType(type, precision, scale);
+        RelDataType relDataType;
+        if (type != SqlTypeName.ARRAY) {
+            if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
+                if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
+                    relDataType = typeFactory.createSqlType(type, precision, scale);
+                } else {
+                    relDataType = typeFactory.createSqlType(type, precision);
+                }
             } else {
-                result = typeFactory.createSqlType(type, precision);
+                relDataType = typeFactory.createSqlType(type);
             }
+        } else {
+            relDataType = typeFactory.createArrayType(typeFactory.createSqlType(elementType), -1);
         }
-        return typeFactory.createTypeWithNullability(result, !this.notNull);
+        return typeFactory.createTypeWithNullability(relDataType, !this.notNull);
     }
 
-    public DingoType getElementType() {
-        return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
+    public DingoType getDingoType() {
+        if (type != SqlTypeName.ARRAY) {
+            return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
+        }
+        return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
     }
 
     @SuppressWarnings("ConstantConditions")

@@ -46,15 +46,8 @@ public class TestTypeCodesUniqueness {
             BigDecimal.class,
             String.class,
             Object.class,
+            byte[].class,
             // array types
-            Boolean[].class,
-            Integer[].class,
-            BigInteger[].class,
-            Long[].class,
-            Float[].class,
-            Double[].class,
-            BigDecimal[].class,
-            String[].class,
             Object[].class,
             // collection types
             List.class,
@@ -63,6 +56,8 @@ public class TestTypeCodesUniqueness {
             Date.class,
             Time.class,
             Timestamp.class,
+            // null
+            Void.class
         };
         Set<Integer> codeSet = new HashSet<>();
         for (Class<?> clazz : classes) {

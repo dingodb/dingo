@@ -81,7 +81,7 @@ public class TestLogicalPlan {
         String sql = "select * from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class TestLogicalPlan {
         String sql = "select * from mock.test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class TestLogicalPlan {
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class TestLogicalPlan {
         String sql = "select name, amount from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -115,7 +115,7 @@ public class TestLogicalPlan {
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -123,7 +123,7 @@ public class TestLogicalPlan {
         String sql = "select count(*) from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class TestLogicalPlan {
         String sql = "select count(1) from test";
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -140,7 +140,7 @@ public class TestLogicalPlan {
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalAggregate.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class TestLogicalPlan {
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalAggregate.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -160,7 +160,7 @@ public class TestLogicalPlan {
         Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalAggregate.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -206,7 +206,7 @@ public class TestLogicalPlan {
             .prop("operation", TableModify.Operation.UPDATE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -216,7 +216,7 @@ public class TestLogicalPlan {
         AssertRelNode assertSort = Assert.relNode(relRoot.rel);
         assertSort.isA(LogicalSort.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
         LogicalSort logicalSort = (LogicalSort) assertSort.getInstance();
         List<RelFieldCollation> collations = logicalSort.getCollation().getFieldCollations();
         assertThat(collations.get(0))
@@ -238,7 +238,7 @@ public class TestLogicalPlan {
         AssertRelNode assertSort = Assert.relNode(relRoot.rel);
         assertSort.isA(LogicalSort.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
         LogicalSort logicalSort = (LogicalSort) assertSort.getInstance();
         assertThat(logicalSort.fetch).isNotNull();
         assertThat(RexLiteral.intValue(logicalSort.fetch)).isEqualTo(3);
@@ -252,7 +252,7 @@ public class TestLogicalPlan {
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalSort.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -263,7 +263,7 @@ public class TestLogicalPlan {
             .prop("operation", TableModify.Operation.DELETE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
             .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test
@@ -272,7 +272,7 @@ public class TestLogicalPlan {
         RelRoot relRoot = parse(sql);
         Assert.relNode(relRoot.rel).isA(LogicalTableModify.class).convention(Convention.NONE)
             .singleInput().isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(DingoConventions.DINGO);
+            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
     }
 
     @Test

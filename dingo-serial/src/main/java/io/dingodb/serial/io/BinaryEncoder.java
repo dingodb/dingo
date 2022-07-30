@@ -44,7 +44,7 @@ public class BinaryEncoder {
 
     public Short readShort() throws IOException {
         if (readIsNull()) {
-            position+=2;
+            position += 2;
             return null;
         }
         return (short) (((buf[position++] & 0xFF) << 8) |
@@ -174,11 +174,11 @@ public class BinaryEncoder {
         if (bytes == null) {
             ensureRemainder(1);
             writeNull();
-        } else if (((ByteBuffer) bytes).capacity() == 0) {
+        } else if (((byte[]) bytes).length == 0) {
             ensureRemainder(5);
             writeInt(0);
         } else {
-            byte[] value = ((ByteBuffer) bytes).array();
+            byte[] value = (byte[]) bytes;
             int length = maxLength == 0 ? value.length : maxLength - 5;
             ensureRemainder(length + 5);
             writeInt(length);
@@ -274,8 +274,7 @@ public class BinaryEncoder {
     public byte[] getByteArray() {
         if (position == buf.length) {
             return buf;
-        }
-        else {
+        } else {
             buf = Arrays.copyOf(buf, position);
             return buf;
         }

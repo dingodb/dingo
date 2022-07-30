@@ -16,8 +16,20 @@
 
 package io.dingodb.common.type;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dingodb.common.type.converter.CsvConverter;
+import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.ObjectType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -28,35 +40,38 @@ import javax.annotation.Nullable;
 
 @EqualsAndHashCode(of = {"typeCode"})
 public abstract class AbstractDingoType implements DingoType {
-    public static final String NULLABLE = "NULL";
-
     @Getter
-    protected final int typeCode;
+    @Setter
+    protected int typeCode;
     @Getter
     @Setter
     private Integer id;
+
+    public AbstractDingoType() {
+    }
 
     protected AbstractDingoType(int typeCode) {
         this.typeCode = typeCode;
     }
 
-    @Nonnull
-    @JsonCreator
-    public static AbstractDingoType scalar(@Nonnull String typeString) {
-        String[] v = typeString.split("\\|", 2);
-        boolean nullable = v.length > 1 && v[1].equals(AbstractDingoType.NULLABLE);
-        return DingoTypeFactory.scalar(TypeCode.codeOf(v[0]), nullable);
-    }
-
-    @Nonnull
-    @JsonCreator
-    public static AbstractDingoType tuple(String[] typeStrings) {
-        return DingoTypeFactory.tuple(typeStrings);
-    }
-
     protected abstract Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter);
 
     protected abstract Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter);
+
+    @Override
+    public int fieldCount() {
+        return 0;
+    }
+
+    @Override
+    public DingoType getChild(@Nonnull Object index) {
+        throw new IllegalStateException("Get child of type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
+    }
+
+    @Override
+    public DingoType select(@Nonnull TupleMapping mapping) {
+        throw new IllegalStateException("Selecting fields from type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
+    }
 
     @Override
     public Object convertTo(@Nullable Object value, @Nonnull DataConverter converter) {
