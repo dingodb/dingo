@@ -70,18 +70,18 @@ public class RocksRawKVStore implements RawKVStore {
 
     private RocksDB db;
     private WriteOptions writeOptions;
+    private final List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
 
     public RocksRawKVStore(final String dataPath, final String optionsFile) throws RocksDBException {
         this.writeOptions = new WriteOptions();
         DBOptions options = new DBOptions();
-        final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
 
         boolean useDefaultOptions = true;
         try {
             if (optionsFile != null && (new File(optionsFile)).exists()) {
                 log.info("RocksRawKVStore rocksdb config file found: {}.", optionsFile);
                 ConfigOptions configOptions = new ConfigOptions();
-                OptionsUtil.loadOptionsFromFile(configOptions, optionsFile, options, columnFamilyDescriptors);
+                OptionsUtil.loadOptionsFromFile(configOptions, optionsFile, options, this.cfDescriptors);
                 useDefaultOptions = false;
             } else {
                 log.info("RocksRawKVStore rocksdb options file not found: {}, use default options.", optionsFile);
@@ -92,12 +92,11 @@ public class RocksRawKVStore implements RawKVStore {
 
         options.setCreateIfMissing(true);
         if (useDefaultOptions) {
-            final ColumnFamilyOptions cfOption = createColumnFamilyOptions();
-            columnFamilyDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOption));
+            this.cfDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
         }
 
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-        this.db = RocksDB.open(options, dataPath, columnFamilyDescriptors, columnFamilyHandles);
+        this.db = RocksDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles);
         log.info("RocksRawKVStore RocksDB open, path: {}, options file: {}, columnFamilyHandles size: {}.",
             dataPath, optionsFile, columnFamilyHandles.size());
     }
@@ -106,6 +105,11 @@ public class RocksRawKVStore implements RawKVStore {
     public void close() {
         RawKVStore.super.close();
         this.db.close();
+        this.cfDescriptors.clear();
+        if (this.writeOptions != null) {
+            this.writeOptions.close();
+            this.writeOptions = null;
+        }
     }
 
     @Override
