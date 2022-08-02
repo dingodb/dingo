@@ -44,9 +44,7 @@ public class ClientBase {
 
     public void initConnection() throws Exception {
         try {
-            // connection string mode
             List<String> servers = Arrays.asList(coordinatorExchangeSvrList.split(","));
-
             List<Location> addrList = servers.stream()
                 .map(s -> s.split(":"))
                 .map(ss -> new Location(ss[0], Integer.parseInt(ss[1])))

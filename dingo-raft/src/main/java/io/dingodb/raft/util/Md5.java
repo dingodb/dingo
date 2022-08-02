@@ -23,20 +23,20 @@ import java.security.NoSuchAlgorithmException;
 
 @Slf4j
 public class Md5 {
+
     /**
-     * @param str
-     * @return
-     * @Description: 32bit lower-case MD5
+     * @param str input value.
+     * @return md5sum value of the input str.
      */
-    public static String parseStrToMd5L32(String str){
+    public static String parseStrToMd5L32(String str) {
         String retStr = null;
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             byte[] bytes = md5.digest(str.getBytes());
             StringBuffer stringBuffer = new StringBuffer();
-            for (byte b : bytes){
-                int bt = b&0xff;
-                if (bt < 16){
+            for (byte b : bytes) {
+                int bt = b & 0xff;
+                if (bt < 16) {
                     stringBuffer.append(0);
                 }
                 stringBuffer.append(Integer.toHexString(bt));
@@ -49,39 +49,36 @@ public class Md5 {
     }
 
     /**
-     * @param str
-     * @return
-     * @Description: 32bits upper-case MD5
+     * @param str input value.
+     * @return md5sum about input str.
      */
-    public static String parseStrToMd5U32(String str){
+    public static String parseStrToMd5U32(String str) {
         String retStr = parseStrToMd5L32(str);
-        if (retStr != null){
+        if (retStr != null) {
             retStr = retStr.toUpperCase();
         }
         return retStr;
     }
 
     /**
-     * @param str
-     * @return
-     * @Description: 16bits lower-case MD5
+     * @param str input value.
+     * @return md5sum about input str.
      */
-    public static String parseStrToMd5L16(String str){
+    public static String parseStrToMd5L16(String str) {
         String retStr = parseStrToMd5L32(str);
-        if (retStr != null){
+        if (retStr != null) {
             retStr = retStr.substring(16, 32);
         }
         return retStr;
     }
 
     /**
-     * @param str
-     * @return
-     * @Description: 16bits upper-case MD5
+     * @param str input value.
+     * @return md5sum about input str.
      */
-    public static String parseStrToMd5U16(String str){
+    public static String parseStrToMd5U16(String str) {
         String retStr = parseStrToMd5L32(str);
-        if (retStr != null){
+        if (retStr != null) {
             retStr = retStr.toUpperCase().substring(16, 32);
         }
         return retStr;

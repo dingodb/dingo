@@ -27,7 +27,8 @@ import javax.annotation.Nonnull;
  *
  * <p>A typical flat errors can be defined as following:</p>
  *
- * <pre>{@code
+ * <pre>
+ * { @code
  *     public enum ValidationError implements FormattingError {
  *         CONFLICT_NAME(1, "Conflict vertex name", "Conflict vertex name %s between vertex type %s and %s"),
  *         CYCLIC_GRAPH(2, "Cyclic graph", "Cyclic graph in pipeline: %s");
@@ -36,17 +37,17 @@ import javax.annotation.Nonnull;
  *         private String info;
  *         private String format;
  *
- *         @Override
+ *         &#64;Override
  *         public int getCode() {
  *             return code;
  *         }
  *
- *         @Override
+ *         &#64;Override
  *         public String getInfo() {
  *             return info;
  *         }
  *
- *         @Override
+ *         &#64;Override
  *         public String getFormat() {
  *             return format;
  *         }
@@ -106,7 +107,7 @@ public interface DingoError {
      * beneath exported error. This way error handling module knows what happens underneath without exporting
      * implementation detail to clients.
      *
-     * <p><pre>{@code
+     * <pre>{@code
      * try {
      *     doSomething();
      * } catch (DingoException ex) {
@@ -115,7 +116,7 @@ public interface DingoError {
      *     DingoError cause = DingoError.from(throwable);
      *     return DingoError.wrap(AppError.INTERNAL_ERROR, cause);
      * }
-     * }</pre></p>
+     * }</pre>
      */
     DingoError UNKNOWN = UnknownError.UNKNOWN;
 

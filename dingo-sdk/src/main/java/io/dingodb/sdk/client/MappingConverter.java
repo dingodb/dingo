@@ -223,7 +223,6 @@ public class MappingConverter {
      * and populated back into the references which
      * contain them.
      * This method performs this batch load, translating the records to objects and mapping them back to the references.
-     * <p/>
      * These loaded child objects can themselves have other references to other objects,
      * so we iterate through this until
      * the list of deferred objects is empty.
