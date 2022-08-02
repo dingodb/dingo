@@ -126,7 +126,7 @@ public class StoreOperationUtils {
             } finally {
                 if (!isSuccess && retryTimes > 0) {
                     try {
-                        Thread.sleep(2000);
+                        Thread.sleep(200);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }

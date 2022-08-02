@@ -16,11 +16,10 @@
 
 package io.dingodb.common.util;
 
-import java.util.Arrays;
 import java.util.StringJoiner;
 
 /**
- * Default 0. 0 -> StackTraces method. 1 -> Current called method.
+ * display stack trace about current thread.
  */
 public class StackTraces {
 

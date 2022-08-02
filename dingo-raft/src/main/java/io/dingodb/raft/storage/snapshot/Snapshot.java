@@ -36,16 +36,20 @@ public abstract class Snapshot extends Status {
 
     /**
      * Get the path of the Snapshot
+     * @return the path of the Snapshot
      */
     public abstract String getPath();
 
     /**
      * List all the existing files in the Snapshot currently
+     * @return the set of file names
      */
     public abstract Set<String> listFiles();
 
     /**
      * Get file meta by fileName.
+     * @param fileName the file name
+     * @return the file meta
      */
     public abstract Message getFileMeta(final String fileName);
 }

@@ -40,9 +40,8 @@ public @interface DingoEmbed {
     /**
      * The elementType is used for sub-elements. For example, if there is:
      * <pre>
-     * @DingoColumn
-     * @DingoEmbed (elementType = EmbedType.LIST)
-     * private List<Account> accounts;
+     * &#064;DingoEmbed (elementType = EmbedType.LIST)
+     * private List&lt;Account&gt; accounts;
      * </pre>
      * then the objects will be stored in the database as lists of lists, rather than lists of maps.
      */
@@ -50,7 +49,7 @@ public @interface DingoEmbed {
 
     /**
      * Determine whether the key should be saved in the sub-object. This is used only for translating
-     * a list of objects in Java into a map of objects which contains a list. For example:<p/>
+     * a list of objects in Java into a map of objects which contains a list. For example:
      * <pre>
      * public class Transaction {
      *    private String name;
@@ -72,27 +71,24 @@ public @interface DingoEmbed {
      * &#064;DingoEmbed(type = EmbedType.MAP, elementType = EmbedType.LIST)
      * public List&lt;Transaction&gt; txns;
      * </pre>
-     * <p>
      * Assume elements have been inserted into the list as follows:
      * <pre>
      *  account.txns.add(new Transaction("details1", 100, 101));
      *  account.txns.add(new Transaction("details2", 200, 99));
      *  account.txns.add(new Transaction("details3", 300, 1010));
      * </pre>
-     * </p>
      * Since these elements are stored in a map, the DingoKey field (time in this case) will be the key to the map.
      * By default, the key is then dropped from the list as it is not needed, resulting in:
      * <pre>
      * KEY_ORDERED_MAP('{99:["details2", 200], 101:["details1", 100], 1010:["details3", 300]}')
      * </pre>
-     * <p>
-     * If it is desired for the key to be part of the list as well, this value can be set to <code>true</code>:
+     *
+     * <p>If it is desired for the key to be part of the list as well, this value can be set to <code>true</code>:
      *
      * <pre>
      * &#064;DingoEmbed(type = EmbedType.MAP, elementType = EmbedType.LIST, saveKey = true)
      * public List&lt;Transaction&gt; txns;
      * </pre>
-     * </p>
      * This would result in:
      * <pre>
      * KEY_ORDERED_MAP('{99:["details2", 99, 200], 101:["details1", 101, 100], 1010:["details3", 1010, 300]}')

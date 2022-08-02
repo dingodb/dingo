@@ -276,10 +276,9 @@ public class DingoException extends RuntimeException implements IndirectError {
      *
      * @return stack trace for DingoException, zero length array if no stack traces.
      * @see Throwable#getStackTrace()
-     *
-     *     <q>Some virtual machines may, under some circumstances, omit one or more
+     *     Some virtual machines may, under some circumstances, omit one or more
      *     stack frames from the stack trace. In the extreme case, a virtual machine that has no stack trace information
-     *     concerning this throwable is permitted to return a zero-length array from this method.</q>
+     *     concerning this throwable is permitted to return a zero-length array from this method.
      */
     @Override
     public StackTraceElement[] getStackTrace() {

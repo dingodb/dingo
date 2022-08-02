@@ -37,35 +37,56 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Instantiate an <code>DingoClient</code> object to access a dingo
+ * database cluster and perform database operations.
+ *
+ * <p>Your application uses this class API to perform database operations such as
+ * create table, drop table,
+ * compute about numerical(min, max, add, sum),
+ * key-value operation(writing, reading, update records),
+ * operation on complex object(Array, Set, List, Map),
+ * filter and aggeragation operation on selecting sets of records.
+ *
+ * <p>Each record may have multiple columns, you can operate on one record
+ * or multiple records with a range of keys.
+ */
 @Slf4j
 public class DingoClient {
 
-    /**
-     * Connection to Dingo Cluster.
-     */
     private DingoConnection connection;
 
-    /**
-     * Operation Utils.
-     */
     private StoreOperationUtils storeOpUtils;
 
     public static Integer retryTimes = 100;
     public static volatile boolean isConnectionInit = false;
 
 
+    /**
+     * construct instance of dingo client.
+     * @param coordinatorExchangeSvrList coordinator exchange server list
+     *                                   format: ip:port,ip:port,ip:port
+     *                                   example: localhost:8080,localhost:8081,localhost:8082
+     */
     public DingoClient(String coordinatorExchangeSvrList) {
         this(coordinatorExchangeSvrList, retryTimes);
     }
 
+    /**
+     * construct instance of dingo client with retry times.
+     * @param coordinatorExchangeSvrList coordinator exchange server list
+     *                                   format: ip:port,ip:port,ip:port
+     *                                   example: localhost:8080,localhost:8081,localhost:8082
+     * @param retryTimes this times is used to retry when operation is failed.
+     */
     public DingoClient(String coordinatorExchangeSvrList, Integer retryTimes) {
         connection = new DingoConnection(coordinatorExchangeSvrList);
         this.retryTimes = retryTimes;
     }
 
     /**
-     * connection must be init before do operation.
-     * @return true or false
+     * build connection to dingo database cluster.
+     * @return true when connection is built successfully, otherwise false.
      */
     public boolean openConnection() {
         try {
@@ -77,16 +98,23 @@ public class DingoClient {
                 isConnectionInit = true;
             }
             return true;
-        } catch (Exception e) {
-            log.error("init connection failed", e.toString(), e);
+        } catch (Exception ex) {
+            log.error("init connection failed", ex);
             return false;
         }
     }
 
+    /**
+     * check connection is connected or not.
+     * @return true when connection is connected, otherwise false.
+     */
     public boolean isConnected() {
         return isConnectionInit;
     }
 
+    /**
+     * close connection to dingo database cluster.
+     */
     public void closeConnection() {
         if (storeOpUtils != null) {
             storeOpUtils.shutdown();
@@ -95,6 +123,11 @@ public class DingoClient {
     }
 
 
+    /**
+     * create table using table definition.
+     * @param tableDef definition of input table
+     * @return true when table is created successfully, otherwise false.
+     */
     public boolean createTable(TableDefinition tableDef) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
@@ -106,9 +139,6 @@ public class DingoClient {
             return false;
         }
 
-        /**
-         * define table definition and call create table api.
-         */
         boolean isSuccess = false;
         try {
             connection.getMetaClient().createTable(tableDef.getName(), tableDef);
@@ -124,6 +154,11 @@ public class DingoClient {
         return isSuccess;
     }
 
+    /**
+     * drop table using table name.
+     * @param tableName input name of table
+     * @return true when table is dropped successfully, otherwise false.
+     */
     public boolean dropTable(final String tableName) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
@@ -145,6 +180,11 @@ public class DingoClient {
         return isSuccess;
     }
 
+    /**
+     * get definition from dingo meta.
+     * @param tableName input table name
+     * @return TableDefinition about table, null if table not exist.
+     */
     public TableDefinition getTableDefinition(final String tableName) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
@@ -158,6 +198,12 @@ public class DingoClient {
         return tableDef;
     }
 
+    /**
+     * insert records into table.
+     * @param tableName input table name
+     * @param records record(multiple records ordered by column index on table definition).
+     * @return true when records are inserted successfully, otherwise false.
+     */
     public boolean insert(String tableName, List<Object[]> records) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
@@ -178,13 +224,20 @@ public class DingoClient {
         return doPut(keyList, recordList);
     }
 
-    public boolean insert(String tableName, Object[] row) {
+    /**
+     * insert records into table.
+     * @param tableName input table name
+     * @param record ordered by column index on table definition.
+     * @return true when records are inserted successfully, otherwise false.
+     */
+    public boolean insert(String tableName, Object[] record) {
         List<Object[]> inputRecords = new ArrayList<>();
-        inputRecords.add(row);
+        inputRecords.add(record);
         return insert(tableName, inputRecords);
     }
 
-    private HashMap<Key, Record> convertObjectArray2Record(String tableName, List<Object[]> recordList) {
+    private HashMap<Key, Record> convertObjectArray2Record(String tableName,
+                                                           List<Object[]> recordList) {
         TableDefinition tableDefinition = storeOpUtils.getTableDefinition(tableName);
         if (tableDefinition == null) {
             log.warn("table:{} definition not found", tableName);
@@ -222,17 +275,37 @@ public class DingoClient {
         return recordResults;
     }
 
-    public boolean put(Key key, Column[] columns) throws DingoClientException {
+    /**
+     * put record to table using key.
+     * @param key input key of the table
+     * @param columns input columns of the table(ordered by column index on table definition).
+     * @return true when record is put successfully, otherwise false.
+     */
+    public boolean put(Key key, Column[] columns) {
         TableDefinition tableDefinition = storeOpUtils.getTableDefinition(key.getTable());
         Record record = new Record(tableDefinition.getColumns(), columns);
         return doPut(Arrays.asList(key), Arrays.asList(record));
     }
 
-    public boolean put(List<Key> keyList, List<Record> recordList) throws DingoClientException {
+    /**
+     * Note: The length of <strong>keyList</strong> and <strong>recordList</strong>MUST be equal!!!
+     * put multiple records together into table.
+     * @param keyList input key list of the table
+     * @param recordList input value list of the table(ordered by column index on table definition).
+     * @return true when records are put successfully, otherwise false.
+     *
+     */
+    public boolean put(List<Key> keyList, List<Record> recordList) {
         return doPut(keyList, recordList);
     }
 
-    public Object[] get(String tableName, Object[] key) throws Exception {
+    /**
+     * get table record by input key.
+     * @param tableName input table name
+     * @param key input key of the table
+     * @return record of the table in array of object, null if not found.
+     */
+    public Object[] get(String tableName, Object[] key) {
         List<Value> userKeys = new ArrayList<>();
         for (Object keyValue: key) {
             userKeys.add(Value.get(keyValue));
@@ -242,7 +315,12 @@ public class DingoClient {
         return dingoRecord.getDingoColumnValuesInOrder();
     }
 
-    public Record get(Key key) throws Exception {
+    /**
+     * get record from table by input key.
+     * @param key input key of the table
+     * @return record of table in Record mode, null if not found.
+     */
+    public Record get(Key key) {
         List<Record> records = doGet(Arrays.asList(key));
         if (records == null || records.isEmpty()) {
             return null;
@@ -250,10 +328,21 @@ public class DingoClient {
         return records.get(0);
     }
 
-    public List<Record> get(List<Key> keyList) throws Exception {
+    /**
+     * get multiple records from table by input key list.
+     * @param keyList input key list
+     * @return record list of table in Record mode, null if not found.
+     */
+    public List<Record> get(List<Key> keyList) {
         return doGet(keyList);
     }
 
+    /**
+     * delete record from table by input key.
+     * @param tableName name of the table
+     * @param key input key of the table
+     * @return true when record is deleted successfully, otherwise false.
+     */
     public boolean delete(String tableName, Object[] key) {
         List<Value> userKeys = new ArrayList<>();
         for (Object keyValue: key) {
@@ -263,15 +352,25 @@ public class DingoClient {
         return doDelete(Arrays.asList(dingoKey));
     }
 
-    public boolean delete(Key key) throws Exception {
+    /**
+     * delete record from the table by input key.
+     * @param key input key
+     * @return true when record is deleted successfully, otherwise false.
+     */
+    public boolean delete(Key key) {
         return doDelete(Arrays.asList(key));
     }
 
-    public boolean delete(List<Key> keyList) throws Exception {
+    /**
+     * delete records from the table by input key list.
+     * @param keyList input key list
+     * @return true when records are deleted successfully, otherwise false.
+     */
+    public boolean delete(List<Key> keyList) {
         return doDelete(keyList);
     }
 
-    private List<Record> doGet(List<Key> keyList) throws Exception {
+    private List<Record> doGet(List<Key> keyList) {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),

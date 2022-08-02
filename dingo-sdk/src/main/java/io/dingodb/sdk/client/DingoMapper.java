@@ -133,7 +133,6 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Each record will be converted to the appropriate class then passed to the
      * processor. If the processor returns true, more records will be processed and if the processor returns false,
      * the scan is aborted.
-     * <p/>
      * Depending on the ScanPolicy set up for this class,
      * it is possible for the processor to be called by multiple different
      * threads concurrently, so the processor should be thread-safe
@@ -150,7 +149,6 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Each record will be converted to the appropriate class then passed to the
      * processor. If the processor returns true, more records will be processed and if the processor returns false,
      * the scan is aborted.
-     * <p/>
      * Depending on the ScanPolicy set up for this class,
      * it is possible for the processor to be called by multiple different
      * threads concurrently, so the processor should be thread-safe
@@ -174,7 +172,6 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Perform a secondary index query with the specified query policy. Each record will be converted
      * to the appropriate class then passed to the processor. If the processor returns false the query is aborted
      * whereas if the processor returns true subsequent records (if any) are processed.
-     * <p/>
      * The query policy used will be the one associated with the passed classtype.
      *
      * @param clazz     - the class used to determine which set to scan and to convert the returned records to.
@@ -188,7 +185,6 @@ public interface DingoMapper extends IBaseDingoMapper {
     /**
      * Perform a secondary index query with the specified query policy
      * and returns the list of records converted to the appropriate class.
-     * <p/>
      * The query policy used will be the one associated with the passed classtype.
      *
      * @param clazz  - the class used to determine which set to scan and to convert the returned records to.

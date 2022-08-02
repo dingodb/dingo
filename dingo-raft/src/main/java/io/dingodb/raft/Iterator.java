@@ -30,7 +30,7 @@ public interface Iterator extends java.util.Iterator<ByteBuffer> {
      * Return a unique and monotonically increasing identifier of the current task:
      * - Uniqueness guarantees that committed tasks in different peers with
      *    the same index are always the same and kept unchanged.
-     * - Monotonicity guarantees that for any index pair i, j (i < j), task
+     * - Monotonicity guarantees that for any index pair i, j (i &lt; j), task
      *    at index |i| must be applied before task at index |j| in all the
      *    peers from the group.
      */
@@ -42,7 +42,7 @@ public interface Iterator extends java.util.Iterator<ByteBuffer> {
     long getTerm();
 
     /**
-     * If done() is non-NULL, you must call done()->Run() after applying this
+     * If done() is non-NULL, you must call done()-$gt;Run() after applying this
      * task no matter this operation succeeds or fails, otherwise the
      * corresponding resources would leak.
      *

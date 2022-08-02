@@ -80,6 +80,7 @@ public class Status implements Copiable<Status> {
 
     /**
      * Creates a OK status instance.
+     * @return OK status instance.
      */
     public static Status OK() {
         return new Status();
@@ -141,6 +142,7 @@ public class Status implements Copiable<Status> {
 
     /**
      * Returns true when status is in OK state.
+     * @return true when status is in OK state.
      */
     public boolean isOk() {
         return this.state == null || this.state.code == 0;

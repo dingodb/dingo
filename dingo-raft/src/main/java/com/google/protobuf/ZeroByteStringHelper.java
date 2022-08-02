@@ -79,8 +79,7 @@ public class ZeroByteStringHelper {
      * ByteString#CONCATENATE_BY_COPY_SIZE} may be copied by value here, as in
      * BAP95.  Large pieces are referenced without copy.
      *
-     * <p>Most of the operation here is inspired by the now-famous paper <a
-     *  * href="https://web.archive.org/web/20060202015456/http://www.cs.ubc.ca/local/reading/proceedings/spe91-95/spe/vol25/issue12/spe986.pdf">
+     * <p>Most of the operation here is inspired by the now-famous paper</p>
      *
      * @param left  string on the left
      * @param right string on the right

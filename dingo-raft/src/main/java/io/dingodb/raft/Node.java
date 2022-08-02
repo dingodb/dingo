@@ -47,7 +47,7 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
     NodeId getNodeId();
 
     /**
-     * Get the node metrics, only valid when node option {@link NodeOptions#isEnableMetrics()} is true.
+     * Get the node metrics, only valid when node option {@link NodeOptions} is true.
      */
     NodeMetrics getNodeMetrics();
 
@@ -136,7 +136,7 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
     List<PeerId> listPeers();
 
     /**
-     * List all alive peers of this raft group, only leader returns.</p>
+     * List all alive peers of this raft group, only leader returns.
      *
      * [NOTE] <strong>list_alive_peers is just a transient data (snapshot)
      * and a short-term loss of response by the follower will cause it to
@@ -148,7 +148,7 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
     List<PeerId> listAlivePeers();
 
     /**
-     * List all learners of this raft group, only leader returns.</p>
+     * <p>List all learners of this raft group, only leader returns.</p>
      *
      * [NOTE] <strong>when listLearners concurrency with {@link #addLearners(List, Closure)}/{@link #removeLearners(List, Closure)}/{@link #resetLearners(List, Closure)},
      * maybe return peers is staled.  Because {@link #addLearners(List, Closure)}/{@link #removeLearners(List, Closure)}/{@link #resetLearners(List, Closure)}
@@ -160,7 +160,7 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
     List<PeerId> listLearners();
 
     /**
-     * List all alive learners of this raft group, only leader returns.</p>
+     * <p>List all alive learners of this raft group, only leader returns.</p>
      *
      * [NOTE] <strong>when listAliveLearners concurrency with {@link #addLearners(List, Closure)}/{@link #removeLearners(List, Closure)}/{@link #resetLearners(List, Closure)},
      * maybe return peers is staled.  Because {@link #addLearners(List, Closure)}/{@link #removeLearners(List, Closure)}/{@link #resetLearners(List, Closure)}
@@ -199,7 +199,7 @@ public interface Node extends Lifecycle<NodeOptions>, Describer {
     void changePeers(final Configuration newPeers, final Closure done);
 
     /**
-     * Reset the configuration of this node individually, without any replication
+     * <p>Reset the configuration of this node individually, without any replication
      * to other peers before this node becomes the leader. This function is
      * supposed to be invoked when the majority of the replication group are
      * dead and you'd like to revive the service in the consideration of

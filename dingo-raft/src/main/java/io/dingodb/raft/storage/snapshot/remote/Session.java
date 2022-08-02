@@ -37,6 +37,7 @@ public interface Session extends Closeable {
 
     /**
      * Returns the copy job status.
+     * @return status about the job.
      */
     Status status();
 }

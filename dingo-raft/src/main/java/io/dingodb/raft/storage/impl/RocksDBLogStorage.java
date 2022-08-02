@@ -89,6 +89,8 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
         /**
          * Wait for all sub jobs finish.
+         * @throws InterruptedException if interrupted
+         * @throws IOException if error
          */
         default void joinAll() throws InterruptedException, IOException {
         }
@@ -96,8 +98,6 @@ public class RocksDBLogStorage implements LogStorage, Describer {
 
     /**
      * An empty write context.
-     * @author boyan(boyan@antfin.com)
-     *
      */
     protected static class EmptyWriteContext implements WriteContext {
         static EmptyWriteContext INSTANCE = new EmptyWriteContext();

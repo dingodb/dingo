@@ -97,9 +97,12 @@ public class RemoteFileCopier {
      * @param destPath local path
      * @param opts     options of copy
      * @return true if copy success
+     * @throws IOException if any error
+     * @throws InterruptedException if any error
      */
-    public boolean copyToFile(final String source, final String destPath, final CopyOptions opts) throws IOException,
-                                                                                                 InterruptedException {
+    public boolean copyToFile(final String source,
+                              final String destPath,
+                              final CopyOptions opts) throws IOException, InterruptedException {
         final Session session = startCopyToFile(source, destPath, opts);
         if (session == null) {
             return false;
@@ -157,9 +160,11 @@ public class RemoteFileCopier {
      * @param destBuf buffer of dest
      * @param opt     options of copy
      * @return true if copy success
+     * @throws InterruptedException if any error
      */
-    public boolean copy2IoBuffer(final String source, final ByteBufferCollector destBuf, final CopyOptions opt)
-                                                                                                               throws InterruptedException {
+    public boolean copy2IoBuffer(final String source,
+                                 final ByteBufferCollector destBuf,
+                                 final CopyOptions opt) throws InterruptedException {
         final Session session = startCopy2IoBuffer(source, destBuf, opt);
         if (session == null) {
             return false;
@@ -172,7 +177,9 @@ public class RemoteFileCopier {
         }
     }
 
-    public Session startCopy2IoBuffer(final String source, final ByteBufferCollector destBuf, final CopyOptions opts) {
+    public Session startCopy2IoBuffer(final String source,
+                                      final ByteBufferCollector destBuf,
+                                      final CopyOptions opts) {
         final CopySession session = newCopySession(source);
         session.setOutputStream(null);
         session.setDestBuf(destBuf);
