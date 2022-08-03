@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -53,7 +54,7 @@ public class TestWithVar {
             arguments("false and a/0", false, false),
             arguments("true or a/0", true, true),
             // functions
-            arguments("abs(a)", 2L, 3L)
+            arguments("abs(a)", new BigDecimal(2), new BigDecimal(3))
         );
     }
 

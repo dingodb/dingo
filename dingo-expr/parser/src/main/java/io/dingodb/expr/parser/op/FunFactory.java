@@ -45,7 +45,13 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberAbsOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberCeilingOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberFloorOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
+import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
@@ -156,6 +162,13 @@ public final class FunFactory {
 
         // number format function
         registerUdf("format", DingoNumberFormatOp::new);
+        registerUdf("abs", DingoNumberAbsOp::new);
+        registerUdf("mod", DingoNumberModOp::new);
+        registerUdf("floor", DingoNumberFloorOp::new);
+        registerUdf("ceiling", DingoNumberCeilingOp::new);
+        registerUdf("ceil", DingoNumberCeilingOp::new);
+        registerUdf("pow", DingoNumberPowOp::new);
+        registerUdf("round", DingoNumberRoundOp::new);
 
         // Date & time
         registerUdf("current_date", CurrentDateFun::new);
