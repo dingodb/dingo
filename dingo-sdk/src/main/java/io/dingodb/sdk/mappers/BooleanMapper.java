@@ -25,7 +25,7 @@ public class BooleanMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return ((Boolean) value) ? 1 : 0;
+        return ((Boolean) value) ? true : false;
     }
 
     @Override
@@ -33,6 +33,6 @@ public class BooleanMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return !Long.valueOf(0).equals(value);
+        return value;
     }
 }

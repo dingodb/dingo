@@ -28,7 +28,7 @@ public class TimestampMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return ((Timestamp) value).getTime();
+        return value;
     }
 
     @Override
@@ -36,8 +36,7 @@ public class TimestampMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        long longValue = (Long) value;
-        return new Timestamp(longValue);
+        return value;
     }
 }
 
