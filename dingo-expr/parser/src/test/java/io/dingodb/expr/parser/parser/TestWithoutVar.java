@@ -88,8 +88,8 @@ public class TestWithoutVar {
             arguments("substring('DingoDatabase', -4, 4)", "base"),
             arguments("substring('abcde', 1, 6)", "abcde"),
             // mathematical fun
-            arguments("abs(-1)", 1L),
-            arguments("abs(-2.3)", 2.3),
+            arguments("abs(-1)", new BigDecimal(1)),
+            arguments("abs(-2.3)", new BigDecimal(String.valueOf(2.3))),
             arguments("sin(0)", 0.0),
             arguments("sin(TAU / 12)", 0.5),
             arguments("sin(TAU / 4)", 1.0),

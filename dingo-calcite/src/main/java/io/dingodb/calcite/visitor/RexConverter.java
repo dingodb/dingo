@@ -217,6 +217,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                     op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
                 }
                 break;
+            case FLOOR:
+            case CEIL:
             case OTHER_FUNCTION: {
                 op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
                 break;

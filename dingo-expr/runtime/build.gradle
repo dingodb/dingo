@@ -25,4 +25,5 @@ dependencies {
     compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly project(':dingo-expr:dingo-expr-annotations')
     compileOnly project(':dingo-func-api')
+    implementation group: 'org.apache.calcite', name: 'calcite-linq4j', version: 'calcite'.v()
 }
