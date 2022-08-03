@@ -162,13 +162,6 @@ public final class Record {
             if (entry.getValue() instanceof Value) {
                 value = ((Value) entry.getValue()).getObject();
             }
-            if (value instanceof Date) {
-                value = ((Date) value).getTime();
-            } else if (value instanceof Time) {
-                value = ((Time) value).getTime();
-            } else if (value instanceof Timestamp) {
-                value = ((Timestamp) value).getTime();
-            }
             columnsInOrder.put(entry.getKey(), value);
         }
         return new Record(keyColumns, columnsInOrder);

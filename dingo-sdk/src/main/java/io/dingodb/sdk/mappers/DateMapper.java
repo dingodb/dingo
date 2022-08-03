@@ -19,6 +19,8 @@ package io.dingodb.sdk.mappers;
 
 import io.dingodb.sdk.utils.TypeMapper;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 
 public class DateMapper extends TypeMapper {
@@ -28,7 +30,7 @@ public class DateMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return ((Date) value).getTime();
+        return value;
     }
 
     @Override
@@ -36,7 +38,6 @@ public class DateMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        long longValue = (Long) value;
-        return new Date(longValue);
+        return value;
     }
 }
