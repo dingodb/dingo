@@ -117,6 +117,8 @@ public class Import {
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
         }
+
+        dingoClient.closeConnection();
     }
 
     private Properties buildProp() {

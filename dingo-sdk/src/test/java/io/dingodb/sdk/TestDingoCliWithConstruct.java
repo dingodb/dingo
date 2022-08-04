@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -106,7 +107,7 @@ public class TestDingoCliWithConstruct {
         Record expectedRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             dingoCli.save(constructedInstance);
@@ -139,7 +140,8 @@ public class TestDingoCliWithConstruct {
         Record expectedRecord = Record.toDingoRecord(new Record(constructedInstance));
 
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            // doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             dingoCli.save(constructedInstance);
