@@ -60,6 +60,8 @@ public class DingoCliExample {
 
         isOK = dingoOpCli.dropTable(Person.class);
         System.out.println("drop table Status:" + isOK + ".............");
+
+        dingoClient.closeConnection();
     }
 
     private static void wait(int millis) {

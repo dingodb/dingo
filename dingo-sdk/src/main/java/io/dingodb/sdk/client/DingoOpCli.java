@@ -220,39 +220,84 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public void save(@NotNull Object... objects) throws DingoClientException {
-        for (Object thisObject : objects) {
-            this.save(thisObject);
+    public void save(@NotNull Object[] objectArray) throws DingoClientException {
+        List<Key> keyList = new ArrayList<>();
+        List<Record> recordList = new ArrayList<>();
+
+        boolean isSameType = true;
+        String previousClassName = " ";
+        if (objectArray.length > 0) {
+            previousClassName = objectArray[0].getClass().getName();
         }
+
+        for (Object object : objectArray) {
+            if (!object.getClass().getName().equals(previousClassName)) {
+                isSameType = false;
+                break;
+            }
+
+            ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(object.getClass(), this);
+            String tableName = entry.getTableName();
+            if (tableName == null || tableName.isEmpty()) {
+                throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
+            }
+
+            TableDefinition tableDefinition = entry.getTableDefinition(tableName);
+            if (tableDefinition == null) {
+                throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
+            }
+
+            Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
+            Column[] columns = entry.getColumns(object, true);
+            Record record = new Record(tableDefinition.getColumns(), columns);
+
+            keyList.add(key);
+            recordList.add(record);
+        }
+
+        if (!isSameType || keyList.size() != 0 && keyList.size() != recordList.size()) {
+            throw new DingoClientException("Cannot save objects with different types");
+        }
+
+        doSave(keyList, recordList);
     }
 
     @Override
     public void save(@NotNull Object object) throws DingoClientException {
-        save(object, RecordExistsAction.REPLACE);
-    }
-
-    private <T> void save(@NotNull T object, RecordExistsAction recordExistsAction) {
-        Class<T> clazz = (Class<T>) object.getClass();
-        ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
-
+        ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(object.getClass(), this);
         String tableName = entry.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
+        }
+
+        TableDefinition tableDefinition = entry.getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
+        }
+
         Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
         Column[] columns = entry.getColumns(object, true);
+        Record record = new Record(tableDefinition.getColumns(), columns);
+
+        doSave(Arrays.asList(key), Arrays.asList(record));
+    }
+
+    private void doSave(@NotNull List<Key> keyList, List<Record> recordList) {
         try {
-            boolean isSuccess = dingoClient.put(key, columns);
+            boolean isSuccess = dingoClient.put(keyList, recordList);
             if (!isSuccess) {
-                log.warn("Failed to save object:{} on table:{}", object, tableName);
+                log.warn("Failed to Save objects in batch: cnt:{}", keyList.size());
             }
         } catch (DingoClientException ex) {
-            log.error("Put Key:{} Columns:{} on table:{} catch exception:{}",
-                key, columns,
-                tableName,
+            log.error("Failed to Save objects in batch: cnt:{} catch exception:{}",
+                keyList.size(),
                 ex.toString(), ex);
             throw ex;
         } catch (Exception e) {
-            throw new DingoClientException("Failed to save object:{}" + object, e);
+            throw new DingoClientException("Failed to Save objects in batch: cnt:" + keyList.size());
         }
     }
+
 
     /**
      * get the stored format of the object.

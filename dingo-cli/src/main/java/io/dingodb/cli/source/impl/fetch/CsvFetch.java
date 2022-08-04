@@ -62,6 +62,7 @@ public class CsvFetch extends AbstractParser implements Fetch {
             if (state) {
                 br.readLine();
             }
+            long totalCnt = 0L;
             while ((line = br.readLine()) != null) {
                 if (Strings.isNullOrEmpty(line)) {
                     continue;
@@ -70,6 +71,7 @@ public class CsvFetch extends AbstractParser implements Fetch {
                     .with(schema.withColumnSeparator(separatorChar))
                     .readValue(line);
                 records.add(arr);
+                totalCnt++;
                 if (records.size() >= 1000) {
                     this.parse(tableDefinition, records, dingoClient);
                     records.clear();
@@ -78,6 +80,8 @@ public class CsvFetch extends AbstractParser implements Fetch {
             if (records.size() != 0) {
                 this.parse(tableDefinition, records, dingoClient);
             }
+
+            System.out.println("All records has been load, count:" + totalCnt);
         } catch (Exception e) {
             log.error("Error reading file:{}", localFile, e);
         }

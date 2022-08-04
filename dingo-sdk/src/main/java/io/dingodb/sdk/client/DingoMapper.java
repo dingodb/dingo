@@ -39,10 +39,10 @@ public interface DingoMapper extends IBaseDingoMapper {
      * Not that no transactionality is implied by this method -- if any of the save methods fail, the exception will be
      * thrown without trying the other objects, nor attempting to roll back previously saved objects
      *
-     * @param objects One or two objects to save.
-     * @throws DingoClientException an Runtime Exception will be thrown in case of an error.
+     * @param objectArray One or multiple objects to save.
+     * @throws DingoClientException a runtime Exception will be thrown in case of an error.
      */
-    void save(@NotNull Object... objects);
+    void save(@NotNull Object[] objectArray);
 
     /**
      * Save an object in the database. This method will perform a REPLACE on the existing record so any existing

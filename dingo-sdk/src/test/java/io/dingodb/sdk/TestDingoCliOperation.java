@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -221,7 +222,7 @@ public class TestDingoCliOperation {
         Record expectedRecord = Record.toDingoRecord(new Record(person));
 
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
         } catch (Exception e) {
@@ -262,7 +263,7 @@ public class TestDingoCliOperation {
         Record expectedRecord02 = Record.toDingoRecord(new Record(person));
 
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             doReturn(expectedRecord01)
                 .doReturn(expectedRecord02)
                 .when(spyClient).get((Key) any());
@@ -304,7 +305,7 @@ public class TestDingoCliOperation {
             users.add(localPerson);
         }
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             // this method is equals to dingoCli.save(users.toArray());
             // dingoCli.save(users.get(0), users.get(1), users.get(2), users.get(3));
             dingoCli.save(users.toArray());

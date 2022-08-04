@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 
@@ -152,7 +153,7 @@ public class TestDingoArrayType {
         Record expectedRecord = Record.toDingoRecord(new Record(tableDefinition.getColumns(), columns));
 
         try {
-            doReturn(true).when(spyClient).put(any(), (Column[]) any());
+            doReturn(true).when(spyClient).put(any(), anyList());
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             doReturn(true).when(spyClient).dropTable(anyString());
