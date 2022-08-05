@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
@@ -77,6 +78,11 @@ public class Value<T> implements Expr {
     @Nonnull
     public static Value<String> parseString(@Nonnull String text) {
         return new Value<>(StringEscapeUtils.unescapeJson(text.substring(1, text.length() - 1)));
+    }
+
+    @Nonnull
+    public static Value<BigDecimal> parseDecimal(@Nonnull String text) {
+        return new Value<>(new BigDecimal(text));
     }
 
     @Nonnull

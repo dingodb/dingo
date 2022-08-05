@@ -32,7 +32,7 @@ public final class ExprUtil {
     @Nonnull
     public static RtExpr compileExpr(String expr, @Nonnull CompileContext ctx) {
         try {
-            return DingoExprCompiler.parse(expr).compileIn(ctx);
+            return DingoExprCompiler.parse(expr, true).compileIn(ctx);
         } catch (DingoExprParseException | DingoExprCompileException e) {
             throw new IllegalStateException(e);
         }

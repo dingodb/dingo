@@ -88,21 +88,23 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return rexNode.accept(INSTANCE);
     }
 
-    @Nullable
-    public static RtExprWithType toRtExprWithType(@Nullable RexNode rexNode) {
-        if (rexNode != null) {
-            return new RtExprWithType(
-                convert(rexNode).toString(),
-                DingoTypeFactory.fromRelDataType(rexNode.getType())
-            );
-        }
-        return null;
+    @Nonnull
+    public static RtExprWithType toRtExprWithType(@Nonnull RexNode rexNode) {
+        return toRtExprWithType(rexNode, rexNode.getType());
     }
 
     @Nonnull
-    public static List<RtExprWithType> toRtExprWithType(@Nonnull List<RexNode> rexNodes) {
-        return rexNodes.stream()
-            .map(RexConverter::toRtExprWithType)
+    public static RtExprWithType toRtExprWithType(@Nonnull RexNode rexNode, RelDataType type) {
+        return new RtExprWithType(
+            convert(rexNode).toString(),
+            DingoTypeFactory.fromRelDataType(type)
+        );
+    }
+
+    @Nonnull
+    public static List<RtExprWithType> toRtExprWithType(@Nonnull List<RexNode> rexNodes, RelDataType type) {
+        return IntStream.range(0, rexNodes.size())
+            .mapToObj(i -> toRtExprWithType(rexNodes.get(i), type.getFieldList().get(i).getType()))
             .collect(Collectors.toList());
     }
 

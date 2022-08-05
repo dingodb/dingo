@@ -106,6 +106,23 @@ public class UpdateTableTest {
     }
 
     @Test
+    public void testUpdate2() throws SQLException, JsonProcessingException {
+        String sql = "update test set amount = 100.123 where id = 1";
+        sqlHelper.updateTest(sql, 1);
+        checkDatumInTestTable(
+            "1, Alice, 100.123\n"
+                + "2, Betty, 4.0\n"
+                + "3, Cindy, 4.5\n"
+                + "4, Doris, 5.0\n"
+                + "5, Emily, 5.5\n"
+                + "6, Alice, 6.0\n"
+                + "7, Betty, 6.5\n"
+                + "8, Alice, 7.0\n"
+                + "9, Cindy, 7.5\n"
+        );
+    }
+
+    @Test
     public void testDelete() throws SQLException, JsonProcessingException {
         String sql = "delete from test where id = 3 or id = 4";
         sqlHelper.updateTest(sql, 2);

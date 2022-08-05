@@ -28,7 +28,6 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -41,12 +40,15 @@ public class TestWithoutVar {
     private static final double TAU = Math.PI * 2;
 
     @Nonnull
-    private static Stream<Arguments> getParameters() throws ParseException {
+    private static Stream<Arguments> getParameters() {
         return Stream.of(
             // value
             arguments("true", true),
             arguments("false", false),
             arguments("2", 2L),
+            arguments("9223372036854775807", Long.MAX_VALUE),
+            arguments("9223372036854775808", new BigDecimal("9223372036854775808")),
+            arguments("long(-9223372036854775808)", Long.MIN_VALUE),
             arguments("3.0", 3.0),
             arguments("'foo'", "foo"),
             arguments("\"bar\"", "bar"),

@@ -33,24 +33,39 @@ import javax.annotation.Nonnull;
 
 public final class DingoExprCompiler {
     private static final DingoExprCompiler INS = new DingoExprCompiler();
+    private static final DingoExprCompiler INS_DECIMAL = new DingoExprCompiler(true);
 
     private final DingoExprParserVisitor<Expr> visitor;
 
     private DingoExprErrorListener errorListener;
 
     private DingoExprCompiler() {
-        visitor = new DingoExprParserVisitorImpl();
+        this(false);
+    }
+
+    private DingoExprCompiler(boolean realAsBigDecimal) {
+        visitor = new DingoExprParserVisitorImpl(realAsBigDecimal);
+    }
+
+    @Nonnull
+    public static Expr parse(String input) throws DingoExprParseException {
+        return parse(input, false);
     }
 
     /**
      * Parse a given String input into an Expr.
      *
-     * @param input the given String
+     * @param input            the given String
+     * @param realAsBigDecimal whether a real should be parsed into a {@code BigDecimal} or {@code Double}
      * @return the Expr
      * @throws DingoExprParseException if errors occurred in parsing
      */
-    public static Expr parse(String input) throws DingoExprParseException {
-        return INS.parseInternal(input);
+    public static Expr parse(String input, boolean realAsBigDecimal) throws DingoExprParseException {
+        if (realAsBigDecimal) {
+            return INS_DECIMAL.parseInternal(input);
+        } else {
+            return INS.parseInternal(input);
+        }
     }
 
     @Nonnull
