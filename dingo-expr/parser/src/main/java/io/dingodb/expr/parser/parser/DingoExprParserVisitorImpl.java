@@ -30,7 +30,13 @@ import io.dingodb.expr.parser.var.Var;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> {
+final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> {
+    private final boolean realAsBigDecimal;
+
+    public DingoExprParserVisitorImpl(boolean realAsBigDecimal) {
+        this.realAsBigDecimal = realAsBigDecimal;
+    }
+
     private void setParaList(@Nonnull Op op, @Nonnull List<DingoExprParser.ExprContext> exprList) {
         op.setExprArray(
             exprList.stream()
@@ -110,7 +116,11 @@ public final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor
     @Nonnull
     @Override
     public Expr visitInt(@Nonnull DingoExprParser.IntContext ctx) {
-        return Value.parseLong(ctx.INT().getText());
+        try {
+            return Value.parseLong(ctx.INT().getText());
+        } catch (NumberFormatException e) { // overflow
+            return Value.parseDecimal(ctx.INT().getText());
+        }
     }
 
     @Nonnull
@@ -160,7 +170,11 @@ public final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor
     @Nonnull
     @Override
     public Expr visitReal(@Nonnull DingoExprParser.RealContext ctx) {
-        return Value.parseDouble(ctx.REAL().getText());
+        if (realAsBigDecimal) {
+            return Value.parseDecimal(ctx.REAL().getText());
+        } else {
+            return Value.parseDouble(ctx.REAL().getText());
+        }
     }
 
     @Nonnull

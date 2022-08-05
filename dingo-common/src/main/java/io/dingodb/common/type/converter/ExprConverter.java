@@ -18,6 +18,7 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
 
+import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 
 public class ExprConverter implements DataConverter {
@@ -32,5 +33,13 @@ public class ExprConverter implements DataConverter {
             return ((Long) value).intValue();
         }
         return (Integer) value;
+    }
+
+    @Override
+    public Double convertDoubleFrom(@Nonnull Object value) {
+        if (value instanceof Double) {
+            return (Double) value;
+        }
+        return ((BigDecimal) value).doubleValue();
     }
 }

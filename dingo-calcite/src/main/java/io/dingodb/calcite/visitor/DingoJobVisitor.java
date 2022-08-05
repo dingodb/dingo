@@ -94,6 +94,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import java.util.ArrayList;
@@ -390,8 +391,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@Nonnull DingoFilter rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        RexNode condition = rel.getCondition();
         return bridge(inputs, () -> new FilterOperator(
-            RexConverter.toRtExprWithType(rel.getCondition()),
+            RexConverter.toRtExprWithType(condition),
             DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
@@ -560,13 +562,14 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         List<Location> distributes = this.metaCache.getDistributes(tableName);
         CommonId tableId = this.metaCache.getTableId(tableName);
         List<Output> outputs = new ArrayList<>(distributes.size());
+        RexNode filter = rel.getFilter();
         for (int i = 0; i < distributes.size(); i++) {
             PartScanOperator operator = new PartScanOperator(
                 tableId,
                 i,
                 td.getDingoType(),
                 td.getKeyMapping(),
-                RexConverter.toRtExprWithType(rel.getFilter()),
+                filter != null ? RexConverter.toRtExprWithType(filter) : null,
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -581,7 +584,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoProject rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new ProjectOperator(
-            RexConverter.toRtExprWithType(rel.getProjects()),
+            RexConverter.toRtExprWithType(rel.getProjects(), rel.getRowType()),
             DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
