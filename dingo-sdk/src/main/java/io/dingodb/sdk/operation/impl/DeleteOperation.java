@@ -43,11 +43,11 @@ public class DeleteOperation implements IStoreOperation {
                                       ContextForStore parameters) {
         try {
             if (parameters == null
-                || parameters.getKeyListInBytes().size() < 1) {
+                || parameters.getStartKeyListInBytes().size() < 1) {
                 String errorMessage = "Delete operation requires at least one key";
                 return new ResultForStore(false, errorMessage);
             }
-            List<byte[]> keyList = parameters.getKeyListInBytes();
+            List<byte[]> keyList = parameters.getStartKeyListInBytes();
             boolean result = executorApi.delete(tableId, keyList);
             return new ResultForStore(result, "OK");
         } catch (Exception e) {

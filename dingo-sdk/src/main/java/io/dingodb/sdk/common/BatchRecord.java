@@ -16,6 +16,8 @@
 
 package io.dingodb.sdk.common;
 
+import io.dingodb.common.operation.Operation;
+
 public class BatchRecord {
 
     public final Key key;

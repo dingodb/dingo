@@ -20,13 +20,13 @@ import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.sdk.common.Column;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.operation.Column;
 import io.dingodb.sdk.common.Record;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,15 +70,27 @@ public final class ConvertUtils {
      * @param codec codec about KeyValue
      * @return ContextForStore.
      */
-    public static ContextForStore getStoreContext(ContextForClient inputContext, KeyValueCodec codec) {
-        List<byte[]> keyListInBytes = inputContext.getKeyList().stream().map(x -> {
+    public static ContextForStore getStoreContext(ContextForClient inputContext,
+                                                  KeyValueCodec codec,
+                                                  TableDefinition definition) {
+        List<byte[]> startKeyListInBytes = inputContext.getStartKeyList().stream().map(x -> {
             try {
-                byte[] keyInBytes = codec.encodeKey(x.getUserKey().toArray());
-                return keyInBytes;
+                return codec.encodeKey(x.getUserKey().toArray());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }).collect(Collectors.toList());
+
+        List<byte[]> endKeyListInBytes = null;
+        if (inputContext.getEndKeyList() != null) {
+            endKeyListInBytes = inputContext.getEndKeyList().stream().map(x -> {
+                try {
+                    return codec.encodeKey(x.getUserKey().toArray());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).collect(Collectors.toList());
+        }
 
         List<KeyValue> keyValueList = null;
         if (inputContext.getRecordList() != null) {
@@ -96,9 +108,10 @@ public final class ConvertUtils {
         List<byte[]> operationListInBytes = null;
         if (inputContext.getOperationList() != null) {
             operationListInBytes = inputContext.getOperationList().stream()
+                .peek(op -> op.operationContext.definition(definition))
                 .map(ProtostuffCodec::write)
                 .collect(Collectors.toList());
         }
-        return new ContextForStore(keyListInBytes, keyValueList, operationListInBytes);
+        return new ContextForStore(startKeyListInBytes, endKeyListInBytes, keyValueList, operationListInBytes);
     }
 }

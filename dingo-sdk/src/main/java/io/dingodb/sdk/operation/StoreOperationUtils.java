@@ -18,6 +18,7 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.DingoKeyValueCodec;
@@ -49,6 +50,7 @@ public class StoreOperationUtils {
     private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
 
     private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private TableDefinition tableDefinition;
     private DingoConnection connection;
     private int retryTimes;
 
@@ -60,6 +62,49 @@ public class StoreOperationUtils {
     public void shutdown() {
         executorService.shutdown();
         clearTableDefinitionInCache();
+    }
+
+    public List<ExecutiveResult> doOperation(String tableName,
+                                             ContextForClient storeParameters) {
+        RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
+        if (routeTable == null) {
+            log.error("table {} not found when do operation", tableName);
+            return null;
+        }
+
+        boolean isSuccess = false;
+        int retryTimes = this.retryTimes;
+        List<ExecutiveResult> results = new ArrayList<>();
+        do {
+            try {
+                KeyValueCodec codec = routeTable.getCodec();
+                ContextForStore storeContext = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
+                Map<String, ContextForStore> keys2Executor =
+                    groupKeysByExecutor(routeTable, null, tableName, storeContext);
+
+                for (Map.Entry<String, ContextForStore> entry : keys2Executor.entrySet()) {
+                    String leaderAddress = entry.getKey();
+                    ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+
+                    List<ExecutiveResult> executiveResults = executorApi.operator(
+                        routeTable.getTableId(),
+                        entry.getValue().getStartKeyListInBytes(),
+                        entry.getValue().getEndKeyListInBytes(),
+                        entry.getValue().getOperationListInBytes());
+                    for (ExecutiveResult executiveResult : executiveResults) {
+                        isSuccess = executiveResult.isSuccess();
+                        if (!isSuccess) {
+                            throw new RuntimeException("calc operation fail");
+                        }
+                        results.add(executiveResult);
+                    }
+                }
+                isSuccess = true;
+            } catch (Exception e) {
+                log.error("operation fail.", e);
+            }
+        } while (!isSuccess && --retryTimes > 0);
+        return results;
     }
 
     public ResultForClient doOperation(StoreOperationType type,
@@ -79,7 +124,7 @@ public class StoreOperationUtils {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
-                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec);
+                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<String, ContextForStore> keys2Executor = groupKeysByExecutor(
                     routeTable,
                     type,
@@ -155,8 +200,8 @@ public class StoreOperationUtils {
         String tableName,
         ContextForStore wholeContext) {
         Map<String, List<byte[]>> keyListByExecutor = new TreeMap<>();
-        for (int index = 0; index < wholeContext.getKeyListInBytes().size(); index++) {
-            byte[] keyInBytes = wholeContext.getKeyListInBytes().get(index);
+        for (int index = 0; index < wholeContext.getStartKeyListInBytes().size(); index++) {
+            byte[] keyInBytes = wholeContext.getStartKeyListInBytes().get(index);
             String leaderAddress = getLeaderAddressByStartKey(routeTable, keyInBytes);
             if (leaderAddress == null) {
                 log.error("Cannot find partition, table {} key:{} not found when do operation:{}",
@@ -184,6 +229,7 @@ public class StoreOperationUtils {
             }
             ContextForStore subStoreContext = new ContextForStore(
                 keys,
+                wholeContext.getEndKeyListInBytes(),
                 records,
                 wholeContext.getOperationListInBytes());
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
@@ -205,15 +251,15 @@ public class StoreOperationUtils {
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
             CommonId tableId = metaClient.getTableId(tableName);
-            TableDefinition tableDef = metaClient.getTableDefinition(tableName);
-            if (tableDef == null) {
+            tableDefinition = metaClient.getTableDefinition(tableName);
+            if (tableDefinition == null) {
                 log.error("Cannot find table:{} defination from meta", tableName);
                 return null;
             }
-            tableDefinitionInCache.put(tableName, tableDef);
+            tableDefinitionInCache.put(tableName, tableDefinition);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
-            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDef.getDingoType(), tableDef.getKeyMapping());
-            RangeStrategy rangeStrategy = new RangeStrategy(tableDef, partitions.navigableKeySet());
+            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+            RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
             routeTable = new RouteTable(
                 tableName,
                 tableId,
@@ -221,7 +267,7 @@ public class StoreOperationUtils {
                 partitions,
                 rangeStrategy);
             dingoRouteTables.put(tableName, routeTable);
-            log.info("Refresh route table:{}, tableDef:{}", tableName, tableDef);
+            log.info("Refresh route table:{}, tableDef:{}", tableName, tableDefinition);
         }
         return routeTable;
     }

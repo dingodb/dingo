@@ -16,11 +16,11 @@
 
 package io.dingodb.sdk;
 
+import io.dingodb.common.operation.Column;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
-import io.dingodb.sdk.common.Column;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.mock.MockApiRegistry;
