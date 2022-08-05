@@ -16,13 +16,15 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.common.Column;
+import io.dingodb.common.operation.Column;
 import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Operation;
+import io.dingodb.common.operation.Operation;
 import io.dingodb.sdk.common.Record;
-import io.dingodb.sdk.common.Value;
+import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.operation.ContextForClient;
 import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
@@ -30,8 +32,10 @@ import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -374,7 +378,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, null, null));
+            new ContextForClient(keyList, Collections.emptyList(), null, null));
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -387,7 +391,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, recordList, null));
+            new ContextForClient(keyList, Collections.emptyList(), recordList, null));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -399,7 +403,7 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, null, null));
+            new ContextForClient(keyList, Collections.emptyList(),null, null));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -407,115 +411,228 @@ public class DingoClient {
         return true;
     }
 
-    public final void add(Key key, Column... columns) {
+    /**
+     * Accumulates a column of values for a single primary key.
+     * Operate on numeric types only.
+     *
+     * @param key primary key
+     * @param columns Multiple columns to be calculated
+     * @return true/false
+     */
+    public final List<ExecutiveResult> add(@Nonnull Key key, @Nonnull Column... columns) {
         Operation operation = Operation.add(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (result.getStatus() != true) {
-            log.error("add operation failed, key:{}, columns:{}", key, columns);
-        }
-        return;
+        return operate(key, Collections.singletonList(operation));
     }
 
-    public final Record max(Key key, Column... columns) {
+    /**
+     * Primary key range accumulates a column of values.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param columns Multiple columns to be calculated
+     * @return true/false
+     */
+    public final List<ExecutiveResult> add(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
+        Operation operation = Operation.add(columns);
+        return operate(start, end, Collections.singletonList(operation));
+    }
+
+    /**
+     * Returns the maximum value within the primary key range.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> max(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.max(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return operate(start, end, Collections.singletonList(operation));
     }
 
-    public final Record min(Key key, Column... columns) {
+    /**
+     * Returns the maximum value in the range of primary keys that match the filter criteria.
+     * Operate on numeric types only.
+     *
+     * <pre> {@code
+     *      DingoFilter root = new DingoFilterImpl();
+     *      DingoFilter equalsFilter = new DingoValueEqualsFilter(new int[]{1}, new Object[]{10});
+     *      root.addAndFilter(equalsFilter);
+     * }</pre>
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param filter filter condition
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> max(@Nonnull Key start,
+                                           @Nonnull Key end,
+                                           @Nonnull DingoFilter filter,
+                                           @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
+        Operation operation = Operation.max(columns);
+
+        operation.operationContext.filter(filter);
+        return operate(start, end, Collections.singletonList(operation));
+    }
+
+    /**
+     * Returns the minimum value within the primary key range.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> min(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.min(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return operate(start, end, Collections.singletonList(operation));
     }
 
-    public final Record sum(Key key, Column... columns) {
+    /**
+     * Returns the smallest value within the range of the primary key that matches the filter criteria.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param filter filter condition
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> min(@Nonnull Key start,
+                                           @Nonnull Key end,
+                                           @Nonnull DingoFilter filter,
+                                           @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} raanges is different", start, end);
+            return null;
+        }
+        Operation operation = Operation.min(columns);
+        operation.operationContext.filter(filter);
+        return operate(start, end, Collections.singletonList(operation));
+    }
+
+    /**
+     * Returns the total in the range of the primary key.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> sum(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
         Operation operation = Operation.sum(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.GET_COMPUTE,
-            key.getTable(),
-            contextForClient);
-        return result.getRecords() != null ? result.getRecords().get(0) : null;
+        return operate(start, end, Collections.singletonList(operation));
     }
 
-    public final void append(Key key, Column... columns) {
-        Operation operation = Operation.append(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (!result.getStatus()) {
-            log.error("append operation failed, key:{}, columns:{}", key, columns);
+    /**
+     * Returns the total number of matching filter criteria within the primary key range.
+     * Operate on numeric types only.
+     *
+     * @param start Primary key start position
+     * @param end primary key end position
+     * @param filter filter condition
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     */
+    public final List<ExecutiveResult> sum(@Nonnull Key start,
+                                           @Nonnull Key end,
+                                           @Nonnull DingoFilter filter,
+                                           @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
         }
+        Operation operation = Operation.sum(columns);
+
+        operation.operationContext.filter(filter);
+        return operate(start, end, Collections.singletonList(operation));
     }
 
-    public final void replace(Key key, Column... columns) {
-        Operation operation = Operation.replace(columns);
-        ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(key),
-            null,
-            Arrays.asList(operation)
-        );
-        ResultForClient result = storeOpUtils.doOperation(
-            StoreOperationType.COMPUTE_UPDATE,
-            key.getTable(),
-            contextForClient);
-        if (!result.getStatus()) {
-            log.error("append operation failed, key:{}, columns:{}", key, columns);
+    /**
+     * Returns the number of rows that satisfy the filter conditions in a primary key range.
+     * Operate on numeric types only.
+     *
+     * @param start Primary key start position
+     * @param end primary key end position
+     * @param filter filter condition
+     * @param columns Multiple columns to be calculated
+     * @return The calculation result of the corresponding column
+     * @see Key
+     * @see ExecutiveResult
+     */
+    public final List<ExecutiveResult> count(@Nonnull Key start,
+                                             @Nonnull Key end,
+                                             @Nonnull DingoFilter filter,
+                                             @Nonnull Column... columns) {
+        if (start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
         }
+        Operation operation = Operation.count(columns);
+        operation.operationContext.filter(filter);
+        return operate(start, end, Collections.singletonList(operation));
     }
 
     /**
      * Perform multiple read/write operations on a single key in one batch call.
+     * @param key primary key
+     * @param operations multiple read/write operations
+     * @return Multiple one-to-one operation results
+     */
+    public final List<ExecutiveResult> operate(Key key, List<Operation> operations) {
+        return operate(key, null, operations);
+    }
+
+    /**
+     * Perform multiple read and write operations on the primary key range in one batch call.
      *<p>
      *     Operation and ListOperation, MapOperation can be performed in same call.
      *</p>
      *
-     * @param key unique record identifier
+     * @param start primary key start position
+     * @param end primary key end position
      * @param operations database operations to perform
-     * @return .
+     * @return Multiple one-to-one operation results
      */
-    public final Record operate(Key key, List<Operation> operations) {
-        /*operations.stream()
-            .map(op -> op.operationType.executive().execute(null, op.context));*/
-
-        return null;
+    public final List<ExecutiveResult> operate(Key start, Key end, List<Operation> operations) {
+        if (end != null && start.userKey.size() != end.userKey.size()) {
+            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
+            return null;
+        }
+        ContextForClient contextForClient = new ContextForClient(
+            Arrays.asList(start),
+            end == null ? null : Arrays.asList(end),
+            null,
+            operations);
+        return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
-    public final Record updateCol(Key key, Column... column) {
-        return null;
+    public boolean updateColumn(Key key, Column column) {
+        return true;
     }
 }

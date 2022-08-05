@@ -17,6 +17,8 @@
 package io.dingodb.sdk.common;
 
 import com.google.common.collect.Maps;
+import io.dingodb.common.operation.Column;
+import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;

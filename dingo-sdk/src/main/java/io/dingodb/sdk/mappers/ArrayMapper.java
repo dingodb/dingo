@@ -17,7 +17,7 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.sdk.common.Value;
+import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.utils.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 

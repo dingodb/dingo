@@ -17,7 +17,7 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Operation;
+import io.dingodb.common.operation.Operation;
 import io.dingodb.sdk.common.Record;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,7 +27,8 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public final class ContextForClient {
-    private final List<Key> keyList;
+    private final List<Key> startKeyList;
+    private final List<Key> endKeyList;
     private final List<Record> recordList;
     private final List<Operation> operationList;
 }

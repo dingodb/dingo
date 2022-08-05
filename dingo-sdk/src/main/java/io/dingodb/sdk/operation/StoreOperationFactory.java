@@ -16,8 +16,6 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.sdk.operation.impl.ComputeGetOperation;
-import io.dingodb.sdk.operation.impl.ComputeUpdateOperation;
 import io.dingodb.sdk.operation.impl.DeleteOperation;
 import io.dingodb.sdk.operation.impl.GetOperation;
 import io.dingodb.sdk.operation.impl.PutOperation;
@@ -31,10 +29,10 @@ public final class StoreOperationFactory {
                 return GetOperation.getInstance();
             case DELETE:
                 return DeleteOperation.getInstance();
-            case GET_COMPUTE:
+            /*case GET_COMPUTE:
                 return ComputeGetOperation.getInstance();
             case COMPUTE_UPDATE:
-                return ComputeUpdateOperation.getInstance();
+                return ComputeUpdateOperation.getInstance();*/
             default:
                 return null;
         }

@@ -93,6 +93,10 @@ public class TableDefinition {
         return null;
     }
 
+    public int getColumnIndexOfValue(String name) {
+        return getColumnIndex(name) - getPrimaryKeyCount();
+    }
+
     public int getColumnIndex(String name) {
         int i = 0;
         for (ColumnDefinition column : columns) {
@@ -111,6 +115,16 @@ public class TableDefinition {
             indices[i] = getColumnIndex(names.get(i));
         }
         return indices;
+    }
+
+    public int getPrimaryKeyCount() {
+        int count = 0;
+        for (ColumnDefinition column : columns) {
+            if (column.isPrimary()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public int getColumnsCount() {

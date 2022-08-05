@@ -94,7 +94,14 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default byte[] compute(byte[] primaryKey, byte[] computes) {
+    default boolean compute(byte[] primaryKey, byte[] computes) {
+        byte[] stop = new byte[primaryKey.length];
+        System.arraycopy(primaryKey, 0, stop, 0, primaryKey.length);
+        stop[stop.length - 1]++;
+        return compute(primaryKey, stop, computes);
+    }
+
+    default boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, byte[] operations) {
         throw new UnsupportedOperationException();
     }
 

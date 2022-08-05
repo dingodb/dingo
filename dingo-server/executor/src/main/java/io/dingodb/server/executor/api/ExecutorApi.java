@@ -17,13 +17,20 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.Operation;
+import io.dingodb.common.operation.Value;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
@@ -97,7 +104,44 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     @Override
-    public byte[] operator(CommonId tableId, byte[] key, byte[] computes) {
-        return new byte[0];
+    public List<ExecutiveResult> operator(CommonId tableId,
+                                 List<byte[]> statPrimaryKey,
+                                 List<byte[]> endPrimaryKey,
+                                 List<byte[]> operations) {
+        List<Operation> operationList = operations.stream()
+            .map(ProtostuffCodec::<Operation>read)
+            .collect(Collectors.toList());
+        List<ExecutiveResult> results = new ArrayList<>();
+        for (int i = 0; i < operationList.size(); i++) {
+            Operation operation = operationList.get(i);
+            if (operation.operationType.isWriteable()) {
+                for (int j = 0; j < statPrimaryKey.size(); j++) {
+                    boolean isOK;
+                    if (endPrimaryKey != null && endPrimaryKey.get(j) != null) {
+                        isOK = storeService.getInstance(tableId)
+                            .compute(statPrimaryKey.get(j), endPrimaryKey.get(j), operations.get(i));
+                    } else {
+                        isOK = storeService.getInstance(tableId).compute(statPrimaryKey.get(j), operations.get(i));
+                    }
+                    results.add(new ExecutiveResult(Collections.singletonList(Collections.singletonMap(
+                        operation.operationContext.columns[0].name, Value.get(isOK))), isOK, null));
+                }
+            } else {
+                for (int j = 0; j < statPrimaryKey.size(); j++) {
+                    Iterator<KeyValue> iterator;
+                    if (endPrimaryKey != null && endPrimaryKey.get(j) != null) {
+                        iterator = storeService.getInstance(tableId)
+                            .keyValueScan(statPrimaryKey.get(j), endPrimaryKey.get(j));
+                    } else {
+                        iterator = storeService.getInstance(tableId).keyValueScan(statPrimaryKey.get(j));
+                    }
+                    ExecutiveResult value = (ExecutiveResult)
+                        operation.operationType.executive().execute(operation.operationContext, iterator);
+
+                    results.add(value);
+                }
+            }
+        }
+        return results;
     }
 }

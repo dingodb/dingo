@@ -44,7 +44,7 @@ public class PutOperation implements IStoreOperation {
                                       ContextForStore parameters) {
         try {
             if (parameters == null
-                || parameters.getKeyListInBytes().size() != parameters.getRecordList().size()) {
+                || parameters.getStartKeyListInBytes().size() != parameters.getRecordList().size()) {
                 log.error("Parameters is null || table:{} has non key columns", tableId);
                 String errorMsg = "Invalid parameters for put operation";
                 return new ResultForStore(false, errorMsg);
