@@ -27,6 +27,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class AvroConverter implements DataConverter {
@@ -56,8 +57,10 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
-    public List<Object> convert(@Nonnull Object[] value) {
-        return Arrays.asList(value);
+    public List<Object> convert(@Nonnull Object[] value, DingoType elementType) {
+        return Arrays.stream(value)
+            .map(v -> elementType.convertTo(v, this))
+            .collect(Collectors.toList());
     }
 
     @Override

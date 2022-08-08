@@ -52,7 +52,7 @@ import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
-import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
+import io.dingodb.expr.runtime.op.sql.RtSqlListConstructorOp;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
 import io.dingodb.expr.runtime.op.string.DingoStringLTrimOp;
@@ -185,7 +185,8 @@ public final class FunFactory {
         registerUdf("datediff", DateDiffFun::new);
 
         // Array
-        registerUdf("array", RtSqlArrayConstructorOp::new);
+        //registerUdf("array", RtSqlArrayConstructorOp::new);
+        registerUdf("array", RtSqlListConstructorOp::new);
     }
 
     private void registerEvaluator(

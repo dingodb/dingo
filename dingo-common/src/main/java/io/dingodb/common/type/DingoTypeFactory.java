@@ -16,6 +16,7 @@
 
 package io.dingodb.common.type;
 
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.scalar.AbstractScalarType;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -112,6 +113,33 @@ public final class DingoTypeFactory {
     }
 
     @Nonnull
+    public static ListType list(DingoType elementType, boolean nullable) {
+        return new ListType(elementType, nullable);
+    }
+
+    @Nonnull
+    public static ListType list(int elementTypeCode, boolean nullable) {
+        return new ListType(scalar(elementTypeCode, false), nullable);
+    }
+
+    @Nonnull
+    public static ListType list(String type, boolean nullable) {
+        return list(scalar(type), nullable);
+    }
+
+    @Nonnull
+    public static DingoType fromColumnDefinition(@Nonnull ColumnDefinition columnDefinition) {
+        SqlTypeName type = columnDefinition.getType();
+        boolean notNull = columnDefinition.isNotNull();
+        if (type != SqlTypeName.ARRAY) {
+            return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
+        }
+        SqlTypeName elementType = columnDefinition.getElementType();
+        //return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
+        return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);
+    }
+
+    @Nonnull
     public static DingoType fromRelDataType(@Nonnull RelDataType relDataType) {
         if (!relDataType.isStruct()) {
             SqlTypeName sqlTypeName = relDataType.getSqlTypeName();
@@ -120,7 +148,8 @@ public final class DingoTypeFactory {
                     return NullType.NULL;
                 case ARRAY:
                     DingoType elementType = fromRelDataType(Objects.requireNonNull(relDataType.getComponentType()));
-                    return array(elementType, relDataType.isNullable());
+                    //return array(elementType, relDataType.isNullable());
+                    return list(elementType, relDataType.isNullable());
                 default:
                     return scalar(
                         TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
@@ -143,7 +172,8 @@ public final class DingoTypeFactory {
             return scalar(convertSqlTypeId(avaticaType.id), false);
         } else if (avaticaType instanceof ColumnMetaData.ArrayType) {
             ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) avaticaType;
-            return array(fromAvaticaType(arrayType.getComponent()), false);
+            //return array(fromAvaticaType(arrayType.getComponent()), false);
+            return list(fromAvaticaType(arrayType.getComponent()), false);
         } else if (avaticaType instanceof ColumnMetaData.StructType) {
             ColumnMetaData.StructType structType = (ColumnMetaData.StructType) avaticaType;
             return fromColumnMetaDataList(structType.columns);
@@ -155,7 +185,8 @@ public final class DingoTypeFactory {
     public static DingoType fromColumnMetaData(@Nonnull ColumnMetaData colMeta) {
         if (colMeta.type.id == Types.ARRAY) {
             ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
-            return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
+            //return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
+            return list(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
         } else if (colMeta.type.id == Types.STRUCT) {
             ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
             return fromColumnMetaDataList(structType.columns);

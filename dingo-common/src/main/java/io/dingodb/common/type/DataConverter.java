@@ -21,7 +21,9 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -53,8 +55,16 @@ public interface DataConverter {
         return value;
     }
 
-    default Object convert(@Nonnull Object[] value) {
-        return value;
+    default Object convert(@Nonnull Object[] value, DingoType elementType) {
+        return Arrays.stream(value)
+            .map(v -> elementType.convertTo(v, this))
+            .toArray(Object[]::new);
+    }
+
+    default Object convert(@Nonnull List<?> value, DingoType elementType) {
+        return value.stream()
+            .map(v -> elementType.convertTo(v, this))
+            .collect(Collectors.toList());
     }
 
     default Integer convertIntegerFrom(@Nonnull Object value) {
@@ -108,6 +118,12 @@ public interface DataConverter {
         return Arrays.stream((Object[]) value)
             .map(e -> elementType.convertFrom(e, this))
             .toArray(Object[]::new);
+    }
+
+    default List<?> convertListFrom(@Nonnull Object value, DingoType elementType) {
+        return ((List<?>) value).stream()
+            .map(e -> elementType.convertFrom(e, this))
+            .collect(Collectors.toList());
     }
 
     default Object collectTuple(@Nonnull Stream<Object> stream) {

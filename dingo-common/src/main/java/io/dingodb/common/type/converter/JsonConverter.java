@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -133,5 +135,15 @@ public class JsonConverter implements DataConverter {
             tuple[i] = elementType.convertFrom(arrayNode.get(i), this);
         }
         return tuple;
+    }
+
+    @Override
+    public List<?> convertListFrom(@Nonnull Object value, DingoType elementType) {
+        ArrayNode arrayNode = (ArrayNode) value;
+        List<Object> list = new ArrayList<>(arrayNode.size());
+        for (JsonNode node : arrayNode) {
+            list.add(elementType.convertFrom(node, this));
+        }
+        return list;
     }
 }

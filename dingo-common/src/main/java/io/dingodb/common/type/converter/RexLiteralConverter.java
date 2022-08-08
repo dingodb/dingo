@@ -17,6 +17,7 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
+import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 
@@ -58,7 +59,7 @@ public class RexLiteralConverter implements DataConverter {
     }
 
     @Override
-    public Object convert(@Nonnull Object[] value) {
+    public Object convert(@Nonnull Object[] value, DingoType elementType) {
         throw NEVER_CONVERT_BACK;
     }
 
