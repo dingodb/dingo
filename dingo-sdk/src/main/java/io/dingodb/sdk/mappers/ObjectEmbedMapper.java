@@ -20,7 +20,7 @@ import io.dingodb.sdk.annotation.DingoEmbed;
 import io.dingodb.sdk.client.IBaseDingoMapper;
 import io.dingodb.sdk.utils.ClassCache;
 import io.dingodb.sdk.utils.ClassCacheEntry;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 
 import java.util.List;
 import java.util.Map;

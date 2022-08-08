@@ -27,7 +27,7 @@ import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.ConstructedClass;
 import io.dingodb.sdk.operation.StoreOperationUtils;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -60,13 +60,13 @@ public class TestDingoCliWithConstruct {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
     @Test
     public void testTableOperationUsingConstruct() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -95,7 +95,7 @@ public class TestDingoCliWithConstruct {
 
     @Test
     public void testTableOperation() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -127,7 +127,7 @@ public class TestDingoCliWithConstruct {
 
     @Test
     public void getTestTableOperationWithNull() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -161,7 +161,7 @@ public class TestDingoCliWithConstruct {
 
     @Test
     public void testTableOperationUsingUpdate01() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -195,7 +195,7 @@ public class TestDingoCliWithConstruct {
 
     @Test
     public void testTableOperationUsingUpdate02() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -229,7 +229,7 @@ public class TestDingoCliWithConstruct {
 
     @Test
     public void testTableOperationUsingUpdate03() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);

@@ -29,7 +29,6 @@ import io.dingodb.sdk.operation.ContextForClient;
 import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
 import io.dingodb.sdk.operation.StoreOperationUtils;
-import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
@@ -92,7 +91,7 @@ public class DingoClient {
      * build connection to dingo database cluster.
      * @return true when connection is built successfully, otherwise false.
      */
-    public boolean openConnection() {
+    public boolean open() {
         try {
             if (isConnected()) {
                 return true;
@@ -119,7 +118,7 @@ public class DingoClient {
     /**
      * close connection to dingo database cluster.
      */
-    public void closeConnection() {
+    public void close() {
         if (storeOpUtils != null) {
             storeOpUtils.shutdown();
         }

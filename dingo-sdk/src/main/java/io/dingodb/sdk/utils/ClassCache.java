@@ -18,6 +18,7 @@ package io.dingodb.sdk.utils;
 
 
 import io.dingodb.sdk.client.IBaseDingoMapper;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.Configuration;
 

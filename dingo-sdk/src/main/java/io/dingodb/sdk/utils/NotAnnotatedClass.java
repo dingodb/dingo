@@ -17,6 +17,8 @@
 package io.dingodb.sdk.utils;
 
 
+import io.dingodb.sdk.common.DingoClientException;
+
 public class NotAnnotatedClass extends DingoClientException {
 
     private static final long serialVersionUID = -4781097961894057707L;

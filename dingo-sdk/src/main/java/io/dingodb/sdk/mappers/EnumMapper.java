@@ -17,8 +17,7 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.sdk.utils.DingoClientException;
-import io.dingodb.sdk.utils.TypeMapper;
+import io.dingodb.sdk.common.DingoClientException;
 
 import java.lang.reflect.Field;
 

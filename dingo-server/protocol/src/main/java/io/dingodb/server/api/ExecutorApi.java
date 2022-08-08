@@ -53,5 +53,8 @@ public interface ExecutorApi {
 
     @ApiDeclaration
     public List<ExecutiveResult> operator(
-        CommonId tableId, List<byte[]> startPrimaryKeys, List<byte[]> endPrimaryKey, List<byte[]> operations);
+        CommonId tableId,
+        List<byte[]> startPrimaryKeys,
+        List<byte[]> endPrimaryKey,
+        List<byte[]> operations);
 }

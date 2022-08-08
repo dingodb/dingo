@@ -28,7 +28,7 @@ import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 

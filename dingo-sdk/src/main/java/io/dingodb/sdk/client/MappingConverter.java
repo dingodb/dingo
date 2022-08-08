@@ -25,10 +25,10 @@ import io.dingodb.sdk.utils.ClassCacheEntry;
 import io.dingodb.sdk.utils.DeferredObjectLoader;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObject;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObjectSetter;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.utils.LoadedObjectResolver;
 import io.dingodb.sdk.utils.ThreadLocalKeySaver;
-import io.dingodb.sdk.utils.TypeMapper;
+import io.dingodb.sdk.mappers.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 
 import java.util.ArrayList;

@@ -22,7 +22,6 @@ import io.dingodb.sdk.utils.DeferredObjectLoader;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObject;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObjectSetter;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredSetter;
-import io.dingodb.sdk.utils.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 
 import java.util.Map;
