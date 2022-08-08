@@ -18,6 +18,7 @@ package io.dingodb.sdk;
 
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.operation.StoreOperationUtils;
@@ -28,8 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-
-import static org.mockito.Mockito.mock;
 
 public class TestDingoClientOperation {
 
@@ -79,8 +78,12 @@ public class TestDingoClientOperation {
         Assertions.assertTrue(isOpened);
 
         TableDefinition tableDefinition = MetaServiceUtils.getSimpleTableDefinition("");
-        boolean isOK = dingoClient.createTable(tableDefinition);
-        Assertions.assertFalse(isOK);
+        try {
+            boolean isOK = dingoClient.createTable(tableDefinition);
+            Assertions.assertFalse(isOK);
+        } catch (Exception e) {
+            Assertions.assertTrue(e instanceof DingoClientException.InvalidTableName);
+        }
         Assertions.assertTrue(tableDefinition.getName().isEmpty());
         Map<String, TableDefinition> storeOperations = StoreOperationUtils.getTableDefinitionInCache();
         Assertions.assertEquals(0, storeOperations.size());

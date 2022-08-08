@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ArrayMapper extends TypeMapper {
-
     private final Class<?> instanceClass;
     private final boolean supportedWithoutTranslation;
     private final TypeMapper instanceClassMapper;

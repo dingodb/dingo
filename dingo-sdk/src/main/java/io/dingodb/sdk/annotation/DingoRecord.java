@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DingoRecord {
-    String database() default "";
+    String database() default "dingo";
     String table() default "";
 
     String factoryClass() default "";

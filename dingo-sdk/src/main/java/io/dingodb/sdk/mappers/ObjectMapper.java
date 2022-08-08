@@ -18,5 +18,4 @@ package io.dingodb.sdk.mappers;
 
 
 public abstract class ObjectMapper extends TypeMapper {
-
 }

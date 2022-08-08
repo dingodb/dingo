@@ -40,7 +40,18 @@ public final class Key {
      */
     public final List<Value> userKey;
 
+    public Key(String table, List<Value> userKey) {
+        this("dingo", table, userKey);
+    }
+
+    public Key(String database, String table, List<Value> userKey) {
+        this.database = database;
+        this.table = table;
+        this.userKey = userKey;
+    }
+
     public List<Object> getUserKey() {
         return userKey.stream().map(Value::getObject).collect(Collectors.toList());
     }
+
 }

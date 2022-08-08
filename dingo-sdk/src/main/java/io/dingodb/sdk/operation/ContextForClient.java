@@ -16,8 +16,8 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.sdk.common.Key;
 import io.dingodb.common.operation.Operation;
+import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

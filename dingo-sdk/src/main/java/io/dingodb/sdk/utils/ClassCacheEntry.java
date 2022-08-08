@@ -16,6 +16,9 @@
 
 package io.dingodb.sdk.utils;
 
+import io.dingodb.common.operation.Column;
+import io.dingodb.common.operation.MapOrder;
+import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
@@ -28,15 +31,11 @@ import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.annotation.DingoSetter;
 import io.dingodb.sdk.annotation.ParamFrom;
 import io.dingodb.sdk.client.IBaseDingoMapper;
-import io.dingodb.sdk.client.PrimitiveDefaults;
-import io.dingodb.sdk.client.PropertyDefinition;
-import io.dingodb.common.operation.Column;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
-import io.dingodb.common.operation.MapOrder;
+import io.dingodb.sdk.common.PropertyDefinition;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.common.SqlTypeInfo;
-import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.common.ValueType;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.ColumnConfig;
