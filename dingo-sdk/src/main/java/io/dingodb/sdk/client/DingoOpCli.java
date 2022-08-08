@@ -26,14 +26,13 @@ import io.dingodb.sdk.common.Key;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.sdk.common.Processor;
 import io.dingodb.sdk.common.Record;
-import io.dingodb.sdk.common.RecordExistsAction;
 import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.Configuration;
 import io.dingodb.sdk.utils.CheckUtils;
 import io.dingodb.sdk.utils.ClassCache;
 import io.dingodb.sdk.utils.ClassCacheEntry;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.utils.GenericTypeMapper;
 import io.dingodb.sdk.utils.LoadedObjectResolver;
 import io.dingodb.sdk.utils.ThreadLocalKeySaver;
@@ -306,7 +305,7 @@ public class DingoOpCli implements DingoMapper {
      * @throws DingoClientException dingo client exception
      *      Use case: TestCases to get the stored format of the object.
      */
-    public Column[] getSavedColumn(Object object) throws DingoClientException {
+    public Column[] getColumnsSeqInStore(Object object) throws DingoClientException {
         Class<?> clazz = object.getClass();
         ClassCacheEntry<?> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
         String tableName = entry.getTableName();

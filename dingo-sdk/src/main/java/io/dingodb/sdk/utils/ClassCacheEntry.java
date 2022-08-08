@@ -31,6 +31,7 @@ import io.dingodb.sdk.client.IBaseDingoMapper;
 import io.dingodb.sdk.client.PrimitiveDefaults;
 import io.dingodb.sdk.client.PropertyDefinition;
 import io.dingodb.common.operation.Column;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.common.operation.MapOrder;
 import io.dingodb.sdk.common.Record;
@@ -40,6 +41,7 @@ import io.dingodb.sdk.common.ValueType;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.ColumnConfig;
 import io.dingodb.sdk.configuration.KeyConfig;
+import io.dingodb.sdk.mappers.TypeMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 

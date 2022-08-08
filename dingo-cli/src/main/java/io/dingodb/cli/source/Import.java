@@ -86,7 +86,7 @@ public class Import {
         DingoConfiguration.parse(config);
         String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
         DingoClient dingoClient = new DingoClient(coordinatorServerList, 100);
-        boolean isConnected = dingoClient.openConnection();
+        boolean isConnected = dingoClient.open();
         if (!isConnected) {
             log.error("Failed to connect to dingo server");
             return;
@@ -118,7 +118,7 @@ public class Import {
                 throw new IllegalStateException("Unexpected value: " + cmd);
         }
 
-        dingoClient.closeConnection();
+        dingoClient.close();
     }
 
     private Properties buildProp() {

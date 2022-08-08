@@ -16,7 +16,6 @@
 
 package io.dingodb.sdk;
 
-import io.dingodb.common.operation.Column;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
@@ -85,13 +84,13 @@ public class TestDingoComplexType {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
     @Test
     public void testOperationWithComplexTypeCase1() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -108,7 +107,7 @@ public class TestDingoComplexType {
 
     @Test
     public void testOperationWithComplexTypeCase2() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class DingoExampleUsingSDK {
     private static DingoClient dingoClient;
@@ -67,7 +66,7 @@ public class DingoExampleUsingSDK {
         DingoConfiguration.parse(coordinatorCfg);
         String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
         dingoClient = new DingoClient(coordinatorServerList);
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         if (!isOK) {
             System.out.println("Failed to open connection");
             return;

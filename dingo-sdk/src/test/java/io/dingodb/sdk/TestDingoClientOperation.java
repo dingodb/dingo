@@ -48,13 +48,13 @@ public class TestDingoClientOperation {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
     @Test
     public void testCreateTableUsingDingoClient() {
-        boolean isOpened = dingoClient.openConnection();
+        boolean isOpened = dingoClient.open();
         Assertions.assertTrue(isOpened);
 
         TableDefinition tableDefinition = MetaServiceUtils.getSimpleTableDefinition("test");
@@ -75,7 +75,7 @@ public class TestDingoClientOperation {
 
     @Test
     public void testCreateTableWithInvalidTableDefinition() {
-        boolean isOpened = dingoClient.openConnection();
+        boolean isOpened = dingoClient.open();
         Assertions.assertTrue(isOpened);
 
         TableDefinition tableDefinition = MetaServiceUtils.getSimpleTableDefinition("");
@@ -88,7 +88,7 @@ public class TestDingoClientOperation {
 
     @Test
     public void testCreateDropTable() {
-        boolean isOpened = dingoClient.openConnection();
+        boolean isOpened = dingoClient.open();
         Assertions.assertTrue(isOpened);
 
         String tableName = "test";

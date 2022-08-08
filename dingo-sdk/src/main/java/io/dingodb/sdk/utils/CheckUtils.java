@@ -17,6 +17,7 @@
 package io.dingodb.sdk.utils;
 
 import io.dingodb.sdk.client.IBaseDingoMapper;
+import io.dingodb.sdk.common.DingoClientException;
 import org.apache.commons.lang3.StringUtils;
 
 public class CheckUtils {

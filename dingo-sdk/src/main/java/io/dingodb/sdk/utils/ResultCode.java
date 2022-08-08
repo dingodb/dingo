@@ -417,27 +417,6 @@ public final class ResultCode {
     public static final int QUERY_GENERIC = 213;
 
     /**
-     * Should connection be put back into pool.
-     */
-    public static boolean keepConnection(int resultCode) {
-        if (resultCode <= 0) {
-            // Do not keep connection on client errors.
-            return false;
-        }
-
-        switch (resultCode) {
-            case SCAN_ABORT:
-            case QUERY_ABORTED:
-                return false;
-
-            default:
-                // Keep connection on TIMEOUT because it can be server response which does not
-                // close socket.  Also, client timeout code path does not call this method.
-                return true;
-        }
-    }
-
-    /**
      * Return result code as a string.
      */
     public static String getResultString(int resultCode) {

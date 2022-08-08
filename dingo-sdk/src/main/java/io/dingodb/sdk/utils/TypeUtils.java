@@ -20,6 +20,7 @@ import io.dingodb.sdk.annotation.DingoEmbed;
 import io.dingodb.sdk.annotation.DingoEnum;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.IBaseDingoMapper;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.ColumnConfig;
 import io.dingodb.sdk.configuration.EmbedConfig;
@@ -39,6 +40,7 @@ import io.dingodb.sdk.mappers.ObjectEmbedMapper;
 import io.dingodb.sdk.mappers.ShortMapper;
 import io.dingodb.sdk.mappers.TimeMapper;
 import io.dingodb.sdk.mappers.TimestampMapper;
+import io.dingodb.sdk.mappers.TypeMapper;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

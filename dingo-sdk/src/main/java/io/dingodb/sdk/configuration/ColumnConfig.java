@@ -16,7 +16,7 @@
 
 package io.dingodb.sdk.configuration;
 
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;

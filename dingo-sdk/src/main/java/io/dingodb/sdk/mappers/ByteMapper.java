@@ -17,8 +17,6 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.sdk.utils.TypeMapper;
-
 public class ByteMapper extends TypeMapper {
 
     @Override

@@ -22,14 +22,10 @@ import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
-import io.dingodb.sdk.utils.DingoClientException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

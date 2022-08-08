@@ -16,7 +16,6 @@
 
 package io.dingodb.sdk;
 
-import io.dingodb.common.operation.Column;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
@@ -60,13 +59,13 @@ public class TestDingoEmbeddedType {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
     @Test
     public void testDingoEmbededType01() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -83,7 +82,7 @@ public class TestDingoEmbeddedType {
 
     @Test
     public void testEmbededType02() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);

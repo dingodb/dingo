@@ -17,8 +17,6 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.sdk.utils.TypeMapper;
-
 import java.time.Instant;
 
 public class InstantMapper extends TypeMapper {

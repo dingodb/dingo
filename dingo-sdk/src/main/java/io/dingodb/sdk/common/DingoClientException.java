@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.utils;
+package io.dingodb.sdk.common;
+
+import io.dingodb.sdk.utils.ResultCode;
 
 public class DingoClientException extends RuntimeException {
 

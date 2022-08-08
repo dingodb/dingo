@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.common;
+package io.dingodb.sdk.mappers;
 
-import io.dingodb.common.operation.Operation;
+public abstract class TypeMapper {
+    public abstract Object toDingoFormat(Object value);
 
-public class BatchRecord {
 
-    public final Key key;
-
-    public Record record;
-
-    public final boolean hasWrite;
-
-    public final Operation[] ops;
-
-    public BatchRecord(Key key, Operation[] ops, boolean hasWrite) {
-        this.key = key;
-        this.ops = ops;
-        this.hasWrite = hasWrite;
+    /**
+     * Some types need to know if they're mapped to the correct class.
+     * If they do, they can override this method to glean that information
+     */
+    public Object toDingoFormat(Object value, boolean isUnknownType, boolean isSubclassOfKnownType) {
+        return toDingoFormat(value);
     }
 
-    public BatchRecord(Key key, Record record, Operation[] ops, boolean hasWrite) {
-        this.key = key;
-        this.record = record;
-        this.ops = ops;
-        this.hasWrite = hasWrite;
-    }
+    public abstract Object fromDingoFormat(Object value);
 }

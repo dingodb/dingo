@@ -23,5 +23,4 @@ dependencies {
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation project(":dingo-raft")
     implementation project(":dingo-common")
-    implementation project(":dingo-sdk")
 }

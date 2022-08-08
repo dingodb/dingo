@@ -110,13 +110,13 @@ public class TestDingoArrayType {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
     @Test
     public void testDingoArrayType01() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -133,7 +133,7 @@ public class TestDingoArrayType {
 
     @Test
     public void testDingoArrayType02() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -149,7 +149,7 @@ public class TestDingoArrayType {
         TableDefinition tableDefinition = storeOperations.get(tableName);
         Assertions.assertTrue(tableDefinition != null);
 
-        Column[] columns = dingoCli.getSavedColumn(arrayClass);
+        Column[] columns = dingoCli.getColumnsSeqInStore(arrayClass);
         Record expectedRecord = Record.toDingoRecord(new Record(tableDefinition.getColumns(), columns));
 
         try {

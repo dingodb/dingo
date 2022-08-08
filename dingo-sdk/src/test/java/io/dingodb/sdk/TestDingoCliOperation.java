@@ -16,7 +16,6 @@
 
 package io.dingodb.sdk;
 
-import io.dingodb.common.operation.Column;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoRecord;
@@ -31,7 +30,7 @@ import io.dingodb.sdk.model.basic.PersonWithOutKey;
 import io.dingodb.sdk.model.basic.PersonWithoutColumnAnnotation;
 import io.dingodb.sdk.model.basic.PersonWithoutTableName;
 import io.dingodb.sdk.operation.StoreOperationUtils;
-import io.dingodb.sdk.utils.DingoClientException;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -80,14 +79,14 @@ public class TestDingoCliOperation {
     @AfterEach
     public void tearDown() {
         if (dingoClient != null) {
-            dingoClient.closeConnection();
+            dingoClient.close();
         }
     }
 
 
     @Test
     public void testBasicCreateTable() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -114,7 +113,7 @@ public class TestDingoCliOperation {
     @SuppressWarnings("unchecked")
     @Test
     public void testBasicCreateTableWithoutKey() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -130,7 +129,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testCreateTableWithOutTableName() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -146,7 +145,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testCreateTableWithOutColumnAnnotation() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -173,7 +172,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testCreateTableWithColumnAnnotation() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoOpCli dingoCli = new DingoOpCli.Builder(dingoClient).build();
@@ -205,7 +204,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testSaveBasicObject() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -241,7 +240,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testReadMultiRecords() {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);
@@ -289,7 +288,7 @@ public class TestDingoCliOperation {
 
     @Test
     public void testPutBatch2Table() throws Exception {
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         Assertions.assertTrue(isOK);
 
         DingoClient spyClient = Mockito.spy(dingoClient);

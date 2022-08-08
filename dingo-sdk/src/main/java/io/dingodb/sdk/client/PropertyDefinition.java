@@ -19,8 +19,8 @@ package io.dingodb.sdk.client;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.configuration.ClassConfig;
-import io.dingodb.sdk.utils.DingoClientException;
-import io.dingodb.sdk.utils.TypeMapper;
+import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.mappers.TypeMapper;
 import io.dingodb.sdk.utils.TypeUtils;
 
 import java.lang.annotation.Annotation;

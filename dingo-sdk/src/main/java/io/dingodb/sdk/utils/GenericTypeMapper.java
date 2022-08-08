@@ -18,6 +18,8 @@ package io.dingodb.sdk.utils;
 
 import io.dingodb.sdk.annotation.FromDingo;
 import io.dingodb.sdk.annotation.ToDingo;
+import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.mappers.TypeMapper;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

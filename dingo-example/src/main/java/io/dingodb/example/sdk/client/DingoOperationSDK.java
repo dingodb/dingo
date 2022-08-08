@@ -69,7 +69,7 @@ public class DingoOperationSDK {
         DingoConfiguration.parse(coordinatorCfg);
         String coordinatorExchangeSvrList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
         dingoClient = new DingoClient(coordinatorExchangeSvrList);
-        boolean isOK = dingoClient.openConnection();
+        boolean isOK = dingoClient.open();
         if (!isOK) {
             System.out.println("Failed to open connection");
             return ;

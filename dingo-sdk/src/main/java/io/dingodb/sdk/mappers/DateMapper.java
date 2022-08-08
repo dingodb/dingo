@@ -17,12 +17,6 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.sdk.utils.TypeMapper;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Date;
-
 public class DateMapper extends TypeMapper {
 
     @Override

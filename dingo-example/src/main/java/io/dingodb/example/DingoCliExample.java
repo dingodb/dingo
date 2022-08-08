@@ -20,9 +20,6 @@ import io.dingodb.example.model.Person;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
 
-import java.util.ArrayList;
-import java.util.List;
-
 
 public class DingoCliExample {
 
@@ -35,7 +32,7 @@ public class DingoCliExample {
 
         String remoteHost = "172.20.31.10:19181,172.20.31.11:19181,172.20.31.12:19181";
         DingoClient dingoClient = new DingoClient(remoteHost);
-        dingoClient.openConnection();
+        dingoClient.open();
 
         DingoOpCli dingoOpCli = new DingoOpCli.Builder(dingoClient).build();
         boolean isOK = dingoOpCli.createTable(Person.class);
@@ -61,7 +58,7 @@ public class DingoCliExample {
         isOK = dingoOpCli.dropTable(Person.class);
         System.out.println("drop table Status:" + isOK + ".............");
 
-        dingoClient.closeConnection();
+        dingoClient.close();
     }
 
     private static void wait(int millis) {

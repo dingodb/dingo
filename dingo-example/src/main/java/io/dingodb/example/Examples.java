@@ -252,7 +252,7 @@ public class Examples {
         SDKRunner(String tableName, DingoClient dingoClient) {
             this.tableName = tableName;
             this.dingoClient = dingoClient;
-            boolean isOK = dingoClient.openConnection();
+            boolean isOK = dingoClient.open();
             if (!isOK) {
                 throw new RuntimeException("Open connection failed");
             }
