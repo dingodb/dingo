@@ -21,13 +21,13 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.ConstructedClass;
 import io.dingodb.sdk.operation.StoreOperationUtils;
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -42,7 +42,6 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 public class TestDingoCliWithConstruct {
     private DingoClient dingoClient;

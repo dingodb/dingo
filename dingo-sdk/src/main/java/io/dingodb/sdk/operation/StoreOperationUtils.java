@@ -78,7 +78,7 @@ public class StoreOperationUtils {
         do {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
-                ContextForStore storeContext = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
+                ContextForStore storeContext = Converter.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<String, ContextForStore> keys2Executor =
                     groupKeysByExecutor(routeTable, null, tableName, storeContext);
 
@@ -103,7 +103,8 @@ public class StoreOperationUtils {
             } catch (Exception e) {
                 log.error("operation fail.", e);
             }
-        } while (!isSuccess && --retryTimes > 0);
+        }
+        while (!isSuccess && --retryTimes > 0);
         return results;
     }
 
@@ -124,7 +125,7 @@ public class StoreOperationUtils {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
-                ContextForStore context4Store = ConvertUtils.getStoreContext(storeParameters, codec, tableDefinition);
+                ContextForStore context4Store = Converter.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<String, ContextForStore> keys2Executor = groupKeysByExecutor(
                     routeTable,
                     type,
@@ -160,7 +161,7 @@ public class StoreOperationUtils {
                     }
                 }
                 ResultForStore result4Store = new ResultForStore(isSuccess, errorMsg, keyValueList);
-                result4Client = ConvertUtils.getResultCode(
+                result4Client = Converter.getResultCode(
                     result4Store,
                     codec,
                     getTableDefinition(tableName).getColumns());
@@ -250,7 +251,6 @@ public class StoreOperationUtils {
         RouteTable routeTable = dingoRouteTables.get(tableName);
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
-            CommonId tableId = metaClient.getTableId(tableName);
             tableDefinition = metaClient.getTableDefinition(tableName);
             if (tableDefinition == null) {
                 log.error("Cannot find table:{} defination from meta", tableName);
@@ -258,8 +258,12 @@ public class StoreOperationUtils {
             }
             tableDefinitionInCache.put(tableName, tableDefinition);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
-            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(
+                tableDefinition.getDingoType(),
+                tableDefinition.getKeyMapping()
+            );
             RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
+            CommonId tableId = metaClient.getTableId(tableName);
             routeTable = new RouteTable(
                 tableName,
                 tableId,

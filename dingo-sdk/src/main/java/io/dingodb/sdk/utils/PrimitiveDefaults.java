@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.client;
+package io.dingodb.sdk.utils;
 
 public class PrimitiveDefaults {
     // These gets initialized to their default values

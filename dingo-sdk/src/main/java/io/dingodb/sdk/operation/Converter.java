@@ -18,10 +18,10 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.operation.Column;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.operation.Column;
 import io.dingodb.sdk.common.Record;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public final class ConvertUtils {
+public final class Converter {
 
     /**
      * convert Result from Storage to Result for client.
@@ -70,10 +70,12 @@ public final class ConvertUtils {
      * @param codec codec about KeyValue
      * @return ContextForStore.
      */
+    @SuppressWarnings("unchecked")
     public static ContextForStore getStoreContext(ContextForClient inputContext,
                                                   KeyValueCodec codec,
                                                   TableDefinition definition) {
-        List<byte[]> startKeyListInBytes = inputContext.getStartKeyList().stream().map(x -> {
+        List<byte[]> startKeyListInBytes = null;
+        startKeyListInBytes = inputContext.getStartKeyList().stream().map(x -> {
             try {
                 return codec.encodeKey(x.getUserKey().toArray());
             } catch (IOException e) {

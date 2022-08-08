@@ -78,17 +78,6 @@ public class DingoClientException extends RuntimeException {
 
 
     /**
-     * Exception thrown when Java serialization error occurs.
-     */
-    public static final class Serialize extends DingoClientException {
-        private static final long serialVersionUID = 1L;
-
-        public Serialize(Throwable ex) {
-            super(ResultCode.SERIALIZE_ERROR, ex);
-        }
-    }
-
-    /**
      * Exception thrown when client can't parse data returned from server.
      */
     public static final class Parse extends DingoClientException {
@@ -102,12 +91,33 @@ public class DingoClientException extends RuntimeException {
     /**
      * Exception thrown when namespace is invalid.
      */
-    public static final class InvalidTableNames extends DingoClientException {
+    public static final class InvalidTableName extends DingoClientException {
         private static final long serialVersionUID = 1L;
 
-        public InvalidTableNames(String ns, int mapSize) {
-            super(ResultCode.INVALID_NAMESPACE,
-                (mapSize == 0) ? "Partition map empty" : "Namespace not found in partition map: " + ns);
+        public InvalidTableName(String tableName) {
+            super(ResultCode.INVALID_TABLE_NAME,
+                tableName == null || tableName.length() == 0 ? "Invalid tableName is Empty!"
+                    : "Invalid tableName:" + tableName);
+        }
+    }
+
+    public static final class InvalidColumnsCnt extends DingoClientException {
+        private static final long serialVersionUID = 1L;
+
+        public InvalidColumnsCnt(int realColumnCnt, int expectedColumnCnt) {
+            super(ResultCode.PARAMETER_ERROR_INVALID_COLUMNCNT,
+                "Invalid columns, realCnt=" + realColumnCnt + ", expectedCnt=" + expectedColumnCnt
+            );
+        }
+    }
+
+    public static final class InvalidUserKeyCnt extends DingoClientException {
+        private static final long serialVersionUID = 1L;
+
+        public InvalidUserKeyCnt(int realKeyCnt, int expectedKeyCnt) {
+            super(ResultCode.PARAMETER_ERROR_INVALID_KEYCNT,
+                "Invalid input userKeys, realCnt=" + realKeyCnt + ", expectedCnt=" + expectedKeyCnt
+            );
         }
     }
 
