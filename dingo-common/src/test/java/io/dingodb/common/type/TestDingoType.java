@@ -76,7 +76,9 @@ public class TestDingoType {
             arguments(DingoTypeFactory.tuple("INT", "DOUBLE")),
             arguments(DingoTypeFactory.tuple("INT|NULL", "TIME")),
             arguments(DingoTypeFactory.array("INT", false)),
-            arguments(DingoTypeFactory.array("INT", true))
+            arguments(DingoTypeFactory.array("INT", true)),
+            arguments(DingoTypeFactory.list("DOUBLE", false)),
+            arguments(DingoTypeFactory.list("DOUBLE", true))
         );
     }
 

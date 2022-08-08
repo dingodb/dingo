@@ -27,36 +27,36 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@JsonTypeName("array")
-public class ArrayType extends AbstractDingoType {
+@JsonTypeName("list")
+public class ListType extends AbstractDingoType {
     @JsonProperty("element")
     private final DingoType elementType;
     @JsonProperty("nullable")
     private final boolean nullable;
 
     @JsonCreator
-    ArrayType(
+    ListType(
         @JsonProperty("element") DingoType elementType,
         @JsonProperty("nullable") boolean nullable
     ) {
-        super(TypeCode.ARRAY);
+        super(TypeCode.LIST);
         this.elementType = elementType;
         this.nullable = nullable;
     }
 
     @Override
     protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
-        return converter.convert((Object[]) value, elementType);
+        return converter.convert((List<?>) value, elementType);
     }
 
     @Override
     protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
-        return converter.convertArrayFrom(value, elementType);
+        return converter.convertListFrom(value, elementType);
     }
 
     @Override
     public DingoType copy() {
-        return new ArrayType(elementType, nullable);
+        return new ListType(elementType, nullable);
     }
 
     @Nonnull
@@ -78,14 +78,14 @@ public class ArrayType extends AbstractDingoType {
     @Override
     public String format(@Nullable Object value) {
         if (value != null) {
-            Object[] arr = (Object[]) value;
+            List<?> list = (List<?>) value;
             StringBuilder b = new StringBuilder();
             b.append("[ ");
-            for (int i = 0; i < arr.length; ++i) {
+            for (int i = 0; i < list.size(); ++i) {
                 if (i > 0) {
                     b.append(", ");
                 }
-                b.append(elementType.format(arr[i]));
+                b.append(elementType.format(list.get(i)));
             }
             b.append(" ]");
             return b.toString();
@@ -96,7 +96,8 @@ public class ArrayType extends AbstractDingoType {
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
-        b.append("array(");
+        //b.append("array(");
+        b.append("list(");
         b.append(elementType.toString());
         b.append(")");
         if (nullable) {

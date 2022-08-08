@@ -26,7 +26,6 @@ import io.dingodb.common.jackson.ScaleSerializer;
 import io.dingodb.common.jackson.SqlTypeNameSerializer;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.runtime.TypeCode;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -138,10 +137,7 @@ public class ColumnDefinition {
     }
 
     public DingoType getDingoType() {
-        if (type != SqlTypeName.ARRAY) {
-            return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
-        }
-        return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
+        return DingoTypeFactory.fromColumnDefinition(this);
     }
 
     @SuppressWarnings("ConstantConditions")
