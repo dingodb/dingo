@@ -99,7 +99,6 @@ public class ListType extends AbstractDingoType {
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
-        //b.append("array(");
         b.append("list(");
         b.append(elementType.toString());
         b.append(")");

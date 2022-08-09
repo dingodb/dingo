@@ -120,18 +120,29 @@ public class ColumnDefinition {
 
     public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
         RelDataType relDataType;
-        if (type != SqlTypeName.ARRAY) {
-            if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
-                if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
-                    relDataType = typeFactory.createSqlType(type, precision, scale);
+        switch (type) {
+            case ARRAY:
+                relDataType = typeFactory.createArrayType(typeFactory.createSqlType(elementType), -1);
+                break;
+            case MULTISET:
+                relDataType = typeFactory.createMultisetType(typeFactory.createSqlType(elementType), -1);
+                break;
+            case MAP:
+                relDataType = typeFactory.createMapType(
+                    typeFactory.createSqlType(elementType),
+                    typeFactory.createSqlType(elementType)
+                );
+                break;
+            default:
+                if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
+                    if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
+                        relDataType = typeFactory.createSqlType(type, precision, scale);
+                    } else {
+                        relDataType = typeFactory.createSqlType(type, precision);
+                    }
                 } else {
-                    relDataType = typeFactory.createSqlType(type, precision);
+                    relDataType = typeFactory.createSqlType(type);
                 }
-            } else {
-                relDataType = typeFactory.createSqlType(type);
-            }
-        } else {
-            relDataType = typeFactory.createArrayType(typeFactory.createSqlType(elementType), -1);
         }
         return typeFactory.createTypeWithNullability(relDataType, !this.notNull);
     }

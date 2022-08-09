@@ -18,10 +18,12 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.converter.ExprConverter;
 import io.dingodb.common.type.converter.RexLiteralConverter;
 import io.dingodb.exec.expr.RtExprWithType;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.parser.exception.UndefinedFunctionName;
 import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
@@ -31,6 +33,7 @@ import io.dingodb.expr.parser.op.OpWithEvaluator;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
+import io.dingodb.expr.runtime.TupleEvalContext;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
@@ -106,6 +109,41 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return IntStream.range(0, rexNodes.size())
             .mapToObj(i -> toRtExprWithType(rexNodes.get(i), type.getFieldList().get(i).getType()))
             .collect(Collectors.toList());
+    }
+
+    @Nullable
+    public static Object calcValue(
+        RexNode rexNode,
+        @Nonnull DingoType targetType,
+        Object[] tuple,
+        DingoType tupleType
+    ) {
+        Expr expr = convert(rexNode);
+        try {
+            return targetType.convertFrom(
+                expr.compileIn(tupleType).eval(new TupleEvalContext(tuple)),
+                ExprConverter.INSTANCE
+            );
+        } catch (DingoExprCompileException | FailGetEvaluator e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Nonnull
+    public static Object[] calcValues(
+        @Nonnull List<RexNode> rexNodeList,
+        @Nonnull DingoType targetType,
+        Object[] tuple,
+        DingoType tupleType
+    ) {
+        return IntStream.range(0, rexNodeList.size())
+            .mapToObj(i -> calcValue(
+                rexNodeList.get(i),
+                Objects.requireNonNull(targetType.getChild(i)),
+                tuple,
+                tupleType
+            ))
+            .toArray(Object[]::new);
     }
 
     private static int typeCodeOf(@Nonnull RelDataType type) {
