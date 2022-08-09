@@ -150,11 +150,39 @@ public class DdlTest {
     }
 
     @Test
-    @Disabled
     public void testCreateTableWithArray() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data int array, primary key(id))",
             "insert into {table} values(1, array[1, 2, 3])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
+        assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithMultiSet() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data int multiset, primary key(id))",
+            "insert into {table} values(1, multiset[7, 7, 8, 8])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
+        assertThat(array.getArray()).isEqualTo(new int[]{7, 7, 8, 8});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    @Disabled
+    public void testCreateTableWithMap() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data any, primary key(id))",
+            "insert into {table} values(1, map['a', 1, 'b', 2])"
         );
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(result).isInstanceOf(Array.class);

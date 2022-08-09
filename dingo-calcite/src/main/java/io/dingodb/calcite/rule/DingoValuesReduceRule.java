@@ -20,26 +20,17 @@ import io.dingodb.calcite.rel.LogicalDingoValues;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.converter.ExprConverter;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
-import io.dingodb.expr.runtime.TupleEvalContext;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
-import org.apache.calcite.rex.RexNode;
 import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @Value.Enclosing
 public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config> implements SubstitutionRule {
@@ -54,7 +45,7 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         DingoType rowType = DingoTypeFactory.fromRelDataType(project.getRowType());
         List<Object[]> tuples = new LinkedList<>();
         for (Object[] tuple : values.getTuples()) {
-            tuples.add(calcValues(project.getProjects(), rowType, tuple, tupleType));
+            tuples.add(RexConverter.calcValues(project.getProjects(), rowType, tuple, tupleType));
         }
         call.transformTo(new LogicalDingoValues(
             project.getCluster(),
@@ -70,7 +61,7 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         DingoType tupleType = DingoTypeFactory.fromRelDataType(values.getRowType());
         List<Object[]> tuples = new LinkedList<>();
         for (Object[] tuple : values.getTuples()) {
-            Object v = calcValue(
+            Object v = RexConverter.calcValue(
                 filter.getCondition(),
                 DingoTypeFactory.scalar(TypeCode.BOOL, false),
                 tuple,
@@ -86,41 +77,6 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
             filter.getRowType(),
             tuples
         ));
-    }
-
-    @Nullable
-    private static Object calcValue(
-        RexNode rexNode,
-        @Nonnull DingoType targetType,
-        Object[] tuple,
-        DingoType tupleType
-    ) {
-        Expr expr = RexConverter.convert(rexNode);
-        try {
-            return targetType.convertFrom(
-                expr.compileIn(tupleType).eval(new TupleEvalContext(tuple)),
-                ExprConverter.INSTANCE
-            );
-        } catch (DingoExprCompileException | FailGetEvaluator e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Nonnull
-    private static Object[] calcValues(
-        @Nonnull List<RexNode> rexNodeList,
-        @Nonnull DingoType targetType,
-        Object[] tuple,
-        DingoType tupleType
-    ) {
-        return IntStream.range(0, rexNodeList.size())
-            .mapToObj(i -> calcValue(
-                rexNodeList.get(i),
-                Objects.requireNonNull(targetType.getChild(i)),
-                tuple,
-                tupleType
-            ))
-            .toArray(Object[]::new);
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package io.dingodb.expr.runtime;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -75,10 +74,5 @@ public class TestTypeCodesEquality {
     @MethodSource("getParameters")
     public void testCodeEquality(Class<?> clazz, int typeCode) {
         assertEquals(TypeCodes.getTypeCode(clazz), typeCode);
-    }
-
-    @Test
-    public void testTime() {
-        assertEquals(TypeCodes.getTypeCode(Time.class), TypeCode.TIME);
     }
 }

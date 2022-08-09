@@ -131,12 +131,15 @@ public final class DingoTypeFactory {
     public static DingoType fromColumnDefinition(@Nonnull ColumnDefinition columnDefinition) {
         SqlTypeName type = columnDefinition.getType();
         boolean notNull = columnDefinition.isNotNull();
-        if (type != SqlTypeName.ARRAY) {
-            return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
+        switch (type) {
+            case ARRAY:
+            case MULTISET:
+                SqlTypeName elementType = columnDefinition.getElementType();
+                //return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
+                return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);
+            default:
+                return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
         }
-        SqlTypeName elementType = columnDefinition.getElementType();
-        //return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
-        return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);
     }
 
     @Nonnull
@@ -147,9 +150,11 @@ public final class DingoTypeFactory {
                 case NULL:
                     return NullType.NULL;
                 case ARRAY:
+                case MULTISET: // MultiSet is implemented by list.
                     DingoType elementType = fromRelDataType(Objects.requireNonNull(relDataType.getComponentType()));
                     //return array(elementType, relDataType.isNullable());
                     return list(elementType, relDataType.isNullable());
+                case MAP:
                 default:
                     return scalar(
                         TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
@@ -183,15 +188,17 @@ public final class DingoTypeFactory {
 
     @Nonnull
     public static DingoType fromColumnMetaData(@Nonnull ColumnMetaData colMeta) {
-        if (colMeta.type.id == Types.ARRAY) {
-            ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
-            //return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
-            return list(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
-        } else if (colMeta.type.id == Types.STRUCT) {
-            ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
-            return fromColumnMetaDataList(structType.columns);
+        switch (colMeta.type.id) {
+            case Types.ARRAY:
+                ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
+                //return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
+                return list(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
+            case Types.STRUCT:
+                ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
+                return fromColumnMetaDataList(structType.columns);
+            default:
+                return scalar(convertSqlTypeId(colMeta.type.id), colMeta.nullable != 0);
         }
-        return scalar(convertSqlTypeId(colMeta.type.id), colMeta.nullable != 0);
     }
 
     @Nonnull

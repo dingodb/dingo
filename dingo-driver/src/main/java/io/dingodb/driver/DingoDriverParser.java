@@ -92,18 +92,22 @@ public final class DingoDriverParser extends DingoParser {
         @Nonnull JavaTypeFactory typeFactory,
         @Nonnull RelDataType type
     ) {
-        if (type.getSqlTypeName() == SqlTypeName.ARRAY) {
-            return ColumnMetaData.array(
-                avaticaType(typeFactory, Objects.requireNonNull(type.getComponentType())),
-                type.getSqlTypeName().getName(),
-                ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
-            );
+        SqlTypeName typeName = type.getSqlTypeName();
+        switch (typeName) {
+            case ARRAY:
+            case MULTISET:
+                return ColumnMetaData.array(
+                    avaticaType(typeFactory, Objects.requireNonNull(type.getComponentType())),
+                    type.getSqlTypeName().getName(),
+                    ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
+                );
+            default:
+                return ColumnMetaData.scalar(
+                    type.getSqlTypeName().getJdbcOrdinal(),
+                    type.getSqlTypeName().getName(),
+                    ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
+                );
         }
-        return ColumnMetaData.scalar(
-            type.getSqlTypeName().getJdbcOrdinal(),
-            type.getSqlTypeName().getName(),
-            ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
-        );
     }
 
     @Nonnull

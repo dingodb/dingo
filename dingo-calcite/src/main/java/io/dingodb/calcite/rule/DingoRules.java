@@ -25,6 +25,7 @@ import java.util.List;
 public final class DingoRules {
     public static final LogicalDingoValueRule LOGICAL_DINGO_VALUE_RULE
         = LogicalDingoValueRule.DEFAULT_CONFIG.toRule(LogicalDingoValueRule.class);
+
     // Substitution rules
     public static final DingoValuesReduceRule DINGO_PROJECT_VALUES_MERGE
         = DingoValuesReduceRule.Config.PROJECT.toRule();
@@ -32,6 +33,10 @@ public final class DingoRules {
         = DingoValuesReduceRule.Config.FILTER.toRule();
     public static final DingoUnionValuesRule DINGO_UNION_VALUES_RULE
         = DingoUnionValuesRule.Config.DEFAULT.toRule();
+    public static final DingoCollectValuesRule DINGO_COLLECT_VALUES_RULE
+        = DingoCollectValuesRule.Config.DEFAULT.toRule();
+    public static final DingoJoinValuesRule DINGO_JOIN_VALUES_RULE
+        = DingoJoinValuesRule.Config.DEFAULT.toRule();
 
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
         = DingoAggregateRule.Config.DEFAULT.toRule();
@@ -87,6 +92,8 @@ public final class DingoRules {
         DINGO_FILTER_VALUES_MERGE,
         DINGO_PROJECT_VALUES_MERGE,
         DINGO_UNION_VALUES_RULE,
+        DINGO_COLLECT_VALUES_RULE,
+        DINGO_JOIN_VALUES_RULE,
         DINGO_AGGREGATE_RULE,
         DINGO_AGGREGATE_SINGLE_RULE,
         DINGO_DISTRIBUTED_VALUES_RULE,
