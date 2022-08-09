@@ -19,6 +19,7 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.util.TypeUtils;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
@@ -72,7 +73,9 @@ public class ListType extends AbstractDingoType {
 
     @Override
     public DingoSchema toDingoSchema(int index) {
-        return null;
+         DingoSchema schema = TypeUtils.elementTypeToDingoList(elementType);
+         schema.setIndex(index);
+         return schema;
     }
 
     @Override

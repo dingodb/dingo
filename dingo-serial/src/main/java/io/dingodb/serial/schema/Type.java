@@ -19,14 +19,16 @@ package io.dingodb.serial.schema;
 import java.util.Locale;
 
 public enum Type {
-    BOOLEAN, SHORT, INTEGER, FLOAT, LONG, DOUBLE, BYTES, STRING;
+    BOOLEAN, BOOLEANLIST, SHORT, SHORTLIST, INTEGER, INTEGERLIST, FLOAT, FLOATLIST,
+    LONG, LONGLIST, DOUBLE, DOUBLELIST, BYTES, BYTESLIST, STRING, STRINGLIST;
+
     private final String name;
 
-    private Type() {
+    Type() {
         this.name = this.name().toLowerCase(Locale.ENGLISH);
     }
 
     public String getName() {
         return name;
     }
-};
+}

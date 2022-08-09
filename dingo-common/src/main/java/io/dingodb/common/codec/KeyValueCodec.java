@@ -18,12 +18,15 @@ package io.dingodb.common.codec;
 
 import io.dingodb.common.store.KeyValue;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 public interface KeyValueCodec {
     public Object[] decode(@Nonnull KeyValue keyValue) throws IOException;
+
     public KeyValue encode(@Nonnull Object[] tuple) throws IOException;
+
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException;
+
     public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException;
 }

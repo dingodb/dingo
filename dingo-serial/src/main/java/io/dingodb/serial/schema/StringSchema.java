@@ -27,6 +27,7 @@ public class StringSchema implements DingoSchema {
         setMaxLength(maxLength);
         setNotNull(false);
     }
+
     public StringSchema(int index, int maxLength, Object defaultValue) {
         setIndex(index);
         setMaxLength(maxLength);
@@ -71,7 +72,7 @@ public class StringSchema implements DingoSchema {
 
     @Override
     public void setPrecision(int precision) {
-        throw new UnsupportedOperationException("Short Schema not support Precision");
+        throw new UnsupportedOperationException("String Schema not support Precision");
     }
 
     @Override
@@ -81,7 +82,7 @@ public class StringSchema implements DingoSchema {
 
     @Override
     public void setScale(int scale) {
-        throw new UnsupportedOperationException("Short Schema not support Scale");
+        throw new UnsupportedOperationException("String Schema not support Scale");
     }
 
     @Override
@@ -100,8 +101,8 @@ public class StringSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (String) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (String) defaultValue;
     }
 
     @Override

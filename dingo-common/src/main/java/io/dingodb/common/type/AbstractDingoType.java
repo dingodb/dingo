@@ -16,20 +16,7 @@
 
 package io.dingodb.common.type;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dingodb.common.type.converter.CsvConverter;
-import io.dingodb.common.type.scalar.BinaryType;
-import io.dingodb.common.type.scalar.BooleanType;
-import io.dingodb.common.type.scalar.DateType;
-import io.dingodb.common.type.scalar.DecimalType;
-import io.dingodb.common.type.scalar.DoubleType;
-import io.dingodb.common.type.scalar.IntegerType;
-import io.dingodb.common.type.scalar.LongType;
-import io.dingodb.common.type.scalar.ObjectType;
-import io.dingodb.common.type.scalar.StringType;
-import io.dingodb.common.type.scalar.TimeType;
-import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

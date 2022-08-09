@@ -18,18 +18,32 @@ package io.dingodb.serial.schema;
 
 public interface DingoSchema {
     Type getType();
+
     void setIndex(int index);
+
     int getIndex();
+
     void setLength(int length);
+
     int getLength();
+
     void setMaxLength(int maxLength);
+
     int getMaxLength();
+
     void setPrecision(int precision);
+
     int getPrecision();
+
     void setScale(int scale);
+
     int getScale();
+
     void setNotNull(boolean notNull);
+
     boolean isNotNull();
-    void setDefaultValue(Object t) throws ClassCastException;
+
+    void setDefaultValue(Object defaultValue) throws ClassCastException;
+
     Object getDefaultValue();
 }
