@@ -71,16 +71,6 @@ public class AvroCodec implements Codec {
         writer.write(record, encoder);
     }
 
-    public Object[] decode(@Nonnull InputStream is) throws IOException {
-        final GenericRecord keyRecord = decodeBytes(is, reader);
-        int size = schema.getFields().size();
-        Object[] tuple = new Object[size];
-        for (int i = 0; i < size; ++i) {
-            tuple[i] = keyRecord.get(i);
-        }
-        return tuple;
-    }
-
     public void encode(OutputStream os, @Nonnull Object[] tuple) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < tuple.length; ++i) {
@@ -114,8 +104,19 @@ public class AvroCodec implements Codec {
     }
 
     @Override
-    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex) throws IOException, ClassCastException {
+    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+        throws IOException, ClassCastException {
         return new byte[0];
+    }
+
+    public Object[] decode(@Nonnull InputStream is) throws IOException {
+        final GenericRecord keyRecord = decodeBytes(is, reader);
+        int size = schema.getFields().size();
+        Object[] tuple = new Object[size];
+        for (int i = 0; i < size; ++i) {
+            tuple[i] = keyRecord.get(i);
+        }
+        return tuple;
     }
 
     public Object[] decode(@Nonnull byte[] bytes) throws IOException {

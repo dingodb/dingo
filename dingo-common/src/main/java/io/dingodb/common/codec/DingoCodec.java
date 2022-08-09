@@ -21,9 +21,9 @@ import io.dingodb.serial.io.RecordDecoder;
 import io.dingodb.serial.io.RecordEncoder;
 import io.dingodb.serial.schema.DingoSchema;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 public class DingoCodec implements Codec {
     private RecordEncoder re;
@@ -47,7 +47,8 @@ public class DingoCodec implements Codec {
     }
 
     @Override
-    public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException {
+    public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping)
+        throws IOException, ClassCastException {
         Object[] newTuple = new Object[mapping.size()];
         int i = 0;
         for (int index : mapping.getMappings()) {
@@ -57,7 +58,8 @@ public class DingoCodec implements Codec {
     }
 
     @Override
-    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex) throws IOException, ClassCastException {
+    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+        throws IOException, ClassCastException {
         return re.encode(origin, schemaIndex, tuple);
     }
 

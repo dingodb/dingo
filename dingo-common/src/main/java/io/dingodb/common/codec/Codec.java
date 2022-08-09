@@ -18,15 +18,20 @@ package io.dingodb.common.codec;
 
 import io.dingodb.common.type.TupleMapping;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 public interface Codec {
     byte[] encode(@Nonnull Object[] tuple) throws IOException, ClassCastException;
+
     byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException;
+
     byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
         throws IOException, ClassCastException;
+
     Object[] decode(@Nonnull byte[] bytes) throws IOException;
+
     Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException;
+
     Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException;
 }

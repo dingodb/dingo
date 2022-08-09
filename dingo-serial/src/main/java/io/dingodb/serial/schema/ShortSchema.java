@@ -25,6 +25,7 @@ public class ShortSchema implements DingoSchema {
         setIndex(index);
         setNotNull(false);
     }
+
     public ShortSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
@@ -97,8 +98,8 @@ public class ShortSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (Short) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (Short) defaultValue;
     }
 
     @Override

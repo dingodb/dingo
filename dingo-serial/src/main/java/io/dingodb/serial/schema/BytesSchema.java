@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 public class BytesSchema implements DingoSchema {
 
     private int index;
-    private int length;
     private int maxLength;
     private boolean notNull;
     private ByteBuffer defaultValue;
@@ -47,12 +46,12 @@ public class BytesSchema implements DingoSchema {
 
     @Override
     public void setLength(int length) {
-        this.length = length;
+        throw new UnsupportedOperationException("Bytes Schema data length always be 0 (not sure)");
     }
 
     @Override
     public int getLength() {
-        return length;
+        return 0;
     }
 
     @Override

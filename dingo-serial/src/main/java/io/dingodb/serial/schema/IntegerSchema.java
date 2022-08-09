@@ -25,6 +25,7 @@ public class IntegerSchema implements DingoSchema {
         setIndex(index);
         setNotNull(false);
     }
+
     public IntegerSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
@@ -97,8 +98,8 @@ public class IntegerSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (Integer) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (Integer) defaultValue;
     }
 
     @Override

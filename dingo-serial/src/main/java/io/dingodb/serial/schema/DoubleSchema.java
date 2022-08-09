@@ -25,6 +25,7 @@ public class DoubleSchema implements DingoSchema {
         setIndex(index);
         setNotNull(false);
     }
+
     public DoubleSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
@@ -97,8 +98,8 @@ public class DoubleSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (Double) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (Double) defaultValue;
     }
 
     @Override

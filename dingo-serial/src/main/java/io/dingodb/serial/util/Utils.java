@@ -17,11 +17,14 @@
 package io.dingodb.serial.util;
 
 import io.dingodb.serial.schema.DingoSchema;
-import io.dingodb.serial.schema.Type;
 
 import java.util.List;
 
-public class Utils {
+public final class Utils {
+
+    private Utils() {
+    }
+
     public static void sortSchema(List<DingoSchema> schemas) {
         int flag = 1;
         for (int i = 0; i < schemas.size() - flag; i++) {
@@ -40,10 +43,7 @@ public class Utils {
     }
 
     public static boolean lengthNotSure(DingoSchema schema) {
-        if (schema.getType().equals(Type.STRING)
-            || schema.getType().equals(Type.BYTES))
-            return true;
-        return false;
+        return schema.getLength() == 0;
     }
 
     public static int getApproPerRecordSize(List<DingoSchema> schemas) {

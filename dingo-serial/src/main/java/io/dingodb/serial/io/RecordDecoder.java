@@ -20,15 +20,13 @@ import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.util.Utils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class RecordDecoder {
-    private List<DingoSchema> schemas;
-    private short schemaVersion;
+    private final List<DingoSchema> schemas;
+    private final short schemaVersion;
 
     public RecordDecoder(List<DingoSchema> schemas, short schemaVersion) {
         Utils.sortSchema(schemas);
@@ -45,26 +43,50 @@ public class RecordDecoder {
                     case BOOLEAN:
                         result[schema.getIndex()] = bd.readBoolean();
                         break;
+                    case BOOLEANLIST:
+                        result[schema.getIndex()] = bd.readBooleanList();
+                        break;
                     case SHORT:
                         result[schema.getIndex()] = bd.readShort();
+                        break;
+                    case SHORTLIST:
+                        result[schema.getIndex()] = bd.readShortList();
                         break;
                     case INTEGER:
                         result[schema.getIndex()] = bd.readInt();
                         break;
+                    case INTEGERLIST:
+                        result[schema.getIndex()] = bd.readIntegerList();
+                        break;
                     case FLOAT:
                         result[schema.getIndex()] = bd.readFloat();
+                        break;
+                    case FLOATLIST:
+                        result[schema.getIndex()] = bd.readFloatList();
                         break;
                     case LONG:
                         result[schema.getIndex()] = bd.readLong();
                         break;
+                    case LONGLIST:
+                        result[schema.getIndex()] = bd.readLongList();
+                        break;
                     case DOUBLE:
                         result[schema.getIndex()] = bd.readDouble();
+                        break;
+                    case DOUBLELIST:
+                        result[schema.getIndex()] = bd.readDoubleList();
                         break;
                     case STRING:
                         result[schema.getIndex()] = bd.readString();
                         break;
+                    case STRINGLIST:
+                        result[schema.getIndex()] = bd.readStringList();
+                        break;
                     case BYTES:
                         result[schema.getIndex()] = bd.readBytes().array();
+                        break;
+                    case BYTESLIST:
+                        result[schema.getIndex()] = bd.readBytesList();
                         break;
                     default:
                 }
@@ -77,7 +99,7 @@ public class RecordDecoder {
     public Object[] decode(byte[] record, int[] index) throws IOException {
         BinaryDecoder bd = new BinaryDecoder(record);
         if (bd.readShort() == this.schemaVersion) {
-            Object result[] = new Object[index.length];
+            Object[] result = new Object[index.length];
             List<Integer> indexList
                 = Arrays.stream(index).boxed().collect(Collectors.toList());
             for (DingoSchema schema : schemas) {
@@ -87,41 +109,87 @@ public class RecordDecoder {
                         case BOOLEAN:
                             result[resultIndex] = bd.readBoolean();
                             break;
+                        case BOOLEANLIST:
+                            result[resultIndex] = bd.readBooleanList();
+                            break;
                         case SHORT:
                             result[resultIndex] = bd.readShort();
+                            break;
+                        case SHORTLIST:
+                            result[resultIndex] = bd.readShortList();
                             break;
                         case INTEGER:
                             result[resultIndex] = bd.readInt();
                             break;
+                        case INTEGERLIST:
+                            result[resultIndex] = bd.readIntegerList();
+                            break;
                         case FLOAT:
                             result[resultIndex] = bd.readFloat();
+                            break;
+                        case FLOATLIST:
+                            result[resultIndex] = bd.readFloatList();
                             break;
                         case LONG:
                             result[resultIndex] = bd.readLong();
                             break;
+                        case LONGLIST:
+                            result[resultIndex] = bd.readLongList();
+                            break;
                         case DOUBLE:
                             result[resultIndex] = bd.readDouble();
+                            break;
+                        case DOUBLELIST:
+                            result[resultIndex] = bd.readDoubleList();
                             break;
                         case STRING:
                             result[resultIndex] = bd.readString();
                             break;
+                        case STRINGLIST:
+                            result[resultIndex] = bd.readStringList();
+                            break;
                         case BYTES:
                             result[resultIndex] = bd.readBytes().array();
+                            break;
+                        case BYTESLIST:
+                            result[resultIndex] = bd.readBytesList();
                             break;
                         default:
                             result[resultIndex] = null;
                     }
                 } else {
-                    if (Utils.lengthNotSure(schema)) {
-                        if (!bd.readIsNull()) {
-                            bd.skip(bd.readIntNoNull());
-                        }
-                    } else {
-                        bd.skip(schema.getLength());
+                    switch (schema.getType()) {
+                        case BOOLEANLIST:
+                            bd.skipBooleanList();
+                            break;
+                        case SHORTLIST:
+                            bd.skipShortList();
+                            break;
+                        case INTEGERLIST:
+                            bd.skipIntegerList();
+                            break;
+                        case FLOATLIST:
+                            bd.skipFloatList();
+                            break;
+                        case LONGLIST:
+                            bd.skipLongList();
+                            break;
+                        case DOUBLELIST:
+                            bd.skipDoubleList();
+                            break;
+                        case STRING:
+                        case BYTES:
+                            bd.skipString();
+                            break;
+                        case STRINGLIST:
+                        case BYTESLIST:
+                            bd.skipStringList();
+                            break;
+                        default:
+                            bd.skip(schema.getLength());
                     }
                 }
             }
-
             return result;
         } else {
             throw new RuntimeException("Schema version Wrong!");

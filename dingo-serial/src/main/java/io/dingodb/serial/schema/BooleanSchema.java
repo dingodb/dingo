@@ -25,6 +25,7 @@ public class BooleanSchema implements DingoSchema {
         setIndex(index);
         setNotNull(false);
     }
+
     public BooleanSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
@@ -97,8 +98,8 @@ public class BooleanSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (Boolean) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (Boolean) defaultValue;
     }
 
     @Override

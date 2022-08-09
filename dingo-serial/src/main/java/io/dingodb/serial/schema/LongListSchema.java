@@ -16,17 +16,19 @@
 
 package io.dingodb.serial.schema;
 
-public class FloatSchema implements DingoSchema {
+import java.util.List;
+
+public class LongListSchema implements DingoSchema {
     private int index;
     private boolean notNull;
-    private Float defaultValue;
+    private List<Long> defaultValue;
 
-    public FloatSchema(int index) {
+    public LongListSchema(int index) {
         setIndex(index);
         setNotNull(false);
     }
 
-    public FloatSchema(int index, Object defaultValue) {
+    public LongListSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
         setDefaultValue(defaultValue);
@@ -34,7 +36,7 @@ public class FloatSchema implements DingoSchema {
 
     @Override
     public Type getType() {
-        return Type.FLOAT;
+        return Type.LONGLIST;
     }
 
     @Override
@@ -49,27 +51,27 @@ public class FloatSchema implements DingoSchema {
 
     @Override
     public void setLength(int length) {
-        throw new UnsupportedOperationException("Float Schema data length always be 5");
+        throw new UnsupportedOperationException("LongList Schema data length always be 0 (not sure)");
     }
 
     @Override
     public int getLength() {
-        return 5;
+        return 0;
     }
 
     @Override
     public void setMaxLength(int maxLength) {
-        throw new UnsupportedOperationException("Float Schema data length always be 5");
+        throw new UnsupportedOperationException("LongList Schema not support maxLength");
     }
 
     @Override
     public int getMaxLength() {
-        return 5;
+        return 0;
     }
 
     @Override
     public void setPrecision(int precision) {
-        throw new UnsupportedOperationException("Float Schema not support Precision");
+        throw new UnsupportedOperationException("LongList Schema not support Precision");
     }
 
     @Override
@@ -79,7 +81,7 @@ public class FloatSchema implements DingoSchema {
 
     @Override
     public void setScale(int scale) {
-        throw new UnsupportedOperationException("Float Schema not support Scale");
+        throw new UnsupportedOperationException("LongList Schema not support Scale");
     }
 
     @Override
@@ -99,7 +101,7 @@ public class FloatSchema implements DingoSchema {
 
     @Override
     public void setDefaultValue(Object defaultValue) throws ClassCastException {
-        this.defaultValue = (Float) defaultValue;
+        this.defaultValue = (List<Long>) defaultValue;
     }
 
     @Override

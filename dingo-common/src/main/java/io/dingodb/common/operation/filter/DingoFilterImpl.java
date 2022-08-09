@@ -25,6 +25,7 @@ public class DingoFilterImpl implements DingoFilter {
 
     List<DingoFilter> orFilter = new ArrayList<>();
     List<DingoFilter> andFilter = new ArrayList<>();
+
     @Override
     public boolean filter(OperationContext context, byte[] record) {
         if (orFilter.size() > 0) {

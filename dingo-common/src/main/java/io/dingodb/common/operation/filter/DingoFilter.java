@@ -21,6 +21,8 @@ import io.dingodb.common.operation.context.OperationContext;
 public interface DingoFilter {
 
     boolean filter(OperationContext context, byte[] record);
+
     void addOrFilter(DingoFilter filter);
+
     void addAndFilter(DingoFilter filter);
 }
