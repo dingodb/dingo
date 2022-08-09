@@ -25,6 +25,7 @@ public class LongSchema implements DingoSchema {
         setIndex(index);
         setNotNull(false);
     }
+
     public LongSchema(int index, Object defaultValue) {
         setIndex(index);
         setNotNull(true);
@@ -97,8 +98,8 @@ public class LongSchema implements DingoSchema {
     }
 
     @Override
-    public void setDefaultValue(Object t) throws ClassCastException {
-        this.defaultValue = (Long) t;
+    public void setDefaultValue(Object defaultValue) throws ClassCastException {
+        this.defaultValue = (Long) defaultValue;
     }
 
     @Override
