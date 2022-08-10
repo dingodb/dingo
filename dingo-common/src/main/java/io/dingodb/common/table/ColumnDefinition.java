@@ -106,7 +106,7 @@ public class ColumnDefinition {
             return builder()
                 .name(name)
                 .type(type)
-                .elementType(elementTypeName != null ? SqlTypeName.get(elementTypeName.toUpperCase()) : null)
+                .elementType(elementTypeName == null ? null : SqlTypeName.get(elementTypeName.toUpperCase()))
                 .precision(precision != null ? precision : RelDataType.PRECISION_NOT_SPECIFIED)
                 .scale(scale != null ? scale : RelDataType.SCALE_NOT_SPECIFIED)
                 .notNull(notNull)

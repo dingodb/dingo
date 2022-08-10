@@ -53,18 +53,27 @@ public class QueryHashJoin3Test {
 
     @Test
     public void testStudentsClassesFullFilter() throws SQLException, IOException {
-        sqlHelper.doQueryTest(this.getClass(), "students-classes-full-join-filter");
+        sqlHelper.doQueryTest(
+            this.getClass(),
+            "students-classes-full-join-filter"
+        );
     }
 
     @Test
     public void testStudentsClassesLeftFilter() throws SQLException, IOException {
-        sqlHelper.doQueryTest(this.getClass(), "students-classes-left-join-filter", "students-classes-full-join" +
-            "-filter");
+        sqlHelper.doQueryTest(
+            this.getClass(),
+            "students-classes-left-join-filter",
+            "students-classes-full-join-filter"
+        );
     }
 
     @Test
     public void testStudentsClassesRightFilter() throws SQLException, IOException {
-        sqlHelper.doQueryTest(this.getClass(), "students-classes-right-join-filter", "students-classes-full-join" +
-            "-filter");
+        sqlHelper.doQueryTest(
+            this.getClass(),
+            "students-classes-right-join-filter",
+            "students-classes-full-join-filter"
+        );
     }
 }

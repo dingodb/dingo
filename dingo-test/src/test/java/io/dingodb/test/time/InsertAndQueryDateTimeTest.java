@@ -85,8 +85,8 @@ public class InsertAndQueryDateTimeTest {
                 + "name varchar(20),"
                 + "age int,"
                 + "amount double,"
-                + "create_time time," +
-                "primary key (id)"
+                + "create_time time,"
+                + "primary key (id)"
                 + ")"
         );
         sqlHelper.updateTest(

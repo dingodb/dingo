@@ -163,6 +163,9 @@ public class TestWithoutVar {
                 "unix_timestamp(timestamp('2022-04-14 00:00:00'))",
                 Timestamp.valueOf("2022-04-14 00:00:00").getTime() / 1000L
             ),
+            arguments("time('10:10:00') < time('11:00:02')", true),
+            arguments("date('1980-01-31') >= date('1980-02-01')", false),
+            arguments("timestamp('1980-01-31 23:59:59') < timestamp('1980-02-01 00:00:00')", true),
             // type conversion
             arguments("int(5)", 5),
             arguments("int(long(5))", 5),
