@@ -49,7 +49,8 @@ public class QueryNoTableTest {
         return Stream.of(
             arguments("select 'hello'", "hello"),
             arguments("select 'abc' || null", null),
-            arguments("select date_format('', '%Y-%m-%d')", null)
+            arguments("select date_format('', '%Y-%m-%d')", null),
+            arguments("select datediff('', '')", null)
         );
     }
 

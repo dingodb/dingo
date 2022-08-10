@@ -37,7 +37,8 @@
     @GenerateTypeCodes.TypeCode(name = "TIMESTAMP", type = "java.sql.Timestamp"),
     // collection types
     @GenerateTypeCodes.TypeCode(name = "ARRAY", type = "java.lang.Object[]"),
-    @GenerateTypeCodes.TypeCode(name = "LIST", type = "java.util.List"),
+    @GenerateTypeCodes.TypeCode(name = "LIST", type = "java.util.List",
+        aliases = {"MULTISET"}),
     @GenerateTypeCodes.TypeCode(name = "MAP", type = "java.util.Map"),
     // pseudo types
     @GenerateTypeCodes.TypeCode(name = "TUPLE", type = "tuple"),

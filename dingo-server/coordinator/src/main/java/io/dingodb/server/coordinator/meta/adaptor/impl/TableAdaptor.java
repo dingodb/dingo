@@ -239,6 +239,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .primary(column.isPrimary())
             .scale(column.getScale())
             .type(SqlTypeName.get(column.getType()))
+            .elementType(SqlTypeName.get(column.getElementType()))
             .defaultValue(column.getDefaultValue())
             .build();
     }
@@ -255,12 +256,14 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     private Column definitionToMeta(Table table, ColumnDefinition definition) {
+        SqlTypeName elementTypeName = definition.getElementType();
         return Column.builder()
             .name(definition.getName())
             .precision(definition.getPrecision())
             .primary(definition.isPrimary())
             .scale(definition.getScale())
             .type(definition.getType().getName())
+            .elementType(elementTypeName == null ? null : elementTypeName.getName())
             .notNull(definition.isNotNull())
             .table(table.getId())
             .schema(table.getSchema())
