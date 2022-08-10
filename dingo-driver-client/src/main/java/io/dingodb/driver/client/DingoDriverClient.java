@@ -18,6 +18,7 @@ package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
 import io.dingodb.driver.DingoServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.DriverVersion;
@@ -26,10 +27,14 @@ import org.apache.calcite.avatica.remote.DingoRemoteMeta;
 import org.apache.calcite.avatica.remote.Driver;
 import org.apache.calcite.avatica.remote.Service;
 
+import java.util.Properties;
 import java.util.function.Supplier;
 
+@Slf4j
 public class DingoDriverClient extends Driver {
     public static final String CONNECT_STRING_PREFIX = "jdbc:dingo:thin:";
+
+    public static final String PARAM_SPLIT = "&";
 
     static final DriverVersion DRIVER_VERSION = new DriverVersion(
         "Dingo JDBC Thin Driver",
@@ -59,19 +64,43 @@ public class DingoDriverClient extends Driver {
 
     @Override public Meta createMeta(AvaticaConnection connection) {
         final ConnectionConfig config = connection.config();
-
+        Properties info = getUrlParam(config.url());
+        int timeout = 30;
+        if (info.containsKey("timeout")) {
+            timeout = Integer.parseInt(info.getProperty("timeout"));
+        }
+        log.info("driver info" + info);
         // Create a single Service and set it on the Connection instance
         Supplier<Location> locationSupplier = null;
-        String[] split = config.url().split(":");
+        String[] split = info.getProperty("point").split(":");
         if (split.length == 2) {
             Location location = new Location(split[0], Integer.valueOf(split[1]));
             locationSupplier = () -> location;
         } else {
             throw new IllegalArgumentException("Bad url: " + config.url());
         }
-        final Service service = new DingoServiceImpl(locationSupplier);
+        final Service service = new DingoServiceImpl(locationSupplier, timeout);
         connection.setService(service);
         return new DingoRemoteMeta(connection, service);
     }
 
+    private Properties getUrlParam(String url) {
+        Properties paramInfo = new Properties();
+        int paramSplitIndex = 0;
+        if ((paramSplitIndex = url.indexOf("?")) > 0) {
+            String paramStr = url.substring(paramSplitIndex + 1);
+            String[] params = paramStr.split(PARAM_SPLIT);
+            for (String paramPair : params) {
+                String[] paramKV = paramPair.split("=");
+                if (paramKV.length == 2) {
+                    paramInfo.put(paramKV[0], paramKV[1]);
+                }
+            }
+            String point = url.substring(0, paramSplitIndex);
+            paramInfo.put("point", point);
+        } else {
+            paramInfo.put("point", url);
+        }
+        return paramInfo;
+    }
 }

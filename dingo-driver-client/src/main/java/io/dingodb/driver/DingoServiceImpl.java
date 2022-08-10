@@ -37,8 +37,8 @@ public class DingoServiceImpl implements Service {
     @Delegate
     private final DriverProxyApi proxyApi;
 
-    public DingoServiceImpl(Supplier<Location> locationSupplier) {
-        proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, locationSupplier, null, 30);
+    public DingoServiceImpl(Supplier<Location> locationSupplier, int timeout) {
+        proxyApi = netService.apiRegistry().proxy(DriverProxyApi.class, locationSupplier, null, timeout);
     }
 
     public ResultSetResponse apply(CatalogsRequest request) {
