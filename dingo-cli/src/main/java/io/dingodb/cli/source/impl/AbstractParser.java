@@ -17,43 +17,64 @@
 package io.dingodb.cli.source.impl;
 
 import io.dingodb.cli.source.Parser;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 public abstract class AbstractParser implements Parser {
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        long totalInsertCnt = 0L;
         List<Object[]> result = new ArrayList<>();
         for (Object[] arr : records) {
-            if (arr.length == tableDefinition.getColumns().size()) {
-                try {
-                    DingoType schema = tableDefinition.getDingoType();
-                    Object[] row = (Object[]) schema.parse(arr);
-                    long nullCount = Arrays.stream(row).filter(Objects::isNull).count();
-                    if (nullCount > 0) {
-                        continue;
-                    }
-                    result.add(row);
-                } catch (Exception e) {
-                    log.warn("Data:{} parsing failed", arr);
+            try {
+                DingoType schema = tableDefinition.getDingoType();
+                Object[] row = (Object[]) schema.parse(arr);
+                if (!isValidRecord(tableDefinition, row)) {
+                    log.warn("Invalid input row will skip it:{}", arr);
+                    continue;
                 }
-            } else {
-                log.warn("The current data is missing a field value, skip it:{} ", arr);
+                result.add(row);
+                totalInsertCnt++;
+            } catch (Exception ex) {
+                log.warn("Data:{} parsing failed", arr, ex);
             }
         }
         try {
             dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
         } catch (Exception e) {
             log.error("Error encoding record", e);
+            totalInsertCnt = 0;
         }
+        return totalInsertCnt;
+    }
+
+    private boolean isValidRecord(TableDefinition tableDefinition, Object[] columnValues) {
+        if (tableDefinition == null
+            || columnValues == null
+            || columnValues.length != tableDefinition.getColumns().size()) {
+            log.error("Invalid record expectedCnt:{}, realCnt:{}",
+                tableDefinition == null ? 0 : tableDefinition.getColumns().size(),
+                columnValues == null ? 0 : columnValues.length);
+            return false;
+        }
+
+        boolean isValid = true;
+        for (int i = 0; i < columnValues.length; i++) {
+            ColumnDefinition columnDefinition = tableDefinition.getColumns().get(i);
+            if (columnDefinition.isNotNull() && columnValues[i] == null) {
+                isValid = false;
+                log.error("Column:{} is not null, but current value is null", columnDefinition.getName());
+                break;
+            }
+        }
+        return isValid;
     }
 }
