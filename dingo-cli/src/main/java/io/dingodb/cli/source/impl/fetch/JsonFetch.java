@@ -49,12 +49,16 @@ public class JsonFetch extends AbstractParser implements Fetch {
         try {
             List<Object[]> records = new ArrayList<>();
             BufferedReader br = new BufferedReader(new FileReader(localFile));
+            long totalReadCnt = 0L;
+            long totalWriteCnt = 0L;
             String line = br.readLine();
+            totalReadCnt++;
             if (line.charAt(0) == '[') {
                 StringBuffer sb = new StringBuffer();
                 sb.append(line);
                 while ((line = br.readLine()) != null) {
                     sb.append(line);
+                    totalReadCnt++;
                 }
                 List<LinkedHashMap<String, Object>> list =
                     mapper.readValue(sb.toString(), new TypeReference<List<LinkedHashMap<String, Object>>>() {});
@@ -62,15 +66,18 @@ public class JsonFetch extends AbstractParser implements Fetch {
             } else {
                 records.add(readLine(line).values().toArray());
                 while ((line = br.readLine()) != null) {
+                    totalReadCnt++;
                     records.add(readLine(line).values().toArray());
                     if (records.size() >= 1000) {
-                        this.parse(tableDefinition, records, dingoClient);
+                        totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
                     }
                 }
             }
             if (records.size() != 0) {
-                this.parse(tableDefinition, records, dingoClient);
+                totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
             }
+            System.out.println("The total read count from File is:" + totalReadCnt
+                + ", real write count:" + totalWriteCnt);
         } catch (IOException e) {
             log.error("Error reading file:{}", localFile, e);
         }
@@ -81,8 +88,8 @@ public class JsonFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        super.parse(tableDefinition, records, dingoClient);
+    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        return super.parse(tableDefinition, records, dingoClient);
     }
 
     private LinkedHashMap<String, Object> readLine(String line) throws JsonProcessingException {

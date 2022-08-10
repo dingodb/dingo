@@ -18,6 +18,7 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class CsvConverter implements DataConverter {
     public static final CsvConverter INSTANCE = new CsvConverter();
 
@@ -39,55 +41,81 @@ public class CsvConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@Nonnull Object value) {
-        return Integer.parseInt((String) value);
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        return Integer.parseInt(value.toString());
     }
 
     @Override
     public Long convertLongFrom(@Nonnull Object value) {
-        return Long.parseLong((String) value);
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(value.toString());
     }
 
     @Override
     public Double convertDoubleFrom(@Nonnull Object value) {
-        return Double.parseDouble((String) value);
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        return Double.parseDouble(value.toString());
     }
 
     @Override
     public Boolean convertBooleanFrom(@Nonnull Object value) {
         String str = (String) value;
+
+        if (str.equalsIgnoreCase("true")) {
+            return Boolean.TRUE;
+        }
+        if (str.equalsIgnoreCase("false")) {
+            return Boolean.FALSE;
+        }
+        if (str.trim().length() == 0) {
+            log.warn("Empty string will return Null.");
+            return null;
+        }
+
         try {
             int aInt = Integer.parseInt(str);
             return aInt != 0 ? Boolean.TRUE : Boolean.FALSE;
         } catch (NumberFormatException ignored) {
+            log.error("Failed to parse boolean value: {}", str, ignored);
+            throw new IllegalArgumentException("Failed to parse boolean value: " + str);
         }
-        if (str.equalsIgnoreCase("true")) {
-            return Boolean.TRUE;
-        }
-        return Boolean.FALSE;
     }
 
     @Override
     public BigDecimal convertDecimalFrom(@Nonnull Object value) {
-        return new BigDecimal((String) value);
+        if (value == null || value.toString().trim().isEmpty()) {
+            return null;
+        }
+        return new BigDecimal(value.toString());
     }
 
     @Override
     public Date convertDateFrom(@Nonnull Object value) {
-        return DateTimeUtils.parseDate((String) value);
+        String strValue = value instanceof String ? (String) value : value.toString();
+        return DateTimeUtils.parseDate(strValue);
     }
 
     @Override
     public Time convertTimeFrom(@Nonnull Object value) {
-        return DateTimeUtils.parseTime((String) value);
+        String strValue = value instanceof String ? (String) value : value.toString();
+        return DateTimeUtils.parseTime(strValue);
     }
 
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
-        return DateTimeUtils.parseTimestamp((String) value);
+        String strValue = value instanceof String ? (String) value : value.toString();
+        return DateTimeUtils.parseTimestamp(strValue);
     }
 
     @Override
     public byte[] convertBinaryFrom(@Nonnull Object value) {
-        return ((String) value).getBytes(StandardCharsets.UTF_8);
+        String strValue = value instanceof String ? (String) value : value.toString();
+        return strValue.getBytes(StandardCharsets.UTF_8);
     }
 }

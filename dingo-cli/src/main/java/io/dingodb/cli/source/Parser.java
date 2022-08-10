@@ -23,5 +23,5 @@ import java.util.List;
 
 public interface Parser {
 
-    void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient);
+    long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient);
 }

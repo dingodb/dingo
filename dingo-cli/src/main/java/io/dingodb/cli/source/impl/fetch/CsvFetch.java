@@ -62,7 +62,8 @@ public class CsvFetch extends AbstractParser implements Fetch {
             if (state) {
                 br.readLine();
             }
-            long totalCnt = 0L;
+            long totalReadCnt = 0L;
+            long totalWriteCnt = 0L;
             while ((line = br.readLine()) != null) {
                 if (Strings.isNullOrEmpty(line)) {
                     continue;
@@ -71,19 +72,19 @@ public class CsvFetch extends AbstractParser implements Fetch {
                     .with(schema.withColumnSeparator(separatorChar))
                     .readValue(line);
                 records.add(arr);
-                totalCnt++;
+                totalReadCnt++;
                 if (records.size() >= 1000) {
-                    this.parse(tableDefinition, records, dingoClient);
+                    totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
                     records.clear();
                 }
             }
             if (records.size() != 0) {
-                this.parse(tableDefinition, records, dingoClient);
+                totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
             }
-
-            System.out.println("All records has been load, count:" + totalCnt);
-        } catch (Exception e) {
-            log.error("Error reading file:{}", localFile, e);
+            System.out.println("The total read count from File is:" + totalReadCnt
+                + ", real write count:" + totalWriteCnt);
+        } catch (Exception ex) {
+            log.error("Error reading file:{}", localFile, ex);
         }
     }
 
@@ -92,7 +93,7 @@ public class CsvFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        super.parse(tableDefinition, records, dingoClient);
+    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+        return super.parse(tableDefinition, records, dingoClient);
     }
 }

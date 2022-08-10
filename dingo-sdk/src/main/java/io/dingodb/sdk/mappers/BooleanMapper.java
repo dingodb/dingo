@@ -16,6 +16,9 @@
 
 package io.dingodb.sdk.mappers;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class BooleanMapper extends TypeMapper {
 
     @Override
@@ -23,7 +26,14 @@ public class BooleanMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return ((Boolean) value) ? true : false;
+        if (value instanceof Boolean) {
+            return ((Boolean) value) ? true : false;
+        } else if (value instanceof Number) {
+            return ((Number) value).intValue() != 0 ? true : false;
+        } else {
+            log.error("Unsupported boolean type: " + value.getClass().getName());
+            throw new IllegalArgumentException("Unsupported boolean type: " + value.getClass().getName());
+        }
     }
 
     @Override
