@@ -17,6 +17,11 @@
 package io.dingodb.sdk.mappers;
 
 
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
 public class DateMapper extends TypeMapper {
 
     @Override
@@ -24,7 +29,17 @@ public class DateMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return value;
+
+        String dateInStr = "";
+        if (value instanceof java.util.Date) {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+            dateInStr = formatter.format((java.util.Date) value);
+        } else if (value instanceof java.sql.Date) {
+            dateInStr = value.toString();
+        } else {
+            throw new IllegalArgumentException("Unsupported date type: " + value.getClass().getName());
+        }
+        return DateTimeUtils.parseDate(dateInStr);
     }
 
     @Override
@@ -32,6 +47,17 @@ public class DateMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return value;
+
+        Date expectedDate = null;
+        if (value instanceof java.util.Date) {
+            expectedDate = new Date(((java.util.Date) value).getTime());
+        } else if (value instanceof java.sql.Date) {
+            expectedDate = (Date) value;
+        } else {
+            throw new IllegalArgumentException("Unsupported date type: " + value.getClass().getName());
+        }
+
+        String dateInStr = DateTimeUtils.dateFormat(expectedDate);
+        return Date.valueOf(dateInStr);
     }
 }

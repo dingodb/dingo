@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
@@ -114,7 +115,9 @@ public class TestDingoCliWithConstruct {
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.age, actualObject.age);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
-            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String expectedBirthDay = dateFormat.format(constructedInstance.birthday);
+            Assertions.assertEquals(expectedBirthDay, actualObject.birthday.toString());
             isOK = dingoCli.delete(constructedInstance);
             Assertions.assertTrue(isOK);
         } catch (DingoClientException e) {
@@ -182,10 +185,13 @@ public class TestDingoCliWithConstruct {
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.age, actualObject.age);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
-            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String expectedBirthDay = dateFormat.format(constructedInstance.birthday);
+            Assertions.assertEquals(expectedBirthDay, actualObject.birthday.toString());
             isOK = dingoCli.delete(constructedInstance);
             Assertions.assertTrue(isOK);
         } catch (DingoClientException e) {
+            e.printStackTrace();
             Assertions.fail(e.getMessage());
         } catch (Exception e) {
             Assertions.fail(e.getMessage());
@@ -216,7 +222,9 @@ public class TestDingoCliWithConstruct {
             ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
-            Assertions.assertEquals(constructedInstance.birthday, actualObject.birthday);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String expectedBirthDay = dateFormat.format(constructedInstance.birthday);
+            Assertions.assertEquals(expectedBirthDay, actualObject.birthday.toString());
             isOK = dingoCli.delete(constructedInstance);
             Assertions.assertTrue(isOK);
         } catch (DingoClientException e) {
