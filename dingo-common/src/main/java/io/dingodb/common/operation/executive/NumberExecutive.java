@@ -24,8 +24,8 @@ import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 
-import javax.activation.UnsupportedDataTypeException;
 import java.util.Iterator;
+import javax.activation.UnsupportedDataTypeException;
 
 public abstract class NumberExecutive<D extends OperationContext, T extends Iterator<KeyValue>, R>
     implements Executive<D, T, R> {

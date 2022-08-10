@@ -18,7 +18,7 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.DingoKeyValueCodec;
@@ -64,7 +64,7 @@ public class StoreOperationUtils {
         clearTableDefinitionInCache();
     }
 
-    public List<ExecutiveResult> doOperation(String tableName,
+    public List<DingoExecResult> doOperation(String tableName,
                                              ContextForClient storeParameters) {
         RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
         if (routeTable == null) {
@@ -73,8 +73,9 @@ public class StoreOperationUtils {
         }
 
         boolean isSuccess = false;
+        String errorMsg = "";
         int retryTimes = this.retryTimes;
-        List<ExecutiveResult> results = new ArrayList<>();
+        List<DingoExecResult> results = new ArrayList<>();
         do {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
@@ -82,24 +83,31 @@ public class StoreOperationUtils {
                 Map<String, ContextForStore> keys2Executor =
                     groupKeysByExecutor(routeTable, null, tableName, storeContext);
 
+                List<Future<List<DingoExecResult>>> futureArrayList = new ArrayList<>();
                 for (Map.Entry<String, ContextForStore> entry : keys2Executor.entrySet()) {
                     String leaderAddress = entry.getKey();
+                    ContextForStore forStore = entry.getValue();
                     ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
 
-                    List<ExecutiveResult> executiveResults = executorApi.operator(
-                        routeTable.getTableId(),
-                        entry.getValue().getStartKeyListInBytes(),
-                        entry.getValue().getEndKeyListInBytes(),
-                        entry.getValue().getOperationListInBytes());
-                    for (ExecutiveResult executiveResult : executiveResults) {
-                        isSuccess = executiveResult.isSuccess();
+                    Future<List<DingoExecResult>> future =
+                        executorService.submit(() -> executorApi.operator(
+                            routeTable.getTableId(),
+                            forStore.getStartKeyListInBytes(),
+                            forStore.getEndKeyListInBytes(),
+                            forStore.getOperationListInBytes()));
+                    futureArrayList.add(future);
+                }
+                for (Future<List<DingoExecResult>> listFuture : futureArrayList) {
+                    List<DingoExecResult> dingoExecResults = listFuture.get();
+                    for (DingoExecResult dingoExecResult : dingoExecResults) {
+                        isSuccess = dingoExecResult.isSuccess();
                         if (!isSuccess) {
-                            throw new RuntimeException("calc operation fail");
+                            errorMsg = dingoExecResult.errorMessage();
+                            throw new DingoClientException(errorMsg);
                         }
-                        results.add(executiveResult);
+                        results.add(dingoExecResult);
                     }
                 }
-                isSuccess = true;
             } catch (Exception e) {
                 log.error("operation fail.", e);
             }
@@ -253,7 +261,7 @@ public class StoreOperationUtils {
             MetaClient metaClient = connection.getMetaClient();
             tableDefinition = metaClient.getTableDefinition(tableName);
             if (tableDefinition == null) {
-                log.error("Cannot find table:{} defination from meta", tableName);
+                log.error("Cannot find table:{} definition from meta", tableName);
                 return null;
             }
             tableDefinitionInCache.put(tableName, tableDefinition);

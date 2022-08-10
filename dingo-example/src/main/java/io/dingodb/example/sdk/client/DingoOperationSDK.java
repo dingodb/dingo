@@ -18,7 +18,7 @@ package io.dingodb.example.sdk.client;
 
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.operation.filter.DingoDateRangeFilter;
@@ -80,47 +80,46 @@ public class DingoOperationSDK {
         DingoFilter root = new DingoFilterImpl();
         switch (op.toUpperCase()) {
             case "ADD":
-                List<ExecutiveResult> add = dingoClient.add(primary, endPrimaryKey, new Column(c1, 30));
-                for (ExecutiveResult record : add) {
-                    System.out.println("===== " + record.getRecord() + ", ==== isSuccess: " + record.isSuccess());
-                }
+                boolean add = dingoClient.add(primary, endPrimaryKey, new Column(c1, 30));
+                System.out.println("===== " + add);
+
                 break;
             case "MAX":
                 DingoFilter eqFilter = new DingoValueEqualsFilter(new int[]{1}, new Object[]{43});
                 root.addAndFilter(eqFilter);
-                List<ExecutiveResult> max =
+                List<DingoExecResult> max =
                     dingoClient.max(primary, endPrimaryKey, root, new Column(c1), new Column(c2));
-                for (ExecutiveResult record : max) {
+                for (DingoExecResult record : max) {
                     System.out.println("===== " + record.getRecord());
                 }
                 break;
             case "MIN":
-                List<ExecutiveResult> min = dingoClient.min(primary, endPrimaryKey, new Column(c1));
-                for (ExecutiveResult record : min) {
+                List<DingoExecResult> min = dingoClient.min(primary, endPrimaryKey, new Column(c1));
+                for (DingoExecResult record : min) {
                     System.out.println("===== " + record.getRecord());
                 }
                 break;
             case "SUM":
-                List<ExecutiveResult> sum = dingoClient.sum(primary, endPrimaryKey, new Column(c1), new Column(c2));
-                for (ExecutiveResult record : sum) {
+                List<DingoExecResult> sum = dingoClient.sum(primary, endPrimaryKey, new Column(c1), new Column(c2));
+                for (DingoExecResult record : sum) {
                     System.out.println("===== " + record.getRecord());
                 }
                 break;
             case "COUNT":
                 DingoFilter equalsFilter = new DingoValueEqualsFilter(new int[]{1}, new Object[]{43});
                 root.addAndFilter(equalsFilter);
-                List<ExecutiveResult> count =
+                List<DingoExecResult> count =
                     dingoClient.count(primary, endPrimaryKey, root, new Column(c1), new Column(c2));
-                for (ExecutiveResult record : count) {
+                for (DingoExecResult record : count) {
                     System.out.println("===== op: " + record.op() + ", ===== record: " + record.getRecord());
                 }
                 break;
             case "OPERATE":
                 Operation maxOp = Operation.max(new Column("amount"));
                 Operation minOp = Operation.min(new Column("amount"));
-                List<ExecutiveResult> records =
+                List<DingoExecResult> records =
                     dingoClient.operate(primary, endPrimaryKey, Arrays.asList(maxOp, minOp));
-                for (ExecutiveResult record : records) {
+                for (DingoExecResult record : records) {
                     System.out.println("===== op: " + record.op() + ", ===== record: " + record.getRecord());
                 }
                 break;
@@ -131,13 +130,14 @@ public class DingoOperationSDK {
                 root.addAndFilter(tradeEqualsFilter);
                 Key startDateKey = new Key("dingo", "trade", Arrays.asList(Value.get("A"), Value.get(1651334400000L)));
                 Key endDateKey = new Key("dingo", "trade", Arrays.asList(Value.get("A"), Value.get(1661875200000L)));
-                List<ExecutiveResult> tradeSum =
+                List<DingoExecResult> tradeSum =
                     dingoClient.sum(startDateKey, endDateKey, root, new Column("moveAmount"));
-                for (ExecutiveResult record : tradeSum) {
+                for (DingoExecResult record : tradeSum) {
                     System.out.println("===== op: " + record.op() + ", ===== record: " + record.getRecord());
                 }
                 break;
             default:
         }
+        dingoClient.close();
     }
 }

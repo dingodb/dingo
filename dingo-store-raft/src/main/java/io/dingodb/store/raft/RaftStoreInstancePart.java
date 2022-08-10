@@ -192,7 +192,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
     }
 
     @Override
-    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, byte[] operations) {
+    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");
         }

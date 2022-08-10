@@ -16,8 +16,8 @@
 
 package io.dingodb.common.operation.executive;
 
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,7 +34,7 @@ import java.util.Map;
 public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValue>, Object> {
 
     @Override
-    public ExecutiveResult execute(BasicContext context, Iterator<KeyValue> records) {
+    public DingoExecResult execute(BasicContext context, Iterator<KeyValue> records) {
         int[] indexes = new int[context.columns.length];
         for (int i = 0; i < context.columns.length; i++) {
             indexes[i] = context.definition.getColumnIndexOfValue(context.columns[i].name);
@@ -59,11 +58,11 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     }
                 } catch (IOException e) {
                     log.error("Column:{} decode failed", Arrays.stream(context.columns).map(col -> col.name).toArray());
-                    return new ExecutiveResult(null, false, NumericType.MAX.name());
+                    return new DingoExecResult(false, "Max operation decode failed, " + e.getMessage());
                 }
             }
         }
         map.forEach((key, value) -> result.put(key, value.value()));
-        return new ExecutiveResult(Collections.singletonList(result), true, NumericType.MAX.name());
+        return new DingoExecResult(result, true, "OK", NumericType.MAX.name());
     }
 }

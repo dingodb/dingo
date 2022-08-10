@@ -50,8 +50,8 @@ public class MemoryStoreService implements StoreService {
         if (instance == null) {
             instance = new MemoryStoreInstance();
             instance.assignPart(createPart(id, ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES));
-//            instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
-//            instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
+            // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
+            // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
             store.put(id, instance);
         }
         return instance;

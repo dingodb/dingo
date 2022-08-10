@@ -57,7 +57,9 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
     }
 
     @Override
-    public Map<byte[], byte[]> calcPartitionRange(@Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd) {
+    public Map<byte[], byte[]> calcPartitionRange(@Nonnull byte[] startKey,
+                                                  @Nonnull byte[] endKey,
+                                                  boolean includeEnd) {
         return Collections.emptyMap();
     }
 }

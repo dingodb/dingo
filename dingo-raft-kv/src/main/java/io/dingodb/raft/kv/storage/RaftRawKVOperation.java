@@ -148,7 +148,7 @@ public class RaftRawKVOperation {
             .build();
     }
 
-    public static RaftRawKVOperation compute(final byte[] start, final byte[] end, final byte[] operations) {
+    public static RaftRawKVOperation compute(final byte[] start, final byte[] end, final List<byte[]> operations) {
         return RaftRawKVOperation.builder()
             .key(start)
             .op(COMPUTE)

@@ -17,7 +17,7 @@
 package io.dingodb.sdk.client;
 
 import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.operation.filter.DingoFilter;
@@ -422,9 +422,8 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return true/false
      */
-    public final List<ExecutiveResult> add(@Nonnull Key key, @Nonnull Column... columns) {
-        Operation operation = Operation.add(columns);
-        return operate(key, Collections.singletonList(operation));
+    public final boolean add(@Nonnull Key key, @Nonnull Column... columns) {
+        return add(key, null, columns);
     }
 
     /**
@@ -436,7 +435,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return true/false
      */
-    public final List<ExecutiveResult> add(@Nonnull Key start, Key end, @Nonnull Column... columns) {
+    public final boolean add(@Nonnull Key start, Key end, @Nonnull Column... columns) {
         int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
         int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {
@@ -444,7 +443,8 @@ public class DingoClient {
             throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
         }
         Operation operation = Operation.add(columns);
-        return operate(start, end, Collections.singletonList(operation));
+        List<DingoExecResult> result = operate(start, end, Collections.singletonList(operation));
+        return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
 
     /**
@@ -456,7 +456,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> max(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+    public final List<DingoExecResult> max(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
         int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
         int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {
@@ -483,7 +483,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> max(@Nonnull Key start,
+    public final List<DingoExecResult> max(@Nonnull Key start,
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
@@ -508,7 +508,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> min(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+    public final List<DingoExecResult> min(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
         int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
         int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {
@@ -529,7 +529,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> min(@Nonnull Key start,
+    public final List<DingoExecResult> min(@Nonnull Key start,
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
@@ -553,7 +553,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> sum(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
+    public final List<DingoExecResult> sum(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
         int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
         int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {
@@ -574,7 +574,7 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      */
-    public final List<ExecutiveResult> sum(@Nonnull Key start,
+    public final List<DingoExecResult> sum(@Nonnull Key start,
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
@@ -600,9 +600,9 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return The calculation result of the corresponding column
      * @see Key
-     * @see ExecutiveResult
+     * @see DingoExecResult
      */
-    public final List<ExecutiveResult> count(@Nonnull Key start,
+    public final List<DingoExecResult> count(@Nonnull Key start,
                                              @Nonnull Key end,
                                              @Nonnull DingoFilter filter,
                                              @Nonnull Column... columns) {
@@ -624,7 +624,7 @@ public class DingoClient {
      * @param operations multiple read/write operations
      * @return Multiple one-to-one operation results
      */
-    public final List<ExecutiveResult> operate(Key key, List<Operation> operations) {
+    public final List<DingoExecResult> operate(Key key, List<Operation> operations) {
         return operate(key, null, operations);
     }
 
@@ -639,7 +639,7 @@ public class DingoClient {
      * @param operations database operations to perform
      * @return Multiple one-to-one operation results
      */
-    public final List<ExecutiveResult> operate(Key start, Key end, List<Operation> operations) {
+    public final List<DingoExecResult> operate(Key start, Key end, List<Operation> operations) {
         int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
         int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {

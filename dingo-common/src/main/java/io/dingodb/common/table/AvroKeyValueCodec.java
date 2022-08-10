@@ -53,6 +53,13 @@ public class AvroKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
+    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+        Object[] result = new Object[keyMapping.size()];
+        keyCodec.decode(result, bytes, keyMapping);
+        return (Object[]) schema.convertFrom(result, AvroConverter.INSTANCE);
+    }
+
+    @Override
     public KeyValue encode(@Nonnull Object[] tuple) throws IOException {
         Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
         return new KeyValue(
