@@ -23,6 +23,7 @@ import io.dingodb.common.store.Row;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface StoreInstance {
 
@@ -94,14 +95,14 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default boolean compute(byte[] primaryKey, byte[] computes) {
+    default boolean compute(byte[] primaryKey, List<byte[]> computes) {
         byte[] stop = new byte[primaryKey.length];
         System.arraycopy(primaryKey, 0, stop, 0, primaryKey.length);
         stop[stop.length - 1]++;
         return compute(primaryKey, stop, computes);
     }
 
-    default boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, byte[] operations) {
+    default boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         throw new UnsupportedOperationException();
     }
 

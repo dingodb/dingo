@@ -156,8 +156,8 @@ public class MemoryRawKVStore implements RawKVStore {
     }
 
     @Override
-    public boolean compute(byte[] startKey, byte[] endkey, byte[] computes) {
-        return true;
+    public void compute(byte[] startKey, byte[] endKey, List<byte[]> computes) {
+
     }
 
     @Override

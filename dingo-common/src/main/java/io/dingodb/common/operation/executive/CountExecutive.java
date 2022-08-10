@@ -17,13 +17,12 @@
 package io.dingodb.common.operation.executive;
 
 import io.dingodb.common.operation.Column;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.store.KeyValue;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,7 +30,7 @@ import java.util.Map;
 public class CountExecutive extends NumberExecutive<BasicContext, Iterator<KeyValue>, Object> {
 
     @Override
-    public ExecutiveResult execute(BasicContext context, Iterator<KeyValue> records) {
+    public DingoExecResult execute(BasicContext context, Iterator<KeyValue> records) {
         Column[] columns = context.columns;
         /*int[] indexes = new int[columns.length];
         for (int i = 0; i < columns.length; i++) {
@@ -56,6 +55,6 @@ public class CountExecutive extends NumberExecutive<BasicContext, Iterator<KeyVa
                 }
             }
         }
-        return new ExecutiveResult(Collections.singletonList(result), true, NumericType.COUNT.name());
+        return new DingoExecResult(result, true, "OK", NumericType.COUNT.name());
     }
 }

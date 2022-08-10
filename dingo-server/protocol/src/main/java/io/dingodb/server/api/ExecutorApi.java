@@ -17,7 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.operation.ExecutiveResult;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
@@ -52,7 +52,7 @@ public interface ExecutorApi {
     public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
-    public List<ExecutiveResult> operator(
+    public List<DingoExecResult> operator(
         CommonId tableId,
         List<byte[]> startPrimaryKeys,
         List<byte[]> endPrimaryKey,

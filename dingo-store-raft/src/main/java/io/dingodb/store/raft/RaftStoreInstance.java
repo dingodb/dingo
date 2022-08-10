@@ -51,7 +51,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.ByteArrayUtils.*;
+import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.common.util.ByteArrayUtils.compare;
 
 @Slf4j
 public class RaftStoreInstance implements StoreInstance {
@@ -282,12 +283,23 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, byte[] operations) {
-        Part part = getPart(startPrimaryKey);
-        if (part == null || part != getPart(endPrimaryKey)) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
+        boolean isSuccess = false;
+        try {
+            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
+
+            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
+                Part part = entry.getKey();
+                List<byte[]> keys = entry.getValue();
+                isSuccess = parts.get(part.getId()).compute(keys.get(0), keys.get(1), operations);
+                if (!isSuccess) {
+                    log.error("Compute failed, part:{}, keys:{}", part.getId(), keys);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Compute failed, startPrimaryKey:{}, endPrimaryKey:{}", startPrimaryKey, endPrimaryKey, e);
         }
-        return parts.get(part.getId()).compute(startPrimaryKey, endPrimaryKey, operations);
+        return isSuccess;
     }
 
     @Override

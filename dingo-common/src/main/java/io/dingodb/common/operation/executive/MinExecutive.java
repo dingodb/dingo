@@ -17,8 +17,8 @@
 package io.dingodb.common.operation.executive;
 
 import io.dingodb.common.operation.Column;
+import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -36,7 +35,7 @@ import java.util.Map;
 public class MinExecutive extends NumberExecutive<BasicContext, Iterator<KeyValue>, Object> {
 
     @Override
-    public ExecutiveResult execute(BasicContext context, Iterator<KeyValue> records) {
+    public DingoExecResult execute(BasicContext context, Iterator<KeyValue> records) {
         Column[] columns = context.columns;
         int[] indexes = new int[columns.length];
         for (int i = 0; i < columns.length; i++) {
@@ -61,11 +60,11 @@ public class MinExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     }
                 } catch (IOException e) {
                     log.error("Columns:{} decode failed", Arrays.stream(columns).map(col -> col.name).toArray());
-                    return new ExecutiveResult(null, false, NumericType.MIN.name());
+                    return new DingoExecResult(false, "Min operation decode failed, " + e.getMessage());
                 }
             }
         }
         map.forEach((key, value) -> result.put(key, value.value()));
-        return new ExecutiveResult(Collections.singletonList(result), true, NumericType.MIN.name());
+        return new DingoExecResult(result, true, "OK", NumericType.MIN.name());
     }
 }

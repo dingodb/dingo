@@ -52,8 +52,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
@@ -281,27 +283,31 @@ public class RocksRawKVStore implements RawKVStore {
     }
 
     @Override
-    public boolean compute(byte[] start, byte[] end, byte[] op) {
-        Operation operation = ProtostuffCodec.read(op);
+    public void compute(byte[] start, byte[] end, List<byte[]> bytes) {
+        List<Operation> operations = bytes.stream()
+            .map(ProtostuffCodec::<Operation>read)
+            .collect(Collectors.toList());
         try (ReadOptions readOptions = new ReadOptions()) {
             try (Snapshot snapshot = this.db.getSnapshot()) {
                 readOptions.setSnapshot(snapshot);
                 ByteArrayEntryIterator entryIterator = new ByteArrayEntryIterator(
                     db.newIterator(readOptions), start, end, true, false);
 
-                Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
+                for (Operation operation : operations) {
+                    Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
 
-                List<KeyValue> result = (List<KeyValue>) operation.operationType.executive().execute(
-                    operation.operationContext, iterator);
+                    List<KeyValue> rows = (List<KeyValue>) operation.operationType.executive().execute(
+                        operation.operationContext, iterator);
 
-                result.forEach(kv -> {
-                    try {
-                        db.put(kv.getKey(), kv.getValue());
-                    } catch (RocksDBException e) {
+                    try (final WriteBatch batch = new WriteBatch()) {
+                        for (final KeyValue entry : rows) {
+                            batch.put(entry.getPrimaryKey(), entry.getValue());
+                        }
+                        this.db.write(this.writeOptions, batch);
+                    } catch (final Exception e) {
                         throw new RuntimeException(e);
                     }
-                });
-                return true;
+                }
             }
         }
     }

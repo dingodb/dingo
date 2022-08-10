@@ -24,6 +24,8 @@ import javax.annotation.Nonnull;
 public interface KeyValueCodec {
     public Object[] decode(@Nonnull KeyValue keyValue) throws IOException;
 
+    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException;
+
     public KeyValue encode(@Nonnull Object[] tuple) throws IOException;
 
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException;
