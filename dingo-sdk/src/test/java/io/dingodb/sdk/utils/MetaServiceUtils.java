@@ -41,6 +41,7 @@ public class MetaServiceUtils {
             "integer",
             null,
             null,
+            null,
             true,
             true,
             null)
@@ -48,6 +49,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "name",
             "varchar",
+            null,
             200,
             0,
             true,
@@ -57,6 +59,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "salary",
             "double",
+            null,
             null,
             3,
             true,
@@ -73,6 +76,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "ssn",
             "varchar",
+            null,
             200,
             null,
             true,
@@ -83,6 +87,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "values",
             "varchar",
+            null,
             200,
             null,
             true,
@@ -93,6 +98,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "addresses",
             "varchar",
+            null,
             200,
             null,
             true,
@@ -103,6 +109,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "home",
             "varchar",
+            null,
             200,
             null,
             true,
@@ -113,6 +120,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "work",
             "varchar",
+            null,
             200,
             null,
             true,
@@ -123,6 +131,7 @@ public class MetaServiceUtils {
         columns.add(ColumnDefinition.getInstance(
             "integerValues",
             "varchar",
+            null,
             200,
             null,
             true,

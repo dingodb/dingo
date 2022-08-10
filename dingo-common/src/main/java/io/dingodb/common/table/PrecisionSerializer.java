@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.jackson;
+package io.dingodb.common.table;
 
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.NumberSerializers;
@@ -22,15 +22,15 @@ import org.apache.calcite.rel.type.RelDataType;
 
 import javax.annotation.Nonnull;
 
-public class ScaleSerializer extends NumberSerializers.IntegerSerializer {
-    private static final long serialVersionUID = 3060735844820138100L;
+public class PrecisionSerializer extends NumberSerializers.IntegerSerializer {
+    private static final long serialVersionUID = 2375636603230636547L;
 
-    protected ScaleSerializer() {
+    protected PrecisionSerializer() {
         super(Integer.class);
     }
 
     @Override
     public boolean isEmpty(SerializerProvider provider, @Nonnull Object value) {
-        return value.equals(RelDataType.SCALE_NOT_SPECIFIED);
+        return value.equals(RelDataType.PRECISION_NOT_SPECIFIED);
     }
 }

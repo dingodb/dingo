@@ -243,7 +243,7 @@ public class ClassCacheEntry<T> {
         if (this.classConfig == null || this.classConfig.getColumns() == null) {
             return null;
         }
-        for (ColumnConfig thisColumn: this.classConfig.getColumns()) {
+        for (ColumnConfig thisColumn : this.classConfig.getColumns()) {
             if (thisColumn.getDerivedName().equals(name)) {
                 return thisColumn;
             }
@@ -337,7 +337,7 @@ public class ClassCacheEntry<T> {
             }
             if (params.length == 1
                 && ((Class.class.isAssignableFrom(params[0].getType()))
-                    || Map.class.isAssignableFrom(params[0].getType()))
+                || Map.class.isAssignableFrom(params[0].getType()))
             ) {
                 return true;
             }
@@ -777,7 +777,8 @@ public class ClassCacheEntry<T> {
 
     /**
      * get all columns from the record by instance of Object.
-     * @param instance input object
+     *
+     * @param instance         input object
      * @param allowNullColumns if true, null columns will be included in the result.
      * @return the whole columns of the record.
      */
@@ -851,6 +852,7 @@ public class ClassCacheEntry<T> {
 
     /**
      * check current input columns is all valid.
+     *
      * @param includeColumns input columns to check.
      * @return true if all columns are valid, otherwise false.
      */
@@ -913,6 +915,7 @@ public class ClassCacheEntry<T> {
             ColumnDefinition columnDefinition = ColumnDefinition.getInstance(
                 columnName,
                 sqlTypeInfo.getSqlTypeName(),
+                null,
                 sqlTypeInfo.getPrecision(),
                 sqlTypeInfo.getScale(),
                 isKey ? true : false,
