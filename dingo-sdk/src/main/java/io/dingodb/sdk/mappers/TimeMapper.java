@@ -16,6 +16,10 @@
 
 package io.dingodb.sdk.mappers;
 
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
+
+import java.sql.Time;
+
 public class TimeMapper extends TypeMapper {
 
     @Override
@@ -23,7 +27,11 @@ public class TimeMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return value;
+        if (!(value instanceof java.sql.Time)) {
+            throw new IllegalArgumentException("Unsupported date type: " + value.getClass().getName());
+        }
+
+        return DateTimeUtils.parseTime(value.toString());
     }
 
     @Override
@@ -31,7 +39,9 @@ public class TimeMapper extends TypeMapper {
         if (value == null) {
             return null;
         }
-        return value;
+
+        String timeInStr = DateTimeUtils.timeFormat((Time) value);
+        return Time.valueOf(timeInStr);
     }
 }
 
