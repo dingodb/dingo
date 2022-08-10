@@ -21,9 +21,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.jackson.PrecisionSerializer;
-import io.dingodb.common.jackson.ScaleSerializer;
-import io.dingodb.common.jackson.SqlTypeNameSerializer;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Builder;
@@ -52,7 +49,7 @@ public class ColumnDefinition {
     @Getter
     private final SqlTypeName type;
 
-    // Element type of ARRAY
+    // Element type of ARRAY & MULTISET
     @JsonProperty(value = "elementType")
     @JsonSerialize(using = SqlTypeNameSerializer.class)
     @Getter
@@ -97,6 +94,7 @@ public class ColumnDefinition {
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
         @Nonnull @JsonProperty("type") String typeName,
+        @JsonProperty("elementType") String elementTypeName,
         @JsonProperty("precision") Integer precision,
         @JsonProperty("scale") Integer scale,
         @JsonProperty("notNull") boolean notNull,
@@ -108,6 +106,7 @@ public class ColumnDefinition {
             return builder()
                 .name(name)
                 .type(type)
+                .elementType(elementTypeName == null ? null : SqlTypeName.get(elementTypeName.toUpperCase()))
                 .precision(precision != null ? precision : RelDataType.PRECISION_NOT_SPECIFIED)
                 .scale(scale != null ? scale : RelDataType.SCALE_NOT_SPECIFIED)
                 .notNull(notNull)

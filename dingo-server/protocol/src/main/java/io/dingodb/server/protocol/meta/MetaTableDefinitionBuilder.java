@@ -18,6 +18,7 @@ package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +43,20 @@ public class MetaTableDefinitionBuilder {
     }
 
     private ColumnDefinition buildColumn(String name) {
-        return ColumnDefinition.getInstance(name, "VARCHAR", null, null, false, false, null);
+        return ColumnDefinition.builder()
+            .name(name)
+            .type(SqlTypeName.VARCHAR)
+            .build();
     }
 
     public TableDefinition build() {
         TableDefinition definition = new TableDefinition("TABLE_PART_MATA")
-            .addColumn(ColumnDefinition.getInstance("id", "VARCHAR", null, null, true, true, null));
+            .addColumn(ColumnDefinition.builder()
+                .name("id")
+                .type(SqlTypeName.VARCHAR)
+                .notNull(true)
+                .primary(true)
+                .build());
         cols.forEach(col -> definition.addColumn(buildColumn(col)));
         return definition;
     }
