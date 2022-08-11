@@ -55,6 +55,7 @@ import javax.annotation.Nullable;
     @JsonSubTypes.Type(TimeType.class),
     @JsonSubTypes.Type(ArrayType.class),
     @JsonSubTypes.Type(ListType.class),
+    @JsonSubTypes.Type(MapType.class),
     @JsonSubTypes.Type(NullType.class),
     @JsonSubTypes.Type(TupleType.class),
 })

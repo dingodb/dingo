@@ -16,6 +16,7 @@
 
 package io.dingodb.test.ddl;
 
+import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.test.SqlHelper;
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Map;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -178,17 +179,14 @@ public class DdlTest {
     }
 
     @Test
-    @Disabled
     public void testCreateTableWithMap() throws SQLException {
         String tableName = sqlHelper.prepareTable(
-            "create table {table} (id int, data any, primary key(id))",
+            "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, map['a', 1, 'b', 2])"
         );
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
-        assertThat(result).isInstanceOf(Array.class);
-        Array array = (Array) result;
-        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
-        assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        assertThat(result).isInstanceOf(Map.class)
+            .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
         sqlHelper.dropTable(tableName);
     }
 }

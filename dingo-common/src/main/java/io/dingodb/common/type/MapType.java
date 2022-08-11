@@ -19,51 +19,55 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.util.TypeUtils;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@JsonTypeName("list")
-public class ListType extends AbstractDingoType {
-    @JsonProperty("element")
-    private final DingoType elementType;
+@JsonTypeName("map")
+public class MapType extends AbstractDingoType {
+    @JsonProperty("key")
+    private final DingoType keyType;
+    @JsonProperty("value")
+    private final DingoType valueType;
     @JsonProperty("nullable")
     private final boolean nullable;
 
     @JsonCreator
-    ListType(
-        @JsonProperty("element") DingoType elementType,
+    MapType(
+        @JsonProperty("key") DingoType keyType,
+        @JsonProperty("value") DingoType valueType,
         @JsonProperty("nullable") boolean nullable
     ) {
         super(TypeCode.LIST);
-        this.elementType = elementType;
+        this.keyType = keyType;
+        this.valueType = valueType;
         this.nullable = nullable;
     }
 
     @Override
     protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
-        return converter.convert((List<?>) value, elementType);
+        return converter.convert((Map<?, ?>) value, keyType, valueType);
     }
 
     @Override
     protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
-        return converter.convertListFrom(value, elementType);
+        return converter.convertMapFrom(value, keyType, valueType);
     }
 
     @Override
     public DingoType copy() {
-        return new ListType(elementType, nullable);
+        return new MapType(keyType, valueType, nullable);
     }
 
     @Nonnull
     @Override
     public Schema toAvroSchema() {
-        return Schema.createArray(elementType.toAvroSchema());
+        return Schema.createMap(valueType.toAvroSchema());
     }
 
     @Override
@@ -73,22 +77,24 @@ public class ListType extends AbstractDingoType {
 
     @Override
     public DingoSchema toDingoSchema(int index) {
-        DingoSchema schema = TypeUtils.elementTypeToDingoList(elementType);
-        schema.setIndex(index);
-        return schema;
+        return null;
     }
 
     @Override
     public String format(@Nullable Object value) {
         if (value != null) {
-            List<?> list = (List<?>) value;
+            Map<?, ?> map = (Map<?, ?>) value;
             StringBuilder b = new StringBuilder();
             b.append("[ ");
-            for (int i = 0; i < list.size(); ++i) {
+            int i = 0;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
                 if (i > 0) {
                     b.append(", ");
                 }
-                b.append(elementType.format(list.get(i)));
+                b.append(entry.getKey());
+                b.append(": ");
+                b.append(entry.getValue());
+                ++i;
             }
             b.append(" ]");
             return b.toString();
@@ -99,8 +105,10 @@ public class ListType extends AbstractDingoType {
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
-        b.append("list(");
-        b.append(elementType.toString());
+        b.append("map(");
+        b.append(keyType.toString());
+        b.append(", ");
+        b.append(valueType.toString());
         b.append(")");
         if (nullable) {
             b.append(NullType.NULL);

@@ -19,10 +19,19 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.type.DataConverter;
+import io.dingodb.common.type.converter.AvaticaResultSetConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import javax.annotation.Nonnull;
 
 @JsonTypeName("object")
 public class ObjectType extends AbstractScalarType {
@@ -39,6 +48,38 @@ public class ObjectType extends AbstractScalarType {
     @Override
     public DingoSchema toDingoSchema(int index) {
         return new BytesSchema(index);
+    }
+
+    @Override
+    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+        if (converter instanceof AvaticaResultSetConverter) { // Return the origin object to driver.
+            return value;
+        }
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(value);
+            byte[] result = bos.toByteArray();
+            oos.close();
+            bos.close();
+            return converter.convert(result);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+        try {
+            ByteArrayInputStream bis = new ByteArrayInputStream(converter.convertBinaryFrom(value));
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            Object result = ois.readObject();
+            ois.close();
+            bis.close();
+            return result;
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -104,7 +104,7 @@ public final class DingoTypeFactory {
 
     @Nonnull
     public static ArrayType array(int elementTypeCode, boolean nullable) {
-        return new ArrayType(scalar(elementTypeCode, false), nullable);
+        return array(scalar(elementTypeCode, false), nullable);
     }
 
     @Nonnull
@@ -119,12 +119,27 @@ public final class DingoTypeFactory {
 
     @Nonnull
     public static ListType list(int elementTypeCode, boolean nullable) {
-        return new ListType(scalar(elementTypeCode, false), nullable);
+        return list(scalar(elementTypeCode, false), nullable);
     }
 
     @Nonnull
     public static ListType list(String type, boolean nullable) {
         return list(scalar(type), nullable);
+    }
+
+    @Nonnull
+    public static MapType map(DingoType keyType, DingoType valueType, boolean nullable) {
+        return new MapType(keyType, valueType, nullable);
+    }
+
+    @Nonnull
+    public static MapType map(int keyTypeCode, int valueTypeCode, boolean nullable) {
+        return map(scalar(keyTypeCode, false), scalar(valueTypeCode, false), nullable);
+    }
+
+    @Nonnull
+    public static MapType map(String keyType, String valueType, boolean nullable) {
+        return map(scalar(keyType), scalar(valueType), nullable);
     }
 
     @Nonnull
@@ -155,6 +170,9 @@ public final class DingoTypeFactory {
                     //return array(elementType, relDataType.isNullable());
                     return list(elementType, relDataType.isNullable());
                 case MAP:
+                    DingoType keyType = fromRelDataType(Objects.requireNonNull(relDataType.getKeyType()));
+                    DingoType valueType = fromRelDataType(Objects.requireNonNull(relDataType.getValueType()));
+                    return map(keyType, valueType, relDataType.isNullable());
                 default:
                     return scalar(
                         TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
@@ -233,6 +251,8 @@ public final class DingoTypeFactory {
                 return TypeCode.TIMESTAMP;
             case Types.BINARY:
                 return TypeCode.BINARY;
+            case Types.JAVA_OBJECT:
+                return TypeCode.OBJECT;
             default:
                 break;
         }

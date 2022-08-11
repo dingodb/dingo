@@ -21,7 +21,9 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,6 +67,17 @@ public interface DataConverter {
         return value.stream()
             .map(v -> elementType.convertTo(v, this))
             .collect(Collectors.toList());
+    }
+
+    default Object convert(@Nonnull Map<?, ?> value, DingoType keyType, DingoType valueType) {
+        Map<Object, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : value.entrySet()) {
+            result.put(
+                keyType.convertTo(entry.getKey(), this),
+                valueType.convertTo(entry.getValue(), this)
+            );
+        }
+        return result;
     }
 
     default Integer convertIntegerFrom(@Nonnull Object value) {
@@ -124,6 +137,17 @@ public interface DataConverter {
         return ((List<?>) value).stream()
             .map(e -> elementType.convertFrom(e, this))
             .collect(Collectors.toList());
+    }
+
+    default Map<Object, Object> convertMapFrom(@Nonnull Object value, DingoType keyType, DingoType valueType) {
+        Map<Object, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+            result.put(
+                keyType.convertFrom(entry.getKey(), this),
+                valueType.convertFrom(entry.getValue(), this)
+            );
+        }
+        return result;
     }
 
     default Object collectTuple(@Nonnull Stream<Object> stream) {
