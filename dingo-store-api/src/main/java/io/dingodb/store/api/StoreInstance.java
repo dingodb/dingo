@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
+import io.dingodb.common.table.TableDefinition;
 
 import java.util.Iterator;
 import java.util.List;
@@ -188,4 +189,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default void registerUdfFunc(String name, String function, TableDefinition definition) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void unregisterUdfFunc(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    default KeyValue udfGet(byte[] primaryKey, String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    default KeyValue udfUpdateAndGet(byte[] primaryKey, String name) {
+        throw new UnsupportedOperationException();
+    }
 }

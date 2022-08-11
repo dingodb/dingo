@@ -19,6 +19,7 @@ package io.dingodb.server.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
 import java.util.List;
@@ -34,27 +35,39 @@ public interface ExecutorApi {
     boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row);
 
     @ApiDeclaration
-    public byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey);
+    byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey);
 
     @ApiDeclaration
-    public List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys);
+    List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys);
 
     @ApiDeclaration
-    public boolean delete(CommonId tableId, byte[] primaryKey);
+    boolean delete(CommonId tableId, byte[] primaryKey);
 
     @ApiDeclaration
-    public boolean delete(CommonId tableId, List<byte[]> primaryKeys);
+    boolean delete(CommonId tableId, List<byte[]> primaryKeys);
 
     @ApiDeclaration
-    public boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+    boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
-    public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+    List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
-    public List<ExecutiveResult> operator(
+    List<ExecutiveResult> operator(
         CommonId tableId,
         List<byte[]> startPrimaryKeys,
         List<byte[]> endPrimaryKey,
         List<byte[]> operations);
+
+    @ApiDeclaration
+    void registerUdfFunc(CommonId tableId, String name, String function, TableDefinition definition);
+
+    @ApiDeclaration
+    void unregisterUdfFunc(CommonId tableId, String name);
+
+    @ApiDeclaration
+    KeyValue udfGet(CommonId tableId, byte[] primaryKey, String name);
+
+    @ApiDeclaration
+    KeyValue udfUpdate(CommonId tableId, byte[] primaryKey, String name);
 }

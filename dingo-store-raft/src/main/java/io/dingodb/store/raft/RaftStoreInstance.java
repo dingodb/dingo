@@ -17,12 +17,16 @@
 package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.DingoKeyValueCodec;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.UdfUtils;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.RawKVStore;
@@ -36,6 +40,10 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,6 +75,12 @@ public class RaftStoreInstance implements StoreInstance {
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final PartReadWriteCollector collector;
+
+    private Map<String, Globals> globalsMap = new HashMap<>();
+
+    private Map<String, TableDefinition> definitionMap = new HashMap<>();
+
+    private Map<String, KeyValueCodec> codecMap = new HashMap<>();
 
     public RaftStoreInstance(Path path, CommonId id) {
         try {
@@ -522,4 +536,52 @@ public class RaftStoreInstance implements StoreInstance {
         }
     }
 
+    @Override
+    public void registerUdfFunc(String name, String function, TableDefinition definition) {
+        if (!globalsMap.containsKey(name)) {
+            Globals globals = JsePlatform.standardGlobals();
+            globals.load(function).call();
+            globalsMap.put(name, globals);
+        }
+        if (!definitionMap.containsKey(name)) {
+            definitionMap.put(name, definition);
+        }
+        if (!codecMap.containsKey(name)) {
+            KeyValueCodec codec = new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
+            codecMap.put(name, codec);
+        }
+    }
+
+    @Override
+    public void unregisterUdfFunc(String name) {
+        globalsMap.remove(name);
+        definitionMap.remove(name);
+        codecMap.remove(name);
+    }
+
+    @Override
+    public KeyValue udfGet(byte[] primaryKey, String name) {
+        try {
+            KeyValue keyValue = new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
+            KeyValueCodec codec = codecMap.get(name);
+            Object[] record = codec.decode(keyValue);
+            TableDefinition definition = definitionMap.get(name);
+            LuaTable table = UdfUtils.getLuaTable(definition.getDingoSchema(), record);
+            Globals globals = globalsMap.get(name);
+            LuaValue udf = globals.get(LuaValue.valueOf(name));
+            LuaValue result = udf.call(table);
+            record = UdfUtils.getObject(definition.getDingoSchema(), result);
+            KeyValue UpdatedkeyValue = codec.encode(record);
+            return UpdatedkeyValue;
+        } catch (Exception e) {
+            throw new RuntimeException("UDF ERROR:", e);
+        }
+    }
+
+    @Override
+    public KeyValue udfUpdateAndGet(byte[] primaryKey, String name) {
+        KeyValue updatedKeyValue = udfGet(primaryKey, name);
+        upsertKeyValue(updatedKeyValue);
+        return updatedKeyValue;
+    }
 }

@@ -22,6 +22,7 @@ import io.dingodb.common.operation.ExecutiveResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
@@ -143,5 +144,25 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
             }
         }
         return results;
+    }
+
+    @Override
+    public void registerUdfFunc(CommonId tableId, String name, String function, TableDefinition definition) {
+        storeService.getInstance(tableId).registerUdfFunc(name, function, definition);
+    }
+
+    @Override
+    public void unregisterUdfFunc(CommonId tableId, String name) {
+        storeService.getInstance(tableId).unregisterUdfFunc(name);
+    }
+
+    @Override
+    public KeyValue udfGet(CommonId tableId, byte[] primaryKey, String name) {
+        return storeService.getInstance(tableId).udfGet(primaryKey, name);
+    }
+
+    @Override
+    public KeyValue udfUpdate(CommonId tableId, byte[] primaryKey, String name) {
+        return storeService.getInstance(tableId).udfUpdateAndGet(primaryKey, name);
     }
 }
