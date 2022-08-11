@@ -50,6 +50,9 @@ public class DingoNumberModOp extends RtFun {
 
         BigDecimal value1 = new BigDecimal(String.valueOf(values[0]));
         BigDecimal value2 = new BigDecimal(String.valueOf(values[1]));
+        if (value2.compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
         return mod(value1, value2);
     }
 

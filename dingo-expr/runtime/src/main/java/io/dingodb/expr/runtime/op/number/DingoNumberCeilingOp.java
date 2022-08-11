@@ -50,7 +50,7 @@ public class DingoNumberCeilingOp extends RtFun {
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        if(values[0] == null) {
+        if (values[0] == null) {
             return null;
         }
 
