@@ -53,6 +53,7 @@ import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlListConstructorOp;
+import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlSliceFun;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
@@ -186,8 +187,9 @@ public final class FunFactory {
         registerUdf("datediff", DateDiffFun::new);
 
         // Sql collection types
-        //registerUdf("array", RtSqlArrayConstructorOp::new);
+        //registerUdf("ARRAY", RtSqlArrayConstructorOp::new);
         registerUdf("ARRAY", RtSqlListConstructorOp::new);
+        registerUdf("MAP", RtSqlMapConstructorOp::new);
         registerUdf("$SLICE", RtSqlSliceFun::new);
     }
 

@@ -20,7 +20,10 @@ import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import javax.annotation.Nonnull;
 
@@ -41,6 +44,9 @@ public final class DingoParserContext {
             DingoRootSchema.ROOT_SCHEMA_NAME,
             DingoRootSchema.ROOT
         );
+
+        RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
+        rootSchema.add("map", mapType);
 
         // Register all the functions
         DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {

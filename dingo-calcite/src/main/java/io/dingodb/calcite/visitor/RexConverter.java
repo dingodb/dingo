@@ -250,6 +250,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 }
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
+            case MAP_VALUE_CONSTRUCTOR:
             case OTHER:
                 if (call.op.getName().equals("||")) {
                     op = FunFactory.INS.getFun("concat");

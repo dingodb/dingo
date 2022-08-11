@@ -19,6 +19,7 @@ package io.dingodb.common.type.converter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.dingodb.common.type.DataConverter;
 import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.Base64;
@@ -29,7 +30,10 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -145,5 +149,19 @@ public class JsonConverter implements DataConverter {
             list.add(elementType.convertFrom(node, this));
         }
         return list;
+    }
+
+    @Override
+    public Map<Object, Object> convertMapFrom(@Nonnull Object value, DingoType keyType, DingoType valueType) {
+        ObjectNode objectNode = (ObjectNode) value;
+        Map<Object, Object> map = new LinkedHashMap<>();
+        for (Iterator<Map.Entry<String, JsonNode>> it = objectNode.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            map.put(
+                keyType.parse(entry.getKey()), // This is a string.
+                valueType.convertFrom(entry.getValue(), this)
+            );
+        }
+        return map;
     }
 }

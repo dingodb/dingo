@@ -128,8 +128,8 @@ public class ColumnDefinition {
                 break;
             case MAP:
                 relDataType = typeFactory.createMapType(
-                    typeFactory.createSqlType(elementType),
-                    typeFactory.createSqlType(elementType)
+                    typeFactory.createSqlType(SqlTypeName.VARCHAR),
+                    typeFactory.createSqlType(SqlTypeName.INTEGER)
                 );
                 break;
             default:
