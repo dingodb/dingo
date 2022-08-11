@@ -840,6 +840,20 @@ public class TestRexConverter {
     }
 
     @Test
+    public void testNumberPow03() throws Exception {
+        String sql = "select pow('10',-2)";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel;
+        RexNode rexNode = project.getProjects().get(0);
+        Expr expr = RexConverter.convert(rexNode);
+        System.out.println(expr.toString());
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).toString().equals("0.01"));
+    }
+
+    @Test
     public void testNumberRound01() throws Exception {
         String sql = "select round(12.677, 2)";
         SqlNode sqlNode = parser.parse(sql);
@@ -865,6 +879,20 @@ public class TestRexConverter {
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).toString().equals("200000"));
+    }
+
+    @Test
+    public void testNumberRound03() throws Exception {
+        String sql = "select round(-155.586,-2)";
+        SqlNode sqlNode = parser.parse(sql);
+        sqlNode = parser.validate(sqlNode);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel;
+        RexNode rexNode = project.getProjects().get(0);
+        Expr expr = RexConverter.convert(rexNode);
+        System.out.println(expr.toString());
+        RtExpr rtExpr = expr.compileIn(null);
+        Assert.assrt(rtExpr.eval(null).toString().equals("-200"));
     }
 
     @Test

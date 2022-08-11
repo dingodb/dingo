@@ -49,7 +49,8 @@ public class DingoNumberRoundOp extends RtFun {
             temp = temp * 10;
         }
         BigDecimal divide = value.divide(new BigDecimal(temp));
-        if (divide.compareTo(BigDecimal.ZERO) < 0) {
+        if ((value.compareTo(BigDecimal.ZERO) > 0 && divide.compareTo(BigDecimal.ONE) < 0)
+            || (value.compareTo(BigDecimal.ZERO) < 0 && divide.abs().compareTo(BigDecimal.ONE) < 0)) {
             return new BigDecimal(0);
         }
         divide = divide.setScale(0, RoundingMode.HALF_UP);
@@ -63,14 +64,14 @@ public class DingoNumberRoundOp extends RtFun {
     @Override
     protected Object fun(@Nonnull Object[] values) {
         if (values.length == 1) {
-            if(values[0] == null ) {
+            if (values[0] == null) {
                 return null;
             }
 
             BigDecimal value = new BigDecimal(String.valueOf(values[0]));
             return round(value);
         } else if (values.length == 2) {
-            if(values[0] == null || values[1] == null) {
+            if (values[0] == null || values[1] == null) {
                 return null;
             }
 
@@ -80,6 +81,12 @@ public class DingoNumberRoundOp extends RtFun {
             if (scale > 10 || scale < -10) {
                 throw new RuntimeException("Parameter out of range");
             }
+
+            // If value is integer and scale > 0, return the original value
+            if (scale > 0 && value.scale() == 0) {
+                return value;
+            }
+
             return round(value, scale);
         }
         return null;

@@ -38,19 +38,31 @@ public class DingoNumberPowOp extends RtFun {
         super(paras);
     }
 
-    public static BigDecimal pow(final BigDecimal value, final int power) {
-        return value.pow(power);
+    public static BigDecimal pow(final BigDecimal value, final BigDecimal power) {
+        int powerInt = power.intValue();
+        if (powerInt < 0) {
+            return BigDecimal.ONE.divide(value.pow(-powerInt));
+        }
+
+        BigDecimal intDecimal = value.setScale(0, BigDecimal.ROUND_FLOOR);
+        if (value.compareTo(intDecimal) == 0) {
+            return intDecimal.pow(powerInt);
+        }
+        return value.pow(powerInt);
     }
 
     @Override
     protected Object fun(@Nonnull Object[] values) {
-        if(values[0] == null || values[1] == null) {
+        if (values[0] == null || values[1] == null) {
             return null;
         }
 
         BigDecimal value = new BigDecimal(String.valueOf(values[0]));
         BigDecimal power = new BigDecimal(String.valueOf(values[1]));
-        return pow(value, power.intValue());
+        if (power.scale() > 0) {
+            throw new RuntimeException("Parameter is invalid");
+        }
+        return pow(value, power);
     }
 
     @Override
@@ -74,7 +86,7 @@ public class DingoNumberPowOp extends RtFun {
         public List<Method> methods() {
             try {
                 List<Method> methods = new ArrayList<>();
-                methods.add(DingoNumberPowOp.class.getMethod("pow", BigDecimal.class, int.class));
+                methods.add(DingoNumberPowOp.class.getMethod("pow", BigDecimal.class, BigDecimal.class));
                 return methods;
             } catch (NoSuchMethodException e) {
                 log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
