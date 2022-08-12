@@ -28,15 +28,17 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class CaseOp extends Op {
-    private CaseOp(OpType type) {
+public final class SqlCaseOp extends Op {
+    public static final String FUN_NAME = "CASE";
+
+    private SqlCaseOp(OpType type) {
         super(type);
-        name = "CASE";
+        name = FUN_NAME;
     }
 
     @Nonnull
-    public static CaseOp fun() {
-        return new CaseOp(OpType.FUN);
+    public static SqlCaseOp fun() {
+        return new SqlCaseOp(OpType.FUN);
     }
 
     @Nonnull

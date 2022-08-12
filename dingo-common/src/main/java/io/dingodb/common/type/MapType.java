@@ -111,7 +111,7 @@ public class MapType extends AbstractDingoType {
         b.append(valueType.toString());
         b.append(")");
         if (nullable) {
-            b.append(NullType.NULL);
+            b.append("|").append(NullType.NULL);
         }
         return b.toString();
     }

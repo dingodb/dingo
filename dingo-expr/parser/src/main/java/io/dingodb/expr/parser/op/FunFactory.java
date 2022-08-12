@@ -52,6 +52,7 @@ import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
+import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlListConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlSliceFun;
@@ -99,15 +100,16 @@ public final class FunFactory {
         funSuppliers = new TreeMap<>(String::compareToIgnoreCase);
 
         // Logical functions are special for short-circuit processing.
-        funSuppliers.put("OR", OrOp::fun);
-        funSuppliers.put("AND", AndOp::fun);
-        funSuppliers.put("CASE", CaseOp::fun);
-        funSuppliers.put("IS_NULL", IsNullOp::fun);
-        funSuppliers.put("IS_NOT_NULL", IsNotNullOp::fun);
-        funSuppliers.put("IS_TRUE", IsTrueOp::fun);
-        funSuppliers.put("IS_NOT_TRUE", IsNotTrueOp::fun);
-        funSuppliers.put("IS_FALSE", IsFalseOp::fun);
-        funSuppliers.put("IS_NOT_FALSE", IsNotFalseOp::fun);
+        funSuppliers.put(OrOp.FUN_NAME, OrOp::fun);
+        funSuppliers.put(AndOp.FUN_NAME, AndOp::fun);
+        funSuppliers.put(SqlCaseOp.FUN_NAME, SqlCaseOp::fun);
+        funSuppliers.put(SqlCastListItemsOp.FUN_NAME, SqlCastListItemsOp::fun);
+        funSuppliers.put(IsNullOp.FUN_NAME, IsNullOp::fun);
+        funSuppliers.put(IsNotNullOp.FUN_NAME, IsNotNullOp::fun);
+        funSuppliers.put(IsTrueOp.FUN_NAME, IsTrueOp::fun);
+        funSuppliers.put(IsNotTrueOp.FUN_NAME, IsNotTrueOp::fun);
+        funSuppliers.put(IsFalseOp.FUN_NAME, IsFalseOp::fun);
+        funSuppliers.put(IsNotFalseOp.FUN_NAME, IsNotFalseOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
@@ -128,16 +130,16 @@ public final class FunFactory {
         registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
 
         // Cast functions
-        registerEvaluator(TypeCode.nameOf(TypeCode.INT), IntegerCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.LONG), LongCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.DOUBLE), DoubleCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.DECIMAL), DecimalCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.STRING), StringCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.DATE), DateCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.TIME), TimeCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.TIMESTAMP), TimestampCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.BOOL), BooleanCastEvaluatorFactory.INSTANCE);
-        registerEvaluator(TypeCode.nameOf(TypeCode.BINARY), BinaryCastEvaluatorFactory.INSTANCE);
+        registerCastFun(TypeCode.INT);
+        registerCastFun(TypeCode.LONG);
+        registerCastFun(TypeCode.DOUBLE);
+        registerCastFun(TypeCode.BOOL);
+        registerCastFun(TypeCode.DECIMAL);
+        registerCastFun(TypeCode.STRING);
+        registerCastFun(TypeCode.DATE);
+        registerCastFun(TypeCode.TIME);
+        registerCastFun(TypeCode.TIMESTAMP);
+        registerCastFun(TypeCode.BINARY);
 
         // String
         registerUdf("char_length", DingoCharLengthOp::new);
@@ -187,10 +189,36 @@ public final class FunFactory {
         registerUdf("datediff", DateDiffFun::new);
 
         // Sql collection types
-        //registerUdf("ARRAY", RtSqlArrayConstructorOp::new);
-        registerUdf("ARRAY", RtSqlListConstructorOp::new);
+        registerUdf("ARRAY", RtSqlArrayConstructorOp::new);
+        registerUdf("LIST", RtSqlListConstructorOp::new);
         registerUdf("MAP", RtSqlMapConstructorOp::new);
         registerUdf("$SLICE", RtSqlSliceFun::new);
+    }
+
+    public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode) {
+        switch (toTypeCode) {
+            case TypeCode.INT:
+                return IntegerCastEvaluatorFactory.INSTANCE;
+            case TypeCode.LONG:
+                return LongCastEvaluatorFactory.INSTANCE;
+            case TypeCode.DOUBLE:
+                return DoubleCastEvaluatorFactory.INSTANCE;
+            case TypeCode.BOOL:
+                return BooleanCastEvaluatorFactory.INSTANCE;
+            case TypeCode.DECIMAL:
+                return DecimalCastEvaluatorFactory.INSTANCE;
+            case TypeCode.STRING:
+                return StringCastEvaluatorFactory.INSTANCE;
+            case TypeCode.DATE:
+                return DateCastEvaluatorFactory.INSTANCE;
+            case TypeCode.TIME:
+                return TimeCastEvaluatorFactory.INSTANCE;
+            case TypeCode.TIMESTAMP:
+                return TimestampCastEvaluatorFactory.INSTANCE;
+            case TypeCode.BINARY:
+                return BinaryCastEvaluatorFactory.INSTANCE;
+        }
+        throw new IllegalArgumentException("Unsupported cast type: \"" + TypeCode.nameOf(toTypeCode) + "\".");
     }
 
     private void registerEvaluator(
@@ -198,6 +226,10 @@ public final class FunFactory {
         final EvaluatorFactory factory
     ) {
         funSuppliers.put(funName, () -> new OpWithEvaluator(funName, factory));
+    }
+
+    private void registerCastFun(int typeCode) {
+        registerEvaluator(TypeCode.nameOf(typeCode), getCastEvaluatorFactory(typeCode));
     }
 
     /**

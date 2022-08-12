@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -151,7 +152,7 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithArray() throws SQLException {
+    public void testCreateTableWithIntArray() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data int array, primary key(id))",
             "insert into {table} values(1, array[1, 2, 3])"
@@ -161,6 +162,36 @@ public class DdlTest {
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithStringArray() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data varchar array, primary key(id))",
+            "insert into {table} values(1, array['1', '2', '3'])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.VARCHAR);
+        assertThat(array.getArray()).isEqualTo(new String[]{"1", "2", "3"});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    @Disabled
+    public void testCreateTableWithDateArray() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data date array, primary key(id))",
+            "insert into {table} values(1, array['1970-1-1', '1980-2-2', '1990-3-3'])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.DATE);
+        // getArray fails for Calcite Bug.
+        assertThat(array.getArray()).isEqualTo(new Object[]{});
         sqlHelper.dropTable(tableName);
     }
 

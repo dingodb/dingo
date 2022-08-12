@@ -27,9 +27,11 @@ import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import javax.annotation.Nonnull;
 
 public final class IsNotTrueOp extends Op {
+    public static final String FUN_NAME = "IS_NOT_TRUE";
+
     private IsNotTrueOp(OpType type) {
         super(type);
-        name = "IS_NOT_TRUE";
+        name = FUN_NAME;
     }
 
     @Nonnull

@@ -26,9 +26,11 @@ import io.dingodb.expr.runtime.op.logical.RtIsNotNull;
 import javax.annotation.Nonnull;
 
 public final class IsNotNullOp extends Op {
+    public static final String FUN_NAME = "IS_NOT_NULL";
+
     private IsNotNullOp(OpType type) {
         super(type);
-        name = "IS_NOT_NULL";
+        name = FUN_NAME;
     }
 
     @Nonnull
