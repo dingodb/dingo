@@ -29,9 +29,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public final class AndOp extends Op {
+    public static final String FUN_NAME = "AND";
+
     private AndOp(OpType type) {
         super(type);
-        name = "AND";
+        name = FUN_NAME;
     }
 
     @Nonnull

@@ -16,6 +16,8 @@
 
 package io.dingodb.expr.parser.parser;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
@@ -195,7 +197,12 @@ public class TestWithoutVar {
             arguments("min(decimal(3), 5.0)", BigDecimal.valueOf(3)),
             arguments("max(3, 5)", 5L),
             arguments("max(7.5, 5)", 7.5),
-            arguments("max(decimal(3), 5.0)", BigDecimal.valueOf(5.0))
+            arguments("max(decimal(3), 5.0)", BigDecimal.valueOf(5.0)),
+            // collection types
+            arguments("array(1, 2, 3)", new Object[]{1L, 2L, 3L}),
+            arguments("list(4, 5, 6)", ImmutableList.of(4L, 5L, 6L)),
+            arguments("map('a', 1, 'b', 2)", ImmutableMap.of("a", 1L, "b", 2L)),
+            arguments("cast_list_items('LONG', 'INT', list(7, 8, 9))", ImmutableList.of(7, 8, 9))
         );
     }
 

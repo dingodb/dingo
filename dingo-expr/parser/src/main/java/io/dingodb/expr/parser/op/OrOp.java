@@ -30,9 +30,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 public final class OrOp extends Op {
+    public static final String FUN_NAME = "OR";
+
     private OrOp(OpType type) {
         super(type);
-        name = "OR";
+        name = FUN_NAME;
     }
 
     @Nonnull

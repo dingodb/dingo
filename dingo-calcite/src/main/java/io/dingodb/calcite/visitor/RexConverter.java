@@ -30,6 +30,7 @@ import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpFactory;
 import io.dingodb.expr.parser.op.OpWithEvaluator;
+import io.dingodb.expr.parser.op.SqlCastListItemsOp;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
@@ -235,9 +236,22 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = FunFactory.INS.getFun(kind.name());
                 break;
             case CAST:
+                SqlTypeName sqlTypeName = call.getType().getSqlTypeName();
+                if (sqlTypeName == SqlTypeName.ARRAY || sqlTypeName == SqlTypeName.MULTISET) {
+                    op = FunFactory.INS.getFun(SqlCastListItemsOp.FUN_NAME);
+                    RexNode listNode = call.getOperands().get(0);
+                    RelDataType oldType = listNode.getType().getComponentType();
+                    RelDataType newType = call.getType().getComponentType();
+                    op.setExprArray(new Expr[]{
+                        new Value<>(Objects.requireNonNull(oldType).getSqlTypeName().getName()),
+                        new Value<>(Objects.requireNonNull(newType).getSqlTypeName().getName()),
+                        listNode.accept(this)
+                    });
+                    return op;
+                }
                 try {
                     op = FunFactory.INS.getCastFun(typeCodeOf(call.getType()));
-                    if (op instanceof OpWithEvaluator) {
+                    if (op instanceof OpWithEvaluator) { // Check if the evaluator exists.
                         EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
                         int[] typeCodes = call.getOperands().stream()
                             .map(RexNode::getType)
@@ -250,7 +264,11 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 }
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
+                op = FunFactory.INS.getFun("LIST");
+                break;
             case MAP_VALUE_CONSTRUCTOR:
+                op = FunFactory.INS.getFun("MAP");
+                break;
             case OTHER:
                 if (call.op.getName().equals("||")) {
                     op = FunFactory.INS.getFun("concat");

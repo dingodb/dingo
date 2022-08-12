@@ -100,7 +100,7 @@ public class ArrayType extends AbstractDingoType {
         b.append(elementType.toString());
         b.append(")");
         if (nullable) {
-            b.append(NullType.NULL);
+            b.append("|").append(NullType.NULL);
         }
         return b.toString();
     }
