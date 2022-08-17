@@ -50,7 +50,10 @@ public abstract class PartitionStrategy<I> {
     }
 
     public abstract Map<byte[], byte[]> calcPartitionRange(
-        @Nonnull final byte[] startKey, @Nonnull final byte[] endKey, boolean includeEnd);
+        @Nonnull final byte[] startKey,
+        @Nonnull final byte[] endKey,
+        boolean includeEnd
+    );
 
     public Map<I, List<Object[]>> partKeyTuples(
         @Nonnull final Collection<Object[]> keyTuples

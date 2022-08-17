@@ -63,4 +63,19 @@ public class FullLifetimeTableTest {
             Collections.singletonList(new Object[]{2, true})
         );
     }
+
+    @Test
+    public void testDatePrimaryKey() throws SQLException {
+        sqlHelper.doTest(
+            "create table {table} (id date not null, data int, primary key(id))",
+            "insert into {table} values ('1980-1-1', 0), ('1990-2-2', 1)",
+            2,
+            "select data from {table}",
+            new String[]{"data"},
+            Arrays.asList(
+                new Object[]{0},
+                new Object[]{1}
+            )
+        );
+    }
 }

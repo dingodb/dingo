@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
@@ -40,18 +42,21 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
     @JsonProperty("definition")
     private final TableDefinition definition;
-    private final transient Codec codec;
 
     @JsonProperty("ranges")
     private final NavigableSet<ComparableByteArray> ranges;
 
+    private final transient Codec codec;
+    private final transient DingoType keySchema;
+
     @JsonCreator
     public RangeStrategy(
-        @JsonProperty("definition") TableDefinition definition,
+        @Nonnull @JsonProperty("definition") TableDefinition definition,
         @JsonProperty("ranges") NavigableSet<ComparableByteArray> ranges
     ) {
         this.ranges = ranges;
         this.definition = definition;
+        this.keySchema = definition.getDingoType(true);
         this.codec = new DingoCodec(definition.getDingoSchemaOfKey());
     }
 
@@ -63,7 +68,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     @Override
     public ComparableByteArray calcPartId(@Nonnull Object[] keyTuple) {
         try {
-            return ranges.floor(new ComparableByteArray(codec.encode(keyTuple)));
+            return calcPartId(codec.encode((Object[]) keySchema.convertTo(keyTuple, DingoConverter.INSTANCE)));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -76,12 +81,12 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
     @Override
     public Map<byte[], byte[]> calcPartitionRange(
-            @Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd
+        @Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd
     ) {
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
 
         SortedSet<ComparableByteArray> subSet = ranges.subSet(
-                ranges.floor(new ComparableByteArray(startKey)), true, new ComparableByteArray(endKey), includeEnd
+            ranges.floor(new ComparableByteArray(startKey)), true, new ComparableByteArray(endKey), includeEnd
         );
 
         byte[] start = startKey;
