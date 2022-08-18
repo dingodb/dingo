@@ -63,7 +63,7 @@ public final class JobImpl implements Job {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(id, jobId, location);
+        Task task = new TaskImpl(id, jobId, location, null);
         tasks.put(id, task);
         return task;
     }

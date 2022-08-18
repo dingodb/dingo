@@ -21,21 +21,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.expr.RtExprWithType;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.expr.runtime.TupleEvalContext;
+
+import java.util.Map;
 
 @JsonTypeName("filter")
 @JsonPropertyOrder({"filter", "schema", "output"})
 public final class FilterOperator extends SoleOutOperator {
     @JsonProperty("filter")
-    private final RtExprWithType filter;
+    private final SqlExpr filter;
     @JsonProperty("schema")
     private final DingoType schema;
 
     @JsonCreator
     public FilterOperator(
-        @JsonProperty("filter") RtExprWithType filter,
+        @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("schema") DingoType schema
     ) {
         super();
@@ -46,12 +47,12 @@ public final class FilterOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        filter.compileIn(schema);
+        filter.compileIn(schema, getParasCompileContext());
     }
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
-        if ((boolean) filter.eval(new TupleEvalContext(tuple))) {
+        if ((boolean) filter.eval(tuple)) {
             return output.push(tuple);
         }
         return true;
@@ -60,5 +61,11 @@ public final class FilterOperator extends SoleOutOperator {
     @Override
     public synchronized void fin(int pin, Fin fin) {
         output.fin(fin);
+    }
+
+    @Override
+    public void setParas(Map<String, Object> paras) {
+        super.setParas(paras);
+        filter.setParas(paras);
     }
 }

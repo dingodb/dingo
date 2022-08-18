@@ -85,4 +85,10 @@ public final class RootOperator extends SinkOperator {
     public Object[] popValue() {
         return QueueUtil.forceTake(tupleQueue);
     }
+
+    @Override
+    public void reset() {
+        super.reset();
+        tupleQueue.clear();
+    }
 }

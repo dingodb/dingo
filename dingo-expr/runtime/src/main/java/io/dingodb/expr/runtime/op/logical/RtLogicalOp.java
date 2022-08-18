@@ -33,6 +33,9 @@ public abstract class RtLogicalOp extends RtOp {
     }
 
     public static boolean test(Object value) {
+        if (value == null) {
+            return false;
+        }
         try {
             return (boolean) BooleanCastEvaluatorFactory.INSTANCE
                 .getEvaluator(EvaluatorKey.UNIVERSAL)

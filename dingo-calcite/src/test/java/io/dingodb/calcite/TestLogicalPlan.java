@@ -77,48 +77,6 @@ public class TestLogicalPlan {
     }
 
     @Test
-    public void testFullScan() throws SqlParseException {
-        String sql = "select * from test";
-        RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
-    }
-
-    @Test
-    public void testFullScan1() throws SqlParseException {
-        String sql = "select * from mock.test";
-        RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
-    }
-
-    @Test
-    public void testFilterScan() throws SqlParseException {
-        String sql = "select * from test where name = 'Alice' and amount > 3.0";
-        RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
-    }
-
-    @Test
-    public void testProjectScan() throws SqlParseException {
-        String sql = "select name, amount from test";
-        RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
-    }
-
-    @Test
-    public void testProjectFilterScan() throws SqlParseException {
-        String sql = "select name, amount from test where amount > 3.0";
-        RelRoot relRoot = parse(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
-    }
-
-    @Test
     public void testAggregateCount() throws SqlParseException {
         String sql = "select count(*) from test";
         RelRoot relRoot = parse(sql);

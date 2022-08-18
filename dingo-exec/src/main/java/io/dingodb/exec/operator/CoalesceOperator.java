@@ -51,24 +51,6 @@ public final class CoalesceOperator extends SoleOutOperator {
         finFlag = new boolean[inputNum];
     }
 
-    private void setFin(int pin, Fin fin) {
-        assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
-        assert !finFlag[pin] : "Input on pin (" + pin + ") is already finished.";
-        finFlag[pin] = true;
-        if (fin instanceof FinWithProfiles) {
-            profiles.addAll(((FinWithProfiles) fin).getProfiles());
-        }
-    }
-
-    private boolean isAllFin() {
-        for (boolean b : finFlag) {
-            if (!b) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         return output.push(tuple);
@@ -85,5 +67,23 @@ public final class CoalesceOperator extends SoleOutOperator {
         if (isAllFin()) {
             output.fin(new FinWithProfiles(profiles));
         }
+    }
+
+    private void setFin(int pin, Fin fin) {
+        assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
+        assert !finFlag[pin] : "Input on pin (" + pin + ") is already finished.";
+        finFlag[pin] = true;
+        if (fin instanceof FinWithProfiles) {
+            profiles.addAll(((FinWithProfiles) fin).getProfiles());
+        }
+    }
+
+    private boolean isAllFin() {
+        for (boolean b : finFlag) {
+            if (!b) {
+                return false;
+            }
+        }
+        return true;
     }
 }

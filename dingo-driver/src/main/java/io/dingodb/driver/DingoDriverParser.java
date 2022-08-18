@@ -28,6 +28,7 @@ import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Job;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.jdbc.CalcitePrepare;
@@ -194,11 +195,31 @@ public final class DingoDriverParser extends DingoParser {
         return new DingoSignature(
             columns,
             sql,
-            null,
+            createParameterList(sqlNode),
             null,
             cursorFactory,
             statementType,
             job
         );
+    }
+
+    @Nonnull
+    private List<AvaticaParameter> createParameterList(SqlNode sqlNode) {
+        final RelDataType parameterRowType = getParameterRowType(sqlNode);
+        List<RelDataTypeField> fieldList = parameterRowType.getFieldList();
+        final List<AvaticaParameter> parameters = new ArrayList<>(fieldList.size());
+        for (RelDataTypeField field : fieldList) {
+            RelDataType type = field.getType();
+            parameters.add(
+                new AvaticaParameter(
+                    false,
+                    type.getPrecision(),
+                    type.getScale(),
+                    type.getSqlTypeName().getJdbcOrdinal(),
+                    type.getSqlTypeName().toString(),
+                    Object.class.getName(),
+                    field.getName()));
+        }
+        return parameters;
     }
 }

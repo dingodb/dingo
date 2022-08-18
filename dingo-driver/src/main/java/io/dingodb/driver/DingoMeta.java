@@ -70,7 +70,7 @@ public class DingoMeta extends MetaImpl {
         super(connection);
     }
 
-    public DingoStatement getStatement(StatementHandle sh) throws SQLException {
+    public AvaticaStatement getStatement(StatementHandle sh) throws SQLException {
         return ((DingoConnection) connection).getStatement(sh);
     }
 
@@ -80,7 +80,16 @@ public class DingoMeta extends MetaImpl {
         String sql,
         long maxRowCount
     ) {
-        return null;
+        final StatementHandle sh = createStatement(ch);
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        try {
+            DingoConnection.DingoContext context = dingoConnection.createContext();
+            DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
+            sh.signature = parser.parseQuery(sql, context);
+        } catch (SqlParseException e) {
+            throw new RuntimeException(e);
+        }
+        return sh;
     }
 
     @Deprecated
@@ -165,18 +174,18 @@ public class DingoMeta extends MetaImpl {
                     Collections.singletonList(""), null);
             } else if (throwable instanceof RuntimeException) {
                 if (throwable.getCause() == null) {
-                    exceptMessage = throwable.getMessage() != null ? ((RuntimeException) throwable).getMessage() :
+                    exceptMessage = throwable.getMessage() != null ? throwable.getMessage() :
                         "Null pointer";
                 } else {
-                    exceptMessage = ((RuntimeException) throwable).getCause().getMessage();
+                    exceptMessage = throwable.getCause().getMessage();
                 }
                 for (Pattern pat : RUNTIME_EXCEPTION_PATTERN_CODE_MAP.keySet()) {
-                    if (pat.matcher(exceptMessage).find() || (pat.matcher(((RuntimeException) throwable).getMessage()).find()
-                        && !((RuntimeException) throwable).getMessage().contains("CAST"))) {
+                    if (pat.matcher(exceptMessage).find() || (pat.matcher(throwable.getMessage()).find()
+                        && !throwable.getMessage().contains("CAST"))) {
                         exceptionCode = RUNTIME_EXCEPTION_PATTERN_CODE_MAP.get(pat);
                         // TODO: Refine error message.
                         if (exceptionCode == TYPE_CAST_ERROR) {
-                            exceptMessage = ((RuntimeException) throwable).getMessage();
+                            exceptMessage = throwable.getMessage();
                         }
                         break;
                     }
@@ -226,11 +235,18 @@ public class DingoMeta extends MetaImpl {
     ) throws MissingResultsException {
         final long startTime = System.currentTimeMillis();
         try {
-            DingoStatement stmt = getStatement(sh);
+            AvaticaStatement stmt = getStatement(sh);
             DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
             final Iterator<Object[]> iterator = resultSet.getIterator();
             final List rows = new ArrayList(fetchMaxRowCount);
-            DingoSignature signature = (DingoSignature) stmt.getSignature();
+            DingoSignature signature;
+            if (stmt instanceof DingoStatement) {
+                signature = ((DingoStatement) stmt).getSignature();
+            } else if (stmt instanceof DingoPreparedStatement) {
+                signature = ((DingoPreparedStatement) stmt).getSignature();
+            } else {
+                throw new IllegalStateException("Got an not-dingo statement, this is an internal error.");
+            }
             DingoType dingoType = DingoTypeFactory.fromColumnMetaDataList(signature.columns);
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                 rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
@@ -245,23 +261,6 @@ public class DingoMeta extends MetaImpl {
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
-        }
-    }
-
-    private void checkJobHasFailed(@Nonnull DingoSignature signature) throws SQLException {
-        /**
-         * when the operation is `Create` or `Drop`, then the signature.getJob is null.
-         */
-        if (signature.getJob() != null) {
-            RootOperator rootOperator = signature.getJob().getRootTask().getRoot();
-            if (rootOperator.getErrorFin() != null) {
-                String errorMsg = (rootOperator.getErrorFin()).detail();
-                log.warn("Check Job:{} operator:{} has failed, ErrorMsg: {}",
-                    rootOperator.getTask().getJobId().toString(),
-                    rootOperator.getId().toString(),
-                    errorMsg);
-                throw new SQLException(errorMsg);
             }
         }
     }
@@ -282,7 +281,64 @@ public class DingoMeta extends MetaImpl {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) {
-        return null;
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        try {
+            DingoPreparedStatement statement = (DingoPreparedStatement) dingoConnection.getStatement(sh);
+            final DingoSignature signature = (DingoSignature) statement.getSignature();
+            MetaResultSet metaResultSet;
+            final Meta.Frame frame = new Meta.Frame(0, false, Collections.emptyList());
+            metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, signature, frame);
+            return new ExecuteResult(ImmutableList.of(metaResultSet));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void closeStatement(@Nonnull StatementHandle sh) {
+        // Called in `AvaticaStatement.close` to do extra things.
+        AvaticaStatement statement = connection.statementMap.get(sh.id);
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public boolean syncResults(
+        StatementHandle sh,
+        QueryState state,
+        long offset
+    ) throws NoSuchStatementException {
+        return false;
+    }
+
+    @Override
+    public void commit(ConnectionHandle ch) {
+    }
+
+    @Override
+    public void rollback(ConnectionHandle ch) {
+    }
+
+    private void checkJobHasFailed(@Nonnull DingoSignature signature) throws SQLException {
+        /**
+         * when the operation is `Create` or `Drop`, then the signature.getJob is null.
+         */
+        if (signature.getJob() != null) {
+            RootOperator rootOperator = signature.getJob().getRootTask().getRoot();
+            if (rootOperator.getErrorFin() != null) {
+                String errorMsg = (rootOperator.getErrorFin()).detail();
+                log.warn("Check Job:{} operator:{} has failed, ErrorMsg: {}",
+                    rootOperator.getTask().getJobId().toString(),
+                    rootOperator.getId().toString(),
+                    errorMsg);
+                throw new SQLException(errorMsg);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -312,19 +368,6 @@ public class DingoMeta extends MetaImpl {
         return createResultSet(Collections.emptyMap(),
             columns, CursorFactory.record(clazz, fields, fieldNames),
             new Frame(0, true, iterable));
-    }
-
-    @Override
-    public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
-        DingoConnection dingoConnection = (DingoConnection) connection;
-        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
-        // TODO: filter by pattern.
-        return createResultSet(
-            Linq4j.asEnumerable(rootSchema.getSubSchemaMap().values())
-                .select(schema -> new MetaSchema(catalog, schema.getName())),
-            MetaSchema.class,
-            "TABLE_SCHEM",
-            "TABLE_CATALOG");
     }
 
     @Override
@@ -432,32 +475,15 @@ public class DingoMeta extends MetaImpl {
     }
 
     @Override
-    public void closeStatement(StatementHandle sh) {
-        // Called in `AvaticaStatement.close` to do extra things.
-        AvaticaStatement statement = connection.statementMap.get(sh.id);
-        if (statement != null) {
-            try {
-                statement.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @Override
-    public boolean syncResults(
-        StatementHandle sh,
-        QueryState state,
-        long offset
-    ) throws NoSuchStatementException {
-        return false;
-    }
-
-    @Override
-    public void commit(ConnectionHandle ch) {
-    }
-
-    @Override
-    public void rollback(ConnectionHandle ch) {
+    public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
+        // TODO: filter by pattern.
+        return createResultSet(
+            Linq4j.asEnumerable(rootSchema.getSubSchemaMap().values())
+                .select(schema -> new MetaSchema(catalog, schema.getName())),
+            MetaSchema.class,
+            "TABLE_SCHEM",
+            "TABLE_CATALOG");
     }
 }

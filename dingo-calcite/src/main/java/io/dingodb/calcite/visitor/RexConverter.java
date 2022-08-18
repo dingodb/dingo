@@ -20,7 +20,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.ExprConverter;
 import io.dingodb.common.type.converter.RexLiteralConverter;
-import io.dingodb.exec.expr.RtExprWithType;
+import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.expr.SqlExprCompileContext;
+import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
@@ -34,13 +36,13 @@ import io.dingodb.expr.parser.op.SqlCastListItemsOp;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
-import io.dingodb.expr.runtime.TupleEvalContext;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -59,6 +61,7 @@ import javax.annotation.Nullable;
 
 public final class RexConverter extends RexVisitorImpl<Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
+
     private static final List<String> REX_CONST_LITERAL = Stream
         .of("BOTH", "LEADING", "TRAILING")
         .collect(Collectors.toList());
@@ -93,20 +96,20 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     }
 
     @Nonnull
-    public static RtExprWithType toRtExprWithType(@Nonnull RexNode rexNode) {
+    public static SqlExpr toRtExprWithType(@Nonnull RexNode rexNode) {
         return toRtExprWithType(rexNode, rexNode.getType());
     }
 
     @Nonnull
-    public static RtExprWithType toRtExprWithType(@Nonnull RexNode rexNode, RelDataType type) {
-        return new RtExprWithType(
+    public static SqlExpr toRtExprWithType(@Nonnull RexNode rexNode, RelDataType type) {
+        return new SqlExpr(
             convert(rexNode).toString(),
             DingoTypeFactory.fromRelDataType(type)
         );
     }
 
     @Nonnull
-    public static List<RtExprWithType> toRtExprWithType(@Nonnull List<RexNode> rexNodes, RelDataType type) {
+    public static List<SqlExpr> toRtExprWithType(@Nonnull List<RexNode> rexNodes, RelDataType type) {
         return IntStream.range(0, rexNodes.size())
             .mapToObj(i -> toRtExprWithType(rexNodes.get(i), type.getFieldList().get(i).getType()))
             .collect(Collectors.toList());
@@ -122,7 +125,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         Expr expr = convert(rexNode);
         try {
             return targetType.convertFrom(
-                expr.compileIn(tupleType).eval(new TupleEvalContext(tuple)),
+                expr.compileIn(new SqlExprCompileContext(tupleType)).eval(new SqlExprEvalContext(tuple)),
                 ExprConverter.INSTANCE
             );
         } catch (DingoExprCompileException | FailGetEvaluator e) {
@@ -156,7 +159,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     public Expr visitInputRef(@Nonnull RexInputRef inputRef) {
         IndexOp op = new IndexOp();
         op.setExprArray(new Expr[]{
-            new Var("$"),
+            new Var(SqlExprCompileContext.SQL_TUPLE_VAR_NAME),
             Value.of(inputRef.getIndex())
         });
         return op;
@@ -296,6 +299,17 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             }
         }
         op.setExprArray(exprList.toArray(new Expr[0]));
+        return op;
+    }
+
+    @Nonnull
+    @Override
+    public Expr visitDynamicParam(@Nonnull RexDynamicParam dynamicParam) {
+        IndexOp op = new IndexOp();
+        op.setExprArray(new Expr[]{
+            new Var(SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME),
+            Value.of(dynamicParam.getIndex())
+        });
         return op;
     }
 }

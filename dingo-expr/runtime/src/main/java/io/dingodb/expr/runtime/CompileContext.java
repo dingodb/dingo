@@ -33,7 +33,9 @@ public interface CompileContext {
      *
      * @return the type code
      */
-    int getTypeCode();
+    default int getTypeCode() {
+        throw new IllegalStateException("This compiling context is not a variable.");
+    }
 
     /**
      * Get a specified child context of this context. A CompileContext may have child contexts.
@@ -41,7 +43,9 @@ public interface CompileContext {
      * @param index then index of the child, can be a String (for Map index) or Integer (for Array index)
      * @return the child context
      */
-    CompileContext getChild(Object index);
+    default CompileContext getChild(Object index) {
+        return null;
+    }
 
     default RtExpr createVar() {
         Object id = getId();

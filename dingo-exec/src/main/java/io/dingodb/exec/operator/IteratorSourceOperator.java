@@ -20,10 +20,11 @@ import io.dingodb.exec.fin.OperatorProfile;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
+import javax.annotation.Nonnull;
 
 @Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
-    protected Iterator<Object[]> iterator;
+    private Iterator<Object[]> iterator;
 
     @Override
     public boolean push() {
@@ -45,5 +46,14 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         profile.setProcessedTupleCount(count);
         profile.setEndTimeStamp(System.currentTimeMillis());
         return false;
+    }
+
+    @Nonnull
+    protected abstract Iterator<Object[]> createIterator();
+
+    @Override
+    public void reset() {
+        super.reset();
+        iterator = createIterator();
     }
 }

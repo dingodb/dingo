@@ -18,6 +18,7 @@ package io.dingodb.calcite.assertion;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptNode;
+import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -25,8 +26,8 @@ import javax.annotation.Nonnull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("UnusedReturnValue")
-public final class AssertRelNode extends Assert<RelOptNode, AssertRelNode> {
-    AssertRelNode(RelOptNode obj) {
+public final class AssertRelNode extends Assert<RelNode, AssertRelNode> {
+    AssertRelNode(RelNode obj) {
         super(obj);
     }
 
@@ -43,7 +44,7 @@ public final class AssertRelNode extends Assert<RelOptNode, AssertRelNode> {
 
     @Nonnull
     public AssertRelNode singleInput() {
-        List<? extends RelOptNode> inputs = instance.getInputs();
+        List<RelNode> inputs = instance.getInputs();
         assertThat(inputs).size().isEqualTo(1);
         return new AssertRelNode(inputs.get(0));
     }

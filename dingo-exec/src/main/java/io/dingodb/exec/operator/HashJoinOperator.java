@@ -75,15 +75,6 @@ public class HashJoinOperator extends SoleOutOperator {
         hashMap = new ConcurrentHashMap<>();
     }
 
-    private void waitRightFinFlag() {
-        while (!rightFinFlag) {
-            try {
-                wait();
-            } catch (InterruptedException ignored) {
-            }
-        }
-    }
-
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
         if (pin == 0) { // left
@@ -141,6 +132,15 @@ public class HashJoinOperator extends SoleOutOperator {
         } else if (pin == 1) { //right
             rightFinFlag = true;
             notify();
+        }
+    }
+
+    private void waitRightFinFlag() {
+        while (!rightFinFlag) {
+            try {
+                wait();
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 }

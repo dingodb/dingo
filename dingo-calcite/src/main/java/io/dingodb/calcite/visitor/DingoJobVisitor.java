@@ -58,7 +58,7 @@ import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.expr.RtExprWithType;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.impl.JobImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
@@ -684,7 +684,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoPartRangeScan rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        RtExprWithType filter = null;
+        SqlExpr filter = null;
         if (rel.getFilter() != null) {
             filter = RexConverter.toRtExprWithType(rel.getFilter());
         }

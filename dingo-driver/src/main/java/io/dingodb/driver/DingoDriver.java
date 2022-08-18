@@ -30,11 +30,6 @@ public class DingoDriver extends UnregisteredDriver {
     }
 
     @Override
-    protected String getConnectStringPrefix() {
-        return CONNECT_STRING_PREFIX;
-    }
-
-    @Override
     protected String getFactoryClassName(JdbcVersion jdbcVersion) {
         return DingoFactory.class.getCanonicalName();
     }
@@ -42,6 +37,11 @@ public class DingoDriver extends UnregisteredDriver {
     @Override
     protected DriverVersion createDriverVersion() {
         return DingoDriverVersion.INSTANCE;
+    }
+
+    @Override
+    protected String getConnectStringPrefix() {
+        return CONNECT_STRING_PREFIX;
     }
 
     @Override

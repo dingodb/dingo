@@ -40,8 +40,9 @@ public class DingoStatement extends AvaticaStatement {
         );
     }
 
-    public Meta.Signature getSignature() {
-        return super.getSignature();
+    @Override
+    protected DingoSignature getSignature() {
+        return (DingoSignature) super.getSignature();
     }
 
     public void clear() throws SQLException {

@@ -26,6 +26,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.JsonConverter;
 import lombok.Getter;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -63,9 +64,9 @@ public final class ValuesOperator extends IteratorSourceOperator {
             .collect(Collectors.toList());
     }
 
+    @Nonnull
     @Override
-    public void init() {
-        super.init();
-        iterator = tuples.iterator();
+    protected Iterator<Object[]> createIterator() {
+        return tuples.iterator();
     }
 }

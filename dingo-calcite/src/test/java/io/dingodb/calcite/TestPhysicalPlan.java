@@ -82,48 +82,6 @@ public class TestPhysicalPlan {
     }
 
     @Test
-    public void testFullScan() throws SqlParseException {
-        String sql = "select * from test";
-        RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
-            .getInstance();
-        DingoPartScan scan = (DingoPartScan) r;
-        assertThat((scan).getFilter()).isNull();
-        assertThat((scan).getSelection()).isNull();
-    }
-
-    @Test
-    public void testFilterScan() throws SqlParseException {
-        String sql = "select * from test where name = 'Alice' and amount > 3.0";
-        RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
-            .getInstance();
-        DingoPartScan scan = (DingoPartScan) r;
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNull();
-    }
-
-    @Test
-    public void testProjectScan() throws SqlParseException {
-        String sql = "select name, amount from test";
-        RelNode relNode = parse(sql);
-        RelOptNode r = Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
-            .getInstance();
-        DingoPartScan scan = (DingoPartScan) r;
-        assertThat((scan).getFilter()).isNull();
-        assertThat((scan).getSelection()).isNotNull();
-    }
-
-    @Test
     public void testGetByKeys() throws SqlParseException {
         String sql = "select * from test1 where id0 = 1";
         RelNode relNode = parse(sql);

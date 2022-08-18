@@ -139,6 +139,10 @@ public class DingoParser {
         return sqlValidator.getFieldOrigins(sqlNode);
     }
 
+    public RelDataType getParameterRowType(SqlNode sqlNode) {
+        return sqlValidator.getParameterRowType(sqlNode);
+    }
+
     public RelRoot convert(@Nonnull SqlNode sqlNode) {
 
         SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
@@ -193,5 +197,11 @@ public class DingoParser {
             log.debug("==DINGO==>:[Optimized RelNode] {}", relNodeString);
         }
         return optimizedRelNode;
+    }
+
+    public RelRoot parseRel(String sql) throws SqlParseException {
+        SqlNode sqlNode = parse(sql);
+        sqlNode = validate(sqlNode);
+        return convert(sqlNode);
     }
 }

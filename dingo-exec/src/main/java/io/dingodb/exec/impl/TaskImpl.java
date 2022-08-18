@@ -28,6 +28,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.expr.SqlParasCompileContext;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
@@ -42,9 +43,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 @Slf4j
-@JsonPropertyOrder({"jobId", "location", "operators", "runList"})
+@JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
     @JsonProperty("id")
@@ -64,6 +66,10 @@ public final class TaskImpl implements Task {
     @JsonProperty("runList")
     @Getter
     private final List<Id> runList;
+    @JsonProperty("parasType")
+    @Getter
+    @Nullable
+    private final SqlParasCompileContext parasCompileContext;
 
     @Getter
     private TaskStatus taskInitStatus;
@@ -72,11 +78,13 @@ public final class TaskImpl implements Task {
     public TaskImpl(
         @JsonProperty("id") Id id,
         @JsonProperty("jobId") Id jobId,
-        @JsonProperty("location") Location location
+        @JsonProperty("location") Location location,
+        @Nullable @JsonProperty("parasType") SqlParasCompileContext parasCompileContext
     ) {
         this.id = id;
         this.jobId = jobId;
         this.location = location;
+        this.parasCompileContext = parasCompileContext;
         this.operators = new HashMap<>();
         this.runList = new LinkedList<>();
     }
@@ -118,12 +126,12 @@ public final class TaskImpl implements Task {
             o.setTask(this);
         });
 
-        for (Operator operator: getOperators().values()) {
+        for (Operator operator : getOperators().values()) {
             try {
                 operator.init();
             } catch (Exception ex) {
                 log.error("Init operator:{} in task:{} failed catch exception:{}",
-                    operator.toString(), this.id.toString(), ex.toString(), ex);
+                    operator.toString(), this.id.toString(), ex, ex);
                 statusErrMsg = ex.toString();
                 isStatusOK = false;
             }
@@ -132,6 +140,8 @@ public final class TaskImpl implements Task {
         taskInitStatus.setStatus(isStatusOK);
         taskInitStatus.setTaskId(this.id.toString());
         taskInitStatus.setErrorMsg(statusErrMsg);
+
+        reset();
     }
 
     public void run() {
@@ -152,9 +162,8 @@ public final class TaskImpl implements Task {
             Executors.execute("execute-" + jobId + "-" + id, () -> {
                 final long startTime = System.currentTimeMillis();
                 boolean isStatusOK = true;
-                String  statusErrMsg = "OK";
+                String statusErrMsg = "OK";
                 try {
-
                     while (operator.push(0, null)) {
                         log.info("Operator {} need another pushing.", operator.getId());
                     }
@@ -163,7 +172,7 @@ public final class TaskImpl implements Task {
                     isStatusOK = false;
                     statusErrMsg = e.toString();
                     log.error("Run Task:{} catch operator:{} run Exception:{}",
-                            getId().toString(), operator.getId(), e.toString(), e);
+                        getId().toString(), operator.getId(), e, e);
                 } finally {
                     if (!isStatusOK) {
                         TaskStatus taskStatus = new TaskStatus();
@@ -178,6 +187,11 @@ public final class TaskImpl implements Task {
                 }
             });
         }
+    }
+
+    @Override
+    public void reset() {
+        getOperators().forEach((id, o) -> o.reset());
     }
 
     @Nonnull

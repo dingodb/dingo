@@ -27,8 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.JsonConverter;
-import io.dingodb.exec.expr.RtExprWithType;
-import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -39,13 +38,9 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("get")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "selection", "output"})
+@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "filter", "selection", "output"})
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
     private final List<Object[]> keyTuples;
-    @JsonProperty("filter")
-    private final RtExprWithType filter;
-    @JsonProperty("selection")
-    private final TupleMapping selection;
 
     public GetByKeysOperator(
         CommonId tableId,
@@ -53,13 +48,11 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         DingoType schema,
         TupleMapping keyMapping,
         @Nonnull List<Object[]> keyTuples,
-        RtExprWithType filter,
+        SqlExpr filter,
         TupleMapping selection
     ) {
-        super(tableId, partId, schema, keyMapping);
+        super(tableId, partId, schema, keyMapping, filter, selection);
         this.keyTuples = keyTuples;
-        this.filter = filter;
-        this.selection = selection;
     }
 
     @Nonnull
@@ -71,7 +64,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonDeserialize(using = TuplesDeserializer.class)
         @Nonnull @JsonProperty("keys") JsonNode jsonNode,
-        @JsonProperty("filter") RtExprWithType filter,
+        @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
         return new GetByKeysOperator(
@@ -85,48 +78,32 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         );
     }
 
+    @Nonnull
+    @Override
+    protected Iterator<Object[]> createSourceIterator() {
+        if (keyTuples.size() == 1) {
+            for (Object[] keyTuple : keyTuples) {
+                Object[] tuple = part.getByKey(keyTuple);
+                if (tuple != null) {
+                    return Iterators.singletonIterator(tuple);
+                }
+                break;
+            }
+        } else if (keyTuples.size() != 0) {
+            return keyTuples.stream()
+                .map(part::getByKey)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                .iterator();
+        }
+        return Iterators.forArray();
+    }
+
     // This method is only used by json serialization.
     @JsonProperty("keys")
     public List<Object[]> getJsonKeyTuples() {
         return keyTuples.stream()
             .map(i -> (Object[]) schema.select(keyMapping).convertTo(i, JsonConverter.INSTANCE))
             .collect(Collectors.toList());
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        Iterator<Object[]> iterator = null;
-        if (keyTuples.size() == 1) {
-            for (Object[] keyTuple : keyTuples) {
-                Object[] tuple = part.getByKey(keyTuple);
-                if (tuple != null) {
-                    iterator = Iterators.singletonIterator(tuple);
-                }
-                break;
-            }
-        } else if (keyTuples.size() != 0) {
-            iterator = keyTuples.stream()
-                .map(part::getByKey)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList())
-                .iterator();
-        }
-        if (iterator != null) {
-            if (filter != null) {
-                filter.compileIn(schema);
-                iterator = Iterators.filter(
-                    iterator,
-                    tuple -> (boolean) filter.eval(new TupleEvalContext(tuple))
-                );
-            }
-            if (selection != null) {
-                this.iterator = Iterators.transform(iterator, selection::revMap);
-            } else {
-                this.iterator = iterator;
-            }
-            return;
-        }
-        this.iterator = Iterators.forArray();
     }
 }

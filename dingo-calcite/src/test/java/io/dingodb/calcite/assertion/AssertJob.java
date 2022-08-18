@@ -39,9 +39,9 @@ public final class AssertJob extends Assert<Job, AssertJob> {
     }
 
     @Nonnull
-    public AssertJob task(Id id, @Nonnull Consumer<AssertTask> consumer) {
+    public AssertJob task(String strId, @Nonnull Consumer<AssertTask> consumer) {
         Map<Id, Task> tasks = instance.getTasks();
-        consumer.accept(Assert.task(tasks.get(id)));
+        consumer.accept(Assert.task(tasks.get(new Id(strId))));
         return this;
     }
 

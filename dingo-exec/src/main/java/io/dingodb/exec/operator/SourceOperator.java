@@ -41,8 +41,6 @@ public abstract class SourceOperator extends SoleOutOperator {
         profiles.add(profile);
     }
 
-    public abstract boolean push();
-
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
         return push();
@@ -56,6 +54,8 @@ public abstract class SourceOperator extends SoleOutOperator {
             output.fin(new FinWithProfiles(profiles));
         }
     }
+
+    public abstract boolean push();
 
     public OperatorProfile getProfile() {
         return profiles.get(0);
