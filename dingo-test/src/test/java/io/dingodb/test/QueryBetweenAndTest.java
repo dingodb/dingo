@@ -115,7 +115,6 @@ public class QueryBetweenAndTest {
     }
 
     @Test
-    @Disabled
     public void testScan3() throws SQLException, IOException {
         sqlHelper.queryTest("select * from t_ba where name between 'a' and 'c'",
             new String[]{"id", "name"},
