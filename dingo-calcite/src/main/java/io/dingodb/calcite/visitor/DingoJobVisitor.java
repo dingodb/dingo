@@ -721,6 +721,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, rel.isIncludeEnd());
 
             Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
+            boolean includeStart = rel.isIncludeStart();
             while (partIterator.hasNext()) {
                 Map.Entry<byte[], byte[]> next = partIterator.next();
                 PartRangeScanOperator operator = new PartRangeScanOperator(
@@ -732,7 +733,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     rel.getSelection(),
                     next.getKey(),
                     next.getValue(),
-                    rel.isIncludeStart(),
+                    includeStart,
                     next.getValue() != null && rel.isIncludeEnd()
                 );
                 operator.setId(idGenerator.get());
@@ -741,6 +742,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 );
                 task.putOperator(operator);
                 outputs.addAll(operator.getOutputs());
+                includeStart = true;
             }
         }
 

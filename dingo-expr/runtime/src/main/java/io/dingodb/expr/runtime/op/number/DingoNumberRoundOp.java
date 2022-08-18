@@ -48,11 +48,12 @@ public class DingoNumberRoundOp extends RtFun {
         for (int i = 1; i <= (-scale); i++) {
             temp = temp * 10;
         }
+
         BigDecimal divide = value.divide(new BigDecimal(temp));
-        if ((value.compareTo(BigDecimal.ZERO) > 0 && divide.compareTo(BigDecimal.ONE) < 0)
-            || (value.compareTo(BigDecimal.ZERO) < 0 && divide.abs().compareTo(BigDecimal.ONE) < 0)) {
+        if (divide.abs().compareTo(new BigDecimal(0.1)) < 0) {
             return new BigDecimal(0);
         }
+
         divide = divide.setScale(0, RoundingMode.HALF_UP);
         return divide.multiply(new BigDecimal(temp));
     }

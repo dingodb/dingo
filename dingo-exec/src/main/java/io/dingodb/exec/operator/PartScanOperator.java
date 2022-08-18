@@ -62,7 +62,9 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
             filter.compileIn(schema);
             iterator = Iterators.filter(
                 iterator,
-                tuple -> (boolean) filter.eval(new TupleEvalContext(tuple))
+                tuple -> filter.eval(
+                    new TupleEvalContext(tuple)) != null && (boolean) filter.eval(new TupleEvalContext(tuple)
+                )
             );
         }
         if (selection != null) {

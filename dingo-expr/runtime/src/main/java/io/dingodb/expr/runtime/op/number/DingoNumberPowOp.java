@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +42,12 @@ public class DingoNumberPowOp extends RtFun {
     public static BigDecimal pow(final BigDecimal value, final BigDecimal power) {
         int powerInt = power.intValue();
         if (powerInt < 0) {
-            return BigDecimal.ONE.divide(value.pow(-powerInt));
+            try {
+                return BigDecimal.ONE.divide(value.pow(-powerInt));
+            } catch (ArithmeticException exception) {
+                return BigDecimal.ONE.divide(value.pow(-powerInt), 16, RoundingMode.HALF_DOWN);
+            }
+
         }
 
         BigDecimal intDecimal = value.setScale(0, BigDecimal.ROUND_FLOOR);
