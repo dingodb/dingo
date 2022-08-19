@@ -30,6 +30,25 @@ public class BooleanMapper extends TypeMapper {
             return ((Boolean) value) ? true : false;
         } else if (value instanceof Number) {
             return ((Number) value).intValue() != 0 ? true : false;
+        } else if (value instanceof String) {
+            /**
+             * type 1. input "true" or "false"
+             */
+            if (value.toString().equalsIgnoreCase("true")) {
+                return true;
+            } else if (value.toString().equalsIgnoreCase("false")) {
+                return false;
+            }
+
+            /**
+             * type 2. input "1" or "0"
+             */
+            try {
+                return Integer.parseInt(value.toString()) != 0 ? true : false;
+            } catch (NumberFormatException e) {
+                log.warn("Unable to parse value {} as boolean", value);
+                return false;
+            }
         } else {
             log.error("Unsupported boolean type: " + value.getClass().getName());
             throw new IllegalArgumentException("Unsupported boolean type: " + value.getClass().getName());

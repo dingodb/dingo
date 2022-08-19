@@ -51,26 +51,25 @@ public class JsonFetch extends AbstractParser implements Fetch {
             BufferedReader br = new BufferedReader(new FileReader(localFile));
             long totalReadCnt = 0L;
             long totalWriteCnt = 0L;
-            String line = br.readLine();
-            totalReadCnt++;
-            if (line.charAt(0) == '[') {
-                StringBuffer sb = new StringBuffer();
-                sb.append(line);
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    totalReadCnt++;
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!isValidRecord(line)) {
+                    continue;
                 }
-                List<LinkedHashMap<String, Object>> list =
-                    mapper.readValue(sb.toString(), new TypeReference<List<LinkedHashMap<String, Object>>>() {});
-                records.addAll(list.stream().map(l -> l.values().toArray()).collect(Collectors.toList()));
-            } else {
+                // skip the header line '[{"id":1,"name":"dingo"},{"id":2,"name":"dingo"}]'
+                if (line.charAt(0) == '[') {
+                    line = line.substring(1);
+                }
+                if (line.charAt(line.length() - 1) == ']') {
+                    line = line.substring(0, line.length() - 1);
+                }
+
                 records.add(readLine(line).values().toArray());
-                while ((line = br.readLine()) != null) {
-                    totalReadCnt++;
-                    records.add(readLine(line).values().toArray());
-                    if (records.size() >= 1000) {
-                        totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
-                    }
+                totalReadCnt++;
+                if (records.size() >= 1000) {
+                    totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                    records.clear();
                 }
             }
             if (records.size() != 0) {
@@ -81,6 +80,22 @@ public class JsonFetch extends AbstractParser implements Fetch {
         } catch (IOException e) {
             log.error("Error reading file:{}", localFile, e);
         }
+    }
+
+    private boolean isValidRecord(final String inputLine) {
+        if (inputLine == null || inputLine.isEmpty()) {
+            return false;
+        }
+
+        String line = inputLine.trim();
+        if (line != null && line.length() == 1 && line.charAt(0) == '[') {
+            return false;
+        }
+
+        if (line != null && line.length() == 1 && line.charAt(0) == ']') {
+            return false;
+        }
+        return true;
     }
 
     @Override
