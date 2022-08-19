@@ -16,11 +16,13 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.operation.filter.DingoFilter;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
@@ -381,7 +383,8 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(), null, null));
+            new ContextForClient(keyList, Collections.emptyList(),
+                null, null, null, null, 0));
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -394,7 +397,8 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(), recordList, null));
+            new ContextForClient(keyList, Collections.emptyList(), recordList,
+                null, null, null, 0));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -406,7 +410,8 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(),null, null));
+            new ContextForClient(keyList, Collections.emptyList(),
+                null, null, null, null, 0));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -650,11 +655,47 @@ public class DingoClient {
             Arrays.asList(start),
             end == null ? null : Arrays.asList(end),
             null,
-            operations);
+            operations, null, null, 0);
         return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
     public boolean updateColumn(Key key, Column column) {
         return true;
+    }
+
+    public int registerUDF(String tableName, String udfName, String function) {
+        CommonId id = connection.getMetaClient().getTableId(tableName);
+        return connection.getMetaClient().registerUDF(id, udfName, function);
+    }
+
+    public boolean unregisterUDF(String tableName, String udfName, int version) {
+        CommonId id = connection.getMetaClient().getTableId(tableName);
+        return connection.getMetaClient().unregisterUDF(id, udfName, version);
+    }
+
+    public boolean udfUpdate(String tableName, String udfName,
+                             String functionName, int version, List<Object> key) {
+        List<Value> userKeys = new ArrayList<>();
+        for (Object keyValue: key) {
+            userKeys.add(Value.get(keyValue));
+        }
+        Key dingoKey = new Key(tableName, userKeys);
+        ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
+            null, udfName, functionName, version);
+        ResultForClient result = storeOpUtils.doOperation(StoreOperationType.UPDATE_UDF, tableName, context);
+        return result.getStatus();
+    }
+
+    public Record udfGet(String tableName, String udfName,
+                             String functionName, int version, List<Object> key) {
+        List<Value> userKeys = new ArrayList<>();
+        for (Object keyValue: key) {
+            userKeys.add(Value.get(keyValue));
+        }
+        Key dingoKey = new Key(tableName, userKeys);
+        ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
+            null, udfName, functionName, version);
+        ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);
+        return result.getRecords().get(0);
     }
 }

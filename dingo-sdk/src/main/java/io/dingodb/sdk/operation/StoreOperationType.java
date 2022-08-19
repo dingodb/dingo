@@ -32,5 +32,9 @@ public enum StoreOperationType {
     /**
      * do compute on resultSet and update result to database.
      */
-    COMPUTE_UPDATE;
+    COMPUTE_UPDATE,
+
+    GET_UDF,
+
+    UPDATE_UDF;
 }

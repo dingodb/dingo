@@ -19,6 +19,7 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 public interface StoreService {
     String name();
@@ -28,4 +29,7 @@ public interface StoreService {
     StoreInstance getInstance(@Nonnull CommonId id);
 
     void deleteInstance(CommonId id);
+
+    default void addConfiguration(Map<String, Object> config) {
+    }
 }

@@ -17,12 +17,16 @@
 package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.DingoKeyValueCodec;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Files;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.UdfUtils;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.RawKVStore;
@@ -31,11 +35,16 @@ import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.option.RaftLogStoreOptions;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
+import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.protocol.metric.MonitorMetric;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.raft.config.StoreConfiguration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,7 +78,15 @@ public class RaftStoreInstance implements StoreInstance {
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final PartReadWriteCollector collector;
 
-    public RaftStoreInstance(Path path, CommonId id) {
+    private final MetaServiceApi metaServiceApi;
+
+    private Map<String, Globals> globalsMap = new HashMap<>();
+
+    private Map<String, TableDefinition> definitionMap = new HashMap<>();
+
+    private Map<String, KeyValueCodec> codecMap = new HashMap<>();
+
+    public RaftStoreInstance(Path path, CommonId id, MetaServiceApi metaServiceApi) {
         try {
             this.id = id;
             this.path = path;
@@ -91,6 +108,7 @@ public class RaftStoreInstance implements StoreInstance {
             this.parts = new ConcurrentHashMap<>();
             this.waitParts = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
             this.collector = PartReadWriteCollector.instance();
+            this.metaServiceApi = metaServiceApi;
             log.info("Start raft store instance, id: {}", id);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -534,4 +552,47 @@ public class RaftStoreInstance implements StoreInstance {
         }
     }
 
+    @Override
+    public KeyValue udfGet(byte[] primaryKey, String udfName, String functionName, int version) {
+        try {
+            KeyValue keyValue = new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
+            String cacheKey = udfName + "-" + version;
+            if (!codecMap.containsKey(cacheKey)) {
+                TableDefinition tableDefinition = metaServiceApi.getTableDefinition(id);
+                DingoKeyValueCodec codec =
+                    new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+                definitionMap.put(cacheKey, tableDefinition);
+                codecMap.put(cacheKey, codec);
+            }
+            KeyValueCodec codec = codecMap.get(cacheKey);
+            Object[] record = codec.decode(keyValue);
+            TableDefinition definition = definitionMap.get(cacheKey);
+            LuaTable table = UdfUtils.getLuaTable(definition.getDingoSchema(), record);
+            if (!globalsMap.containsKey(cacheKey)) {
+                String function = metaServiceApi.getUDF(id, udfName, version);
+                if (function != null) {
+                    Globals globals = JsePlatform.standardGlobals();
+                    globals.load(function).call();
+                    globalsMap.put(cacheKey, globals);
+                } else {
+                    definitionMap.remove(cacheKey);
+                    codecMap.remove(cacheKey);
+                    throw new RuntimeException("UDF not register");
+                }
+            }
+            Globals globals = globalsMap.get(cacheKey);
+            LuaValue udf = globals.get(LuaValue.valueOf(functionName));
+            LuaValue result = udf.call(table);
+            record = UdfUtils.getObject(definition.getDingoSchema(), result);
+            return codec.encode(record);
+        } catch (Exception e) {
+            throw new RuntimeException("UDF ERROR:", e);
+        }
+    }
+
+    @Override
+    public boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
+        KeyValue updatedKeyValue = udfGet(primaryKey, udfName, functionName, version);
+        return upsertKeyValue(updatedKeyValue);
+    }
 }

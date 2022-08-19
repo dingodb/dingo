@@ -114,6 +114,8 @@ public final class Converter {
                 .map(ProtostuffCodec::write)
                 .collect(Collectors.toList());
         }
-        return new ContextForStore(startKeyListInBytes, endKeyListInBytes, keyValueList, operationListInBytes);
+        return new ContextForStore(startKeyListInBytes, endKeyListInBytes,
+            keyValueList, operationListInBytes,
+            inputContext.getUdfName(), inputContext.getFunctionName(), inputContext.getUdfVersion());
     }
 }

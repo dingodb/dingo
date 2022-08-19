@@ -23,6 +23,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.LogLevelApi;
+import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ServerApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.executor.api.DriverProxyApi;
@@ -39,7 +40,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 @Slf4j
@@ -53,6 +56,8 @@ public class ExecutorServer {
     private CoordinatorConnector coordinatorConnector;
     private CommonId id;
 
+    private MetaServiceApi metaServiceApi;
+
     private TableStoreApi tableStoreApi;
     private DriverProxyApi driverProxyApi;
 
@@ -64,6 +69,7 @@ public class ExecutorServer {
         this.storeService = loadStoreService();
         this.coordinatorConnector = CoordinatorConnector.defaultConnector();
         this.serverApi = netService.apiRegistry().proxy(ServerApi.class, coordinatorConnector);
+        this.metaServiceApi = netService.apiRegistry().proxy(MetaServiceApi.class, coordinatorConnector);
     }
 
     public void start() throws Exception {
@@ -100,6 +106,9 @@ public class ExecutorServer {
 
     private void initStore() {
         List<Part> parts = serverApi.storeMap(this.id);
+        Map<String, Object> storeServiceConfig = new HashMap<>();
+        storeServiceConfig.put("MetaServiceApi", metaServiceApi);
+        storeService.addConfiguration(storeServiceConfig);
         this.storeInstance = storeService.getOrCreateInstance(this.id);
         log.info("Init store, parts: {}", parts);
         parts.forEach(tableStoreApi::assignTablePart);

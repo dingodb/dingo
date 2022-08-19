@@ -115,6 +115,10 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
         return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName);
     }
 
+    public CommonId getTableIdByIdString(CommonId id) {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableIdByIdString(id);
+    }
+
     @Override
     public boolean dropTable(@Nonnull String tableName) {
         CommonId tableId = ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName);
@@ -168,6 +172,48 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     @Override
     public TableDefinition getTableDefinition(@Nonnull CommonId commonId) {
         return ((TableAdaptor) getMetaAdaptor(Table.class)).getDefinition(commonId);
+    }
+
+    @Override
+    public int registerUDF(CommonId id, String udfName, String function) {
+        id = getTableIdByIdString(id);
+        TableAdaptor adaptor = (TableAdaptor) getMetaAdaptor(Table.class);
+        synchronized (id) {
+            Integer version = adaptor.updateUdfVersion(id, udfName);
+            if (adaptor.updateUdfFunction(id, udfName, version, function)) {
+                return version;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public boolean unregisterUDF(CommonId id, String udfName, int version) {
+        id = getTableIdByIdString(id);
+        TableAdaptor adaptor = (TableAdaptor) getMetaAdaptor(Table.class);
+        synchronized (id) {
+            return adaptor.deleteUdfFunction(id, udfName, version);
+        }
+    }
+
+    @Override
+    public String getUDF(CommonId id, String udfName) {
+        return getUDF(id, udfName, 0);
+    }
+
+    @Override
+    public String getUDF(CommonId id, String udfName, int version) {
+        id = getTableIdByIdString(id);
+        TableAdaptor adaptor = (TableAdaptor) getMetaAdaptor(Table.class);
+        if (version == 0) {
+            version = adaptor.getUdfVersion(id, udfName);
+        }
+        String udf = null;
+        while (udf == null && version > 0) {
+            udf = adaptor.getUdfFunction(id, udfName, version);
+            version--;
+        }
+        return udf;
     }
 
     @Override

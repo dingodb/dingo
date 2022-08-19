@@ -240,7 +240,10 @@ public class StoreOperationUtils {
                 keys,
                 wholeContext.getEndKeyListInBytes(),
                 records,
-                wholeContext.getOperationListInBytes());
+                wholeContext.getOperationListInBytes(),
+                wholeContext.getUdfName(),
+                wholeContext.getFunctionName(),
+                wholeContext.getUdfVersion());
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }
         return contextGroupyByExecutor;

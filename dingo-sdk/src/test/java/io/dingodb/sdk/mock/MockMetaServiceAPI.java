@@ -80,4 +80,24 @@ public class MockMetaServiceAPI implements MetaServiceApi {
     public TableDefinition getTableDefinition(@Nonnull CommonId commonId) {
         return null;
     }
+
+    @Override
+    public int registerUDF(CommonId id, String udfName, String function) {
+        return 0;
+    }
+
+    @Override
+    public boolean unregisterUDF(CommonId id, String udfName, int version) {
+        return false;
+    }
+
+    @Override
+    public String getUDF(CommonId id, String udfName) {
+        return null;
+    }
+
+    @Override
+    public String getUDF(CommonId id, String udfName, int version) {
+        return null;
+    }
 }
