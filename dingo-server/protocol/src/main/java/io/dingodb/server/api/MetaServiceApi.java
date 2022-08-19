@@ -56,4 +56,16 @@ public interface MetaServiceApi {
 
     @ApiDeclaration
     TableDefinition getTableDefinition(@Nonnull CommonId commonId);
+
+    @ApiDeclaration
+    int registerUDF(CommonId id, String udfName, String function);
+
+    @ApiDeclaration
+    boolean unregisterUDF(CommonId id, String udfName, int version);
+
+    @ApiDeclaration
+    String getUDF(CommonId id, String udfName);
+
+    @ApiDeclaration
+    String getUDF(CommonId id, String udfName, int version);
 }

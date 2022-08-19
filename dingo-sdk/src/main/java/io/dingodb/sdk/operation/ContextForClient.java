@@ -31,4 +31,7 @@ public final class ContextForClient {
     private final List<Key> endKeyList;
     private final List<Record> recordList;
     private final List<Operation> operationList;
+    private final String udfName;
+    private final String functionName;
+    private final int udfVersion;
 }

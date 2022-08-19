@@ -31,6 +31,10 @@ public final class ContextForStore {
     private final List<KeyValue> recordList;
     private final List<byte[]> operationListInBytes;
 
+    private final String udfName;
+    private final String functionName;
+    private final int udfVersion;
+
     public KeyValue getRecordByKey(byte[] key) {
         if (recordList == null) {
             return null;

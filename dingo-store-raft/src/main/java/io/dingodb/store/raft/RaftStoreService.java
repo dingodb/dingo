@@ -24,6 +24,7 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
 import io.dingodb.raft.rpc.RpcServer;
 import io.dingodb.raft.util.Endpoint;
+import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.raft.api.StoreReportStatsApi;
@@ -40,6 +41,8 @@ public class RaftStoreService implements StoreService {
     public static final RaftStoreService INSTANCE = new RaftStoreService();
 
     private final Path path = Paths.get(StoreConfiguration.dbPath());
+
+    private MetaServiceApi metaServiceApi;
 
     static {
         RocksDB.loadLibrary();
@@ -65,7 +68,8 @@ public class RaftStoreService implements StoreService {
     @Override
     public StoreInstance getOrCreateInstance(@Nonnull CommonId id) {
         Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
-        return storeInstanceMap.compute(id, (l, i) -> i == null ? new RaftStoreInstance(instancePath, id) : i);
+        return storeInstanceMap.compute(id, (l, i) -> i == null
+            ? new RaftStoreInstance(instancePath, id, metaServiceApi) : i);
     }
 
     @Override
@@ -76,5 +80,10 @@ public class RaftStoreService implements StoreService {
     @Override
     public void deleteInstance(CommonId id) {
         Optional.ofNullable(storeInstanceMap.remove(id)).ifPresent(RaftStoreInstance::clear);
+    }
+
+    @Override
+    public void addConfiguration(Map<String, Object> config) {
+        this.metaServiceApi = (MetaServiceApi) config.get("MetaServiceApi");
     }
 }

@@ -33,7 +33,9 @@ import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.type.SqlTypeName;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,12 +56,14 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     private final ColumnAdaptor columnAdaptor;
     private final TablePartAdaptor tablePartAdaptor;
     private final Map<String, CommonId> tableIdMap = new ConcurrentHashMap<>();
+    private final Map<String, CommonId> idMap = new ConcurrentHashMap<>();
 
     public TableAdaptor(MetaStore metaStore) {
         super(metaStore);
         this.columnAdaptor = new ColumnAdaptor(metaStore);
         this.tablePartAdaptor = new TablePartAdaptor(metaStore);
         this.metaMap.forEach((id, table) -> tableIdMap.put(table.getName(), id));
+        this.metaMap.forEach((id, table) -> idMap.put(id.toString(), id));
         MetaAdaptorRegistry.register(Table.class, this);
     }
 
@@ -86,6 +90,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
         tableIdMap.put(table.getName(), id);
+        idMap.put(id.toString(), id);
         return id;
     }
 
@@ -190,9 +195,14 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     public Boolean delete(String tableName) {
-        return Optional.of(tableIdMap.remove(tableName))
-            .ifPresent(this::delete)
-            .isPresent();
+        if (tableIdMap.containsKey(tableName)) {
+            CommonId id = tableIdMap.get(tableName);
+            idMap.remove(id.toString());
+            tableIdMap.remove(tableName);
+            delete(id);
+            return true;
+        }
+        return false;
     }
 
     public TableDefinition get(String tableName) {
@@ -271,6 +281,82 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .build();
     }
 
+    public Integer getUdfVersion(CommonId id, String udfName) {
+        byte[] udfKey = udfNameCommonIdToBytes(id, udfName);
+        byte[] versionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
+        if (versionBytes == null) {
+            return 0;
+        }
+        return bytesToInt(versionBytes);
+    }
+
+    public Integer updateUdfVersion(CommonId id, String udfName) {
+        byte[] udfKey = udfNameCommonIdToBytes(id, udfName);
+        byte[] versionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
+        if (versionBytes == null) {
+            this.metaStore.upsertKeyValue(udfKey, intToBytes(1));
+            return 1;
+        }
+        Integer version = bytesToInt(versionBytes);
+        version++;
+        this.metaStore.upsertKeyValue(udfKey, intToBytes(version));
+        return version;
+    }
+
+    public boolean updateUdfFunction(CommonId id, String udfName, Integer version, String function) {
+        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
+        return this.metaStore.upsertKeyValue(udfKey, function.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public boolean deleteUdfFunction(CommonId id, String udfName, Integer version) {
+        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
+        return this.metaStore.delete(udfKey);
+    }
+
+    public String getUdfFunction(CommonId id, String udfName, Integer version) {
+        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
+        byte[] functionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
+        if (functionBytes == null) {
+            return null;
+        }
+        return new String(functionBytes, StandardCharsets.UTF_8);
+    }
+
+    private byte[] udfNameCommonIdToBytes(CommonId id, String udfName) {
+        byte[] udfNameBytes = udfName.getBytes(StandardCharsets.UTF_8);
+        byte[] idBytes = id.encode();
+        byte[] result = new byte[udfNameBytes.length + idBytes.length];
+        System.arraycopy(udfNameBytes, 0,
+            result, 0, udfNameBytes.length);
+        System.arraycopy(idBytes, 0,
+            result, udfNameBytes.length - 1, idBytes.length);
+        return result;
+    }
+
+    private byte[] udfNameCommonIdVersionToBytes(CommonId id, String udfName, Integer version) {
+        byte[] udfNameCommonIdBytes = udfNameCommonIdToBytes(id, udfName);
+        byte[] versionBytes = intToBytes(version);
+        byte[] result = new byte[udfNameCommonIdBytes.length + versionBytes.length];
+        System.arraycopy(udfNameCommonIdBytes, 0,
+            result, 0, udfNameCommonIdBytes.length);
+        System.arraycopy(versionBytes, 0,
+            result, udfNameCommonIdBytes.length - 1, versionBytes.length);
+        return result;
+    }
+
+    private byte[] intToBytes(Integer num) {
+        return num.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private Integer bytesToInt(byte[] numBytes) {
+        String numStr = new String(numBytes, StandardCharsets.UTF_8);
+        return Integer.parseInt(numStr);
+    }
+
+    public CommonId getTableIdByIdString(CommonId id) {
+        return idMap.get(id.toString());
+    }
+
     @AutoService(BaseAdaptor.Creator.class)
     public static class Creator implements BaseAdaptor.Creator<Table, TableAdaptor> {
         @Override
@@ -278,5 +364,4 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             return new TableAdaptor(metaStore);
         }
     }
-
 }

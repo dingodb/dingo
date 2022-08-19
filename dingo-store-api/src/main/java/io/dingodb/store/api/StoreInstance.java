@@ -23,7 +23,6 @@ import io.dingodb.common.store.Row;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public interface StoreInstance {
 
@@ -189,4 +188,11 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default KeyValue udfGet(byte[] primaryKey, String udfName, String functionName, int version) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
+        throw new UnsupportedOperationException();
+    }
 }
