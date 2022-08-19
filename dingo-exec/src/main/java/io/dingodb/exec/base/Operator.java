@@ -17,8 +17,10 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.expr.runtime.CompileContext;
 
 import java.util.Collection;
+import java.util.Map;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -50,6 +52,10 @@ public interface Operator {
 
     void fin(int pin, Fin fin);
 
+    void reset();
+
+    void setParas(Map<String, Object> paras);
+
     default Input getInput(int pin) {
         Input input = new Input(getId(), pin);
         input.setOperator(this);
@@ -67,7 +73,7 @@ public interface Operator {
         return sole(getOutputs());
     }
 
-    default void deleteFromTask() {
-        getTask().deleteOperator(this);
+    default CompileContext getParasCompileContext() {
+        return getTask().getParasCompileContext();
     }
 }

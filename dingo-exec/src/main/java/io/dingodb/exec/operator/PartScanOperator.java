@@ -20,24 +20,19 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.expr.RtExprWithType;
-import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
+import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("scan")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output"})
 public final class PartScanOperator extends PartIteratorSourceOperator {
-    @JsonProperty("filter")
-    private final RtExprWithType filter;
-    @JsonProperty("selection")
-    private final TupleMapping selection;
 
     @JsonCreator
     public PartScanOperator(
@@ -45,34 +40,15 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("filter") RtExprWithType filter,
+        @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
-        super(tableId, partId, schema, keyMapping);
-        this.filter = filter;
-        this.selection = selection;
+        super(tableId, partId, schema, keyMapping, filter, selection);
     }
 
+    @Nonnull
     @Override
-    public void init() {
-        final long startTime = System.currentTimeMillis();
-        super.init();
-        Iterator<Object[]> iterator = part.getIterator();
-        if (filter != null) {
-            filter.compileIn(schema);
-            iterator = Iterators.filter(
-                iterator,
-                tuple -> filter.eval(
-                    new TupleEvalContext(tuple)) != null && (boolean) filter.eval(new TupleEvalContext(tuple)
-                )
-            );
-        }
-        if (selection != null) {
-            iterator = Iterators.transform(iterator, selection::revMap);
-        }
-        this.iterator = iterator;
-        if (log.isDebugEnabled()) {
-            log.debug("PartScanOperator init, cost: {}ms.", System.currentTimeMillis() - startTime);
-        }
+    protected Iterator<Object[]> createSourceIterator() {
+        return part.getIterator();
     }
 }

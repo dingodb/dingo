@@ -60,9 +60,10 @@ public class DingoConnection extends AvaticaConnection {
         context = new DingoParserContext(defaultSchema);
     }
 
-    public DingoStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
+    public AvaticaStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
         // Returns a new statement if not exists.
-        return (DingoStatement) lookupStatement(sh);
+        // This method is protected, so wrap it.
+        return lookupStatement(sh);
     }
 
     public AvaticaResultSet newResultSet(

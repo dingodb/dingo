@@ -20,26 +20,22 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.expr.RtExprWithType;
-import io.dingodb.expr.runtime.TupleEvalContext;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
+import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
+import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("rangeScan")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output", "startKey", "endKey",
-    "includeStart", "includeEnd"})
+@JsonPropertyOrder({
+    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
+    "startKey", "endKey", "includeStart", "includeEnd"
+})
 public final class PartRangeScanOperator extends PartIteratorSourceOperator {
-    @JsonProperty("filter")
-    private final RtExprWithType filter;
-    @JsonProperty("selection")
-    private final TupleMapping selection;
     @JsonProperty("startKey")
     private final byte[] startKey;
     @JsonProperty("endKey")
@@ -55,40 +51,23 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("filter") RtExprWithType filter,
+        @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey,
         @JsonProperty("includeStart") boolean includeStart,
         @JsonProperty("includeEnd") boolean includeEnd
     ) {
-        super(tableId, partId, schema, keyMapping);
-        this.filter = filter;
-        this.selection = selection;
+        super(tableId, partId, schema, keyMapping, filter, selection);
         this.startKey = startKey;
         this.endKey = endKey;
         this.includeStart = includeStart;
         this.includeEnd = includeEnd;
     }
 
+    @Nonnull
     @Override
-    public void init() {
-        final long startTime = System.currentTimeMillis();
-        super.init();
-        Iterator<Object[]> iterator = part.getIteratorByRange(startKey, endKey, includeStart, includeEnd);
-        if (filter != null) {
-            filter.compileIn(schema);
-            iterator = Iterators.filter(
-                iterator,
-                tuple -> RtLogicalOp.test(filter.eval(new TupleEvalContext(tuple)))
-            );
-        }
-        if (selection != null) {
-            iterator = Iterators.transform(iterator, selection::revMap);
-        }
-        this.iterator = iterator;
-        if (log.isDebugEnabled()) {
-            log.debug("PartRangeScanOperator init, cost: {}ms.", System.currentTimeMillis() - startTime);
-        }
+    protected Iterator<Object[]> createSourceIterator() {
+        return part.getIteratorByRange(startKey, endKey, includeStart, includeEnd);
     }
 }

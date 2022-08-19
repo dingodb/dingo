@@ -41,18 +41,18 @@ public final class RemovePartOperator extends SourceOperator {
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId tableId;
+    private final CommonId tableId;
 
     @JsonProperty("startKeyList")
-    protected final List<String> startKeyLists;
+    private final List<String> startKeyLists;
 
     @JsonProperty("schema")
-    protected final DingoType schema;
+    private final DingoType schema;
 
     @JsonProperty("keyMapping")
-    protected final TupleMapping keyMapping;
+    private final TupleMapping keyMapping;
 
-    protected Part part;
+    private Part part;
 
     @JsonCreator
     public RemovePartOperator(

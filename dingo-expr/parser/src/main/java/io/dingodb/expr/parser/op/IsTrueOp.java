@@ -46,7 +46,7 @@ public final class IsTrueOp extends Op {
         try {
             if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
                 Object v = rtExpr.eval(null);
-                return (v != null && RtLogicalOp.test(v)) ? RtConst.TRUE : RtConst.FALSE;
+                return RtLogicalOp.test(v) ? RtConst.TRUE : RtConst.FALSE;
             }
             return createRtOp(rtExprArray);
         } catch (FailGetEvaluator e) {

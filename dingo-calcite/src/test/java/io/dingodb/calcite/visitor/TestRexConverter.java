@@ -60,11 +60,11 @@ public class TestRexConverter {
             arguments("1 + 2", "1 + 2"),
             arguments("1 + 2*3", "1 + 2*3"),
             arguments("1*(2 + 3)", "1*(2 + 3)"),
-            arguments("name = 'Alice'", "$[1] == 'Alice'"),
-            arguments("name = 'Alice' and amount > 2.0", "AND($[1] == 'Alice', $[2] > 2.0)"),
+            arguments("name = 'Alice'", "_[1] == 'Alice'"),
+            arguments("name = 'Alice' and amount > 2.0", "AND(_[1] == 'Alice', _[2] > 2.0)"),
             arguments(
                 "name = 'Betty' and name = 'Alice' and amount < 1.0",
-                "AND($[1] == 'Betty', $[1] == 'Alice', $[2] < 1.0)"
+                "AND(_[1] == 'Betty', _[1] == 'Alice', _[2] < 1.0)"
             ),
             arguments("unix_timestamp('2022-04-14 00:00:00')", "unix_timestamp(TIMESTAMP('2022-04-14 00:00:00'))"),
             arguments("from_unixtime(123)", "from_unixtime(123)")

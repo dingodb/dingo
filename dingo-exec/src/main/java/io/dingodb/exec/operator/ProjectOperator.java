@@ -21,23 +21,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.expr.RtExprWithType;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.expr.runtime.TupleEvalContext;
 
 import java.util.List;
+import java.util.Map;
 
 @JsonTypeName("project")
 @JsonPropertyOrder({"projects", "schema", "output"})
 public final class ProjectOperator extends SoleOutOperator {
     @JsonProperty("projects")
-    private final List<RtExprWithType> projects;
+    private final List<SqlExpr> projects;
     @JsonProperty("schema")
     private final DingoType schema;
 
     @JsonCreator
     public ProjectOperator(
-        @JsonProperty("projects") List<RtExprWithType> projects,
+        @JsonProperty("projects") List<SqlExpr> projects,
         @JsonProperty("schema") DingoType schema
     ) {
         super();
@@ -48,14 +48,14 @@ public final class ProjectOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        projects.forEach(expr -> expr.compileIn(schema));
+        projects.forEach(expr -> expr.compileIn(schema, getParasCompileContext()));
     }
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
         Object[] newTuple = new Object[projects.size()];
         for (int i = 0; i < newTuple.length; ++i) {
-            newTuple[i] = projects.get(i).eval(new TupleEvalContext(tuple));
+            newTuple[i] = projects.get(i).eval(tuple);
         }
         return output.push(newTuple);
     }
@@ -63,5 +63,11 @@ public final class ProjectOperator extends SoleOutOperator {
     @Override
     public synchronized void fin(int pin, Fin fin) {
         output.fin(fin);
+    }
+
+    @Override
+    public void setParas(Map<String, Object> paras) {
+        super.setParas(paras);
+        projects.forEach(e -> e.setParas(paras));
     }
 }

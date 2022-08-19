@@ -34,8 +34,6 @@ public abstract class SinkOperator extends AbstractOperator {
         return push(tuple);
     }
 
-    protected abstract void fin(Fin fin);
-
     @Override
     public synchronized void fin(int pin, Fin fin) {
         fin(fin);
@@ -45,4 +43,6 @@ public abstract class SinkOperator extends AbstractOperator {
     public List<Output> getOutputs() {
         return ImmutableList.of();
     }
+
+    protected abstract void fin(Fin fin);
 }

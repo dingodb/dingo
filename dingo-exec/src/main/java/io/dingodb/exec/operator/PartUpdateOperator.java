@@ -23,12 +23,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.expr.RtExprWithType;
-import io.dingodb.expr.runtime.TupleEvalContext;
+import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -38,7 +38,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @JsonProperty("mapping")
     private final TupleMapping mapping;
     @JsonProperty("updates")
-    private final List<RtExprWithType> updates;
+    private final List<SqlExpr> updates;
 
     @JsonCreator
     public PartUpdateOperator(
@@ -47,7 +47,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
-        @JsonProperty("updates") List<RtExprWithType> updates
+        @JsonProperty("updates") List<SqlExpr> updates
     ) {
         super(tableId, partId, schema, keyMapping);
         this.mapping = mapping;
@@ -57,17 +57,17 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public void init() {
         super.init();
-        updates.forEach(expr -> expr.compileIn(schema));
+        updates.forEach(expr -> expr.compileIn(schema, getParasCompileContext()));
     }
 
     @Override
     public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
-        TupleEvalContext etx = new TupleEvalContext(Arrays.copyOf(tuple, tuple.length));
+        Object[] newTuple = Arrays.copyOf(tuple, tuple.length);
         boolean updated = false;
         int i = 0;
         try {
             for (i = 0; i < mapping.size(); ++i) {
-                Object newValue = updates.get(i).eval(etx);
+                Object newValue = updates.get(i).eval(newTuple);
                 int index = mapping.get(i);
                 if ((tuple[index] == null && newValue != null)
                     || (tuple[index] != null && !tuple[index].equals(newValue))
@@ -87,5 +87,11 @@ public final class PartUpdateOperator extends PartModifyOperator {
             throw new RuntimeException("Update Operator catch Exception");
         }
         return true;
+    }
+
+    @Override
+    public void setParas(Map<String, Object> paras) {
+        super.setParas(paras);
+        updates.forEach(e -> e.setParas(paras));
     }
 }

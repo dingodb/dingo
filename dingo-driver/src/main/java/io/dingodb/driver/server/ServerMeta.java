@@ -363,7 +363,7 @@ public class ServerMeta implements Meta {
         PrepareCallback callback // This callback does nothing
     ) throws NoSuchStatementException {
         DingoMeta meta = metaMap.get(sh.connectionId);
-        DingoStatement statement = meta.getStatement(sh);
+        DingoStatement statement = (DingoStatement) meta.getStatement(sh);
         return meta.prepareAndExecute(
             sh,
             sql,

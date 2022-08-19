@@ -18,6 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
 import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.expr.runtime.CompileContext;
 
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,8 @@ public interface Task {
 
     void run();
 
+    void reset();
+
     @Nullable
     default Operator getOperator(Id id) {
         return getOperators().get(id);
@@ -62,4 +65,9 @@ public interface Task {
 
     byte[] serialize();
 
+    CompileContext getParasCompileContext();
+
+    default void setParas(Map<String, Object> paras) {
+        getOperators().forEach((id, o) -> o.setParas(paras));
+    }
 }

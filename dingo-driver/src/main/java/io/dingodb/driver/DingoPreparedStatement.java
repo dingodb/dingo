@@ -39,4 +39,9 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
             resultSetHoldability
         );
     }
+
+    @Override
+    protected DingoSignature getSignature() {
+        return (DingoSignature) super.getSignature();
+    }
 }

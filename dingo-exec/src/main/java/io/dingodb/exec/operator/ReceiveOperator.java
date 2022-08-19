@@ -91,6 +91,26 @@ public final class ReceiveOperator extends SourceOperator {
     }
 
     @Override
+    public void fin(int pin, Fin fin) {
+        /**
+         * when the upstream operator(`sender`) has failed,
+         * then the current operator('receiver`) should failed too
+         * so the `Fin` should use FinWithException
+         */
+        if (finObj != null && finObj instanceof FinWithException) {
+            super.fin(pin, finObj);
+        } else {
+            super.fin(pin, fin);
+        }
+
+        try {
+            endpoint.close();
+        } catch (Exception e) {
+            log.error("Fin pin:{} catch exception:{}", pin, e, e);
+        }
+    }
+
+    @Override
     public boolean push() {
         long count = 0;
         OperatorProfile profile = getProfile();
@@ -120,26 +140,6 @@ public final class ReceiveOperator extends SourceOperator {
         }
         Services.NET.unregisterTagMessageListener(tag, messageListener);
         return false;
-    }
-
-    @Override
-    public void fin(int pin, Fin fin) {
-        /**
-         * when the upstream operator(`sender`) has failed,
-         * then the current operator('receiver`) should failed too
-         * so the `Fin` should use FinWithException
-         */
-        if (finObj != null && finObj instanceof FinWithException) {
-            super.fin(pin, finObj);
-        } else {
-            super.fin(pin, fin);
-        }
-
-        try {
-            endpoint.close();
-        } catch (Exception e) {
-            log.error("Fin pin:{} catch exception:{}", pin, e, e);
-        }
     }
 
     private class ReceiveMessageListener implements MessageListener {

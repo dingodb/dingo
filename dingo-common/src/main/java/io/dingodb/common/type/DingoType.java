@@ -72,7 +72,6 @@ public interface DingoType extends CompileContext {
      */
     int fieldCount();
 
-    @Nullable
     @Override
     DingoType getChild(@Nonnull Object index);
 

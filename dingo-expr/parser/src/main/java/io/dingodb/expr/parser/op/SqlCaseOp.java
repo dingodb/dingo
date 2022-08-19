@@ -54,7 +54,7 @@ public final class SqlCaseOp extends Op {
                 }
                 if (rtExpr instanceof RtConst) {
                     Object v = rtExpr.eval(null);
-                    if (v != null && RtLogicalOp.test(v)) {
+                    if (RtLogicalOp.test(v)) {
                         return rtExprArray[i + 1];
                     }
                 } else {
