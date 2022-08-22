@@ -24,6 +24,7 @@ import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredObjectSetter;
 import io.dingodb.sdk.utils.DeferredObjectLoader.DeferredSetter;
 import io.dingodb.sdk.utils.TypeUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -62,7 +63,7 @@ public class MapMapper extends TypeMapper {
             return value;
         }
 
-        Map<Object, Object> results = new TreeMap<>();
+        Map<Object, Object> results = new HashMap<>();
         for (Object key : map.keySet()) {
             Object item = map.get(key);
             TypeMapper mapper1 = TypeUtils.getMapper(
