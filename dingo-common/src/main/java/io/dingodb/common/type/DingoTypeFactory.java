@@ -30,6 +30,7 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.TypeCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public final class DingoTypeFactory {
     private DingoTypeFactory() {
     }
@@ -150,7 +152,10 @@ public final class DingoTypeFactory {
             case ARRAY:
             case MULTISET:
                 SqlTypeName elementType = columnDefinition.getElementType();
-                //return DingoTypeFactory.array(TypeCode.codeOf(elementType.getName()), !notNull);
+                if (log.isDebugEnabled()) {
+                    log.debug("current type is:{}, elementType is:{], definition:{}",
+                        type, elementType, columnDefinition);
+                }
                 return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);
             default:
                 return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);

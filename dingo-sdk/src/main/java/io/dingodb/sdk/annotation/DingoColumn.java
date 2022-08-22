@@ -32,6 +32,12 @@ public @interface DingoColumn {
      */
     String name() default "";
 
+    /**
+     * The type of the column. If not specified, the field type is used for the column type.
+     * address varchar array.
+     */
+    String elementType() default "";
+
     String precision() default "";
 
     String scale() default "";

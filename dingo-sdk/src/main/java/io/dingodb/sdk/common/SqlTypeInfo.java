@@ -19,8 +19,10 @@ package io.dingodb.sdk.common;
 
 import io.dingodb.sdk.annotation.DingoColumn;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 public class SqlTypeInfo {
     String sqlTypeName;
     String defaultValue;
