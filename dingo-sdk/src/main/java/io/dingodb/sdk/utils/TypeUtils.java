@@ -37,6 +37,7 @@ import io.dingodb.sdk.mappers.IntMapper;
 import io.dingodb.sdk.mappers.ListMapper;
 import io.dingodb.sdk.mappers.MapMapper;
 import io.dingodb.sdk.mappers.ObjectEmbedMapper;
+import io.dingodb.sdk.mappers.SetMapper;
 import io.dingodb.sdk.mappers.ShortMapper;
 import io.dingodb.sdk.mappers.TimeMapper;
 import io.dingodb.sdk.mappers.TimestampMapper;
@@ -53,6 +54,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TypeUtils {
@@ -198,6 +200,19 @@ public class TypeUtils {
                     typeMapper = new ArrayMapper(elementType, subMapper, allowBatch);
                     addToMap = false;
                 }
+            } else if (Set.class.isAssignableFrom(clazz)) {
+                ParameterizedType paramType = type.getParameterizedType();
+                Type[] types = paramType.getActualTypeArguments();
+                Class<?> elementType = types[0] instanceof Class ? (Class<?>) types[0] : null;
+
+                if (isByteType(elementType)) {
+                    // Byte arrays are natively supported
+                    typeMapper = new DefaultMapper();
+                } else {
+                    TypeMapper subMapper = getMapper(elementType, type, mapper, true);
+                    typeMapper = new SetMapper(elementType, subMapper);
+                    addToMap = false;
+                }
             } else if (Map.class.isAssignableFrom(clazz)) {
                 if (type.isParameterizedType()) {
                     ParameterizedType paramType = type.getParameterizedType();
@@ -215,7 +230,6 @@ public class TypeUtils {
                     TypeMapper keyMapper = getMapper(keyClazz, type, mapper, true);
                     TypeMapper itemMapper = getMapper(itemClazz, type, mapper, true);
                     typeMapper = new MapMapper(clazz, keyClazz, itemClazz, keyMapper, itemMapper, mapper);
-
                 } else {
                     typeMapper = new MapMapper(clazz, null, null, null, null, mapper);
                 }
@@ -405,6 +419,7 @@ public class TypeUtils {
                 return "TIMESTAMP";
             }
 
+            case "varchar":
             case "string": {
                 return "VARCHAR";
             }
@@ -413,8 +428,12 @@ public class TypeUtils {
                 return "ARRAY";
             }
 
+            case "set": {
+                return "MULTISET";
+            }
+
             case "map": {
-                return "MAP";
+                return "ANY";
             }
 
             default: {

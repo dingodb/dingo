@@ -903,6 +903,7 @@ public class ClassCacheEntry<T> {
             SqlTypeInfo sqlTypeInfo = getSqlTypeInfo(javaTypeName);
 
             String columnName = thisField.getName();
+            String elementTypeName = null;
             if (thisField.isAnnotationPresent(DingoColumn.class)) {
                 DingoColumn dingoColumn = thisField.getAnnotation(DingoColumn.class);
                 String sqlTypeName = getSqlType(javaTypeName);
@@ -910,12 +911,25 @@ public class ClassCacheEntry<T> {
                 if (dingoColumn.name() != null && !dingoColumn.name().isEmpty()) {
                     columnName = dingoColumn.name();
                 }
+
+                if (dingoColumn.elementType() != null && !dingoColumn.elementType().isEmpty()) {
+                    elementTypeName = getSqlType(dingoColumn.elementType());
+                }
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("Input JavaTypeName is:{}, sqlTypeInfo:{}, "
+                        + "columnName:{}, elementTypeName:{}",
+                    javaTypeName,
+                    sqlTypeInfo,
+                    thisField.getType().toGenericString(),
+                    elementTypeName);
             }
 
             ColumnDefinition columnDefinition = ColumnDefinition.getInstance(
                 columnName,
                 sqlTypeInfo.getSqlTypeName(),
-                null,
+                elementTypeName,
                 sqlTypeInfo.getPrecision(),
                 sqlTypeInfo.getScale(),
                 isKey ? true : false,
@@ -949,8 +963,10 @@ public class ClassCacheEntry<T> {
         }
     }
 
-    private void addDataFromValueName(String name, Object instance, ClassCacheEntry<?> thisClass, List<Object> results)
-        throws ReflectiveOperationException {
+    private void addDataFromValueName(String name,
+                                      Object instance,
+                                      ClassCacheEntry<?> thisClass,
+                                      List<Object> results) throws ReflectiveOperationException {
         ValueType value = thisClass.values.get(name);
         Object javaValue = value.get(instance);
         Object dingoValue = value.getTypeMapper().toDingoFormat(javaValue);

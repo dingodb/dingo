@@ -292,8 +292,8 @@ public class DingoOpCli implements DingoMapper {
                 keyList.size(),
                 ex.toString(), ex);
             throw ex;
-        } catch (Exception e) {
-            throw new DingoClientException("Failed to Save objects in batch: cnt:" + keyList.size());
+        } catch (Exception ex) {
+            throw new DingoClientException("Failed to Save objects in batch: cnt:" + keyList.size(), ex);
         }
     }
 
