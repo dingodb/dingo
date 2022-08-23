@@ -293,20 +293,24 @@ public class RocksRawKVStore implements RawKVStore {
                 ByteArrayEntryIterator entryIterator = new ByteArrayEntryIterator(
                     db.newIterator(readOptions), start, end, true, false);
 
+                Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
                 for (Operation operation : operations) {
-                    Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
-
-                    List<KeyValue> rows = (List<KeyValue>) operation.operationType.executive().execute(
+                    List<KeyValue> execute = (List<KeyValue>) operation.operationType.executive().execute(
                         operation.operationContext, iterator);
-
-                    try (final WriteBatch batch = new WriteBatch()) {
-                        for (final KeyValue entry : rows) {
-                            batch.put(entry.getPrimaryKey(), entry.getValue());
-                        }
-                        this.db.write(this.writeOptions, batch);
-                    } catch (final Exception e) {
-                        throw new RuntimeException(e);
+                    if (execute.size() == 0) {
+                        continue;
                     }
+                    iterator = execute.iterator();
+                }
+
+                try (final WriteBatch batch = new WriteBatch()) {
+                    while (iterator.hasNext()) {
+                        KeyValue entry = iterator.next();
+                        batch.put(entry.getPrimaryKey(), entry.getValue());
+                    }
+                    this.db.write(this.writeOptions, batch);
+                } catch (final Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         }

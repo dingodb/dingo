@@ -25,6 +25,10 @@ import io.dingodb.net.api.annotation.ApiDeclaration;
 import java.util.List;
 
 public interface ExecutorApi {
+
+    @ApiDeclaration
+    boolean exist(CommonId tableId, byte[] primaryKey);
+
     @ApiDeclaration
     boolean upsertKeyValue(CommonId tableId, KeyValue row);
 

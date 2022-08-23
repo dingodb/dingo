@@ -87,6 +87,6 @@ public class DingoExecResult implements Serializable {
      * @return result value
      */
     public Value get(String column) {
-        return record.get(column);
+        return record.get(column.toUpperCase());
     }
 }

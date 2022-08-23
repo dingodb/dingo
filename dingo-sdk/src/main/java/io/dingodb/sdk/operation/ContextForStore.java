@@ -16,6 +16,8 @@
 
 package io.dingodb.sdk.operation;
 
+import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +36,9 @@ public final class ContextForStore {
     private final String udfName;
     private final String functionName;
     private final int udfVersion;
+
+    private final boolean ignore;
+    private final OperationContext context;
 
     public KeyValue getRecordByKey(byte[] key) {
         if (recordList == null) {

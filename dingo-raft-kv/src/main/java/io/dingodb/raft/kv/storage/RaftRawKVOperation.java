@@ -64,7 +64,7 @@ public class RaftRawKVOperation {
         BACKUP,
         RESTORE,
 
-        COMPUTE;
+        COMPUTE
         ;
     }
 

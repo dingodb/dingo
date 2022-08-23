@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.common.type.converter;
 
-public enum StoreOperationType {
-    PUT,
+import io.dingodb.common.type.DataConverter;
 
-    GET,
+import java.math.BigDecimal;
+import javax.annotation.Nonnull;
 
-    DELETE,
+public class ClientConverter implements DataConverter {
+    public static final ClientConverter INSTANCE = new ClientConverter();
 
-    QUERY,
+    public ClientConverter() {
+    }
 
-    GET_UDF,
-
-    UPDATE_UDF;
+    @Override
+    public Double convertDoubleFrom(@Nonnull Object value) {
+        if (value instanceof Float) {
+            return new BigDecimal(String.valueOf(value)).doubleValue();
+        }
+        return (Double) value;
+    }
 }

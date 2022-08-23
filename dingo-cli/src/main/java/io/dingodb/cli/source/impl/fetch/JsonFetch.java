@@ -82,6 +82,10 @@ public class JsonFetch extends AbstractParser implements Fetch {
         }
     }
 
+    @Override
+    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
+    }
+
     private boolean isValidRecord(final String inputLine) {
         if (inputLine == null || inputLine.isEmpty()) {
             return false;
@@ -96,10 +100,6 @@ public class JsonFetch extends AbstractParser implements Fetch {
             return false;
         }
         return true;
-    }
-
-    @Override
-    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
     }
 
     @Override

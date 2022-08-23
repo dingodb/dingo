@@ -16,13 +16,13 @@
 
 package io.dingodb.sdk.client;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
@@ -209,9 +209,10 @@ public class DingoClient {
      * insert records into table.
      * @param tableName input table name
      * @param records record(multiple records ordered by column index on table definition).
+     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
      * @return true when records are inserted successfully, otherwise false.
      */
-    public boolean insert(String tableName, List<Object[]> records) {
+    public boolean insert(String tableName, List<Object[]> records, boolean ignore) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
             return false;
@@ -228,7 +229,7 @@ public class DingoClient {
             keyList.add(recordEntry.getKey());
             recordList.add(recordEntry.getValue());
         }
-        return doPut(keyList, recordList);
+        return doPut(keyList, recordList, ignore);
     }
 
     /**
@@ -241,6 +242,17 @@ public class DingoClient {
         List<Object[]> inputRecords = new ArrayList<>();
         inputRecords.add(record);
         return insert(tableName, inputRecords);
+    }
+
+    /**
+     * insert records into table.
+     *
+     * @param tableName input table name
+     * @param records record(multiple records ordered by column index on table definition).
+     * @return true when records are inserted successfully, otherwise false.
+     */
+    public boolean insert(String tableName, List<Object[]> records) {
+        return insert(tableName, records, false);
     }
 
     private HashMap<Key, Record> convertObjectArray2Record(String tableName,
@@ -291,9 +303,20 @@ public class DingoClient {
      * @return true when record is put successfully, otherwise false.
      */
     public boolean put(Key key, Column[] columns) {
+        return put(key, columns, false);
+    }
+
+    /**
+     * put record to table using key.
+     * @param key input key of the table
+     * @param columns input columns of the table(ordered by column index on table definition).
+     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
+     * @return true when record is put successfully, otherwise false.
+     */
+    public boolean put(Key key, Column[] columns, boolean ignore) {
         TableDefinition tableDefinition = storeOpUtils.getTableDefinition(key.getTable());
         Record record = new Record(tableDefinition.getColumns(), columns);
-        return doPut(Arrays.asList(key), Arrays.asList(record));
+        return doPut(Arrays.asList(key), Arrays.asList(record), ignore);
     }
 
     /**
@@ -305,7 +328,20 @@ public class DingoClient {
      *
      */
     public boolean put(List<Key> keyList, List<Record> recordList) {
-        return doPut(keyList, recordList);
+        return put(keyList, recordList, false);
+    }
+
+    /**
+     * Note: The length of <strong>keyList</strong> and <strong>recordList</strong>MUST be equal!!!
+     * put multiple records together into table.
+     * @param keyList input key list of the table
+     * @param recordList input value list of the table(ordered by column index on table definition).
+     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
+     * @return true when records are put successfully, otherwise false.
+     *
+     */
+    public boolean put(List<Key> keyList, List<Record> recordList, boolean ignore) {
+        return doPut(keyList, recordList, ignore);
     }
 
     /**
@@ -347,6 +383,17 @@ public class DingoClient {
     }
 
     /**
+     * Get filtered multiple records from table by entering key range.
+     * @param start input start key of the table
+     * @param end input end key of the table
+     * @param filter filter condition
+     * @return record list of table in Record mode, null if not found.
+     */
+    public final List<Record> query(Key start, Key end, DingoFilter filter) {
+        return doQuery(Arrays.asList(start), Arrays.asList(end), filter);
+    }
+
+    /**
      * delete record from table by input key.
      * @param tableName name of the table
      * @param key input key of the table
@@ -384,7 +431,7 @@ public class DingoClient {
             StoreOperationType.GET,
             keyList.get(0).getTable(),
             new ContextForClient(keyList, Collections.emptyList(),
-                null, null, null, null, 0));
+                null, null, null, null, 0, null,false));
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -393,12 +440,12 @@ public class DingoClient {
         }
     }
 
-    private boolean doPut(List<Key> keyList, List<Record> recordList) {
+    private boolean doPut(List<Key> keyList, List<Record> recordList, boolean ignore) {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
             new ContextForClient(keyList, Collections.emptyList(), recordList,
-                null, null, null, 0));
+                null, null, null, 0, null, ignore));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -406,12 +453,25 @@ public class DingoClient {
         return true;
     }
 
+    private List<Record> doQuery(List<Key> startKeys, List<Key> endKeys, DingoFilter filter) {
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.QUERY,
+            startKeys.get(0).getTable(),
+            new ContextForClient(startKeys, endKeys,
+                null, null, null, null, 0, filter, false));
+        if (!result.getStatus()) {
+            log.error("Execute query command failed:{}", result.getErrorMessage());
+            return null;
+        }
+        return result.getRecords();
+    }
+
     private boolean doDelete(List<Key> keyList) {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
             new ContextForClient(keyList, Collections.emptyList(),
-                null, null, null, null, 0));
+                null, null, null, null, 0, null, false));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -428,7 +488,9 @@ public class DingoClient {
      * @return true/false
      */
     public final boolean add(@Nonnull Key key, @Nonnull Column... columns) {
-        return add(key, null, columns);
+        Operation operation = Operation.add(columns);
+        List<DingoExecResult> result = operate(key, ImmutableList.of(operation));
+        return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
 
     /**
@@ -440,15 +502,29 @@ public class DingoClient {
      * @param columns Multiple columns to be calculated
      * @return true/false
      */
-    public final boolean add(@Nonnull Key start, Key end, @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
+    public final boolean add(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
         Operation operation = Operation.add(columns);
-        List<DingoExecResult> result = operate(start, end, Collections.singletonList(operation));
+        List<DingoExecResult> result = operate(start, end, ImmutableList.of(operation));
+        return result != null && result.size() > 0 && result.get(0).isSuccess();
+    }
+
+    /**
+     * Accumulates the values matching the filter condition within the primary key range.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param filter filter condition
+     * @param columns Multiple columns to be calculated
+     * @return true/false
+     */
+    public final boolean add(@Nonnull Key start,
+                             @Nonnull Key end,
+                             @Nonnull DingoFilter filter,
+                             @Nonnull Column... columns) {
+        Operation operation = Operation.add(columns);
+        operation.operationContext.filter(filter);
+        List<DingoExecResult> result = operate(start, end, ImmutableList.of(operation));
         return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
 
@@ -462,14 +538,8 @@ public class DingoClient {
      * @return The calculation result of the corresponding column
      */
     public final List<DingoExecResult> max(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
         Operation operation = Operation.max(columns);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -492,16 +562,9 @@ public class DingoClient {
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
-
         Operation operation = Operation.max(columns);
         operation.operationContext.filter(filter);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -514,14 +577,8 @@ public class DingoClient {
      * @return The calculation result of the corresponding column
      */
     public final List<DingoExecResult> min(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
         Operation operation = Operation.min(columns);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -538,15 +595,9 @@ public class DingoClient {
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
         Operation operation = Operation.min(columns);
         operation.operationContext.filter(filter);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -559,14 +610,8 @@ public class DingoClient {
      * @return The calculation result of the corresponding column
      */
     public final List<DingoExecResult> sum(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
         Operation operation = Operation.sum(columns);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -583,16 +628,9 @@ public class DingoClient {
                                            @Nonnull Key end,
                                            @Nonnull DingoFilter filter,
                                            @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
-
         Operation operation = Operation.sum(columns);
         operation.operationContext.filter(filter);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -611,16 +649,9 @@ public class DingoClient {
                                              @Nonnull Key end,
                                              @Nonnull DingoFilter filter,
                                              @Nonnull Column... columns) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
-        if (startKeyCnt != endKeyCnt) {
-            log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
-            throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
-        }
-
         Operation operation = Operation.count(columns);
         operation.operationContext.filter(filter);
-        return operate(start, end, Collections.singletonList(operation));
+        return operate(start, end, ImmutableList.of(operation));
     }
 
     /**
@@ -629,8 +660,13 @@ public class DingoClient {
      * @param operations multiple read/write operations
      * @return Multiple one-to-one operation results
      */
-    public final List<DingoExecResult> operate(Key key, List<Operation> operations) {
-        return operate(key, null, operations);
+    public final List<DingoExecResult> operate(@Nonnull Key key, @Nonnull List<Operation> operations) {
+        ContextForClient contextForClient = new ContextForClient(
+            ImmutableList.of(key),
+            null,
+            null,
+            operations, null, null, 0, null, false);
+        return storeOpUtils.doOperation(key.getTable().toUpperCase(), contextForClient);
     }
 
     /**
@@ -644,18 +680,20 @@ public class DingoClient {
      * @param operations database operations to perform
      * @return Multiple one-to-one operation results
      */
-    public final List<DingoExecResult> operate(Key start, Key end, List<Operation> operations) {
-        int startKeyCnt = (start != null && start.getUserKey() != null) ? start.userKey.size() : 0;
-        int endKeyCnt = (end != null && end.getUserKey() != null) ? end.userKey.size() : 0;
+    public final List<DingoExecResult> operate(@Nonnull Key start,
+                                               @Nonnull Key end,
+                                               @Nonnull List<Operation> operations) {
+        int startKeyCnt = start.getUserKey() != null ? start.userKey.size() : 0;
+        int endKeyCnt = end.getUserKey() != null ? end.userKey.size() : 0;
         if (startKeyCnt != endKeyCnt) {
             log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
             throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
         }
         ContextForClient contextForClient = new ContextForClient(
-            Arrays.asList(start),
-            end == null ? null : Arrays.asList(end),
+            ImmutableList.of(start),
+            ImmutableList.of(end),
             null,
-            operations, null, null, 0);
+            operations, null, null, 0, null, false);
         return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
@@ -681,7 +719,7 @@ public class DingoClient {
         }
         Key dingoKey = new Key(tableName, userKeys);
         ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
-            null, udfName, functionName, version);
+            null, udfName, functionName, version, null, false);
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.UPDATE_UDF, tableName, context);
         return result.getStatus();
     }
@@ -694,7 +732,7 @@ public class DingoClient {
         }
         Key dingoKey = new Key(tableName, userKeys);
         ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
-            null, udfName, functionName, version);
+            null, udfName, functionName, version, null, false);
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);
         return result.getRecords().get(0);
     }

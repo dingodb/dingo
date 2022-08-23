@@ -19,6 +19,8 @@ package io.dingodb.sdk.operation;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.operation.Column;
+import io.dingodb.common.operation.context.BasicContext;
+import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -114,8 +116,21 @@ public final class Converter {
                 .map(ProtostuffCodec::write)
                 .collect(Collectors.toList());
         }
-        return new ContextForStore(startKeyListInBytes, endKeyListInBytes,
-            keyValueList, operationListInBytes,
-            inputContext.getUdfName(), inputContext.getFunctionName(), inputContext.getUdfVersion());
+        OperationContext context = null;
+        if (inputContext.getFilter() != null) {
+            context = new BasicContext(null);
+            context.definition(definition);
+            context.filter(inputContext.getFilter());
+        }
+        return new ContextForStore(
+            startKeyListInBytes,
+            endKeyListInBytes,
+            keyValueList,
+            operationListInBytes,
+            inputContext.getUdfName(),
+            inputContext.getFunctionName(),
+            inputContext.getUdfVersion(),
+            inputContext.isIgnore(),
+            context);
     }
 }
