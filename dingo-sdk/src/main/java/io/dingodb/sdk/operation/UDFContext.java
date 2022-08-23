@@ -16,23 +16,13 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.common.operation.Operation;
-import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.sdk.common.Key;
-import io.dingodb.sdk.common.Record;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 @AllArgsConstructor
-public final class ContextForClient {
-    private final List<Key> startKeyList;
-    private final List<Key> endKeyList;
-    private final List<Record> recordList;
-    private final List<Operation> operationList;
-    private final UDFContext udfContext;
-    private final DingoFilter filter;
-    private final boolean ignore;
+public class UDFContext {
+    private final String udfName;
+    private final String functionName;
+    private final int udfVersion;
 }

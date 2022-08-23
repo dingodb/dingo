@@ -32,6 +32,7 @@ import io.dingodb.sdk.operation.ContextForClient;
 import io.dingodb.sdk.operation.ResultForClient;
 import io.dingodb.sdk.operation.StoreOperationType;
 import io.dingodb.sdk.operation.StoreOperationUtils;
+import io.dingodb.sdk.operation.UDFContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -430,8 +431,13 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(),
-                null, null, null, null, 0, null,false));
+            new ContextForClient(keyList,
+                Collections.emptyList(),
+                null,
+                null,
+                null,
+                null,
+                false));
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -445,7 +451,7 @@ public class DingoClient {
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
             new ContextForClient(keyList, Collections.emptyList(), recordList,
-                null, null, null, 0, null, ignore));
+                null, null, null, ignore));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -457,8 +463,14 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.QUERY,
             startKeys.get(0).getTable(),
-            new ContextForClient(startKeys, endKeys,
-                null, null, null, null, 0, filter, false));
+            new ContextForClient(
+                startKeys,
+                endKeys,
+                null,
+                null,
+                null,
+                filter,
+                false));
         if (!result.getStatus()) {
             log.error("Execute query command failed:{}", result.getErrorMessage());
             return null;
@@ -470,8 +482,14 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(),
-                null, null, null, null, 0, null, false));
+            new ContextForClient(
+                keyList,
+                Collections.emptyList(),
+                null,
+                null,
+                null,
+                null,
+                false));
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -665,7 +683,10 @@ public class DingoClient {
             ImmutableList.of(key),
             null,
             null,
-            operations, null, null, 0, null, false);
+            operations,
+            null,
+            null,
+            false);
         return storeOpUtils.doOperation(key.getTable().toUpperCase(), contextForClient);
     }
 
@@ -693,7 +714,10 @@ public class DingoClient {
             ImmutableList.of(start),
             ImmutableList.of(end),
             null,
-            operations, null, null, 0, null, false);
+            operations,
+            null,
+            null,
+            false);
         return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
@@ -728,8 +752,15 @@ public class DingoClient {
             userKeys.add(Value.get(keyValue));
         }
         Key dingoKey = new Key(tableName, userKeys);
-        ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
-            null, udfName, functionName, version, null, false);
+        UDFContext udfContext = new UDFContext(udfName, functionName, version);
+        ContextForClient context = new ContextForClient(
+            Arrays.asList(dingoKey),
+            null,
+            null,
+            null,
+            udfContext,
+            null,
+            false);
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.UPDATE_UDF, tableName, context);
         return result.getStatus();
     }
@@ -743,14 +774,13 @@ public class DingoClient {
             userKeys.add(Value.get(keyValue));
         }
         Key dingoKey = new Key(tableName, userKeys);
+        UDFContext udfContext = new UDFContext(udfName, functionName, version);
         ContextForClient context = new ContextForClient(
             Arrays.asList(dingoKey),
             null,
             null,
             null,
-            udfName,
-            functionName,
-            version,
+            udfContext,
             null,
             false);
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);

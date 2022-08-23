@@ -21,10 +21,10 @@ import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.filter.DingoDateRangeFilter;
+import io.dingodb.common.operation.filter.impl.DingoDateRangeFilter;
 import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.operation.filter.DingoFilterImpl;
-import io.dingodb.common.operation.filter.DingoValueEqualsFilter;
+import io.dingodb.common.operation.filter.impl.DingoLogicalExpressFilter;
+import io.dingodb.common.operation.filter.impl.DingoValueEqualsFilter;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.server.client.config.ClientConfiguration;
@@ -77,7 +77,7 @@ public class DingoOperationSDK {
         Key primary = new Key("default", tableName, Collections.singletonList(Value.get(startKey)));
         Key endPrimaryKey = new Key("default", tableName, Collections.singletonList(Value.get(endKey)));
 
-        DingoFilter root = new DingoFilterImpl();
+        DingoFilter root = new DingoLogicalExpressFilter();
         switch (op.toUpperCase()) {
             case "ADD":
                 boolean add = dingoClient.add(primary, endPrimaryKey, new Column(c1, 30));

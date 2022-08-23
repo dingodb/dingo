@@ -16,9 +16,15 @@
 
 package io.dingodb.example;
 
+import io.dingodb.common.operation.Value;
 import io.dingodb.example.model.Person;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
+import io.dingodb.sdk.common.Filter;
+import io.dingodb.sdk.common.Key;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 public class DingoCliExample {
@@ -42,7 +48,7 @@ public class DingoCliExample {
             Person person = new Person();
             person.setId(i + 1);
             person.setAge(10 + i);
-            person.setName("dingo");
+            person.setName("dingo" + i);
             person.setSalary(1000.0 * i);
             dingoOpCli.save(person);
         }
@@ -50,6 +56,35 @@ public class DingoCliExample {
         for (int i = 0; i < totalCnt; i++) {
             Person person = dingoOpCli.read(Person.class, (i + 1));
             System.out.println(">>>>>>>>>>Read=>" + person);
+        }
+
+
+        Value startKey = Value.get(1);
+        Value endKey = Value.get(2000);
+        List<Person> resultList = dingoOpCli.query(
+            Person.class,
+            Filter.range(startKey, endKey,"age", Value.get(10), Value.get(13))
+        );
+
+        for (Person person: resultList) {
+            System.out.println("Query===>(age >= 10 && age < 13), result is:" + person.toString());
+        }
+
+        resultList = dingoOpCli.query(
+            Person.class,
+            Filter.contains(startKey, endKey,"name", Value.get("dingo1"))
+        );
+
+        for (Person person: resultList) {
+            System.out.println("Query===>(name contains 'dingo1'), result is:" + person.toString());
+        }
+
+        resultList = dingoOpCli.query(
+            Person.class,
+            Filter.equal(startKey, endKey,"name", Value.get("dingo1"))
+        );
+        for (Person person: resultList) {
+            System.out.println("Query===>(name equal 'dingo1'), result is:" + person.toString());
         }
 
         System.out.println("Will drop table ....You can cancel...");

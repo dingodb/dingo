@@ -21,7 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.Operation;
+import io.dingodb.common.operation.ParticleType;
 import io.dingodb.common.operation.Value;
+import io.dingodb.common.operation.filter.DingoFilter;
+import io.dingodb.common.operation.filter.impl.DingoNumberRangeFilter;
+import io.dingodb.common.operation.filter.impl.DingoStringRangeFilter;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Filter;
@@ -47,7 +52,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 import javax.validation.constraints.NotNull;
 
 @Slf4j
@@ -429,59 +433,86 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> void find(@NotNull Class<T> clazz, Function<T, Boolean> function) throws DingoClientException {
-        /*
-        ClassCacheEntry<T> entry = MapperUtils.getEntryAndValidateNamespace(clazz, this);
+    public <T> void query(@NotNull Class<T> clazz,
+                          @NotNull Processor<T> processor,
+                          Filter filter) {
+        ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
+        String tableName = entry.getTableName();
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Table name is null");
+        }
 
-        Statement statement = new Statement();
-        statement.setNamespace(entry.getNamespace());
-        statement.setSetName(entry.getSetName());
+        if (filter == null
+            || filter.getColumnValueStart() == null
+            || filter.getColumnValueEnd() == null) {
+            String outMsg = (filter == null) ? "null" : filter.toString();
+            throw new DingoClientException("Invalid Input Filter:" + outMsg);
+        }
 
-        RecordSet recordSet = null;
+        TableDefinition tableDefinition = entry.getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            throw new DingoClientException("Cannot find table name for class " + clazz.getName());
+        }
+
+        int columnIndex = getColumnIndexByName(tableDefinition, filter.getColumnName());
+        if (columnIndex == -1) {
+            String errorMsg = "Cannot find columnName:" + filter.getColumnName() + " in table " + tableName;
+            throw new DingoClientException(errorMsg);
+        }
+
+        Key startKey = new Key(tableName, Arrays.asList(filter.getStartKey()));
+        Key endKey = new Key(tableName, Arrays.asList(filter.getEndKey()));
+
+        String startRange = filter.getColumnValueStart().toString();
+        String endRange = filter.getColumnValueEnd().toString();
+
+        DingoFilter dingoFilter = null;
+        if (filter.getColumnValueStart().getType() == ParticleType.STRING) {
+            dingoFilter = new DingoStringRangeFilter(
+                columnIndex,
+                startRange,
+                endRange
+            );
+        } else {
+            dingoFilter = new DingoNumberRangeFilter(
+                columnIndex,
+                Double.valueOf(startRange),
+                Double.valueOf(endRange)
+            );
+        }
+
+        List<Record> recordList = dingoClient.query(startKey, endKey, dingoFilter);
         try {
-            // TODO: set the policy (If this statement is thought to be useful, which is dubious)
-            recordSet = mClient.query(null, statement);
-            T result;
-            while (recordSet.next()) {
-                result = clazz.getConstructor().newInstance();
-                entry.hydrateFromRecord(recordSet.getRecord(), result);
-                if (!function.apply(result)) {
+            if (recordList == null) {
+                log.warn("Execute query:{} on table:{} get empty record list",
+                    filter.toString(),
+                    tableName
+                );
+                return;
+            }
+
+            for (Record record: recordList) {
+                T object = this.getMappingConverter().convertToObject(clazz, record);
+                if (!processor.process(object)) {
                     break;
                 }
             }
-        } catch (ReflectiveOperationException e) {
-            throw new DingoClientException(e);
-        } finally {
-            if (recordSet != null) {
-                recordSet.close();
-            }
+        } catch (DingoClientException ex) {
+            log.error("Query:{} in table:{} catch exception:{}",
+                filter.toString(), tableName, ex.toString(), ex);
         }
-         */
     }
 
-    @Override
-    public <T> void scan(@NotNull Class<T> clazz, @NotNull Processor<T> processor) {
-        scan(clazz, processor);
-    }
-
-    @Override
-    public <T> void scan(@NotNull Class<T> clazz, @NotNull Processor<T> processor, int recordsPerSecond) {
-        // scan(null, clazz, processor, recordsPerSecond);
-    }
-
-    @Override
-    public <T> List<T> scan(@NotNull Class<T> clazz) {
-        return scan(clazz);
-    }
-
-    @Override
-    public <T> void query(@NotNull Class<T> clazz, @NotNull Processor<T> processor, Filter filter) {
-        // query(null, clazz, processor, filter);
-    }
 
     @Override
     public <T> List<T> query(Class<T> clazz, Filter filter) {
-        return query( clazz, filter);
+        List<T> result = new ArrayList<>();
+        Processor<T> resultProcessor = record -> {
+            result.add(record);
+            return true;
+        };
+        query(clazz, resultProcessor, filter);
+        return result;
     }
 
     @Override
@@ -497,5 +528,18 @@ public class DingoOpCli implements DingoMapper {
     @Override
     public DingoMapper asMapper() {
         return this;
+    }
+
+    private int getColumnIndexByName(TableDefinition tableDefinition, String columnName) {
+        int index = 0;
+        boolean isFound = false;
+        for (ColumnDefinition columnDef : tableDefinition.getColumns()) {
+            if (columnDef.getName().equalsIgnoreCase(columnName)) {
+                isFound = true;
+                break;
+            }
+            index++;
+        }
+        return isFound ? index : -1;
     }
 }

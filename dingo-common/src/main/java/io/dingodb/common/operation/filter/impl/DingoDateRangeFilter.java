@@ -14,57 +14,50 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.operation.filter;
+package io.dingodb.common.operation.filter.impl;
 
 import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.operation.filter.AbstractDingoFilter;
 import io.dingodb.common.store.KeyValue;
 
 import java.io.IOException;
 
-public class DingoValueEqualsFilter implements DingoFilter {
+public class DingoDateRangeFilter extends AbstractDingoFilter {
+    private int index;
+    private long startTime;
+    private long endTime;
 
-    private int[] index;
-    private Object[] value;
-
-    public DingoValueEqualsFilter(int[] index, Object[] value) {
+    public DingoDateRangeFilter(int index, long startTime, long endTime) {
         this.index = index;
-        this.value = value;
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
     @Override
     public boolean filter(OperationContext context, KeyValue keyValue) {
         try {
-            int[] keyIndex = getKeyIndex(context, index);
-            int[] valueIndex = getValueIndex(context, index);
+            int[] keyIndex = getKeyIndex(context, new int[]{index});
+            int[] valueIndex = getValueIndex(context, new int[]{index});
+
             Object[] record0 = getRecord(keyIndex, valueIndex, keyValue, context);
-            return equals(record0);
+            return contain(record0);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private boolean equals(Object[] record0) {
+    private boolean contain(Object[] record0) {
         if (record0 == null) {
             return false;
         }
-        if (record0.length != value.length) {
-            return false;
-        }
-        for (int i = 0; i < record0.length; i++) {
-            if (!record0[i].equals(value[i])) {
-                return false;
+        for (Object o : record0) {
+            if (o instanceof Long) {
+                long timestamp = (Long) o;
+                if (timestamp > startTime && timestamp < endTime) {
+                    return true;
+                }
             }
         }
-        return true;
-    }
-
-    @Override
-    public void addOrFilter(DingoFilter filter) {
-
-    }
-
-    @Override
-    public void addAndFilter(DingoFilter filter) {
-
+        return false;
     }
 }
