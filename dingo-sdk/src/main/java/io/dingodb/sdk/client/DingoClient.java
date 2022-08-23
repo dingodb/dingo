@@ -701,6 +701,14 @@ public class DingoClient {
         return true;
     }
 
+
+    /**
+     * register UDF in lua format. when restart.
+     * @param tableName tableName
+     * @param udfName udfName
+     * @param function function name
+     * @return the register lua version.
+     */
     public int registerUDF(String tableName, String udfName, String function) {
         CommonId id = connection.getMetaClient().getTableId(tableName);
         return connection.getMetaClient().registerUDF(id, udfName, function);
@@ -711,8 +719,10 @@ public class DingoClient {
         return connection.getMetaClient().unregisterUDF(id, udfName, version);
     }
 
-    public boolean udfUpdate(String tableName, String udfName,
-                             String functionName, int version, List<Object> key) {
+    public boolean updateRecordUsingUDF(String tableName, String udfName,
+                                        String functionName,
+                                        int version,
+                                        List<Object> key) {
         List<Value> userKeys = new ArrayList<>();
         for (Object keyValue: key) {
             userKeys.add(Value.get(keyValue));
@@ -724,15 +734,25 @@ public class DingoClient {
         return result.getStatus();
     }
 
-    public Record udfGet(String tableName, String udfName,
-                             String functionName, int version, List<Object> key) {
+    public Record getRecordByUDF(String tableName, String udfName,
+                                 String functionName,
+                                 int version,
+                                 List<Object> key) {
         List<Value> userKeys = new ArrayList<>();
         for (Object keyValue: key) {
             userKeys.add(Value.get(keyValue));
         }
         Key dingoKey = new Key(tableName, userKeys);
-        ContextForClient context = new ContextForClient(Arrays.asList(dingoKey), null, null,
-            null, udfName, functionName, version, null, false);
+        ContextForClient context = new ContextForClient(
+            Arrays.asList(dingoKey),
+            null,
+            null,
+            null,
+            udfName,
+            functionName,
+            version,
+            null,
+            false);
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);
         return result.getRecords().get(0);
     }

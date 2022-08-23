@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.udf;
+package io.dingodb.example;
 
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.common.Record;
@@ -22,7 +22,7 @@ import io.dingodb.sdk.common.Record;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestUDF {
+public class DingoExampleUsingUDF {
 
     /*
     CREATE TABLE persons1
@@ -53,12 +53,12 @@ public class TestUDF {
         List<Object> key = new ArrayList<>();
         key.add(2);
 
-        Record record = client.udfGet("PERSONS1", "test", "test1", version, key);
+        Record record = client.getRecordByUDF("PERSONS1", "test", "test1", version, key);
         for (Object column : record.getDingoColumnValuesInOrder()) {
             System.out.println(column);
         }
 
-        client.udfUpdate("PERSONS1", "test", "test1", version, key);
+        client.updateRecordUsingUDF("PERSONS1", "test", "test1", version, key);
 
         System.out.println(client.unregisterUDF("PERSONS1", "test", version));
 
