@@ -16,23 +16,26 @@
 
 package io.dingodb.sdk.udf;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.jse.JsePlatform;
 
 public class LuaTest {
-    public static void main(String[] args) {
+
+    @Test
+    public void testLuaFunction() {
         LuaTable table = new LuaTable();
         table.set(0, LuaValue.valueOf(true));
         table.set(1, LuaValue.valueOf(false));
         table.set(2, LuaValue.valueOf(false));
 
-        System.out.println(table.length());
-        System.out.println(table.len().toint());
-        System.out.println(table.get(0).toboolean());
-        System.out.println(table.get(1).toboolean());
-        System.out.println(table.get(2).toboolean());
+        Assertions.assertEquals(table.len().toint(), table.length());
+        Assertions.assertTrue(table.get(0).toboolean());
+        Assertions.assertTrue(!table.get(1).toboolean());
+        Assertions.assertTrue(!table.get(2).toboolean());
 
         LuaTable table1 = new LuaTable();
         table1.set(1, table);
