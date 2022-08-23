@@ -17,6 +17,7 @@
 package io.dingodb.common.operation.filter;
 
 import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.store.KeyValue;
 
 import java.io.IOException;
 
@@ -33,20 +34,31 @@ public class DingoDateRangeFilter implements DingoFilter {
     }
 
     @Override
-    public boolean filter(OperationContext context, byte[] record) {
+    public boolean filter(OperationContext context, KeyValue keyValue) {
         try {
-            Object[] record0 = context.dingoValueCodec().decode(record, new int[]{index});
-            boolean contain = false;
-            for (Object o : record0) {
-                Long timestamp = (Long) o;
-                if (timestamp > startTime && timestamp < endTime) {
-                    contain = true;
-                }
-            }
-            return contain;
+            int[] keyIndex = getKeyIndex(context, new int[]{index});
+            int[] valueIndex = getValueIndex(context, new int[]{index});
+
+            Object[] record0 = getRecord(keyIndex, valueIndex, keyValue, context);
+            return contain(record0);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean contain(Object[] record0) {
+        if (record0 == null) {
+            return false;
+        }
+        for (Object o : record0) {
+            if (o instanceof Long) {
+                long timestamp = (Long) o;
+                if (timestamp > startTime && timestamp < endTime) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

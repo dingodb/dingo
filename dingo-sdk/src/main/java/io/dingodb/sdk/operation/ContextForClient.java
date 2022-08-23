@@ -17,6 +17,7 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.operation.Operation;
+import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import lombok.AllArgsConstructor;
@@ -34,4 +35,7 @@ public final class ContextForClient {
     private final String udfName;
     private final String functionName;
     private final int udfVersion;
+
+    private final DingoFilter filter;
+    private final boolean ignore;
 }

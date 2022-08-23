@@ -17,6 +17,7 @@
 package io.dingodb.common.operation.filter;
 
 import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.store.KeyValue;
 
 import java.io.IOException;
 
@@ -31,22 +32,30 @@ public class DingoValueEqualsFilter implements DingoFilter {
     }
 
     @Override
-    public boolean filter(OperationContext context, byte[] record) {
+    public boolean filter(OperationContext context, KeyValue keyValue) {
         try {
-            Object[] recordO = context.dingoValueCodec().decode(record, index);
-            boolean equals = true;
-            if (recordO.length != value.length) {
-                return false;
-            }
-            for (int i = 0; i < recordO.length; i ++) {
-                if (!recordO[i].equals(value[i])) {
-                    equals = false;
-                }
-            }
-            return equals;
+            int[] keyIndex = getKeyIndex(context, index);
+            int[] valueIndex = getValueIndex(context, index);
+            Object[] record0 = getRecord(keyIndex, valueIndex, keyValue, context);
+            return equals(record0);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean equals(Object[] record0) {
+        if (record0 == null) {
+            return false;
+        }
+        if (record0.length != value.length) {
+            return false;
+        }
+        for (int i = 0; i < record0.length; i++) {
+            if (!record0[i].equals(value[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

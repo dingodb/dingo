@@ -17,6 +17,7 @@
 package io.dingodb.common.operation.filter;
 
 import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.store.KeyValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +28,10 @@ public class DingoFilterImpl implements DingoFilter {
     List<DingoFilter> andFilter = new ArrayList<>();
 
     @Override
-    public boolean filter(OperationContext context, byte[] record) {
+    public boolean filter(OperationContext context, KeyValue keyValue) {
         if (orFilter.size() > 0) {
             for (DingoFilter filter : orFilter) {
-                if (filter.filter(context, record)) {
+                if (filter.filter(context, keyValue)) {
                     return true;
                 }
             }
@@ -38,7 +39,7 @@ public class DingoFilterImpl implements DingoFilter {
         }
         if (andFilter.size() > 0) {
             for (DingoFilter filter : andFilter) {
-                if (!filter.filter(context, record)) {
+                if (!filter.filter(context, keyValue)) {
                     return false;
                 }
             }

@@ -17,6 +17,7 @@
 package io.dingodb.sdk.operation.impl;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.sdk.operation.ContextForStore;
 import io.dingodb.sdk.operation.IStoreOperation;
@@ -28,14 +29,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class PutOperation implements IStoreOperation {
+public class QueryOperation implements IStoreOperation {
 
-    private static final PutOperation instance = new PutOperation();
+    public static final QueryOperation instance = new QueryOperation();
 
-    private PutOperation() {
+    public QueryOperation() {
     }
 
-    public static PutOperation getInstance() {
+    public static QueryOperation getInstance() {
         return instance;
     }
 
@@ -44,23 +45,23 @@ public class PutOperation implements IStoreOperation {
                                       CommonId tableId,
                                       ContextForStore parameters) {
         try {
-            if (parameters == null
-                || parameters.getStartKeyListInBytes().size() != parameters.getRecordList().size()) {
+            if (parameters == null || parameters.getStartKeyListInBytes().size() < 1
+                || parameters.getEndKeyListInBytes().size() < 1) {
                 log.error("Parameters is null || table:{} has non key columns", tableId);
-                String errorMsg = "Invalid parameters for put operation";
-                return new ResultForStore(false, errorMsg);
+                return new ResultForStore(false, "Invalid parameters for query operation");
             }
-            List<KeyValue> keyValueList = parameters.getRecordList();
-            if (parameters.isIgnore()) {
-                keyValueList = parameters.getRecordList().stream()
-                    .filter(record -> !executorApi.exist(tableId, record.getKey()))
-                    .collect(Collectors.toList());
-            }
-            boolean isSuccess = executorApi.upsertKeyValue(tableId, keyValueList);
-            return new ResultForStore(isSuccess, "OK");
+            OperationContext context = parameters.getContext();
+            List<byte[]> startKeys = parameters.getStartKeyListInBytes();
+            List<byte[]> endKeys = parameters.getEndKeyListInBytes();
+            List<KeyValue> keyValueList = executorApi.getKeyValueByRange(tableId, startKeys.get(0), endKeys.get(0));
+            List<KeyValue> recordList = keyValueList.stream()
+                .filter(kv -> context.filter.filter(context, kv))
+                .collect(Collectors.toList());
+            return new ResultForStore(true, "OK", recordList);
         } catch (Exception e) {
-            log.error("put table:{} by KeyValue catch exception:{}", tableId, e.toString(), e);
+            log.error("deQuery KeyValue error, tableId:{}, exception:{}", tableId, e);
             throw e;
         }
+
     }
 }

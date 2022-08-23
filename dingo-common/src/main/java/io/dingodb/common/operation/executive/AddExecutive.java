@@ -20,6 +20,8 @@ import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.ClientConverter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -33,31 +35,41 @@ public class AddExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
     @Override
     public List<KeyValue> execute(BasicContext context, Iterator<KeyValue> records) {
         List<KeyValue> list = new ArrayList<>();
-        while (records.hasNext()) {
-            KeyValue keyValue = records.next();
-            boolean flag;
-            if (context.filter == null) {
-                flag = true;
-            } else {
-                flag = context.filter.filter(context, keyValue.getValue());
+        try {
+            Column[] columns = context.columns;
+            int[] indexes = new int[columns.length];
+            for (int i = 0; i < columns.length; i++) {
+                indexes[i] = context.definition.getColumnIndexOfValue(columns[i].name);
             }
-            if (flag) {
-                for (Column column : context.columns) {
-                    int index = context.definition.getColumnIndexOfValue(column.name);
+            while (records.hasNext()) {
+                KeyValue keyValue = records.next();
+                boolean flag;
+                if (context.filter == null) {
+                    flag = true;
+                } else {
+                    flag = context.filter.filter(context, keyValue);
+                }
+                if (flag) {
                     try {
-                        Object value = context.dingoValueCodec().decode(keyValue.getValue(), new int[]{index})[0];
-                        ComputeNumber record = convertType(column.value.getObject());
-                        ComputeNumber add = record.add(convertType(value));
-
-                        byte[] bytes = context.dingoValueCodec()
-                            .encode(keyValue.getValue(), new Object[]{add.value().getObject()}, new int[]{index});
+                        Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
+                        Object[] values = new Object[objects.length];
+                        for (int i = 0; i < objects.length; i++) {
+                            ComputeNumber number = convertType(columns[i].value.getObject());
+                            ComputeNumber value = number.add(convertType(objects[i]));
+                            values[i] = value.value().getObject();
+                        }
+                        DingoType dingoType = getDingoType(context);
+                        Object[] converted = (Object[]) dingoType.convertFrom(values, ClientConverter.INSTANCE);
+                        byte[] bytes = context.dingoValueCodec().encode(keyValue.getValue(), converted, indexes);
                         keyValue.setValue(bytes);
                         list.add(keyValue);
-                    } catch (IOException e) {
-                        log.error("Column:{} decode/encode failed", column.name, e);
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
                     }
                 }
             }
+        } catch (Exception e) {
+            log.error("add failed to execute, e: ", e);
         }
         return list;
     }

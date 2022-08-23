@@ -42,6 +42,11 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     @Override
+    public boolean exist(CommonId tableId, byte[] primaryKey) {
+        return storeService.getInstance(tableId).exist(primaryKey);
+    }
+
+    @Override
     public boolean upsertKeyValue(CommonId tableId, KeyValue row) {
         return storeService.getInstance(tableId).upsertKeyValue(row);
     }

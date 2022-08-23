@@ -48,8 +48,8 @@ public abstract class OperationContext {
         return new DingoCodec(definition.getDingoSchemaOfValue());
     }
 
-    public DingoCodec dingoCodec() {
-        return new DingoCodec(definition.getDingoSchema());
+    public DingoCodec dingoKeyCodec() {
+        return new DingoCodec(definition.getDingoSchemaOfKey());
     }
 
     public KeyValueCodec keyValueCodec() {

@@ -22,6 +22,7 @@ import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -35,10 +36,10 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
 
     @Override
     public DingoExecResult execute(BasicContext context, Iterator<KeyValue> records) {
-        int[] indexes = new int[context.columns.length];
-        for (int i = 0; i < context.columns.length; i++) {
-            indexes[i] = context.definition.getColumnIndexOfValue(context.columns[i].name);
-        }
+        int[] keyIndex = getKeyIndex(context);
+        int[] valueIndex = getValueIndex(context);
+
+        TableDefinition definition = context.definition;
         Map<String, Value> result = new HashMap<>();
         Map<String, ComputeNumber> map = new HashMap<>();
         while (records.hasNext()) {
@@ -47,14 +48,24 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
             if (context.filter == null) {
                 flag = true;
             } else {
-                flag = context.filter.filter(context, keyValue.getValue());
+                flag = context.filter.filter(context, keyValue);
             }
             if (flag) {
                 try {
-                    Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
-                    for (int i = 0; i < objects.length; i++) {
-                        ComputeNumber number = convertType(objects[i]);
-                        map.merge(context.columns[i].name, number, ComputeNumber::max);
+                    if (keyIndex.length > 0) {
+                        Object[] objects = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
+                        for (int i = 0; i < objects.length; i++) {
+                            ComputeNumber number = convertType(objects[i]);
+                            map.merge(definition.getColumn(keyIndex[i]).getName(), number, ComputeNumber::max);
+                        }
+                    }
+                    if (valueIndex.length > 0) {
+                        Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), valueIndex);
+                        for (int i = 0; i < objects.length; i++) {
+                            ComputeNumber number = convertType(objects[i]);
+                            map.merge(definition.getColumn(
+                                valueIndex[i] + definition.getPrimaryKeyCount()).getName(), number, ComputeNumber::max);
+                        }
                     }
                 } catch (IOException e) {
                     log.error("Column:{} decode failed", Arrays.stream(context.columns).map(col -> col.name).toArray());

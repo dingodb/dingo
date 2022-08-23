@@ -59,12 +59,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
-        Object[] record = new Object[keyMapping.size()];
-        Object[] key = keyCodec.decode(bytes);
-        for (int i = 0; i < key.length; i++) {
-            record[keyMapping.get(i)] = key[i];
-        }
-        return (Object[]) schema.convertFrom(record, DingoConverter.INSTANCE);
+        return keyCodec.decode(bytes);
     }
 
     @Override

@@ -21,6 +21,7 @@ import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.common.operation.filter.DingoFilterImpl;
 import io.dingodb.common.operation.filter.DingoValueEqualsFilter;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,14 +33,14 @@ public class DingoFilterTest {
 
     private static TableDefinition tableDefinition;
 
-    // @BeforeAll
+    @BeforeAll
     public static void setupAll() throws IOException {
         tableDefinition = TableDefinition.readJson(
             DingoFilterTest.class.getResourceAsStream("/table-test.json")
         );
     }
 
-    // @Test
+    @Test
     public void testFilter() throws IOException {
         OperationContext context = new BasicContext(null).definition(tableDefinition);
 
@@ -48,32 +49,32 @@ public class DingoFilterTest {
         root.addAndFilter(equalsFilter);
 
         Object[] record = new Object[] {1, "a1", "a2", 1};
-        byte[] recordb = context.dingoCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, recordb), true);
+        KeyValue keyValue = context.keyValueCodec().encode(record);
+        Assertions.assertEquals(root.filter(context, keyValue), true);
 
         record = new Object[] {1, "a1", "a2", 2};
-        recordb = context.dingoCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, recordb), false);
+        keyValue = context.keyValueCodec().encode(record);
+        Assertions.assertEquals(root.filter(context, keyValue), false);
 
         DingoFilter equalsFilter2 = new DingoValueEqualsFilter(new int[]{1}, new Object[]{"a1"});
         root.addAndFilter(equalsFilter2);
 
         record = new Object[] {1, "a1", "a2", 1};
-        recordb = context.dingoCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, recordb), true);
+        keyValue = context.keyValueCodec().encode(record);
+        Assertions.assertEquals(root.filter(context, keyValue), true);
 
         record = new Object[] {1, "a2", "a2", 1};
-        recordb = context.dingoCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, recordb), false);
+        keyValue = context.keyValueCodec().encode(record);
+        Assertions.assertEquals(root.filter(context, keyValue), false);
 
         root = new DingoFilterImpl();
         root.addOrFilter(equalsFilter);
         root.addOrFilter(equalsFilter2);
 
-        Assertions.assertEquals(root.filter(context, recordb), true);
+        Assertions.assertEquals(root.filter(context, keyValue), true);
 
         record = new Object[] {1, "a2", "a2", 2};
-        recordb = context.dingoCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, recordb), false);
+        keyValue = context.keyValueCodec().encode(record);
+        Assertions.assertEquals(root.filter(context, keyValue), false);
     }
 }

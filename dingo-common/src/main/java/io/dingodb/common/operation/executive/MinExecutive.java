@@ -16,13 +16,13 @@
 
 package io.dingodb.common.operation.executive;
 
-import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -36,11 +36,10 @@ public class MinExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
 
     @Override
     public DingoExecResult execute(BasicContext context, Iterator<KeyValue> records) {
-        Column[] columns = context.columns;
-        int[] indexes = new int[columns.length];
-        for (int i = 0; i < columns.length; i++) {
-            indexes[i] = context.definition.getColumnIndexOfValue(columns[i].name);
-        }
+        int[] keyIndex = getKeyIndex(context);
+        int[] valueIndex = getValueIndex(context);
+
+        TableDefinition definition = context.definition;
         Map<String, Value> result = new HashMap<>();
         Map<String, ComputeNumber> map = new HashMap<>();
         while (records.hasNext()) {
@@ -49,17 +48,27 @@ public class MinExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
             if (context.filter == null) {
                 flag = true;
             } else {
-                flag = context.filter.filter(context, keyValue.getValue());
+                flag = context.filter.filter(context, keyValue);
             }
             if (flag) {
                 try {
-                    Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
-                    for (int i = 0; i < objects.length; i++) {
-                        ComputeNumber number = convertType(objects[i]);
-                        map.merge(columns[i].name, number, ComputeNumber::min);
+                    if (keyIndex.length > 0) {
+                        Object[] objects = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
+                        for (int i = 0; i < objects.length; i++) {
+                            ComputeNumber number = convertType(objects[i]);
+                            map.merge(definition.getColumn(keyIndex[i]).getName(), number, ComputeNumber::min);
+                        }
+                    }
+                    if (valueIndex.length > 0) {
+                        Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), valueIndex);
+                        for (int i = 0; i < objects.length; i++) {
+                            ComputeNumber number = convertType(objects[i]);
+                            map.merge(definition.getColumn(
+                                valueIndex[i] + definition.getPrimaryKeyCount()).getName(), number, ComputeNumber::min);
+                        }
                     }
                 } catch (IOException e) {
-                    log.error("Columns:{} decode failed", Arrays.stream(columns).map(col -> col.name).toArray());
+                    log.error("Column:{} decode failed", Arrays.stream(context.columns).map(col -> col.name).toArray());
                     return new DingoExecResult(false, "Min operation decode failed, " + e.getMessage());
                 }
             }
