@@ -122,14 +122,16 @@ public final class Converter {
             context.definition(definition);
             context.filter(inputContext.getFilter());
         }
+
+        UDFContext udfContext = inputContext.getUdfContext();
         return new ContextForStore(
             startKeyListInBytes,
             endKeyListInBytes,
             keyValueList,
             operationListInBytes,
-            inputContext.getUdfName(),
-            inputContext.getFunctionName(),
-            inputContext.getUdfVersion(),
+            udfContext != null ? udfContext.getUdfName() : null,
+            udfContext != null ? udfContext.getFunctionName() : null,
+            udfContext != null ? udfContext.getUdfVersion() : 1,
             inputContext.isIgnore(),
             context);
     }

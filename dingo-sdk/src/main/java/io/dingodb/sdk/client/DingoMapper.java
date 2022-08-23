@@ -116,58 +116,6 @@ public interface DingoMapper extends IBaseDingoMapper {
      */
     boolean delete(@NotNull Object record);
 
-
-    /**
-     * Find a record by specifying a class and a Boolean function.
-     *
-     * @param clazz    - The type of the record.
-     * @param function a Boolean function.
-     * @throws DingoClientException an DingoClientException will be thrown in case of an error.
-     * @deprecated use the scan/query APIs instead.
-     */
-    @Deprecated
-    <T> void find(@NotNull Class<T> clazz, Function<T, Boolean> function);
-
-    /**
-     * Scan every record in the set associated with the passed class.
-     * Each record will be converted to the appropriate class then passed to the
-     * processor. If the processor returns true, more records will be processed and if the processor returns false,
-     * the scan is aborted.
-     * Depending on the ScanPolicy set up for this class,
-     * it is possible for the processor to be called by multiple different
-     * threads concurrently, so the processor should be thread-safe
-     *
-     * @param clazz     - the class used to determine which set to scan and to convert the returned records to.
-     * @param processor - the Processor used to process each record
-     */
-    <T> void scan(@NotNull Class<T> clazz, @NotNull Processor<T> processor);
-
-
-    /**
-     * Scan every record in the set associated with the passed class,
-     * limiting the throughput to the specified recordsPerSecond.
-     * Each record will be converted to the appropriate class then passed to the
-     * processor. If the processor returns true, more records will be processed and if the processor returns false,
-     * the scan is aborted.
-     * Depending on the ScanPolicy set up for this class,
-     * it is possible for the processor to be called by multiple different
-     * threads concurrently, so the processor should be thread-safe
-     *
-     * @param clazz            - the class used to determine which set to scan and to convert the returned records to.
-     * @param processor        - the Processor used to process each record
-     * @param recordsPerSecond - the maximum number of records to be processed every second.
-     */
-    <T> void scan(@NotNull Class<T> clazz, @NotNull Processor<T> processor, int recordsPerSecond);
-
-    /**
-     * Scan every record in the set associated with the passed class
-     * and returns the list of records converted to the appropriate class.
-     *
-     * @param clazz - the class used to determine which set to scan and to convert the returned records to.
-     */
-    <T> List<T> scan(@NotNull Class<T> clazz);
-
-
     /**
      * Perform a secondary index query with the specified query policy. Each record will be converted
      * to the appropriate class then passed to the processor. If the processor returns false the query is aborted

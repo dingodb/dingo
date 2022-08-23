@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.operation.filter;
+package io.dingodb.common.operation.filter.impl;
 
 import io.dingodb.common.operation.context.OperationContext;
+import io.dingodb.common.operation.filter.AbstractDingoFilter;
+import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.common.store.KeyValue;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DingoFilterImpl implements DingoFilter {
-
+public class DingoLogicalExpressFilter extends AbstractDingoFilter {
     List<DingoFilter> orFilter = new ArrayList<>();
     List<DingoFilter> andFilter = new ArrayList<>();
 

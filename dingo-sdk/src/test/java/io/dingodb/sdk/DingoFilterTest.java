@@ -19,8 +19,8 @@ package io.dingodb.sdk;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.operation.filter.DingoFilterImpl;
-import io.dingodb.common.operation.filter.DingoValueEqualsFilter;
+import io.dingodb.common.operation.filter.impl.DingoLogicalExpressFilter;
+import io.dingodb.common.operation.filter.impl.DingoValueEqualsFilter;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import org.junit.jupiter.api.Assertions;
@@ -44,7 +44,7 @@ public class DingoFilterTest {
     public void testFilter() throws IOException {
         OperationContext context = new BasicContext(null).definition(tableDefinition);
 
-        DingoFilter root = new DingoFilterImpl();
+        DingoFilter root = new DingoLogicalExpressFilter();
         DingoFilter equalsFilter = new DingoValueEqualsFilter(new int[]{3}, new Object[]{1});
         root.addAndFilter(equalsFilter);
 
@@ -67,7 +67,7 @@ public class DingoFilterTest {
         keyValue = context.keyValueCodec().encode(record);
         Assertions.assertEquals(root.filter(context, keyValue), false);
 
-        root = new DingoFilterImpl();
+        root = new DingoLogicalExpressFilter();
         root.addOrFilter(equalsFilter);
         root.addOrFilter(equalsFilter2);
 
