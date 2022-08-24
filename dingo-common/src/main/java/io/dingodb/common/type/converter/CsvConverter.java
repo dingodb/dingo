@@ -65,8 +65,7 @@ public class CsvConverter implements DataConverter {
 
     @Override
     public Boolean convertBooleanFrom(@Nonnull Object value) {
-        String str = (String) value;
-
+        String str = value.toString();
         if (str.equalsIgnoreCase("true")) {
             return Boolean.TRUE;
         }
