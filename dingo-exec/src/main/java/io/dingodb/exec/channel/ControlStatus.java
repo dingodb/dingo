@@ -20,9 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum ControlStatus {
     @JsonProperty("ready")
-    READY,
+    READY, // The receiver is ready to receive messages.
     @JsonProperty("halt")
-    HALT,
+    HALT, // The receiver's queue is about full, so the sender must wait for READY signal.
     @JsonProperty("stop")
-    STOP
+    STOP, // The receiver need no more messages, so the sender should exit.
 }

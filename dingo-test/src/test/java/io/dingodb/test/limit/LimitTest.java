@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class LimitTest {
     private static SqlHelper sqlHelper;
@@ -62,5 +63,19 @@ public class LimitTest {
         );
         sqlHelper.clearTable("strdemo");
     }
-}
 
+    @Test
+    public void testQueryLimit() throws SQLException, IOException {
+        sqlHelper.execFile("/table-test-create.sql");
+        StringBuilder sql = new StringBuilder("insert into test values ");
+        Random random = new Random();
+        for (int id = 1; id < 100; ++id) {
+            if (id > 1) {
+                sql.append(", ");
+            }
+            sql.append("(").append(id).append(", 'ABC', ").append(random.nextDouble()).append(")");
+        }
+        sqlHelper.execSqlCmd(sql.toString());
+        sqlHelper.execSqlCmd("select * from test limit 3");
+    }
+}
