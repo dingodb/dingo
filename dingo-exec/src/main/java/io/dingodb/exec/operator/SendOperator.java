@@ -39,9 +39,10 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"host", "port", "tag", "schema"})
 @JsonTypeName("send")
 public final class SendOperator extends SinkOperator {
+    public static final int SEND_MAX_COUNT = 200;
+
     private static final int SEND_BUFFER_MAX_SIZE = 8192;
     private static final int SEND_BUFFER_HALF_SIZE = (SEND_BUFFER_MAX_SIZE >> 1);
-    private static final int SEND_MAX_COUNT = 200;
 
     @JsonProperty("host")
     private final String host;
@@ -97,15 +98,18 @@ public final class SendOperator extends SinkOperator {
 
             if (array.length >= SEND_BUFFER_HALF_SIZE) {
                 // send data in buffer first
-                this.sendBufferData();
+                if (!this.sendBufferData()) {
+                    return false;
+                }
                 // send directly
-                this.endpoint.send(array);
-                return true;
+                return endpoint.send(array);
             }
 
             if ((array.length + this.sendBuffer.position() > this.sendBuffer.capacity())
                 || this.tupleCount >= SEND_MAX_COUNT) {
-                this.sendBufferData();
+                if (!this.sendBufferData()) {
+                    return false;
+                }
             }
             this.putArray(array);
             return true;
@@ -117,25 +121,15 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(@Nonnull Fin fin) {
         try {
-            if (fin instanceof FinWithException) {
-                byte[] encodeArr = codec.encodeFin(fin);
-                byte[] array = PrimitiveCodec.encodeArray(encodeArr);
-                endpoint.send(array);
-            } else {
-                byte[] encodeArr = codec.encodeFin(fin);
-                byte[] array = PrimitiveCodec.encodeArray(encodeArr);
-                if ((array.length + this.sendBuffer.position() > this.sendBuffer.capacity())
-                    || this.tupleCount >= SEND_MAX_COUNT) {
-                    this.sendBufferData();
-                }
-                this.putArray(array);
-                if (log.isDebugEnabled()) {
-                    log.debug("Send FIN to ({}, {}, {}), fin length: {}, arr len: {}, buff pos: {}, hashCode: {}.",
-                        host, port, receiveId, array.length, encodeArr.length, this.sendBuffer.position(),
-                        this.hashCode());
-                }
+            byte[] encodeArr = codec.encodeFin(fin);
+            byte[] array = PrimitiveCodec.encodeArray(encodeArr);
+            if (!(fin instanceof FinWithException)) {
                 this.sendBufferData();
             }
+            if (log.isDebugEnabled()) {
+                log.debug("Send FIN with detail:\n{}", fin.detail());
+            }
+            endpoint.send(array, true);
             endpoint.close();
         } catch (Exception e) {
             log.error("Send FIN to ({}, {}, {}) error", host, port, receiveId, e);
@@ -147,24 +141,27 @@ public final class SendOperator extends SinkOperator {
         this.tupleCount++;
     }
 
-    private void sendBufferData() {
+    private boolean sendBufferData() {
         if (this.tupleCount <= 0) {
-            return;
+            return true;
         }
         this.sendBuffer.flip();
         int length = this.sendBuffer.limit() - this.sendBuffer.position();
         if (length <= 0) {
             log.error("Send data to ({}, {}, {}) failed, length: {}.", this.host, this.port, this.receiveId, length);
-            return;
+            return true;
         }
         byte[] array = new byte[length];
         this.sendBuffer.get(array);
-        this.endpoint.send(array);
+        if (!endpoint.send(array)) {
+            return false;
+        }
         if (log.isDebugEnabled()) {
             log.debug("SendOperator send data to ({}, {}, {}) done, length: {}, tupleCount: {}, hashCode: {}.",
                 this.host, this.port, this.receiveId, length, this.tupleCount, this.hashCode());
         }
         this.sendBuffer.clear();
         this.tupleCount = 0;
+        return true;
     }
 }

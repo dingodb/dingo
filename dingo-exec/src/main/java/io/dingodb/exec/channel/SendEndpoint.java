@@ -50,8 +50,11 @@ public class SendEndpoint {
         notify();
     }
 
-    synchronized void checkStatus() {
+    synchronized ControlStatus checkStatus() {
         ControlStatus status = EndpointManager.INSTANCE.getStatus(tag);
+        if (status == ControlStatus.STOP) {
+            return status;
+        }
         if (status != ControlStatus.READY) {
             while (true) {
                 try {
@@ -62,21 +65,27 @@ public class SendEndpoint {
                 }
                 status = EndpointManager.INSTANCE.getStatus(tag);
                 if (status == ControlStatus.READY) {
-                    log.info("ReCheck Status of Instance:{}:{} (tag = {}) Status = {}.",
-                        host, port, tag, status);
                     break;
                 }
             }
         }
+        return status;
     }
 
-    public void send(byte[] content) {
-        checkStatus();
-        Message msg = Message.builder()
-            .tag(tag)
-            .content(content)
-            .build();
-        channel.send(msg);
+    public boolean send(byte[] content) {
+        return send(content, false);
+    }
+
+    public boolean send(byte[] content, boolean needed) {
+        ControlStatus status = checkStatus();
+        if (status == ControlStatus.READY || needed) {
+            Message msg = Message.builder()
+                .tag(tag)
+                .content(content)
+                .build();
+            channel.send(msg);
+        }
+        return status != ControlStatus.STOP;
     }
 
     public void close() throws Exception {

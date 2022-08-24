@@ -48,6 +48,9 @@ import javax.annotation.Nonnull;
 @JsonPropertyOrder({"host", "port", "schema", "output"})
 @JsonTypeName("receive")
 public final class ReceiveOperator extends SourceOperator {
+    private static final int LOW_WATER_LEVEL = 10;
+    private static final int QUEUE_CAPACITY = 1024;
+
     @JsonProperty("host")
     private final String host;
     @JsonProperty("port")
@@ -78,13 +81,12 @@ public final class ReceiveOperator extends SourceOperator {
     public void init() {
         super.init();
         codec = new AvroTxRxCodec(schema);
-        tupleQueue = new LinkedBlockingDeque<>();
+        tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
         messageListener = new ReceiveMessageListener();
         tag = TagUtil.tag(getTask().getJobId(), getId());
         Services.NET.registerTagMessageListener(tag, messageListener);
         endpoint = new ReceiveEndpoint(host, port, tag);
         endpoint.init();
-        endpoint.sendControlMessage(ControlStatus.READY);
         if (log.isDebugEnabled()) {
             log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
         }
@@ -92,17 +94,17 @@ public final class ReceiveOperator extends SourceOperator {
 
     @Override
     public void fin(int pin, Fin fin) {
-        /**
-         * when the upstream operator(`sender`) has failed,
-         * then the current operator('receiver`) should failed too
-         * so the `Fin` should use FinWithException
+        /*
+          when the upstream operator('sender') has failed,
+          then the current operator('receiver') should fail too
+          so the `Fin` should use FinWithException
          */
         if (finObj != null && finObj instanceof FinWithException) {
             super.fin(pin, finObj);
         } else {
             super.fin(pin, fin);
         }
-
+        Services.NET.unregisterTagMessageListener(tag, messageListener);
         try {
             endpoint.close();
         } catch (Exception e) {
@@ -116,13 +118,19 @@ public final class ReceiveOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
+            if (tupleQueue.size() < LOW_WATER_LEVEL) {
+                endpoint.sendControlMessage(ControlStatus.READY);
+            }
             Object[] tuple = QueueUtil.forceTake(tupleQueue);
             if (!(tuple[0] instanceof Fin)) {
                 ++count;
                 if (log.isDebugEnabled()) {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
                 }
-                output.push(tuple);
+                if (!output.push(tuple)) {
+                    endpoint.sendControlMessage(ControlStatus.STOP);
+                    // Stay in loop to receive FIN.
+                }
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("(tag = {}) Take out FIN.", tag);
@@ -138,7 +146,6 @@ public final class ReceiveOperator extends SourceOperator {
                 break;
             }
         }
-        Services.NET.unregisterTagMessageListener(tag, messageListener);
         return false;
     }
 
@@ -150,7 +157,6 @@ public final class ReceiveOperator extends SourceOperator {
                 int count = 0;
                 int offset = 0;
                 while (offset < content.length) {
-                    byte[] bytes;
                     Pair<byte[], Integer> pair = PrimitiveCodec.decodeArray(content, offset);
                     if (pair == null) {
                         log.error("ReceiveMessageListener, parse error.");
@@ -170,7 +176,12 @@ public final class ReceiveOperator extends SourceOperator {
                     }
                     offset += pair.getValue();
                     count++;
-                    QueueUtil.forcePut(tupleQueue, tuple);
+                    if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
+                        QueueUtil.forcePut(tupleQueue, tuple);
+                    }
+                }
+                if (tupleQueue.remainingCapacity() < SendOperator.SEND_MAX_COUNT * 2) {
+                    endpoint.sendControlMessage(ControlStatus.HALT);
                 }
                 if (log.isDebugEnabled()) {
                     log.debug("ReceiveMessageListener onMessage, content length: {}, tupleCount: {}, "

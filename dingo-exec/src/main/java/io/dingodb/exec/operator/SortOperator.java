@@ -64,8 +64,11 @@ public class SortOperator extends SoleOutOperator {
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
+        if (limit == 0) {
+            return false;
+        }
         cache.add(tuple);
-        return collations.size() > 0 || limit <= 0 || cache.size() < offset + limit;
+        return collations.size() > 0 || limit < 0 || cache.size() < offset + limit;
     }
 
     @Override

@@ -22,6 +22,9 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nonnull;
+
 import static io.dingodb.exec.Services.CTRL_TAG;
 
 @Slf4j
@@ -31,6 +34,7 @@ public class ReceiveEndpoint {
     private final String tag;
 
     private Channel channel;
+    private AtomicReference<ControlStatus> emittedStatus;
 
     public ReceiveEndpoint(String host, int port, String tag) {
         this.host = host;
@@ -40,16 +44,34 @@ public class ReceiveEndpoint {
 
     public void init() {
         channel = Services.openNewSysChannel(host, port);
+        emittedStatus = new AtomicReference<>(ControlStatus.HALT);
     }
 
-    public void sendControlMessage(ControlStatus status) {
+    public void sendControlMessage(@Nonnull ControlStatus status) {
+        switch (status) {
+            case READY:
+                if (!emittedStatus.compareAndSet(ControlStatus.HALT, ControlStatus.READY)) {
+                    return;
+                }
+                break;
+            case HALT:
+                if (!emittedStatus.compareAndSet(ControlStatus.READY, ControlStatus.HALT)) {
+                    return;
+                }
+                break;
+            case STOP:
+                if (emittedStatus.getAndSet(ControlStatus.STOP) == ControlStatus.STOP) {
+                    return;
+                }
+                break;
+        }
         byte[] content;
         try {
             content = ControlMessage.of(tag, status).toBytes();
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize control message: host:{} port:{} tag:{}, status:{}",
                 host, port, tag, status, e);
-            throw new RuntimeException("Serialize control message failed.");
+            throw new RuntimeException("Serialize control message failed.", e);
         }
         channel.send(
             Message.builder()
@@ -60,6 +82,10 @@ public class ReceiveEndpoint {
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Sent control message \"{}\".", tag, status);
         }
+    }
+
+    public boolean isStopped() {
+        return emittedStatus.get() == ControlStatus.STOP;
     }
 
     public void close() throws Exception {

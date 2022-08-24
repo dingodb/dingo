@@ -67,16 +67,13 @@ public final class RootOperator extends SinkOperator {
 
     @Override
     public void fin(Fin fin) {
-        if (log.isDebugEnabled()) {
-            log.debug("Received FIN. {}", fin.detail());
-        }
-
-        if (tupleQueue == null) {
-            tupleQueue = new LinkedBlockingDeque<>();
-        }
         if (fin instanceof FinWithException) {
             errorFin = fin;
-            log.warn("Receive FinWith Exception:{}", fin.detail());
+            log.warn("Got FIN with exception: {}", fin.detail());
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("Got FIN with detail:\n{}", fin.detail());
+            }
         }
         QueueUtil.forcePut(tupleQueue, FIN);
     }
