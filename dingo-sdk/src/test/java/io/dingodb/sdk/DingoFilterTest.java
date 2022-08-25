@@ -42,7 +42,7 @@ public class DingoFilterTest {
 
     @Test
     public void testFilter() throws IOException {
-        OperationContext context = new BasicContext(null).definition(tableDefinition);
+        OperationContext context = new BasicContext().definition(tableDefinition);
 
         DingoFilter root = new DingoLogicalExpressFilter();
         DingoFilter equalsFilter = new DingoValueEqualsFilter(new int[]{3}, new Object[]{1});

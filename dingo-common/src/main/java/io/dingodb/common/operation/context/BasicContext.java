@@ -22,7 +22,7 @@ public class BasicContext extends OperationContext {
 
     public Object[] record;
 
-    public BasicContext(Column[] columns) {
+    public BasicContext(Column... columns) {
         super(columns);
     }
 
