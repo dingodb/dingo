@@ -30,7 +30,7 @@ public class ClientConverter implements DataConverter {
     @Override
     public Double convertDoubleFrom(@Nonnull Object value) {
         if (value instanceof Float) {
-            return new BigDecimal(String.valueOf(value)).doubleValue();
+            return BigDecimal.valueOf((Float) value).doubleValue();
         }
         return (Double) value;
     }
