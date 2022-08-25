@@ -51,12 +51,15 @@ public class PutOperation implements IStoreOperation {
                 return new ResultForStore(false, errorMsg);
             }
             List<KeyValue> keyValueList = parameters.getRecordList();
-            if (parameters.isIgnore()) {
+            if (parameters.isSkippedWhenExisted()) {
                 keyValueList = parameters.getRecordList().stream()
                     .filter(record -> !executorApi.exist(tableId, record.getKey()))
                     .collect(Collectors.toList());
             }
-            boolean isSuccess = executorApi.upsertKeyValue(tableId, keyValueList);
+            boolean isSuccess = true;
+            if (!keyValueList.isEmpty()) {
+                isSuccess = executorApi.upsertKeyValue(tableId, keyValueList);
+            }
             return new ResultForStore(isSuccess, "OK");
         } catch (Exception e) {
             log.error("put table:{} by KeyValue catch exception:{}", tableId, e.toString(), e);

@@ -53,7 +53,7 @@ public class DingoDateRangeFilter extends AbstractDingoFilter {
         for (Object o : record0) {
             if (o instanceof Long) {
                 long timestamp = (Long) o;
-                if (timestamp > startTime && timestamp < endTime) {
+                if (timestamp >= startTime && timestamp < endTime) {
                     return true;
                 }
             }

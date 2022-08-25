@@ -50,10 +50,13 @@ public class QueryOperation implements IStoreOperation {
                 log.error("Parameters is null || table:{} has non key columns", tableId);
                 return new ResultForStore(false, "Invalid parameters for query operation");
             }
-            OperationContext context = parameters.getContext();
             List<byte[]> startKeys = parameters.getStartKeyListInBytes();
             List<byte[]> endKeys = parameters.getEndKeyListInBytes();
             List<KeyValue> keyValueList = executorApi.getKeyValueByRange(tableId, startKeys.get(0), endKeys.get(0));
+            OperationContext context = parameters.getContext();
+            if (context == null) {
+                return new ResultForStore(true, "OK", keyValueList);
+            }
             List<KeyValue> recordList = keyValueList.stream()
                 .filter(kv -> context.filter.filter(context, kv))
                 .collect(Collectors.toList());

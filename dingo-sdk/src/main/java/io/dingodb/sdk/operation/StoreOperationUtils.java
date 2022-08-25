@@ -244,7 +244,7 @@ public class StoreOperationUtils {
                 wholeContext.getUdfName(),
                 wholeContext.getFunctionName(),
                 wholeContext.getUdfVersion(),
-                wholeContext.isIgnore(),
+                wholeContext.isSkippedWhenExisted(),
                 wholeContext.getContext());
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }

@@ -89,4 +89,72 @@ public class DingoExecResult implements Serializable {
     public Value get(String column) {
         return record.get(column.toUpperCase());
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(500);
+        sb.append('{');
+        sb.append("record: ");
+        if (!record.isEmpty()) {
+            boolean sep = false;
+
+            for (Map.Entry<String, Value> entry : record.entrySet()) {
+                if (sep) {
+                    sb.append(',');
+                } else {
+                    sep = true;
+                }
+                sb.append('{');
+                sb.append(entry.getKey());
+                sb.append(": ");
+                if (entry.getValue().getType() == ParticleType.MAP) {
+                    Map<String, Object> map = (Map<String, Object>) entry.getValue().getObject();
+                    sb.append('{');
+                    boolean b = false;
+                    for (Map.Entry<String, Object> mapEntry : map.entrySet()) {
+                        if (b) {
+                            sb.append(',');
+                        } else {
+                            b = true;
+                        }
+                        sb.append(mapEntry.getKey());
+                        sb.append(':');
+                        sb.append(mapEntry.getValue());
+                    }
+                    sb.append('}');
+                } else {
+                    sb.append(':');
+                    sb.append(entry.getValue().getObject());
+                    sb.append('}');
+                }
+                if (sb.length() > 1000) {
+                    sb.append("...");
+                    break;
+                }
+            }
+        } else {
+            sb.append("null");
+        }
+        sb.append('}');
+        sb.append(',');
+        sb.append("isSuccess: ");
+        sb.append(isSuccess);
+        sb.append(", ");
+        sb.append("errorMessage: ");
+        sb.append('\"');
+        sb.append(errorMessage);
+        sb.append('\"');
+        sb.append(", ");
+        sb.append("op: ");
+        if (op == null) {
+            sb.append("null");
+        } else {
+            sb.append('\"');
+            sb.append(op);
+            sb.append('\"');
+        }
+        sb.append('}');
+
+        return sb.toString();
+    }
 }
