@@ -118,7 +118,7 @@ public final class Converter {
         }
         OperationContext context = null;
         if (inputContext.getFilter() != null) {
-            context = new BasicContext(null);
+            context = new BasicContext();
             context.definition(definition);
             context.filter(inputContext.getFilter());
         }
@@ -132,7 +132,7 @@ public final class Converter {
             udfContext != null ? udfContext.getUdfName() : null,
             udfContext != null ? udfContext.getFunctionName() : null,
             udfContext != null ? udfContext.getUdfVersion() : 1,
-            inputContext.isIgnore(),
+            inputContext.isSkippedWhenExisted(),
             context);
     }
 }

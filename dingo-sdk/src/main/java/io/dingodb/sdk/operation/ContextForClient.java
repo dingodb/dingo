@@ -34,5 +34,5 @@ public final class ContextForClient {
     private final List<Operation> operationList;
     private final UDFContext udfContext;
     private final DingoFilter filter;
-    private final boolean ignore;
+    private final boolean skippedWhenExisted;
 }

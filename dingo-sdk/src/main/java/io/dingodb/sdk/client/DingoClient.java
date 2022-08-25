@@ -210,10 +210,10 @@ public class DingoClient {
      * insert records into table.
      * @param tableName input table name
      * @param records record(multiple records ordered by column index on table definition).
-     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
+     * @param skippedWhenExisted Whether to skip if input data exists, true is skip, false is overwritten.
      * @return true when records are inserted successfully, otherwise false.
      */
-    public boolean insert(String tableName, List<Object[]> records, boolean ignore) {
+    public boolean insert(String tableName, List<Object[]> records, boolean skippedWhenExisted) {
         if (!isConnected()) {
             log.error("connection has not been initialized, please call openConnection first");
             return false;
@@ -230,7 +230,7 @@ public class DingoClient {
             keyList.add(recordEntry.getKey());
             recordList.add(recordEntry.getValue());
         }
-        return doPut(keyList, recordList, ignore);
+        return doPut(keyList, recordList, skippedWhenExisted);
     }
 
     /**
@@ -311,13 +311,13 @@ public class DingoClient {
      * put record to table using key.
      * @param key input key of the table
      * @param columns input columns of the table(ordered by column index on table definition).
-     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
+     * @param skippedWhenExisted Whether to skip if input data exists, true is skip, false is overwritten.
      * @return true when record is put successfully, otherwise false.
      */
-    public boolean put(Key key, Column[] columns, boolean ignore) {
+    public boolean put(Key key, Column[] columns, boolean skippedWhenExisted) {
         TableDefinition tableDefinition = storeOpUtils.getTableDefinition(key.getTable());
         Record record = new Record(tableDefinition.getColumns(), columns);
-        return doPut(Arrays.asList(key), Arrays.asList(record), ignore);
+        return doPut(Arrays.asList(key), Arrays.asList(record), skippedWhenExisted);
     }
 
     /**
@@ -337,12 +337,12 @@ public class DingoClient {
      * put multiple records together into table.
      * @param keyList input key list of the table
      * @param recordList input value list of the table(ordered by column index on table definition).
-     * @param ignore If the input record exists, whether to ignore it, true is ignored, false is overwritten.
+     * @param skippedWhenExisted Whether to skip if input data exists, true is skip, false is overwritten.
      * @return true when records are put successfully, otherwise false.
      *
      */
-    public boolean put(List<Key> keyList, List<Record> recordList, boolean ignore) {
-        return doPut(keyList, recordList, ignore);
+    public boolean put(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
+        return doPut(keyList, recordList, skippedWhenExisted);
     }
 
     /**
@@ -446,12 +446,13 @@ public class DingoClient {
         }
     }
 
-    private boolean doPut(List<Key> keyList, List<Record> recordList, boolean ignore) {
+    private boolean doPut(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
             new ContextForClient(keyList, Collections.emptyList(), recordList,
-                null, null, null, ignore));
+                null, null, null, skippedWhenExisted));
+
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;

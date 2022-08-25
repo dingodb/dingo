@@ -387,6 +387,7 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
         }
     }
 
+    @Slf4j
     class GetByKey implements CollectionOperation<MapContext, Iterator<KeyValue>, Object> {
 
         @Override
@@ -406,10 +407,17 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
                         Map value = convertValueFrom(objects[i]);
-                        values.put(columns[i].name, value.get(context.key.getObject()));
+                        if (value.containsKey(context.key.getObject())) {
+                            values.put(columns[i].name, value.get(context.key.getObject()));
+                        }
                     }
-                    Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+                    if (!values.isEmpty()) {
+                        Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
+                        result.put(Arrays.toString(key), Value.get(values));
+                    } else {
+                        log.info("Collection get by key operation, The key:{} was not found in the map",
+                            context.key.getObject());
+                    }
 
                 } catch (IOException e) {
                     return new DingoExecResult(false, "Get by key operation decode failed, " + e.getMessage());
