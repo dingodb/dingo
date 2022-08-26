@@ -46,8 +46,8 @@ import java.util.concurrent.Future;
 @Slf4j
 public class StoreOperationUtils {
 
-    private static Map<String, RouteTable> dingoRouteTables = new ConcurrentHashMap<>(127);
-    private static Map<String, TableDefinition> tableDefinitionInCache = new ConcurrentHashMap<>(127);
+    private static Map<String, RouteTable> dingoRouteTables = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static Map<String, TableDefinition> tableDefinitionInCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private TableDefinition tableDefinition;
