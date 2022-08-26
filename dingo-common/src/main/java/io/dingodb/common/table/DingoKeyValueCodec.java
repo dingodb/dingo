@@ -23,10 +23,12 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.DingoConverter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoKeyValueCodec implements KeyValueCodec {
 
     private final DingoType schema;

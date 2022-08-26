@@ -22,6 +22,7 @@ import io.dingodb.raft.entity.Task;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.PUT_LIST;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SCAN;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SYNC;
 
+@Slf4j
 @Getter
 @ToString
 @Builder
@@ -148,12 +150,14 @@ public class RaftRawKVOperation {
             .build();
     }
 
-    public static RaftRawKVOperation compute(final byte[] start, final byte[] end, final List<byte[]> operations) {
+    public static RaftRawKVOperation compute(final byte[] start, final byte[] end, final List<byte[]> operations,
+                                             int timestamp) {
         return RaftRawKVOperation.builder()
             .key(start)
             .op(COMPUTE)
             .extKey(end)
             .ext1(operations)
+            .ext2(timestamp)
             .build();
     }
 
@@ -238,5 +242,4 @@ public class RaftRawKVOperation {
             .op(op)
             .build();
     }
-
 }

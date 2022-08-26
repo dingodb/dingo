@@ -156,7 +156,7 @@ public class MemoryRawKVStore implements RawKVStore {
     }
 
     @Override
-    public void compute(byte[] startKey, byte[] endKey, List<byte[]> computes) {
+    public void compute(byte[] startKey, byte[] endKey, List<byte[]> computes, int timestamp) {
 
     }
 
