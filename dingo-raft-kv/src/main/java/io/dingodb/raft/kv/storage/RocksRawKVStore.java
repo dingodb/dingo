@@ -26,11 +26,9 @@ import io.dingodb.raft.util.BytesUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.ConfigOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.EnvOptions;
-import org.rocksdb.FlushOptions;
 import org.rocksdb.Options;
 import org.rocksdb.OptionsUtil;
 import org.rocksdb.ReadOptions;
@@ -41,6 +39,7 @@ import org.rocksdb.Snapshot;
 import org.rocksdb.SstFileReader;
 import org.rocksdb.SstFileReaderIterator;
 import org.rocksdb.SstFileWriter;
+import org.rocksdb.TtlDB;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
@@ -52,15 +51,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.concurrent.Executors.scheduleWithFixecDelay;
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
-import static io.dingodb.raft.storage.impl.RocksDBLogStore.createColumnFamilyOptions;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class RocksRawKVStore implements RawKVStore {
@@ -72,8 +72,14 @@ public class RocksRawKVStore implements RawKVStore {
     private RocksDB db;
     private WriteOptions writeOptions;
     private final List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
+    private ScheduledFuture<?> scheduledFuture;
+    private String groupId;
+    private int ttl = -1;
 
-    public RocksRawKVStore(final String dataPath, final String optionsFile) throws RocksDBException {
+    public RocksRawKVStore(final String dataPath, final String optionsFile, String groupId, final int ttl)
+        throws RocksDBException {
+        this.groupId = groupId;
+        this.ttl = ttl;
         this.writeOptions = new WriteOptions();
         DBOptions options = new DBOptions();
 
@@ -97,9 +103,22 @@ public class RocksRawKVStore implements RawKVStore {
         }
 
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-        this.db = RocksDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles);
-        log.info("RocksRawKVStore RocksDB open, path: {}, options file: {}, columnFamilyHandles size: {}.",
-            dataPath, optionsFile, columnFamilyHandles.size());
+
+        if (RocksDBUtils.dataWithTtl(this.ttl)) {
+            List<Integer> ttlList = new ArrayList<>();
+            ttlList.add(this.ttl);
+            this.db = TtlDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles, ttlList, false);
+            scheduledFuture = scheduleWithFixecDelay("raw-kv-compact", this::compact,  0, 60 * 60, SECONDS);
+        } else {
+            this.db = RocksDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles);
+        }
+        log.info("RocksRawKVStore RocksDB open, path: {}, options file: {}, columnFamilyHandles size: {}, " +
+            "useDefaultOptions: {}, ttl: {}, groupId: {}.", dataPath, optionsFile, columnFamilyHandles.size(),
+            useDefaultOptions, this.ttl, this.groupId);
+    }
+
+    public RocksRawKVStore(final String dataPath, final String optionsFile, String groupId) throws RocksDBException {
+        this(dataPath, optionsFile, groupId, 0);
     }
 
     @Override
@@ -283,7 +302,7 @@ public class RocksRawKVStore implements RawKVStore {
     }
 
     @Override
-    public void compute(byte[] start, byte[] end, List<byte[]> bytes) {
+    public void compute(byte[] start, byte[] end, List<byte[]> bytes, int timestamp) {
         List<Operation> operations = bytes.stream()
             .map(ProtostuffCodec::<Operation>read)
             .collect(Collectors.toList());
@@ -305,8 +324,9 @@ public class RocksRawKVStore implements RawKVStore {
 
                 try (final WriteBatch batch = new WriteBatch()) {
                     while (iterator.hasNext()) {
-                        KeyValue entry = iterator.next();
-                        batch.put(entry.getPrimaryKey(), entry.getValue());
+						KeyValue entry = iterator.next();
+						byte[] valueWithTs = RocksDBUtils.getValueWithTs(entry.getValue(), timestamp);
+						batch.put(entry.getPrimaryKey(), valueWithTs);
                     }
                     this.db.write(this.writeOptions, batch);
                 } catch (final Exception e) {
@@ -387,6 +407,15 @@ public class RocksRawKVStore implements RawKVStore {
                         break;
                     }
                     byte[] value = iterator.value();
+                    //byte[] value = iterator.sourceValue();
+                    if (RocksDBUtils.dataWithTtl(this.ttl)) {
+                        int timestamp = RocksDBUtils.getTsbyValue(value);
+                        int now = (int)(System.currentTimeMillis() / 1000);
+                        if (timestamp + this.ttl < now) {
+                            iterator.next();
+                            continue;
+                        }
+                    }
                     sstFileWriter.put(key, value);
                     iterator.next();
                     count++;
@@ -462,6 +491,18 @@ public class RocksRawKVStore implements RawKVStore {
             Files.delete(sstPath);
         }
         return true;
+    }
+
+    private void compact() {
+        long now = System.currentTimeMillis();
+        try {
+            this.db.compactRange();
+        } catch (final Exception e) {
+            log.error("RocksRawKVStore compact exception, groupId: {}.", this.groupId, e);
+            throw new RuntimeException(e);
+        }
+        log.info("RocksRawKVStore compact, groupId: {}, cost {}s.", this.groupId,
+            (System.currentTimeMillis() - now) / 1000 );
     }
 
     @SuppressWarnings("checkstyle:NoFinalizer")

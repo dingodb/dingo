@@ -38,7 +38,7 @@ public class TestRocksRawKVStore {
     @BeforeAll
     public static void beforeAll() throws Exception {
         afterAll();
-        store = new RocksRawKVStore(DB_PATH.toString(), "");
+        store = new RocksRawKVStore(DB_PATH.toString(), "", "");
     }
 
     @AfterAll

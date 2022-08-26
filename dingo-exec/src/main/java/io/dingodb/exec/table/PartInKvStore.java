@@ -145,11 +145,13 @@ public final class PartInKvStore implements Part {
                     currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
                 }
                 totalCnt += currentCnt;
-                log.info("delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}",
+                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}" +
+                        ", doDeleting: {}.",
                     partStartKey,
                     isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
                     currentCnt,
-                    totalCnt);
+                    totalCnt,
+                    doDeleting);
             }
         } finally {
             if (log.isDebugEnabled()) {

@@ -74,7 +74,7 @@ public class TestRaftInstancePart {
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
         storeInstancePart = new RaftStoreInstancePart(
-            part, Paths.get(TEST_PATH.toString(), id.toString()), store, logStore
+            part, Paths.get(TEST_PATH.toString(), id.toString()), store, logStore, 0
         );
         storeInstancePart.init();
         while (!storeInstancePart.getStateMachine().isAvailable()) {

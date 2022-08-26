@@ -24,6 +24,7 @@ import io.dingodb.common.store.Part;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
 import io.dingodb.raft.kv.storage.RaftRawKVStore;
 import io.dingodb.raft.kv.storage.RawKVStore;
+import io.dingodb.raft.kv.storage.RocksDBUtils;
 import io.dingodb.raft.kv.storage.SeekableIterator;
 import io.dingodb.raft.storage.LogStore;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
@@ -49,8 +50,9 @@ public final class RaftStoreInstancePart implements StoreInstance {
     private RawKVStore store;
     private RaftRawKVStore raftStore;
     private PartStateMachine stateMachine;
+    private int ttl = 0;
 
-    public RaftStoreInstancePart(Part part, Path path, RawKVStore store, LogStore logStore) throws Exception {
+    public RaftStoreInstancePart(Part part, Path path, RawKVStore store, LogStore logStore, int ttl) throws Exception {
         this.id = part.getId();
         this.store = store;
         this.part = part;
@@ -63,6 +65,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
             new Location(DingoConfiguration.host(), StoreConfiguration.raft().getPort()),
             part.getReplicates()
         );
+        this.ttl = ttl;
         this.stateMachine = new PartStateMachine(id, raftStore, part);
         raftStore.getNodeOptions().setFsm(stateMachine);
         log.info("Start raft store instance part, id: {}, part: {}", id, part);
@@ -121,10 +124,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
-        if (!stateMachine.isEnable()) {
-            throw new UnsupportedOperationException("State machine not available");
-        }
-        return raftStore.put(row.getPrimaryKey(), row.getValue()).join();
+        return this.upsertKeyValue(row.getPrimaryKey(), row.getValue());
     }
 
     @Override
@@ -132,7 +132,11 @@ public final class RaftStoreInstancePart implements StoreInstance {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");
         }
-        return raftStore.put(primaryKey, row).join();
+        if (RocksDBUtils.dataWithTtl(this.ttl)) {
+            return raftStore.put(primaryKey, RocksDBUtils.getValueWithNowTs(row)).join();
+        } else {
+            return raftStore.put(primaryKey, row).join();
+        }
     }
 
     @Override
@@ -140,7 +144,13 @@ public final class RaftStoreInstancePart implements StoreInstance {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");
         }
-        return raftStore.put(rows.stream()
+        List<KeyValue> kvList;
+        if (RocksDBUtils.dataWithTtl(this.ttl)) {
+            kvList = RocksDBUtils.getValueWithNowTsList(rows);
+        } else {
+            kvList = rows;
+        }
+        return raftStore.put(kvList.stream()
             .filter(Objects::nonNull)
             .map(row -> new ByteArrayEntry(row.getPrimaryKey(), row.getValue()))
             .collect(Collectors.toList())
@@ -196,7 +206,11 @@ public final class RaftStoreInstancePart implements StoreInstance {
         if (!stateMachine.isEnable()) {
             throw new UnsupportedOperationException("State machine not available");
         }
-        return raftStore.compute(startPrimaryKey, endPrimaryKey, operations).join();
+        int timestamp = RocksDBUtils.TIMESTAMP_WITHOUT_TTL;
+        if (RocksDBUtils.dataWithTtl(this.ttl)) {
+            timestamp = (int) (System.currentTimeMillis() / 1000);
+        }
+        return raftStore.compute(startPrimaryKey, endPrimaryKey, operations, timestamp).join();
     }
 
     @Override

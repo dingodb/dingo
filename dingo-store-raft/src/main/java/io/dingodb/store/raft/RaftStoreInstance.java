@@ -77,6 +77,7 @@ public class RaftStoreInstance implements StoreInstance {
     private final NavigableMap<byte[], Part> startKeyPartMap;
     private final Map<byte[], RaftStoreInstancePart> waitParts;
     private final PartReadWriteCollector collector;
+    private int ttl = 0;
 
     private final MetaServiceApi metaServiceApi;
 
@@ -86,14 +87,16 @@ public class RaftStoreInstance implements StoreInstance {
 
     private Map<String, KeyValueCodec> codecMap = new HashMap<>();
 
-    public RaftStoreInstance(Path path, CommonId id, MetaServiceApi metaServiceApi) {
+    public RaftStoreInstance(Path path, CommonId id, MetaServiceApi metaServiceApi, final int ttl) {
         try {
             this.id = id;
             this.path = path;
+            this.ttl = ttl;
             Files.createDirectories(path);
             Files.createDirectories(dbPath = Paths.get(path.toString(), "db"));
             Files.createDirectories(logPath = Paths.get(path.toString(), "log"));
-            this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.dbRocksOptionsFile());
+            this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.dbRocksOptionsFile(),
+                this.id.toString(), this.ttl);
             this.logStore = new RocksDBLogStore();
             RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
             logStoreOptions.setDataPath(logPath.toString());
@@ -113,6 +116,10 @@ public class RaftStoreInstance implements StoreInstance {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public RaftStoreInstance(Path path, CommonId id, MetaServiceApi metaServiceApi) {
+        this(path, id, metaServiceApi, 0);
     }
 
     public void clear() {
@@ -146,7 +153,8 @@ public class RaftStoreInstance implements StoreInstance {
                 .map(p -> Paths.get(p, part.getId().toString()))
                 .ifPresent(Files::createDirectories)
                 .get();
-            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, partPath, store, logStore);
+            RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, partPath, store, logStore,
+                this.ttl);
             storeInstancePart.getStateMachine().listenAvailable(() -> onPartAvailable(storeInstancePart));
             storeInstancePart.init();
             parts.put(part.getId(), storeInstancePart);
