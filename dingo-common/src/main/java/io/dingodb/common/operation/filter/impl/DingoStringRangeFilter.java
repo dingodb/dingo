@@ -52,7 +52,7 @@ public class DingoStringRangeFilter extends AbstractDingoFilter {
                 }
 
                 String objStr = obj.toString();
-                if (objStr.compareTo(startValue) >= 0 && objStr.compareTo(endValue) <= 0) {
+                if (objStr.compareTo(startValue) >= 0 && objStr.compareTo(endValue) < 0) {
                     isOK = true;
                     break;
                 }

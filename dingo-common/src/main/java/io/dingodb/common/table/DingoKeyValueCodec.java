@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 public class DingoKeyValueCodec implements KeyValueCodec {
 
     private final DingoType schema;
+    private final DingoType keySchema;
     TupleMapping keyMapping;
     TupleMapping valueMapping;
     Codec keyCodec;
@@ -37,6 +38,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     public DingoKeyValueCodec(@Nonnull DingoType schema, @Nonnull TupleMapping keyMapping) {
         this.schema = schema;
+        this.keySchema = schema.select(keyMapping);
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
         keyCodec = new DingoCodec(schema.select(keyMapping).toDingoSchemas(), keyMapping);
@@ -80,7 +82,12 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
-        return keyCodec.encode(keys);
+        Object[] converted = (Object[]) keySchema.convertTo(keys, DingoConverter.INSTANCE);
+        Object[] key = new Object[keyMapping.size()];
+        for (int i = 0; i < keyMapping.size(); i++) {
+            key[i] = converted[keyMapping.get(i)];
+        }
+        return keyCodec.encode(key);
     }
 
     @Override

@@ -51,7 +51,8 @@ public class TestDingoCodec {
 
     @Test
     public void testKey() throws IOException {
-        byte[] key = codec.encodeKey(record);
+        Object[] keys = tableDefinition.getKeyMapping().revMap(record);
+        byte[] key = codec.encodeKey(keys);
         KeyValue keyValue = codec.encode(record);
         Assertions.assertArrayEquals(key, keyValue.getKey());
     }
