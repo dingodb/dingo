@@ -49,7 +49,7 @@ public class DingoNumberRangeFilter extends AbstractDingoFilter {
             for (Object o : record0) {
                 BigDecimal currentValue = new BigDecimal(o.toString());
                 boolean isBetween = (currentValue.compareTo(startValue) >= 0)
-                    && (currentValue.compareTo(endValue) <= 0);
+                    && (currentValue.compareTo(endValue) < 0);
                 if (isBetween) {
                     isOK = true;
                     break;
