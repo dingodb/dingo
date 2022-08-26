@@ -50,12 +50,15 @@ public class TableDefinition {
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonProperty("name")
-    @Getter
     private final String name;
     @JsonProperty("columns")
     @Getter
     @Setter
     private List<ColumnDefinition> columns;
+
+    public String getName() {
+        return name.toUpperCase();
+    }
 
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {

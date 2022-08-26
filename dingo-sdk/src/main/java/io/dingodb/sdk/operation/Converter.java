@@ -79,7 +79,11 @@ public final class Converter {
         List<byte[]> startKeyListInBytes = null;
         startKeyListInBytes = inputContext.getStartKeyList().stream().map(x -> {
             try {
-                return codec.encodeKey(x.getUserKey().toArray());
+                Object[] keys = x.getUserKey().toArray();
+                if (keys.length != definition.getPrimaryKeyCount()) {
+                    log.error("Inconsistent number of primary keys:{}", keys);
+                }
+                return codec.encodeKey(keys);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -89,7 +93,11 @@ public final class Converter {
         if (inputContext.getEndKeyList() != null) {
             endKeyListInBytes = inputContext.getEndKeyList().stream().map(x -> {
                 try {
-                    return codec.encodeKey(x.getUserKey().toArray());
+                    Object[] keys = x.getUserKey().toArray();
+                    if (keys.length != definition.getPrimaryKeyCount()) {
+                        log.error("Inconsistent number of primary keys:{}", keys);
+                    }
+                    return codec.encodeKey(keys);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
