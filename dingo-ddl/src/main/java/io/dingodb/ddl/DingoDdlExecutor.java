@@ -32,6 +32,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.SqlTruncate;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -218,5 +219,32 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.tableNotFound(drop.name.toString())
             );
         }
+    }
+
+    public void execute(SqlTruncate truncate, CalcitePrepare.Context context) {
+        SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(name, context);
+        final MutableSchema schema = schemaTableName.left;
+        final String tableName = schemaTableName.right;
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
+        if (tableDefinition == null) {
+            throw SqlUtil.newContextException(
+                name.getParserPosition(),
+                RESOURCE.tableNotFound(name.toString()));
+        }
+
+        final boolean existed;
+        assert schema != null;
+        assert tableName != null;
+        existed = schema.dropTable(tableName);
+        if (!existed && !true) {
+            throw SqlUtil.newContextException(
+                name.getParserPosition(),
+                RESOURCE.tableNotFound(name.toString())
+            );
+        }
+        schema.createTable(tableName, tableDefinition);
+
     }
 }
