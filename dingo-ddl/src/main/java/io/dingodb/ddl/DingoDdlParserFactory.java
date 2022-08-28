@@ -19,7 +19,7 @@ package io.dingodb.ddl;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
-import org.apache.calcite.sql.parser.ddl.SqlDdlParserImpl;
+import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 
 import java.io.Reader;
 
@@ -32,7 +32,7 @@ public class DingoDdlParserFactory implements SqlParserImplFactory {
 
     @Override
     public SqlAbstractParserImpl getParser(Reader stream) {
-        return SqlDdlParserImpl.FACTORY.getParser(stream);
+        return DingoSqlParserImpl.FACTORY.getParser(stream);
     }
 
     @Override
