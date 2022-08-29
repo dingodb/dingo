@@ -270,13 +270,14 @@ public class StoreOperationUtils {
                 return null;
             }
             tableDefinitionInCache.put(tableName, tableDefinition);
-            NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaClient.getParts(tableName);
+            NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions =
+                metaClient.getParts(tableDefinition.getName());
             KeyValueCodec keyValueCodec = new DingoKeyValueCodec(
                 tableDefinition.getDingoType(),
                 tableDefinition.getKeyMapping()
             );
             RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
-            CommonId tableId = metaClient.getTableId(tableName);
+            CommonId tableId = metaClient.getTableId(tableDefinition.getName());
             routeTable = new RouteTable(
                 tableName,
                 tableId,

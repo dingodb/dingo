@@ -20,6 +20,8 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.AvroConverter;
 import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericData;
@@ -83,7 +85,29 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
 
     @Override
     public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        return super.parse(tableDefinition, records, dingoClient);
+        long totalInsertCnt = 0L;
+        List<Object[]> result = new ArrayList<>();
+        for (Object[] arr : records) {
+            try {
+                DingoType schema = tableDefinition.getDingoType();
+                Object[] row = (Object[]) schema.convertFrom(arr, AvroConverter.INSTANCE);
+                if (!isValidRecord(tableDefinition, row)) {
+                    log.warn("Invalid input row will skip it:{}", arr);
+                    continue;
+                }
+                result.add(row);
+                totalInsertCnt++;
+            } catch (Exception ex) {
+                log.warn("Data:{} parsing failed", arr, ex);
+            }
+        }
+        try {
+            dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
+        } catch (Exception e) {
+            log.error("Error encoding record", e);
+            totalInsertCnt = 0;
+        }
+        return totalInsertCnt;
     }
 
 }
