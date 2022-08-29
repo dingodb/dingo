@@ -39,11 +39,16 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.sql.SqlExplain;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -150,7 +155,7 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @Nonnull
-    public DingoSignature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
+    public Meta.Signature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
         MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
@@ -164,6 +169,11 @@ public final class DingoDriverParser extends DingoParser {
             );
         }
         JavaTypeFactory typeFactory = context.getTypeFactory();
+        SqlExplain explain = null;
+        if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
+            explain = (SqlExplain) sqlNode;
+            sqlNode = explain.getExplicandum();
+        }
         sqlNode = validate(sqlNode);
         Meta.StatementType statementType;
         RelDataType type;
@@ -192,6 +202,23 @@ public final class DingoDriverParser extends DingoParser {
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
         Job job = DingoJobVisitor.createJob(relNode, currentLocation, true);
+        if (explain != null) {
+            statementType = Meta.StatementType.CALL;
+            String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES);
+            return new DingoExplainSignature(
+                ImmutableList.of(metaData(typeFactory, 0, "PLAN",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null)),
+                sql,
+                createParameterList(sqlNode),
+                null,
+                cursorFactory,
+                statementType,
+                sqlNode.toString(),
+                logicalPlan,
+                job
+            );
+        }
+
         return new DingoSignature(
             columns,
             sql,

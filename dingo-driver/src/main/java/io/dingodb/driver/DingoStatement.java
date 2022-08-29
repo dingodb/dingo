@@ -41,8 +41,8 @@ public class DingoStatement extends AvaticaStatement {
     }
 
     @Override
-    protected DingoSignature getSignature() {
-        return (DingoSignature) super.getSignature();
+    protected Meta.Signature getSignature() {
+        return super.getSignature();
     }
 
     public void clear() throws SQLException {

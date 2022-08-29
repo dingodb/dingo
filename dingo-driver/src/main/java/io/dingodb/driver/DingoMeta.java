@@ -117,7 +117,7 @@ public class DingoMeta extends MetaImpl {
             DingoConnection.DingoContext context = dingoConnection.createContext();
             DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            final DingoSignature signature = parser.parseQuery(sql, context);
+            final Signature signature = parser.parseQuery(sql, context);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount;
@@ -148,7 +148,9 @@ public class DingoMeta extends MetaImpl {
                 null,
                 updateCount
             );
-            checkJobHasFailed(signature);
+            if (signature instanceof DingoSignature) {
+                checkJobHasFailed((DingoSignature) signature);
+            }
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (SQLException | SqlParseException | RuntimeException e) {
             Throwable throwable = e;
@@ -239,7 +241,7 @@ public class DingoMeta extends MetaImpl {
             DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
             final Iterator<Object[]> iterator = resultSet.getIterator();
             final List rows = new ArrayList(fetchMaxRowCount);
-            DingoSignature signature;
+            Signature signature;
             if (stmt instanceof DingoStatement) {
                 signature = ((DingoStatement) stmt).getSignature();
             } else if (stmt instanceof DingoPreparedStatement) {
@@ -252,7 +254,9 @@ public class DingoMeta extends MetaImpl {
                 rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            checkJobHasFailed(signature);
+            if (signature instanceof DingoSignature) {
+                checkJobHasFailed((DingoSignature) signature);
+            }
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
             log.error("Fetch catch exception:{}", e, e);
