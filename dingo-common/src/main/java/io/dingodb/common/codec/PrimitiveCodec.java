@@ -57,6 +57,19 @@ public class PrimitiveCodec {
         return result;
     }
 
+    public static byte[] encodeLong(long value) {
+        byte[] result = new byte[8];
+        result[0] = (byte) (value >> 56);
+        result[1] = (byte) (value >> 48);
+        result[2] = (byte) (value >> 40);
+        result[3] = (byte) (value >> 32);
+        result[4] = (byte) (value >> 24);
+        result[5] = (byte) (value >> 16);
+        result[6] = (byte) (value >> 8);
+        result[7] = (byte) (value);
+        return result;
+    }
+
     /**
      * Encode {@code value} using VarInt.
      */
@@ -114,6 +127,14 @@ public class PrimitiveCodec {
             return null;
         }
         return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+    }
+
+    public static Long readLong(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return bytes[7] & 0xFFL | (bytes[6] & 0xFFL) << 8 | (bytes[5] & 0xFFL) << 16 | (bytes[4] & 0xFFL) << 24
+            | (bytes[3] & 0xFFL) << 32 | (bytes[2] & 0xFFL) << 40 | (bytes[1] & 0xFFL) << 48 | (bytes[0] & 0xFFL) << 56;
     }
 
     /**

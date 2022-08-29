@@ -74,6 +74,20 @@ public class Optional<T> {
         return this;
     }
 
+    public static <T> void ifPresent(T value, Runnable runnable) {
+        if (value == null) {
+            return;
+        }
+        runnable.run();
+    }
+
+    public static <T> void ifPresent(T value, Consumer<? super T> consumer) {
+        if (value == null) {
+            return;
+        }
+        consumer.accept(value);
+    }
+
     public Optional<T> ifAbsent(Runnable runnable) {
         if (!optional.isPresent()) {
             runnable.run();
@@ -99,7 +113,23 @@ public class Optional<T> {
         return of(optional.filter(predicate));
     }
 
-    public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
+    public Optional<T> filter(Supplier<Boolean> predicate) {
+        if (predicate.get()) {
+            return this;
+        } else {
+            return empty();
+        }
+    }
+
+    public Optional<T> filter(boolean whether) {
+        if (whether) {
+            return this;
+        } else {
+            return empty();
+        }
+    }
+
+    public <U> Optional<U> map(Function<? super T, U> mapper) {
         return of(optional.map(mapper));
     }
 
@@ -113,6 +143,22 @@ public class Optional<T> {
     @Deprecated
     public T orElse(T other) throws Exception {
         throw new UnsupportedOperationException("Use orElseGet method.");
+    }
+
+    public <U> U mapOrNull(Function<? super T, U> mapper) {
+        return optional.map(mapper).orElse(null);
+    }
+
+    public static <T, U> U mapOrNull(T value, Function<? super T, U> mapper) {
+        return value == null ? null : mapper.apply(value);
+    }
+
+    public <U> U mapOrGet(Function<? super T, U> mapper, Supplier<U> other) {
+        return optional.map(mapper).orElseGet(other);
+    }
+
+    public static <T, U> U mapOrGet(T value, Function<? super T, ? extends U> mapper, Supplier<U> other) {
+        return value == null ? other.get() : mapper.apply(value);
     }
 
     public T orNull() {

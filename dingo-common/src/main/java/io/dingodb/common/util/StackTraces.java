@@ -19,7 +19,8 @@ package io.dingodb.common.util;
 import java.util.StringJoiner;
 
 /**
- * display stack trace about current thread.
+ * Display stack trace about current thread.
+ * Default 0. 0 -> StackTraces method. 1 -> Current invoke method.
  */
 public class StackTraces {
 
@@ -44,12 +45,12 @@ public class StackTraces {
         return Thread.currentThread().getStackTrace()[CURRENT_STACK + stack].getLineNumber();
     }
 
-    public static Class clazz() throws ClassNotFoundException {
+    public static Class<?> clazz() throws ClassNotFoundException {
         return clazz(CURRENT_STACK + 1);
     }
 
-    public static Class clazz(int stack) throws ClassNotFoundException {
-        return Class.forName(className(stack));
+    public static Class<?> clazz(int stack) throws ClassNotFoundException {
+        return Class.forName(className(stack + 1));
     }
 
     public static String className() {

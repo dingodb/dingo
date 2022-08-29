@@ -21,6 +21,10 @@ import io.dingodb.net.api.ApiRegistry;
 
 public interface NetService extends AutoCloseable {
 
+    static NetService getDefault() {
+        return NetServiceProvider.getDefault().get();
+    }
+
     /**
      * Return a new channel connected to the remote-end.
      *

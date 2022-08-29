@@ -22,11 +22,11 @@ import io.dingodb.net.Message;
 import io.dingodb.net.netty.NettyNetService;
 import io.dingodb.net.netty.NettyNetServiceProvider;
 import io.dingodb.net.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -66,7 +66,7 @@ public class RandomChannelProxy<T> implements ApiProxy<T> {
     }
 
     @Override
-    public void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws Exception {
+    public void invoke(Channel ch, ByteBuf buffer, CompletableFuture<Object> future) throws Exception {
         future.whenCompleteAsync((r, e) -> {
             if (e instanceof CancellationException) {
                 ch.send(new Message(API_CANCEL, EMPTY.content()));

@@ -22,11 +22,11 @@ import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +41,7 @@ public interface ApiProxy<T> extends InvocationHandler {
 
     int timeout();
 
-    void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws Exception;
+    void invoke(Channel ch, ByteBuf buffer, CompletableFuture<Object> future) throws Exception;
 
     @Override
     default Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -57,10 +57,14 @@ public interface ApiProxy<T> extends InvocationHandler {
         Channel channel = channel();
         try {
             channel.setMessageListener(callHandler(future));
-            channel.closeListener(ch -> closeListener(channel, future));
+            channel.setCloseListener(ch -> closeListener(channel, future));
             byte[] nameB = PrimitiveCodec.encodeString(name);
             byte[] content = ProtostuffCodec.write(args);
-            invoke(channel, channel.buffer(API, nameB.length + content.length).put(nameB).put(content), future);
+            invoke(
+                channel,
+                channel.buffer(API, nameB.length + content.length).writeBytes(nameB).writeBytes(content),
+                future
+            );
         } catch (Exception e) {
             if (channel == null) {
                 future.complete(e);

@@ -67,4 +67,6 @@ include 'dingo-func-api'
 include 'dingo-sdk'
 include 'dingo-example'
 include 'dingo-serial'
+include 'dingo-mirror-processing-unit'
+include 'dingo-store-mpu'
 

@@ -14,48 +14,43 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.connection.impl;
+package io.dingodb.net.netty.connection;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.api.HandshakeApi;
+import io.dingodb.net.netty.channel.Channel;
 import io.dingodb.net.netty.handler.ExceptionHandler;
 import io.dingodb.net.netty.handler.MessageDecoder;
-import io.dingodb.net.netty.handler.MessageEncoder;
 import io.dingodb.net.netty.packet.Command;
 import io.dingodb.net.netty.packet.Type;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.AttributeMap;
-import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.dingodb.net.netty.NetServiceConfiguration.heartbeat;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 @Accessors(fluent = true)
-public class NettyClientConnection extends AbstractClientConnection {
+public class ClientConnection extends Connection {
 
     protected Bootstrap bootstrap;
     protected EventLoopGroup eventLoopGroup;
-    @Getter
-    @Delegate(excludes = {ChannelOutboundInvoker.class, AttributeMap.class})
-    protected SocketChannel socketChannel;
 
-    public NettyClientConnection(Location location) {
+    public ClientConnection(Location location) {
         super(location, null);
     }
 
@@ -77,10 +72,10 @@ public class NettyClientConnection extends AbstractClientConnection {
             protected void initChannel(SocketChannel ch) throws Exception {
                 socketChannel = ch;
                 ch.pipeline()
-                    .addLast(new MessageEncoder())
-                    .addLast(new MessageDecoder(NettyClientConnection.this))
+                    //.addLast(new MessageEncoder())
+                    .addLast(new MessageDecoder(ClientConnection.this))
                     .addLast(new IdleStateHandler(heartbeat(), 0, 0, SECONDS))
-                    .addLast(new ExceptionHandler(NettyClientConnection.this));
+                    .addLast(new ExceptionHandler(ClientConnection.this));
             }
         };
     }
@@ -91,23 +86,37 @@ public class NettyClientConnection extends AbstractClientConnection {
         log.info("Connection open, remote: [{}]", remoteLocation.getUrl());
         InetSocketAddress localAddress = socketChannel.localAddress();
         localLocation = new Location(localAddress.getHostName(), localAddress.getPort());
-        Executors.scheduleWithFixecDelay(
+        Executors.scheduleWithFixedDelayAsync(
             String.format("%s-heartbeat", remoteLocation), this::sendHeartbeat, 0, heartbeat() / 2, SECONDS
         );
     }
 
     private void sendHeartbeat() {
-        channel.sendAsync(channel.buffer(Type.COMMAND, 1).put(Command.PING.code()));
+        channel.sendAsync(channel.buffer(Type.COMMAND, 1).writeByte(Command.PING.code()));
     }
 
     @Override
-    public void sendAsync(ByteBuffer message) {
-        socketChannel.writeAndFlush(message.flip());
+    protected Map<Long, Channel> createChannels() {
+        return new ConcurrentHashMap<>();
     }
 
     @Override
-    public void send(ByteBuffer message) throws InterruptedException {
-        socketChannel.writeAndFlush(message.flip()).await();
+    protected String channelName(String url, long id) {
+        return String.format("<%s/%s/client>", url, id);
+    }
+
+    @Override
+    public void receive(ByteBuffer message) {
+        if (message == null) {
+            return;
+        }
+        long channelId = message.getLong();
+        Channel channel = getChannel(channelId);
+        if (channel == null) {
+            log.error("Receive message, channel id is [{}], but not have channel.", channelId);
+            return;
+        }
+        channel.receive(message);
     }
 
     @Override

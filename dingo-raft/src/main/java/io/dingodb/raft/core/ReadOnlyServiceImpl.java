@@ -31,7 +31,6 @@ import io.dingodb.raft.Status;
 import io.dingodb.raft.closure.ReadIndexClosure;
 import io.dingodb.raft.entity.ReadIndexState;
 import io.dingodb.raft.entity.ReadIndexStatus;
-import io.dingodb.raft.error.OverloadException;
 import io.dingodb.raft.error.RaftError;
 import io.dingodb.raft.error.RaftException;
 import io.dingodb.raft.option.RaftOptions;
@@ -279,7 +278,7 @@ public class ReadOnlyServiceImpl implements ReadOnlyService, FSMCaller.LastAppli
         this.fsmCaller.addLastAppliedLogIndexListener(this);
 
         // start scanner
-        Executors.scheduleAtFixedRate(
+        Executors.scheduleAtFixedRateAsync(
             "ReadOnlyService-PendingNotify-Scanner",
             () -> onApplied(this.fsmCaller.getLastAppliedIndex()),
             this.raftOptions.getMaxElectionDelayMs(),

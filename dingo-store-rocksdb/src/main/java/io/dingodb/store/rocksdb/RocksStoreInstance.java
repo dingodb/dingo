@@ -19,7 +19,7 @@ package io.dingodb.store.rocksdb;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ReadOptions;
@@ -45,7 +45,7 @@ public class RocksStoreInstance implements StoreInstance {
     public RocksStoreInstance(CommonId id) {
         try {
             this.path = Paths.get(RocksConfiguration.dataPath(), id.toString());
-            Files.createDirectories(path);
+            FileUtils.createDirectories(path);
             this.db = RocksDB.open(path.toString());
             this.writeOptions = new WriteOptions();
         } catch (RocksDBException e) {

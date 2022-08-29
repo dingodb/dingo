@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.common.concurrent.Executors.scheduleWithFixecDelay;
+import static io.dingodb.common.concurrent.Executors.scheduleWithFixedDelayAsync;
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -108,7 +108,7 @@ public class RocksRawKVStore implements RawKVStore {
             List<Integer> ttlList = new ArrayList<>();
             ttlList.add(this.ttl);
             this.db = TtlDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles, ttlList, false);
-            scheduledFuture = scheduleWithFixecDelay("raw-kv-compact", this::compact,  0, 60 * 60, SECONDS);
+            scheduledFuture = scheduleWithFixedDelayAsync("raw-kv-compact", this::compact,  0, 60 * 60, SECONDS);
         } else {
             this.db = RocksDB.open(options, dataPath, this.cfDescriptors, columnFamilyHandles);
         }
@@ -609,7 +609,7 @@ public class RocksRawKVStore implements RawKVStore {
                 if (hasMore) {
                     iterator.seek(endKey);
                 } else {
-                    Utils.emptyWhile(() -> hasNext() && ByteArrayUtils.compare(next().getKey(), endKey) < 0);
+                    Utils.loop(() -> hasNext() && ByteArrayUtils.compare(next().getKey(), endKey) < 0);
                 }
             }
             load();

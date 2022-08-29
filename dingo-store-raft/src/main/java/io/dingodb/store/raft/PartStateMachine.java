@@ -51,7 +51,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.concurrent.Executors.execute;
-import static io.dingodb.common.concurrent.Executors.scheduleWithFixecDelay;
+import static io.dingodb.common.concurrent.Executors.scheduleWithFixedDelayAsync;
 import static io.dingodb.raft.kv.Constants.SNAPSHOT_ZIP;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SNAPSHOT_LOAD;
 import static io.dingodb.raft.kv.storage.RaftRawKVOperation.Op.SNAPSHOT_SAVE;
@@ -210,7 +210,9 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         }
         this.reportApi = ServiceLoader.load(NetServiceProvider.class).iterator().next().get().apiRegistry()
             .proxy(ReportApi.class, CoordinatorConnector.defaultConnector());
-        scheduledFuture = scheduleWithFixecDelay("part-report", this::sendStats,  0, collectStatsInterval(), SECONDS);
+        scheduledFuture = scheduleWithFixedDelayAsync(
+            "part-report", this::sendStats,  0, collectStatsInterval(), SECONDS
+        );
 
     }
 

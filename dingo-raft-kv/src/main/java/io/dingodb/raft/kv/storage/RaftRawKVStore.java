@@ -18,7 +18,7 @@ package io.dingodb.raft.kv.storage;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.raft.Lifecycle;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
@@ -76,10 +76,10 @@ public class RaftRawKVStore implements Lifecycle<Void> {
         this.path = path;
         this.metaPath = Paths.get(path.toString(), "meta");
         this.snapshotPath = Paths.get(path.toString(), "snapshot");
-        Files.createDirectories(metaPath);
-        Files.createDirectories(snapshotPath);
-        Files.createDirectories(metaPath);
-        Files.createDirectories(snapshotPath);
+        FileUtils.createDirectories(metaPath);
+        FileUtils.createDirectories(snapshotPath);
+        FileUtils.createDirectories(metaPath);
+        FileUtils.createDirectories(snapshotPath);
         if (nodeOptions == null) {
             nodeOptions = new NodeOptions();
         } else {
@@ -110,7 +110,7 @@ public class RaftRawKVStore implements Lifecycle<Void> {
     public void shutdown() {
         this.node.shutdown(status -> {
             log.info("The {} shutdown, status: {}.", raftId, status);
-            Files.deleteIfExists(path);
+            FileUtils.deleteIfExists(path);
         });
     }
 

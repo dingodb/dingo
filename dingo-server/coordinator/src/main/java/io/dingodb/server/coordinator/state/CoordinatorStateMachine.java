@@ -251,7 +251,7 @@ public class CoordinatorStateMachine implements StateMachine {
         if (node.isLeader()) {
             channel.send(Message.EMPTY);
         }
-        channel.closeListener(leaderListener::remove);
+        channel.setCloseListener(leaderListener::remove);
     }
 
 }

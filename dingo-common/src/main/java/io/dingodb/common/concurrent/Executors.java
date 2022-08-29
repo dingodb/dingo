@@ -19,8 +19,8 @@ package io.dingodb.common.concurrent;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
@@ -64,32 +64,66 @@ public final class Executors {
         GLOBAL_POOL.execute(wrap(name, command));
     }
 
-    public static ScheduledFuture<?> schedule(String name, Runnable command, long delay, TimeUnit unit) {
-        return GLOBAL_SCHEDULE_POOL.schedule(() -> execute(name, command), delay, unit);
+    public static ScheduledFuture<CompletableFuture<?>> scheduleAsync(
+        String name, Runnable command, long delay, TimeUnit unit
+    ) {
+        return GLOBAL_SCHEDULE_POOL.schedule(() -> submit(name, command), delay, unit);
     }
 
-    public static ScheduledFuture<?> scheduleWithFixecDelay(
+    public static ScheduledFuture<CompletableFuture<?>> scheduleAsync(
+        String name, Callable<?> command, long delay, TimeUnit unit
+    ) {
+        return GLOBAL_SCHEDULE_POOL.schedule(() -> submit(name, command), delay, unit);
+    }
+
+    public static ScheduledFuture<?> scheduleWithFixedDelayAsync(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
         return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(() -> execute(name, command), initialDelay, period, unit);
     }
 
-    public static ScheduledFuture<?> scheduleAtFixedRate(
+    public static ScheduledFuture<?> scheduleAtFixedRateAsync(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
         return GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(() -> execute(name, command), initialDelay, period, unit);
     }
 
-    public static <T> Future<T> submit(String name, Callable<T> task) {
-        return GLOBAL_POOL.submit(wrap(name, task));
+    public static <T> CompletableFuture<T> submit(String name, Callable<T> task) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        GLOBAL_POOL.execute(() -> {
+            try {
+                future.complete(wrap(name, task).call());
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
     }
 
-    public static <T> Future<T> submit(String name, Runnable task, T result) {
-        return GLOBAL_POOL.submit(wrap(name, task), result);
+    public static <T> CompletableFuture<T> submit(String name, Runnable task, T result) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        GLOBAL_POOL.execute(() -> {
+            try {
+                wrap(name, task).run();
+                future.complete(result);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
     }
 
-    public static Future<?> submit(String name, Runnable task) {
-        return GLOBAL_POOL.submit(wrap(name, task));
+    public static CompletableFuture<Void> submit(String name, Runnable task) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        GLOBAL_POOL.execute(() -> {
+            try {
+                wrap(name, task).run();
+                future.complete(null);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
     }
 
     private static <V> Callable<V> wrap(String name, Callable<V> callable) {

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public final class PartInKvStore implements Part {

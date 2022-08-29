@@ -39,7 +39,7 @@ public class DefaultTimer implements Timer {
         Requires.requireNonNull(unit, "unit");
 
         final TimeoutTask timeoutTask = new TimeoutTask(task);
-        final ScheduledFuture<?> future = Executors.schedule(name, new TimeoutTask(task), delay, unit);
+        final ScheduledFuture<?> future = Executors.scheduleAsync(name, new TimeoutTask(task), delay, unit);
         timeoutTask.setFuture(future);
         return timeoutTask.getTimeout();
     }

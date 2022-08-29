@@ -16,7 +16,7 @@
 
 package io.dingodb.raft.kv.storage;
 
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +43,7 @@ public class TestRocksRawKVStore {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(DB_PATH);
+        FileUtils.deleteIfExists(DB_PATH);
     }
 
     @BeforeEach

@@ -18,7 +18,7 @@ package io.dingodb.store.raft;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.raft.rpc.RaftRpcServerFactory;
@@ -51,7 +51,7 @@ public class RaftStoreService implements StoreService {
     private final Map<CommonId, RaftStoreInstance> storeInstanceMap = new ConcurrentHashMap<>();
 
     private RaftStoreService() {
-        Files.createDirectories(path);
+        FileUtils.createDirectories(path);
         RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(
             new Endpoint(DingoConfiguration.host(), StoreConfiguration.raft().getPort()));
         rpcServer.init(null);

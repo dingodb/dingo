@@ -19,12 +19,12 @@ package io.dingodb.net.netty.api;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,7 +62,7 @@ public class FixedChannelProxy<T> implements  ApiProxy<T> {
     }
 
     @Override
-    public void invoke(Channel ch, ByteBuffer buffer, CompletableFuture<Object> future) throws InterruptedException {
+    public void invoke(Channel ch, ByteBuf buffer, CompletableFuture<Object> future) throws InterruptedException {
         future.whenCompleteAsync((r, e) -> {
             if (e instanceof CancellationException) {
                 ch.send(new Message(API_CANCEL, EMPTY.content()));

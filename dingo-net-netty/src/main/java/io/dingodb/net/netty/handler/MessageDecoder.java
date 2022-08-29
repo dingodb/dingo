@@ -17,7 +17,6 @@
 package io.dingodb.net.netty.handler;
 
 import io.dingodb.net.netty.connection.Connection;
-import io.dingodb.net.netty.utils.Serializers;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -55,11 +54,11 @@ public class MessageDecoder extends ByteToMessageDecoder {
     }
 
     private static ByteBuffer read(ByteBuf buf) {
-        buf.markReaderIndex();
-        Integer length;
-        if ((length = Serializers.readVarInt(buf)) == null) {
+        if (buf.readableBytes() < 5) {
             return null;
         }
+        buf.markReaderIndex();
+        int length = buf.readInt();
         if (length < 0) {
             throw new CorruptedFrameException("Negative length: " + length);
         }
