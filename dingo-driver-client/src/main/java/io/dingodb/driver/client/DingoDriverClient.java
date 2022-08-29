@@ -156,7 +156,7 @@ public class DingoDriverClient extends Driver {
         String hostname = null;
         if (portIndex != -1) {
             if (portIndex + 1 >= hostPortPair.length()) {
-                throw new SQLException("xx");
+                throw new SQLException("Malformed database URL, failed to parse the main URL sections.", "01S00", null);
             }
 
             String portAsString = hostPortPair.substring(portIndex + 1);
