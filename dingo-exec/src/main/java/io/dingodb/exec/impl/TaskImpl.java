@@ -21,14 +21,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.JsonConverter;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.expr.SqlParasCompileContext;
+import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
@@ -69,24 +72,38 @@ public final class TaskImpl implements Task {
     @JsonProperty("parasType")
     @Getter
     @Nullable
-    private final SqlParasCompileContext parasCompileContext;
+    private final DingoType parasType;
+
+    private Object[] paras = null;
 
     @Getter
     private TaskStatus taskInitStatus;
 
-    @JsonCreator
-    public TaskImpl(
-        @JsonProperty("id") Id id,
-        @JsonProperty("jobId") Id jobId,
-        @JsonProperty("location") Location location,
-        @Nullable @JsonProperty("parasType") SqlParasCompileContext parasCompileContext
-    ) {
+    public TaskImpl(Id id, Id jobId, Location location, @Nullable DingoType parasType) {
         this.id = id;
         this.jobId = jobId;
         this.location = location;
-        this.parasCompileContext = parasCompileContext;
+        this.parasType = parasType;
         this.operators = new HashMap<>();
         this.runList = new LinkedList<>();
+    }
+
+    @Nonnull
+    @JsonCreator
+    public static TaskImpl fromJson(
+        @JsonProperty("id") Id id,
+        @JsonProperty("jobId") Id jobId,
+        @JsonProperty("location") Location location,
+        @Nullable @JsonProperty("parasType") DingoType parasType,
+        @JsonDeserialize(using = RawJsonDeserializer.class)
+        @JsonProperty("paras") JsonNode paras
+    ) {
+        TaskImpl task = new TaskImpl(id, jobId, location, parasType);
+        if (paras != null) {
+            assert parasType != null;
+            task.paras = (Object[]) parasType.convertFrom(paras, JsonConverter.INSTANCE);
+        }
+        return task;
     }
 
     public static TaskImpl deserialize(String str) throws JsonProcessingException {
@@ -192,12 +209,28 @@ public final class TaskImpl implements Task {
     @Override
     public void reset() {
         getOperators().forEach((id, o) -> o.reset());
+        setParas(paras);
     }
 
     @Nonnull
     @Override
     public byte[] serialize() {
         return toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public void setParas(Object[] paras) {
+        this.paras = paras;
+        Task.super.setParas(paras);
+    }
+
+    @Nullable
+    @JsonProperty("paras")
+    Object[] getParasJson() {
+        if (parasType != null) {
+            return (Object[]) parasType.convertTo(paras, JsonConverter.INSTANCE);
+        }
+        return null;
     }
 
     @Override

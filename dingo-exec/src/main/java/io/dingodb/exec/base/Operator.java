@@ -16,11 +16,10 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.expr.runtime.CompileContext;
 
 import java.util.Collection;
-import java.util.Map;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -54,7 +53,7 @@ public interface Operator {
 
     void reset();
 
-    void setParas(Map<String, Object> paras);
+    void setParas(Object[] paras);
 
     default Input getInput(int pin) {
         Input input = new Input(getId(), pin);
@@ -73,7 +72,7 @@ public interface Operator {
         return sole(getOutputs());
     }
 
-    default CompileContext getParasCompileContext() {
-        return getTask().getParasCompileContext();
+    default DingoType getParasType() {
+        return getTask().getParasType();
     }
 }

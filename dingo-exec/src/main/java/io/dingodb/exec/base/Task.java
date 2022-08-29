@@ -17,8 +17,8 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.operator.RootOperator;
-import io.dingodb.expr.runtime.CompileContext;
 
 import java.util.List;
 import java.util.Map;
@@ -65,9 +65,9 @@ public interface Task {
 
     byte[] serialize();
 
-    CompileContext getParasCompileContext();
+    DingoType getParasType();
 
-    default void setParas(Map<String, Object> paras) {
+    default void setParas(Object[] paras) {
         getOperators().forEach((id, o) -> o.setParas(paras));
     }
 }

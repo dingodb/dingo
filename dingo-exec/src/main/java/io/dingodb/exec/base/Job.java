@@ -17,6 +17,7 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
 
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,9 @@ public interface Job {
     Map<Id, Task> getTasks();
 
     @Nonnull
-    Task create(Id id, Location location);
+    Task create(Id id, Location location, DingoType parasType);
+
+    DingoType getParasType();
 
     default Task getTask(Id id) {
         return getTasks().get(id);
@@ -41,6 +44,10 @@ public interface Job {
         return tasks.get(0);
     }
 
+    default void setParas(Object[] paras) {
+        getTasks().forEach((id, task) -> task.setParas(paras));
+    }
+
     default Task getByLocation(Location location) {
         List<Task> tasks = getTasks().values().stream()
             .filter(t -> t.getLocation().equals(location))
@@ -52,7 +59,7 @@ public interface Job {
     default Task getOrCreate(Location location, IdGenerator idGenerator) {
         Task task = getByLocation(location);
         if (task == null) {
-            task = create(idGenerator.get(), location);
+            task = create(idGenerator.get(), location, getParasType());
         }
         return task;
     }

@@ -25,7 +25,6 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
 
 import java.util.List;
-import java.util.Map;
 
 @JsonTypeName("project")
 @JsonPropertyOrder({"projects", "schema", "output"})
@@ -48,7 +47,7 @@ public final class ProjectOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        projects.forEach(expr -> expr.compileIn(schema, getParasCompileContext()));
+        projects.forEach(expr -> expr.compileIn(schema, getParasType()));
     }
 
     @Override
@@ -66,7 +65,7 @@ public final class ProjectOperator extends SoleOutOperator {
     }
 
     @Override
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
         super.setParas(paras);
         projects.forEach(e -> e.setParas(paras));
     }

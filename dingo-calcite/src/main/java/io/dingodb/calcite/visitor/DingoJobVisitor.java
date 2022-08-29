@@ -124,11 +124,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Getter
     private final Job job;
 
-    public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation) {
+    public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation, DingoType parasType) {
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.metaCache = new MetaCache();
-        job = new JobImpl(new Id(UUID.randomUUID().toString()));
+        job = new JobImpl(new Id(UUID.randomUUID().toString()), parasType);
     }
 
     @Nonnull
@@ -139,8 +139,19 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Nonnull
     public static Job createJob(RelNode input, Location currentLocation, boolean addRoot) {
+        MetaCache.initTableDefinitions();
+        return createJob(input, currentLocation, addRoot, null);
+    }
+
+    @Nonnull
+    public static Job createJob(
+        RelNode input,
+        Location currentLocation,
+        boolean addRoot,
+        DingoType parasType
+    ) {
         IdGenerator idGenerator = new DingoIdGenerator();
-        DingoJobVisitor visitor = new DingoJobVisitor(idGenerator, currentLocation);
+        DingoJobVisitor visitor = new DingoJobVisitor(idGenerator, currentLocation, parasType);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (addRoot) {
             if (outputs.size() == 1) {

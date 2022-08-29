@@ -23,21 +23,27 @@ import lombok.ToString;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@ToString(of = {"tupleType", "parasCompileContext"})
+@ToString(of = {"tupleType", "parasType"})
 public class SqlExprCompileContext implements CompileContext {
     public static final String SQL_DYNAMIC_VAR_NAME = "_P";
     public static final String SQL_TUPLE_VAR_NAME = "_";
 
     private final DingoType tupleType;
-    private final CompileContext parasCompileContext;
+    private final DingoType parasType;
 
     public SqlExprCompileContext(DingoType tupleType) {
         this(tupleType, null);
     }
 
-    public SqlExprCompileContext(DingoType tupleType, @Nullable CompileContext parasCompileContext) {
+    public SqlExprCompileContext(DingoType tupleType, @Nullable DingoType parasType) {
         this.tupleType = tupleType;
-        this.parasCompileContext = parasCompileContext;
+        this.parasType = parasType;
+        // Reset paras id to negative numbers.
+        if (parasType != null) {
+            for (int i = 0; i < parasType.fieldCount(); ++i) {
+                parasType.getChild(i).setId(-i - 1);
+            }
+        }
     }
 
     @Override
@@ -45,7 +51,7 @@ public class SqlExprCompileContext implements CompileContext {
         if (index.equals(SQL_TUPLE_VAR_NAME)) {
             return tupleType;
         } else if (index.equals(SQL_DYNAMIC_VAR_NAME)) {
-            return parasCompileContext;
+            return parasType;
         }
         return null;
     }

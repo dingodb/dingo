@@ -25,8 +25,6 @@ import io.dingodb.exec.base.Task;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Map;
-
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = "type"
@@ -69,6 +67,6 @@ public abstract class AbstractOperator implements Operator {
     }
 
     @Override
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
     }
 }

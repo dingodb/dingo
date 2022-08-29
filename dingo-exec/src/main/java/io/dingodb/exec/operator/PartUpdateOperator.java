@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -57,7 +56,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public void init() {
         super.init();
-        updates.forEach(expr -> expr.compileIn(schema, getParasCompileContext()));
+        updates.forEach(expr -> expr.compileIn(schema, getParasType()));
     }
 
     @Override
@@ -90,7 +89,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
         super.setParas(paras);
         updates.forEach(e -> e.setParas(paras));
     }

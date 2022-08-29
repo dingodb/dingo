@@ -31,6 +31,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.TimeZone;
+import javax.annotation.Nullable;
 
 @Slf4j
 public class DingoResultSet extends AvaticaResultSet {
@@ -48,6 +49,10 @@ public class DingoResultSet extends AvaticaResultSet {
     }
 
     Iterator<Object[]> getIterator() {
+        return getIterator(null);
+    }
+
+    Iterator<Object[]> getIterator(@Nullable Object[] paras) {
         if (iterator == null) {
             if (signature instanceof DingoExplainSignature) {
                 DingoExplainSignature signature = (DingoExplainSignature) this.signature;
@@ -55,10 +60,13 @@ public class DingoResultSet extends AvaticaResultSet {
             }
             DingoSignature dingoSignature = (DingoSignature) signature;
             Job job = dingoSignature.getJob();
+            if (paras != null) {
+                job.setParas(paras);
+            }
             Enumerator<Object[]> enumerator = new JobRunner(job).createEnumerator();
             iterator = Linq4j.enumeratorIterator(enumerator);
             try {
-                setFetchSize(1);
+                setFetchSize(100);
             } catch (SQLException e) {
                 log.error("Executor Iterator catch exception:{}", e.getMessage(), e);
             }
