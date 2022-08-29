@@ -16,6 +16,7 @@
 
 package io.dingodb.driver;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.JobRunner;
 import io.dingodb.exec.base.Job;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,10 @@ public class DingoResultSet extends AvaticaResultSet {
 
     Iterator<Object[]> getIterator() {
         if (iterator == null) {
+            if (signature instanceof DingoExplainSignature) {
+                DingoExplainSignature signature = (DingoExplainSignature) this.signature;
+                return ImmutableList.of(new Object[]{signature.toString()}).iterator();
+            }
             DingoSignature dingoSignature = (DingoSignature) signature;
             Job job = dingoSignature.getJob();
             Enumerator<Object[]> enumerator = new JobRunner(job).createEnumerator();
