@@ -17,5 +17,5 @@
 package io.dingodb.net;
 
 public interface MessageListenerProvider {
-    MessageListener get();
+    MessageListener get(Message message, Channel channel);
 }

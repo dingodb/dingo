@@ -18,7 +18,6 @@ package io.dingodb.net.netty.connection;
 
 import io.dingodb.common.Location;
 import io.dingodb.net.NetError;
-import io.dingodb.net.netty.connection.impl.NettyClientConnection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -34,7 +33,7 @@ public class ConnectionManager implements AutoCloseable {
         if (connections.containsKey(location)) {
             throw new UnsupportedOperationException();
         }
-        NettyClientConnection connection = new NettyClientConnection(location);
+        ClientConnection connection = new ClientConnection(location);
         try {
             connection.connect();
         } catch (InterruptedException e) {
@@ -45,6 +44,10 @@ public class ConnectionManager implements AutoCloseable {
         }
         connection.socketChannel().closeFuture().addListener(future -> onClose(connection));
         return connection;
+    }
+
+    public Connection getConnection(Location location) {
+        return connections.get(location);
     }
 
     public Connection getOrOpenConnection(Location location) {

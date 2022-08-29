@@ -18,6 +18,7 @@ package io.dingodb.common.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
@@ -53,8 +54,36 @@ public final class Utils {
     }
 
 
-    public static void emptyWhile(Supplier<Boolean> predicate) {
-        while (predicate.get()) {
+    public static void loop(Supplier<Boolean> predicate) {
+        while (true) {
+            if (!predicate.get()) {
+                break;
+            }
+        }
+    }
+
+    public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate) {
+        while (true) {
+            try {
+                if (!predicate.get()) {
+                    break;
+                }
+            } catch (Throwable e) {
+                break;
+            }
+        }
+    }
+
+    public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate, Consumer<Throwable> exceptionHandler) {
+        while (true) {
+            try {
+                if (!predicate.get()) {
+                    break;
+                }
+            } catch (Throwable e) {
+                exceptionHandler.accept(e);
+                break;
+            }
         }
     }
 

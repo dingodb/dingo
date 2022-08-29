@@ -19,7 +19,7 @@ package io.dingodb.raft.kv.storage;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.option.NodeOptions;
@@ -28,14 +28,12 @@ import io.dingodb.raft.storage.LogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStorage;
 import io.dingodb.raft.storage.impl.RocksDBLogStore;
 import io.dingodb.raft.util.Endpoint;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
@@ -70,7 +68,7 @@ public class TestRaftRawKVStore {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(Paths.get(DB_PATH));
+        FileUtils.deleteIfExists(Paths.get(DB_PATH));
     }
 
 
@@ -81,7 +79,7 @@ public class TestRaftRawKVStore {
         nodeOpts.setInitialConf(initialConf);
         final String logUri = Paths.get(DB_PATH, "log").toString();
         try {
-            FileUtils.forceMkdir(new File(logUri));
+            FileUtils.createDirectories(Paths.get(logUri));
         } catch (final Throwable t) {
             throw new RuntimeException("Fail to make dir for logDbPath: " + logUri);
         }

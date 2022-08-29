@@ -23,7 +23,7 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.common.util.UdfUtils;
@@ -92,9 +92,9 @@ public class RaftStoreInstance implements StoreInstance {
             this.id = id;
             this.path = path;
             this.ttl = ttl;
-            Files.createDirectories(path);
-            Files.createDirectories(dbPath = Paths.get(path.toString(), "db"));
-            Files.createDirectories(logPath = Paths.get(path.toString(), "log"));
+            FileUtils.createDirectories(path);
+            FileUtils.createDirectories(dbPath = Paths.get(path.toString(), "db"));
+            FileUtils.createDirectories(logPath = Paths.get(path.toString(), "log"));
             this.store = new RocksRawKVStore(dbPath.toString(), StoreConfiguration.dbRocksOptionsFile(),
                 this.id.toString(), this.ttl);
             this.logStore = new RocksDBLogStore();
@@ -130,7 +130,7 @@ public class RaftStoreInstance implements StoreInstance {
         waitParts.clear();
         store.close();
         logStore.shutdown();
-        Files.deleteIfExists(path);
+        FileUtils.deleteIfExists(path);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class RaftStoreInstance implements StoreInstance {
                 .filter(s -> !s.isEmpty())
                 .ifAbsentSet(path::toString)
                 .map(p -> Paths.get(p, part.getId().toString()))
-                .ifPresent(Files::createDirectories)
+                .ifPresent(FileUtils::createDirectories)
                 .get();
             RaftStoreInstancePart storeInstancePart = new RaftStoreInstancePart(part, partPath, store, logStore,
                 this.ttl);

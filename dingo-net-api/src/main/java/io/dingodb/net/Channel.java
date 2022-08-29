@@ -33,7 +33,7 @@ public interface Channel extends AutoCloseable {
      */
     void send(Message msg);
 
-    void send(Message message, boolean sync) throws InterruptedException;
+    void send(Message message, boolean sync);
 
     /**
      * Set message listener on the channel. When the remote-end returns a message, listener will be notified.
@@ -41,9 +41,9 @@ public interface Channel extends AutoCloseable {
     void setMessageListener(MessageListener listener);
 
     /**
-     * Register close listener on the channel. When the channel close, listener will be notified.
+     * Set close listener on the channel. When the channel close, listener will be notified.
      */
-    void closeListener(Consumer<Channel> listener);
+    void setCloseListener(Consumer<Channel> listener);
 
     /**
      * Returns current channel status {@link Status}.
@@ -73,6 +73,9 @@ public interface Channel extends AutoCloseable {
     default boolean isClosed() {
         return status() == Status.CLOSE;
     }
+
+    @Override
+    void close();
 
     enum Status {
         /**

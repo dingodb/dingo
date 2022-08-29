@@ -52,4 +52,13 @@ public interface ApiRegistry {
     <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined);
 
     <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined, int timeout);
+
+    default <T> T proxy(Class<T> api, Location location) {
+        return proxy(api, () -> location);
+    }
+
+    default <T> T proxy(Class<T> api, Location location, int timeout) {
+        return proxy(api, location, timeout);
+    }
+
 }

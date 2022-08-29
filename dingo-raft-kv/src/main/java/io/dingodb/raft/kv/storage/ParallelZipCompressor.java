@@ -49,8 +49,8 @@ import java.util.zip.Checksum;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 
-import static io.dingodb.common.util.NoBreakFunctionWrapper.throwException;
-import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
+import static io.dingodb.common.util.NoBreakFunctions.throwException;
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 public class ParallelZipCompressor {
     private static final Logger LOG = LoggerFactory.getLogger(ParallelZipCompressor.class);
@@ -152,7 +152,7 @@ public class ParallelZipCompressor {
             CheckedInputStream cis = new CheckedInputStream(bis, checksum);
             ZipArchiveInputStream zis = new ZipArchiveInputStream(cis);
         ) {
-            Utils.emptyWhile(wrap(() -> zis.getNextZipEntry() != null, throwException()));
+            Utils.loop(wrap(() -> zis.getNextZipEntry() != null, throwException()));
         }
         return checksum;
     }

@@ -16,7 +16,7 @@
 
 package io.dingodb.raft.kv.storage;
 
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ public class TestMemoryRawKVStore {
         assertThat(iterator.next()).isEqualTo(new ByteArrayEntry(new byte[] {5}, new byte[] {5}));
         assertThat(iterator.hasNext()).isFalse();
 
-        Files.deleteIfExists(snapshot);
+        FileUtils.deleteIfExists(snapshot);
     }
 
 }

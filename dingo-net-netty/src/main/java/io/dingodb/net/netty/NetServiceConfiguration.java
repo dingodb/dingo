@@ -22,8 +22,7 @@ import lombok.Getter;
 @Getter
 public class NetServiceConfiguration {
 
-    public static final int DEFAULT_HEARTBEAT = 20;
-    public static final int MIN_HEARTBEAT = 2;
+    public static final int MIN_HEARTBEAT = 1111;
     public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors() * 2;
     public static final String HEARTBEAT = "heartbeat";
 
@@ -43,7 +42,7 @@ public class NetServiceConfiguration {
                 }
             }
             if (INSTANCE.heartbeat == null || INSTANCE.heartbeat < MIN_HEARTBEAT) {
-                INSTANCE.heartbeat = DEFAULT_HEARTBEAT;
+                INSTANCE.heartbeat = MIN_HEARTBEAT;
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

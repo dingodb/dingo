@@ -36,19 +36,19 @@ public class TimerManager implements Scheduler {
 
     @Override
     public ScheduledFuture<?> schedule(final Runnable command, final long delay, final TimeUnit unit) {
-        return Executors.schedule(name, command, delay, unit);
+        return Executors.scheduleAsync(name, command, delay, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command, final long initialDelay, final long period,
                                                   final TimeUnit unit) {
-        return Executors.scheduleAtFixedRate(name, command, initialDelay, period, unit);
+        return Executors.scheduleAtFixedRateAsync(name, command, initialDelay, period, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command, final long initialDelay, final long delay,
                                                      final TimeUnit unit) {
-        return Executors.scheduleWithFixecDelay(name, command, initialDelay, delay, unit);
+        return Executors.scheduleWithFixedDelayAsync(name, command, initialDelay, delay, unit);
     }
 
     @Override

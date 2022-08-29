@@ -22,7 +22,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.raft.kv.storage.RawKVStore;
 import io.dingodb.store.raft.config.StoreConfiguration;
@@ -69,7 +69,7 @@ public class TestRaftStoreInstance {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(TEST_PATH);
+        FileUtils.deleteIfExists(TEST_PATH);
     }
 
     @BeforeEach

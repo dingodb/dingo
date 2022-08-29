@@ -21,4 +21,5 @@ public enum Type {
     COMMAND,
     API,
     HANDSHAKE,
+    ;
 }

@@ -35,6 +35,7 @@ public final class Message {
     public static final String API_OK = "API_OK";
     public static final String API_ERROR = "API_ERROR";
     public static final String API_CANCEL = "API_CANCEL";
+    public static final String FILE_TRANSFER = "FILE_TRANSFER";
 
     public static final Message EMPTY = new Message(EMPTY_TAG, new byte[0]);
 

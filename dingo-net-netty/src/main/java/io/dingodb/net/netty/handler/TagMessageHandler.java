@@ -87,19 +87,22 @@ public class TagMessageHandler {
         }
     }
 
-    public void handler(Channel channel, Message message) {
+    public void handler(Message message, Channel channel) {
         String tag = message.tag();
         if (tag == null) {
             return;
+        }
+        MessageListenerProvider provider = listenerProviders.get(tag);
+        if (provider != null) {
+            MessageListener listener = provider.get(message, channel);
+            if (listener != null) {
+                channel.setMessageListener(listener);
+            }
         }
         Collection<MessageListener> listeners = this.listeners.get(tag);
         if (listeners == null || listeners.isEmpty()) {
             return;
         }
         listeners.forEach(listener -> onTagMessage(channel, message, listener));
-        MessageListenerProvider provider = listenerProviders.get(tag);
-        if (provider != null) {
-            channel.setMessageListener(provider.get());
-        }
     }
 }

@@ -16,71 +16,80 @@
 
 package io.dingodb.net.netty.connection;
 
-import io.dingodb.common.Location;
-import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.net.netty.channel.Channel;
-import io.netty.channel.socket.SocketChannel;
+ import io.dingodb.common.Location;
+ import io.dingodb.common.concurrent.LinkedRunner;
+ import io.dingodb.net.netty.channel.Channel;
+ import io.netty.buffer.ByteBuf;
+ import io.netty.channel.ChannelOutboundInvoker;
+ import io.netty.channel.socket.SocketChannel;
+ import io.netty.util.AttributeMap;
+ import lombok.Getter;
+ import lombok.experimental.Accessors;
+ import lombok.experimental.Delegate;
+ import lombok.extern.slf4j.Slf4j;
 
-import java.nio.ByteBuffer;
+ import java.nio.ByteBuffer;
+ import java.util.Map;
+ import java.util.concurrent.atomic.AtomicLong;
 
-public interface Connection extends AutoCloseable {
+@Slf4j
+@Accessors(fluent = true)
+public abstract class Connection  {
 
-    /**
-     * Return {@code true} if this connection is active.
-     */
-    boolean isActive();
+    protected final Map<Long, Channel> channels = createChannels();
+    protected final AtomicLong channelIdSeq = new AtomicLong(0);
+    @Getter
+    protected final Channel channel;
+    @Getter
+    protected Location remoteLocation;
+    @Getter
+    protected Location localLocation;
+    @Getter
+    @Delegate(excludes = {ChannelOutboundInvoker.class, AttributeMap.class})
+    protected SocketChannel socketChannel;
 
-    /**
-     * Return this connection netty channel.
-     */
-    SocketChannel socketChannel();
+    public Connection(Location remoteLocation, Location localLocation) {
+        this.remoteLocation = remoteLocation;
+        this.localLocation = localLocation;
+        this.channel = createChannel(0);
+        this.channels.put(0L, channel);
+    }
 
-    /**
-     * Returns the local location where this connection is connected to.
-     */
-    Location localLocation();
+    protected abstract Map<Long, Channel> createChannels();
+    public abstract void receive(ByteBuffer message);
 
-    /**
-     * Returns the remote location where this connection is connected to.
-     */
-    Location remoteLocation();
+    public void send(ByteBuf message) throws InterruptedException {
+        socketChannel.writeAndFlush(message).await();
+    }
 
-    /**
-     * Returns generic sub channel.
-     */
-    Channel channel();
-
-    default ByteBuffer allocMessageBuffer(long channelId, int capacity) {
-        return ByteBuffer.allocate(capacity + PrimitiveCodec.LONG_MAX_LEN).put(PrimitiveCodec.encodeVarLong(channelId));
+    public void sendAsync(ByteBuf message) {
+        socketChannel.writeAndFlush(message);
     }
 
     /**
-     * Returns a new sub channel for current connection.
+     * Two arguments, first is url, second is channel id.
+     * @return channel name format
      */
-    Channel newChannel(boolean keepAlive) throws InterruptedException;
+    protected abstract String channelName(String url, long id);
 
-    /**
-     * Returns channel by channel id, if channel id is null or channel not exists, will return null.
-     */
-    Channel getChannel(long channelId);
-
-    /**
-     * Send message to remote-end.
-     */
-    void send(ByteBuffer message) throws InterruptedException;
-
-    /**
-     * Async send message to remote-end.
-     */
-    void sendAsync(ByteBuffer message);
-
-    /**
-     * Receive message.
-     */
-    void receive(ByteBuffer message);
-
-    @Override
-    default void close() {
-
+    protected Channel createChannel(long channelId) {
+        return new Channel(
+            channelId, this, new LinkedRunner(channelName(remoteLocation.getUrl(), channelId)), channels::remove
+        );
     }
+
+    public Channel newChannel(boolean keepAlive) {
+        return channels.computeIfAbsent(channelIdSeq.incrementAndGet(), this::createChannel);
+    }
+
+    public Channel getChannel(long channelId) {
+        return channels.get(channelId);
+    }
+
+    public void close() {
+        channel.shutdown();
+        channels.values().forEach(Channel::shutdown);
+        channels.clear();
+    }
+
 }

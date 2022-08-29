@@ -19,6 +19,7 @@ package io.dingodb.net.netty.channel;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.PreParameters;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
@@ -27,20 +28,20 @@ import io.dingodb.net.netty.connection.Connection;
 import io.dingodb.net.netty.handler.TagMessageHandler;
 import io.dingodb.net.netty.packet.Command;
 import io.dingodb.net.netty.packet.Type;
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 @Slf4j
 @Getter
 @Accessors(fluent = true, chain = true)
-public class Channel implements Runnable, io.dingodb.net.Channel {
+public class Channel implements io.dingodb.net.Channel {
 
     private static final long WAIT_THREAD_TIME = TimeUnit.MILLISECONDS.toNanos(2);
     private static final ApiRegistryImpl API_REGISTRY = ApiRegistryImpl.instance();
@@ -54,29 +55,32 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
     protected final long channelId;
     @Getter
     protected final Connection connection;
-    @Getter
-    protected final boolean server;
-    protected final LinkedBlockingQueue<ByteBuffer> buffers = new LinkedBlockingQueue<>();
-    protected final Runnable onClose;
-    protected Thread thread;
+    protected final Consumer<Long> onClose;
+
+    protected LinkedRunner runner;
 
     @Getter
     protected Status status;
 
+    @Setter
+    private Consumer<ByteBuffer> directListener = null;
     private MessageListener messageListener = null;
     private Consumer<io.dingodb.net.Channel> closeListener = EMPTY_CLOSE_LISTENER;
 
-    public Channel(long channelId, Connection connection, boolean server, Runnable onClose) {
+    public Channel(long channelId, Connection connection, LinkedRunner runner, Consumer<Long> onClose) {
         this.channelId = channelId;
         this.connection = connection;
         this.onClose = onClose;
         this.status = Status.ACTIVE;
-        this.server = server;
+        this.runner = runner;
     }
 
-    public ByteBuffer buffer(Type type, int capacity) {
-        return connection.allocMessageBuffer(channelId, capacity + 1)
-            .put((byte) type.ordinal());
+    public ByteBuf buffer(Type type, int capacity) {
+        capacity = capacity + 8 + 1;
+        return connection.alloc().buffer(capacity + 4, capacity + 4)
+            .writeInt(capacity)
+            .writeLong(channelId)
+            .writeByte(type.ordinal());
     }
 
     public synchronized void close() {
@@ -84,12 +88,12 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
             log.warn("Channel [{}] already close", channelId);
             return;
         }
-        while (thread == null && closeRetry-- > 0) {
-            LockSupport.parkNanos(WAIT_THREAD_TIME);
-        }
         this.shutdown();
-        this.sendAsync(buffer(Type.COMMAND, 1).put(Command.CLOSE.code()));
-        Executors.execute(channelId + "-channel-close", onClose);
+        try {
+            this.sendAsync(buffer(Type.COMMAND, 1).writeByte(Command.CLOSE.code()));
+        } catch (Exception e) {
+            log.error("Send close message error.", e);
+        }
     }
 
     public synchronized void shutdown() {
@@ -97,20 +101,23 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
             return;
         }
         this.status = Status.CLOSE;
-        if (thread != null) {
-            thread.interrupt();
-        }
-        closeListener.accept(this);
+        runner.forceFollow(() -> onClose.accept(channelId));
+        runner.forceFollow(() -> closeListener.accept(this));
+        this.runner = null;
     }
 
     @Override
-    public void setMessageListener(MessageListener listener) {
+    public synchronized void setMessageListener(MessageListener listener) {
         messageListener = PreParameters.cleanNull(listener, EMPTY_MESSAGE_LISTENER);
     }
 
     @Override
-    public void closeListener(Consumer<io.dingodb.net.Channel> listener) {
-        this.closeListener = PreParameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
+    public synchronized void setCloseListener(Consumer<io.dingodb.net.Channel> listener) {
+        if (isClosed()) {
+            runner.forceFollow(() -> closeListener.accept(this));
+        } else {
+            this.closeListener = PreParameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
+        }
     }
 
     @Override
@@ -125,57 +132,46 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
 
     @Override
     public void send(Message message) {
-        try {
-            send(message, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        send(message, false);
     }
 
     @Override
-    public void send(Message message, boolean sync) throws InterruptedException {
-        byte[] encodeMessage = message.encode();
-        if (log.isDebugEnabled()) {
-            log.debug("Send [{}] to [{}] on [{}].", localLocation().getUrl(), remoteLocation().getUrl(), channelId);
+    public void send(Message message, boolean sync) {
+        if (isClosed()) {
+            throw new RuntimeException("The channel is closed");
+        }
+        byte[] msg = message.encode();
+        if (log.isTraceEnabled()) {
+            log.trace("Send message to [{}] on [{}].", remoteLocation().getUrl(), channelId);
         }
         if (sync) {
-            send(buffer(Type.USER_DEFINE, encodeMessage.length).put(encodeMessage));
+            try {
+                send(buffer(Type.USER_DEFINE, msg.length).writeBytes(msg));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         } else {
-            sendAsync(buffer(Type.USER_DEFINE, encodeMessage.length).put(encodeMessage));
+            try {
+                sendAsync(buffer(Type.USER_DEFINE, msg.length).writeBytes(msg));
+            } catch (Exception e) {
+                log.error("Send message to {} on {} error.", remoteLocation().getUrl(), channelId, e);
+            }
         }
     }
 
-    public void send(ByteBuffer content) throws InterruptedException {
+    public void send(ByteBuf content) throws InterruptedException {
         connection.send(content);
     }
 
-    public void sendAsync(ByteBuffer content) {
+    public void sendAsync(ByteBuf content) {
         connection.sendAsync(content);
     }
 
     public void receive(ByteBuffer buffer) {
-        try {
-            if (!buffers.offer(buffer)) {
-                log.error("Channel [{}] receive message, but full of buffer, size: [{}].", channelId, buffers.size());
+        if (status == Status.ACTIVE) {
+            if (!runner.follow(() -> processMessage(buffer))) {
+                log.error("Channel [{}] concurrent receive.", channelId);
             }
-        } catch (Exception e) {
-            log.error("Channel [{}] receive message, offer to buffer error.", channelId, e);
-        }
-    }
-
-    public void run() {
-        thread = Thread.currentThread();
-        while (status == Status.ACTIVE) {
-            try {
-                processMessage(buffers.take());
-            } catch (InterruptedException e) {
-                log.debug("Poll message interrupt.");
-            } catch (Exception e) {
-                log.error("Process message failed.", e);
-            }
-        }
-        if (!buffers.isEmpty()) {
-            log.warn("Channel [{}] closed, but buffer not empty, [{}] message not process.", channelId, buffers.size());
         }
     }
 
@@ -183,11 +179,15 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
         try {
             switch (Type.values()[buffer.get()]) {
                 case USER_DEFINE:
+                    if (directListener != null) {
+                        directListener.accept(buffer);
+                        return;
+                    }
                     Message message = Message.decode(buffer);
                     if (messageListener != null) {
                         messageListener.onMessage(message, this);
                     }
-                    TagMessageHandler.instance().handler(this, message);
+                    TagMessageHandler.instance().handler(message, this);
                     break;
                 case COMMAND:
                     processCommand(buffer);
@@ -207,21 +207,27 @@ public class Channel implements Runnable, io.dingodb.net.Channel {
         Command type = Command.values()[buffer.get()];
         switch (type) {
             case PONG:
+                if (log.isTraceEnabled()) {
+                    log.trace("Channel [{}] receive pong command.", channelId);
+                }
+                return;
             case ACK:
-                if (log.isDebugEnabled()) {
-                    log.debug("Channel [{}] receive ack command.", channelId);
+                if (log.isTraceEnabled()) {
+                    log.trace("Channel [{}] receive ack command.", channelId);
                 }
                 return;
             case PING:
-                sendAsync(buffer(Type.COMMAND, 1).put(Command.PONG.code()));
+                if (log.isTraceEnabled()) {
+                    log.trace("Channel [{}] receive ping command.", channelId);
+                }
+                sendAsync(buffer(Type.COMMAND, 1).writeByte(Command.PONG.code()));
                 return;
             case CLOSE:
-                if (log.isDebugEnabled()) {
-                    log.debug("Channel [{}] receive close command.", channelId);
+                if (log.isTraceEnabled()) {
+                    log.trace("Channel [{}] receive close command.", channelId);
                 }
-                thread = null;
                 shutdown();
-                Executors.execute(channelId + "-channel-close", onClose);
+                Executors.execute(channelId + "-channel-close", () -> onClose.accept(channelId));
                 return;
             case ERROR:
                 log.error("Receive error: {}.", PrimitiveCodec.readString(buffer));

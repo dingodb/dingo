@@ -41,7 +41,7 @@ public interface HandshakeApi {
     }
 
     @ApiDeclaration
-    default Command handshake(Channel channel, Handshake handshake) throws InterruptedException {
+    default Command handshake(Channel channel, Handshake handshake) {
         if (Versions.checkCode(handshake.code, 0) && currentVersion() == handshake.version) {
             return Command.ACK;
         }

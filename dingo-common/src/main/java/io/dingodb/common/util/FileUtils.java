@@ -17,16 +17,17 @@
 package io.dingodb.common.util;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class Files {
+public final class FileUtils {
 
-    private Files() {
+    private FileUtils() {
     }
 
     public static void createDirectories(Path path) {
         try {
-            java.nio.file.Files.createDirectories(path);
+            Files.createDirectories(path);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -34,11 +35,11 @@ public class Files {
 
     public static void deleteIfExists(Path path) {
         try {
-            if (java.nio.file.Files.isDirectory(path)) {
-                java.nio.file.Files.list(path).forEach(Files::deleteIfExists);
-                java.nio.file.Files.deleteIfExists(path);
+            if (Files.isDirectory(path)) {
+                Files.list(path).forEach(FileUtils::deleteIfExists);
+                Files.deleteIfExists(path);
             }
-            java.nio.file.Files.deleteIfExists(path);
+            Files.deleteIfExists(path);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

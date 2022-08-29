@@ -18,7 +18,7 @@ package io.dingodb.server.coordinator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.raft.Node;
@@ -69,7 +69,7 @@ public class CoordinatorServer {
         log.info("Coordinator configuration: {}.", this.configuration);
         log.info("Dingo configuration: {}.", DingoConfiguration.instance());
 
-        Files.createDirectories(Paths.get(configuration.getDataPath()));
+        FileUtils.createDirectories(Paths.get(configuration.getDataPath()));
 
         RawKVStore memoryStore = new MemoryRawKVStore();
         RawKVStore rocksStore = new RocksRawKVStore(
@@ -99,7 +99,7 @@ public class CoordinatorServer {
 
     private LogStorage createLogStorage(NodeOptions nodeOptions) {
         Path logPath = Paths.get(configuration.getDataPath(), RAFT, "log");
-        Files.createDirectories(logPath);
+        FileUtils.createDirectories(logPath);
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
         logStoreOptions.setDataPath(logPath.toString());
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
@@ -131,7 +131,7 @@ public class CoordinatorServer {
         if (nodeOptions.getRaftMetaUri() == null || nodeOptions.getRaftMetaUri().isEmpty()) {
             Path metaPath = Paths.get(dataPath, RAFT, "meta");
             try {
-                Files.createDirectories(metaPath);
+                FileUtils.createDirectories(metaPath);
             } catch (final Throwable t) {
                 throw new RuntimeException("Fail to make dir for meta: " + metaPath);
             }
@@ -140,7 +140,7 @@ public class CoordinatorServer {
         if (nodeOptions.getSnapshotUri() == null || nodeOptions.getSnapshotUri().isEmpty()) {
             Path snapshotPath = Paths.get(dataPath, RAFT, "snapshot");
             try {
-                Files.createDirectories(snapshotPath);
+                FileUtils.createDirectories(snapshotPath);
             } catch (final Throwable t) {
                 throw new RuntimeException("Fail to make dir for snapshot: " + snapshotPath);
             }

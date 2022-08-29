@@ -14,28 +14,23 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.connection.impl;
+package io.dingodb.net.netty.connection;
 
 import io.dingodb.common.Location;
-import io.netty.channel.ChannelOutboundInvoker;
+import io.dingodb.net.netty.channel.Channel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.util.AttributeMap;
-import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Accessors(fluent = true)
-public class NettyServerConnection extends AbstractServerConnection {
+public class ServerConnection extends Connection {
 
-    @Getter
-    @Delegate(excludes = {ChannelOutboundInvoker.class, AttributeMap.class})
-    protected SocketChannel socketChannel;
-
-    public NettyServerConnection(SocketChannel socketChannel) {
+    public ServerConnection(SocketChannel socketChannel) {
         super(
             new Location(socketChannel.remoteAddress().getHostName(), socketChannel.remoteAddress().getPort()),
             new Location(socketChannel.localAddress().getHostName(), socketChannel.localAddress().getPort())
@@ -43,14 +38,34 @@ public class NettyServerConnection extends AbstractServerConnection {
         this.socketChannel = socketChannel;
     }
 
+
     @Override
-    public void send(ByteBuffer message) throws InterruptedException {
-        socketChannel.writeAndFlush(message.flip()).await();
+    protected Map<Long, Channel> createChannels() {
+        return new ConcurrentHashMap<>();
     }
 
     @Override
-    public void sendAsync(ByteBuffer message) {
-        socketChannel.writeAndFlush(message.flip());
+    protected String channelName(String url, long id) {
+        return String.format("<%s/%s/server>",url, id);
+    }
+
+    @Override
+    public Channel newChannel(boolean keepAlive) {
+        throw new UnsupportedOperationException("Server connection cannot create new channel.");
+    }
+
+    @Override
+    public void receive(ByteBuffer message) {
+        if (message == null) {
+            return;
+        }
+        long channelId = message.getLong();
+        Channel channel = channels.get(channelId);
+        if (channel == null) {
+            channel = createChannel(channelId);
+            channels.put(channelId, channel);
+        }
+        channel.receive(message);
     }
 
 }

@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.common.util.NoBreakFunctionWrapper.wrap;
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public class CoordinatorConnector implements Connector, Supplier<Location> {
@@ -140,7 +140,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
     private void connected(Message message, Channel channel) {
         log.info("Connected coordinator [{}] channel.", channel.remoteLocation());
         coordinatorAddresses.add(channel.remoteLocation());
-        channel.closeListener(this::listenClose);
+        channel.setCloseListener(this::listenClose);
         channel.setMessageListener(this::listenLeader);
     }
 
@@ -211,7 +211,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
         if (oldLeader != null) {
             closeChannel(oldLeader);
         }
-        channel.closeListener(this::listenClose);
+        channel.setCloseListener(this::listenClose);
         return true;
     }
 

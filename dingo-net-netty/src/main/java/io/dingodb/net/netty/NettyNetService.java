@@ -26,10 +26,11 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.channel.Channel;
 import io.dingodb.net.netty.connection.ConnectionManager;
-import io.dingodb.net.netty.connection.impl.LocalClientConnection;
 import io.dingodb.net.netty.handler.TagMessageHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.dingodb.net.netty.listener.impl.NettyServer;
+import io.dingodb.net.service.FileTransferService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -38,9 +39,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class NettyNetService implements NetService {
 
+    @Getter
     private final Map<Integer, PortListener> portListeners;
+    @Getter
     private final ConnectionManager connectionManager;
-
+    @Getter
     private final String hostname;
 
     protected NettyNetService() {
@@ -67,6 +70,7 @@ public class NettyNetService implements NetService {
         server.start();
         portListeners.put(port, server);
         log.info("Start listening {}.", port);
+        FileTransferService.getDefault();
     }
 
     @Override
@@ -79,11 +83,6 @@ public class NettyNetService implements NetService {
         return ApiRegistryImpl.instance();
     }
 
-    private boolean isLocal(Location location) {
-        return location.port() == 0 || (portListeners.containsKey(location.port())
-            && location.host().equals(hostname));
-    }
-
     @Override
     public Channel newChannel(Location location) {
         return newChannel(location, true);
@@ -91,14 +90,7 @@ public class NettyNetService implements NetService {
 
     @Override
     public Channel newChannel(Location location, boolean keepAlive) {
-        if (isLocal(location)) {
-            return LocalClientConnection.INSTANCE.newChannel(keepAlive);
-        }
-        try {
-            return connectionManager.getOrOpenConnection(location).newChannel(keepAlive);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        return connectionManager.getOrOpenConnection(location).newChannel(keepAlive);
     }
 
     @Override

@@ -21,7 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.util.Files;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.MemoryRawKVStore;
 import io.dingodb.raft.option.RaftLogStoreOptions;
@@ -68,9 +68,9 @@ public class TestRaftInstancePart {
         final RocksDBLogStore logStore = new RocksDBLogStore();
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();
         Path raftLogPath = Paths.get(TEST_PATH.toString(), "raft", "log");
-        Files.createDirectories(raftLogPath);
+        FileUtils.createDirectories(raftLogPath);
         logStoreOptions.setDataPath(raftLogPath.toString());
-        Files.createDirectories(raftLogPath);
+        FileUtils.createDirectories(raftLogPath);
         logStoreOptions.setLogEntryCodecFactory(DefaultJRaftServiceFactory.newInstance().createLogEntryCodecFactory());
         logStore.init(logStoreOptions);
         storeInstancePart = new RaftStoreInstancePart(
@@ -84,7 +84,7 @@ public class TestRaftInstancePart {
 
     @AfterAll
     public static void afterAll() throws Exception {
-        Files.deleteIfExists(TEST_PATH);
+        FileUtils.deleteIfExists(TEST_PATH);
     }
 
     @BeforeEach

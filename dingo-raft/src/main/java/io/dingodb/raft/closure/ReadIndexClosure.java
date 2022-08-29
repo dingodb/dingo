@@ -60,7 +60,7 @@ public abstract class ReadIndexClosure implements Closure {
     public ReadIndexClosure(long timeoutMs) {
         if (timeoutMs >= 0) {
             // Lazy to init the timer
-            Executors.schedule("read-index-timeout-scanner", this::timeout, timeoutMs, TimeUnit.MILLISECONDS);
+            Executors.scheduleAsync("read-index-timeout-scanner", this::timeout, timeoutMs, TimeUnit.MILLISECONDS);
         }
     }
 
