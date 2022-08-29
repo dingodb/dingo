@@ -56,7 +56,7 @@ public abstract class AbstractParser implements Parser {
         return totalInsertCnt;
     }
 
-    private boolean isValidRecord(TableDefinition tableDefinition, Object[] columnValues) {
+    protected boolean isValidRecord(TableDefinition tableDefinition, Object[] columnValues) {
         if (tableDefinition == null
             || columnValues == null
             || columnValues.length != tableDefinition.getColumns().size()) {
