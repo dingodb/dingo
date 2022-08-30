@@ -45,6 +45,8 @@ tasks.named("build") { x ->
 }
 
 fatJar.dependsOn([
+    ':dingo-common:jar',
+    ':dingo-net-api:jar',
     ':dingo-net-netty:jar'
 ])
 
