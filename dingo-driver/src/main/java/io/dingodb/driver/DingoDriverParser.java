@@ -24,6 +24,7 @@ import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Job;
 import lombok.extern.slf4j.Slf4j;
@@ -155,6 +156,25 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @Nonnull
+    private static List<AvaticaParameter> createParameterList(@Nonnull RelDataType parasType) {
+        List<RelDataTypeField> fieldList = parasType.getFieldList();
+        final List<AvaticaParameter> parameters = new ArrayList<>(fieldList.size());
+        for (RelDataTypeField field : fieldList) {
+            RelDataType type = field.getType();
+            parameters.add(
+                new AvaticaParameter(
+                    false,
+                    type.getPrecision(),
+                    type.getScale(),
+                    type.getSqlTypeName().getJdbcOrdinal(),
+                    type.getSqlTypeName().toString(),
+                    Object.class.getName(),
+                    field.getName()));
+        }
+        return parameters;
+    }
+
+    @Nonnull
     public Meta.Signature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
         MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
@@ -201,15 +221,22 @@ public final class DingoDriverParser extends DingoParser {
             throw new RuntimeException("No default schema is found.");
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation, true);
+        RelDataType parasType = getParameterRowType(sqlNode);
+        Job job = DingoJobVisitor.createJob(
+            relNode,
+            currentLocation,
+            true,
+            DingoTypeFactory.fromRelDataType(parasType)
+        );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
-            String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES);
+            String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
+                SqlExplainLevel.ALL_ATTRIBUTES);
             return new DingoExplainSignature(
                 ImmutableList.of(metaData(typeFactory, 0, "PLAN",
                     new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null)),
                 sql,
-                createParameterList(sqlNode),
+                createParameterList(parasType),
                 null,
                 cursorFactory,
                 statementType,
@@ -222,31 +249,11 @@ public final class DingoDriverParser extends DingoParser {
         return new DingoSignature(
             columns,
             sql,
-            createParameterList(sqlNode),
+            createParameterList(parasType),
             null,
             cursorFactory,
             statementType,
             job
         );
-    }
-
-    @Nonnull
-    private List<AvaticaParameter> createParameterList(SqlNode sqlNode) {
-        final RelDataType parameterRowType = getParameterRowType(sqlNode);
-        List<RelDataTypeField> fieldList = parameterRowType.getFieldList();
-        final List<AvaticaParameter> parameters = new ArrayList<>(fieldList.size());
-        for (RelDataTypeField field : fieldList) {
-            RelDataType type = field.getType();
-            parameters.add(
-                new AvaticaParameter(
-                    false,
-                    type.getPrecision(),
-                    type.getScale(),
-                    type.getSqlTypeName().getJdbcOrdinal(),
-                    type.getSqlTypeName().toString(),
-                    Object.class.getName(),
-                    field.getName()));
-        }
-        return parameters;
     }
 }

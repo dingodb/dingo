@@ -32,7 +32,6 @@ import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.store.api.StoreInstance;
 
 import java.util.Iterator;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 public abstract class PartIteratorSourceOperator extends IteratorSourceOperator {
@@ -73,7 +72,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
     }
 
     @Override
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
         super.setParas(paras);
         if (filter != null) {
             filter.setParas(paras);
@@ -90,7 +89,7 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
             keyMapping
         );
         if (filter != null) {
-            filter.compileIn(schema, getParasCompileContext());
+            filter.compileIn(schema, getParasType());
         }
     }
 

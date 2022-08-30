@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
@@ -33,6 +34,7 @@ import lombok.Getter;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 @JsonPropertyOrder({"tasks"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -47,10 +49,18 @@ public final class JobImpl implements Job {
     @Getter
     private final Map<Id, Task> tasks;
 
+    // Need not serialize this, for it is serialized in tasks.
+    private final DingoType parasType;
+
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") Id jobId) {
+        this(jobId, null);
+    }
+
+    public JobImpl(@JsonProperty("jobId") Id jobId, @Nullable DingoType parasType) {
         this.jobId = jobId;
         this.tasks = new HashMap<>();
+        this.parasType = parasType;
     }
 
     public static JobImpl fromString(String str) throws JsonProcessingException {
@@ -59,13 +69,18 @@ public final class JobImpl implements Job {
 
     @Nonnull
     @Override
-    public Task create(Id id, Location location) {
+    public Task create(Id id, Location location, DingoType parasType) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(id, jobId, location, null);
+        Task task = new TaskImpl(id, jobId, location, parasType);
         tasks.put(id, task);
         return task;
+    }
+
+    @Nullable
+    public DingoType getParasType() {
+        return parasType;
     }
 
     @Override

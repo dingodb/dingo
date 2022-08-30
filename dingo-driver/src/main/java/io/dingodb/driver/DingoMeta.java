@@ -237,18 +237,27 @@ public class DingoMeta extends MetaImpl {
     ) throws MissingResultsException {
         final long startTime = System.currentTimeMillis();
         try {
-            AvaticaStatement stmt = getStatement(sh);
-            DingoResultSet resultSet = (DingoResultSet) stmt.getResultSet();
-            final Iterator<Object[]> iterator = resultSet.getIterator();
-            final List rows = new ArrayList(fetchMaxRowCount);
+            AvaticaStatement statement = getStatement(sh);
+            DingoResultSet resultSet = (DingoResultSet) statement.getResultSet();
+            Iterator<Object[]> iterator;
             Signature signature;
-            if (stmt instanceof DingoStatement) {
-                signature = ((DingoStatement) stmt).getSignature();
-            } else if (stmt instanceof DingoPreparedStatement) {
-                signature = ((DingoPreparedStatement) stmt).getSignature();
+            if (statement instanceof DingoStatement) {
+                DingoStatement dingoStatement = (DingoStatement) statement;
+                iterator = resultSet.getIterator();
+                signature = dingoStatement.getSignature();
+            } else if (statement instanceof DingoPreparedStatement) {
+                DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
+                try {
+                    Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
+                    iterator = resultSet.getIterator(parasValue);
+                } catch (NullPointerException e) {
+                    throw new IllegalStateException("Not all parameters are set.");
+                }
+                signature = dingoPreparedStatement.getSignature();
             } else {
                 throw new IllegalStateException("Got an not-dingo statement, this is an internal error.");
             }
+            final List rows = new ArrayList(fetchMaxRowCount);
             DingoType dingoType = DingoTypeFactory.fromColumnMetaDataList(signature.columns);
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                 rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
@@ -285,10 +294,11 @@ public class DingoMeta extends MetaImpl {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) {
+        // parameterValues are not used here, actually they live in prepared statement.
         final DingoConnection dingoConnection = (DingoConnection) connection;
         try {
             DingoPreparedStatement statement = (DingoPreparedStatement) dingoConnection.getStatement(sh);
-            final DingoSignature signature = (DingoSignature) statement.getSignature();
+            final Signature signature = statement.getSignature();
             MetaResultSet metaResultSet;
             final Meta.Frame frame = new Meta.Frame(0, false, Collections.emptyList());
             metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, signature, frame);

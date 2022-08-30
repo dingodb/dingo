@@ -23,12 +23,9 @@ import io.dingodb.common.type.converter.ExprConverter;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.parser.exception.DingoExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
-import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import lombok.Getter;
-
-import java.util.Map;
 
 public class SqlExpr {
     @JsonProperty("expr")
@@ -38,7 +35,7 @@ public class SqlExpr {
     private final DingoType type;
 
     private RtExpr expr;
-    private SqlExprEvalContext etx;
+    private final SqlExprEvalContext etx;
 
     @JsonCreator
     public SqlExpr(
@@ -47,20 +44,20 @@ public class SqlExpr {
     ) {
         this.exprString = exprString;
         this.type = type;
+        this.etx = new SqlExprEvalContext();
     }
 
-    public void compileIn(DingoType tupleType, CompileContext parasCompileContext) {
+    public void compileIn(DingoType tupleType, DingoType parasType) {
         try {
             expr = DingoExprCompiler.parse(exprString, true).compileIn(
-                new SqlExprCompileContext(tupleType, parasCompileContext)
+                new SqlExprCompileContext(tupleType, parasType)
             );
-            etx = new SqlExprEvalContext();
         } catch (DingoExprParseException | DingoExprCompileException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
         etx.setParas(paras);
     }
 

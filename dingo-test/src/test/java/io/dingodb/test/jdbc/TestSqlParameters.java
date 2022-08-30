@@ -16,10 +16,11 @@
 
 package io.dingodb.test.jdbc;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.asserts.AssertResultSet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,17 +62,25 @@ public class TestSqlParameters {
         });
     }
 
-    @Disabled
     @Test
     public void testFilter() throws SQLException {
-        String sql = "select * from test where amount > ?";
+        String sql = "select * from test where id < ? and amount > ?";
         Connection connection = sqlHelper.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDouble(1, 2.0);
+            statement.setInt(1, 8);
+            statement.setDouble(2, 5.0);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    String name = resultSet.getString(2);
-                }
+                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{5, "Emily", 5.5},
+                    new Object[]{6, "Alice", 6.0},
+                    new Object[]{7, "Betty", 6.5}
+                ));
+            }
+            statement.setDouble(2, 6.0);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{7, "Betty", 6.5}
+                ));
             }
         }
     }

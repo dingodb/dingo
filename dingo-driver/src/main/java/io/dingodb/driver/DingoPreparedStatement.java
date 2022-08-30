@@ -18,8 +18,10 @@ package io.dingodb.driver;
 
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.remote.TypedValue;
 
 import java.sql.SQLException;
+import java.util.List;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
     protected DingoPreparedStatement(
@@ -43,5 +45,10 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     @Override
     protected Meta.Signature getSignature() {
         return super.getSignature();
+    }
+
+    @Override
+    protected List<TypedValue> getParameterValues() {
+        return super.getParameterValues();
     }
 }

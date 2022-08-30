@@ -27,6 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.JsonConverter;
+import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,7 +63,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonDeserialize(using = TuplesDeserializer.class)
+        @JsonDeserialize(using = RawJsonDeserializer.class)
         @Nonnull @JsonProperty("keys") JsonNode jsonNode,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection
@@ -72,7 +73,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
             partId,
             schema,
             keyMapping,
-            TuplesDeserializer.convertBySchema(jsonNode, schema.select(keyMapping)),
+            RawJsonDeserializer.convertBySchema(jsonNode, schema.select(keyMapping)),
             filter,
             selection
         );

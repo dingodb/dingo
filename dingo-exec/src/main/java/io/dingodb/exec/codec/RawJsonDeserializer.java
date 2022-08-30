@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.codec;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -29,15 +29,15 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-final class TuplesDeserializer extends StdDeserializer<JsonNode> {
+public final class RawJsonDeserializer extends StdDeserializer<JsonNode> {
     private static final long serialVersionUID = -1878986711147886876L;
 
-    TuplesDeserializer() {
+    RawJsonDeserializer() {
         super(JsonNode.class);
     }
 
     @Nonnull
-    static List<Object[]> convertBySchema(@Nonnull JsonNode jsonNode, DingoType schema) {
+    public static List<Object[]> convertBySchema(@Nonnull JsonNode jsonNode, DingoType schema) {
         if (jsonNode.isArray()) {
             List<Object[]> tuples = new LinkedList<>();
             ArrayNode arrayNode = (ArrayNode) jsonNode;

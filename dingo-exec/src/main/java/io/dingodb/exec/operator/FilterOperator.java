@@ -24,8 +24,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
 
-import java.util.Map;
-
 @JsonTypeName("filter")
 @JsonPropertyOrder({"filter", "schema", "output"})
 public final class FilterOperator extends SoleOutOperator {
@@ -47,7 +45,7 @@ public final class FilterOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        filter.compileIn(schema, getParasCompileContext());
+        filter.compileIn(schema, getParasType());
     }
 
     @Override
@@ -64,7 +62,7 @@ public final class FilterOperator extends SoleOutOperator {
     }
 
     @Override
-    public void setParas(Map<String, Object> paras) {
+    public void setParas(Object[] paras) {
         super.setParas(paras);
         filter.setParas(paras);
     }

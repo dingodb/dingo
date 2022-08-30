@@ -19,13 +19,11 @@ package io.dingodb.exec.expr;
 import io.dingodb.expr.runtime.EvalContext;
 import lombok.Setter;
 
-import java.util.Map;
-
 public class SqlExprEvalContext implements EvalContext {
     private static final long serialVersionUID = 9182182810857271788L;
 
     @Setter
-    private Map<String, Object> paras = null;
+    private Object[] paras = null;
     @Setter
     private Object[] tuple = null;
 
@@ -38,21 +36,23 @@ public class SqlExprEvalContext implements EvalContext {
 
     @Override
     public Object get(Object id) {
-        if (id instanceof Integer) {
-            return tuple[(int) id];
-        } else if (id instanceof String) {
-            assert paras != null : "Parameters are not available in this context.";
-            return paras.get(id);
+        int index = (Integer) id;
+        if (index >= 0) {
+            return tuple[index];
         }
-        return null;
+        // id < 0 means it is a sql parameter.
+        assert paras != null : "Parameters are not available in this context.";
+        return paras[-index - 1];
     }
 
     @Override
     public void set(Object id, Object value) {
-        if (id instanceof Integer) {
-            tuple[(int) id] = value;
-        } else if (id instanceof String) {
-            paras.put((String) id, value);
+        int index = (Integer) id;
+        if (index >= 0) {
+            tuple[index] = value;
         }
+        // id < 0 means it is a sql parameter.
+        assert paras != null : "Parameters are not available in this context.";
+        paras[-index - 1] = value;
     }
 }
