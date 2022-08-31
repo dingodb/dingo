@@ -30,7 +30,6 @@ public class DingoCodec implements Codec {
     private RecordDecoder rd;
     TupleMapping mapping;
 
-
     public DingoCodec(List<DingoSchema> schemas) {
         this(schemas, null);
     }
@@ -47,6 +46,11 @@ public class DingoCodec implements Codec {
     }
 
     @Override
+    public byte[] encodeKey(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+        return re.encodeKey(tuple);
+    }
+
+    @Override
     public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping)
         throws IOException, ClassCastException {
         Object[] newTuple = new Object[mapping.size()];
@@ -58,14 +62,34 @@ public class DingoCodec implements Codec {
     }
 
     @Override
+    public byte[] encodeKey(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException {
+        Object[] newTuple = new Object[mapping.size()];
+        int i = 0;
+        for (int index : mapping.getMappings()) {
+            newTuple[index] = tuple[i++];
+        }
+        return re.encodeKey(newTuple);
+    }
+
+    @Override
     public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
         throws IOException, ClassCastException {
         return re.encode(origin, schemaIndex, tuple);
     }
 
     @Override
+    public byte[] encodeKey(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex) throws IOException, ClassCastException {
+        return re.encodeKey(origin, schemaIndex, tuple);
+    }
+
+    @Override
     public Object[] decode(@Nonnull byte[] bytes) throws IOException {
         return rd.decode(bytes);
+    }
+
+    @Override
+    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+        return rd.decodeKey(bytes);
     }
 
     @Override
@@ -76,7 +100,19 @@ public class DingoCodec implements Codec {
     }
 
     @Override
+    public Object[] decodeKey(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
+        Object[] tuple = decodeKey(bytes);
+        mapping.map(result, tuple);
+        return result;
+    }
+
+    @Override
     public Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
         return rd.decode(bytes, schemaIndex);
+    }
+
+    @Override
+    public Object[] decodeKey(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
+        return rd.decodeKey(bytes, schemaIndex);
     }
 }

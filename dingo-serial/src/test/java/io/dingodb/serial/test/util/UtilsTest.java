@@ -111,6 +111,6 @@ public class UtilsTest {
         schemas.add(new DoubleSchema(11));  //9
         schemas.add(new StringSchema(12, 5));  //10
 
-        Assertions.assertEquals(Utils.getApproPerRecordSize(schemas), 349);
+        Assertions.assertEquals(Utils.getApproPerRecordSize(schemas)[0], 349);
     }
 }

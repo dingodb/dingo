@@ -127,7 +127,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case LESS_THAN:
                             includeEnd = false;
                         case LESS_THAN_OR_EQUAL:
-                            right = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(
+                            right = codec.encodeKey(new Object[]{RexConverter.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});
@@ -135,7 +135,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case GREATER_THAN:
                             includeStart = false;
                         case GREATER_THAN_OR_EQUAL:
-                            left = codec.encode(new Object[]{RexConverter.convertFromRexLiteral(
+                            left = codec.encodeKey(new Object[]{RexConverter.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(rel.getRowType().getFieldList().get(info.index).getType())
                             )});
