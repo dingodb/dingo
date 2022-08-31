@@ -16,67 +16,66 @@
 
 package io.dingodb.serial.io;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BinaryDecoder {
     private final byte[] buf;
-    private int position = 0;
+    private int forwardPosition = 0;
+    private int reversePosition;
 
     public BinaryDecoder(byte[] buf) {
         this.buf = buf;
-    }
-
-    public boolean readIsNull() throws IndexOutOfBoundsException {
-        return buf[position++] == 0;
+        this.reversePosition = buf.length - 1;
     }
 
     public Boolean readBoolean() throws IndexOutOfBoundsException {
         if (readIsNull()) {
-            position++;
+            forwardPosition++;
             return null;
         }
-        return buf[position++] != 0;
+        return buf[forwardPosition++] != 0;
     }
 
     public Short readShort() throws IndexOutOfBoundsException {
         if (readIsNull()) {
-            position += 2;
+            forwardPosition += 2;
             return null;
         }
-        return (short) (((buf[position++] & 0xFF) << 8)
-            | ((buf[position++] & 0xFF) << 0));
+        return (short) (((buf[forwardPosition++] & 0xFF) << 8)
+            | ((buf[forwardPosition++] & 0xFF) << 0));
+    }
 
+    public Short readKeyShort() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            forwardPosition += 2;
+            return null;
+        }
+        return (short) (((buf[forwardPosition++] & 0xFF ^ 0x80) << 8)
+            | ((buf[forwardPosition++] & 0xFF) << 0));
     }
 
     public Integer readInt() throws IndexOutOfBoundsException {
         if (readIsNull()) {
-            position += 4;
+            forwardPosition += 4;
             return null;
         }
-        return readIntNoNull();
+        return (((buf[forwardPosition++] & 0xFF) << 24)
+            | ((buf[forwardPosition++] & 0xFF) << 16)
+            | ((buf[forwardPosition++] & 0xFF) << 8)
+            | ((buf[forwardPosition++] & 0xFF) << 0));
     }
 
-    public int readIntNoNull() throws IndexOutOfBoundsException {
-        return (((buf[position++] & 0xFF) << 24)
-            | ((buf[position++] & 0xFF) << 16)
-            | ((buf[position++] & 0xFF) << 8)
-            | ((buf[position++] & 0xFF) << 0));
-    }
-
-    public Long readLong() throws IndexOutOfBoundsException {
+    public Integer readKeyInt() throws IndexOutOfBoundsException {
         if (readIsNull()) {
-            position += 8;
+            forwardPosition += 4;
             return null;
         }
-        long l = 0;
-        for (int i = 0; i < 8; i++) {
-            l <<= 8;
-            l |= buf[position++] & 0xFF;
-        }
-        return l;
+        return (((buf[forwardPosition++] & 0xFF ^ 0x80) << 24)
+            | ((buf[forwardPosition++] & 0xFF) << 16)
+            | ((buf[forwardPosition++] & 0xFF) << 8)
+            | ((buf[forwardPosition++] & 0xFF) << 0));
     }
 
     public Float readFloat() throws IndexOutOfBoundsException {
@@ -87,6 +86,53 @@ public class BinaryDecoder {
         return Float.intBitsToFloat(i);
     }
 
+    public Float readKeyFloat() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            forwardPosition += 4;
+            return null;
+        }
+        int i = 0;
+        if ((buf[forwardPosition] & 0xFF) > 0x80) {
+            i = (((buf[forwardPosition++] & 0xFF ^ 0x80) << 24)
+                | ((buf[forwardPosition++] & 0xFF) << 16)
+                | ((buf[forwardPosition++] & 0xFF) << 8)
+                | ((buf[forwardPosition++] & 0xFF) << 0));
+        } else {
+            i = (((~ buf[forwardPosition++] & 0xFF) << 24)
+                | ((~ buf[forwardPosition++] & 0xFF) << 16)
+                | ((~ buf[forwardPosition++] & 0xFF) << 8)
+                | ((~ buf[forwardPosition++] & 0xFF) << 0));
+        }
+        return Float.intBitsToFloat(i);
+    }
+
+    public Long readLong() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            forwardPosition += 8;
+            return null;
+        }
+        long l = 0;
+        for (int i = 0; i < 8; i++) {
+            l <<= 8;
+            l |= buf[forwardPosition++] & 0xFF;
+        }
+        return l;
+    }
+
+    public Long readKeyLong() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            forwardPosition += 8;
+            return null;
+        }
+        long l = 0;
+        l |= buf[forwardPosition++] & 0xFF ^ 0x80;
+        for (int i = 0; i < 7; i++) {
+            l <<= 8;
+            l |= buf[forwardPosition++] & 0xFF;
+        }
+        return l;
+    }
+
     public Double readDouble() throws IndexOutOfBoundsException {
         Long l = readLong();
         if (l == null) {
@@ -95,41 +141,96 @@ public class BinaryDecoder {
         return Double.longBitsToDouble(l);
     }
 
-    public String readString() throws IndexOutOfBoundsException {
+    public Double readKeyDouble() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            forwardPosition += 8;
+            return null;
+        }
+        long l = 0;
+        if ((buf[forwardPosition] & 0xFF) > 0x80) {
+            l |= buf[forwardPosition++] & 0xFF ^ 0x80;
+            for (int i = 0; i < 7; i++) {
+                l <<= 8;
+                l |= buf[forwardPosition++] & 0xFF;
+            }
+        } else {
+            for (int i = 0; i < 8; i++) {
+                l <<= 8;
+                l |= ~ buf[forwardPosition++] & 0xFF;
+            }
+        }
+        return Double.longBitsToDouble(l);
+    }
+
+    public byte[] readBytes() throws IndexOutOfBoundsException {
         if (readIsNull()) {
             return null;
         } else {
-            int length = readIntNoNull();
+            int length = readLength();
             if (length > 0) {
                 byte[] buf = new byte[length];
-                System.arraycopy(this.buf, position, buf, 0, length);
+                System.arraycopy(this.buf, forwardPosition, buf, 0, length);
                 skip(length);
-                return new String(buf, StandardCharsets.UTF_8);
+                return buf;
             }
-            return "";
+            return new byte[0];
         }
     }
 
-    public ByteBuffer readBytes() throws IndexOutOfBoundsException {
+    public byte[] readKeyBytes() throws IndexOutOfBoundsException {
         if (readIsNull()) {
             return null;
         } else {
-            int length = readIntNoNull();
+            int length = readKeyLength();
             if (length > 0) {
-                byte[] buf = new byte[length];
-                System.arraycopy(this.buf, position, buf, 0, length);
-                skip(length);
-                return ByteBuffer.wrap(buf);
+                int groupNum = length / 9;
+                int reminderZero = 255 - buf[forwardPosition + length - 1] & 0xFF;
+                int oriLength = groupNum * 8 - reminderZero;
+                byte[] buf = new byte[oriLength];
+                int bi = 0;
+                buf[bi++] = this.buf[forwardPosition++];
+                for (int i = 2; i < length - reminderZero; i++) {
+                    if (i % 9 != 0) {
+                        buf[bi++] = this.buf[forwardPosition++];
+                    } else {
+                        forwardPosition ++;
+                    }
+                }
+                forwardPosition += reminderZero;
+                forwardPosition ++;
+                return buf;
             }
-            return ByteBuffer.allocate(0);
+            return new byte[0];
         }
+    }
+
+    public String readString() throws IndexOutOfBoundsException {
+        byte[] buf = readBytes();
+        if (buf == null) {
+            return null;
+        }
+        if (buf.length == 0) {
+            return "";
+        }
+        return new String(buf, StandardCharsets.UTF_8);
+    }
+
+    public String readKeyString() throws IndexOutOfBoundsException {
+        byte[] buf = readKeyBytes();
+        if (buf == null) {
+            return null;
+        }
+        if (buf.length == 0) {
+            return "";
+        }
+        return new String(buf, StandardCharsets.UTF_8);
     }
 
     public List<Boolean> readBooleanList() throws IndexOutOfBoundsException {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Boolean> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readBoolean());
@@ -142,7 +243,7 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Short> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readShort());
@@ -155,7 +256,7 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Integer> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readInt());
@@ -168,7 +269,7 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Float> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readFloat());
@@ -181,7 +282,7 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Long> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readLong());
@@ -194,23 +295,10 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<Double> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 list.add(readDouble());
-            }
-            return list;
-        }
-    }
-
-    public List<String> readStringList() throws IndexOutOfBoundsException {
-        if (readIsNull()) {
-            return null;
-        } else {
-            int size = readIntNoNull();
-            List<String> list = new ArrayList<>(size);
-            for (int i = 0; i < size; i++) {
-                list.add(readString());
             }
             return list;
         }
@@ -220,60 +308,102 @@ public class BinaryDecoder {
         if (readIsNull()) {
             return null;
         } else {
-            int size = readIntNoNull();
+            int size = readLength();
             List<byte[]> list = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
-                list.add(readBytes().array());
+                list.add(readBytes());
             }
             return list;
         }
     }
 
-    public void skipBooleanList() throws IndexOutOfBoundsException {
-        if (!readIsNull()) {
-            skip(2 * readIntNoNull());
+    public List<String> readStringList() throws IndexOutOfBoundsException {
+        if (readIsNull()) {
+            return null;
+        } else {
+            int size = readLength();
+            List<String> list = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                list.add(readString());
+            }
+            return list;
         }
     }
 
-    public void skipShortList() throws IndexOutOfBoundsException {
+    public void skipBytes() throws IndexOutOfBoundsException {
         if (!readIsNull()) {
-            skip(3 * readIntNoNull());
+            skip(readLength());
         }
     }
 
-    public void skipIntegerList() throws IndexOutOfBoundsException {
+    public void skipKeyBytes() throws IndexOutOfBoundsException {
         if (!readIsNull()) {
-            skip(5 * readIntNoNull());
-        }
-    }
-
-    public void skipFloatList() throws IndexOutOfBoundsException {
-        if (!readIsNull()) {
-            skip(5 * readIntNoNull());
-        }
-    }
-
-    public void skipLongList() throws IndexOutOfBoundsException {
-        if (!readIsNull()) {
-            skip(9 * readIntNoNull());
-        }
-    }
-
-    public void skipDoubleList() throws IndexOutOfBoundsException {
-        if (!readIsNull()) {
-            skip(9 * readIntNoNull());
+            skip(readKeyLength());
         }
     }
 
     public void skipString() throws IndexOutOfBoundsException {
         if (!readIsNull()) {
-            skip(readIntNoNull());
+            skip(readLength());
+        }
+    }
+
+    public void skipKeyString() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(readKeyLength());
+        }
+    }
+
+    public void skipBooleanList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(2 * readLength());
+        }
+    }
+
+    public void skipShortList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(3 * readLength());
+        }
+    }
+
+    public void skipIntegerList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(5 * readLength());
+        }
+    }
+
+    public void skipFloatList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(5 * readLength());
+        }
+    }
+
+    public void skipLongList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(9 * readLength());
+        }
+    }
+
+    public void skipDoubleList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            skip(9 * readLength());
+        }
+    }
+
+    public void skipBytesList() throws IndexOutOfBoundsException {
+        if (!readIsNull()) {
+            int size = readLength();
+            if (size > 0) {
+                for (int i = 0; i < size; i++) {
+                    skipBytes();
+                }
+            }
         }
     }
 
     public void skipStringList() throws IndexOutOfBoundsException {
         if (!readIsNull()) {
-            int size = readIntNoNull();
+            int size = readLength();
             if (size > 0) {
                 for (int i = 0; i < size; i++) {
                     skipString();
@@ -282,11 +412,33 @@ public class BinaryDecoder {
         }
     }
 
-    public void skip(int length) throws IndexOutOfBoundsException {
-        position += length;
+    public int remainder() {
+        return buf.length - forwardPosition;
     }
 
-    public int remainder() {
-        return buf.length - position;
+    private boolean readIsNull() throws IndexOutOfBoundsException {
+        return buf[forwardPosition++] == 0;
+    }
+
+    private int readLength() throws IndexOutOfBoundsException {
+        return (((buf[forwardPosition++] & 0xFF) << 24)
+            | ((buf[forwardPosition++] & 0xFF) << 16)
+            | ((buf[forwardPosition++] & 0xFF) << 8)
+            | ((buf[forwardPosition++] & 0xFF) << 0));
+    }
+
+    private int readKeyLength() throws IndexOutOfBoundsException {
+        return (((buf[reversePosition--] & 0xFF) << 24)
+            | ((buf[reversePosition--] & 0xFF) << 16)
+            | ((buf[reversePosition--] & 0xFF) << 8)
+            | ((buf[reversePosition--] & 0xFF) << 0));
+    }
+
+    private void skipKeyLength() {
+        reversePosition -= 4;
+    }
+
+    public void skip(int length) throws IndexOutOfBoundsException {
+        forwardPosition += length;
     }
 }

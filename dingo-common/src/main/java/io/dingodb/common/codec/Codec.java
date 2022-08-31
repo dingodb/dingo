@@ -29,9 +29,34 @@ public interface Codec {
     byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
         throws IOException, ClassCastException;
 
+    default byte[] encodeKey(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+        return encode(tuple);
+    }
+
+    default byte[] encodeKey(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException {
+        return encode(tuple, mapping);
+    }
+
+    default byte[] encodeKey(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+        throws IOException, ClassCastException {
+        return encode(origin, tuple, schemaIndex);
+    }
+
     Object[] decode(@Nonnull byte[] bytes) throws IOException;
 
     Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException;
 
     Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException;
+
+    default Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+        return decode(bytes);
+    }
+
+    default Object[] decodeKey(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
+        return decode(result, bytes, mapping);
+    }
+
+    default Object[] decodeKey(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
+        return decode(bytes, schemaIndex);
+    }
 }

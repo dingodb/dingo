@@ -50,7 +50,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     @Override
     public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
         Object[] record = new Object[keyMapping.size() + valueMapping.size()];
-        Object[] key = keyCodec.decode(keyValue.getKey());
+        Object[] key = keyCodec.decodeKey(keyValue.getKey());
         Object[] value = valueCodec.decode(keyValue.getValue());
         for (int i = 0; i < key.length; i++) {
             record[keyMapping.get(i)] = key[i];
@@ -63,7 +63,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
-        return keyCodec.decode(bytes);
+        return keyCodec.decodeKey(bytes);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         for (int i = 0; i < valueMapping.size(); i++) {
             value[i] = converted[valueMapping.get(i)];
         }
-        byte[] keyByte = keyCodec.encode(key);
+        byte[] keyByte = keyCodec.encodeKey(key);
         byte[] valueByte = valueCodec.encode(value);
         return new KeyValue(keyByte, valueByte);
     }
@@ -85,7 +85,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     @Override
     public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
         Object[] key = (Object[]) keySchema.convertTo(keys, DingoConverter.INSTANCE);
-        return keyCodec.encode(key);
+        return keyCodec.encodeKey(key);
     }
 
     @Override

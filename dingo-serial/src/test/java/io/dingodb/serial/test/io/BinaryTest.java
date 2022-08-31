@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,36 +35,36 @@ public class BinaryTest {
 
         be.writeBoolean(false); //length 2
         be.writeBoolean(null);
-        be.writeShort((short) 1); //length 3
-        be.writeShort(null);
-        be.writeInt(1); //length 5
-        be.writeInt(null);
-        be.writeLong(1L); //length 9
-        be.writeLong(null);
-        be.writeFloat(1f); //length 5
-        be.writeFloat(null);
-        be.writeDouble(1d); //length 9
-        be.writeDouble(null);
-        be.writeString("123", 0);
-        be.writeString("测试长度超过80的情况", 0);
-        be.writeString("", 0);
-        be.writeString(null, 0);
+        be.writeKeyShort((short) 1); //length 3
+        be.writeKeyShort(null);
+        be.writeKeyInt(1); //length 5
+        be.writeKeyInt(null);
+        be.writeKeyLong(1L); //length 9
+        be.writeKeyLong(null);
+        be.writeKeyFloat(1f); //length 5
+        be.writeKeyFloat(null);
+        be.writeKeyDouble(1d); //length 9
+        be.writeKeyDouble(null);
+        be.writeString("123");
+        be.writeString("测试长度超过80的情况");
+        be.writeString("");
+        be.writeString(null);
 
         byte[] result = be.getByteArray();
 
         BinaryDecoder bd = new BinaryDecoder(result);
         assertEquals(bd.readBoolean(), false);
         assertEquals(bd.readBoolean(), null);
-        assertEquals(bd.readShort(), (short) 1);
-        assertEquals(bd.readShort(), null);
-        assertEquals(bd.readInt(), 1);
-        assertEquals(bd.readInt(), null);
-        assertEquals(bd.readLong(), 1L);
-        assertEquals(bd.readLong(), null);
-        assertEquals(bd.readFloat(), 1f);
-        assertEquals(bd.readFloat(), null);
-        assertEquals(bd.readDouble(), 1d);
-        assertEquals(bd.readDouble(), null);
+        assertEquals(bd.readKeyShort(), (short) 1);
+        assertEquals(bd.readKeyShort(), null);
+        assertEquals(bd.readKeyInt(), 1);
+        assertEquals(bd.readKeyInt(), null);
+        assertEquals(bd.readKeyLong(), 1L);
+        assertEquals(bd.readKeyLong(), null);
+        assertEquals(bd.readKeyFloat(), 1f);
+        assertEquals(bd.readKeyFloat(), null);
+        assertEquals(bd.readKeyDouble(), 1d);
+        assertEquals(bd.readKeyDouble(), null);
         assertEquals(bd.readString(), "123");
         assertEquals(bd.readString(), "测试长度超过80的情况");
         assertEquals(bd.readString(), "");
@@ -178,7 +179,6 @@ public class BinaryTest {
         be3.writeLongList(longList);
         be3.writeDoubleList(doubleList);
 
-
         BinaryDecoder bd3 = new BinaryDecoder(be3.getByteArray());
 
         shortList = bd3.readShortList();
@@ -218,6 +218,122 @@ public class BinaryTest {
         assertEquals(floatList.get(3), 4f);
         assertEquals(longList.get(3), 4L);
         assertEquals(doubleList.get(3), 4D);
+    }
+
+    @Test
+    public void testKeyBytes() {
+        BinaryEncoder be1 = new BinaryEncoder(100, 12);
+        byte[] bytes1 = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        byte[] bytes2 = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
+        byte[] bytes3 = new byte[] {};
+        be1.writeKeyBytes(bytes1);
+        be1.writeKeyBytes(bytes2);
+        be1.writeKeyBytes(bytes3);
+        byte[] bytes = be1.getByteArray();
+        BinaryDecoder bd = new BinaryDecoder(bytes);
+        byte[] bytes11 = bd.readKeyBytes();
+        byte[] bytes22 = bd.readKeyBytes();
+        byte[] bytes33 = bd.readKeyBytes();
+        Arrays.equals(bytes1, bytes11);
+        Arrays.equals(bytes2, bytes22);
+        Arrays.equals(bytes3, bytes33);
+
+        BinaryEncoder be2 = new BinaryEncoder(100, 12);
+        be2.writeKeyBytes(bytes3);
+        be2.writeKeyBytes(bytes2);
+        be2.writeKeyBytes(bytes1);
+        bytes = be2.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        bytes11 = bd.readKeyBytes();
+        bytes22 = bd.readKeyBytes();
+        bytes33 = bd.readKeyBytes();
+        Arrays.equals(bytes3, bytes11);
+        Arrays.equals(bytes2, bytes22);
+        Arrays.equals(bytes1, bytes33);
+
+        BinaryEncoder be3 = new BinaryEncoder(100, 12);
+        be3.writeKeyBytes(bytes2);
+        be3.writeKeyBytes(bytes3);
+        be3.writeKeyBytes(bytes1);
+        bytes = be3.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        bytes11 = bd.readKeyBytes();
+        bytes22 = bd.readKeyBytes();
+        bytes33 = bd.readKeyBytes();
+        Arrays.equals(bytes2, bytes11);
+        Arrays.equals(bytes3, bytes22);
+        Arrays.equals(bytes1, bytes33);
+
+        BinaryEncoder be4 = new BinaryEncoder(bytes, 12);
+        be4.skipKeyBytes();
+        be4.updateKeyBytes(bytes1);
+        be4.skipKeyBytes();
+        bytes = be4.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        bytes11 = bd.readKeyBytes();
+        bytes22 = bd.readKeyBytes();
+        bytes33 = bd.readKeyBytes();
+        Arrays.equals(bytes2, bytes11);
+        Arrays.equals(bytes1, bytes22);
+        Arrays.equals(bytes1, bytes33);
+    }
+
+    @Test
+    public void testString() {
+        BinaryEncoder be1 = new BinaryEncoder(100, 12);
+        String str1 = "Hello World";
+        String str2 = "Hello World 2";
+        String str3 = "";
+        be1.writeKeyString(str1);
+        be1.writeKeyString(str2);
+        be1.writeKeyString(str3);
+        byte[] bytes = be1.getByteArray();
+        BinaryDecoder bd = new BinaryDecoder(bytes);
+        String str11 = bd.readKeyString();
+        String str22 = bd.readKeyString();
+        String str33 = bd.readKeyString();
+        assertEquals(str1, str11);
+        assertEquals(str2, str22);
+        assertEquals(str3, str33);
+
+        BinaryEncoder be2 = new BinaryEncoder(100, 12);
+        be2.writeKeyString(str3);
+        be2.writeKeyString(str2);
+        be2.writeKeyString(str1);
+        bytes = be2.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        str11 = bd.readKeyString();
+        str22 = bd.readKeyString();
+        str33 = bd.readKeyString();
+        assertEquals(str3, str11);
+        assertEquals(str2, str22);
+        assertEquals(str1, str33);
+
+        BinaryEncoder be3 = new BinaryEncoder(100, 12);
+        be3.writeKeyString(str2);
+        be3.writeKeyString(str3);
+        be3.writeKeyString(str1);
+        bytes = be3.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        str11 = bd.readKeyString();
+        str22 = bd.readKeyString();
+        str33 = bd.readKeyString();
+        assertEquals(str2, str11);
+        assertEquals(str3, str22);
+        assertEquals(str1, str33);
+
+        BinaryEncoder be4 = new BinaryEncoder(bytes, 12);
+        be4.skipKeyString();
+        be4.updateKeyString(str1);
+        be4.skipKeyString();
+        bytes = be4.getByteArray();
+        bd = new BinaryDecoder(bytes);
+        str11 = bd.readKeyString();
+        str22 = bd.readKeyString();
+        str33 = bd.readKeyString();
+        assertEquals(str2, str11);
+        assertEquals(str1, str22);
+        assertEquals(str1, str33);
     }
 
     @Test

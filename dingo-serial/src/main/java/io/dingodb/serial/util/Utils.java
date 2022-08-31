@@ -46,12 +46,14 @@ public final class Utils {
         return schema.getLength() == 0;
     }
 
-    public static int getApproPerRecordSize(List<DingoSchema> schemas) {
+    public static int[] getApproPerRecordSize(List<DingoSchema> schemas) {
         int approSize = 0;
+        int keySize = 0;
         for (DingoSchema schema : schemas) {
             approSize += schema.getMaxLength() == 0 ? 100 : schema.getMaxLength();
+            keySize += lengthNotSure(schema) ? 4 : 0;
         }
-        return approSize;
+        return new int[] {approSize, keySize};
     }
 
     public static Object processNullColumn(DingoSchema schema, Object column) {

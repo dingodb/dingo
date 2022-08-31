@@ -76,17 +76,17 @@ public class RecordDecoder {
                     case DOUBLELIST:
                         result[schema.getIndex()] = bd.readDoubleList();
                         break;
+                    case BYTES:
+                        result[schema.getIndex()] = bd.readBytes();
+                        break;
+                    case BYTESLIST:
+                        result[schema.getIndex()] = bd.readBytesList();
+                        break;
                     case STRING:
                         result[schema.getIndex()] = bd.readString();
                         break;
                     case STRINGLIST:
                         result[schema.getIndex()] = bd.readStringList();
-                        break;
-                    case BYTES:
-                        result[schema.getIndex()] = bd.readBytes().array();
-                        break;
-                    case BYTESLIST:
-                        result[schema.getIndex()] = bd.readBytesList();
                         break;
                     default:
                 }
@@ -142,17 +142,17 @@ public class RecordDecoder {
                         case DOUBLELIST:
                             result[resultIndex] = bd.readDoubleList();
                             break;
+                        case BYTES:
+                            result[resultIndex] = bd.readBytes();
+                            break;
+                        case BYTESLIST:
+                            result[resultIndex] = bd.readBytesList();
+                            break;
                         case STRING:
                             result[resultIndex] = bd.readString();
                             break;
                         case STRINGLIST:
                             result[resultIndex] = bd.readStringList();
-                            break;
-                        case BYTES:
-                            result[resultIndex] = bd.readBytes().array();
-                            break;
-                        case BYTESLIST:
-                            result[resultIndex] = bd.readBytesList();
                             break;
                         default:
                             result[resultIndex] = null;
@@ -177,12 +177,182 @@ public class RecordDecoder {
                         case DOUBLELIST:
                             bd.skipDoubleList();
                             break;
-                        case STRING:
                         case BYTES:
+                            bd.skipBytes();
+                            break;
+                        case STRING:
                             bd.skipString();
                             break;
-                        case STRINGLIST:
                         case BYTESLIST:
+                            bd.skipBytesList();
+                            break;
+                        case STRINGLIST:
+                            bd.skipStringList();
+                            break;
+                        default:
+                            bd.skip(schema.getLength());
+                    }
+                }
+            }
+            return result;
+        } else {
+            throw new RuntimeException("Schema version Wrong!");
+        }
+    }
+
+    public Object[] decodeKey(byte[] record) throws IOException {
+        BinaryDecoder bd = new BinaryDecoder(record);
+        if (bd.readShort() == this.schemaVersion) {
+            Object[] result = new Object[this.schemas.size()];
+            for (DingoSchema schema : schemas) {
+                switch (schema.getType()) {
+                    case BOOLEAN:
+                        result[schema.getIndex()] = bd.readBoolean();
+                        break;
+                    case BOOLEANLIST:
+                        result[schema.getIndex()] = bd.readBooleanList();
+                        break;
+                    case SHORT:
+                        result[schema.getIndex()] = bd.readKeyShort();
+                        break;
+                    case SHORTLIST:
+                        result[schema.getIndex()] = bd.readShortList();
+                        break;
+                    case INTEGER:
+                        result[schema.getIndex()] = bd.readKeyInt();
+                        break;
+                    case INTEGERLIST:
+                        result[schema.getIndex()] = bd.readIntegerList();
+                        break;
+                    case FLOAT:
+                        result[schema.getIndex()] = bd.readKeyFloat();
+                        break;
+                    case FLOATLIST:
+                        result[schema.getIndex()] = bd.readFloatList();
+                        break;
+                    case LONG:
+                        result[schema.getIndex()] = bd.readKeyLong();
+                        break;
+                    case LONGLIST:
+                        result[schema.getIndex()] = bd.readLongList();
+                        break;
+                    case DOUBLE:
+                        result[schema.getIndex()] = bd.readKeyDouble();
+                        break;
+                    case DOUBLELIST:
+                        result[schema.getIndex()] = bd.readDoubleList();
+                        break;
+                    case BYTES:
+                        result[schema.getIndex()] = bd.readKeyBytes();
+                        break;
+                    case BYTESLIST:
+                        result[schema.getIndex()] = bd.readBytesList();
+                        break;
+                    case STRING:
+                        result[schema.getIndex()] = bd.readKeyString();
+                        break;
+                    case STRINGLIST:
+                        result[schema.getIndex()] = bd.readStringList();
+                        break;
+                    default:
+                }
+            }
+            return result;
+        }
+        return null;
+    }
+
+    public Object[] decodeKey(byte[] record, int[] index) throws IOException {
+        BinaryDecoder bd = new BinaryDecoder(record);
+        if (bd.readShort() == this.schemaVersion) {
+            Object[] result = new Object[index.length];
+            List<Integer> indexList
+                = Arrays.stream(index).boxed().collect(Collectors.toList());
+            for (DingoSchema schema : schemas) {
+                int resultIndex = indexList.indexOf(schema.getIndex());
+                if (resultIndex >= 0) {
+                    switch (schema.getType()) {
+                        case BOOLEAN:
+                            result[resultIndex] = bd.readBoolean();
+                            break;
+                        case BOOLEANLIST:
+                            result[resultIndex] = bd.readBooleanList();
+                            break;
+                        case SHORT:
+                            result[resultIndex] = bd.readKeyShort();
+                            break;
+                        case SHORTLIST:
+                            result[resultIndex] = bd.readShortList();
+                            break;
+                        case INTEGER:
+                            result[resultIndex] = bd.readKeyInt();
+                            break;
+                        case INTEGERLIST:
+                            result[resultIndex] = bd.readIntegerList();
+                            break;
+                        case FLOAT:
+                            result[resultIndex] = bd.readKeyFloat();
+                            break;
+                        case FLOATLIST:
+                            result[resultIndex] = bd.readFloatList();
+                            break;
+                        case LONG:
+                            result[resultIndex] = bd.readKeyLong();
+                            break;
+                        case LONGLIST:
+                            result[resultIndex] = bd.readLongList();
+                            break;
+                        case DOUBLE:
+                            result[resultIndex] = bd.readKeyDouble();
+                            break;
+                        case DOUBLELIST:
+                            result[resultIndex] = bd.readDoubleList();
+                            break;
+                        case BYTES:
+                            result[resultIndex] = bd.readKeyBytes();
+                            break;
+                        case BYTESLIST:
+                            result[resultIndex] = bd.readBytesList();
+                            break;
+                        case STRING:
+                            result[resultIndex] = bd.readKeyString();
+                            break;
+                        case STRINGLIST:
+                            result[resultIndex] = bd.readStringList();
+                            break;
+                        default:
+                            result[resultIndex] = null;
+                    }
+                } else {
+                    switch (schema.getType()) {
+                        case BOOLEANLIST:
+                            bd.skipBooleanList();
+                            break;
+                        case SHORTLIST:
+                            bd.skipShortList();
+                            break;
+                        case INTEGERLIST:
+                            bd.skipIntegerList();
+                            break;
+                        case FLOATLIST:
+                            bd.skipFloatList();
+                            break;
+                        case LONGLIST:
+                            bd.skipLongList();
+                            break;
+                        case DOUBLELIST:
+                            bd.skipDoubleList();
+                            break;
+                        case BYTES:
+                            bd.skipKeyBytes();
+                            break;
+                        case STRING:
+                            bd.skipKeyString();
+                            break;
+                        case BYTESLIST:
+                            bd.skipBytesList();
+                            break;
+                        case STRINGLIST:
                             bd.skipStringList();
                             break;
                         default:
