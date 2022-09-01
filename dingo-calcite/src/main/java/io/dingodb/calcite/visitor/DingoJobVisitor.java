@@ -59,7 +59,6 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.impl.JobImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.FilterOperator;
@@ -108,7 +107,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -124,34 +122,21 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Getter
     private final Job job;
 
-    public DingoJobVisitor(IdGenerator idGenerator, Location currentLocation, DingoType parasType) {
+    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation) {
+        this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.metaCache = new MetaCache();
-        job = new JobImpl(new Id(UUID.randomUUID().toString()), parasType);
     }
 
-    @Nonnull
-    public static Job createJob(RelNode input, Location currentLocation) {
+    public static void renderJob(Job job, RelNode input, Location currentLocation) {
+        renderJob(job, input, currentLocation, false);
+    }
+
+    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean addRoot) {
         MetaCache.initTableDefinitions();
-        return createJob(input, currentLocation, false);
-    }
-
-    @Nonnull
-    public static Job createJob(RelNode input, Location currentLocation, boolean addRoot) {
-        MetaCache.initTableDefinitions();
-        return createJob(input, currentLocation, addRoot, null);
-    }
-
-    @Nonnull
-    public static Job createJob(
-        RelNode input,
-        Location currentLocation,
-        boolean addRoot,
-        DingoType parasType
-    ) {
         IdGenerator idGenerator = new DingoIdGenerator();
-        DingoJobVisitor visitor = new DingoJobVisitor(idGenerator, currentLocation, parasType);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (addRoot) {
             if (outputs.size() == 1) {
@@ -165,11 +150,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 throw new IllegalStateException("There must be zero or one output to job root.");
             }
         }
-        Job job = visitor.getJob();
         if (log.isDebugEnabled()) {
             log.info("job = {}", job);
         }
-        return job;
     }
 
     private static Collection<Output> illegalRelNode(@Nonnull RelNode rel) {

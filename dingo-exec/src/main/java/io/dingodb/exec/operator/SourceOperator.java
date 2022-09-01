@@ -48,7 +48,7 @@ public abstract class SourceOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
-        if (fin != null && fin instanceof FinWithException) {
+        if (fin instanceof FinWithException) {
             output.fin(fin);
         } else {
             output.fin(new FinWithProfiles(profiles));

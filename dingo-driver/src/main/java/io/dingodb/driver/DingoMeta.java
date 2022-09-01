@@ -24,7 +24,11 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.AvaticaResultSetConverter;
-import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.exec.JobRunner;
+import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.impl.JobManagerImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaClientRuntimeException;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -66,12 +70,40 @@ import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class DingoMeta extends MetaImpl {
+    private static final JobManager jobManager = JobManagerImpl.INSTANCE;
+
     public DingoMeta(DingoConnection connection) {
         super(connection);
     }
 
-    public AvaticaStatement getStatement(StatementHandle sh) throws SQLException {
-        return ((DingoConnection) connection).getStatement(sh);
+    @Nonnull
+    private static Iterator<Object[]> createIterator(AvaticaStatement statement, Signature signature) {
+        Iterator<Object[]> iterator;
+        if (signature instanceof DingoExplainSignature) {
+            DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
+            iterator = ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
+        } else {
+            Job job = jobManager.getJob(new Id(statement.handle.toString()));
+            if (statement instanceof DingoPreparedStatement) {
+                DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
+                try {
+                    Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
+                    job.setParas(parasValue);
+                } catch (NullPointerException e) {
+                    throw new IllegalStateException("Not all parameters are set.");
+                }
+            }
+            iterator = new JobRunner(job).createIterator();
+        }
+        return iterator;
+    }
+
+    @Nonnull
+    public static ExecuteResult createExecuteResult(@Nonnull StatementHandle sh) {
+        MetaResultSet metaResultSet;
+        final Frame frame = new Frame(0, false, Collections.emptyList());
+        metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, sh.signature, frame);
+        return new ExecuteResult(ImmutableList.of(metaResultSet));
     }
 
     @Override
@@ -85,7 +117,7 @@ public class DingoMeta extends MetaImpl {
         try {
             DingoConnection.DingoContext context = dingoConnection.createContext();
             DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
-            sh.signature = parser.parseQuery(sql, context);
+            sh.signature = parser.parseQuery(jobManager, new Id(sh.toString()), sql, context);
         } catch (SqlParseException e) {
             throw new RuntimeException(e);
         }
@@ -112,12 +144,12 @@ public class DingoMeta extends MetaImpl {
         @Nonnull PrepareCallback callback
     ) {
         final long startTime = System.currentTimeMillis();
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        DingoConnection.DingoContext context = dingoConnection.createContext();
+        DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
         try {
-            DingoConnection dingoConnection = (DingoConnection) connection;
-            DingoConnection.DingoContext context = dingoConnection.createContext();
-            DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            final Signature signature = parser.parseQuery(sql, context);
+            final Signature signature = parser.parseQuery(jobManager, new Id(sh.toString()), sql, context);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount;
@@ -148,9 +180,6 @@ public class DingoMeta extends MetaImpl {
                 null,
                 updateCount
             );
-            if (signature instanceof DingoSignature) {
-                checkJobHasFailed((DingoSignature) signature);
-            }
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (SQLException | SqlParseException | RuntimeException e) {
             Throwable throwable = e;
@@ -204,7 +233,6 @@ public class DingoMeta extends MetaImpl {
                     Service.ErrorResponse.UNKNOWN_SQL_STATE,
                     AvaticaSeverity.ERROR, Collections.singletonList(""), null);
             }
-
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta prepareAndExecute total cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -216,7 +244,7 @@ public class DingoMeta extends MetaImpl {
     public ExecuteBatchResult prepareAndExecuteBatch(
         StatementHandle sh,
         List<String> sqlCommands
-    ) throws NoSuchStatementException {
+    ) {
         return null;
     }
 
@@ -224,7 +252,7 @@ public class DingoMeta extends MetaImpl {
     public ExecuteBatchResult executeBatch(
         StatementHandle sh,
         List<List<TypedValue>> parameterValues
-    ) throws NoSuchStatementException {
+    ) {
         return null;
     }
 
@@ -234,28 +262,19 @@ public class DingoMeta extends MetaImpl {
         StatementHandle sh,
         long offset,
         int fetchMaxRowCount
-    ) throws MissingResultsException {
+    ) throws NoSuchStatementException, MissingResultsException {
         final long startTime = System.currentTimeMillis();
+        AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         try {
-            AvaticaStatement statement = getStatement(sh);
             DingoResultSet resultSet = (DingoResultSet) statement.getResultSet();
-            Iterator<Object[]> iterator;
-            Signature signature;
-            if (statement instanceof DingoStatement) {
-                DingoStatement dingoStatement = (DingoStatement) statement;
-                iterator = resultSet.getIterator();
-                signature = dingoStatement.getSignature();
-            } else if (statement instanceof DingoPreparedStatement) {
-                DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
-                try {
-                    Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
-                    iterator = resultSet.getIterator(parasValue);
-                } catch (NullPointerException e) {
-                    throw new IllegalStateException("Not all parameters are set.");
-                }
-                signature = dingoPreparedStatement.getSignature();
-            } else {
-                throw new IllegalStateException("Got an not-dingo statement, this is an internal error.");
+            if (resultSet == null) {
+                throw new MissingResultsException(sh);
+            }
+            Signature signature = resultSet.getSignature();
+            Iterator<Object[]> iterator = resultSet.getIterator();
+            if (iterator == null) {
+                iterator = createIterator(statement, signature);
+                resultSet.setIterator(iterator);
             }
             final List rows = new ArrayList(fetchMaxRowCount);
             DingoType dingoType = DingoTypeFactory.fromColumnMetaDataList(signature.columns);
@@ -263,9 +282,6 @@ public class DingoMeta extends MetaImpl {
                 rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            if (signature instanceof DingoSignature) {
-                checkJobHasFailed((DingoSignature) signature);
-            }
             return new Meta.Frame(offset, done, rows);
         } catch (SQLException e) {
             log.error("Fetch catch exception:{}", e, e);
@@ -290,22 +306,12 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public ExecuteResult execute(
-        StatementHandle sh,
+        @Nonnull StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
-    ) {
+    ) throws NoSuchStatementException {
         // parameterValues are not used here, actually they live in prepared statement.
-        final DingoConnection dingoConnection = (DingoConnection) connection;
-        try {
-            DingoPreparedStatement statement = (DingoPreparedStatement) dingoConnection.getStatement(sh);
-            final Signature signature = statement.getSignature();
-            MetaResultSet metaResultSet;
-            final Meta.Frame frame = new Meta.Frame(0, false, Collections.emptyList());
-            metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, signature, frame);
-            return new ExecuteResult(ImmutableList.of(metaResultSet));
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return createExecuteResult(sh);
     }
 
     @Override
@@ -336,23 +342,6 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public void rollback(ConnectionHandle ch) {
-    }
-
-    private void checkJobHasFailed(@Nonnull DingoSignature signature) throws SQLException {
-        /**
-         * when the operation is `Create` or `Drop`, then the signature.getJob is null.
-         */
-        if (signature.getJob() != null) {
-            RootOperator rootOperator = signature.getJob().getRootTask().getRoot();
-            if (rootOperator.getErrorFin() != null) {
-                String errorMsg = (rootOperator.getErrorFin()).detail();
-                log.warn("Check Job:{} operator:{} has failed, ErrorMsg: {}",
-                    rootOperator.getTask().getJobId().toString(),
-                    rootOperator.getId().toString(),
-                    errorMsg);
-                throw new SQLException(errorMsg);
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")

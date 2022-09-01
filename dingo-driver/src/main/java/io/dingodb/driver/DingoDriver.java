@@ -20,6 +20,8 @@ import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.DriverVersion;
 import org.apache.calcite.avatica.UnregisteredDriver;
 
+import java.util.Properties;
+
 public class DingoDriver extends UnregisteredDriver {
     public static final DingoDriver INSTANCE = new DingoDriver();
 
@@ -47,5 +49,9 @@ public class DingoDriver extends UnregisteredDriver {
     @Override
     public DingoMeta createMeta(AvaticaConnection connection) {
         return new DingoMeta((DingoConnection) connection);
+    }
+
+    public DingoConnection createConnection(String url, Properties info) {
+        return ((DingoFactory) factory).newConnection(this, factory, url, info);
     }
 }

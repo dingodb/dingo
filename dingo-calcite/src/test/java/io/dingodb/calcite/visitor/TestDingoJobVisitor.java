@@ -31,7 +31,10 @@ import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.PartModifyOperator;
 import io.dingodb.exec.operator.ReceiveOperator;
@@ -53,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestDingoJobVisitor {
     private static final String FULL_TABLE_NAME = MockMetaServiceProvider.TABLE_NAME;
     private static final CommonId TABLE_ID = CommonId.prefix((byte) 0);
+    private static final JobManager jobManager = JobManagerImpl.INSTANCE;
 
     private static DingoParser parser;
     private static Location currentLocation;
@@ -107,7 +111,8 @@ public class TestDingoJobVisitor {
             cluster.traitSetOf(DingoConventions.DISTRIBUTED),
             table
         );
-        Job job = DingoJobVisitor.createJob(partScan, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, partScan, currentLocation);
         Assert.job(job).taskNum(2)
             .task("0001", t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_0)
                 .soleSource().isPartScan(TABLE_ID, 0)
@@ -129,7 +134,8 @@ public class TestDingoJobVisitor {
                 table
             )
         );
-        Job job = DingoJobVisitor.createJob(exchange, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, exchange, currentLocation);
         Assert.job(job).taskNum(2)
             .task("0001", t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
                 .source(0, s -> s.isPartScan(TABLE_ID, 0)
@@ -157,7 +163,8 @@ public class TestDingoJobVisitor {
                 )
             )
         );
-        Job job = DingoJobVisitor.createJob(coalesce, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, coalesce, currentLocation);
         Assert.job(job).taskNum(2)
             .task("0001", t -> t.operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
                 .source(0, s -> s.isPartScan(TABLE_ID, 0)
@@ -171,7 +178,8 @@ public class TestDingoJobVisitor {
 
     @Test
     public void testVisitValues() {
-        Job job = DingoJobVisitor.createJob(values, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, values, currentLocation);
         ValuesOperator operator = (ValuesOperator) Assert.job(job)
             .soleTask().location(MockMetaServiceProvider.LOC_0).operatorNum(1)
             .soleSource().isA(ValuesOperator.class)
@@ -196,7 +204,8 @@ public class TestDingoJobVisitor {
             null,
             null
         );
-        Job job = DingoJobVisitor.createJob(partModify, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(2)
             .task("0001", t -> t.location(MockMetaServiceProvider.LOC_0).operatorNum(2)
                 .soleSource().isA(ValuesOperator.class)

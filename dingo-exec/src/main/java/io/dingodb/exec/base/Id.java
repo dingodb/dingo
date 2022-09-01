@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
 
+import java.util.UUID;
 import javax.annotation.Nonnull;
 
 @EqualsAndHashCode(of = {"value"})
@@ -32,6 +33,11 @@ public final class Id implements Comparable<Id> {
     @JsonCreator
     public Id(String value) {
         this.value = value;
+    }
+
+    @Nonnull
+    public static Id random() {
+        return new Id(UUID.randomUUID().toString());
     }
 
     @Override

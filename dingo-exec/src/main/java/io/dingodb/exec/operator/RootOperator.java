@@ -24,9 +24,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.util.QueueUtil;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import javax.annotation.Nonnull;
@@ -38,7 +38,6 @@ public final class RootOperator extends SinkOperator {
     public static final Object[] FIN = new Object[0];
     @JsonProperty("schema")
     private final DingoType schema;
-    @Getter
     private Fin errorFin;
     private BlockingQueue<Object[]> tupleQueue;
 
@@ -87,5 +86,38 @@ public final class RootOperator extends SinkOperator {
     public void reset() {
         super.reset();
         tupleQueue.clear();
+    }
+
+    @Nonnull
+    public TupleIterator getIterator() {
+        return new TupleIterator();
+    }
+
+    public class TupleIterator implements Iterator<Object[]> {
+        private Object[] current;
+
+        private TupleIterator() {
+            current = RootOperator.this.popValue();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (current != RootOperator.FIN) {
+                return true;
+            }
+            if (errorFin != null) {
+                String errorMsg = errorFin.detail();
+                log.warn("Job [id = {}] has failed, ErrorMsg: {}", getTask().getJobId(), errorMsg);
+                throw new IllegalStateException(errorMsg);
+            }
+            return false;
+        }
+
+        @Override
+        public Object[] next() {
+            Object[] result = current;
+            current = RootOperator.this.popValue();
+            return result;
+        }
     }
 }

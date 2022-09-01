@@ -17,7 +17,6 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoSchema;
@@ -26,13 +25,14 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.ddl.DingoDdlParserFactory;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -175,7 +175,12 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @Nonnull
-    public Meta.Signature parseQuery(String sql, CalcitePrepare.Context context) throws SqlParseException {
+    public Meta.Signature parseQuery(
+        JobManager jobManager,
+        Id jobId,
+        String sql,
+        DingoConnection.DingoContext context
+    ) throws SqlParseException {
         MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
@@ -214,7 +219,7 @@ public final class DingoDriverParser extends DingoParser {
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         final RelRoot relRoot = convert(sqlNode);
-        final RelNode relNode = optimize(relRoot.rel, DingoConventions.ROOT);
+        final RelNode relNode = optimize(relRoot.rel);
         CalciteSchema rootSchema = context.getRootSchema();
         CalciteSchema defaultSchema = rootSchema.getSubSchema(context.getDefaultSchemaPath().get(0), true);
         if (defaultSchema == null) {
@@ -222,12 +227,8 @@ public final class DingoDriverParser extends DingoParser {
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
         RelDataType parasType = getParameterRowType(sqlNode);
-        Job job = DingoJobVisitor.createJob(
-            relNode,
-            currentLocation,
-            true,
-            DingoTypeFactory.fromRelDataType(parasType)
-        );
+        Job job = jobManager.createJob(jobId, DingoTypeFactory.fromRelDataType(parasType));
+        DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
@@ -245,15 +246,13 @@ public final class DingoDriverParser extends DingoParser {
                 job
             );
         }
-
         return new DingoSignature(
             columns,
             sql,
             createParameterList(parasType),
             null,
             cursorFactory,
-            statementType,
-            job
+            statementType
         );
     }
 }

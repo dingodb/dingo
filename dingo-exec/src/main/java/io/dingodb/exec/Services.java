@@ -93,7 +93,7 @@ public final class Services {
             }
             try {
                 final Timer.Context timeCtx = DingoMetrics.getTimeContext("deserialize");
-                Task task = TaskImpl.deserialize(taskStr);
+                Task task = TaskImpl.fromString(taskStr);
                 timeCtx.stop();
 
                 executorService.execute(() -> {

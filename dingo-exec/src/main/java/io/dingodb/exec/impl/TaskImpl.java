@@ -106,7 +106,7 @@ public final class TaskImpl implements Task {
         return task;
     }
 
-    public static TaskImpl deserialize(String str) throws JsonProcessingException {
+    public static TaskImpl fromString(String str) throws JsonProcessingException {
         return JobImpl.PARSER.parse(str, TaskImpl.class);
     }
 

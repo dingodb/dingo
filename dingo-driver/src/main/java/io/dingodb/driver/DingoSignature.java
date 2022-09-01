@@ -16,9 +16,6 @@
 
 package io.dingodb.driver;
 
-import io.dingodb.exec.base.Job;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -27,17 +24,13 @@ import java.util.List;
 import java.util.Map;
 
 final class DingoSignature extends Meta.Signature {
-    @Getter
-    @Setter
-    private Job job;
-
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType
     ) {
-        this(columns, sql, null, null, cursorFactory, statementType, null);
+        this(columns, sql, null, null, cursorFactory, statementType);
     }
 
     public DingoSignature(
@@ -46,10 +39,8 @@ final class DingoSignature extends Meta.Signature {
         List<AvaticaParameter> parameters,
         Map<String, Object> internalParameters,
         Meta.CursorFactory cursorFactory,
-        Meta.StatementType statementType,
-        Job job
+        Meta.StatementType statementType
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
-        this.job = job;
     }
 }

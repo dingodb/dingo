@@ -24,7 +24,10 @@ import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.impl.JobManagerImpl;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -42,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestScan {
     private static DingoParser parser;
+    private static final JobManager jobManager = JobManagerImpl.INSTANCE;
     private static Location currentLocation;
     private static int tableTestPartNum;
 
@@ -75,7 +79,8 @@ public class TestScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
             .task("0001", t -> t.location(currentLocation).operatorNum(3));
     }
@@ -98,7 +103,8 @@ public class TestScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
             .task("0001", t -> t.location(currentLocation).operatorNum(3));
     }
@@ -120,7 +126,8 @@ public class TestScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
             .task("0001", t -> t.location(currentLocation).operatorNum(3));
     }
@@ -143,7 +150,8 @@ public class TestScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
             .task("0001", t -> t.location(currentLocation).operatorNum(3));
     }
@@ -166,7 +174,8 @@ public class TestScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = DingoJobVisitor.createJob(relNode, currentLocation);
+        Job job = jobManager.createJob(Id.random());
+        DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
             .task("0001", t -> t.location(currentLocation).operatorNum(3));
     }

@@ -20,11 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -144,7 +142,6 @@ public class DingoParser {
     }
 
     public RelRoot convert(@Nonnull SqlNode sqlNode) {
-
         SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             .withExpand(false)
@@ -174,18 +171,8 @@ public class DingoParser {
     }
 
     public RelNode optimize(RelNode relNode) {
-        return optimize(relNode, DingoConventions.ROOT);
-    }
-
-    public RelNode optimize(RelNode relNode, Convention convention) {
-        RelTraitSet traitSet = planner.emptyTraitSet().replace(convention);
+        RelTraitSet traitSet = planner.emptyTraitSet().replace(DingoConventions.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
-        if (convention == EnumerableConvention.INSTANCE) {
-            rules = ImmutableList.<RelOptRule>builder()
-                .addAll(rules)
-                .add(DingoRules.DINGO_TO_ENUMERABLE_RULE)
-                .build();
-        }
         final Program program = Programs.ofRules(rules);
         RelNode optimizedRelNode = program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
         if (log.isDebugEnabled()) {
