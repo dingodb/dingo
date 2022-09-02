@@ -21,10 +21,12 @@ import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
 
+@Builder
 @Getter
 @AllArgsConstructor
 public final class ContextForClient {

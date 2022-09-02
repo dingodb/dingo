@@ -22,7 +22,9 @@ import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.compute.number.ComputeNumber;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -56,16 +58,18 @@ public class SumExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     if (keyIndex.length > 0) {
                         Object[] objects = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
                         for (int i = 0; i < objects.length; i++) {
-                            ComputeNumber number = convertType(objects[i]);
+                            DingoType dingoType = definition.getColumn(keyIndex[i]).getDingoType();
+                            ComputeNumber number = convertType(objects[i], dingoType);
                             map.merge(definition.getColumn(keyIndex[i]).getName(), number, ComputeNumber::add);
                         }
                     }
                     if (valueIndex.length > 0) {
                         Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), valueIndex);
+                        int keyCount = definition.getPrimaryKeyCount();
                         for (int i = 0; i < objects.length; i++) {
-                            ComputeNumber number = convertType(objects[i]);
-                            map.merge(definition.getColumn(
-                                valueIndex[i] + definition.getPrimaryKeyCount()).getName(), number, ComputeNumber::add);
+                            ColumnDefinition columnDefinition = definition.getColumn(valueIndex[i] + keyCount);
+                            ComputeNumber number = convertType(objects[i], columnDefinition.getDingoType());
+                            map.merge(columnDefinition.getName(), number, ComputeNumber::add);
                         }
                     }
                 } catch (IOException e) {

@@ -312,6 +312,11 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         boolean isSuccess = false;
         try {
+            if (ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
+                log.error("Invalid range key, start key:{} should be less than end key:{}",
+                    startPrimaryKey, endPrimaryKey);
+                return false;
+            }
             Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
 
             for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {

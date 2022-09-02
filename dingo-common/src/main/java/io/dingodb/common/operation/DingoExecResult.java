@@ -95,7 +95,7 @@ public class DingoExecResult implements Serializable {
         StringBuilder sb = new StringBuilder(500);
         sb.append('{');
         sb.append("record: ");
-        if (!record.isEmpty()) {
+        if (record != null) {
             boolean sep = false;
 
             for (Map.Entry<String, Value> entry : record.entrySet()) {
@@ -132,10 +132,10 @@ public class DingoExecResult implements Serializable {
                     break;
                 }
             }
+            sb.append('}');
         } else {
             sb.append("null");
         }
-        sb.append('}');
         sb.append(',');
         sb.append("isSuccess: ");
         sb.append(isSuccess);

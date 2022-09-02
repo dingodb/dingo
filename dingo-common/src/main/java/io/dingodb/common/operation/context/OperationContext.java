@@ -31,12 +31,25 @@ public abstract class OperationContext {
 
     public DingoFilter filter;
 
+    public byte[] primaryStartKey;
+    public byte[] primaryEndKey;
+
     public OperationContext(Column[] columns) {
         this.columns = columns;
     }
 
     public OperationContext definition(TableDefinition definition) {
         this.definition = definition;
+        return this;
+    }
+
+    public OperationContext startKey(byte[] primaryStartKey) {
+        this.primaryStartKey = primaryStartKey;
+        return this;
+    }
+
+    public OperationContext endKey(byte[] primaryEndKey) {
+        this.primaryEndKey = primaryEndKey;
         return this;
     }
 

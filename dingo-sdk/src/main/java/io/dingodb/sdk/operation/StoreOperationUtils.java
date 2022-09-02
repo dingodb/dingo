@@ -18,6 +18,7 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
@@ -38,9 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -49,7 +47,6 @@ public class StoreOperationUtils {
     private static Map<String, RouteTable> dingoRouteTables = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static Map<String, TableDefinition> tableDefinitionInCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private TableDefinition tableDefinition;
     private DingoConnection connection;
     private int retryTimes;
@@ -60,7 +57,6 @@ public class StoreOperationUtils {
     }
 
     public void shutdown() {
-        executorService.shutdown();
         clearTableDefinitionInCache();
     }
 
@@ -73,7 +69,6 @@ public class StoreOperationUtils {
         }
 
         boolean isSuccess = false;
-        String errorMsg = "";
         int retryTimes = this.retryTimes;
         List<DingoExecResult> results = new ArrayList<>();
         do {
@@ -89,9 +84,10 @@ public class StoreOperationUtils {
                     ContextForStore forStore = entry.getValue();
                     ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
 
+                    RouteTable finalRouteTable = routeTable;
                     Future<List<DingoExecResult>> future =
-                        executorService.submit(() -> executorApi.operator(
-                            routeTable.getTableId(),
+                        Executors.submit("compute-operation", () -> executorApi.operator(
+                            finalRouteTable.getTableId(),
                             forStore.getStartKeyListInBytes(),
                             forStore.getEndKeyListInBytes(),
                             forStore.getOperationListInBytes()));
@@ -101,15 +97,20 @@ public class StoreOperationUtils {
                     List<DingoExecResult> dingoExecResults = listFuture.get();
                     for (DingoExecResult dingoExecResult : dingoExecResults) {
                         isSuccess = dingoExecResult.isSuccess();
-                        if (!isSuccess) {
-                            errorMsg = dingoExecResult.errorMessage();
-                            throw new DingoClientException(errorMsg);
-                        }
                         results.add(dingoExecResult);
                     }
                 }
             } catch (Exception e) {
                 log.error("operation fail.", e);
+            } finally {
+                if (!isSuccess && retryTimes > 0) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    routeTable = getAndRefreshRouteTable(tableName, true);
+                }
             }
         }
         while (!isSuccess && --retryTimes > 0);
@@ -145,7 +146,7 @@ public class StoreOperationUtils {
                     String leaderAddress = entry.getKey();
                     ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
                     futureArrayList.add(
-                        executorService.submit(
+                        Executors.submit("do-operation",
                             new CallableTask(
                                 executorApi,
                                 storeOperation,
@@ -236,16 +237,15 @@ public class StoreOperationUtils {
             for (byte[] key : keys) {
                 records.add(wholeContext.getRecordByKey(key));
             }
-            ContextForStore subStoreContext = new ContextForStore(
-                keys,
-                wholeContext.getEndKeyListInBytes(),
-                records,
-                wholeContext.getOperationListInBytes(),
-                wholeContext.getUdfName(),
-                wholeContext.getFunctionName(),
-                wholeContext.getUdfVersion(),
-                wholeContext.isSkippedWhenExisted(),
-                wholeContext.getContext());
+            ContextForStore subStoreContext = ContextForStore.builder()
+                .startKeyListInBytes(keys)
+                .endKeyListInBytes(wholeContext.getEndKeyListInBytes())
+                .recordList(records)
+                .operationListInBytes(wholeContext.getOperationListInBytes())
+                .udfContext(wholeContext.getUdfContext())
+                .skippedWhenExisted(wholeContext.isSkippedWhenExisted())
+                .context(wholeContext.getContext())
+                .build();
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }
         return contextGroupyByExecutor;
@@ -331,6 +331,7 @@ public class StoreOperationUtils {
     public synchronized void removeCacheOfTableDefinition(String tableName) {
         if (tableName != null) {
             TableDefinition tableDefinition = tableDefinitionInCache.remove(tableName);
+            dingoRouteTables.remove(tableName);
             if (tableDefinition != null) {
                 log.info("remove cache of table:{} definition:{}", tableName, tableDefinition);
             }

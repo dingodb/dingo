@@ -21,6 +21,7 @@ import io.dingodb.common.operation.Column;
 public class BasicContext extends OperationContext {
 
     public Object[] record;
+    public boolean useDefaultWhenNotExisted = false;
 
     public BasicContext(Column... columns) {
         super(columns);
@@ -29,5 +30,10 @@ public class BasicContext extends OperationContext {
     public BasicContext(Object[] record, Column[] columns) {
         super(columns);
         this.record = record;
+    }
+
+    public BasicContext(boolean useDefaultWhenNotExisted, Column... columns) {
+        super(columns);
+        this.useDefaultWhenNotExisted = useDefaultWhenNotExisted;
     }
 }
