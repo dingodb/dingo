@@ -34,8 +34,8 @@ public final class Operation implements Serializable {
         this.operationContext = operationContext;
     }
 
-    public static Operation add(Column... columns) {
-        return new Operation(NumericType.ADD, new BasicContext(columns));
+    public static Operation add(boolean useDefaultWhenNotExisted, Column... columns) {
+        return new Operation(NumericType.ADD, new BasicContext(useDefaultWhenNotExisted, columns));
     }
 
     public static Operation max(Column... columns) {

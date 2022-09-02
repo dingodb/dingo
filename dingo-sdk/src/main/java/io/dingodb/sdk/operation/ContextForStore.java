@@ -19,11 +19,13 @@ package io.dingodb.sdk.operation;
 import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Builder
 @Getter
 @AllArgsConstructor
 public final class ContextForStore {
@@ -32,9 +34,7 @@ public final class ContextForStore {
     private final List<KeyValue> recordList;
     private final List<byte[]> operationListInBytes;
 
-    private final String udfName;
-    private final String functionName;
-    private final int udfVersion;
+    private final UDFContext udfContext;
 
     private final boolean skippedWhenExisted;
     private final OperationContext context;

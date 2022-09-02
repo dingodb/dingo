@@ -65,7 +65,7 @@ public class DingoClient {
 
     private StoreOperationUtils storeOpUtils;
 
-    public static Integer retryTimes = 100;
+    public static Integer retryTimes = 10;
     public static volatile boolean isConnectionInit = false;
 
 
@@ -431,13 +431,11 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.GET,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList,
-                Collections.emptyList(),
-                null,
-                null,
-                null,
-                null,
-                false));
+            ContextForClient.builder()
+                .startKeyList(keyList)
+                .endKeyList(Collections.emptyList())
+                .skippedWhenExisted(false)
+                .build());
         if (!result.getStatus()) {
             log.error("Execute get command failed:{}", result.getErrorMessage());
             return null;
@@ -450,8 +448,12 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.PUT,
             keyList.get(0).getTable(),
-            new ContextForClient(keyList, Collections.emptyList(), recordList,
-                null, null, null, skippedWhenExisted));
+            ContextForClient.builder()
+                .startKeyList(keyList)
+                .endKeyList(Collections.emptyList())
+                .recordList(recordList)
+                .skippedWhenExisted(skippedWhenExisted)
+                .build());
 
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
@@ -464,14 +466,12 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.QUERY,
             startKeys.get(0).getTable(),
-            new ContextForClient(
-                startKeys,
-                endKeys,
-                null,
-                null,
-                null,
-                filter,
-                false));
+            ContextForClient.builder()
+                .startKeyList(startKeys)
+                .endKeyList(endKeys)
+                .filter(filter)
+                .skippedWhenExisted(false)
+                .build());
         if (!result.getStatus()) {
             log.error("Execute query command failed:{}", result.getErrorMessage());
             return null;
@@ -483,14 +483,11 @@ public class DingoClient {
         ResultForClient result = storeOpUtils.doOperation(
             StoreOperationType.DELETE,
             keyList.get(0).getTable(),
-            new ContextForClient(
-                keyList,
-                Collections.emptyList(),
-                null,
-                null,
-                null,
-                null,
-                false));
+            ContextForClient.builder()
+                .startKeyList(keyList)
+                .endKeyList(Collections.emptyList())
+                .skippedWhenExisted(false)
+                .build());
         if (!result.getStatus()) {
             log.error("Execute put command failed:{}", result.getErrorMessage());
             return false;
@@ -507,7 +504,21 @@ public class DingoClient {
      * @return true/false
      */
     public final boolean add(@Nonnull Key key, @Nonnull Column... columns) {
-        Operation operation = Operation.add(columns);
+        return add(key, false, columns);
+    }
+
+    /**
+     * Accumulates a column of values for a single primary key.
+     * Operate on numeric types only.
+     *
+     * @param key primary key
+     * @param useDefaultWhenNotExisted If the data does not exist, you can choose whether to use the default value
+     *                                of the field when the table is defined to insert a piece of data
+     * @param columns Multiple columns to be calculated
+     * @return true/false
+     */
+    public final boolean add(@Nonnull Key key, boolean useDefaultWhenNotExisted, @Nonnull Column... columns) {
+        Operation operation = Operation.add(useDefaultWhenNotExisted, columns);
         List<DingoExecResult> result = operate(key, ImmutableList.of(operation));
         return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
@@ -522,7 +533,26 @@ public class DingoClient {
      * @return true/false
      */
     public final boolean add(@Nonnull Key start, @Nonnull Key end, @Nonnull Column... columns) {
-        Operation operation = Operation.add(columns);
+        return add(start, end, false, columns);
+    }
+
+    /**
+     * Primary key range accumulates a column of values.
+     * Operate on numeric types only.
+     *
+     * @param start primary key start position
+     * @param end primary key end position
+     * @param useDefaultWhenNotExisted If the data does not exist, you can choose whether to use the default value
+     *                                 of the field when the table is defined to insert a piece of data
+     * @param columns Multiple columns to be calculated
+     * @return true/false
+     */
+    public final boolean add(
+        @Nonnull Key start,
+        @Nonnull Key end,
+        boolean useDefaultWhenNotExisted,
+        @Nonnull Column... columns) {
+        Operation operation = Operation.add(useDefaultWhenNotExisted, columns);
         List<DingoExecResult> result = operate(start, end, ImmutableList.of(operation));
         return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
@@ -541,7 +571,7 @@ public class DingoClient {
                              @Nonnull Key end,
                              @Nonnull DingoFilter filter,
                              @Nonnull Column... columns) {
-        Operation operation = Operation.add(columns);
+        Operation operation = Operation.add(false, columns);
         operation.operationContext.filter(filter);
         List<DingoExecResult> result = operate(start, end, ImmutableList.of(operation));
         return result != null && result.size() > 0 && result.get(0).isSuccess();
@@ -680,14 +710,11 @@ public class DingoClient {
      * @return Multiple one-to-one operation results
      */
     public final List<DingoExecResult> operate(@Nonnull Key key, @Nonnull List<Operation> operations) {
-        ContextForClient contextForClient = new ContextForClient(
-            ImmutableList.of(key),
-            null,
-            null,
-            operations,
-            null,
-            null,
-            false);
+        ContextForClient contextForClient = ContextForClient.builder()
+            .startKeyList(ImmutableList.of(key))
+            .operationList(operations)
+            .skippedWhenExisted(false)
+            .build();
         return storeOpUtils.doOperation(key.getTable().toUpperCase(), contextForClient);
     }
 
@@ -711,14 +738,12 @@ public class DingoClient {
             log.error("The number of primary keys in the start:{} and end:{} ranges is different", start, end);
             throw new DingoClientException.InvalidUserKeyCnt(startKeyCnt, endKeyCnt);
         }
-        ContextForClient contextForClient = new ContextForClient(
-            ImmutableList.of(start),
-            ImmutableList.of(end),
-            null,
-            operations,
-            null,
-            null,
-            false);
+        ContextForClient contextForClient = ContextForClient.builder()
+            .startKeyList(ImmutableList.of(start))
+            .endKeyList(ImmutableList.of(end))
+            .operationList(operations)
+            .skippedWhenExisted(false)
+            .build();
         return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
@@ -754,14 +779,11 @@ public class DingoClient {
         }
         Key dingoKey = new Key(tableName, userKeys);
         UDFContext udfContext = new UDFContext(udfName, functionName, version);
-        ContextForClient context = new ContextForClient(
-            Arrays.asList(dingoKey),
-            null,
-            null,
-            null,
-            udfContext,
-            null,
-            false);
+        ContextForClient context = ContextForClient.builder()
+            .startKeyList(ImmutableList.of(dingoKey))
+            .udfContext(udfContext)
+            .skippedWhenExisted(false)
+            .build();
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.UPDATE_UDF, tableName, context);
         return result.getStatus();
     }
@@ -776,14 +798,11 @@ public class DingoClient {
         }
         Key dingoKey = new Key(tableName, userKeys);
         UDFContext udfContext = new UDFContext(udfName, functionName, version);
-        ContextForClient context = new ContextForClient(
-            Arrays.asList(dingoKey),
-            null,
-            null,
-            null,
-            udfContext,
-            null,
-            false);
+        ContextForClient context = ContextForClient.builder()
+            .startKeyList(ImmutableList.of(dingoKey))
+            .udfContext(udfContext)
+            .skippedWhenExisted(false)
+            .build();
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);
         return result.getRecords().get(0);
     }

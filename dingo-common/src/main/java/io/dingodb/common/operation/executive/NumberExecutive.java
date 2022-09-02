@@ -37,7 +37,8 @@ import javax.activation.UnsupportedDataTypeException;
 public abstract class NumberExecutive<D extends OperationContext, T extends Iterator<KeyValue>, R>
     implements Executive<D, T, R> {
 
-    public static ComputeNumber convertType(Object value) throws UnsupportedDataTypeException {
+    public static ComputeNumber convertType(Object value, DingoType dingoType) throws UnsupportedDataTypeException {
+        value = dingoType.parse(value);
         if (value instanceof Integer) {
             return new ComputeInteger((Integer) value);
         } else if (value instanceof Long) {

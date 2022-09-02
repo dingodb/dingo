@@ -315,7 +315,7 @@ public class RocksRawKVStore implements RawKVStore {
                 Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
                 for (Operation operation : operations) {
                     List<KeyValue> execute = (List<KeyValue>) operation.operationType.executive().execute(
-                        operation.operationContext, iterator);
+                        operation.operationContext.startKey(start).endKey(end), iterator);
                     if (execute.size() == 0) {
                         continue;
                     }
@@ -323,10 +323,17 @@ public class RocksRawKVStore implements RawKVStore {
                 }
 
                 try (final WriteBatch batch = new WriteBatch()) {
-                    while (iterator.hasNext()) {
-						KeyValue entry = iterator.next();
-						byte[] valueWithTs = RocksDBUtils.getValueWithTs(entry.getValue(), timestamp);
-						batch.put(entry.getPrimaryKey(), valueWithTs);
+                    if (timestamp != RocksDBUtils.TIMESTAMP_WITHOUT_TTL && RocksDBUtils.dataWithTtl(this.ttl)) {
+                        while (iterator.hasNext()) {
+                            KeyValue entry = iterator.next();
+                            byte[] valueWithTs = RocksDBUtils.getValueWithTs(entry.getValue(), timestamp);
+                            batch.put(entry.getPrimaryKey(), valueWithTs);
+                        }
+                    } else {
+                        while (iterator.hasNext()) {
+                            KeyValue entry = iterator.next();
+                            batch.put(entry.getPrimaryKey(), entry.getValue());
+                        }
                     }
                     this.db.write(this.writeOptions, batch);
                 } catch (final Exception e) {

@@ -21,6 +21,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.sdk.operation.ContextForStore;
 import io.dingodb.sdk.operation.IStoreOperation;
 import io.dingodb.sdk.operation.ResultForStore;
+import io.dingodb.sdk.operation.UDFContext;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,9 +52,10 @@ public class UdfGetOperation implements IStoreOperation {
             }
             List<byte[]> keyList = parameters.getStartKeyListInBytes();
             List<KeyValue> recordList = new ArrayList<>();
+            UDFContext udfContext = parameters.getUdfContext();
             for (byte[] primaryKey : keyList) {
-                recordList.add(executorApi.udfGet(tableId, primaryKey, parameters.getUdfName(),
-                    parameters.getFunctionName(), parameters.getUdfVersion()));
+                recordList.add(executorApi.udfGet(tableId, primaryKey, udfContext.getUdfName(),
+                    udfContext.getFunctionName(), udfContext.getUdfVersion()));
             }
             return new ResultForStore(true, "OK", recordList);
         } catch (Exception e) {
