@@ -137,7 +137,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case GREATER_THAN_OR_EQUAL:
                             left = codec.encodeKey(new Object[]{RexConverter.convertFromRexLiteral(
                                 info.value,
-                                DingoTypeFactory.fromRelDataType(rel.getRowType().getFieldList().get(info.index).getType())
+                                DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});
                             break;
                         default:
