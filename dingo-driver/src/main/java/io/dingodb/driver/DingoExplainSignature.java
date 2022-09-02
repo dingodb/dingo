@@ -17,7 +17,6 @@
 package io.dingodb.driver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.exec.base.Job;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
@@ -26,6 +25,7 @@ import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,10 +66,26 @@ final class DingoExplainSignature extends Meta.Signature {
 
     @Override
     public String toString() {
-        try {
-            return PARSER.stringify(this);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        StringBuilder resultBuilder = new StringBuilder();
+        String space = String.join("", Collections.nCopies(40, " "));
+        String separate = String.join("", Collections.nCopies(100, "-"));
+        resultBuilder.append(space + "QUERY PLAN\n");
+        resultBuilder.append(separate + "\n");
+
+        // sql
+        resultBuilder.append("SQL: \n" + this.physicalPlan + "\n");
+        resultBuilder.append(separate + "\n");
+
+        // logical plan
+        resultBuilder.append("LOGICAL PLAN: \n");
+        String[] operatorArray = this.logicalPlan.split("\n");
+        for (int i = 0; i < operatorArray.length; i++) {
+            resultBuilder.append(operatorArray[i].trim() + "\n");
         }
+        resultBuilder.append(separate + "\n");
+
+        // job
+        resultBuilder.append("IMPLEMENTATION PLAN: \n" + this.job.toString());
+        return resultBuilder.toString();
     }
 }
