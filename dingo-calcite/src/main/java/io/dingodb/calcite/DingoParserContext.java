@@ -30,7 +30,7 @@ import javax.annotation.Nonnull;
 
 // These are static for every sql parsing.
 public final class DingoParserContext {
-    public static JavaTypeFactory TYPE_FACTORY = new JavaTypeFactoryImpl();
+    private static final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
     @Getter
     private final CalciteSchema rootSchema;
     @Getter
@@ -56,7 +56,7 @@ public final class DingoParserContext {
 
     @SuppressWarnings("MethodMayBeStatic")
     public JavaTypeFactory getTypeFactory() {
-        return TYPE_FACTORY;
+        return typeFactory;
     }
 
     public CalciteSchema getDefaultSchema() {

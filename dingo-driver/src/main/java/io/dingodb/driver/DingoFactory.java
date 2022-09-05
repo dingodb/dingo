@@ -16,6 +16,7 @@
 
 package io.dingodb.driver;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaDatabaseMetaData;
 import org.apache.calcite.avatica.AvaticaFactory;
@@ -32,6 +33,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.TimeZone;
 
+@Slf4j
 public class DingoFactory implements AvaticaFactory {
     public static final DingoFactory INSTANCE = new DingoFactory();
 
@@ -68,6 +70,9 @@ public class DingoFactory implements AvaticaFactory {
         int resultSetConcurrency,
         int resultSetHoldability
     ) {
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, statement handle = {}.", connection.handle, handle);
+        }
         return new DingoStatement(
             (DingoConnection) connection,
             handle,
@@ -86,6 +91,9 @@ public class DingoFactory implements AvaticaFactory {
         int resultSetConcurrency,
         int resultSetHoldability
     ) throws SQLException {
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, statement handle = {}.", connection.handle, handle);
+        }
         return new DingoPreparedStatement(
             (DingoConnection) connection,
             handle,
@@ -105,14 +113,10 @@ public class DingoFactory implements AvaticaFactory {
         Meta.Frame firstFrame
     ) throws SQLException {
         final ResultSetMetaData metaData = newResultSetMetaData(statement, signature);
-        return new DingoResultSet(
-            statement,
-            state,
-            signature,
-            metaData,
-            timeZone,
-            firstFrame
-        );
+        if (signature instanceof DingoSignature || signature instanceof DingoExplainSignature) {
+            return new DingoResultSet(statement, state, signature, metaData, timeZone, firstFrame);
+        }
+        return new AvaticaResultSet(statement, state, signature, metaData, timeZone, firstFrame);
     }
 
     @Override

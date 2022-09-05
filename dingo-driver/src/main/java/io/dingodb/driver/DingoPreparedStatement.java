@@ -22,6 +22,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 
 import java.sql.SQLException;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
     protected DingoPreparedStatement(
@@ -43,12 +44,30 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     }
 
     @Override
-    protected Meta.Signature getSignature() {
-        return super.getSignature();
-    }
-
-    @Override
     protected List<TypedValue> getParameterValues() {
         return super.getParameterValues();
+    }
+
+    public void clear() throws SQLException {
+        if (openResultSet != null) {
+            openResultSet.close();
+            openResultSet = null;
+        }
+    }
+
+    public void assign(Meta.Signature sig, Meta.Frame firstFrame, long uc, String sql) throws SQLException {
+        setSignature(sig);
+        updateCount = uc;
+        // No result set for DDL.
+        if (updateCount == -1) {
+            openResultSet = ((DingoConnection) connection).newResultSet(this, sig, firstFrame, sql);
+        }
+    }
+
+    // This is only used by `ServerMeta`, for local driver, the value is set when JDBC APIs are called.
+    public void setParameterValues(@Nonnull List<TypedValue> parameterValues) {
+        for (int i = 0; i < parameterValues.size(); ++i) {
+            slots[i] = parameterValues.get(i);
+        }
     }
 }

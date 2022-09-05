@@ -16,12 +16,13 @@
 
 package io.dingodb.driver.server;
 
+import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoDriver;
-import io.dingodb.driver.DingoFactory;
 import io.dingodb.driver.DingoMeta;
+import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -29,25 +30,32 @@ import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
 
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 // Only one meta instance exists in avatica server.
-// Bridge it to connection specified meta of local driver.
+// On each request, create a local meta (which is light-weighted) to do the work.
 @Slf4j
 public class ServerMeta implements Meta {
-    private final Map<String, DingoMeta> metaMap = new LinkedHashMap<>();
+    private final Map<String, DingoConnection> connectionMap = new ConcurrentHashMap<>();
 
     public ServerMeta() {
     }
 
+    @Nonnull
+    private Meta getConnectionMeta(@Nonnull ConnectionHandle ch) {
+        DingoConnection connection = connectionMap.get(ch.id);
+        return connection.getMeta();
+    }
+
     @Override
     public Map<DatabaseProperty, Object> getDatabaseProperties(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getDatabaseProperties(ch);
+        return getConnectionMeta(ch).getDatabaseProperties(ch);
     }
 
     @Override
@@ -58,8 +66,7 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         List<String> typeList
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getTables(ch, catalog, schemaPattern, tableNamePattern, typeList);
+        return getConnectionMeta(ch).getTables(ch, catalog, schemaPattern, tableNamePattern, typeList);
     }
 
     @Override
@@ -70,26 +77,22 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         Pat columnNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getColumns(ch, catalog, schemaPattern, tableNamePattern, columnNamePattern);
+        return getConnectionMeta(ch).getColumns(ch, catalog, schemaPattern, tableNamePattern, columnNamePattern);
     }
 
     @Override
     public MetaResultSet getSchemas(@Nonnull ConnectionHandle ch, String catalog, Pat schemaPattern) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getSchemas(ch, catalog, schemaPattern);
+        return getConnectionMeta(ch).getSchemas(ch, catalog, schemaPattern);
     }
 
     @Override
     public MetaResultSet getCatalogs(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getCatalogs(ch);
+        return getConnectionMeta(ch).getCatalogs(ch);
     }
 
     @Override
     public MetaResultSet getTableTypes(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getTableTypes(ch);
+        return getConnectionMeta(ch).getTableTypes(ch);
     }
 
     @Override
@@ -99,8 +102,7 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat procedureNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getProcedures(ch, catalog, schemaPattern, procedureNamePattern);
+        return getConnectionMeta(ch).getProcedures(ch, catalog, schemaPattern, procedureNamePattern);
     }
 
     @Override
@@ -111,8 +113,13 @@ public class ServerMeta implements Meta {
         Pat procedureNamePattern,
         Pat columnNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getProcedureColumns(ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern);
+        return getConnectionMeta(ch).getProcedureColumns(
+            ch,
+            catalog,
+            schemaPattern,
+            procedureNamePattern,
+            columnNamePattern
+        );
     }
 
     @Override
@@ -123,8 +130,7 @@ public class ServerMeta implements Meta {
         String table,
         Pat columnNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getColumnPrivileges(ch, catalog, schema, table, columnNamePattern);
+        return getConnectionMeta(ch).getColumnPrivileges(ch, catalog, schema, table, columnNamePattern);
     }
 
     @Override
@@ -134,8 +140,7 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat tableNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getTablePrivileges(ch, catalog, schemaPattern, tableNamePattern);
+        return getConnectionMeta(ch).getTablePrivileges(ch, catalog, schemaPattern, tableNamePattern);
     }
 
     @Override
@@ -147,8 +152,7 @@ public class ServerMeta implements Meta {
         int scope,
         boolean nullable
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getBestRowIdentifier(ch, catalog, schema, table, scope, nullable);
+        return getConnectionMeta(ch).getBestRowIdentifier(ch, catalog, schema, table, scope, nullable);
     }
 
     @Override
@@ -158,8 +162,7 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getVersionColumns(ch, catalog, schema, table);
+        return getConnectionMeta(ch).getVersionColumns(ch, catalog, schema, table);
     }
 
     @Override
@@ -169,8 +172,7 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getPrimaryKeys(ch, catalog, schema, table);
+        return getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table);
     }
 
     @Override
@@ -180,8 +182,7 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getImportedKeys(ch, catalog, schema, table);
+        return getConnectionMeta(ch).getImportedKeys(ch, catalog, schema, table);
     }
 
     @Override
@@ -191,8 +192,7 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getExportedKeys(ch, catalog, schema, table);
+        return getConnectionMeta(ch).getExportedKeys(ch, catalog, schema, table);
     }
 
     @Override
@@ -205,8 +205,7 @@ public class ServerMeta implements Meta {
         String foreignSchema,
         String foreignTable
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getCrossReference(
+        return getConnectionMeta(ch).getCrossReference(
             ch,
             parentCatalog,
             parentSchema,
@@ -219,8 +218,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getTypeInfo(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getTypeInfo(ch);
+        return getConnectionMeta(ch).getTypeInfo(ch);
     }
 
     @Override
@@ -232,8 +230,7 @@ public class ServerMeta implements Meta {
         boolean unique,
         boolean approximate
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getIndexInfo(ch, catalog, schema, table, unique, approximate);
+        return getConnectionMeta(ch).getIndexInfo(ch, catalog, schema, table, unique, approximate);
     }
 
     @Override
@@ -244,8 +241,7 @@ public class ServerMeta implements Meta {
         Pat typeNamePattern,
         int[] types
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getUDTs(ch, catalog, schemaPattern, typeNamePattern, types);
+        return getConnectionMeta(ch).getUDTs(ch, catalog, schemaPattern, typeNamePattern, types);
     }
 
     @Override
@@ -255,8 +251,7 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat typeNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getSuperTypes(ch, catalog, schemaPattern, typeNamePattern);
+        return getConnectionMeta(ch).getSuperTypes(ch, catalog, schemaPattern, typeNamePattern);
     }
 
     @Override
@@ -266,8 +261,7 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat tableNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getSuperTables(ch, catalog, schemaPattern, tableNamePattern);
+        return getConnectionMeta(ch).getSuperTables(ch, catalog, schemaPattern, tableNamePattern);
     }
 
     @Override
@@ -278,14 +272,13 @@ public class ServerMeta implements Meta {
         Pat typeNamePattern,
         Pat attributeNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getAttributes(ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern);
+        return getConnectionMeta(ch).getAttributes(ch, catalog, schemaPattern, typeNamePattern,
+            attributeNamePattern);
     }
 
     @Override
     public MetaResultSet getClientInfoProperties(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getClientInfoProperties(ch);
+        return getConnectionMeta(ch).getClientInfoProperties(ch);
     }
 
     @Override
@@ -295,8 +288,7 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat functionNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getFunctions(ch, catalog, schemaPattern, functionNamePattern);
+        return getConnectionMeta(ch).getFunctions(ch, catalog, schemaPattern, functionNamePattern);
     }
 
     @Override
@@ -307,8 +299,13 @@ public class ServerMeta implements Meta {
         Pat functionNamePattern,
         Pat columnNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getFunctionColumns(ch, catalog, schemaPattern, functionNamePattern, columnNamePattern);
+        return getConnectionMeta(ch).getFunctionColumns(
+            ch,
+            catalog,
+            schemaPattern,
+            functionNamePattern,
+            columnNamePattern
+        );
     }
 
     @Override
@@ -319,8 +316,13 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         Pat columnNamePattern
     ) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.getPseudoColumns(ch, catalog, schemaPattern, tableNamePattern, columnNamePattern);
+        return getConnectionMeta(ch).getPseudoColumns(
+            ch,
+            catalog,
+            schemaPattern,
+            tableNamePattern,
+            columnNamePattern
+        );
     }
 
     @Override
@@ -331,14 +333,30 @@ public class ServerMeta implements Meta {
         List<TypedValue> parameters,
         Frame firstFrame
     ) {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.createIterable(sh, state, signature, parameters, firstFrame);
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        return connection.getMeta().createIterable(
+            newSh,
+            state,
+            signature,
+            parameters,
+            firstFrame
+        );
     }
 
     @Override
     public StatementHandle prepare(@Nonnull ConnectionHandle ch, String sql, long maxRowCount) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.prepare(ch, sql, maxRowCount);
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
+        }
+        DingoConnection connection = connectionMap.get(ch.id);
+        try {
+            DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
+            StatementHandle handle = prepareStatement.handle;
+            return new StatementHandle(ch.id, handle.id, handle.signature);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Deprecated
@@ -348,12 +366,10 @@ public class ServerMeta implements Meta {
         String sql,
         long maxRowCount,
         PrepareCallback callback
-    ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.prepareAndExecute(sh, sql, maxRowCount, callback);
+    ) {
+        return null;
     }
 
-    @SneakyThrows(SQLException.class)
     @Override
     public ExecuteResult prepareAndExecute(
         @Nonnull StatementHandle sh,
@@ -362,10 +378,15 @@ public class ServerMeta implements Meta {
         int maxRowsInFirstFrame,
         PrepareCallback callback // This callback does nothing
     ) throws NoSuchStatementException {
-        DingoMeta meta = metaMap.get(sh.connectionId);
-        DingoStatement statement = (DingoStatement) meta.getStatement(sh);
-        return meta.prepareAndExecute(
-            sh,
+        if (log.isDebugEnabled()) {
+            log.debug("statement handle = {}, sql = {}, maxRowCount = {}, maxRowsInFirstFrame = {}.",
+                sh, sql, maxRowCount, maxRowsInFirstFrame);
+        }
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        DingoStatement statement = (DingoStatement) connection.getStatement(newSh);
+        return connection.getMeta().prepareAndExecute(
+            newSh,
             sql,
             maxRowCount,
             maxRowsInFirstFrame,
@@ -397,8 +418,9 @@ public class ServerMeta implements Meta {
         @Nonnull StatementHandle sh,
         List<String> sqlCommands
     ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.prepareAndExecuteBatch(sh, sqlCommands);
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        return connection.getMeta().prepareAndExecuteBatch(newSh, sqlCommands);
     }
 
     @Override
@@ -406,8 +428,9 @@ public class ServerMeta implements Meta {
         @Nonnull StatementHandle sh,
         List<List<TypedValue>> parameterValues
     ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.executeBatch(sh, parameterValues);
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        return connection.getMeta().executeBatch(newSh, parameterValues);
     }
 
     @Override
@@ -416,8 +439,12 @@ public class ServerMeta implements Meta {
         long offset,
         int fetchMaxRowCount
     ) throws NoSuchStatementException, MissingResultsException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.fetch(sh, offset, fetchMaxRowCount);
+        if (log.isDebugEnabled()) {
+            log.debug("statement handle = {}, offset = {}, fetchMaxRowCount = {}.", sh, offset, fetchMaxRowCount);
+        }
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        return connection.getMeta().fetch(newSh, offset, fetchMaxRowCount);
     }
 
     @Deprecated
@@ -426,9 +453,8 @@ public class ServerMeta implements Meta {
         @Nonnull StatementHandle sh,
         List<TypedValue> parameterValues,
         long maxRowCount
-    ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.execute(sh, parameterValues, maxRowCount);
+    ) {
+        return null;
     }
 
     @Override
@@ -437,46 +463,105 @@ public class ServerMeta implements Meta {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.execute(sh, parameterValues, maxRowsInFirstFrame);
+        if (log.isDebugEnabled()) {
+            log.debug("statement handle = {}, parameterValues = {}, maxRowInFirstFrame = {}.",
+                sh,
+                TypedValue.values(parameterValues).stream()
+                    .map(Objects::toString)
+                    .collect(Collectors.joining(", ")),
+                maxRowsInFirstFrame
+            );
+        }
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        try {
+            DingoPreparedStatement statement = (DingoPreparedStatement) connection.getStatement(newSh);
+            synchronized (connection.getStatement(newSh)) {
+                statement.clear();
+                int updateCount;
+                switch (sh.signature.statementType) {
+                    case CREATE:
+                    case DROP:
+                    case ALTER:
+                    case OTHER_DDL:
+                        updateCount = 0; // DDL produces no result set
+                        break;
+                    default:
+                        updateCount = -1; // SELECT and DML produces result set
+                        break;
+                }
+                statement.assign(sh.signature, null, updateCount, sh.signature.sql);
+                statement.setParameterValues(parameterValues);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        // Instead of call execute of `DingoMeta`, construct `ExecuteResult` here to use our own connection id.
+        return DingoMeta.createExecuteResult(sh);
     }
 
     @Override
     public StatementHandle createStatement(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.createStatement(ch);
+        if (log.isDebugEnabled()) {
+            log.debug("ch = {}.", ch);
+        }
+        DingoConnection connection = connectionMap.get(ch.id);
+        try {
+            AvaticaStatement statement = connection.createStatement();
+            if (log.isDebugEnabled()) {
+                log.debug("Statement created, handle = {}.", statement.handle);
+            }
+            StatementHandle handle = statement.handle;
+            return new StatementHandle(ch.id, handle.id, handle.signature);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void closeStatement(@Nonnull StatementHandle sh) {
-        Meta meta = metaMap.get(sh.connectionId);
-        if (meta == null) {
-            log.warn("Close statement id [{}], unknown connection id [{}].", sh.id, sh.connectionId);
-            return;
+        if (log.isDebugEnabled()) {
+            log.debug("statement handle = {}.", sh);
         }
-        meta.closeStatement(sh);
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        try {
+            AvaticaStatement statement = connection.getStatement(newSh);
+            statement.close();
+            return;
+        } catch (NoSuchStatementException | SQLException e) {
+            log.error("Failed to close statement: handle = {}.", sh, e);
+        }
+        log.warn("The connection (handle = {}) is not found.", sh.connectionId);
     }
 
     // Here the local meta is created.
     @Override
     public void openConnection(@Nonnull ConnectionHandle ch, Map<String, String> info) {
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, info = {}.", ch, info);
+        }
         Properties properties = new Properties();
         properties.putAll(info);
-        metaMap.computeIfAbsent(ch.id, (id) -> DingoDriver.INSTANCE.createMeta(
-            DingoFactory.INSTANCE.newConnection(
-                DingoDriver.INSTANCE,
-                DingoFactory.INSTANCE,
-                null,
-                properties
-            )
-        ));
+        DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
+        connectionMap.put(ch.id, connection);
     }
 
     @Override
     public void closeConnection(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        meta.closeConnection(ch);
-        metaMap.remove(ch.id);
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}.", ch);
+        }
+        DingoConnection connection = connectionMap.remove(ch.id);
+        if (connection != null) {
+            try {
+                connection.close();
+                return;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        log.warn("The connection (handle = {}) is not found.", ch);
     }
 
     @Override
@@ -485,25 +570,23 @@ public class ServerMeta implements Meta {
         QueryState state,
         long offset
     ) throws NoSuchStatementException {
-        Meta meta = metaMap.get(sh.connectionId);
-        return meta.syncResults(sh, state, offset);
+        DingoConnection connection = connectionMap.get(sh.connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
+        return connection.getMeta().syncResults(newSh, state, offset);
     }
 
     @Override
     public void commit(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        meta.commit(ch);
+        getConnectionMeta(ch).commit(ch);
     }
 
     @Override
     public void rollback(@Nonnull ConnectionHandle ch) {
-        Meta meta = metaMap.get(ch.id);
-        meta.rollback(ch);
+        getConnectionMeta(ch).rollback(ch);
     }
 
     @Override
     public ConnectionProperties connectionSync(@Nonnull ConnectionHandle ch, ConnectionProperties connProps) {
-        Meta meta = metaMap.get(ch.id);
-        return meta.connectionSync(ch, connProps);
+        return getConnectionMeta(ch).connectionSync(ch, connProps);
     }
 }

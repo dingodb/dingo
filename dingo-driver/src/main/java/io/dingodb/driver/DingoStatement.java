@@ -16,9 +16,7 @@
 
 package io.dingodb.driver;
 
-import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
-import org.apache.calcite.avatica.Helper;
 import org.apache.calcite.avatica.Meta;
 
 import java.sql.SQLException;
@@ -40,20 +38,10 @@ public class DingoStatement extends AvaticaStatement {
         );
     }
 
-    @Override
-    protected Meta.Signature getSignature() {
-        return super.getSignature();
-    }
-
     public void clear() throws SQLException {
         if (openResultSet != null) {
-            final AvaticaResultSet rs = openResultSet;
+            openResultSet.close();
             openResultSet = null;
-            try {
-                rs.close();
-            } catch (Exception e) {
-                throw Helper.INSTANCE.createException("Error while closing previous result set", e);
-            }
         }
     }
 

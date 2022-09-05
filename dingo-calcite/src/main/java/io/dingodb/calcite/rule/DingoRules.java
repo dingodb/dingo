@@ -72,8 +72,6 @@ public final class DingoRules {
         = DingoProjectScanRule.Config.DEFAULT.toRule();
     public static final DingoSortRule DINGO_SORT_RULE
         = DingoSortRule.DEFAULT_CONFIG.toRule(DingoSortRule.class);
-    public static final DingoToEnumerableRule DINGO_TO_ENUMERABLE_RULE
-        = DingoToEnumerableRule.Config.DEFAULT.toRule();
     public static final DingoUnionRule DINGO_UNION_RULE
         = DingoUnionRule.DEFAULT_CONFIG.toRule(DingoUnionRule.class);
     public static final DingoValuesRule DINGO_VALUES_RULE

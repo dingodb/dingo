@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoRootSchema;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
@@ -27,6 +28,7 @@ import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
@@ -42,6 +44,7 @@ import java.util.Properties;
 import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
+@Slf4j
 public class DingoConnection extends AvaticaConnection {
     @Getter
     private final DingoParserContext context;
@@ -60,10 +63,17 @@ public class DingoConnection extends AvaticaConnection {
         context = new DingoParserContext(defaultSchema);
     }
 
-    public AvaticaStatement getStatement(@Nonnull Meta.StatementHandle sh) throws SQLException {
-        // Returns a new statement if not exists.
-        // This method is protected, so wrap it.
-        return lookupStatement(sh);
+    public Meta getMeta() {
+        return meta;
+    }
+
+    @Nonnull
+    public AvaticaStatement getStatement(@Nonnull Meta.StatementHandle sh) throws NoSuchStatementException {
+        AvaticaStatement statement = statementMap.get(sh.id);
+        if (statement != null) {
+            return statement;
+        }
+        throw new NoSuchStatementException(sh);
     }
 
     public AvaticaResultSet newResultSet(

@@ -16,26 +16,24 @@
 
 package io.dingodb.driver;
 
-import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.JobRunner;
-import io.dingodb.exec.base.Job;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.QueryState;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.TimeZone;
-import javax.annotation.Nullable;
 
 @Slf4j
 public class DingoResultSet extends AvaticaResultSet {
-    private Iterator<Object[]> iterator = null;
+    @Getter
+    @Setter
+    private Iterator<Object[]> iterator;
 
     public DingoResultSet(
         AvaticaStatement statement,
@@ -46,31 +44,14 @@ public class DingoResultSet extends AvaticaResultSet {
         Meta.Frame firstFrame
     ) throws SQLException {
         super(statement, state, signature, resultSetMetaData, timeZone, firstFrame);
-    }
-
-    Iterator<Object[]> getIterator() {
-        return getIterator(null);
-    }
-
-    Iterator<Object[]> getIterator(@Nullable Object[] paras) {
-        if (iterator == null) {
-            if (signature instanceof DingoExplainSignature) {
-                DingoExplainSignature signature = (DingoExplainSignature) this.signature;
-                return ImmutableList.of(new Object[]{signature.toString()}).iterator();
-            }
-            DingoSignature dingoSignature = (DingoSignature) signature;
-            Job job = dingoSignature.getJob();
-            if (paras != null) {
-                job.setParas(paras);
-            }
-            Enumerator<Object[]> enumerator = new JobRunner(job).createEnumerator();
-            iterator = Linq4j.enumeratorIterator(enumerator);
-            try {
-                setFetchSize(100);
-            } catch (SQLException e) {
-                log.error("Executor Iterator catch exception:{}", e.getMessage(), e);
-            }
+        try {
+            setFetchSize(1024);
+        } catch (SQLException e) {
+            log.error("Executor Iterator catch exception:{}", e.getMessage(), e);
         }
-        return iterator;
+    }
+
+    public Meta.Signature getSignature() {
+        return signature;
     }
 }
