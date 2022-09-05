@@ -262,6 +262,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .partMaxCount(CoordinatorConfiguration.schedule().getDefaultAutoMaxCount())
             .partMaxSize(CoordinatorConfiguration.schedule().getDefaultAutoMaxSize())
             .autoSplit(CoordinatorConfiguration.schedule().isAutoSplit())
+            .attrMap(definition.getAttrMap())
+            .partType(definition.getPartType())
+            .dingoTablePart(definition.getDingoTablePart())
             .build();
     }
 

@@ -248,15 +248,227 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     SqlNodeList tableElementList = null;
     SqlNode query = null;
+    DingoTablePart dingoTablePart = null;
+    String partNm = null;
+    String comSymbol = null;
+    String operand = null;
+    Map<String,Object> attrList = null;
+    List<DingoPartDetail> partList = null;
+    String partType = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
+    [ <WITH> attrList = AttrMap() ]
+    [
+       <PARTITION> <BY>
+       [
+            <RANGE>
+            { partType = "RANGE"; }
+            dingoTablePart = partColNm()
+            partList = defPart()
+            { dingoTablePart = new DingoTablePart(dingoTablePart.getFuncNm(), dingoTablePart.getCols());
+              dingoTablePart.setPartDetailList(partList);
+              return DingoSqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
+                          tableElementList, query, attrList, partType, dingoTablePart);
+             }
+       ]
+    ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query);
+        return DingoSqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
+            tableElementList, query, attrList, partType, dingoTablePart);
     }
+}
+
+List<DingoPartDetail> defPart() : {
+    List<DingoPartDetail> listParts = new ArrayList<DingoPartDetail>();
+    Object partNm = null;
+    String operator = null;
+    List<Object> operand = null;
+}{
+    <LPAREN>
+    [
+       <PARTITION>
+       partNm = anything()
+       <VALUES>
+       operator = symbol()
+       <THAN>
+        [ operand = getPartVals() ]
+        [ <MAXVALUE> { operand = new ArrayList<Object>(); operand.add("MAXVALUE"); } ]
+       { listParts.add(new DingoPartDetail(partNm, operator, operand)); }
+       { partNm = null; operator = null; operand = null; }
+       (
+          <COMMA>
+          <PARTITION>
+          partNm = anything()
+          <VALUES>
+          operator = symbol()
+          <THAN>
+          [ operand = getPartVals() ]
+          [ <MAXVALUE> { operand = new ArrayList<Object>(); operand.add("MAXVALUE"); } ]
+          { listParts.add(new DingoPartDetail(partNm, operator, operand )); }
+          { partNm = null; operator = null; operand = null; }
+       )*
+    ]
+    <RPAREN>
+    { return listParts; }
+}
+
+Object getPartPairVal() : {
+   Object operand = null;
+}{
+     <LPAREN>
+     [
+        operand = anything()
+     ]
+     <RPAREN>
+     { return operand; }
+}
+
+List<Object> getPartVals() : {
+   List<Object> partVals = new ArrayList<Object>();
+   Object operand = null;
+}{
+     <LPAREN>
+     [
+        operand = anything()
+        { partVals.add(operand); operand = null; }
+        (
+          <COMMA>
+          operand = anything()
+          { partVals.add(operand); operand = null; }
+        )*
+     ]
+     <RPAREN>
+     { return partVals; }
+}
+
+DingoTablePart partColNm() : {
+	String partColNm = null;
+	List<String> partColNmList = new ArrayList<String>();
+	String funNm = null;
+	DingoTablePart tablePart = null;
+	SqlIdentifier tmp = null;
+} {
+	  <LPAREN>
+	  [
+	    tmp = CompoundIdentifier()
+	    { partColNm = tmp.names.get(0); partColNmList.add(partColNm); }
+	    [
+	      <LPAREN>
+	      { partColNmList.remove(partColNm); funNm = partColNm; partColNm = null; tmp = null;}
+	      tmp = CompoundIdentifier()
+          { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
+	      (
+	         <COMMA>
+	         tmp = CompoundIdentifier()
+             { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
+	      )*
+	      <RPAREN>
+	    ]
+	    (
+	      <COMMA>
+          tmp = CompoundIdentifier()
+          { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
+	    )*
+	  ]
+	  <RPAREN>
+	{ tablePart = new DingoTablePart();
+	  tablePart.setFuncNm(funNm); tablePart.setCols(partColNmList); return tablePart; }
+}
+
+
+
+Map<String,Object> AttrMap() : {
+	final Map<String,Object> map = new HashMap<String,Object>();
+	String key = null;
+	Object tmp = null;
+	Object value = null;
+}{
+	<LPAREN>
+	[
+		tmp = anything()
+		{ key=tmp.toString(); }
+		<EQ>
+		value = anything()
+		{ map.put(key, value); }
+		{ key = null; tmp = null; value = null; }
+		(
+			<COMMA>
+			tmp = anything()
+			{ key=tmp.toString(); }
+			<EQ>
+			value = anything()
+			{ map.put(key, value); }
+			{ key = null; tmp = null; value = null; }
+		)*
+	]
+	<RPAREN>
+	{ return map; }
+}
+
+String symbol() : {
+}{
+	<IDENTIFIER>
+	{ return token.image.toUpperCase(); }
+}
+
+String getPartCol() : {
+}{
+	<IDENTIFIER>
+	{
+        return unquotedIdentifier();
+
+    }
+}
+
+Object nullValue(): {}{
+	<NULL>
+	{ return null; }
+}
+
+Object anything() : {
+	Object x;
+}{
+	(
+	  x = symbol()
+	| x = number()
+	| x = booleanValue()
+	| x = NonReservedKeyWord()
+	| x = nullValue()
+	)
+	{ return x; }
+}
+
+Boolean booleanValue(): {
+	Boolean b;
+}{
+	(
+		(
+			<TRUE>
+			{ b = Boolean.TRUE; }
+		) | (
+			<FALSE>
+			{ b = Boolean.FALSE; }
+		)
+	)
+	{ return b; }
+}
+
+Number number(): {
+	Token t;
+}{
+	 (
+        t = <UNSIGNED_INTEGER_LITERAL>
+        {
+            if(nativeNumbers) {
+                return new Double(t.image);
+            } else {
+                return new BigInteger(substringBefore(t.image, '.'));
+            }
+        }
+      )
 }
 
 SqlCreate SqlCreateView(Span s, boolean replace) :

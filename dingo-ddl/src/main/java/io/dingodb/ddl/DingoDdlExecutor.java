@@ -16,6 +16,8 @@
 
 package io.dingodb.ddl;
 
+import io.dingodb.common.partition.DingoPartDetail;
+import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTruncate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.ddl.DingoSqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -43,6 +46,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -165,8 +169,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
             }
         }
+        try {
+            validatorCreateTable(keyList, create);
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage());
+        }
         final String tableName = schemaTableName.right;
         TableDefinition td = new TableDefinition(tableName);
+        DingoSqlCreateTable dingoSqlCreateTable = (DingoSqlCreateTable) create;
+        td.setAttrMap(dingoSqlCreateTable.getAttrMap());
+        td.setPartType(dingoSqlCreateTable.getPartType());
+        td.setDingoTablePart(dingoSqlCreateTable.getDingoTablePart());
         SqlValidator validator = new ContextSqlValidator(context, true);
         for (SqlNode sqlNode : create.columnList) {
             if (sqlNode.getKind() == SqlKind.COLUMN_DECL) {
@@ -246,5 +259,39 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         schema.createTable(tableName, tableDefinition);
 
+    }
+
+    public void validatorCreateTable(List<String> keyList, SqlCreateTable create) throws SQLException {
+        DingoSqlCreateTable dingoSqlCreateTable = (DingoSqlCreateTable) create;
+        String partType = dingoSqlCreateTable.getPartType();
+        if (partType != null) {
+            if (partType.equalsIgnoreCase("range")) {
+                DingoTablePart dingoTablePart = dingoSqlCreateTable.getDingoTablePart();
+                List<String> cols = dingoTablePart.getCols();
+
+                int partColsSize = cols.size();
+                List<DingoPartDetail> rangePartList = dingoTablePart.getPartDetailList();
+                String operator = "";
+                int i = 0;
+                for (DingoPartDetail rangePart : rangePartList) {
+                    if (++i > 1) {
+                        if (!operator.equalsIgnoreCase(rangePart.getOperator())) {
+                            throw new SQLException("keep all partition types consistent!");
+                        }
+                    }
+                    operator = rangePart.getOperator();
+                    if (rangePart.getOperand().size() != partColsSize) {
+                        throw new SQLException("keep all partition types consistent!");
+                    }
+                }
+
+                for (String partCol : cols) {
+                    if (!keyList.contains(partCol)) {
+                        throw new SQLException("partition columns must be a subset of primary key columns.");
+                    }
+                }
+
+            }
+        }
     }
 }

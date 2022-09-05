@@ -17,6 +17,7 @@
 package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.table.TableDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,7 @@ import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
@@ -60,4 +62,10 @@ public class Table implements Meta {
     private boolean autoSplit;
 
     private int version;
+
+    private Map<String,Object> attrMap;
+
+    private DingoTablePart dingoTablePart;
+
+    private String partType;
 }

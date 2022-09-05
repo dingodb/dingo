@@ -148,7 +148,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class ${parser.class} extends SqlAbstractParserImpl
 {
     private static final Logger LOGGER = CalciteTrace.getParserTracer();
-
+    private boolean nativeNumbers = false;
     // Can't use quoted literal because of a bug in how JavaCC translates
     // backslash-backslash.
     private static final char BACKSLASH = 0x5c;
@@ -177,7 +177,11 @@ public class ${parser.class} extends SqlAbstractParserImpl
           return parser;
         }
     };
-
+    private static String substringBefore(String str, char delim) {
+		int pos = str.indexOf(delim);
+		if(pos == -1) return str;
+		return str.substring(0, pos);
+	}
     public SqlParseException normalizeException(Throwable ex) {
         try {
             if (ex instanceof ParseException) {
@@ -7907,6 +7911,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TRIM_ARRAY: "TRIM_ARRAY" >
 |   < TRUE: "TRUE" >
 |   < TRUNCATE: "TRUNCATE" >
+|   < THAN: "THAN" >
 |   < TUMBLE: "TUMBLE" >
 |   < TYPE: "TYPE" >
 |   < UESCAPE: "UESCAPE" >
