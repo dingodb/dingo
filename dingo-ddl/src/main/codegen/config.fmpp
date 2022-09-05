@@ -26,12 +26,17 @@ data: {
 
     # List of import statements.
     imports: [
+      "io.dingodb.common.partition.DingoPartDetail"
+      "io.dingodb.common.partition.DingoTablePart"
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlCreate"
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
+      "org.apache.calcite.sql.ddl.DingoSqlDdlNodes"
       "java.util.Map"
       "java.util.HashMap"
+      "java.util.LinkedHashMap"
+      "java.math.BigInteger"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is

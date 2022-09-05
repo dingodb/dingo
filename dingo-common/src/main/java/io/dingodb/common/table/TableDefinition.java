@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -39,6 +40,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -56,6 +58,12 @@ public class TableDefinition {
     @Setter
     private List<ColumnDefinition> columns;
 
+    private String partType;
+
+    private Map<String,Object> attrMap;
+
+    private DingoTablePart dingoTablePart;
+
     public String getName() {
         return name.toUpperCase();
     }
@@ -63,6 +71,30 @@ public class TableDefinition {
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
+    }
+
+    public String getPartType() {
+        return partType;
+    }
+
+    public void setPartType(String partType) {
+        this.partType = partType;
+    }
+
+    public Map<String, Object> getAttrMap() {
+        return attrMap;
+    }
+
+    public void setAttrMap(Map<String, Object> attrMap) {
+        this.attrMap = attrMap;
+    }
+
+    public DingoTablePart getDingoTablePart() {
+        return dingoTablePart;
+    }
+
+    public void setDingoTablePart(DingoTablePart dingoTablePart) {
+        this.dingoTablePart = dingoTablePart;
     }
 
     public static TableDefinition fromJson(String json) throws IOException {
