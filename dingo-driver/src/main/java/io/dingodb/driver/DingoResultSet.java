@@ -44,11 +44,6 @@ public class DingoResultSet extends AvaticaResultSet {
         Meta.Frame firstFrame
     ) throws SQLException {
         super(statement, state, signature, resultSetMetaData, timeZone, firstFrame);
-        try {
-            setFetchSize(1024);
-        } catch (SQLException e) {
-            log.error("Executor Iterator catch exception:{}", e.getMessage(), e);
-        }
     }
 
     public Meta.Signature getSignature() {

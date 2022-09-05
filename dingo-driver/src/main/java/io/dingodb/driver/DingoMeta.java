@@ -77,7 +77,8 @@ public class DingoMeta extends MetaImpl {
     }
 
     @Nonnull
-    private static Iterator<Object[]> createIterator(AvaticaStatement statement, Signature signature) {
+    private static Iterator<Object[]> createIterator(@Nonnull AvaticaStatement statement) {
+        Signature signature = statement.handle.signature;
         Iterator<Object[]> iterator;
         if (signature instanceof DingoExplainSignature) {
             DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
@@ -99,11 +100,27 @@ public class DingoMeta extends MetaImpl {
     }
 
     @Nonnull
-    public static ExecuteResult createExecuteResult(@Nonnull StatementHandle sh) {
+    static ExecuteResult createExecuteResult(@Nonnull StatementHandle sh) {
         MetaResultSet metaResultSet;
         final Frame frame = new Frame(0, false, Collections.emptyList());
         metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, sh.signature, frame);
         return new ExecuteResult(ImmutableList.of(metaResultSet));
+    }
+
+    static int getUpdateCount(@Nonnull StatementType statementType) {
+        final int updateCount;
+        switch (statementType) {
+            case CREATE:
+            case DROP:
+            case ALTER:
+            case OTHER_DDL:
+                updateCount = 0; // DDL produces no result set
+                break;
+            default:
+                updateCount = -1; // SELECT and DML produces result set
+                break;
+        }
+        return updateCount;
     }
 
     @Override
@@ -152,22 +169,9 @@ public class DingoMeta extends MetaImpl {
             final Signature signature = parser.parseQuery(jobManager, new Id(sh.toString()), sql, context);
             timeCtx.stop();
             sh.signature = signature;
-            final int updateCount;
-            switch (signature.statementType) {
-                case CREATE:
-                case DROP:
-                case ALTER:
-                case OTHER_DDL:
-                    updateCount = 0; // DDL produces no result set
-                    break;
-                default:
-                    updateCount = -1; // SELECT and DML produces result set
-                    break;
-            }
+            final int updateCount = getUpdateCount(signature.statementType);
             synchronized (callback.getMonitor()) {
                 callback.clear();
-                // For local driver, here signature is assigned to statement.
-                // Buf not for remote driver. Don't know why.
                 callback.assign(signature, null, updateCount);
             }
             // For local driver, here `fetch` is called.
@@ -273,7 +277,7 @@ public class DingoMeta extends MetaImpl {
             Signature signature = resultSet.getSignature();
             Iterator<Object[]> iterator = resultSet.getIterator();
             if (iterator == null) {
-                iterator = createIterator(statement, signature);
+                iterator = createIterator(statement);
                 resultSet.setIterator(iterator);
             }
             final List rows = new ArrayList(fetchMaxRowCount);
@@ -310,7 +314,17 @@ public class DingoMeta extends MetaImpl {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
-        // parameterValues are not used here, actually they live in prepared statement.
+        // parameterValues are not used here, actually they are set to statement before call this function.
+        DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
+        if (statement.getStatementType().canUpdate()) {
+            final Iterator<Object[]> iterator = createIterator(statement);
+            MetaResultSet metaResultSet = MetaResultSet.count(
+                sh.connectionId,
+                sh.id,
+                ((Number) iterator.next()[0]).longValue()
+            );
+            return new ExecuteResult(ImmutableList.of(metaResultSet));
+        }
         return createExecuteResult(sh);
     }
 
@@ -332,7 +346,7 @@ public class DingoMeta extends MetaImpl {
         StatementHandle sh,
         QueryState state,
         long offset
-    ) throws NoSuchStatementException {
+    ) {
         return false;
     }
 

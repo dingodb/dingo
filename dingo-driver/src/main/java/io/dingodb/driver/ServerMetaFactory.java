@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.driver.server;
+package io.dingodb.driver;
 
 import org.apache.calcite.avatica.Meta;
 

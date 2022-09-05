@@ -121,16 +121,12 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         @Nonnull DingoType targetType,
         Object[] tuple,
         DingoType tupleType
-    ) {
+    ) throws DingoExprCompileException, FailGetEvaluator {
         Expr expr = convert(rexNode);
-        try {
-            return targetType.convertFrom(
-                expr.compileIn(new SqlExprCompileContext(tupleType)).eval(new SqlExprEvalContext(tuple)),
-                ExprConverter.INSTANCE
-            );
-        } catch (DingoExprCompileException | FailGetEvaluator e) {
-            throw new RuntimeException(e);
-        }
+        return targetType.convertFrom(
+            expr.compileIn(new SqlExprCompileContext(tupleType)).eval(new SqlExprEvalContext(tuple)),
+            ExprConverter.INSTANCE
+        );
     }
 
     @Nonnull
@@ -139,15 +135,13 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         @Nonnull DingoType targetType,
         Object[] tuple,
         DingoType tupleType
-    ) {
-        return IntStream.range(0, rexNodeList.size())
-            .mapToObj(i -> calcValue(
-                rexNodeList.get(i),
-                Objects.requireNonNull(targetType.getChild(i)),
-                tuple,
-                tupleType
-            ))
-            .toArray(Object[]::new);
+    ) throws DingoExprCompileException, FailGetEvaluator {
+        int size = rexNodeList.size();
+        Object[] result = new Object[size];
+        for (int i = 0; i < size; ++i) {
+            result[i] = calcValue(rexNodeList.get(i), targetType.getChild(i), tuple, tupleType);
+        }
+        return result;
     }
 
     private static int typeCodeOf(@Nonnull RelDataType type) {

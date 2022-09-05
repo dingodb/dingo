@@ -77,7 +77,7 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         pw.item("operation", operation);
         pw.item("updateColumnList", updateColumnList);
         pw.item("sourceExpressionList", sourceExpressionList);

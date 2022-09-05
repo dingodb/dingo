@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.driver.server;
+package io.dingodb.driver;
 
-import io.dingodb.driver.DingoConnection;
-import io.dingodb.driver.DingoDriver;
-import io.dingodb.driver.DingoMeta;
-import io.dingodb.driver.DingoPreparedStatement;
-import io.dingodb.driver.DingoStatement;
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
@@ -45,6 +41,23 @@ public class ServerMeta implements Meta {
     private final Map<String, DingoConnection> connectionMap = new ConcurrentHashMap<>();
 
     public ServerMeta() {
+    }
+
+    @Nonnull
+    private static MetaResultSet mapMetaResultSet(String connectionId, @Nonnull MetaResultSet resultSet) {
+        if (resultSet.signature != null) {
+            // It is a query result set.
+            return MetaResultSet.create(
+                connectionId,
+                resultSet.statementId,
+                resultSet.ownStatement,
+                resultSet.signature,
+                resultSet.firstFrame,
+                resultSet.updateCount
+            );
+        }
+        // It is a DML result set.
+        return MetaResultSet.count(connectionId, resultSet.statementId, resultSet.updateCount);
     }
 
     @Nonnull
@@ -353,6 +366,7 @@ public class ServerMeta implements Meta {
         try {
             DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
             StatementHandle handle = prepareStatement.handle;
+            prepareStatement.setSignature(handle.signature);
             return new StatementHandle(ch.id, handle.id, handle.signature);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -403,7 +417,10 @@ public class ServerMeta implements Meta {
 
                 @Override
                 public void assign(Signature signature, Frame firstFrame, long updateCount) throws SQLException {
-                    statement.assign(signature, firstFrame, updateCount, sql);
+                    statement.setSignature(signature);
+                    if (updateCount == -1) {
+                        statement.createResultSet(firstFrame);
+                    }
                 }
 
                 @Override
@@ -472,32 +489,31 @@ public class ServerMeta implements Meta {
                 maxRowsInFirstFrame
             );
         }
-        DingoConnection connection = connectionMap.get(sh.connectionId);
+        final String connectionId = sh.connectionId;
+        DingoConnection connection = connectionMap.get(connectionId);
+        // `sh.signature` may be `null` for the client is trying to save ser-des cost.
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         try {
             DingoPreparedStatement statement = (DingoPreparedStatement) connection.getStatement(newSh);
+            MetaResultSet resultSet;
             synchronized (connection.getStatement(newSh)) {
                 statement.clear();
-                int updateCount;
-                switch (sh.signature.statementType) {
-                    case CREATE:
-                    case DROP:
-                    case ALTER:
-                    case OTHER_DDL:
-                        updateCount = 0; // DDL produces no result set
-                        break;
-                    default:
-                        updateCount = -1; // SELECT and DML produces result set
-                        break;
-                }
-                statement.assign(sh.signature, null, updateCount, sh.signature.sql);
                 statement.setParameterValues(parameterValues);
+                ExecuteResult executeResult = connection.getMeta().execute(
+                    newSh,
+                    parameterValues,
+                    maxRowsInFirstFrame
+                );
+                // There are always 1 resultSet.
+                resultSet = executeResult.resultSets.get(0);
+                if (resultSet.updateCount == -1) {
+                    statement.createResultSet(resultSet.firstFrame);
+                }
             }
+            return new ExecuteResult(ImmutableList.of(mapMetaResultSet(connectionId, resultSet)));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        // Instead of call execute of `DingoMeta`, construct `ExecuteResult` here to use our own connection id.
-        return DingoMeta.createExecuteResult(sh);
     }
 
     @Override

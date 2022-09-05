@@ -21,7 +21,10 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ArrayUtils;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ElementNotExists;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -47,19 +50,25 @@ public class DingoJoinValuesRule extends RelRule<DingoJoinValuesRule.Config> imp
         List<Object[]> tuples = new LinkedList<>();
         if (join.getJoinType() == JoinRelType.INNER) {
             DingoType type = DingoTypeFactory.fromRelDataType(join.getRowType());
-            for (Object[] v0 : value0.getTuples()) {
-                for (Object[] v1 : value1.getTuples()) {
-                    Object[] newTuple = ArrayUtils.concat(v0, v1);
-                    Object v = RexConverter.calcValue(
-                        join.getCondition(),
-                        DingoTypeFactory.scalar(TypeCode.BOOL, false),
-                        newTuple,
-                        type
-                    );
-                    if (v != null && (boolean) v) {
-                        tuples.add(newTuple);
+            try {
+                for (Object[] v0 : value0.getTuples()) {
+                    for (Object[] v1 : value1.getTuples()) {
+                        Object[] newTuple = ArrayUtils.concat(v0, v1);
+                        Object v = RexConverter.calcValue(
+                            join.getCondition(),
+                            DingoTypeFactory.scalar(TypeCode.BOOL, false),
+                            newTuple,
+                            type
+                        );
+                        if (v != null && (boolean) v) {
+                            tuples.add(newTuple);
+                        }
                     }
                 }
+            } catch (ElementNotExists e) {
+                return;
+            } catch (DingoExprCompileException | FailGetEvaluator e) {
+                throw new RuntimeException(e);
             }
             call.transformTo(new LogicalDingoValues(
                 join.getCluster(),

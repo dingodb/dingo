@@ -46,7 +46,7 @@ public class DingoDistributedValues extends LogicalDingoValues implements DingoR
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         return pw;
     }
 
