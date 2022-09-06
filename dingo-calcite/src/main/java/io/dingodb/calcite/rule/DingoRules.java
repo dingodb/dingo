@@ -74,8 +74,10 @@ public final class DingoRules {
         = DingoSortRule.DEFAULT_CONFIG.toRule(DingoSortRule.class);
     public static final DingoUnionRule DINGO_UNION_RULE
         = DingoUnionRule.DEFAULT_CONFIG.toRule(DingoUnionRule.class);
-    public static final DingoValuesRule DINGO_VALUES_RULE
-        = DingoValuesRule.DEFAULT_CONFIG.toRule(DingoValuesRule.class);
+    public static final DingoValuesRule DINGO_VALUES_RULE_DISTRIBUTED
+        = DingoValuesRule.DISTRIBUTED.toRule(DingoValuesRule.class);
+    public static final DingoValuesRule DINGO_VALUES_RULE_ROOT
+        = DingoValuesRule.ROOT.toRule(DingoValuesRule.class);
     public static final DingoPartRangeRule DINGO_PART_RANGE_RULE
         = DingoPartRangeRule.Config.DEFAULT.toRule();
 
@@ -110,7 +112,8 @@ public final class DingoRules {
         DINGO_PROJECT_SCAN_RULE,
         DINGO_SORT_RULE,
         DINGO_UNION_RULE,
-        DINGO_VALUES_RULE,
+        DINGO_VALUES_RULE_DISTRIBUTED,
+        DINGO_VALUES_RULE_ROOT,
         DINGO_PART_RANGE_RULE
     );
 

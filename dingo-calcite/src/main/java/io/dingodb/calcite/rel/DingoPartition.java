@@ -48,7 +48,7 @@ public final class DingoPartition extends SingleRel implements DingoRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         return pw;
     }
 

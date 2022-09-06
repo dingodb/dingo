@@ -65,7 +65,7 @@ public final class DingoPartCountDelete extends AbstractRelNode implements Dingo
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         pw.item("doDeleting", doDeleting);
         return pw;
     }

@@ -94,7 +94,7 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         pw.itemIf("filter", filter, filter != null && ((RexCall) filter).op.kind == SqlKind.AND);
         pw.itemIf("selection", selection, selection != null);
         return pw;

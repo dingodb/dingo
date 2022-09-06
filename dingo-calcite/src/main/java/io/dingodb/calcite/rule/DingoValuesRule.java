@@ -26,12 +26,21 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import javax.annotation.Nonnull;
 
 public class DingoValuesRule extends ConverterRule {
-    public static final Config DEFAULT_CONFIG = Config.INSTANCE
+    public static final Config ROOT = Config.INSTANCE
         .withConversion(
             LogicalDingoValues.class,
             Convention.NONE,
             DingoConventions.ROOT,
-            "DingoValuesRule"
+            "DingoValuesRule.ROOT"
+        )
+        .withRuleFactory(DingoValuesRule::new);
+
+    public static final Config DISTRIBUTED = Config.INSTANCE
+        .withConversion(
+            LogicalDingoValues.class,
+            Convention.NONE,
+            DingoConventions.DISTRIBUTED,
+            "DingoValuesRule.DISTRIBUTED"
         )
         .withRuleFactory(DingoValuesRule::new);
 
@@ -41,9 +50,10 @@ public class DingoValuesRule extends ConverterRule {
 
     @Override
     public RelNode convert(@Nonnull RelNode rel) {
+        Convention convention = this.getOutConvention();
         return new DingoValues(
             rel.getCluster(),
-            rel.getTraitSet().replace(DingoConventions.ROOT),
+            rel.getTraitSet().replace(convention),
             rel.getRowType(),
             ((LogicalDingoValues) rel).getTuples()
         );

@@ -33,7 +33,7 @@ public final class DingoDriverTestServer {
     }
 
     public static void main(String[] args) throws Exception {
-        Services.META.init(null);
+        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         netService.listenPort(port);
         DriverProxyService driverProxyService = new DriverProxyService();

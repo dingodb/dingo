@@ -23,14 +23,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -49,17 +48,39 @@ public class TestSqlParameters {
         sqlHelper.cleanUp();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "select ?",
-        "select 1 + ?",
-    })
-    public void testIllegalUse(String sql) {
-        assertThrows(SQLException.class, () -> {
+    @Test
+    public void testIllegalUse() throws SQLException {
+        String sql = "select ?";
+        SQLException e = assertThrows(SQLException.class, () -> {
             try (PreparedStatement statement = sqlHelper.getConnection().prepareStatement(sql)) {
-                statement.setInt(1, 0);
+                statement.setInt(1, 1);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                        new Object[]{1}
+                    ));
+                }
             }
         });
+        assertThat(e.getCause().getMessage()).contains("Illegal use of dynamic parameter");
+    }
+
+    @Test
+    public void testSimple() throws SQLException {
+        String sql = "select 1 + ?";
+        try (PreparedStatement statement = sqlHelper.getConnection().prepareStatement(sql)) {
+            statement.setInt(1, 1);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{2}
+                ));
+            }
+            statement.setInt(1, 2);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{3}
+                ));
+            }
+        }
     }
 
     @Test
@@ -83,5 +104,31 @@ public class TestSqlParameters {
                 ));
             }
         }
+    }
+
+    @Test
+    public void testInsert() throws SQLException {
+        String sql = "insert into test values(?, ?, ?)";
+        Connection connection = sqlHelper.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, 10);
+            statement.setString(2, "Alice");
+            statement.setDouble(3, 10.0);
+            int count = statement.executeUpdate();
+            assertThat(count).isEqualTo(1);
+            statement.setInt(1, 11);
+            statement.setString(2, "Betty");
+            statement.setDouble(3, 11.0);
+            count = statement.executeUpdate();
+            assertThat(count).isEqualTo(1);
+        }
+        sqlHelper.queryTest(
+            "select * from test where id >= 10",
+            new String[]{"id", "name", "amount"},
+            ImmutableList.of(
+                new Object[]{10, "Alice", 10.0},
+                new Object[]{11, "Betty", 11.0}
+            )
+        );
     }
 }

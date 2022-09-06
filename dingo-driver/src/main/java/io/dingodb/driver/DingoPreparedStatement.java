@@ -23,6 +23,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import java.sql.SQLException;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
     protected DingoPreparedStatement(
@@ -48,26 +49,32 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         return super.getParameterValues();
     }
 
-    public void clear() throws SQLException {
+    // This is only used by `ServerMeta`, for local driver, the value is set when JDBC APIs are called.
+    void setParameterValues(@Nonnull List<TypedValue> parameterValues) {
+        for (int i = 0; i < parameterValues.size(); ++i) {
+            slots[i] = parameterValues.get(i);
+        }
+    }
+
+    @Override
+    protected void setSignature(Meta.Signature signature) {
+        super.setSignature(signature);
+    }
+
+    void clear() throws SQLException {
         if (openResultSet != null) {
             openResultSet.close();
             openResultSet = null;
         }
     }
 
-    public void assign(Meta.Signature sig, Meta.Frame firstFrame, long uc, String sql) throws SQLException {
-        setSignature(sig);
-        updateCount = uc;
-        // No result set for DDL.
-        if (updateCount == -1) {
-            openResultSet = ((DingoConnection) connection).newResultSet(this, sig, firstFrame, sql);
-        }
-    }
-
-    // This is only used by `ServerMeta`, for local driver, the value is set when JDBC APIs are called.
-    public void setParameterValues(@Nonnull List<TypedValue> parameterValues) {
-        for (int i = 0; i < parameterValues.size(); ++i) {
-            slots[i] = parameterValues.get(i);
-        }
+    void createResultSet(@Nullable Meta.Frame firstFrame) throws SQLException {
+        Meta.Signature signature = getSignature();
+        openResultSet = ((DingoConnection) connection).newResultSet(
+            this,
+            signature,
+            firstFrame,
+            signature.sql
+        );
     }
 }

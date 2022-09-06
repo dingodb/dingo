@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 
 import java.sql.SQLException;
+import javax.annotation.Nullable;
 
 public class DingoStatement extends AvaticaStatement {
     DingoStatement(
@@ -38,6 +39,11 @@ public class DingoStatement extends AvaticaStatement {
         );
     }
 
+    @Override
+    protected void setSignature(Meta.Signature signature) {
+        super.setSignature(signature);
+    }
+
     public void clear() throws SQLException {
         if (openResultSet != null) {
             openResultSet.close();
@@ -45,12 +51,13 @@ public class DingoStatement extends AvaticaStatement {
         }
     }
 
-    public void assign(Meta.Signature sig, Meta.Frame firstFrame, long uc, String sql) throws SQLException {
-        setSignature(sig);
-        updateCount = uc;
-        // No result set for DDL.
-        if (updateCount == -1) {
-            openResultSet = ((DingoConnection) connection).newResultSet(this, sig, firstFrame, sql);
-        }
+    public void createResultSet(@Nullable Meta.Frame firstFrame) throws SQLException {
+        Meta.Signature signature = getSignature();
+        openResultSet = ((DingoConnection) connection).newResultSet(
+            this,
+            signature,
+            firstFrame,
+            signature.sql
+        );
     }
 }

@@ -80,7 +80,7 @@ public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table);
+        pw.item("table", table.getQualifiedName());
         pw.item("keyItems", keyItems);
         pw.item("selection", selection);
         return pw;

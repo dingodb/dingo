@@ -20,7 +20,10 @@ import io.dingodb.calcite.rel.LogicalDingoValues;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ElementNotExists;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -38,14 +41,23 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         super(config);
     }
 
-    private static void matchProject(@Nonnull DingoValuesReduceRule rule, @Nonnull RelOptRuleCall call) {
+    private static void matchProject(
+        @Nonnull DingoValuesReduceRule rule,
+        @Nonnull RelOptRuleCall call
+    ) {
         LogicalProject project = call.rel(0);
         LogicalDingoValues values = call.rel(1);
         DingoType tupleType = DingoTypeFactory.fromRelDataType(values.getRowType());
         DingoType rowType = DingoTypeFactory.fromRelDataType(project.getRowType());
         List<Object[]> tuples = new LinkedList<>();
-        for (Object[] tuple : values.getTuples()) {
-            tuples.add(RexConverter.calcValues(project.getProjects(), rowType, tuple, tupleType));
+        try {
+            for (Object[] tuple : values.getTuples()) {
+                tuples.add(RexConverter.calcValues(project.getProjects(), rowType, tuple, tupleType));
+            }
+        } catch (ElementNotExists e) { // Means it is not a constant.
+            return;
+        } catch (DingoExprCompileException | FailGetEvaluator e) {
+            throw new RuntimeException(e);
         }
         call.transformTo(new LogicalDingoValues(
             project.getCluster(),
@@ -55,21 +67,30 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         ));
     }
 
-    private static void matchFilter(@Nonnull DingoValuesReduceRule rule, @Nonnull RelOptRuleCall call) {
+    private static void matchFilter(
+        @Nonnull DingoValuesReduceRule rule,
+        @Nonnull RelOptRuleCall call
+    ) {
         LogicalFilter filter = call.rel(0);
         LogicalDingoValues values = call.rel(1);
         DingoType tupleType = DingoTypeFactory.fromRelDataType(values.getRowType());
         List<Object[]> tuples = new LinkedList<>();
-        for (Object[] tuple : values.getTuples()) {
-            Object v = RexConverter.calcValue(
-                filter.getCondition(),
-                DingoTypeFactory.scalar(TypeCode.BOOL, false),
-                tuple,
-                tupleType
-            );
-            if (v != null && (boolean) v) {
-                tuples.add(tuple);
+        try {
+            for (Object[] tuple : values.getTuples()) {
+                Object v = RexConverter.calcValue(
+                    filter.getCondition(),
+                    DingoTypeFactory.scalar(TypeCode.BOOL, false),
+                    tuple,
+                    tupleType
+                );
+                if (v != null && (boolean) v) {
+                    tuples.add(tuple);
+                }
             }
+        } catch (ElementNotExists e) {
+            return;
+        } catch (DingoExprCompileException | FailGetEvaluator e) {
+            throw new RuntimeException(e);
         }
         call.transformTo(new LogicalDingoValues(
             filter.getCluster(),
