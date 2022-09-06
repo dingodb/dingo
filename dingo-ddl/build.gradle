@@ -76,5 +76,11 @@ compileJavacc {
     outputDirectory = file(project.buildDir.absolutePath + '/generated/javacc/org/apache/calcite/sql/parser/dingo')
 }
 
+javadoc {
+    exclude "org/apache/calcite/**"
+    source = sourceSets.main.allJava
+}
+
+
 
 

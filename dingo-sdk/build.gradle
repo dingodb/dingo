@@ -27,6 +27,10 @@ test {
     useJUnitPlatform()
 }
 
+javadoc {
+    exclude "org/apache/calcite/**"
+    source = sourceSets.main.allJava
+}
 
 task fatJar(type: Jar) {
     classifier 'all'
