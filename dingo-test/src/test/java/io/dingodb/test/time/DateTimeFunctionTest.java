@@ -73,11 +73,13 @@ public class DateTimeFunctionTest {
             arguments("select time_format('000006', '%H.%i.%s')", "00.00.06"),
             arguments("select time_format('180000', '%H.%i.%s')", "18.00.00"),
             arguments("select time_format('23:59:59', '%H.%i.%s')", "23.59.59"),
+            arguments("select time_format('19:00:28.331', '%H.%i.%s.%f')", "19.00.28.331"),
             // timestamp_format
             arguments("select timestamp_format('1999/1/01 01:01:01', '%Y/%m/%d %T')", "1999/01/01 01:01:01"),
             arguments("select timestamp_format('1999.01.01 01:01:01', '%Y.%m.%d %T')", "1999.01.01 01:01:01"),
             arguments("select timestamp_format('19990101010101', '%Y%m%d %T')", "19990101 01:01:01"),
             arguments("select timestamp_format('20220413103706','%Y/%m/%d %H:%i:%S')", "2022/04/13 10:37:06"),
+            arguments("select timestamp_format('1999-01-01 01:01:01.22', '%Y/%m/%d %T.%f')", "1999/01/01 01:01:01.220"),
             arguments("select timestamp_format('2022-04-13 10:37:26', '%Ss')", "26s"),
             arguments(
                 "select timestamp_format('1999-01-01 10:37:26', '%Y year %m month %d day and %s seconds')",
