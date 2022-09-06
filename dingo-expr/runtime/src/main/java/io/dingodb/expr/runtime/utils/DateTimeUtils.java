@@ -333,6 +333,9 @@ public final class DateTimeUtils {
                     case 'T':
                         fmt = "HH:mm:ss";
                         break;
+                    case 'f':
+                        fmt = "SSS";
+                        break;
                     case CharacterIterator.DONE:
                         continue;
                     default:
