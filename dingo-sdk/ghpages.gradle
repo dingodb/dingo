@@ -1,0 +1,36 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'org.ajoberstar:gradle-git:1.4.2'
+    }
+}
+
+apply plugin: org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
+
+ext {
+    repoPath = 'huzx0608/dingo'
+    ghToken = System.getenv('GH_TOKEN')
+}
+
+githubPages {
+    if (ghToken) {
+        repoUri = "https://github.com/${repoPath}.git"
+        credentials {
+            username = ghToken
+            password = ''
+        }
+    } else {
+        repoUri = "git@github.com:${repoPath}.git"
+    }
+
+    pages {
+        from(javadoc.outputs.files) {
+            into 'docs/javadoc'
+        }
+    }
+}
+
+publishGhPages.dependsOn javadoc

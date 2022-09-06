@@ -20,7 +20,9 @@ import java.util.StringJoiner;
 
 /**
  * Display stack trace about current thread.
- * Default 0. 0 -> StackTraces method. 1 -> Current invoke method.
+ * Default 0.
+ * 0) StackTraces method.
+ * 1) Current invoke method.
  */
 public class StackTraces {
 
