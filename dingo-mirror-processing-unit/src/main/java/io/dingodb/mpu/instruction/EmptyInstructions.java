@@ -16,21 +16,30 @@
 
 package io.dingodb.mpu.instruction;
 
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.mpu.core.Core;
+import io.dingodb.mpu.storage.Reader;
+import io.dingodb.mpu.storage.Writer;
 
 import java.util.function.Function;
 
-public class InternalInstructions implements Instructions {
+public class EmptyInstructions implements Instructions {
 
-    public static final byte id = 1;
+    public static final byte id = 0;
     public static final int SIZE = 16;
 
-    public static final int DESTROY_OC = 0;
+    public static final short EMPTY = 0;
+    public static final EmptyInstructions INSTRUCTIONS = new EmptyInstructions();
 
-    private static final Instructions.Processor[] processors = new Instructions.Processor[SIZE];
+    public static final Processor empty = new Processor() {
+        @Override
+        public <V> V process(Reader reader, Writer writer, Object... operand) {
+            return null;
+        }
+    };
 
-    private static final Function<byte[], Object[]>[] decoders = new Function[SIZE];
+    public static final Function<byte[], Object[]> decoder = bs -> new Object[0];
+
+    private EmptyInstructions() {
+    }
 
     @Override
     public void processor(int opcode, Processor processor) {
@@ -39,7 +48,7 @@ public class InternalInstructions implements Instructions {
 
     @Override
     public Processor processor(int opcode) {
-        return processors[opcode];
+        return empty;
     }
 
     @Override
@@ -49,19 +58,6 @@ public class InternalInstructions implements Instructions {
 
     @Override
     public Function<byte[], Object[]> decoder(int opcode) {
-        return decoders[opcode];
+        return decoder;
     }
-
-    public static void process(Core core, int opcode, Object... operand) {
-        switch (opcode) {
-            case DESTROY_OC: {
-                core.close();
-                core.storage.destroy();
-                break;
-            }
-            default:
-                throw new IllegalStateException("Unexpected value: " + operand);
-        }
-    }
-
 }

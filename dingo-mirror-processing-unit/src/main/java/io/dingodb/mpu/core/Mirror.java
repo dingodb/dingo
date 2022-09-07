@@ -16,6 +16,7 @@
 
 package io.dingodb.mpu.core;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.mpu.Constant;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.protocol.TagClock;
@@ -51,7 +52,6 @@ public class Mirror implements MessageListener {
             case Constant.T_INSTRUCTION: {
                 try {
                     Instruction instruction = Instruction.decode(message.content());
-                    log.info("Sync {}", instruction.clock);
                     core.storage.saveInstruction(instruction.clock, message.content());
                     channel.send(new Message(null, new TagClock(Constant.T_SYNC, instruction.clock).encode()));
                     core.executionUnit.execute(instruction);
@@ -64,7 +64,6 @@ public class Mirror implements MessageListener {
             case Constant.T_EXECUTE_INSTRUCTION: {
                 try {
                     Instruction instruction = Instruction.decode(message.content());
-                    log.info("Exec {}", instruction.clock);
                     core.storage.saveInstruction(instruction.clock, message.content());
                     core.executionUnit.execute(instruction);
                     return;
@@ -72,6 +71,12 @@ public class Mirror implements MessageListener {
                     log.error("Sync and execute instruction from {} error.", channel.remoteLocation(), e);
                     channel.close();
                 }
+                return;
+            }
+            case Constant.T_EXECUTE_CLOCK: {
+                Executors
+                    .execute("clear-clock", () -> core.storage.clearClock(TagClock.decode(message.content()).clock));
+                return;
             }
             default: {
                 close();

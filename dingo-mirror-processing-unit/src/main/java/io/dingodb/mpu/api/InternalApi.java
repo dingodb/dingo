@@ -63,8 +63,12 @@ public interface InternalApi {
         return core(meta.mpuId, meta.coreId).askPrimary(meta, clock);
     }
 
-    default SelectReturn askPrimary(Location location, CoreMeta meta, long clock) {
-        return instance(location).askPrimary(meta, clock);
+    static SelectReturn askPrimary(Location location, CoreMeta meta, long clock) {
+        try {
+            return instance(location).askPrimary(meta, clock);
+        } catch (Exception e) {
+            return SelectReturn.ERROR;
+        }
     }
 
     @ApiDeclaration
@@ -73,7 +77,11 @@ public interface InternalApi {
     }
 
     static boolean isPrimary(Location location, CommonId mpuId, CommonId coreId) {
-        return instance(location).isPrimary(mpuId, coreId);
+        try {
+            return instance(location).isPrimary(mpuId, coreId);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @ApiDeclaration

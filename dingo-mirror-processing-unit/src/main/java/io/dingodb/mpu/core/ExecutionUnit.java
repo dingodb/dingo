@@ -20,11 +20,13 @@ import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
 
 import static io.dingodb.mpu.instruction.InstructionSetRegistry.instructions;
 
+@Slf4j
 class ExecutionUnit {
 
     public final Core core;
@@ -32,7 +34,7 @@ class ExecutionUnit {
 
     ExecutionUnit(Core core) {
         this.core = core;
-        this.executeRunner = new LinkedRunner("execution-pipeline-execute-" + core.meta.label);
+        this.executeRunner = new LinkedRunner("execute-" + core.meta.label);
     }
 
     public void execute(Instruction instruction) {
@@ -44,6 +46,11 @@ class ExecutionUnit {
     }
 
     private <V> V execute0(Instruction instruction) {
+        // todo
+        //if (instruction.instructions == InternalInstructions.id) {
+        //    InternalInstructions.process(core, instruction.opcode, instruction.operand);
+        //    return null;
+        //}
         Reader reader = core.storage.reader();
         Writer writer = core.storage.writer(instruction);
         V result = instructions(instruction.instructions).process(reader, writer, instruction);

@@ -18,12 +18,15 @@ package io.dingodb.net.netty;
 
 import io.dingodb.common.Location;
 import io.dingodb.net.Channel;
+import io.dingodb.net.service.FileTransferService;
 import io.dingodb.net.Message;
+import io.dingodb.net.NetService;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
 public class NetServiceTest {
@@ -38,6 +41,13 @@ public class NetServiceTest {
         default CompletableFuture<String> test() {
             return CompletableFuture.completedFuture("test");
         }
+    }
+
+    @Test
+    @Disabled
+    public void fileTransfer() throws Exception {
+        NetService.getDefault().listenPort(19199);
+        FileTransferService.transferTo(new Location("localhost", 19199), Paths.get("/tmp/tf/1"), Paths.get("/tmp/tf/2"));
     }
 
     @Test

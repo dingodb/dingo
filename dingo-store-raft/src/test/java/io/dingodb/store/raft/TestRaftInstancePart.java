@@ -63,7 +63,7 @@ public class TestRaftInstancePart {
         CommonId id = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, encodeInt(0), encodeInt(0));
         final Part part = Part.builder()
             .id(id)
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         final RocksDBLogStore logStore = new RocksDBLogStore();
         RaftLogStoreOptions logStoreOptions = new RaftLogStoreOptions();

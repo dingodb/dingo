@@ -21,6 +21,7 @@ import io.dingodb.mpu.api.KVApi;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
 
+import java.util.List;
 import java.util.function.Function;
 
 import static io.dingodb.mpu.Constant.API;
@@ -37,6 +38,8 @@ public class KVInstructions implements Instructions {
 
     public static final int COUNT_OC = 0;
     public static final int GET_OC = 2;
+    public static final int SCAN_OC = 4;
+    public static final int GET_BATCH_OC = 6;
 
     public static final KVInstructions INSTRUCTIONS;
 
@@ -59,7 +62,7 @@ public class KVInstructions implements Instructions {
         Object out(Reader reader, Object... operand);
     }
 
-    public static final byte id = 1;
+    public static final byte id = 2;
 
     private final Instructions.Processor[] processors = new Processor[SIZE];
 
@@ -121,13 +124,33 @@ public class KVInstructions implements Instructions {
             }
         });
         // delete range opcode 9
-        kv.processor(DEL_RANGE_OC, (InProcessor) (writer, operand) -> writer.erase((byte[]) operand[0], (byte[]) operand[1]));
+        kv.processor(
+            DEL_RANGE_OC,
+            (InProcessor) (writer, operand) -> writer.erase((byte[]) operand[0], (byte[]) operand[1])
+        );
 
         // out instruction:
         // count opcode 0
         kv.processor(COUNT_OC, (OutProcessor) (reader, operand) -> reader.count());
         // get opcode 2
         kv.processor(GET_OC, (OutProcessor) (reader, operand) -> reader.get((byte[]) operand[0]));
+        // scan opcode 4
+        kv.processor(SCAN_OC, (OutProcessor) (reader, operand) -> {
+            switch (operand.length) {
+                case 0:
+                    return reader.scan(null, null, true, true);
+                case 1:
+                    return reader.scan((byte[]) operand[0], null, true, true);
+                case 2:
+                    return reader.scan((byte[]) operand[0], (byte[]) operand[1], true, true);
+                case 3:
+                    return reader.scan((byte[]) operand[0], (byte[]) operand[1], true, (Boolean) operand[2]);
+                default:
+                    return reader
+                        .scan((byte[]) operand[0], (byte[]) operand[1], (Boolean) operand[2], (Boolean) operand[3]);
+            }
+        });
+        kv.processor(GET_BATCH_OC, (OutProcessor) (reader, operand) -> reader.get((List<byte[]>) operand[0]));
 
     }
 

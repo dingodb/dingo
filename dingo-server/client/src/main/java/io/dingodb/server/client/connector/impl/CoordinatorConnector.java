@@ -102,13 +102,13 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
 
     @Override
     public Location get() {
-        int times = 5;
+        int times = 10;
         int sleep = 200;
         while (!verify() && times-- > 0) {
             try {
                 Thread.sleep(sleep);
                 refresh();
-                sleep *= (5 - times);
+                sleep *= (10 - times);
             } catch (InterruptedException e) {
                 log.error("Wait coordinator connector ready, but interrupted.");
             }

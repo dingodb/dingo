@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.dingodb.mpu.core;
 
 import java.util.concurrent.CompletableFuture;
@@ -22,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
-public final class PhaseAck<T> {
+public final class PhaseAck {
 
     CompletableFuture<Long> clock = new CompletableFuture<>();
-    CompletableFuture<T> result;
+    CompletableFuture<Object> result;
 
     PhaseAck() {
     }
@@ -42,28 +43,30 @@ public final class PhaseAck<T> {
         return clock.get(ttl, unit);
     }
 
-    public T join() {
-        clock.join();
-        return result.join();
+    public <V> V join() {
+        joinClock();
+        return (V) result.join();
     }
 
-    public T get() throws ExecutionException, InterruptedException {
-        clock.join();
-        return result.get();
+    public <V> V get() throws ExecutionException, InterruptedException {
+        joinClock();
+        return (V) result.get();
     }
 
-    public T get(long ttl, TimeUnit unit) throws ExecutionException, InterruptedException, TimeoutException {
-        clock.join();
-        return result.get(ttl, unit);
+    public <V> V get(long ttl, TimeUnit unit) throws ExecutionException, InterruptedException, TimeoutException {
+        joinClock();
+        return (V) result.get(ttl, unit);
     }
 
     public void whenClockCompleteAsync(BiConsumer<Long, Throwable> consumer, Executor executor) {
         clock.whenCompleteAsync(consumer, executor);
     }
 
-    public void whenCompleteAsync(BiConsumer<T, Throwable> consumer, Executor executor) {
-        clock.join();
-        result.whenCompleteAsync(consumer, executor);
+    public <V> void whenCompleteAsync(BiConsumer<V, Throwable> consumer, Executor executor) {
+        joinClock();
+        result.whenCompleteAsync((r, e) -> {
+            consumer.accept((V) r, e);
+        }, executor);
     }
 
 }

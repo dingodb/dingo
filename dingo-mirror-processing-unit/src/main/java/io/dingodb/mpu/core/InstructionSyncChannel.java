@@ -18,6 +18,7 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.Constant;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.Instruction;
@@ -52,15 +53,12 @@ public class InstructionSyncChannel implements Channel, MessageListener {
     private long clock;
     private long syncClock;
 
-    public InstructionSyncChannel(
-        Core core, CoreMeta mirror, long clock, ControlUnit controlUnit
-    ) {
+    public InstructionSyncChannel(Core core, CoreMeta mirror, long clock) {
         this.core = core;
         this.mirror = mirror;
-        this.controlUnit = controlUnit;
-        this.sendRunner = new LinkedRunner(core.meta.label + "-send-runner");
-        this.executeChain = new InstructionChain(clock, core.meta.label + "-instruction-chain");
-        this.chainRunner = new LinkedRunner(core.meta.label + "-synced-runner");
+        this.sendRunner = new LinkedRunner(mirror.label + "-send-runner");
+        this.executeChain = new InstructionChain(clock, mirror.label + "-instruction-chain");
+        this.chainRunner = new LinkedRunner(mirror.label + "-synced-runner");
         this.clock = clock;
         this.syncClock = clock;
     }
@@ -80,7 +78,6 @@ public class InstructionSyncChannel implements Channel, MessageListener {
             channel.setCloseListener(this::onClose);
             channel.setMessageListener(this);
             syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
-            controlUnit.onMirrorConnect(mirror, this);
             return OK;
         } catch (Exception e) {
             if (channel != null && !channel.isClosed()) {
@@ -90,9 +87,16 @@ public class InstructionSyncChannel implements Channel, MessageListener {
         }
     }
 
+    public synchronized void assignControlUnit(ControlUnit controlUnit) {
+        if (this.controlUnit == null) {
+            this.controlUnit = controlUnit;
+            controlUnit.onMirrorConnect(mirror, this);
+        }
+    }
+
     private void onClose(Channel channel) {
-         chainRunner.forceFollow(executeChain::reset);
-         controlUnit.onMirrorClose(mirror);
+        chainRunner.forceFollow(() -> executeChain.clear(false));
+        Optional.ifPresent(controlUnit, __ -> __.onMirrorClose(mirror));
     }
 
     @Override
@@ -123,25 +127,32 @@ public class InstructionSyncChannel implements Channel, MessageListener {
                 try {
                     while (syncClock < instruction.clock - 1) {
                         syncClock++;
-                        //if (instruction.clock - syncClock >= 100_0000) {
-                        //    core.storage.transferTo(mirror).join();
-                        //    continue;
-                        //}
                         byte[] reappearInstruction = core.storage.reappearInstruction(syncClock);
-                        reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
-                        channel.send(new Message(null, reappearInstruction));
+                        if (reappearInstruction == null) {
+                            core.storage.transferTo(mirror).join();
+                            syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
+                        } else {
+                            reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
+                            channel.send(new Message(null, reappearInstruction));
+                        }
+                        chainRunner.forceFollow(() -> executeChain.reset(syncClock, false));
                     }
-                    executeChain.forceFollow(instruction, () -> {
-                        syncClock = instruction.clock;
-                        controlUnit.onSynced(mirror, instruction);
-                    });
+                    executeChain.forceFollow(instruction, () -> controlUnit.onSynced(mirror, instruction));
                     channel.send(new Message(null, instruction.encode()), true);
+                    syncClock = instruction.clock;
                 } catch (Exception e) {
                     log.error("Sync to {} error.", mirror.label, e);
                     close();
                 }
             }
         });
+    }
+
+    public void executed(long clock) {
+        if (isClosed()) {
+            return;
+        }
+        channel.send(new Message(null, new TagClock(Constant.T_EXECUTE_CLOCK, clock).encode()));
     }
 
 }

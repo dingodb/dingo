@@ -21,6 +21,7 @@ import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.instruction.Instructions;
+import io.dingodb.mpu.instruction.InternalInstructions;
 import io.dingodb.mpu.protocol.SelectReturn;
 import io.dingodb.mpu.protocol.SyncChannel;
 import io.dingodb.mpu.storage.Storage;
@@ -44,7 +45,8 @@ public class Core {
     public final CoreMeta meta;
     public final Storage storage;
     public final MirrorProcessingUnit mpu;
-    public final CoreMeta firstMirror, secondMirror;
+    public final CoreMeta firstMirror;
+    public final CoreMeta secondMirror;
 
     final ExecutionUnit executionUnit;
     final LinkedRunner runner;
@@ -53,13 +55,15 @@ public class Core {
     private ControlUnit controlUnit;
     private Mirror mirror;
 
+    private boolean close;
+
     private List<CoreListener> listeners = new CopyOnWriteArrayList<>();
 
     public Core(MirrorProcessingUnit mpu, CoreMeta meta, CoreMeta firstMirror, CoreMeta secondMirror, Storage storage) {
         if (firstMirror != secondMirror && (firstMirror == null || secondMirror == null)) {
             throw new IllegalArgumentException("Mirror1 and mirror2 can't have just one that's not null.");
         }
-        this.runner = new LinkedRunner(meta.mpuId + "-core-" + meta.coreId);
+        this.runner = new LinkedRunner(meta.label);
         this.mpu = mpu;
         this.meta = meta;
         this.firstMirror = firstMirror;
@@ -69,11 +73,28 @@ public class Core {
     }
 
     public void start() {
+        log.info("Start core {}", meta.label);
         if (firstMirror == null && secondMirror == null) {
             log.info("Core {} start without mirror.", meta.label);
             controlUnit = new ControlUnit(this, storage.clocked(), firstMirror, secondMirror);
+            listeners.forEach(__ -> execute(meta.label + "-primary", () -> __.primary(clock())));
         }
-        selectPrimary();
+        Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
+    }
+
+    public void destroy() {
+        // todo exec(InternalInstructions.id, InternalInstructions.DESTROY_OC);
+        InternalInstructions.process(this, InternalInstructions.DESTROY_OC);
+    }
+
+    public void close() {
+        close = true;
+        if (controlUnit != null) {
+            controlUnit.close();
+        }
+        if (mirror != null) {
+            mirror.close();
+        }
     }
 
     public void registerListener(CoreListener listener) {
@@ -85,6 +106,9 @@ public class Core {
     }
 
     public void onControlUnitClose() {
+        if (close) {
+            return;
+        }
         this.controlUnit = null;
         long clock = clock();
         listeners.forEach(__ -> execute(meta.label + "-back", () -> __.back(clock)));
@@ -92,6 +116,9 @@ public class Core {
     }
 
     private boolean connectPrimary(CoreMeta primary) {
+        if (close) {
+            return false;
+        }
         try {
             if (InternalApi.isPrimary(primary.location, meta.mpuId, meta.coreId)) {
                 log.info("Ask primary {} return ok.", primary.label);
@@ -105,6 +132,9 @@ public class Core {
     }
 
     public SelectReturn askPrimary(CoreMeta mirror, long clock) {
+        if (close) {
+            return NO;
+        }
         if (controlUnit != null) {
             return PRIMARY;
         }
@@ -119,12 +149,20 @@ public class Core {
     }
 
     public void connectMirrors() {
+        if (close) {
+            return;
+        }
         long clock = clock();
+        SelectReturn firstReturn = InternalApi.askPrimary(firstMirror.location, meta, clock);
+        SelectReturn secondReturn = InternalApi.askPrimary(secondMirror.location, meta, clock);
+        if ((firstReturn != OK && secondReturn != OK) || firstReturn == NO || secondReturn == NO) {
+            return;
+        }
         ControlUnit controlUnit = new ControlUnit(this, clock, firstMirror, secondMirror);
-        InstructionSyncChannel firstChannel = new InstructionSyncChannel(this, firstMirror, clock, controlUnit);
-        InstructionSyncChannel secondChannel = new InstructionSyncChannel(this, secondMirror, clock, controlUnit);
-        SelectReturn firstReturn = firstChannel.connect();
-        SelectReturn secondReturn = secondChannel.connect();
+        InstructionSyncChannel firstChannel = new InstructionSyncChannel(this, firstMirror, clock);
+        InstructionSyncChannel secondChannel = new InstructionSyncChannel(this, secondMirror, clock);
+        firstReturn = firstChannel.connect();
+        secondReturn = secondChannel.connect();
         if (firstReturn != OK && secondReturn != OK) {
             return;
         }
@@ -139,6 +177,8 @@ public class Core {
         synchronized (this) {
             if (mirror == null) {
                 primary = this.meta;
+                firstChannel.assignControlUnit(controlUnit);
+                secondChannel.assignControlUnit(controlUnit);
                 this.controlUnit = controlUnit;
                 listeners.forEach(__ -> execute(meta.label + "-primary", () -> __.primary(clock)));
             } else {
@@ -153,11 +193,20 @@ public class Core {
     }
 
     public void selectPrimary() {
+        if (close) {
+            return;
+        }
         log.info("{} select primary.", meta.label);
-        if (controlUnit != null || mirror != null) {
+        if (controlUnit != null) {
+            log.info("{} is primary.", meta.label);
+            return;
+        }
+        if (mirror != null) {
+            log.info("{} is primary.", mirror.primary().label);
             return;
         }
         if (connectPrimary(firstMirror) || connectPrimary(secondMirror)) {
+            Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
             return;
         }
         connectMirrors();
@@ -167,6 +216,9 @@ public class Core {
     }
 
     public synchronized SelectReturn connectFromPrimary(SyncChannel syncChannel) {
+        if (close) {
+            return NO;
+        }
         log.info("Receive primary sync channel from {}.", syncChannel.primary.label);
         SelectReturn selectReturn = askPrimary(syncChannel.primary, syncChannel.clock);
         if (selectReturn == OK) {
@@ -181,7 +233,10 @@ public class Core {
         log.info("Receive primary message from {}.", syncChannel.primary.label);
         if (!syncChannel.primary.equals(primary)) {
             channel.close();
-            log.info("Receive primary message from {}, but not eq current primary {}.", syncChannel.primary.label, primary.label);
+            log.info(
+                "Receive primary message from {}, but not eq current primary {}.",
+                syncChannel.primary.label, primary.label
+            );
             return null;
         }
         channel.setCloseListener(ch -> {
@@ -191,24 +246,32 @@ public class Core {
             execute(meta.label + "-select-primary", this::selectPrimary);
         });
         Mirror mirror = new Mirror(syncChannel.primary, this, clock(), channel);
-        execute(meta.label + "-connected-primary", () -> {
+        execute(primary.label + "-connected-primary", () -> {
             long clock = clock();
             channel.send(Message.EMPTY);
             listeners.forEach(__ -> execute(meta.label + "-lose-primary", () -> __.mirror(clock)));
             log.info("Connected primary {} success on {}.", syncChannel.primary.label, clock);
+            if (close) {
+                mirror.close();
+            }
         });
         return this.mirror = mirror;
     }
 
 
     public void requestConnect(CoreMeta mirror) {
+        if (close) {
+            return;
+        }
         log.info("Receive connect request from {}.", mirror.label);
         execute("connect-mirror-" + mirror, () -> {
             if (controlUnit == null) {
                 return;
             }
             log.info("Connect mirror {}.", mirror.label);
-            new InstructionSyncChannel(this, mirror, clock(), controlUnit).connect();
+            InstructionSyncChannel channel = new InstructionSyncChannel(this, mirror, clock());
+            channel.connect();
+            channel.assignControlUnit(controlUnit);
         });
     }
 
@@ -224,11 +287,11 @@ public class Core {
         return storage.clocked();
     }
 
-    public <V> PhaseAck<V> exec(int instructions, int opcode, Object... operand) {
+    public PhaseAck exec(int instructions, int opcode, Object... operand) {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        PhaseAck<V> ack = new PhaseAck<>();
+        PhaseAck ack = new PhaseAck();
         runner.forceFollow(() -> controlUnit.process(ack, (byte) instructions, (short) opcode, operand));
         return ack;
     }

@@ -37,7 +37,6 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     private final RocksDB db;
     private final ColumnFamilyHandle handler;
     private final WriteBatch writeBatch;
-    private final Map<byte[], byte[]> instructionMap = new ConcurrentHashMap<>();
 
     public Writer(RocksDB db, Instruction instruction, ColumnFamilyHandle dcfHandler) {
         this.db = db;
@@ -56,16 +55,19 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     //    return null;
     //}
 
+    public void close() {
+        writeBatch.close();
+    }
+
     @Override
     public int count() {
-        return instructionMap.size();
+        return writeBatch.count();
     }
 
     @Override
     public void set(byte[] key, byte[] value) {
         try {
             writeBatch.put(handler, key, value);
-            instructionMap.put(key, value);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -75,7 +77,6 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     public void erase(byte[] key) {
         try {
             writeBatch.delete(handler, key);
-            instructionMap.put(key, null);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -90,7 +91,6 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
                     if (iter.isValid()) {
                         end = iter.key();
                         writeBatch.delete(handler, end);
-                        instructionMap.put(end, null);
                     } else {
                         return;
                     }

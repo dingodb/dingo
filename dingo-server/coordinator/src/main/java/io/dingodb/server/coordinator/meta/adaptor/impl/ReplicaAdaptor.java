@@ -80,11 +80,16 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
         return getByDomain(domain).stream().map(Replica::location).collect(Collectors.toList());
     }
 
-    public List<Replica> createByPart(TablePart tablePart, Collection<Executor> executors) {
-        return executors.stream()
-            .map(executor -> newReplica(tablePart, executor))
-            .peek(this::save)
-            .collect(Collectors.toList());
+    public List<Replica> getOrCreateByPart(TablePart tablePart, Collection<Executor> executors) {
+        List<Replica> replicas = MetaAdaptorRegistry.getMetaAdaptor(Replica.class)
+            .getByDomain(tablePart.getId().seqContent());
+        if (replicas == null || replicas.isEmpty()) {
+            return executors.stream()
+                .map(executor -> newReplica(tablePart, executor)).peek(this::save)
+                .collect(Collectors.toList());
+        } else {
+            return replicas;
+        }
     }
 
     public Replica newReplica(TablePart tablePart, Executor executor) {
