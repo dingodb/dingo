@@ -28,7 +28,7 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 public class DingoServiceImpl implements Service {
-    private final static NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+    private static final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
     @Setter
     private RpcMetadataResponse rpcMetadata;

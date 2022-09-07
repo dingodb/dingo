@@ -79,7 +79,10 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         List<String> typeList
     ) {
-        return getConnectionMeta(ch).getTables(ch, catalog, schemaPattern, tableNamePattern, typeList);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getTables(ch, catalog, schemaPattern, tableNamePattern, typeList)
+        );
     }
 
     @Override
@@ -90,22 +93,34 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         Pat columnNamePattern
     ) {
-        return getConnectionMeta(ch).getColumns(ch, catalog, schemaPattern, tableNamePattern, columnNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getColumns(ch, catalog, schemaPattern, tableNamePattern, columnNamePattern)
+        );
     }
 
     @Override
     public MetaResultSet getSchemas(@Nonnull ConnectionHandle ch, String catalog, Pat schemaPattern) {
-        return getConnectionMeta(ch).getSchemas(ch, catalog, schemaPattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getSchemas(ch, catalog, schemaPattern)
+        );
     }
 
     @Override
     public MetaResultSet getCatalogs(@Nonnull ConnectionHandle ch) {
-        return getConnectionMeta(ch).getCatalogs(ch);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getCatalogs(ch)
+        );
     }
 
     @Override
     public MetaResultSet getTableTypes(@Nonnull ConnectionHandle ch) {
-        return getConnectionMeta(ch).getTableTypes(ch);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getTableTypes(ch)
+        );
     }
 
     @Override
@@ -115,7 +130,10 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat procedureNamePattern
     ) {
-        return getConnectionMeta(ch).getProcedures(ch, catalog, schemaPattern, procedureNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getProcedures(ch, catalog, schemaPattern, procedureNamePattern)
+        );
     }
 
     @Override
@@ -126,12 +144,15 @@ public class ServerMeta implements Meta {
         Pat procedureNamePattern,
         Pat columnNamePattern
     ) {
-        return getConnectionMeta(ch).getProcedureColumns(
-            ch,
-            catalog,
-            schemaPattern,
-            procedureNamePattern,
-            columnNamePattern
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getProcedureColumns(
+                ch,
+                catalog,
+                schemaPattern,
+                procedureNamePattern,
+                columnNamePattern
+            )
         );
     }
 
@@ -143,7 +164,10 @@ public class ServerMeta implements Meta {
         String table,
         Pat columnNamePattern
     ) {
-        return getConnectionMeta(ch).getColumnPrivileges(ch, catalog, schema, table, columnNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getColumnPrivileges(ch, catalog, schema, table, columnNamePattern)
+        );
     }
 
     @Override
@@ -153,7 +177,10 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat tableNamePattern
     ) {
-        return getConnectionMeta(ch).getTablePrivileges(ch, catalog, schemaPattern, tableNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getTablePrivileges(ch, catalog, schemaPattern, tableNamePattern)
+        );
     }
 
     @Override
@@ -165,7 +192,10 @@ public class ServerMeta implements Meta {
         int scope,
         boolean nullable
     ) {
-        return getConnectionMeta(ch).getBestRowIdentifier(ch, catalog, schema, table, scope, nullable);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getBestRowIdentifier(ch, catalog, schema, table, scope, nullable)
+        );
     }
 
     @Override
@@ -175,7 +205,10 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        return getConnectionMeta(ch).getVersionColumns(ch, catalog, schema, table);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getVersionColumns(ch, catalog, schema, table)
+        );
     }
 
     @Override
@@ -185,7 +218,10 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        return getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table)
+        );
     }
 
     @Override
@@ -195,7 +231,10 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        return getConnectionMeta(ch).getImportedKeys(ch, catalog, schema, table);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getImportedKeys(ch, catalog, schema, table)
+        );
     }
 
     @Override
@@ -205,7 +244,10 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        return getConnectionMeta(ch).getExportedKeys(ch, catalog, schema, table);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getExportedKeys(ch, catalog, schema, table)
+        );
     }
 
     @Override
@@ -218,20 +260,26 @@ public class ServerMeta implements Meta {
         String foreignSchema,
         String foreignTable
     ) {
-        return getConnectionMeta(ch).getCrossReference(
-            ch,
-            parentCatalog,
-            parentSchema,
-            parentTable,
-            foreignCatalog,
-            foreignSchema,
-            foreignTable
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getCrossReference(
+                ch,
+                parentCatalog,
+                parentSchema,
+                parentTable,
+                foreignCatalog,
+                foreignSchema,
+                foreignTable
+            )
         );
     }
 
     @Override
     public MetaResultSet getTypeInfo(@Nonnull ConnectionHandle ch) {
-        return getConnectionMeta(ch).getTypeInfo(ch);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getTypeInfo(ch)
+        );
     }
 
     @Override
@@ -243,7 +291,10 @@ public class ServerMeta implements Meta {
         boolean unique,
         boolean approximate
     ) {
-        return getConnectionMeta(ch).getIndexInfo(ch, catalog, schema, table, unique, approximate);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getIndexInfo(ch, catalog, schema, table, unique, approximate)
+        );
     }
 
     @Override
@@ -254,7 +305,10 @@ public class ServerMeta implements Meta {
         Pat typeNamePattern,
         int[] types
     ) {
-        return getConnectionMeta(ch).getUDTs(ch, catalog, schemaPattern, typeNamePattern, types);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getUDTs(ch, catalog, schemaPattern, typeNamePattern, types)
+        );
     }
 
     @Override
@@ -264,7 +318,10 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat typeNamePattern
     ) {
-        return getConnectionMeta(ch).getSuperTypes(ch, catalog, schemaPattern, typeNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getSuperTypes(ch, catalog, schemaPattern, typeNamePattern)
+        );
     }
 
     @Override
@@ -274,7 +331,10 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat tableNamePattern
     ) {
-        return getConnectionMeta(ch).getSuperTables(ch, catalog, schemaPattern, tableNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getSuperTables(ch, catalog, schemaPattern, tableNamePattern)
+        );
     }
 
     @Override
@@ -285,13 +345,24 @@ public class ServerMeta implements Meta {
         Pat typeNamePattern,
         Pat attributeNamePattern
     ) {
-        return getConnectionMeta(ch).getAttributes(ch, catalog, schemaPattern, typeNamePattern,
-            attributeNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getAttributes(
+                ch,
+                catalog,
+                schemaPattern,
+                typeNamePattern,
+                attributeNamePattern
+            )
+        );
     }
 
     @Override
     public MetaResultSet getClientInfoProperties(@Nonnull ConnectionHandle ch) {
-        return getConnectionMeta(ch).getClientInfoProperties(ch);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getClientInfoProperties(ch)
+        );
     }
 
     @Override
@@ -301,7 +372,10 @@ public class ServerMeta implements Meta {
         Pat schemaPattern,
         Pat functionNamePattern
     ) {
-        return getConnectionMeta(ch).getFunctions(ch, catalog, schemaPattern, functionNamePattern);
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getFunctions(ch, catalog, schemaPattern, functionNamePattern)
+        );
     }
 
     @Override
@@ -312,12 +386,15 @@ public class ServerMeta implements Meta {
         Pat functionNamePattern,
         Pat columnNamePattern
     ) {
-        return getConnectionMeta(ch).getFunctionColumns(
-            ch,
-            catalog,
-            schemaPattern,
-            functionNamePattern,
-            columnNamePattern
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getFunctionColumns(
+                ch,
+                catalog,
+                schemaPattern,
+                functionNamePattern,
+                columnNamePattern
+            )
         );
     }
 
@@ -329,15 +406,19 @@ public class ServerMeta implements Meta {
         Pat tableNamePattern,
         Pat columnNamePattern
     ) {
-        return getConnectionMeta(ch).getPseudoColumns(
-            ch,
-            catalog,
-            schemaPattern,
-            tableNamePattern,
-            columnNamePattern
+        return mapMetaResultSet(
+            ch.id,
+            getConnectionMeta(ch).getPseudoColumns(
+                ch,
+                catalog,
+                schemaPattern,
+                tableNamePattern,
+                columnNamePattern
+            )
         );
     }
 
+    // This is never called at server side.
     @Override
     public Iterable<Object> createIterable(
         @Nonnull StatementHandle sh,
@@ -346,15 +427,7 @@ public class ServerMeta implements Meta {
         List<TypedValue> parameters,
         Frame firstFrame
     ) {
-        DingoConnection connection = connectionMap.get(sh.connectionId);
-        StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
-        return connection.getMeta().createIterable(
-            newSh,
-            state,
-            signature,
-            parameters,
-            firstFrame
-        );
+        return null;
     }
 
     @Override
@@ -396,10 +469,11 @@ public class ServerMeta implements Meta {
             log.debug("statement handle = {}, sql = {}, maxRowCount = {}, maxRowsInFirstFrame = {}.",
                 sh, sql, maxRowCount, maxRowsInFirstFrame);
         }
-        DingoConnection connection = connectionMap.get(sh.connectionId);
+        final String connectionId = sh.connectionId;
+        DingoConnection connection = connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         DingoStatement statement = (DingoStatement) connection.getStatement(newSh);
-        return connection.getMeta().prepareAndExecute(
+        ExecuteResult executeResult = connection.getMeta().prepareAndExecute(
             newSh,
             sql,
             maxRowCount,
@@ -427,6 +501,11 @@ public class ServerMeta implements Meta {
                 public void execute() {
                 }
             }
+        );
+        return new ExecuteResult(
+            executeResult.resultSets.stream()
+                .map(r -> mapMetaResultSet(connectionId, r))
+                .collect(Collectors.toList())
         );
     }
 

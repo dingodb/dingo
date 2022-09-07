@@ -60,6 +60,9 @@ public class DingoConnection extends AvaticaConnection {
         if (defaultSchema == null) {
             defaultSchema = DingoRootSchema.DEFAULT_SCHEMA_NAME;
         }
+        if (log.isInfoEnabled()) {
+            log.info("Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
+        }
         context = new DingoParserContext(defaultSchema);
     }
 

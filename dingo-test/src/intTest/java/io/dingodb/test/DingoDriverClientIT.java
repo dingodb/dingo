@@ -35,6 +35,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
+import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,8 +50,13 @@ public class DingoDriverClientIT {
     @BeforeAll
     public static void setupAll() throws Exception {
         Class.forName("io.dingodb.driver.client.DingoDriverClient");
+        Properties properties = new Properties();
+        properties.setProperty("defaultSchema", MetaTestService.SCHEMA_NAME);
+        TimeZone timeZone = TimeZone.getDefault();
+        properties.setProperty("timeZone", timeZone.getID());
         Connection connection = DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + "url=server:8765"
+            DingoDriverClient.CONNECT_STRING_PREFIX + "url=server:8765",
+            properties
         );
         sqlHelper = new SqlHelper(connection);
     }
