@@ -51,7 +51,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     public Iterator iterator() {
-            return new Iterator(db.newIterator(handle, readOptions), null, null, true, true);
+        return new Iterator(db.newIterator(handle, readOptions), null, null, true, true);
     }
 
     @Override
@@ -63,6 +63,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         }
     }
 
+    @Override
     public List<KV> get(List<byte[]> keys) {
         try {
             List<byte[]> values = db.multiGetAsList(readOptions, Collections.singletonList(handle), keys);
@@ -84,6 +85,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         }
     }
 
+    @Override
     public Iterator scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd) {
         return new Iterator(db.newIterator(handle, readOptions), startKey, endKey, withStart, withEnd);
     }
@@ -95,8 +97,6 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         long count = 0;
-        start = start;
-        end = end;
         try (RocksIterator iterator = db.newIterator(handle, readOptions)) {
             if (start == null) {
                 iterator.seekToFirst();
@@ -157,9 +157,9 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
             if (kv == null) {
                 throw new NoSuchElementException();
             }
-            iterator.next();
             if (iterator.isValid() && _end.test(iterator.key())) {
                 this.current = new KV(iterator.key(), iterator.value());
+                iterator.next();
             } else {
                 this.current = null;
             }

@@ -124,21 +124,21 @@ public class PartStateMachine extends DefaultRaftRawKVStoreStateMachine {
         if (node.isLeader()) {
             Map<Location, PeerId> peers = node.listPeers().stream()
                 .collect(Collectors.toMap(PeerId::toLocation, Function.identity()));
-            if (part.getLeader() != null
-                && (!part.getLeader().getHost().equals(DingoConfiguration.host())
-                    || part.getLeader().getRaftPort() != DingoConfiguration.raftPort())) {
-                log.info("Transfer leader to [{}].", part.getLeader().getUrl());
-                node.transferLeadershipTo(PeerId.of(part.getLeader()));
+            if (part.getLeaderLocation() != null
+                && (!part.getLeaderLocation().getHost().equals(DingoConfiguration.host())
+                    || part.getLeaderLocation().getRaftPort() != DingoConfiguration.raftPort())) {
+                log.info("Transfer leader to [{}].", part.getLeaderLocation().getUrl());
+                node.transferLeadershipTo(PeerId.of(part.getLeaderLocation()));
                 return;
             }
-            if (part.getReplicates().size() != node.listPeers().size()) {
-                for (Location replicateLoc : part.getReplicates()) {
+            if (part.getReplicateLocations().size() != node.listPeers().size()) {
+                for (Location replicateLoc : part.getReplicateLocations()) {
                     if (!raftLocationContains(peers.keySet(), replicateLoc)) {
                         addReplica(PeerId.of(replicateLoc));
                     }
                 }
                 for (Location peerLoc : peers.keySet()) {
-                    if (!raftLocationContains(part.getReplicates(), peerLoc)) {
+                    if (!raftLocationContains(part.getReplicateLocations(), peerLoc)) {
                         removeReplica(peers.get(peerLoc));
                     }
                 }

@@ -63,8 +63,8 @@ public final class LinkedRunner implements Unsafe {
         protected boolean follow(RunnerNode next) {
             if (UNSAFE.compareAndSwapObject(this, NEXT_OFFSET, null, next)) {
                 runner.last = next;
-                if (UNSAFE.compareAndSwapInt(this, COMPLETE_OFFSET, 1, 1)) {
-                    complete();
+                if (UNSAFE.compareAndSwapInt(this, COMPLETE_OFFSET, 1, 2)) {
+                    runner.submit(next);
                 }
                 return true;
             }
@@ -80,20 +80,18 @@ public final class LinkedRunner implements Unsafe {
                 log.error("Execute task [{}] error, the exception should be handled within the task.", runner.name, e);
             }
             UNSAFE.compareAndSwapInt(this, COMPLETE_OFFSET, 0, 1);
-            if (!UNSAFE.compareAndSwapObject(this, NEXT_OFFSET, null, null)) {
-                complete();
-            }
         }
 
         private void complete() {
             Executors.execute(runner.name, next);
         }
+
     }
 
     public final String name;
-    protected int available = 1;
-    protected RunnerNode current;
-    protected RunnerNode last;
+    private int available = 1;
+    private RunnerNode current;
+    private RunnerNode last;
 
     public LinkedRunner(String name) {
         this.name = name;
@@ -142,6 +140,23 @@ public final class LinkedRunner implements Unsafe {
             removeNext(node);
         }
         node.next = null;
+    }
+
+    private void submit(final RunnerNode node) {
+        Executors.execute(name, () -> {
+            RunnerNode next = node;
+            while (true) {
+                next.run();
+                if (
+                        !UNSAFE.compareAndSwapObject(next, NEXT_OFFSET, null, null)
+                        && UNSAFE.compareAndSwapInt(next, COMPLETE_OFFSET, 1, 2)
+                ) {
+                    next = next.next;
+                } else {
+                    return;
+                }
+            }
+        });
     }
 
 }

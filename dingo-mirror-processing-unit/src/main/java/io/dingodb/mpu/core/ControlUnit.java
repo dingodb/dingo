@@ -18,15 +18,12 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.Optional;
-import io.dingodb.mpu.Constant;
 import io.dingodb.mpu.api.InternalApi;
+import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
-import io.dingodb.mpu.instruction.InternalInstructions;
-import io.dingodb.net.Message;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -49,6 +46,7 @@ class ControlUnit {
     private InstructionChain chain;
 
     private boolean closed = false;
+    private final boolean extClock = false;
 
     private AtomicLong syncedClock;
 
@@ -63,15 +61,24 @@ class ControlUnit {
         this.syncedClock = new AtomicLong(clock);
         this.executeRunner = new LinkedRunner(core.meta.label + "-execute");
         this.chain = new InstructionChain(clock, core.meta.label + "-instruction-chain");
-        this.firstRunner = new LinkedRunner(first.label + "-sync-runner");
-        this.secondRunner = new LinkedRunner(second.label + "-sync-runner");
         this.local = first == null;
+        if (!local) {
+            this.firstRunner = new LinkedRunner(first.label + "-sync-runner");
+            this.secondRunner = new LinkedRunner(second.label + "-sync-runner");
+        }
     }
 
     public void close() {
         closed = true;
         log.info("{} control unit close on {}.", core.meta.label, clock);
+        chain.clear(true);
         core.onControlUnitClose();
+        if (firstChannel != null) {
+            firstChannel.close();
+        }
+        if (secondChannel != null) {
+            secondChannel.close();
+        }
     }
 
     public boolean isClosed() {
@@ -83,24 +90,17 @@ class ControlUnit {
             throw new RuntimeException("Control unit closed.");
         }
         long mirrorClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
-        while (mirrorClock < clock - 1) {
-            mirrorClock++;
-            if (clock - mirrorClock >= 100_0000) {
-                core.storage.transferTo(mirror).join();
-                continue;
-            }
-            byte[] reappearInstruction = core.storage.reappearInstruction(mirrorClock);
-            reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
-            channel.send(new Message(null, reappearInstruction));
+        if (mirrorClock < clock - 1) {
+            channel.sync(Instruction.decode(core.storage.reappearInstruction(clock - 1)));
         }
         if (mirror == first) {
             firstChannel = channel;
         } else {
             secondChannel = channel;
         }
-        PhaseAck<Object> ack = new PhaseAck<>();
+        PhaseAck ack = new PhaseAck();
         log.info("{} control unit connect {} on {}.", core.meta.label, mirror.label, clock);
-        core.runner.forceFollow(() -> process(ack, InternalInstructions.id, InternalInstructions.EMPTY));
+        core.runner.forceFollow(() -> process(ack, EmptyInstructions.id, EmptyInstructions.EMPTY));
         ack.join();
     }
 
@@ -119,10 +119,22 @@ class ControlUnit {
         }
     }
 
-    protected <V> void process(PhaseAck<V> ack, byte instructions, short opcode, Object... operand) {
+    protected void process(PhaseAck ack, byte instructions, short opcode, Object... operand) {
         Instruction instruction = new Instruction(++clock, instructions, opcode, operand);
+        processInstruction(ack, instruction);
+    }
+
+    protected void process(PhaseAck ack, long clock, byte instructions, short opcode, Object... operand) {
+        if (!extClock) {
+            throw new UnsupportedOperationException("Not ext clock mode.");
+        }
+        Instruction instruction = new Instruction(clock, instructions, opcode, operand);
+        processInstruction(ack, instruction);
+    }
+
+    private void processInstruction(PhaseAck ack, Instruction instruction) {
+        ack.result = instruction.future;
         ack.clock.complete(instruction.clock);
-        ack.result = (CompletableFuture<V>) instruction.future;
         if (local) {
             executeRunner.forceFollow(() -> core.executionUnit.execute(instruction, ack.result));
             return;
@@ -132,7 +144,8 @@ class ControlUnit {
             return;
         }
         core.storage.saveInstruction(instruction.clock, instruction.encode());
-        executeRunner.forceFollow(() -> chain.forceFollow(instruction, () -> core.executionUnit.execute(instruction, ack.result)));
+        executeRunner.forceFollow(() -> chain.forceFollow(
+            instruction, () -> core.executionUnit.execute(instruction, ack.result)));
         Optional.ifPresent(firstChannel, () -> firstRunner.forceFollow(() -> firstChannel.sync(instruction)));
         Optional.ifPresent(secondChannel, () -> secondRunner.forceFollow(() -> secondChannel.sync(instruction)));
     }
@@ -140,6 +153,10 @@ class ControlUnit {
     protected void onSynced(CoreMeta mirror, Instruction instruction) {
         if (syncedClock.compareAndSet(instruction.clock - 1, instruction.clock)) {
             executeRunner.forceFollow(chain::tick);
+        } else {
+            core.storage.clearClock(instruction.clock);
+            firstChannel.executed(instruction.clock);
+            secondChannel.executed(instruction.clock);
         }
     }
 

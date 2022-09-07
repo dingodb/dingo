@@ -18,7 +18,7 @@ package io.dingodb.mpu.storage;
 
 import io.dingodb.mpu.instruction.Instruction;
 
-public interface Writer {
+public interface Writer extends AutoCloseable {
 
     /**
      * Returns the number of updates in the batch.
@@ -28,7 +28,7 @@ public interface Writer {
     int count();
 
     /**
-     * Returns the instruction corresponding to this writer
+     * Returns the instruction corresponding to this writer.
      *
      * @return instruction
      */

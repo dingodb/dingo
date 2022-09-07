@@ -69,8 +69,8 @@ public class MemoryStoreService implements StoreService {
             .start(start)
             .end(end)
             .type(Part.PartType.ROW_STORE)
-            .replicates(Collections.emptyList())
-            .leader(new Location("localhost", 0))
+            .replicateLocations(Collections.emptyList())
+            .leaderLocation(new Location("localhost", 0))
             .version(0)
             .build();
     }

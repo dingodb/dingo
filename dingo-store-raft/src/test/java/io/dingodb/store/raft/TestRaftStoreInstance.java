@@ -95,7 +95,7 @@ public class TestRaftStoreInstance {
         Part part = Part.builder()
             .id(id)
             .start(ByteArrayUtils.EMPTY_BYTES)
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part);
         while (storeInstance.getPart(part.getStart()) == null) {
@@ -118,7 +118,7 @@ public class TestRaftStoreInstance {
         Part part = Part.builder()
             .id(id)
             .start(ByteArrayUtils.EMPTY_BYTES)
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part);
         while (storeInstance.getPart(part.getStart()) == null) {
@@ -144,7 +144,7 @@ public class TestRaftStoreInstance {
         Part part = Part.builder()
             .id(id)
             .start(ByteArrayUtils.EMPTY_BYTES)
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part);
         while (storeInstance.getPart(part.getStart()) == null) {
@@ -155,7 +155,7 @@ public class TestRaftStoreInstance {
             .id(id)
             .start(ByteArrayUtils.EMPTY_BYTES)
             .end(new byte[] {3})
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.reassignPart(part);
         assertThat(storeInstance.getValueByPrimaryKey(new byte[] {2})).isEqualTo(new byte[] {2});
@@ -250,7 +250,7 @@ public class TestRaftStoreInstance {
             .id(id1)
             .start(ByteArrayUtils.EMPTY_BYTES)
             .end(new byte[] {1})
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part1);
         parts.add(part1);
@@ -262,7 +262,7 @@ public class TestRaftStoreInstance {
             .id(id2)
             .start(new byte[] {1})
             .end(new byte[] {3})
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part2);
         parts.add(part2);
@@ -275,7 +275,7 @@ public class TestRaftStoreInstance {
             .id(id3)
             .start(new byte[] {3})
             .end(new byte[] {5})
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part3);
         parts.add(part3);
@@ -286,7 +286,7 @@ public class TestRaftStoreInstance {
         Part part4 = Part.builder()
             .id(id4)
             .start(new byte[] {5})
-            .replicates(singletonList(location))
+            .replicateLocations(singletonList(location))
             .build();
         storeInstance.assignPart(part4);
         parts.add(part4);

@@ -39,6 +39,7 @@ public class InstructionChain implements Unsafe {
     private static final Runnable EMPTY = () -> { };
 
     private static final long NEXT_OFFSET;
+
     static {
         try {
             NEXT_OFFSET = UNSAFE.objectFieldOffset(InstructionNode.class.getDeclaredField(InstructionNode.Fields.next));
@@ -78,7 +79,7 @@ public class InstructionChain implements Unsafe {
     }
 
     public final String name;
-    private final long startClock;
+    private long startClock;
     private InstructionNode current;
     private InstructionNode last;
 
@@ -97,19 +98,29 @@ public class InstructionChain implements Unsafe {
 
     public void forceFollow(InstructionNode next) {
         while (!last.follow(next)) {
-            if (last.instruction != null && next.instruction.clock < last.instruction.clock) {
-                throw new RuntimeException("Next clock less than last instruction clock.");
+            if (last.instruction != null && next.instruction.clock <= last.instruction.clock) {
+                throw new RuntimeException(
+                    "Next clock " + next.instruction.clock + " less than or equal last clock " + last.instruction.clock
+                );
             }
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
         }
     }
 
-    public void reset() {
+    public void reset(long clock, boolean completeExceptionally) {
+        clear(completeExceptionally);
+        this.startClock = clock;
+    }
+
+    public void clear(boolean completeExceptionally) {
+        log.info("Instruction chain {} clear {}.", name, completeExceptionally ? "and complete exceptionally" : "");
         while (current != null) {
             if (current.instruction == null) {
                 return;
             }
-            current.instruction.future.completeExceptionally(new RuntimeException("Available mirror less than 1."));
+            if (completeExceptionally) {
+                current.instruction.future.completeExceptionally(new RuntimeException("Available mirror less than 1."));
+            }
             current = current.next;
         }
         current = last = new InstructionNode(null, EMPTY, this);

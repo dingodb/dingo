@@ -18,8 +18,11 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.PreParameters;
+import io.dingodb.mpu.storage.rocks.RocksStorage;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,11 +30,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MirrorProcessingUnit {
 
     public final CommonId id;
-    public final String path;
+    public final Path path;
 
     private final Map<CommonId, Core> subCores = new ConcurrentHashMap<>();
 
-    public MirrorProcessingUnit(CommonId id, String path) {
+    public MirrorProcessingUnit(CommonId id, Path path) {
         this.id = id;
         this.path = path;
         MPURegister.put(this);
@@ -46,5 +49,23 @@ public class MirrorProcessingUnit {
         return subCores.get(id);
     }
 
+    public Core createCore(int num, List<CoreMeta> metas) {
+        try {
+            Core core;
+            CoreMeta local = metas.remove(num);
+            log.info("Create core {} for {}", local.coreId, id);
+            RocksStorage storage = new RocksStorage(local, path.resolve(local.id.toString()).toString(), null);
+            if (metas.size() == 0) {
+                core = new Core(this, local, null, null, storage);
+            } else {
+                core = new Core(this, local, metas.get(0), metas.get(1), storage);
+            }
+            subCores.put(local.coreId, core);
+            log.info("Create core {} for {} success", local.coreId, id);
+            return core;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

@@ -24,12 +24,14 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.TableStoreApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.protocol.meta.Executor;
+import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class TableStoreProcessor {
@@ -78,12 +80,6 @@ public class TableStoreProcessor {
     public static void applyTablePart(
         TablePart tablePart, CommonId executor, List<Location> replicaLocations, boolean exist
     ) {
-        applyTablePart(tablePart, executor, replicaLocations, null, exist);
-    }
-
-    public static void applyTablePart(
-        TablePart tablePart, CommonId executor, List<Location> replicaLocations, Location leader, boolean exist
-    ) {
         TableStoreApi api = APIS.get(executor);
         if (api == null) {
             api = addStore(executor, MetaAdaptorRegistry.getMetaAdaptor(Executor.class).get(executor).location());
@@ -94,8 +90,35 @@ public class TableStoreProcessor {
             .type(Part.PartType.ROW_STORE)
             .start(tablePart.getStart())
             .end(tablePart.getEnd())
-            .leader(leader)
-            .replicates(replicaLocations)
+            .leaderLocation(null)
+            .replicateLocations(replicaLocations)
+            .build();
+        log.info("Apply part [{}] on [{}], part info: {}", tablePart.getId(), executor, part);
+        if (exist) {
+            api.reassignTablePart(part);
+        } else {
+            api.assignTablePart(part);
+        }
+    }
+
+    public static void applyTablePart(
+        TablePart tablePart, Replica replica, List<Replica> replicas, Replica leader, boolean exist
+    ) {
+        CommonId executor = replica.getExecutor();
+        TableStoreApi api = APIS.get(executor);
+        if (api == null) {
+            api = addStore(executor, MetaAdaptorRegistry.getMetaAdaptor(Executor.class).get(executor).location());
+        }
+        Part part = Part.builder()
+            .id(tablePart.getId())
+            .instanceId(tablePart.getTable())
+            .type(Part.PartType.ROW_STORE)
+            .start(tablePart.getStart())
+            .end(tablePart.getEnd())
+            .leaderLocation(leader == null ? null : leader.location())
+            .replicateId(replica.getId())
+            .replicateLocations(replicas.stream().map(Replica::location).collect(Collectors.toList()))
+            .replicates(replicas.stream().map(Replica::getId).collect(Collectors.toList()))
             .build();
         log.info("Apply part [{}] on [{}], part info: {}", tablePart.getId(), executor, part);
         if (exist) {

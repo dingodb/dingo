@@ -16,21 +16,23 @@
 
 package io.dingodb.net.netty.connection;
 
- import io.dingodb.common.Location;
- import io.dingodb.common.concurrent.LinkedRunner;
- import io.dingodb.net.netty.channel.Channel;
- import io.netty.buffer.ByteBuf;
- import io.netty.channel.ChannelOutboundInvoker;
- import io.netty.channel.socket.SocketChannel;
- import io.netty.util.AttributeMap;
- import lombok.Getter;
- import lombok.experimental.Accessors;
- import lombok.experimental.Delegate;
- import lombok.extern.slf4j.Slf4j;
+import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.net.netty.NetServiceConfiguration;
+import io.dingodb.net.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelOutboundInvoker;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.util.AttributeMap;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import lombok.experimental.Delegate;
+import lombok.extern.slf4j.Slf4j;
 
- import java.nio.ByteBuffer;
- import java.util.Map;
- import java.util.concurrent.atomic.AtomicLong;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Accessors(fluent = true)
@@ -42,7 +44,6 @@ public abstract class Connection  {
     protected final Channel channel;
     @Getter
     protected Location remoteLocation;
-    @Getter
     protected Location localLocation;
     @Getter
     @Delegate(excludes = {ChannelOutboundInvoker.class, AttributeMap.class})
@@ -56,7 +57,12 @@ public abstract class Connection  {
     }
 
     protected abstract Map<Long, Channel> createChannels();
+
     public abstract void receive(ByteBuffer message);
+
+    public Location localLocation() {
+        return DingoConfiguration.instance() == null ? localLocation : DingoConfiguration.location();
+    }
 
     public void send(ByteBuf message) throws InterruptedException {
         socketChannel.writeAndFlush(message).await();

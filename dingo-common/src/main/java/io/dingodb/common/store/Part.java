@@ -44,13 +44,16 @@ public class Part {
 
     private CommonId id;
     private CommonId instanceId;
+    private CommonId replicateId;
     private byte[] start;
     private byte[] end;
     @Builder.Default
     private PartType type = PartType.ROW_STORE;
 
-    private Location leader;
-    private List<Location> replicates;
+    private CommonId leader;
+    private Location leaderLocation;
+    private List<CommonId> replicates;
+    private List<Location> replicateLocations;
     private int version;
 
 
@@ -61,8 +64,8 @@ public class Part {
             .add("start=" + Arrays.toString(start))
             .add("end=" + Arrays.toString(end))
             .add("type=" + type)
-            .add("leader=" + leader)
-            .add("replicates=" + replicates)
+            .add("leader=" + leaderLocation)
+            .add("replicates=" + replicateLocations)
             .add("version=" + version)
             .toString();
     }

@@ -40,7 +40,7 @@ public final class InstructionSetRegistry {
     }
 
     static {
-        register(InternalInstructions.id, InternalInstructions.INSTRUCTIONS);
+        register(EmptyInstructions.id, EmptyInstructions.INSTRUCTIONS);
         register(KVInstructions.id, KVInstructions.INSTRUCTIONS);
     }
 

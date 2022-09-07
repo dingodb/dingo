@@ -52,7 +52,7 @@ public class DingoConfiguration {
 
     private static DingoConfiguration INSTANCE;
 
-    public static <T> T parse(InputStream is, Class<T> clazz) throws IOException {
+    public static synchronized <T> T parse(InputStream is, Class<T> clazz) throws IOException {
         YAMLFactory yamlFactory = new YAMLFactory()
             .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
         final ObjectMapper mapper = JsonMapper.builder(yamlFactory)

@@ -33,6 +33,8 @@ public interface Storage {
 
     byte[] reappearInstruction(long clock);
 
+    void destroy();
+
     CompletableFuture<Void> transferTo(CoreMeta meta);
 
     String filePath();
@@ -42,6 +44,10 @@ public interface Storage {
     void applyBackup();
 
     void clearClock(long clock);
+
+    long approximateCount();
+
+    long approximateSize();
 
     /**
      * Get storage snapshot reader.

@@ -36,10 +36,10 @@ import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -104,21 +104,27 @@ public class ClusterScheduler implements ServerApi, ReportApi {
             return Collections.emptyList();
         }
         log.info("Executor get store map, id: [{}], replicas: [{}] ==> {}", id, replicas.size(), replicas);
-        return replicas.stream()
-            .map(Replica::getPart)
-            .map(tablePartAdaptor::get)
-            .filter(Objects::nonNull)
-            .map(tablePart -> Part.builder()
-                .id(tablePart.getId())
-                .instanceId(tablePart.getTable())
-                .start(tablePart.getStart())
-                .end(tablePart.getEnd())
-                .type(Part.PartType.ROW_STORE)
-                .replicates(replicaAdaptor.getByDomain(tablePart.getId().seqContent()).stream()
-                    .map(Replica::location)
-                    .collect(Collectors.toList()))
-                .build())
-            .collect(Collectors.toList());
+        List<Part> parts = new ArrayList<>();
+        for (Replica replica : replicas) {
+            CommonId part = replica.getPart();
+            TablePart tablePart = tablePartAdaptor.get(part);
+            if (tablePart != null) {
+                List<Replica> partRep = replicaAdaptor.getByDomain(tablePart.getId().seqContent());
+                parts.add(
+                    Part.builder()
+                    .id(tablePart.getId())
+                    .instanceId(tablePart.getTable())
+                    .start(tablePart.getStart())
+                    .end(tablePart.getEnd())
+                    .type(Part.PartType.ROW_STORE)
+                    .replicateId(replica.getId())
+                    .replicates(partRep.stream().map(Replica::getId).collect(Collectors.toList()))
+                    .replicateLocations(partRep.stream().map(Replica::location).collect(Collectors.toList()))
+                    .build()
+                );
+            }
+        }
+        return parts;
     }
 
     @Override

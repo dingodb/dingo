@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.mpu.storage;
+package io.dingodb.store.mpu;
+
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.mpu.storage.KV;
+import lombok.AllArgsConstructor;
 
 import java.util.Iterator;
-import java.util.List;
 
-public interface Reader {
+@AllArgsConstructor
+public class KeyValueIterator implements Iterator<KeyValue> {
 
-    Iterator<KV> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
+    private final Iterator<KV> iterator;
 
-    long count();
+    @Override
+    public boolean hasNext() {
+        return iterator.hasNext();
+    }
 
-    byte[] get(byte[] key);
-
-    List<KV> get(List<byte[]> keys);
+    @Override
+    public KeyValue next() {
+        KV next = iterator.next();
+        return new KeyValue(next.key, next.value);
+    }
 }

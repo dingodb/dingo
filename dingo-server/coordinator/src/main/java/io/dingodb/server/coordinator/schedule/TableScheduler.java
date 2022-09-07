@@ -46,7 +46,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getStatsMetaAdaptor;
 import static io.dingodb.server.coordinator.schedule.processor.TableStoreProcessor.applyTablePart;
@@ -178,16 +177,17 @@ public class TableScheduler {
         try {
             log.info("Transfer leader part [{}] replica to [{}]", partId, executorId);
             TablePart tablePart = tablePartAdaptor.get(partId);
-            Replica replica = replicaAdaptor.getByExecutor(executorId, partId);
-            if (replica == null) {
+            Replica newLeader = replicaAdaptor.getByExecutor(executorId, partId);
+            Replica current = replicaAdaptor.getByExecutor(tablePartStatsAdaptor.getStats(
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent())
+            ).getLeader()).get(0);
+
+            if (newLeader == null) {
                 throw new RuntimeException("Not found part on executor.");
             }
-            TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
-            List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
             log.info("Update part [{}] on current leader.", partId);
             try {
-                applyTablePart(tablePart, partStats.getLeader(), locations, replica.location(), true);
+                applyTablePart(tablePart, current, replicaAdaptor.getByDomain(partId.seqContent()), newLeader, true);
             } catch (Exception e) {
                 log.error("Update part [{}] on current leader error.", partId, e);
             }
@@ -221,15 +221,10 @@ public class TableScheduler {
     public CompletableFuture<Void> assignPart(TablePart tablePart) {
         log.info("On assign table part, part: {}", tablePart);
         CompletableFuture<Void> future = new CompletableFuture<>();
-        List<Replica> replicas = replicaAdaptor.getByDomain(tablePart.getId().seqContent());
-        if (replicas == null || replicas.isEmpty()) {
-            replicas = replicaAdaptor.createByPart(tablePart, executorAdaptor.getAll());
-        }
-        List<Location> locations = replicas.stream().map(Replica::location).collect(Collectors.toList());
+        List<Replica> replicas = replicaAdaptor.getOrCreateByPart(tablePart, executorAdaptor.getAll());
         reportFutures.put(tablePart.getId(), future);
         replicas.forEach(replica -> Executors.execute(
-            "assign-part",
-            () -> applyTablePart(tablePart, replica.getExecutor(), locations, false))
+            "assign-part", () -> applyTablePart(tablePart, replica, replicas, null, false))
         );
         return future;
     }

@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.mpu.storage;
+package io.dingodb.store.mpu;
 
-import java.util.Iterator;
-import java.util.List;
+import com.google.auto.service.AutoService;
 
-public interface Reader {
-
-    Iterator<KV> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
-
-    long count();
-
-    byte[] get(byte[] key);
-
-    List<KV> get(List<byte[]> keys);
+@AutoService(io.dingodb.store.api.StoreServiceProvider.class)
+public class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
+    @Override
+    public StoreService get() {
+        return StoreService.INSTANCE;
+    }
 }
