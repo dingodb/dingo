@@ -16,6 +16,7 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.common.driver.DingoSignature;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaDatabaseMetaData;

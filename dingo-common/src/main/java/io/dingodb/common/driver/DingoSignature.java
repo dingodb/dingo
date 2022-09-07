@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.driver;
+package io.dingodb.common.driver;
 
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -23,7 +23,9 @@ import org.apache.calcite.avatica.Meta;
 import java.util.List;
 import java.util.Map;
 
-final class DingoSignature extends Meta.Signature {
+// This class is needed by driver, both in server and client side.
+// because protostuff wants to recover/serialize the class from net messages.
+public final class DingoSignature extends Meta.Signature {
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,

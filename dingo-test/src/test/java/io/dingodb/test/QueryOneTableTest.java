@@ -74,7 +74,7 @@ public class QueryOneTableTest {
     @Test
     public void testScan1() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
-            "select * from test.test",
+            "select * from " + MetaTestService.SCHEMA_NAME + ".test",
             new String[]{"id", "name", "amount"},
             DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             TEST_ALL_DATA

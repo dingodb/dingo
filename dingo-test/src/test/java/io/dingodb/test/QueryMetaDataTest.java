@@ -31,6 +31,8 @@ import java.util.Arrays;
 
 @Slf4j
 public class QueryMetaDataTest {
+    private static final String SCHEMA_NAME = MetaTestService.SCHEMA_NAME;
+
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -63,21 +65,21 @@ public class QueryMetaDataTest {
             )
             .isRecords(Arrays.asList(
                 new Object[]{"metadata", null},
-                new Object[]{"TEST", null}
+                new Object[]{MetaTestService.SCHEMA_NAME, null}
             ));
     }
 
     @Test
     public void testGetTables() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getTables(null, "TEST", null, null);
+        ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, null, null);
         AssertResultSet.of(resultSet)
             .columnLabels(
                 new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
             )
             .isRecords(Arrays.asList(
-                new Object[]{null, "TEST", "TEST", "TABLE"},
-                new Object[]{null, "TEST", "TEST1", "TABLE"}
+                new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
+                new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
             ));
     }
 
@@ -90,15 +92,15 @@ public class QueryMetaDataTest {
                 new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
             )
             .isRecords(Arrays.asList(
-                new Object[]{null, "TEST", "TEST", "TABLE"},
-                new Object[]{null, "TEST", "TEST1", "TABLE"}
+                new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
+                new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
             ));
     }
 
     @Test
     public void testGetColumns() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getColumns(null, "TEST", "TEST", null);
+        ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null);
         AssertResultSet.of(resultSet)
             .columnLabels(
                 new String[]{
@@ -109,17 +111,17 @@ public class QueryMetaDataTest {
             )
             .isRecords(Arrays.asList(
                 new Object[]{
-                    null, "TEST", "TEST", "ID", 4,
+                    null, SCHEMA_NAME, "TEST", "ID", 4,
                     "INTEGER NOT NULL", -1, null, 10, 0,
                     -1, 1, "NO", "", ""
                 },
                 new Object[]{
-                    null, "TEST", "TEST", "NAME", 12,
+                    null, SCHEMA_NAME, "TEST", "NAME", 12,
                     "VARCHAR(32) NOT NULL", 32, null, 10, 0,
                     32, 2, "NO", "", ""
                 },
                 new Object[]{
-                    null, "TEST", "TEST", "AMOUNT", 8,
+                    null, SCHEMA_NAME, "TEST", "AMOUNT", 8,
                     "DOUBLE", -1, null, 10, 1,
                     -1, 3, "YES", "", ""
                 }
