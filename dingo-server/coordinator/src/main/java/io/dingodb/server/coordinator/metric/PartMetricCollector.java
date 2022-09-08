@@ -16,6 +16,7 @@
 
 package io.dingodb.server.coordinator.metric;
 
+import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ReplicaAdaptor;
@@ -31,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -51,14 +52,16 @@ public class PartMetricCollector extends Collector {
         ArrayList<MetricFamilySamples.Sample> countSample = new ArrayList<>();
         ExecutorAdaptor executorAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Executor.class);
         ReplicaAdaptor replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
-        executorAdaptor.getAll().forEach(executor -> {
-            Integer partCount = Optional.of(replicaAdaptor.getByExecutor(executor.getId()).size()).orElse(0);
-            countSample.add(new MetricFamilySamples.Sample(
-                MonitorMetric.PART_COUNT.value(),
-                Collections.singletonList(MetricLabel.EXECUTOR),
-                Collections.singletonList(executor.getId().toString()),
-                partCount
-            ));
+        executorAdaptor.getAll().stream().filter(Objects::nonNull).forEach(executor -> {
+            Optional.ofNullable(executor.getId())
+                .map(replicaAdaptor::getByExecutor)
+                .map(List::size)
+                .ifPresent(size -> countSample.add(new MetricFamilySamples.Sample(
+                    MonitorMetric.PART_COUNT.value(),
+                    Collections.singletonList(MetricLabel.EXECUTOR),
+                    Collections.singletonList(executor.getId().toString()),
+                    size
+                )));
         });
         samplesMap.put(MonitorMetric.PART_COUNT, countSample);
 

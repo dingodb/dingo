@@ -142,8 +142,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
             }
             if (this.iterator.isValid()) {
                 this.current = new KV(this.iterator.key(), this.iterator.value());
+                this.iterator.next();
             }
-            this.iterator.next();
         }
 
         @Override

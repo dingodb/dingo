@@ -142,7 +142,7 @@ public class KVInstructions implements Instructions {
                 case 1:
                     return reader.scan((byte[]) operand[0], null, true, true);
                 case 2:
-                    return reader.scan((byte[]) operand[0], (byte[]) operand[1], true, true);
+                    return reader.scan((byte[]) operand[0], (byte[]) operand[1], true, false);
                 case 3:
                     return reader.scan((byte[]) operand[0], (byte[]) operand[1], true, (Boolean) operand[2]);
                 default:
