@@ -192,6 +192,10 @@ public class ServerMeta implements Meta {
         int scope,
         boolean nullable
     ) {
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, catalog = {}, schema = {}, table = {}, scope = {}, nullable = {}",
+                ch, catalog, schema, table, scope, nullable);
+        }
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getBestRowIdentifier(ch, catalog, schema, table, scope, nullable)
@@ -218,6 +222,9 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
+        if (log.isDebugEnabled()) {
+            log.debug("connection handle = {}, catalog = {}, schema = {}, table = {}.", ch, catalog, schema, table);
+        }
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table)
@@ -598,7 +605,7 @@ public class ServerMeta implements Meta {
     @Override
     public StatementHandle createStatement(@Nonnull ConnectionHandle ch) {
         if (log.isDebugEnabled()) {
-            log.debug("ch = {}.", ch);
+            log.debug("connection handle = {}.", ch);
         }
         DingoConnection connection = connectionMap.get(ch.id);
         try {
