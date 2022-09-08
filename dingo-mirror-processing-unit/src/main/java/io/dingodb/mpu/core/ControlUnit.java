@@ -50,7 +50,7 @@ class ControlUnit {
 
     private AtomicLong syncedClock;
 
-    private long clock;
+    protected long clock;
 
     ControlUnit(Core core, long clock, CoreMeta first, CoreMeta second) {
         this.core = core;

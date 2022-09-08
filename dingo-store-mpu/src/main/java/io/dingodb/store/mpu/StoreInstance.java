@@ -18,6 +18,7 @@ package io.dingodb.store.mpu;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
@@ -34,6 +35,7 @@ import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -41,12 +43,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
+@Slf4j
 public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public final MirrorProcessingUnit mpu;
@@ -70,7 +74,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             coreMetas.add(i, new CoreMeta(replicates.get(i), part.getId(), mpu.id, replicateLocations.get(i), 3 - i));
         }
         core = mpu.createCore(replicates.indexOf(part.getReplicateId()), coreMetas);
-        core.registerListener(CoreListener.primary(__ -> sendStats()));
+        core.registerListener(CoreListener.primary(__ -> sendStats(core)));
         core.start();
     }
 
@@ -91,18 +95,26 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         return core.storage.approximateSize();
     }
 
-    public void sendStats() {
-        CommonId partId = core.meta.coreId;
-        TablePartStats stats = TablePartStats.builder()
-            .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()))
-            .leader(DingoConfiguration.instance().getServerId())
-            .tablePart(partId)
-            .table(core.meta.mpuId)
-            .approximateStats(Collections.singletonList(approximateStats()))
-            .time(System.currentTimeMillis())
-            .build();
-        ApiRegistry.getDefault().proxy(ReportApi.class, CoordinatorConnector.defaultConnector())
-            .report(stats);
+    public void sendStats(Core core) {
+        try {
+            if (!core.isAvailable() && core.isPrimary()) {
+                return;
+            }
+            CommonId partId = core.meta.coreId;
+            TablePartStats stats = TablePartStats.builder()
+                .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()))
+                .leader(DingoConfiguration.instance().getServerId())
+                .tablePart(partId)
+                .table(core.meta.mpuId)
+                .approximateStats(Collections.singletonList(approximateStats()))
+                .time(System.currentTimeMillis())
+                .build();
+            ApiRegistry.getDefault().proxy(ReportApi.class, CoordinatorConnector.defaultConnector())
+                .report(stats);
+        } catch (Exception e) {
+            log.error("{} send stats to failed.", core.meta, e);
+        }
+        Executors.scheduleAsync(core.meta.label + "-send-stats", () -> sendStats(core), 5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -152,11 +164,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     @Override
-    public Iterator<KeyValue> keyValueScan() {
-        return new KeyValueIterator(core.view(KVInstructions.id, KVInstructions.SCAN_OC));
-    }
-
-    @Override
     public void deletePart(Part part) {
         core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
     }
@@ -181,6 +188,11 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
         return ((List<KV>) core.view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys)).stream()
             .map(kv -> new KeyValue(kv.key, kv.value)).collect(Collectors.toList());
+    }
+
+    @Override
+    public Iterator<KeyValue> keyValueScan() {
+        return new KeyValueIterator(core.view(KVInstructions.id, KVInstructions.SCAN_OC));
     }
 
     @Override

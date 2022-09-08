@@ -107,6 +107,7 @@ public class Core {
 
     public void onControlUnitClose() {
         if (close) {
+            listeners.forEach(__ -> execute(meta.label + "-back", () -> __.back(controlUnit.clock)));
             return;
         }
         this.controlUnit = null;
@@ -242,7 +243,7 @@ public class Core {
         channel.setCloseListener(ch -> {
             log.info("Mirror connection from {} closed.", syncChannel.primary.label);
             this.mirror = null;
-            listeners.forEach(__ -> execute(meta.label + "-lose-primary", () -> __.losePrimary(clock())));
+            listeners.forEach(__ -> execute(meta.label + "-lose-primary", () -> __.losePrimary(close ? -1 : clock())));
             execute(meta.label + "-select-primary", this::selectPrimary);
         });
         Mirror mirror = new Mirror(syncChannel.primary, this, clock(), channel);
