@@ -28,6 +28,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 
 @Slf4j
 public class QueryMetaDataTest {
@@ -58,73 +59,147 @@ public class QueryMetaDataTest {
     @Test
     public void testGetSchemas() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getSchemas();
-        AssertResultSet.of(resultSet)
-            .columnLabels(
-                new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
-            )
-            .isRecords(Arrays.asList(
-                new Object[]{"metadata", null},
-                new Object[]{MetaTestService.SCHEMA_NAME, null}
-            ));
+        try (ResultSet resultSet = metaData.getSchemas()) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
+                )
+                .isRecords(Arrays.asList(
+                    new Object[]{"metadata", null},
+                    new Object[]{MetaTestService.SCHEMA_NAME, null}
+                ));
+        }
+    }
+
+    @Test
+    public void testGetSchemasWithPattern() throws SQLException {
+        DatabaseMetaData metaData = sqlHelper.metaData();
+        try (ResultSet resultSet = metaData.getSchemas(null, "T%")) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
+                )
+                .isRecords(Collections.singletonList(
+                    new Object[]{MetaTestService.SCHEMA_NAME, null}
+                ));
+        }
     }
 
     @Test
     public void testGetTables() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, null, null);
-        AssertResultSet.of(resultSet)
-            .columnLabels(
-                new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
-            )
-            .isRecords(Arrays.asList(
-                new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
-                new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
-            ));
+        try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, null, null)) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
+                )
+                .isRecords(Arrays.asList(
+                    new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
+                ));
+        }
+    }
+
+    @Test
+    public void testGetTablesWithPattern() throws SQLException {
+        DatabaseMetaData metaData = sqlHelper.metaData();
+        try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, "TEST_", null)) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
+                )
+                .isRecords(Collections.singletonList(
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
+                ));
+        }
     }
 
     @Test
     public void testGetTablesNullSchema() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getTables(null, null, "%", null);
-        AssertResultSet.of(resultSet)
-            .columnLabels(
-                new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
-            )
-            .isRecords(Arrays.asList(
-                new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
-                new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
-            ));
+        try (ResultSet resultSet = metaData.getTables(null, null, "%", null)) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
+                )
+                .isRecords(Arrays.asList(
+                    new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"},
+                    new Object[]{null, "metadata", "COLUMNS", "SYSTEM TABLE"},
+                    new Object[]{null, "metadata", "TABLES", "SYSTEM TABLE"}
+                ));
+        }
     }
 
     @Test
     public void testGetColumns() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null);
-        AssertResultSet.of(resultSet)
-            .columnLabels(
-                new String[]{
-                    "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
-                    "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
-                    "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN"
-                }
-            )
-            .isRecords(Arrays.asList(
-                new Object[]{
-                    null, SCHEMA_NAME, "TEST", "ID", 4,
-                    "INTEGER NOT NULL", -1, null, 10, 0,
-                    -1, 1, "NO", "", ""
-                },
-                new Object[]{
-                    null, SCHEMA_NAME, "TEST", "NAME", 12,
-                    "VARCHAR(32) NOT NULL", 32, null, 10, 0,
-                    32, 2, "NO", "", ""
-                },
-                new Object[]{
-                    null, SCHEMA_NAME, "TEST", "AMOUNT", 8,
-                    "DOUBLE", -1, null, 10, 1,
-                    -1, 3, "YES", "", ""
-                }
-            ));
+        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null)) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{
+                        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
+                        "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
+                        "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN"
+                    }
+                )
+                .isRecords(Arrays.asList(
+                    new Object[]{
+                        null, SCHEMA_NAME, "TEST", "ID", 4,
+                        "INTEGER NOT NULL", -1, null, 10, 0,
+                        -1, 1, "NO", "", ""
+                    },
+                    new Object[]{
+                        null, SCHEMA_NAME, "TEST", "NAME", 12,
+                        "VARCHAR(32) NOT NULL", 32, null, 10, 0,
+                        32, 2, "NO", "", ""
+                    },
+                    new Object[]{
+                        null, SCHEMA_NAME, "TEST", "AMOUNT", 8,
+                        "DOUBLE", -1, null, 10, 1,
+                        -1, 3, "YES", "", ""
+                    }
+                ));
+        }
+    }
+
+    @Test
+    public void testGetColumnsWithPattern() throws SQLException {
+        DatabaseMetaData metaData = sqlHelper.metaData();
+        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", "N%E")) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{
+                        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
+                        "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
+                        "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN"
+                    }
+                )
+                .isRecords(Collections.singletonList(
+                    new Object[]{
+                        null, SCHEMA_NAME, "TEST", "NAME", 12,
+                        "VARCHAR(32) NOT NULL", 32, null, 10, 0,
+                        32, 2, "NO", "", ""
+                    }
+                ));
+        }
+    }
+
+    @Test
+    public void testGetPrimaryKeys() throws SQLException {
+        DatabaseMetaData metaData = sqlHelper.metaData();
+        try (ResultSet resultSet = metaData.getPrimaryKeys(null, SCHEMA_NAME, "TEST")) {
+            AssertResultSet.of(resultSet)
+                .columnLabels(
+                    new String[]{
+                        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ"
+                    }
+                )
+                .isRecords(Collections.singletonList(
+                    new Object[]{
+                        null, SCHEMA_NAME, "TEST", "ID", (short) 1,
+                    }
+                ));
+        }
     }
 }

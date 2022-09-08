@@ -19,10 +19,15 @@ package io.dingodb.driver;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.MetaCache;
+import io.dingodb.common.driver.DingoMetaPrimaryKey;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.JobRunner;
 import io.dingodb.exec.base.Id;
@@ -35,7 +40,6 @@ import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -48,7 +52,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.runtime.CalciteContextException;
-import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.parser.SqlParseException;
 
 import java.lang.reflect.Field;
@@ -56,13 +59,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.calcite.DingoTable.dingo;
 import static io.dingodb.common.error.DingoException.CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
 import static io.dingodb.common.error.DingoException.RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
 import static io.dingodb.common.error.DingoException.TYPE_CAST_ERROR;
@@ -74,6 +83,46 @@ public class DingoMeta extends MetaImpl {
 
     public DingoMeta(DingoConnection connection) {
         super(connection);
+    }
+
+    @Nonnull
+    private static Predicate<String> patToFilter(@Nonnull Pat pat) {
+        if (pat.s == null) {
+            return str -> true;
+        }
+        StringBuilder buf = new StringBuilder("^");
+        char[] charArray = pat.s.toCharArray();
+        int backslashIndex = -2;
+        for (int i = 0; i < charArray.length; i++) {
+            char c = charArray[i];
+            if (backslashIndex == i - 1) {
+                buf.append('[').append(c).append(']');
+                continue;
+            }
+            switch (c) {
+                case '\\':
+                    backslashIndex = i;
+                    break;
+                case '%':
+                    buf.append(".*");
+                    break;
+                case '_':
+                    buf.append(".");
+                    break;
+                case '[':
+                    buf.append("\\[");
+                    break;
+                case ']':
+                    buf.append("\\]");
+                    break;
+                default:
+                    buf.append('[').append(c).append(']');
+                    break;
+            }
+        }
+        buf.append("$");
+        Pattern regex = Pattern.compile(buf.toString());
+        return str -> regex.matcher(str).matches();
     }
 
     @Nonnull
@@ -121,6 +170,58 @@ public class DingoMeta extends MetaImpl {
                 break;
         }
         return updateCount;
+    }
+
+    private static Collection<CalciteSchema> getMatchedSubSchema(
+        @Nonnull CalciteSchema rootSchema,
+        @Nonnull Pat pat
+    ) {
+        final Predicate<String> filter = patToFilter(pat);
+        return rootSchema.getSubSchemaMap().entrySet().stream()
+            .filter(e -> filter.test(e.getKey()))
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toSet());
+    }
+
+    private static Collection<CalciteSchema.TableEntry> getMatchedTables(
+        @Nonnull Collection<CalciteSchema> schemas,
+        @Nonnull Pat pat
+    ) {
+        final Predicate<String> filter = patToFilter(pat);
+        return schemas.stream()
+            .flatMap(s -> s.getTableNames().stream()
+                .filter(filter)
+                .map(n -> s.getTable(n, false)))
+            .collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E> MetaResultSet createResultSet(
+        Enumerable<E> enumerable,
+        Class<E> clazz,
+        String... names
+    ) {
+        requireNonNull(names, "names");
+        final List<ColumnMetaData> columns = new ArrayList<>(names.length);
+        final List<Field> fields = new ArrayList<>(names.length);
+        final List<String> fieldNames = new ArrayList<>(names.length);
+        for (String name : names) {
+            final int index = fields.size();
+            final String fieldName = AvaticaUtils.toCamelCase(name);
+            final Field field;
+            try {
+                field = clazz.getField(fieldName);
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            columns.add(columnMetaData(name, index, field.getType(), false));
+            fields.add(field);
+            fieldNames.add(fieldName);
+        }
+        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
+        return createResultSet(Collections.emptyMap(),
+            columns, CursorFactory.record(clazz, fields, fieldNames),
+            new Frame(0, true, iterable));
     }
 
     @Override
@@ -286,11 +387,10 @@ public class DingoMeta extends MetaImpl {
                 rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            return new Meta.Frame(offset, done, rows);
+            return new Frame(offset, done, rows);
         } catch (SQLException e) {
             log.error("Fetch catch exception:{}", e, e);
-            // TODO AvaticaClientRuntimeException
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -358,35 +458,6 @@ public class DingoMeta extends MetaImpl {
     public void rollback(ConnectionHandle ch) {
     }
 
-    @SuppressWarnings("unchecked")
-    private <E> MetaResultSet createResultSet(
-        Enumerable<E> enumerable,
-        Class<E> clazz,
-        String... names
-    ) {
-        requireNonNull(names, "names");
-        final List<ColumnMetaData> columns = new ArrayList<>(names.length);
-        final List<Field> fields = new ArrayList<>(names.length);
-        final List<String> fieldNames = new ArrayList<>(names.length);
-        for (String name : names) {
-            final int index = fields.size();
-            final String fieldName = AvaticaUtils.toCamelCase(name);
-            final Field field;
-            try {
-                field = clazz.getField(fieldName);
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(e);
-            }
-            columns.add(columnMetaData(name, index, field.getType(), false));
-            fields.add(field);
-            fieldNames.add(fieldName);
-        }
-        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
-        return createResultSet(Collections.emptyMap(),
-            columns, CursorFactory.record(clazz, fields, fieldNames),
-            new Frame(0, true, iterable));
-    }
-
     @Override
     public MetaResultSet getTables(
         ConnectionHandle ch,
@@ -395,23 +466,19 @@ public class DingoMeta extends MetaImpl {
         Pat tableNamePattern,
         List<String> typeList
     ) {
-        DingoConnection dingoConnection = (DingoConnection) connection;
-        DingoParserContext context = dingoConnection.getContext();
-        CalciteSchema rootSchema = context.getRootSchema();
-        // TODO: should match by pattern
-        String schemaName = schemaPattern.s == null ? context.getDefaultSchemaName() : schemaPattern.s;
-        CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
-        if (schema == null) {
-            return createEmptyResultSet(MetaTable.class);
-        }
         MetaCache.initTableDefinitions();
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        final DingoParserContext context = dingoConnection.getContext();
+        final CalciteSchema rootSchema = context.getRootSchema();
+        final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
+        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(schemas, tableNamePattern);
         return createResultSet(
-            Linq4j.asEnumerable(schema.getTableNames())
-                .select(name -> new MetaTable(
+            Linq4j.asEnumerable(tables)
+                .select(t -> new MetaTable(
                     catalog,
-                    schemaName,
-                    name,
-                    schema.getTable(name, true).getTable().getJdbcTableType().jdbcName
+                    t.schema.name,
+                    t.name,
+                    t.getTable().getJdbcTableType().jdbcName
                 )),
             MetaTable.class,
             "TABLE_CAT",
@@ -427,51 +494,48 @@ public class DingoMeta extends MetaImpl {
         String catalog,
         @Nonnull Pat schemaPattern,
         Pat tableNamePattern,
-        Pat columnNamePattern
+        @Nonnull Pat columnNamePattern
     ) {
-        DingoConnection dingoConnection = (DingoConnection) connection;
-        DingoParserContext context = dingoConnection.getContext();
-        CalciteSchema rootSchema = context.getRootSchema();
-        // TODO: should match by pattern
-        String schemaName = schemaPattern.s == null ? context.getDefaultSchemaName() : schemaPattern.s;
-        CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
-        if (schema == null || tableNamePattern.s == null) {
-            return createEmptyResultSet(MetaColumn.class);
-        }
-        CalciteSchema.TableEntry tableEntry = schema.getTable(tableNamePattern.s, false);
-        if (tableEntry == null) {
-            return createEmptyResultSet(MetaColumn.class);
-        }
-        Table table = tableEntry.getTable();
-        RelDataType rowType = table.getRowType(dingoConnection.getContext().getTypeFactory());
+        MetaCache.initTableDefinitions();
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        final DingoParserContext context = dingoConnection.getContext();
+        final CalciteSchema rootSchema = context.getRootSchema();
+        final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
+        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(schemas, tableNamePattern);
+        final Predicate<String> filter = patToFilter(columnNamePattern);
+        List<MetaColumn> columns = tables.stream()
+            .flatMap(t -> {
+                RelDataType rowType = t.getTable().getRowType(context.getTypeFactory());
+                return rowType.getFieldList().stream()
+                    .filter(f -> filter.test(f.getName()))
+                    .map(f -> {
+                        final int precision = f.getType().getSqlTypeName().allowsPrec()
+                            && !(f.getType() instanceof RelDataTypeFactoryImpl.JavaType)
+                            ? f.getType().getPrecision()
+                            : RelDataType.PRECISION_NOT_SPECIFIED;
+                        final Integer scale = f.getType().getSqlTypeName().allowsScale()
+                            ? f.getType().getScale()
+                            : null;
+                        return new MetaColumn(
+                            catalog,
+                            t.schema.name,
+                            t.name,
+                            f.getName(),
+                            f.getType().getSqlTypeName().getJdbcOrdinal(),
+                            f.getType().getFullTypeString(),
+                            precision,
+                            scale,
+                            10,
+                            f.getType().isNullable() ? DatabaseMetaData.columnNullable : DatabaseMetaData.columnNoNulls,
+                            precision,
+                            f.getIndex() + 1,
+                            f.getType().isNullable() ? "YES" : "NO"
+                        );
+                    });
+            })
+            .collect(Collectors.toList());
         return createResultSet(
-            Linq4j.asEnumerable(rowType.getFieldList())
-                .select(field -> {
-                    final int precision =
-                        field.getType().getSqlTypeName().allowsPrec()
-                            && !(field.getType()
-                            instanceof RelDataTypeFactoryImpl.JavaType)
-                            ? field.getType().getPrecision()
-                            : -1;
-                    return new MetaColumn(
-                        catalog,
-                        schemaPattern.s,
-                        tableNamePattern.s,
-                        field.getName(),
-                        field.getType().getSqlTypeName().getJdbcOrdinal(),
-                        field.getType().getFullTypeString(),
-                        precision,
-                        field.getType().getSqlTypeName().allowsScale()
-                            ? field.getType().getScale()
-                            : null,
-                        10,
-                        field.getType().isNullable()
-                            ? DatabaseMetaData.columnNullable
-                            : DatabaseMetaData.columnNoNulls,
-                        precision,
-                        field.getIndex() + 1,
-                        field.getType().isNullable() ? "YES" : "NO");
-                }),
+            Linq4j.asEnumerable(columns),
             MetaColumn.class,
             "TABLE_CAT",
             "TABLE_SCHEM",
@@ -493,14 +557,48 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
-        DingoConnection dingoConnection = (DingoConnection) connection;
-        CalciteSchema rootSchema = dingoConnection.getContext().getRootSchema();
-        // TODO: filter by pattern.
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        final DingoParserContext context = dingoConnection.getContext();
+        final CalciteSchema rootSchema = context.getRootSchema();
+        final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
         return createResultSet(
-            Linq4j.asEnumerable(rootSchema.getSubSchemaMap().values())
-                .select(schema -> new MetaSchema(catalog, schema.getName())),
+            Linq4j.asEnumerable(schemas)
+                .select(schema -> new MetaSchema(catalog, schema.name)),
             MetaSchema.class,
             "TABLE_SCHEM",
             "TABLE_CATALOG");
+    }
+
+    @Override
+    public MetaResultSet getPrimaryKeys(ConnectionHandle ch, String catalog, String schemaName, String tableName) {
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        final DingoParserContext context = dingoConnection.getContext();
+        final CalciteSchema rootSchema = context.getRootSchema();
+        final CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
+        final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
+        final DingoTable dingoTable = dingo(table.getTable());
+        final TableDefinition tableDefinition = dingoTable.getTableDefinition();
+        final TupleMapping mapping = tableDefinition.getKeyMapping();
+        return createResultSet(
+            Linq4j.asEnumerable(IntStream.range(0, mapping.size())
+                .mapToObj(i -> {
+                    ColumnDefinition c = tableDefinition.getColumn(mapping.get(i));
+                    return new DingoMetaPrimaryKey(
+                        catalog,
+                        schemaName,
+                        tableName,
+                        c.getName(),
+                        (short) (i + 1)
+                    );
+                })
+                .collect(Collectors.toList())
+            ),
+            DingoMetaPrimaryKey.class,
+            "TABLE_CAT",
+            "TABLE_SCHEM",
+            "TABLE_NAME",
+            "COLUMN_NAME",
+            "KEY_SEQ"
+        );
     }
 }
