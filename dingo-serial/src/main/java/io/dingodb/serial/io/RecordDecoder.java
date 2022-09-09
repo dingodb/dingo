@@ -29,6 +29,13 @@ public class RecordDecoder {
     private final short schemaVersion;
 
     public RecordDecoder(List<DingoSchema> schemas, short schemaVersion) {
+        this(schemas, schemaVersion, false);
+    }
+
+    public RecordDecoder(List<DingoSchema> schemas, short schemaVersion, boolean isKey) {
+        if (!isKey) {
+            Utils.sortSchema(schemas);
+        }
         Utils.sortSchema(schemas);
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;

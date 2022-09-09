@@ -134,7 +134,7 @@ public class BinaryEncoder {
             buf[forwardPosition++] = (byte) (in >>> 24);
             buf[forwardPosition++] = (byte) (in >>> 16);
             buf[forwardPosition++] = (byte) (in >>> 8);
-            buf[forwardPosition++] = (byte) (in >>> 0);
+            buf[forwardPosition++] = (byte) in;
         }
     }
 
@@ -152,12 +152,12 @@ public class BinaryEncoder {
                 buf[forwardPosition++] = (byte) (in >>> 24 ^ 0x80);
                 buf[forwardPosition++] = (byte) (in >>> 16);
                 buf[forwardPosition++] = (byte) (in >>> 8);
-                buf[forwardPosition++] = (byte) (in >>> 0);
+                buf[forwardPosition++] = (byte) in;
             } else {
                 buf[forwardPosition++] = (byte) (~ in >>> 24);
                 buf[forwardPosition++] = (byte) (~ in >>> 16);
                 buf[forwardPosition++] = (byte) (~ in >>> 8);
-                buf[forwardPosition++] = (byte) (~ in >>> 0);
+                buf[forwardPosition++] = (byte) ~ in;
             }
         }
     }
@@ -231,7 +231,7 @@ public class BinaryEncoder {
             buf[forwardPosition++] = (byte) (ln >>> 24);
             buf[forwardPosition++] = (byte) (ln >>> 16);
             buf[forwardPosition++] = (byte) (ln >>> 8);
-            buf[forwardPosition++] = (byte) (ln >>> 0);
+            buf[forwardPosition++] = (byte) ln;
         }
     }
 
@@ -257,7 +257,7 @@ public class BinaryEncoder {
                 buf[forwardPosition++] = (byte) (ln >>> 24);
                 buf[forwardPosition++] = (byte) (ln >>> 16);
                 buf[forwardPosition++] = (byte) (ln >>> 8);
-                buf[forwardPosition++] = (byte) (ln >>> 0);
+                buf[forwardPosition++] = (byte) ln;
             } else {
                 buf[forwardPosition++] = (byte) (~ ln >>> 56);
                 buf[forwardPosition++] = (byte) (~ ln >>> 48);
@@ -266,7 +266,7 @@ public class BinaryEncoder {
                 buf[forwardPosition++] = (byte) (~ ln >>> 24);
                 buf[forwardPosition++] = (byte) (~ ln >>> 16);
                 buf[forwardPosition++] = (byte) (~ ln >>> 8);
-                buf[forwardPosition++] = (byte) (~ ln >>> 0);
+                buf[forwardPosition++] = (byte) ~ ln;
             }
         }
     }
@@ -740,7 +740,7 @@ public class BinaryEncoder {
         lengthBuf[reversePosition--] = (byte) (length >>> 24);
         lengthBuf[reversePosition--] = (byte) (length >>> 16);
         lengthBuf[reversePosition--] = (byte) (length >>> 8);
-        lengthBuf[reversePosition--] = (byte) (length >>> 0);
+        lengthBuf[reversePosition--] = (byte) length;
     }
 
     private void internWriteBytes(byte[] value) throws IndexOutOfBoundsException, ClassCastException {
@@ -787,21 +787,21 @@ public class BinaryEncoder {
             return null;
         }
         return (short) (((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     private int readLength() throws IndexOutOfBoundsException {
         return (((buf[forwardPosition++] & 0xFF) << 24)
             | ((buf[forwardPosition++] & 0xFF) << 16)
             | ((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     private int readKeyLength() throws IndexOutOfBoundsException {
         return (((lengthBuf[reversePosition--] & 0xFF) << 24)
             | ((lengthBuf[reversePosition--] & 0xFF) << 16)
             | ((lengthBuf[reversePosition--] & 0xFF) << 8)
-            | ((lengthBuf[reversePosition--] & 0xFF) << 0));
+            | lengthBuf[reversePosition--] & 0xFF);
     }
 
     private void skipKeyLength() {

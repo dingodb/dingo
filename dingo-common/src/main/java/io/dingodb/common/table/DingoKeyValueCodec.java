@@ -43,8 +43,8 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         this.keySchema = schema.select(keyMapping);
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
-        keyCodec = new DingoCodec(schema.select(keyMapping).toDingoSchemas(), keyMapping);
-        valueCodec = new DingoCodec(schema.select(valueMapping).toDingoSchemas(), valueMapping);
+        keyCodec = new DingoCodec(schema.select(keyMapping).toDingoSchemas(), keyMapping, true);
+        valueCodec = new DingoCodec(schema.select(valueMapping).toDingoSchemas(), valueMapping, false);
     }
 
     @Override

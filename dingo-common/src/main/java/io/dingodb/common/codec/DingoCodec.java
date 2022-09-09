@@ -31,12 +31,16 @@ public class DingoCodec implements Codec {
     TupleMapping mapping;
 
     public DingoCodec(List<DingoSchema> schemas) {
-        this(schemas, null);
+        this(schemas, null, false);
     }
 
     public DingoCodec(List<DingoSchema> schemas, TupleMapping mapping) {
-        this.re = new RecordEncoder(schemas, (short) 0);
-        this.rd = new RecordDecoder(schemas, (short) 0);
+        this(schemas, mapping, false);
+    }
+
+    public DingoCodec(List<DingoSchema> schemas, TupleMapping mapping, boolean isKey) {
+        this.re = new RecordEncoder(schemas, (short) 0, isKey);
+        this.rd = new RecordDecoder(schemas, (short) 0, isKey);
         this.mapping = mapping;
     }
 
