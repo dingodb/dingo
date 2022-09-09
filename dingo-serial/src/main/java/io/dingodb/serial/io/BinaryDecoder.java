@@ -44,7 +44,7 @@ public class BinaryDecoder {
             return null;
         }
         return (short) (((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     public Short readKeyShort() throws IndexOutOfBoundsException {
@@ -53,7 +53,7 @@ public class BinaryDecoder {
             return null;
         }
         return (short) (((buf[forwardPosition++] & 0xFF ^ 0x80) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     public Integer readInt() throws IndexOutOfBoundsException {
@@ -64,7 +64,7 @@ public class BinaryDecoder {
         return (((buf[forwardPosition++] & 0xFF) << 24)
             | ((buf[forwardPosition++] & 0xFF) << 16)
             | ((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     public Integer readKeyInt() throws IndexOutOfBoundsException {
@@ -75,7 +75,7 @@ public class BinaryDecoder {
         return (((buf[forwardPosition++] & 0xFF ^ 0x80) << 24)
             | ((buf[forwardPosition++] & 0xFF) << 16)
             | ((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     public Float readFloat() throws IndexOutOfBoundsException {
@@ -96,12 +96,12 @@ public class BinaryDecoder {
             i = (((buf[forwardPosition++] & 0xFF ^ 0x80) << 24)
                 | ((buf[forwardPosition++] & 0xFF) << 16)
                 | ((buf[forwardPosition++] & 0xFF) << 8)
-                | ((buf[forwardPosition++] & 0xFF) << 0));
+                | buf[forwardPosition++] & 0xFF);
         } else {
             i = (((~ buf[forwardPosition++] & 0xFF) << 24)
                 | ((~ buf[forwardPosition++] & 0xFF) << 16)
                 | ((~ buf[forwardPosition++] & 0xFF) << 8)
-                | ((~ buf[forwardPosition++] & 0xFF) << 0));
+                | ~ buf[forwardPosition++] & 0xFF);
         }
         return Float.intBitsToFloat(i);
     }
@@ -424,14 +424,14 @@ public class BinaryDecoder {
         return (((buf[forwardPosition++] & 0xFF) << 24)
             | ((buf[forwardPosition++] & 0xFF) << 16)
             | ((buf[forwardPosition++] & 0xFF) << 8)
-            | ((buf[forwardPosition++] & 0xFF) << 0));
+            | buf[forwardPosition++] & 0xFF);
     }
 
     private int readKeyLength() throws IndexOutOfBoundsException {
         return (((buf[reversePosition--] & 0xFF) << 24)
             | ((buf[reversePosition--] & 0xFF) << 16)
             | ((buf[reversePosition--] & 0xFF) << 8)
-            | ((buf[reversePosition--] & 0xFF) << 0));
+            | buf[reversePosition--] & 0xFF);
     }
 
     private void skipKeyLength() {

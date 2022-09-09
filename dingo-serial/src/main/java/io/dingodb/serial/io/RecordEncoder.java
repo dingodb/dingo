@@ -31,7 +31,13 @@ public class RecordEncoder {
     private final int perRecordKeySize;
 
     public RecordEncoder(List<DingoSchema> schemas, short schemaVersion) {
-        Utils.sortSchema(schemas);
+        this(schemas, schemaVersion, false);
+    }
+
+    public RecordEncoder(List<DingoSchema> schemas, short schemaVersion, boolean isKey) {
+        if (!isKey) {
+            Utils.sortSchema(schemas);
+        }
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;
         int[] approSize = Utils.getApproPerRecordSize(schemas);
