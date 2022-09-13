@@ -210,6 +210,20 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithMultiSet1() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, name char(8), data int multiset, primary key(id))",
+            "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
+        assertThat(array.getArray()).isEqualTo(new int[]{7, 7, 8, 8});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
     public void testCreateTableWithMap() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data map, primary key(id))",

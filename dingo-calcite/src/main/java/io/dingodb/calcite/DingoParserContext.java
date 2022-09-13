@@ -16,10 +16,10 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
@@ -30,7 +30,6 @@ import javax.annotation.Nonnull;
 
 // These are static for every sql parsing.
 public final class DingoParserContext {
-    private static final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
     @Getter
     private final CalciteSchema rootSchema;
     @Getter
@@ -56,7 +55,7 @@ public final class DingoParserContext {
 
     @SuppressWarnings("MethodMayBeStatic")
     public JavaTypeFactory getTypeFactory() {
-        return typeFactory;
+        return DingoSqlTypeFactory.INSTANCE;
     }
 
     public CalciteSchema getDefaultSchema() {
