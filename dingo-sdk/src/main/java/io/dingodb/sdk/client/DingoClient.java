@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 /**
@@ -146,6 +147,8 @@ public class DingoClient {
             log.error("Invalid TableDefinition:{}", tableDef);
             throw new DingoClientException.InvalidTableName(tableName);
         }
+
+        copyColumnDefinition(tableDef);
 
         boolean isSuccess = false;
         try {
@@ -279,6 +282,9 @@ public class DingoClient {
             int index = 0;
             for (ColumnDefinition column : tableDefinition.getColumns()) {
                 if (column.isPrimary()) {
+                    if (record[index] == null) {
+                        throw new DingoClientException.InvalidPrimaryKeyData();
+                    }
                     userKeys.add(Value.get(record[index]));
                 }
                 columnNames.add(column.getName());
@@ -295,6 +301,26 @@ public class DingoClient {
             recordResults.put(key, record1);
         }
         return recordResults;
+    }
+
+    /**
+     * Validation and modification of column parameters when creating tables.
+     */
+    private static void copyColumnDefinition(TableDefinition tableDef) {
+        List<ColumnDefinition> columnDefinitions = tableDef.getColumns().stream()
+            .map(c ->
+                ColumnDefinition.builder()
+                    .name(c.getName())
+                    .type(c.getType())
+                    .elementType(c.getElementType())
+                    .primary(c.isPrimary())
+                    .scale(c.getScale())
+                    .precision(c.getPrecision())
+                    .defaultValue(c.getDefaultValue())
+                    .notNull(c.isPrimary() || c.isNotNull())
+                    .build())
+            .collect(Collectors.toList());
+        tableDef.setColumns(columnDefinitions);
     }
 
     /**
@@ -747,8 +773,17 @@ public class DingoClient {
         return storeOpUtils.doOperation(start.getTable().toUpperCase(), contextForClient);
     }
 
+    /**
+     * Updates the value of a column of the specified primary key.
+     *
+     * @param key primary key
+     * @param column column name and value
+     * @return true/false
+     */
     public boolean updateColumn(Key key, Column column) {
-        return true;
+        Operation operation = Operation.update(column);
+        List<DingoExecResult> result = operate(key, ImmutableList.of(operation));
+        return result != null && result.size() > 0 && result.get(0).isSuccess();
     }
 
 

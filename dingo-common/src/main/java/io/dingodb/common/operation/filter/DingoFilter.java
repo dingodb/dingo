@@ -52,7 +52,7 @@ public interface DingoFilter {
         Object[] recordKey;
         Object[] recordValue;
         if (keyIndex.length > 0 && valueIndex.length > 0) {
-            recordKey = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
+            recordKey = context.dingoKeyCodec().decodeKey(keyValue.getKey(), keyIndex);
             recordValue = context.dingoValueCodec().decode(keyValue.getValue(), valueIndex);
             Object[] record0 = new Object[keyIndex.length + valueIndex.length];
             System.arraycopy(recordKey, 0, record0, 0, recordKey.length);
@@ -60,7 +60,7 @@ public interface DingoFilter {
             return record0;
         }
         if (keyIndex.length > 0) {
-            recordKey = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
+            recordKey = context.dingoKeyCodec().decodeKey(keyValue.getKey(), keyIndex);
             return recordKey;
         }
         if (valueIndex.length > 0) {

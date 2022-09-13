@@ -42,13 +42,7 @@ public class CountExecutive extends NumberExecutive<BasicContext, Iterator<KeyVa
 
         while (records.hasNext()) {
             KeyValue keyValue = records.next();
-            boolean flag;
-            if (context.filter == null) {
-                flag = true;
-            } else {
-                flag = context.filter.filter(context, keyValue);
-            }
-            if (flag) {
+            if (context.filter == null || context.filter.filter(context, keyValue)) {
                 try {
                     if (valueIndex.length > 0) {
                         Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), valueIndex);
@@ -64,7 +58,7 @@ public class CountExecutive extends NumberExecutive<BasicContext, Iterator<KeyVa
                         }
                     }
                     if (keyIndex.length > 0) {
-                        Object[] objects = context.dingoKeyCodec().decode(keyValue.getKey(), valueIndex);
+                        Object[] objects = context.dingoKeyCodec().decodeKey(keyValue.getKey(), valueIndex);
                         for (int i = 0; i < objects.length; i++) {
                             Value v = result.get(definition.getColumn(keyIndex[i]).getName());
                             v = v == null ? Value.get(1) : Value.get(v.value().intValue() + 1);

@@ -16,6 +16,7 @@
 
 package io.dingodb.common.operation;
 
+import io.dingodb.common.operation.compute.BasicType;
 import io.dingodb.common.operation.compute.NumericType;
 import io.dingodb.common.operation.context.BasicContext;
 import io.dingodb.common.operation.context.OperationContext;
@@ -54,4 +55,7 @@ public final class Operation implements Serializable {
         return new Operation(NumericType.COUNT, new BasicContext(columns));
     }
 
+    public static Operation update(Column... columns) {
+        return new Operation(BasicType.UPDATE, new BasicContext(columns));
+    }
 }

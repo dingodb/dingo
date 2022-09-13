@@ -121,5 +121,13 @@ public class DingoClientException extends RuntimeException {
         }
     }
 
+    public static final class InvalidPrimaryKeyData extends DingoClientException {
+        private static final long serialVersionUID = 1L;
+
+        public InvalidPrimaryKeyData() {
+            super(ResultCode.NULL_KEY_ERROR, "Invalid primary key, primary key is Empty");
+        }
+    }
+
 }
 

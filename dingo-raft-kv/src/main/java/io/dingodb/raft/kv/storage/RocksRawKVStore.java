@@ -310,7 +310,7 @@ public class RocksRawKVStore implements RawKVStore {
             try (Snapshot snapshot = this.db.getSnapshot()) {
                 readOptions.setSnapshot(snapshot);
                 ByteArrayEntryIterator entryIterator = new ByteArrayEntryIterator(
-                    db.newIterator(readOptions), start, end, true, false);
+                    db.newIterator(readOptions), start, end, true, ByteArrayUtils.equal(start, end));
 
                 Iterator<KeyValue> iterator = new KeyValueIterator(entryIterator);
                 for (Operation operation : operations) {
