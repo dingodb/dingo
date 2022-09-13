@@ -47,7 +47,10 @@ tasks.named("build") { x ->
 fatJar.dependsOn([
     ':dingo-common:jar',
     ':dingo-net-api:jar',
-    ':dingo-net-netty:jar'
+    ':dingo-net-netty:jar',
+    ':dingo-serial:jar',
+    ':dingo-expr:dingo-expr-runtime:jar',
+    ':dingo-expr:dingo-expr-json-runtime:jar'
 ])
 
 publishing {
@@ -58,6 +61,16 @@ publishing {
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+        maven {
+            name = "OSSRH"
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/content/repositories/releases/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_TOKEN")
             }
         }
     }

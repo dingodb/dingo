@@ -7,6 +7,7 @@
 
 name: Build
 
+
 on:
   push:
     branches: [ main, develop ]
@@ -26,37 +27,29 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 8
-    - name: Build with Gradle
+
+    - name: Build Java Code
       uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
       with:
         arguments: build
 
-
-    #- name: Publish artifact
-    # env:
-    #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
-      # If we split on '/' and take the 3rd value,
-      # we can get the release name.
-      #if: github.repository == 'dingodb/dingo'
-      #run: |
-      #  NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
-      #  echo "New version: ${NEW_VERSION}"
-      #  echo "Github username: ${GITHUB_ACTOR}"
-      #  ./gradlew -Pversion=${NEW_VERSION} publish
+    - name: Build Java Documents
+      uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
+      with:
+        arguments: javadoc
 
     - name: Archive the dingo directory
       run: |
         mkdir dingo
         unzip ./dingo-dist/build/distributions/dingo.zip -d dingo
+        cp -r ./dingo-sdk/build/docs/javadoc ./dingo/javadoc
         cp -r ./docker/templates/bin/* ./dingo/bin/
         cp -r ./docker/templates/conf/* ./dingo/conf/
         rm -rf ./dingo/conf/logback.xml
         rm -rf ./dingo/conf/config.yaml
         zip -r dingo.zip dingo/*
 
-    - name: copy artifactory to anthor workflow
+    - name: copy artifactory to another workflow
       uses: actions/upload-artifact@v2
       with:
           name: dingo.zip
