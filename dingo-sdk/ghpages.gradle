@@ -11,19 +11,18 @@ buildscript {
 apply plugin: org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 
 ext {
-    repoPath = 'huzx0608/dingo'
-    ghToken = System.getenv('GH_TOKEN')
+    repoPath = 'dingodb/dingo'
 }
 
 githubPages {
     if (ghToken) {
         repoUri = "https://github.com/${repoPath}.git"
         credentials {
-            username = ghToken
-            password = ''
+            username = System.getenv("GITHUB_ACTOR")
+            password = System.getenv("GITHUB_TOKEN")
         }
     } else {
-        repoUri = "git@github.com:${repoPath}.git"
+        repoUri = "git@github.com/${repoPath}.git"
     }
 
     pages {
