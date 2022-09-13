@@ -54,13 +54,7 @@ public class AddExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
             while (records.hasNext()) {
                 KeyValue keyValue = records.next();
                 totalCnt++;
-                boolean flag;
-                if (context.filter == null) {
-                    flag = true;
-                } else {
-                    flag = context.filter.filter(context, keyValue);
-                }
-                if (flag) {
+                if (context.filter == null || context.filter.filter(context, keyValue)) {
                     try {
                         Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
                         Object[] values = new Object[objects.length];
@@ -82,8 +76,8 @@ public class AddExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     }
                 }
             }
-            int compare = ByteArrayUtils.compare(context.primaryStartKey, context.primaryEndKey);
-            if (context.useDefaultWhenNotExisted && totalCnt == 0 && (compare == -1 || compare == 0)) {
+            if (context.useDefaultWhenNotExisted && totalCnt == 0
+                && ByteArrayUtils.equal(context.primaryStartKey, context.primaryEndKey)) {
                 List<ColumnDefinition> columnDefinitions = definition.getColumns()
                     .stream()
                     .filter(c -> !c.isPrimary())

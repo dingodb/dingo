@@ -34,8 +34,8 @@ public class DingoNumberRangeFilter extends AbstractDingoFilter {
 
     public DingoNumberRangeFilter(int index, Number startKey, Number endKey) {
         this.index = index;
-        this.startValue = new BigDecimal(startKey.toString());
-        this.endValue = new BigDecimal(endKey.toString());
+        this.startValue = startKey == null ? null : new BigDecimal(startKey.toString());
+        this.endValue = endKey == null ? null : new BigDecimal(endKey.toString());
     }
 
     @Override
@@ -48,8 +48,16 @@ public class DingoNumberRangeFilter extends AbstractDingoFilter {
             boolean isOK = false;
             for (Object o : record0) {
                 BigDecimal currentValue = new BigDecimal(o.toString());
-                boolean isBetween = (currentValue.compareTo(startValue) >= 0)
-                    && (currentValue.compareTo(endValue) < 0);
+                boolean isBetween = false;
+                if (startValue != null && endValue != null) {
+                    isBetween = (currentValue.compareTo(startValue) >= 0) && (currentValue.compareTo(endValue) < 0);
+                }
+                if (startValue != null && endValue == null) {
+                    isBetween = currentValue.compareTo(startValue) >= 0;
+                }
+                if (startValue == null && endValue != null) {
+                    isBetween = currentValue.compareTo(endValue) < 0;
+                }
                 if (isBetween) {
                     isOK = true;
                     break;

@@ -125,23 +125,14 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
                 readOperations.add(operationList.get(i));
             }
         }
+        byte[] end = endKeys == null ? null : endKeys.get(0);
         if (writeOperations.size() > 0) {
-            boolean isOK;
-            if (endKeys != null && endKeys.get(0) != null) {
-                isOK = storeService.getInstance(tableId).compute(startKeys.get(0), endKeys.get(0), writeOperations);
-            } else {
-                isOK = storeService.getInstance(tableId).compute(startKeys.get(0), writeOperations);
-            }
+            boolean isOK = storeService.getInstance(tableId).compute(startKeys.get(0), end, writeOperations);
             results.add(new DingoExecResult(isOK, "OK"));
         }
 
         for (Operation operation : readOperations) {
-            Iterator<KeyValue> iterator;
-            if (endKeys != null && endKeys.get(0) != null) {
-                iterator = storeService.getInstance(tableId).keyValueScan(startKeys.get(0), endKeys.get(0));
-            } else {
-                iterator = storeService.getInstance(tableId).keyValueScan(startKeys.get(0));
-            }
+            Iterator<KeyValue> iterator = storeService.getInstance(tableId).keyValueScan(startKeys.get(0), end);
             DingoExecResult value = (DingoExecResult)
                 operation.operationType.executive().execute(operation.operationContext, iterator);
             results.add(value);

@@ -79,7 +79,7 @@ DingoDB is Sponsored by [DataCanvas](https://www.datacanvas.com/), a new platfor
 
 I highly recommend YourKit Java Profiler for any preformance critical application you make.
 
-Check it out at https://www.yourkit.com/
+Check it out at https://www.yourkit.com/.
 
 
 DingoDB is an open-source project licensed in **Apache License Version 2.0**, welcome any feedback from the community.
