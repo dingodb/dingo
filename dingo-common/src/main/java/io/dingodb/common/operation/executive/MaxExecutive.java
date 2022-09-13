@@ -46,16 +46,10 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
         Map<String, ComputeNumber> map = new HashMap<>();
         while (records.hasNext()) {
             KeyValue keyValue = records.next();
-            boolean flag;
-            if (context.filter == null) {
-                flag = true;
-            } else {
-                flag = context.filter.filter(context, keyValue);
-            }
-            if (flag) {
+            if (context.filter == null || context.filter.filter(context, keyValue)) {
                 try {
                     if (keyIndex.length > 0) {
-                        Object[] objects = context.dingoKeyCodec().decode(keyValue.getKey(), keyIndex);
+                        Object[] objects = context.dingoKeyCodec().decodeKey(keyValue.getKey(), keyIndex);
                         for (int i = 0; i < objects.length; i++) {
                             DingoType dingoType = definition.getColumn(keyIndex[i]).getDingoType();
                             ComputeNumber number = convertType(objects[i], dingoType);

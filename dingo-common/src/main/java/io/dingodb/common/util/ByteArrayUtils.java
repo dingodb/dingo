@@ -66,6 +66,10 @@ public class ByteArrayUtils {
         return bytes1.length - bytes2.length;
     }
 
+    public static boolean equal(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2) == 0;
+    }
+
     public static boolean lessThan(byte[] bytes1, byte[] bytes2) {
         return compare(bytes1, bytes2) < 0;
     }

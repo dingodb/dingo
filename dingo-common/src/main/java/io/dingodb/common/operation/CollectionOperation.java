@@ -130,7 +130,7 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
                         List value = (List) objects[i];
-                        values.put(columns[i].name, value.get(context.index));
+                        values.put(columns[i].name, value.size() > context.index ? value.get(context.index) : null);
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
                     result.put(Arrays.toString(key), Value.get(values));

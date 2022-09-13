@@ -254,6 +254,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         Part part = getPart(startPrimaryKey);
         if (part == null || part != getPart(endPrimaryKey)) {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
@@ -312,21 +313,17 @@ public class RaftStoreInstance implements StoreInstance {
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         boolean isSuccess = false;
         try {
-            if (ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
-                log.error("Invalid range key, start key:{} should be less than end key:{}",
-                    startPrimaryKey, endPrimaryKey);
-                return false;
+            isValidRangeKey(startPrimaryKey, endPrimaryKey);
+            Part part = getPart(startPrimaryKey);
+            if (part == null) {
+                throw new IllegalArgumentException("The start and end not in current instance.");
             }
-            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
-
-            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
-                Part part = entry.getKey();
-                List<byte[]> keys = entry.getValue();
-                isSuccess = parts.get(part.getId()).compute(keys.get(0), keys.get(1), operations);
-                if (!isSuccess) {
-                    log.error("Compute failed, part:{}, keys:{}", part.getId(), keys);
-                }
+            if (endPrimaryKey == null) {
+                endPrimaryKey = part.getEnd();
+            } else if (getPart(endPrimaryKey) != part) {
+                throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
             }
+            isSuccess = parts.get(part.getId()).compute(startPrimaryKey, endPrimaryKey, operations);
         } catch (IllegalArgumentException e) {
             log.error("Compute failed, startPrimaryKey:{}, endPrimaryKey:{}", startPrimaryKey, endPrimaryKey, e);
         }
@@ -370,6 +367,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         boolean isSuccess = true;
         try {
             Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
@@ -387,6 +385,12 @@ public class RaftStoreInstance implements StoreInstance {
             log.error("Delete failed, startPrimaryKey: {}, endPrimaryKey: {}", startPrimaryKey, endPrimaryKey, e);
         }
         return isSuccess;
+    }
+
+    private static void isValidRangeKey(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (endPrimaryKey != null && ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
+            throw new IllegalArgumentException("Invalid range key, start key should be less than end key");
+        }
     }
 
     private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
@@ -521,8 +525,14 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         Part part = getPart(startPrimaryKey);
-        if (part == null || part != getPart(endPrimaryKey)) {
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPart(endPrimaryKey) != part) {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
         return parts.get(part.getId()).keyValueScan(startPrimaryKey, endPrimaryKey);
@@ -532,6 +542,7 @@ public class RaftStoreInstance implements StoreInstance {
     public Iterator<KeyValue> keyValueScan(
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
     ) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         Part part = getPart(startPrimaryKey);
         if (part == null) {
             throw new IllegalArgumentException("The start and end not in current instance.");

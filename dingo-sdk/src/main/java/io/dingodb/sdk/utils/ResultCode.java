@@ -100,6 +100,10 @@ public final class ResultCode {
      */
     public static final int INVALID_TABLE_NAME = 2006;
 
+    /**
+     * Invalid primary key.
+     */
+    public static final int NULL_KEY_ERROR = 2007;
 
     /**
      * Server Error. Start from 3000
@@ -163,6 +167,9 @@ public final class ResultCode {
 
             case INVALID_TABLE_NAME:
                 return "Namespace not found";
+
+            case NULL_KEY_ERROR:
+                return "Input primary key is null";
 
             default:
                 return "";
