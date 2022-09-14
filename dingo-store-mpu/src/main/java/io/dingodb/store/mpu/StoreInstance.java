@@ -29,12 +29,12 @@ import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.core.MirrorProcessingUnit;
 import io.dingodb.mpu.instruction.KVInstructions;
-import io.dingodb.mpu.storage.KV;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
+import io.dingodb.store.mpu.instruction.OpInstructions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
@@ -44,7 +44,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -181,22 +180,22 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
-        return new KeyValue(primaryKey, core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey));
+        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        return ((List<KV>) core.view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys)).stream()
-            .map(kv -> new KeyValue(kv.key, kv.value)).collect(Collectors.toList());
+        return core.view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return new KeyValueIterator(core.view(KVInstructions.id, KVInstructions.SCAN_OC));
+        return core.view(KVInstructions.id, KVInstructions.SCAN_OC);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         return core.view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey);
     }
 
@@ -204,9 +203,23 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public Iterator<KeyValue> keyValueScan(
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
     ) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
         return core.view(
             KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd
         );
+    }
+
+    @Override
+    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
+        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations, -1);
+        return true;
+    }
+
+    private static void isValidRangeKey(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (endPrimaryKey != null && ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
+            throw new IllegalArgumentException("Invalid range key, start key should be less than end key");
+        }
     }
 
     @Override

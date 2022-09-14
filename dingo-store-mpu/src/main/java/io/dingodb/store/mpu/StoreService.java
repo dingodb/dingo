@@ -19,6 +19,8 @@ package io.dingodb.store.mpu;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.mpu.instruction.InstructionSetRegistry;
+import io.dingodb.store.mpu.instruction.OpInstructions;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +37,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
 
     private StoreService() {
         FileUtils.createDirectories(path);
+        InstructionSetRegistry.register(OpInstructions.id, OpInstructions.INSTRUCTIONS);
     }
 
     @Override

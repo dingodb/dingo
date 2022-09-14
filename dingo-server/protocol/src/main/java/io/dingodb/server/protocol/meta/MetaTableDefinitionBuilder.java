@@ -50,15 +50,17 @@ public class MetaTableDefinitionBuilder {
     }
 
     public TableDefinition build() {
-        TableDefinition definition = new TableDefinition("TABLE_PART_MATA")
-            .addColumn(ColumnDefinition.builder()
-                .name("id")
-                .type(SqlTypeName.VARCHAR)
-                .notNull(true)
-                .primary(true)
-                .build());
-        cols.forEach(col -> definition.addColumn(buildColumn(col)));
-        return definition;
+        synchronized (System.getProperties()) {
+            TableDefinition definition = new TableDefinition("TABLE_PART_MATA")
+                .addColumn(ColumnDefinition.builder()
+                    .name("id")
+                    .type(SqlTypeName.VARCHAR)
+                    .notNull(true)
+                    .primary(true)
+                    .build());
+            cols.forEach(col -> definition.addColumn(buildColumn(col)));
+            return definition;
+        }
     }
 
 }

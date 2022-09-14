@@ -16,7 +16,7 @@
 
 package io.dingodb.mpu.storage.rocks;
 
-import io.dingodb.mpu.storage.KV;
+import io.dingodb.common.store.KeyValue;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -64,12 +64,12 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     @Override
-    public List<KV> get(List<byte[]> keys) {
+    public List<KeyValue> get(List<byte[]> keys) {
         try {
             List<byte[]> values = db.multiGetAsList(readOptions, Collections.singletonList(handle), keys);
-            List<KV> entries = new ArrayList<>(keys.size());
+            List<KeyValue> entries = new ArrayList<>(keys.size());
             for (int i = 0; i < keys.size(); i++) {
-                entries.add(new KV(keys.get(i), values.get(i)));
+                entries.add(new KeyValue(keys.get(i), values.get(i)));
             }
             return entries;
         } catch (RocksDBException e) {
@@ -123,11 +123,11 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         snapshot.close();
     }
 
-    static class Iterator implements java.util.Iterator<KV> {
+    static class Iterator implements java.util.Iterator<KeyValue> {
 
         private final RocksIterator iterator;
         private final Predicate<byte[]> _end;
-        private KV current;
+        private KeyValue current;
 
         Iterator(RocksIterator iterator, byte[] start, byte[] end, boolean withStart, boolean withEnd) {
             this.iterator = iterator;
@@ -141,7 +141,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
                 this.iterator.next();
             }
             if (this.iterator.isValid()) {
-                this.current = new KV(this.iterator.key(), this.iterator.value());
+                this.current = new KeyValue(this.iterator.key(), this.iterator.value());
                 this.iterator.next();
             }
         }
@@ -152,13 +152,13 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         }
 
         @Override
-        public KV next() {
-            KV kv = current;
+        public KeyValue next() {
+            KeyValue kv = current;
             if (kv == null) {
                 throw new NoSuchElementException();
             }
             if (iterator.isValid() && _end.test(iterator.key())) {
-                this.current = new KV(iterator.key(), iterator.value());
+                this.current = new KeyValue(iterator.key(), iterator.value());
                 iterator.next();
             } else {
                 this.current = null;
