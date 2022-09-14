@@ -297,7 +297,9 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                         Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
                         for (Object object : objects) {
                             List<?> value = (List<?>) object;
-                            value.remove(context.index);
+                            if (value.size() > context.index) {
+                                value.remove(context.index);
+                            }
                         }
                         byte[] bytes =
                             context.dingoValueCodec().encode(keyValue.getValue(), objects, indexes);

@@ -16,16 +16,18 @@
 
 package io.dingodb.mpu.storage;
 
+import io.dingodb.common.store.KeyValue;
+
 import java.util.Iterator;
 import java.util.List;
 
 public interface Reader {
 
-    Iterator<KV> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
+    Iterator<KeyValue> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
 
     long count();
 
     byte[] get(byte[] key);
 
-    List<KV> get(List<byte[]> keys);
+    List<KeyValue> get(List<byte[]> keys);
 }
