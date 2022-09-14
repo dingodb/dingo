@@ -50,7 +50,9 @@ public final class FilterOperator extends SoleOutOperator {
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
-        if ((boolean) filter.eval(tuple)) {
+        // The eval result may be `null`
+        Boolean v = (Boolean) filter.eval(tuple);
+        if (v != null && v) {
             return output.push(tuple);
         }
         return true;
