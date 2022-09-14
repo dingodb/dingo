@@ -278,7 +278,12 @@ public class DingoOpCli implements DingoMapper {
             throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
         }
 
-        Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
+        List<Value> keyList = new ArrayList<>();
+        List entryKey = (List) entry.getKey(object);
+        for (Object o : entryKey) {
+            keyList.add(Value.get(o));
+        }
+        Key key = new Key(entry.getDatabase(), tableName, keyList);
         Column[] columns = entry.getColumns(object, true);
         Record record = new Record(tableDefinition.getColumns(), columns);
 
@@ -304,10 +309,11 @@ public class DingoOpCli implements DingoMapper {
 
     /**
      * get the stored format of the object.
+     *
      * @param object input Object
      * @return columns about the table
      * @throws DingoClientException dingo client exception
-     *      Use case: TestCases to get the stored format of the object.
+     *                              Use case: TestCases to get the stored format of the object.
      */
     public Column[] getColumnsSeqInStore(Object object) throws DingoClientException {
         Class<?> clazz = object.getClass();
@@ -353,13 +359,17 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey) throws DingoClientException {
-        if (clazz == null || userKey == null) {
+    public <T> T read(@NotNull Class<T> clazz, @NotNull Object[] userKeys) throws DingoClientException {
+        if (clazz == null || userKeys == null) {
             throw new DingoClientException("Class or Key is null");
         }
         ClassCacheEntry<T> entry = CheckUtils.getEntryAndValidateTableName(clazz, this);
         String tableName = entry.getTableName();
-        Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(userKey)));
+        List<Value> valueList = new ArrayList<>();
+        for (Object o : userKeys) {
+            valueList.add(Value.get(o));
+        }
+        Key key = new Key(entry.getDatabase(), tableName, valueList);
         try {
             Record record = dingoClient.get(key);
             ThreadLocalKeySaver.save(key);
@@ -371,7 +381,7 @@ public class DingoOpCli implements DingoMapper {
                 ex.toString(), ex);
             throw ex;
         } catch (Exception e) {
-            throw new DingoClientException("Failed to get object:{}" + userKey, e);
+            throw new DingoClientException("Failed to get object:{}" + userKeys, e);
         } finally {
             LoadedObjectResolver.end();
             ThreadLocalKeySaver.clear();
@@ -379,12 +389,12 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys) throws DingoClientException {
+    public <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[][] userKeys) throws DingoClientException {
         if (clazz == null || userKeys == null || userKeys.length == 0) {
             throw new DingoClientException("Class or keys is null");
         }
 
-        T [] result = (T[]) Array.newInstance(clazz, userKeys.length);
+        T[] result = (T[]) Array.newInstance(clazz, userKeys.length);
         for (int i = 0; i < userKeys.length; i++) {
             result[i] = read(clazz, userKeys[i]);
         }
@@ -491,7 +501,7 @@ public class DingoOpCli implements DingoMapper {
                 return;
             }
 
-            for (Record record: recordList) {
+            for (Record record : recordList) {
                 T object = this.getMappingConverter().convertToObject(clazz, record);
                 if (!processor.process(object)) {
                     break;

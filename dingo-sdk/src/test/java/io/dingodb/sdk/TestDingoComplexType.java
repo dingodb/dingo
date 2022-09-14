@@ -134,7 +134,7 @@ public class TestDingoComplexType {
         }
         dingoCli.save(complexStruct);
 
-        ComplexStruct localStruct = dingoCli.read(ComplexStruct.class, "123456789");
+        ComplexStruct localStruct = dingoCli.read(ComplexStruct.class, new Object[]{"123456789"});
         Assertions.assertEquals(complexStruct.getSsn(), localStruct.getSsn());
         Assertions.assertEquals(
             Arrays.toString(complexStruct.getAddresses().toArray()),

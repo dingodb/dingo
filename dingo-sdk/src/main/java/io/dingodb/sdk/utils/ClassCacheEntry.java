@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 
 import static io.dingodb.sdk.utils.TypeUtils.getSqlType;
@@ -72,9 +73,9 @@ public class ClassCacheEntry<T> {
 
     private int version = 1;
     private final Class<T> clazz;
-    private ValueType key;
+    private List<ValueType> keys = new ArrayList<>();
     private boolean mapAll = true;
-    private String keyName = null;
+    private List<String> keysName = new ArrayList<>();
     private final TreeMap<String, ValueType> values = new TreeMap<>();
     private ClassCacheEntry<?> superClazz;
     private int columnCnt;
@@ -232,8 +233,8 @@ public class ClassCacheEntry<T> {
         }
         ClassCacheEntry<?> thisEntry = this.superClazz;
         while (thisEntry != null) {
-            if (this.key == null && thisEntry.key != null) {
-                this.key = thisEntry.key;
+            if ( thisEntry.keys != null) {
+                this.keys = thisEntry.keys;
             }
             thisEntry = thisEntry.superClazz;
         }
@@ -524,7 +525,6 @@ public class ClassCacheEntry<T> {
             ColumnConfig getterConfig = getColumnFromGetter(methodName);
             ColumnConfig setterConfig = getColumnFromSetter(methodName);
 
-            boolean isKey = false;
             boolean isKeyViaConfig = keyConfig != null
                 && (keyConfig.isGetter(methodName) || keyConfig.isSetter(methodName));
             if (thisMethod.isAnnotationPresent(DingoKey.class) || isKeyViaConfig) {
@@ -546,7 +546,6 @@ public class ClassCacheEntry<T> {
                         keyProperty.setGetter(thisMethod);
                     }
                 }
-                isKey = true;
             }
 
             if (thisMethod.isAnnotationPresent(DingoGetter.class) || getterConfig != null) {
@@ -556,9 +555,6 @@ public class ClassCacheEntry<T> {
                 String name = ParserUtils.getInstance().get(ParserUtils.getInstance().get(getterName));
                 PropertyDefinition thisProperty = getOrCreateProperty(name, properties);
                 thisProperty.setGetter(thisMethod);
-                if (isKey) {
-                    keyName = name;
-                }
             }
 
             if (thisMethod.isAnnotationPresent(DingoSetter.class) || setterConfig != null) {
@@ -570,15 +566,6 @@ public class ClassCacheEntry<T> {
             }
         }
 
-        if (keyProperty != null) {
-            keyProperty.validate(clazz.getName(), config, true);
-            if (key != null) {
-                throw new DingoClientException("Class " + clazz.getName() + " cannot have a more than one key");
-            }
-            TypeUtils.AnnotatedType annotatedType = new TypeUtils.AnnotatedType(config, keyProperty.getGetter());
-            TypeMapper typeMapper = TypeUtils.getMapper(keyProperty.getType(), annotatedType, this.mapper);
-            this.key = new ValueType.MethodValue(keyProperty, typeMapper, annotatedType);
-        }
         for (String thisPropertyName : properties.keySet()) {
             PropertyDefinition thisProperty = properties.get(thisPropertyName);
             thisProperty.validate(clazz.getName(), config, false);
@@ -606,12 +593,9 @@ public class ClassCacheEntry<T> {
                     throw new DingoClientException("Class " + clazz.getName()
                         + " cannot have a field which is both a key and excluded.");
                 }
-                if (key != null) {
-                    throw new DingoClientException("Class " + clazz.getName() + " cannot have a more than one key");
-                }
                 TypeUtils.AnnotatedType annotatedType = new TypeUtils.AnnotatedType(config, thisField);
                 TypeMapper typeMapper = TypeUtils.getMapper(thisField.getType(), annotatedType, this.mapper);
-                this.key = new ValueType.FieldValue(thisField, typeMapper, annotatedType);
+                keys.add(new ValueType.FieldValue(thisField, typeMapper, annotatedType));
                 isKey = true;
             }
 
@@ -635,7 +619,7 @@ public class ClassCacheEntry<T> {
                     name = columnName;
                 }
                 if (isKey) {
-                    this.keyName = name;
+                    keysName.add(name);
                 }
 
                 if (this.values.get(name) != null) {
@@ -710,23 +694,24 @@ public class ClassCacheEntry<T> {
         values.put(columnName, value);
     }
 
-    public Object translateKeyToDingoKey(Object key) {
-        return this.key.getTypeMapper().toDingoFormat(key);
+    public Object translateKeyToDingoKey(TypeMapper typeMapper, Object key) {
+        return typeMapper.toDingoFormat(key);
     }
 
     private Object internalGetKey(Object object) throws ReflectiveOperationException {
-        if (this.key != null) {
-            return this.translateKeyToDingoKey(this.key.get(object));
-        } else if (superClazz != null) {
-            return this.superClazz.internalGetKey(object);
+        List<Object> keyList = new ArrayList<>();
+        for (ValueType key : this.keys) {
+            if (key != null) {
+                keyList.add(this.translateKeyToDingoKey(key.getTypeMapper(), key.get(object)));
+            }
         }
-        return null;
+        return keyList;
     }
 
     public Object getKey(Object object) {
         try {
             Object key = this.internalGetKey(object);
-            if (key == null) {
+            if (key instanceof List && ((List) key).size() == 0) {
                 throw new DingoClientException("Null key from annotated object of class "
                     + this.clazz.getSimpleName() + ". Did you forget an @DingoKey annotation?");
             }
@@ -736,17 +721,20 @@ public class ClassCacheEntry<T> {
         }
     }
 
-    private void interalSetKey(Object object, Object value) throws ReflectiveOperationException {
-        if (this.key != null) {
-            this.key.set(object, this.key.getTypeMapper().fromDingoFormat(value));
+    private void internalSetKey(Object[] objects, Object[] values) throws ReflectiveOperationException {
+        // TODO:
+        if (this.keys != null && this.keys.size() > 0) {
+            for (int i = 0; i < keys.size(); i++) {
+                keys.get(i).set(objects[i], values[i]);
+            }
         } else if (superClazz != null) {
-            this.superClazz.interalSetKey(object, value);
+            this.superClazz.internalSetKey(objects, values);
         }
     }
 
-    public void setKey(Object object, Object value) {
+    public void setKey(Object[] object, Object[] value) {
         try {
-            this.interalSetKey(object, value);
+            this.internalSetKey(object, value);
         } catch (ReflectiveOperationException re) {
             throw new DingoClientException(re);
         }
@@ -882,6 +870,8 @@ public class ClassCacheEntry<T> {
 
     public TableDefinition getTableDefinition(String tableName) {
         TableDefinition tableDefinition = new TableDefinition(tableName);
+        List<Field> keyFieldList = this.keys.stream()
+            .map(v -> ((ValueType.FieldValue) v).getField()).collect(Collectors.toList());
         for (Field thisField : this.clazz.getDeclaredFields()) {
             boolean isKey = false;
             if (thisField.isAnnotationPresent(DingoKey.class)) {
@@ -889,7 +879,8 @@ public class ClassCacheEntry<T> {
                     throw new DingoClientException("Class " + clazz.getName()
                         + " cannot have a field which is both a key and excluded.");
                 }
-                if (key != null) {
+
+                if (this.keys != null && keyFieldList.contains(thisField)) {
                     isKey = true;
                 }
             }
@@ -974,7 +965,7 @@ public class ClassCacheEntry<T> {
     }
 
     private boolean isKeyField(String name) {
-        return keyName != null && keyName.equals(name);
+        return keysName.contains(name);
     }
 
     public List<Object> getList(Object instance, boolean skipKey, boolean needsType) {

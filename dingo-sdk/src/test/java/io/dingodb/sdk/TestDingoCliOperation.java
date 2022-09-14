@@ -228,7 +228,7 @@ public class TestDingoCliOperation {
         }
         dingoCli.save(person);
 
-        Person localPerson = dingoCli.read(Person.class, "123456789");
+        Person localPerson = dingoCli.read(Person.class, new Object[]{"123456789"});
         Assertions.assertEquals(person.getSsn(), localPerson.getSsn());
         Assertions.assertEquals(person.getAge(), localPerson.getAge());
         Assertions.assertEquals(person.getBirthTimestamp(), localPerson.getBirthTimestamp());
@@ -273,12 +273,12 @@ public class TestDingoCliOperation {
         person.setSsn(key2);
         dingoCli.save(person);
 
-        Person localPerson = dingoCli.read(Person.class, key1);
+        Person localPerson = dingoCli.read(Person.class, new Object[]{key1});
         Assertions.assertEquals(key1, localPerson.getSsn());
         Assertions.assertEquals(person.getAge(), localPerson.getAge());
         Assertions.assertEquals(person.getBirthTimestamp(), localPerson.getBirthTimestamp());
 
-        localPerson = dingoCli.read(Person.class, key2);
+        localPerson = dingoCli.read(Person.class, new Object[]{key2});
         Assertions.assertEquals(key2, localPerson.getSsn());
         Assertions.assertEquals(person.getAge(), localPerson.getAge());
         Assertions.assertEquals(person.getBirthTimestamp(), localPerson.getBirthTimestamp());

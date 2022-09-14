@@ -21,9 +21,7 @@ import io.dingodb.example.model.Person;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;
 import io.dingodb.sdk.common.Filter;
-import io.dingodb.sdk.common.Key;
 
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -54,36 +52,36 @@ public class DingoCliExample {
         }
 
         for (int i = 0; i < totalCnt; i++) {
-            Person person = dingoOpCli.read(Person.class, (i + 1));
+            Person person = dingoOpCli.read(Person.class, new Object[]{(i + 1), ("dingo" + i)});
             System.out.println(">>>>>>>>>>Read=>" + person);
         }
 
 
-        Value startKey = Value.get(1);
-        Value endKey = Value.get(2000);
+        Value[] startKey = new Value[]{Value.get(1), Value.get("dingo0")};
+        Value[] endKey = new Value[]{Value.get(2000), Value.get("dingo" + (totalCnt - 1))};
         List<Person> resultList = dingoOpCli.query(
             Person.class,
-            Filter.range(startKey, endKey,"age", Value.get(10), Value.get(13))
+            Filter.range(startKey, endKey, "age", Value.get(10), Value.get(13))
         );
 
-        for (Person person: resultList) {
+        for (Person person : resultList) {
             System.out.println("Query===>(age >= 10 && age < 13), result is:" + person.toString());
         }
 
         resultList = dingoOpCli.query(
             Person.class,
-            Filter.contains(startKey, endKey,"name", Value.get("dingo1"))
+            Filter.contains(startKey, endKey, "name", Value.get("dingo1"))
         );
 
-        for (Person person: resultList) {
+        for (Person person : resultList) {
             System.out.println("Query===>(name contains 'dingo1'), result is:" + person.toString());
         }
 
         resultList = dingoOpCli.query(
             Person.class,
-            Filter.equal(startKey, endKey,"name", Value.get("dingo1"))
+            Filter.equal(startKey, endKey, "name", Value.get("dingo1"))
         );
-        for (Person person: resultList) {
+        for (Person person : resultList) {
             System.out.println("Query===>(name equal 'dingo1'), result is:" + person.toString());
         }
 
