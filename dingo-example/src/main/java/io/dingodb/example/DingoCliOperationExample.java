@@ -75,7 +75,7 @@ public class DingoCliOperationExample {
         }
 
         for (int i = 0; i < totalCnt; i++) {
-            PojoModel pojoModel = dingoOpCli.read(PojoModel.class, i + 1);
+            PojoModel pojoModel = dingoOpCli.read(PojoModel.class, new Object[]{i + 1});
             System.out.println(pojoModel);
         }
 

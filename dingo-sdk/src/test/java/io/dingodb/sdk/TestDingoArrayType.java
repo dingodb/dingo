@@ -162,7 +162,7 @@ public class TestDingoArrayType {
         }
         dingoCli.save(arrayClass);
 
-        AnnotatedArrayClass localArray = dingoCli.read(AnnotatedArrayClass.class, 1);
+        AnnotatedArrayClass localArray = dingoCli.read(AnnotatedArrayClass.class, new Object[]{1});
         Assertions.assertEquals(arrayClass.getKey(), localArray.getKey());
         Assertions.assertEquals(
             Arrays.toString(arrayClass.getBytes()),

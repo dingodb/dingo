@@ -57,6 +57,7 @@ public interface DingoMapper extends IBaseDingoMapper {
     /**
      * Updates the object in the database, merging the record with the existing record.
      * If Columns are specified, only columns with the passed names will be updated (or all of them if null is passed)
+     *
      * @param object The object to update.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
@@ -71,7 +72,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * @return The returned mapped record.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    <T> T read(@NotNull Class<T> clazz, @NotNull Object userKey);
+    <T> T read(@NotNull Class<T> clazz, @NotNull Object[] userKey);
 
 
     /**
@@ -83,7 +84,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * @return The returned mapped records.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys);
+    <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[][] userKeys);
 
     /**
      * Read a batch of records from the repository using read operations in one batch call

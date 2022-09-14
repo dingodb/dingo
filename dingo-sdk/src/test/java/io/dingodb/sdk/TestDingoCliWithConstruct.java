@@ -111,7 +111,7 @@ public class TestDingoCliWithConstruct {
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             dingoCli.save(constructedInstance);
-            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, new Object[]{constructedInstance.id});
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.age, actualObject.age);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
@@ -147,7 +147,7 @@ public class TestDingoCliWithConstruct {
             doReturn(expectedRecord).when(spyClient).get((Key) any());
             doReturn(true).when(spyClient).delete((Key) any());
             dingoCli.save(constructedInstance);
-            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, new Object[]{constructedInstance.id});
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.age, actualObject.age);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
@@ -181,7 +181,7 @@ public class TestDingoCliWithConstruct {
             doReturn(true).when(spyClient).delete((Key) any());
             isOK = dingoCli.update(constructedInstance, "name", "birthday");
             Assertions.assertTrue(isOK);
-            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, new Object[]{constructedInstance.id});
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.age, actualObject.age);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
@@ -219,7 +219,7 @@ public class TestDingoCliWithConstruct {
             doReturn(true).when(spyClient).delete((Key) any());
             isOK = dingoCli.update(constructedInstance, "name", "birthday");
             Assertions.assertTrue(isOK);
-            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, constructedInstance.id);
+            ConstructedClass actualObject = dingoCli.read(ConstructedClass.class, new Object[]{constructedInstance.id});
             Assertions.assertEquals(constructedInstance.id, actualObject.id);
             Assertions.assertEquals(constructedInstance.name, actualObject.name);
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");

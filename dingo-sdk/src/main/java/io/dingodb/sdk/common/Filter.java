@@ -20,51 +20,56 @@ import io.dingodb.common.operation.Value;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
+
 @Slf4j
 public final class Filter {
 
     /**
      * Create contains filter for query on collection index.
-     * @param startKey start primary key.
-     * @param endKey end primary key
+     *
+     * @param startKey   start primary key.
+     * @param endKey     end primary key
      * @param columnName column name
-     * @param value column value expected value.
+     * @param value      column value expected value.
      * @return the records satisfy the filter conditions.
      */
-    public static Filter equal(Value startKey, Value endKey, String columnName, Value value) {
+    public static Filter equal(Value[] startKey, Value[] endKey, String columnName, Value value) {
         return new Filter(startKey, endKey, columnName, value, value);
     }
 
     /**
      * Create contains filter for query on collection index.
-     * @param startKey start primary key.
-     * @param endKey end primary key
+     *
+     * @param startKey   start primary key.
+     * @param endKey     end primary key
      * @param columnName column name
-     * @param value column value expected value.
+     * @param value      column value expected value.
      * @return the records satisfy the filter conditions.
      */
-    public static Filter contains(Value startKey, Value endKey, String columnName, Value value) {
+    public static Filter contains(Value[] startKey, Value[] endKey, String columnName, Value value) {
         return new Filter(startKey, endKey, columnName, value, value);
     }
 
     /**
      * query records from startKey to endKey, where column values is between begin and end values.
-     * @param startKey user start key.
-     * @param endKey  user end key.
+     *
+     * @param startKey   user start key.
+     * @param endKey     user end key.
      * @param columnName column name
-     * @param begin column start value(contains)
-     * @param end column end value(contains)
+     * @param begin      column start value(contains)
+     * @param end        column end value(contains)
      * @return SubRecords satisfy the filter conditions.
      */
-    public static Filter range(Value startKey, Value endKey, String columnName, Value begin, Value end) {
+    public static Filter range(Value[] startKey, Value[] endKey, String columnName, Value begin, Value end) {
         return new Filter(startKey, endKey, columnName, begin, end);
     }
 
     @Getter
-    private final Value startKey;
+    private final Value[] startKey;
 
     @Getter
-    private final Value endKey;
+    private final Value[] endKey;
 
     @Getter
     private final String columnName;
@@ -76,8 +81,8 @@ public final class Filter {
     private final Value columnValueEnd;
 
 
-    private Filter(Value startKey,
-                   Value endKey,
+    private Filter(Value[] startKey,
+                   Value[] endKey,
                    String columnName,
                    Value columnValueStart,
                    Value columnValueEnd) {
@@ -91,8 +96,8 @@ public final class Filter {
     @Override
     public String toString() {
         return "Filter {"
-            + " startKey=" + startKey
-            + ", endKey=" + endKey
+            + " startKey=" + Arrays.toString(startKey)
+            + ", endKey=" + Arrays.toString(endKey)
             + ", columnName=" + columnName
             + ", columnValueStart=" + columnValueStart
             + ", columnValueEnd=" + columnValueEnd

@@ -29,6 +29,7 @@ import lombok.ToString;
 public class Person {
     @DingoKey
     private int id;
+    @DingoKey
     private String name;
     private int age;
     private double salary;

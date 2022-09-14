@@ -104,6 +104,10 @@ public abstract class ValueType {
         public String toString() {
             return String.format("Value(Field): %s (%s)", this.field.getName(), this.field.getType().getSimpleName());
         }
+
+        public Field getField() {
+            return field;
+        }
     }
 
     public static class MethodValue extends ValueType {
@@ -129,7 +133,7 @@ public abstract class ValueType {
             if (this.property.getSetter() == null) {
                 throw new DingoClientException(
                     "Lazy loading cannot be used on objects with a property key type "
-                    + "and no annotated key setter method");
+                        + "and no annotated key setter method");
             } else {
                 switch (this.property.getSetterParamType()) {
                     case KEY: {

@@ -75,8 +75,8 @@ public class ListMapper extends TypeMapper {
             // TODO: Should this throw an exception or just change the embedType back to LIST?
             throw new DingoClientException(
                 "Annotations embedding lists of objects can only map those objects to maps"
-                + "instead of lists if the object is an AerospikeRecord on instance of class "
-                + clazz.getSimpleName());
+                    + "instead of lists if the object is an AerospikeRecord on instance of class "
+                    + clazz.getSimpleName());
         } else {
             if (instanceClass != null) {
                 subTypeEntry = ClassCache.getInstance().loadClass(instanceClass, mapper);
@@ -185,7 +185,7 @@ public class ListMapper extends TypeMapper {
         } else {
             Entry<Object, Object> entry = (Entry<Object, Object>) obj;
             Object result = this.instanceClassMapper.fromDingoFormat(entry.getValue());
-            subTypeEntry.setKey(result, entry.getKey());
+            subTypeEntry.setKey(new Object[]{result}, new Object[]{entry.getKey()});
             return result;
         }
     }
@@ -255,7 +255,8 @@ public class ListMapper extends TypeMapper {
                 Object item = map.get(key);
 
                 Object result = this.instanceClassMapper.fromDingoFormat(item);
-                subTypeEntry.setKey(result, key);
+                // TODO:
+                subTypeEntry.setKey(new Object[]{result}, new Object[]{key});
                 results.add(result);
             }
         }
