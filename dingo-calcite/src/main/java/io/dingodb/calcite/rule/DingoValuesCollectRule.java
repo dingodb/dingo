@@ -28,8 +28,8 @@ import java.util.Collections;
 import javax.annotation.Nonnull;
 
 @Value.Enclosing
-public class DingoCollectValuesRule extends RelRule<DingoCollectValuesRule.Config> implements SubstitutionRule {
-    protected DingoCollectValuesRule(Config config) {
+public class DingoValuesCollectRule extends RelRule<DingoValuesCollectRule.Config> implements SubstitutionRule {
+    protected DingoValuesCollectRule(Config config) {
         super(config);
     }
 
@@ -54,8 +54,8 @@ public class DingoCollectValuesRule extends RelRule<DingoCollectValuesRule.Confi
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoCollectValuesRule.Config.builder()
-            .description("DingoCollectValuesRule(Filter)")
+        Config DEFAULT = ImmutableDingoValuesCollectRule.Config.builder()
+            .description("DingoValuesCollectRule")
             .operandSupplier(b0 ->
                 b0.operand(Collect.class).oneInput(b1 ->
                     b1.operand(LogicalDingoValues.class).noInputs()
@@ -64,8 +64,8 @@ public class DingoCollectValuesRule extends RelRule<DingoCollectValuesRule.Confi
             .build();
 
         @Override
-        default DingoCollectValuesRule toRule() {
-            return new DingoCollectValuesRule(this);
+        default DingoValuesCollectRule toRule() {
+            return new DingoValuesCollectRule(this);
         }
     }
 }

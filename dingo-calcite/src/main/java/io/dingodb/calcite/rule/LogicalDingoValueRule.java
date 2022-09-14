@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
 import static io.dingodb.calcite.visitor.RexConverter.convertFromRexLiteralList;
 
 public class LogicalDingoValueRule extends ConverterRule {
-    public static final Config DEFAULT_CONFIG = Config.INSTANCE
+    public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalValues.class,
             Convention.NONE,

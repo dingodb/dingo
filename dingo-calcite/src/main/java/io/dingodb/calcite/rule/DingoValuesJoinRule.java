@@ -37,8 +37,8 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 @Value.Enclosing
-public class DingoJoinValuesRule extends RelRule<DingoJoinValuesRule.Config> implements SubstitutionRule {
-    protected DingoJoinValuesRule(Config config) {
+public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> implements SubstitutionRule {
+    protected DingoValuesJoinRule(Config config) {
         super(config);
     }
 
@@ -86,8 +86,8 @@ public class DingoJoinValuesRule extends RelRule<DingoJoinValuesRule.Config> imp
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoJoinValuesRule.Config.builder()
-            .description("DingoJoinValuesRule(Filter)")
+        Config DEFAULT = ImmutableDingoValuesJoinRule.Config.builder()
+            .description("DingoValuesJoinRule")
             .operandSupplier(b0 ->
                 b0.operand(LogicalJoin.class).inputs(
                     b1 -> b1.operand(LogicalDingoValues.class).noInputs(),
@@ -97,8 +97,8 @@ public class DingoJoinValuesRule extends RelRule<DingoJoinValuesRule.Config> imp
             .build();
 
         @Override
-        default DingoJoinValuesRule toRule() {
-            return new DingoJoinValuesRule(this);
+        default DingoValuesJoinRule toRule() {
+            return new DingoValuesJoinRule(this);
         }
     }
 }

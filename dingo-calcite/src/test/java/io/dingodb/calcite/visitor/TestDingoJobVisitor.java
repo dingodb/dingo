@@ -25,9 +25,9 @@ import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
-import io.dingodb.calcite.rel.DingoExchangeRoot;
+import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoPartScan;
+import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -104,15 +104,18 @@ public class TestDingoJobVisitor {
     }
 
     @Test
-    public void testVisitPartScan() {
+    public void testVisitTableScan() {
         RelOptCluster cluster = parser.getCluster();
-        DingoPartScan partScan = new DingoPartScan(
+        DingoTableScan scan = new DingoTableScan(
             cluster,
             cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-            table
+            ImmutableList.of(),
+            table,
+            null,
+            null
         );
         Job job = jobManager.createJob(Id.random());
-        DingoJobVisitor.renderJob(job, partScan, currentLocation);
+        DingoJobVisitor.renderJob(job, scan, currentLocation);
         Assert.job(job).taskNum(2)
             .task("0001", t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_0)
                 .soleSource().isPartScan(TABLE_ID, 0)
@@ -125,14 +128,18 @@ public class TestDingoJobVisitor {
     @Test
     public void testVisitExchangeRoot() {
         RelOptCluster cluster = parser.getCluster();
-        DingoExchangeRoot exchange = new DingoExchangeRoot(
+        DingoExchange exchange = new DingoExchange(
             cluster,
             cluster.traitSetOf(DingoConventions.PARTITIONED),
-            new DingoPartScan(
+            new DingoTableScan(
                 cluster,
                 cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-                table
-            )
+                ImmutableList.of(),
+                table,
+                null,
+                null
+            ),
+            true
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, exchange, currentLocation);
@@ -153,14 +160,18 @@ public class TestDingoJobVisitor {
         DingoCoalesce coalesce = new DingoCoalesce(
             cluster,
             cluster.traitSetOf(DingoConventions.ROOT),
-            new DingoExchangeRoot(
+            new DingoExchange(
                 cluster,
                 cluster.traitSetOf(DingoConventions.PARTITIONED),
-                new DingoPartScan(
+                new DingoTableScan(
                     cluster,
                     cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-                    table
-                )
+                    ImmutableList.of(),
+                    table,
+                    null,
+                    null
+                ),
+                true
             )
         );
         Job job = jobManager.createJob(Id.random());

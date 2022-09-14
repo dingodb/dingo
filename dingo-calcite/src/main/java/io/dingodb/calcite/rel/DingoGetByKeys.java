@@ -21,68 +21,48 @@ import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public final class DingoGetByKeys extends AbstractRelNode implements DingoRel {
-    @Getter
-    private final RelOptTable table;
+public final class DingoGetByKeys extends DingoTableScan implements DingoRel {
     @Getter
     private final Collection<Map<Integer, RexLiteral>> keyItems;
-    @Getter
-    private final RexNode filter;
-    @Getter
-    private final TupleMapping selection;
 
     public DingoGetByKeys(
         RelOptCluster cluster,
         RelTraitSet traitSet,
+        List<RelHint> hints,
         RelOptTable table,
-        Collection<Map<Integer, RexLiteral>> keyItems,
         RexNode filter,
-        @Nullable TupleMapping selection
+        @Nullable TupleMapping selection,
+        Collection<Map<Integer, RexLiteral>> keyItems
     ) {
-        super(cluster, traitSet);
-        this.table = table;
+        super(cluster, traitSet, hints, table, filter, selection);
         this.keyItems = keyItems;
-        this.filter = filter;
-        this.selection = selection;
     }
 
     @Override
-    protected RelDataType deriveRowType() {
-        return mapRowType(table.getRowType(), selection);
-    }
-
-    @Override
-    public RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = keyItems.size();
-        double cpu = rowCount + 1;
-        double io = 0;
-        return planner.getCostFactory().makeCost(rowCount, cpu, io);
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return keyItems.size() / DingoTableScan.ASSUME_PARTS;
     }
 
     @Nonnull
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("table", table.getQualifiedName());
         pw.item("keyItems", keyItems);
-        pw.item("selection", selection);
         return pw;
     }
 

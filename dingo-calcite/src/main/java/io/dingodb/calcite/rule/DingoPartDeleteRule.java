@@ -19,7 +19,7 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoPartScan;
+import io.dingodb.calcite.rel.DingoTableScan;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -31,15 +31,15 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 @Value.Enclosing
-public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.Config> {
-    public DingoPartitionDeleteRule(Config config) {
+public class DingoPartDeleteRule extends RelRule<DingoPartDeleteRule.Config> {
+    public DingoPartDeleteRule(Config config) {
         super(config);
     }
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         final DingoPartModify rel = call.rel(0);
-        final DingoPartScan scan = call.rel(1);
+        final DingoTableScan scan = call.rel(1);
 
         RelOptCluster cluster = rel.getCluster();
         call.transformTo(new DingoPartCountDelete(
@@ -53,22 +53,22 @@ public class DingoPartitionDeleteRule extends RelRule<DingoPartitionDeleteRule.C
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoPartitionDeleteRule.Config.builder()
+        Config DEFAULT = ImmutableDingoPartDeleteRule.Config.builder()
             .operandSupplier(b0 ->
                 b0.operand(DingoPartModify.class)
                     .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
                     .oneInput(b1 ->
-                        b1.operand(DingoPartScan.class)
+                        b1.operand(DingoTableScan.class)
                             .predicate(x -> x.getFilter() == null)
                             .noInputs()
                     )
             )
-            .description("DingoPartitionDeleteRule")
+            .description("DingoPartDeleteRule")
             .build();
 
         @Override
-        default DingoPartitionDeleteRule toRule() {
-            return new DingoPartitionDeleteRule(this);
+        default DingoPartDeleteRule toRule() {
+            return new DingoPartDeleteRule(this);
         }
     }
 }

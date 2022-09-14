@@ -35,8 +35,7 @@ public class TestSqlParser {
         SqlParser parser = SqlParser.create("select 1");
         SqlNode sqlNode = parser.parseQuery();
         log.info("sqlNode = {}", sqlNode);
-        assertThat(sqlNode.getKind()).isEqualTo(SqlKind.SELECT);
-        SqlSelect select = (SqlSelect) sqlNode;
+        SqlSelect select = (SqlSelect) Assert.sqlNode(sqlNode).kind(SqlKind.SELECT).getInstance();
         assertThat(select.getSelectList()).size().isEqualTo(1);
         Assert.sqlNode(select.getFrom()).isNull();
     }
@@ -46,8 +45,7 @@ public class TestSqlParser {
         SqlParser parser = SqlParser.create("select * from test");
         SqlNode sqlNode = parser.parseQuery();
         log.info("sqlNode = {}", sqlNode);
-        assertThat(sqlNode.getKind()).isEqualTo(SqlKind.SELECT);
-        SqlSelect select = (SqlSelect) sqlNode;
+        SqlSelect select = (SqlSelect) Assert.sqlNode(sqlNode).kind(SqlKind.SELECT).getInstance();
         assertThat(select.getSelectList()).size().isEqualTo(1);
         Assert.sqlNode(select.getFrom()).isTableName("TEST");
     }
@@ -57,8 +55,7 @@ public class TestSqlParser {
         SqlParser parser = SqlParser.create("insert into test values(1, 'Alice', 1.0)");
         SqlNode sqlNode = parser.parseQuery();
         log.info("sqlNode = {}", sqlNode);
-        assertThat(sqlNode.getKind()).isEqualTo(SqlKind.INSERT);
-        SqlInsert insert = (SqlInsert) sqlNode;
+        SqlInsert insert = (SqlInsert) Assert.sqlNode(sqlNode).kind(SqlKind.INSERT).getInstance();
         Assert.sqlNode(insert.getTargetTable()).isTableName("TEST");
     }
 }

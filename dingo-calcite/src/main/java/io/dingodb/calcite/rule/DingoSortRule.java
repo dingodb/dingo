@@ -20,19 +20,21 @@ import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoSort;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalSort;
 
+import java.util.Collections;
 import javax.annotation.Nonnull;
 
 public class DingoSortRule extends ConverterRule {
-    public static final Config DEFAULT_CONFIG = Config.INSTANCE
+    public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalSort.class,
             Convention.NONE,
             DingoConventions.ROOT,
-            "DingoSortRule"
+            "DingoSortRule.ROOT"
         )
         .withRuleFactory(DingoSortRule::new);
 
@@ -44,10 +46,13 @@ public class DingoSortRule extends ConverterRule {
     public RelNode convert(@Nonnull RelNode rel) {
         LogicalSort sort = (LogicalSort) rel;
         RelTraitSet traitSet = sort.getTraitSet().replace(DingoConventions.ROOT);
+        // The input need not be sorted.
+        RelTraitSet inputTraitSet = traitSet.replace(DingoConventions.ROOT)
+            .replace(RelCollationTraitDef.INSTANCE, Collections.emptyList());
         return new DingoSort(
             sort.getCluster(),
             traitSet,
-            convert(sort.getInput(), traitSet),
+            convert(sort.getInput(), inputTraitSet),
             sort.getCollation(),
             sort.offset,
             sort.fetch

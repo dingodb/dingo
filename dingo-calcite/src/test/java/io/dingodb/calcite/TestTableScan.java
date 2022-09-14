@@ -19,20 +19,22 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchangeRoot;
-import io.dingodb.calcite.rel.DingoPartScan;
+import io.dingodb.calcite.rel.DingoExchange;
+import io.dingodb.calcite.rel.DingoPartRangeScan;
+import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,9 +45,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestScan {
-    private static DingoParser parser;
+public class TestTableScan {
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
+    private static DingoParser parser;
     private static Location currentLocation;
     private static int tableTestPartNum;
 
@@ -66,15 +68,17 @@ public class TestScan {
     })
     public void testScan(String sql) throws SqlParseException {
         // To logical plan.
-        RelRoot relRoot = parser.parseRel(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .singleInput().isA(LogicalProject.class)
+            .singleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoPartScan scan = (DingoPartScan) Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class)
+            .singleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNull();
@@ -82,23 +86,25 @@ public class TestScan {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(3));
+            .task("0001", t -> t.location(currentLocation).operatorNum(4));
     }
 
     @Test
     public void testFilterScan() throws SqlParseException {
         String sql = "select * from test where name = 'Alice' and amount > 3.0";
         // To logical plan.
-        RelRoot relRoot = parser.parseRel(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .singleInput().isA(LogicalProject.class)
+            .singleInput().isA(LogicalFilter.class)
+            .singleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoPartScan scan = (DingoPartScan) Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class).prop("root", true)
+            .singleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
@@ -106,22 +112,24 @@ public class TestScan {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(3));
+            .task("0001", t -> t.location(currentLocation).operatorNum(4));
     }
 
     @Test
     public void testProjectScan() throws SqlParseException {
         String sql = "select name, amount from test";
         // To logical plan.
-        RelRoot relRoot = parser.parseRel(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .singleInput().isA(LogicalProject.class)
+            .singleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoPartScan scan = (DingoPartScan) Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class).prop("root", true)
+            .singleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNotNull();
@@ -129,23 +137,25 @@ public class TestScan {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(3));
+            .task("0001", t -> t.location(currentLocation).operatorNum(4));
     }
 
     @Test
     public void testProjectFilterScan() throws SqlParseException {
         String sql = "select name, amount from test where amount > 3.0";
         // To logical plan.
-        RelRoot relRoot = parser.parseRel(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .singleInput().isA(LogicalProject.class)
+            .singleInput().isA(LogicalFilter.class)
+            .singleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoPartScan scan = (DingoPartScan) Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class).prop("root", true)
+            .singleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNotNull();
@@ -153,23 +163,25 @@ public class TestScan {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(3));
+            .task("0001", t -> t.location(currentLocation).operatorNum(4));
     }
 
     @Test
     public void testFilterScanWithParameters() throws SqlParseException {
         String sql = "select * from test where name = ? and amount > ?";
         // To logical plan.
-        RelRoot relRoot = parser.parseRel(sql);
-        Assert.relNode(relRoot.rel).isA(LogicalProject.class).convention(Convention.NONE)
-            .singleInput().isA(LogicalFilter.class).convention(Convention.NONE)
-            .singleInput().isA(DingoTableScan.class).convention(Convention.NONE);
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .singleInput().isA(LogicalProject.class)
+            .singleInput().isA(LogicalFilter.class)
+            .singleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoPartScan scan = (DingoPartScan) Assert.relNode(relNode)
-            .isA(DingoCoalesce.class).convention(DingoConventions.ROOT)
-            .singleInput().isA(DingoExchangeRoot.class).convention(DingoConventions.PARTITIONED)
-            .singleInput().isA(DingoPartScan.class).convention(DingoConventions.DISTRIBUTED)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class).prop("root", true)
+            .singleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
@@ -177,6 +189,22 @@ public class TestScan {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(3));
+            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+    }
+
+    @Test
+    public void testBetweenAnd() throws SqlParseException {
+        String sql = "select * from test where id between 2 and 5";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        RelNode relNode = Assert.relNode(optimized).isA(DingoRoot.class)
+            .singleInput().isA(DingoCoalesce.class)
+            .singleInput().isA(DingoExchange.class)
+            .singleInput().isA(DingoPartRangeScan.class)
+            .getInstance();
+        DingoPartRangeScan scan = (DingoPartRangeScan) relNode;
+        assertThat((scan).getFilter()).isNotNull();
+        assertThat((scan).getSelection()).isNull();
     }
 }

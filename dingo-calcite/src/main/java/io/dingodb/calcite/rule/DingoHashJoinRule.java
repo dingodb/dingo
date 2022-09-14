@@ -21,7 +21,6 @@ import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -29,6 +28,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -66,7 +66,7 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        Join rel = call.rel(0);
+        LogicalJoin rel = call.rel(0);
         JoinInfo joinInfo = rel.analyzeCondition();
         if (!joinInfo.isEqui()) {
             // If the conditions have been extracted to a Filter above, do HashJoin with empty key.
@@ -95,10 +95,7 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoHashJoinRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(Join.class).trait(Convention.NONE).inputs(
-                    b1 -> b1.operand(RelNode.class).anyInputs(),
-                    b2 -> b2.operand(RelNode.class).anyInputs()
-                )
+                b0.operand(LogicalJoin.class).anyInputs()
             )
             .description("DingoHashJoinRule")
             .build();

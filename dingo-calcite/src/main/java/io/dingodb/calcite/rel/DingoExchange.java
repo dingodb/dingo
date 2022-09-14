@@ -17,24 +17,52 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
 public final class DingoExchange extends SingleRel implements DingoRel {
+    @Getter
+    private final boolean root;
+
     public DingoExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+        this(cluster, traits, input, false);
+    }
+
+    public DingoExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input, boolean root) {
         super(cluster, traits, input);
+        this.root = root;
+    }
+
+    @Nonnull
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.itemIf("root", root, root);
+        return pw;
     }
 
     @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoExchange(getCluster(), traitSet, AbstractRelNode.sole(inputs));
+        return new DingoExchange(getCluster(), traitSet, AbstractRelNode.sole(inputs), root);
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(getInput());
+        return planner.getCostFactory().makeCost(rowCount, rowCount + 1.0, rowCount);
     }
 
     @Override

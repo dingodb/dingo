@@ -219,7 +219,7 @@ public final class DingoDriverParser extends DingoParser {
         List<List<String>> originList = getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
-        final RelRoot relRoot = convert(sqlNode);
+        final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
         CalciteSchema rootSchema = context.getRootSchema();
         CalciteSchema defaultSchema = rootSchema.getSubSchema(context.getDefaultSchemaPath().get(0), true);

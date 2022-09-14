@@ -17,6 +17,8 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.meta.DingoRelMetadataProvider;
+import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,17 +29,16 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.ViewExpanders;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.prepare.PlannerImpl;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -50,12 +51,12 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import javax.annotation.Nonnull;
 
@@ -91,8 +92,17 @@ public class DingoParser {
         planner = new VolcanoPlanner();
         // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        // Defines the "order-by" traits.
+        planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
+
         RexBuilder rexBuilder = new RexBuilder(context.getTypeFactory());
         cluster = RelOptCluster.create(planner, rexBuilder);
+        cluster.setMetadataProvider(ChainedRelMetadataProvider.of(
+            ImmutableList.of(
+                DingoRelMetadataProvider.INSTANCE,
+                Objects.requireNonNull(cluster.getMetadataProvider())
+            )
+        ));
 
         Properties properties = new Properties();
         properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
@@ -105,7 +115,7 @@ public class DingoParser {
             new CalciteConnectionConfigImpl(properties)
         );
 
-        // CatalogReader is also serving as SqlOperatorTable
+        // CatalogReader is also serving as SqlOperatorTable.
         SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         sqlValidator = SqlValidatorUtil.newValidator(
             SqlOperatorTables.chain(tableInstance, catalogReader),
@@ -115,6 +125,7 @@ public class DingoParser {
         );
     }
 
+    @SuppressWarnings("MethodMayBeStatic")
     public SqlNode parse(String sql) throws SqlParseException {
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
@@ -142,6 +153,10 @@ public class DingoParser {
     }
 
     public RelRoot convert(@Nonnull SqlNode sqlNode) {
+        return convert(sqlNode, true);
+    }
+
+    public RelRoot convert(@Nonnull SqlNode sqlNode, boolean needsValidation) {
         SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             .withExpand(false)
@@ -150,7 +165,7 @@ public class DingoParser {
             .addRelBuilderConfigTransform(c -> c.withSimplify(false));
 
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
-            (PlannerImpl) Frameworks.getPlanner(Frameworks.newConfigBuilder().build()),
+            ViewExpanders.simpleContext(cluster),
             sqlValidator,
             catalogReader,
             cluster,
@@ -158,37 +173,16 @@ public class DingoParser {
             convertConfig
         );
 
-        RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, false, true);
-        if (log.isDebugEnabled()) {
-            String relRootString = RelOptUtil.dumpPlan(
-                "[Physical plan before optimization]",
-                relRoot.rel,
-                SqlExplainFormat.TEXT,
-                SqlExplainLevel.ALL_ATTRIBUTES);
-            log.debug("==DINGO==>:[SqlNode Converted RelRoot] {}", relRootString);
-        }
-        return relRoot;
+        RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);
+
+        // Insert a `DingoRoot` to collect the results.
+        return relRoot.withRel(new DingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel));
     }
 
     public RelNode optimize(RelNode relNode) {
         RelTraitSet traitSet = planner.emptyTraitSet().replace(DingoConventions.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
         final Program program = Programs.ofRules(rules);
-        RelNode optimizedRelNode = program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
-        if (log.isDebugEnabled()) {
-            String relNodeString = RelOptUtil.dumpPlan(
-                "[Physical plan after optimization]",
-                optimizedRelNode,
-                SqlExplainFormat.TEXT,
-                SqlExplainLevel.ALL_ATTRIBUTES);
-            log.debug("==DINGO==>:[Optimized RelNode] {}", relNodeString);
-        }
-        return optimizedRelNode;
-    }
-
-    public RelRoot parseRel(String sql) throws SqlParseException {
-        SqlNode sqlNode = parse(sql);
-        sqlNode = validate(sqlNode);
-        return convert(sqlNode);
+        return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
     }
 }

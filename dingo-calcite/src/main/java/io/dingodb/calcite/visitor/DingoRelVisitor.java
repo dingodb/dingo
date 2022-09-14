@@ -20,7 +20,6 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
-import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
@@ -28,10 +27,10 @@ import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
-import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
@@ -48,8 +47,6 @@ public interface DingoRelVisitor<T> {
 
     T visit(@Nonnull DingoExchange rel);
 
-    T visit(@Nonnull DingoExchangeRoot rel);
-
     T visit(@Nonnull DingoFilter rel);
 
     T visit(@Nonnull DingoGetByKeys rel);
@@ -62,11 +59,11 @@ public interface DingoRelVisitor<T> {
 
     T visit(@Nonnull DingoPartModify rel);
 
-    T visit(@Nonnull DingoPartScan rel);
-
     T visit(@Nonnull DingoProject rel);
 
     T visit(@Nonnull DingoReduce rel);
+
+    T visit(@Nonnull DingoRoot rel);
 
     T visit(@Nonnull DingoSort rel);
 

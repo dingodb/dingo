@@ -52,10 +52,11 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
             call.transformTo(new DingoGetByKeys(
                 rel.getCluster(),
                 rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                rel.getHints(),
                 rel.getTable(),
-                items,
                 rel.getFilter(),
-                rel.getSelection()
+                rel.getSelection(),
+                items
             ));
         }
     }
@@ -63,8 +64,10 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
     @Value.Immutable
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoGetByKeysRule.Config.builder()
-            .operandSupplier(
-                b0 -> b0.operand(DingoTableScan.class).predicate(r -> r.getFilter() != null).noInputs()
+            .operandSupplier(b0 ->
+                b0.operand(DingoTableScan.class)
+                    .predicate(r -> !(r instanceof DingoGetByKeys) && r.getFilter() != null)
+                    .noInputs()
             )
             .description("DingoGetByKeysRule")
             .build();

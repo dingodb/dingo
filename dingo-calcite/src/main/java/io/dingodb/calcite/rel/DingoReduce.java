@@ -19,17 +19,24 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
+/**
+ * To reduce the results of partitioned aggregation.
+ */
 public final class DingoReduce extends SingleRel implements DingoRel {
     @Getter
     private final ImmutableBitSet groupSet;
@@ -47,6 +54,7 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         RelDataType originalInputType
     ) {
         super(cluster, traits, input);
+        this.input = input;
         this.groupSet = groupSet;
         this.aggregateCallList = aggregateCallList;
         this.originalInputType = originalInputType;
@@ -65,6 +73,17 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         );
     }
 
+    @Override
+    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+        return mq.getRowCount(input) / DingoTableScan.ASSUME_PARTS;
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        // Assume that all reduces are needed.
+        return planner.getCostFactory().makeZeroCost();
+    }
+
     @Nonnull
     @Override
     public RelWriter explainTerms(RelWriter pw) {
@@ -73,11 +92,6 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         pw.item("aggregateCallList", aggregateCallList);
         pw.item("originalInputType", originalInputType);
         return pw;
-    }
-
-    @Override
-    protected RelDataType deriveRowType() {
-        return input.getRowType();
     }
 
     @Override

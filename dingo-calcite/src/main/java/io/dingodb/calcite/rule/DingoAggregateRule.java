@@ -18,99 +18,58 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoAggregate;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchangeRoot;
-import io.dingodb.calcite.rel.DingoReduce;
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
-import org.immutables.value.Value;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
-@Value.Enclosing
-public class DingoAggregateRule extends RelRule<DingoAggregateRule.Config> {
-    /**
-     * when the Operand is aggregate and contains distinct, we will skip it.
-     */
-    public static Predicate<AggregateCall> isAggregateHasDistinct = agg -> {
-        SqlKind kind = agg.getAggregation().getKind();
-        return agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM);
-    };
-
+public class DingoAggregateRule extends ConverterRule {
+    public static final Config DEFAULT = Config.INSTANCE
+        .withConversion(
+            LogicalAggregate.class,
+            DingoAggregateRule::match,
+            Convention.NONE,
+            DingoConventions.ROOT,
+            "DingoAggregateRule.ROOT"
+        )
+        .withRuleFactory(DingoAggregateRule::new);
 
     protected DingoAggregateRule(Config config) {
         super(config);
     }
 
-    @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
-        Aggregate rel = call.rel(0);
-        // AVG must be transformed to SUM/COUNT before.
-        if (rel.getAggCallList().stream().anyMatch(agg -> agg.getAggregation().getKind() == SqlKind.AVG)) {
-            return;
-        }
-
-        /**
-         * After apply `CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES`, the sql: `select count(distinct a) from t`
-         * will be transformed to two rules:
-         * 1. aggregate with distinct(AggregateCall List is empty)
-         * 2. aggregate with count(AggregateCall List contains COUNT, SUM, AVG...)
-         * So, In this case, the origin aggregate and distinct should be ignored.
-         */
-        if (rel.getAggCallList().stream().anyMatch(isAggregateHasDistinct)) {
-            return;
-        }
-
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet rootTraits = rel.getTraitSet().replace(DingoConventions.ROOT);
-
-        call.transformTo(
-            new DingoReduce(
-                cluster,
-                rootTraits,
-                new DingoCoalesce(
-                    cluster,
-                    rootTraits,
-                    new DingoExchangeRoot(
-                        cluster,
-                        rel.getTraitSet().replace(DingoConventions.PARTITIONED),
-                        new DingoAggregate(
-                            cluster,
-                            rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
-                            rel.getHints(),
-                            convert(rel.getInput(), DingoConventions.DISTRIBUTED),
-                            rel.getGroupSet(),
-                            rel.getGroupSets(),
-                            rel.getAggCallList()
-                        )
-                    )
-                ),
-                rel.getGroupSet(),
-                rel.getAggCallList(),
-                rel.getInput().getRowType()
-            )
-        );
+    public static boolean match(@Nonnull LogicalAggregate rel) {
+        return rel.getAggCallList().stream().noneMatch(agg -> {
+            SqlKind kind = agg.getAggregation().getKind();
+            // AVG must be transformed to SUM/COUNT before.
+            // TODO: GROUPING is not supported, maybe it is useful.
+            if (kind == SqlKind.AVG || kind == SqlKind.GROUPING) {
+                return true;
+            }
+            // After apply `CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES`, the sql: `select count(distinct a) from t`
+            // will be transformed to two rules:
+            // 1. aggregate with distinct(AggregateCall List is empty)
+            // 2. aggregate with count(AggregateCall List contains COUNT, SUM, AVG...)
+            // So, In this case, the origin aggregate and distinct should be ignored.
+            return agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM);
+        });
     }
 
-    @Value.Immutable
-    public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoAggregateRule.Config.builder()
-            .operandSupplier(b0 ->
-                b0.operand(Aggregate.class).trait(Convention.NONE).anyInputs()
-            )
-            .description("DingoAggregateRule")
-            .build();
-
-        @Override
-        default DingoAggregateRule toRule() {
-            return new DingoAggregateRule(this);
-        }
+    @Override
+    public @Nullable RelNode convert(RelNode rel) {
+        LogicalAggregate agg = (LogicalAggregate) rel;
+        return new DingoAggregate(
+            agg.getCluster(),
+            agg.getTraitSet().replace(DingoConventions.ROOT),
+            agg.getHints(),
+            convert(agg.getInput(), DingoConventions.ROOT),
+            agg.getGroupSet(),
+            agg.getGroupSets(),
+            agg.getAggCallList()
+        );
     }
 }

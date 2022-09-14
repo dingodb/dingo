@@ -18,14 +18,13 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
-import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.immutables.value.Value;
 
@@ -41,8 +40,8 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        final Aggregate aggregate = call.rel(0);
-        final DingoTableScan scan = call.rel(1);
+        final LogicalAggregate aggregate = call.rel(0);
+        final LogicalDingoTableScan scan = call.rel(1);
         RelOptCluster cluster = scan.getCluster();
         call.transformTo(new DingoPartCountDelete(
             cluster,
@@ -57,7 +56,7 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoPartCountRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(Aggregate.class).trait(Convention.NONE)
+                b0.operand(LogicalAggregate.class)
                     .predicate(x -> {
                         if (x.getGroupCount() != 0) {
                             return false;
@@ -69,7 +68,7 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
                         AggregateCall agg = aggList.get(0);
                         return agg.getAggregation().getKind() == SqlKind.COUNT && agg.getArgList().isEmpty();
                     }).oneInput(b1 ->
-                        b1.operand(DingoTableScan.class)
+                        b1.operand(LogicalDingoTableScan.class)
                             .predicate(x -> x.getFilter() == null)
                             .noInputs()
                     )
