@@ -42,7 +42,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import static io.dingodb.common.util.PreParameters.cleanNull;
+import static io.dingodb.common.util.Parameters.cleanNull;
 import static io.dingodb.net.Message.API_CANCEL;
 import static io.dingodb.net.Message.API_ERROR;
 import static io.dingodb.net.Message.API_OK;

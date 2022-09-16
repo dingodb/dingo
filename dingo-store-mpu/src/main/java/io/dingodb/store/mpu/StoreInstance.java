@@ -113,7 +113,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         } catch (Exception e) {
             log.error("{} send stats to failed.", core.meta, e);
         }
-        Executors.scheduleAsync(core.meta.label + "-send-stats", () -> sendStats(core), 5, TimeUnit.SECONDS);
+        // todo
+        // if (!core.isAvailable() && core.isPrimary()) {
+        //     Executors.scheduleAsync(core.meta.label + "-send-stats", () -> sendStats(core), 5, TimeUnit.SECONDS);
+        // }
     }
 
     @Override

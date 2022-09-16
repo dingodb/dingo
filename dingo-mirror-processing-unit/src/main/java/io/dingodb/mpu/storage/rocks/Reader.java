@@ -116,9 +116,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         return count;
     }
 
-    // close read options, snapshot
     @Override
-    protected void finalize() throws Throwable {
+    public void close() {
         readOptions.close();
         snapshot.close();
     }

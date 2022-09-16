@@ -20,7 +20,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
@@ -108,7 +108,7 @@ public class Channel implements io.dingodb.net.Channel {
 
     @Override
     public synchronized void setMessageListener(MessageListener listener) {
-        messageListener = PreParameters.cleanNull(listener, EMPTY_MESSAGE_LISTENER);
+        messageListener = Parameters.cleanNull(listener, EMPTY_MESSAGE_LISTENER);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class Channel implements io.dingodb.net.Channel {
         if (isClosed()) {
             runner.forceFollow(() -> closeListener.accept(this));
         } else {
-            this.closeListener = PreParameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
+            this.closeListener = Parameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
         }
     }
 

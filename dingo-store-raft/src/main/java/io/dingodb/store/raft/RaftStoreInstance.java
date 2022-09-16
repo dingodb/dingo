@@ -25,7 +25,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.UdfUtils;
 import io.dingodb.raft.core.DefaultJRaftServiceFactory;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
@@ -145,7 +145,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public void assignPart(Part part) {
-        part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
+        part.setStart(Parameters.cleanNull(part.getStart(), EMPTY_BYTES));
         try {
             Path partPath = Optional.ofNullable(StoreConfiguration.raft().getRaftPath())
                 .filter(s -> !s.isEmpty())
@@ -176,7 +176,7 @@ public class RaftStoreInstance implements StoreInstance {
 
     @Override
     public void unassignPart(Part part) {
-        part.setStart(PreParameters.cleanNull(part.getStart(), EMPTY_BYTES));
+        part.setStart(Parameters.cleanNull(part.getStart(), EMPTY_BYTES));
         parts.remove(part.getId()).clear();
         startKeyPartMap.remove(part.getStart());
     }

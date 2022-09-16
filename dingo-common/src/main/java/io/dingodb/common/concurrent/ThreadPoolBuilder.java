@@ -16,7 +16,7 @@
 
 package io.dingodb.common.concurrent;
 
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
@@ -105,10 +105,10 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolExecutor build() {
-        PreParameters.nonNull(name, "Name must not null.");
-        workQueue = PreParameters.cleanNull(workQueue, LinkedBlockingQueue::new);
-        handler = PreParameters.cleanNull(handler, DEFAULT_HANDLER);
-        threadFactory = PreParameters.cleanNull(threadFactory, this::generateThreadFactory);
+        Parameters.nonNull(name, "Name must not null.");
+        workQueue = Parameters.cleanNull(workQueue, LinkedBlockingQueue::new);
+        handler = Parameters.cleanNull(handler, DEFAULT_HANDLER);
+        threadFactory = Parameters.cleanNull(threadFactory, this::generateThreadFactory);
         return new ThreadPoolExecutor(
             coreThreads,
             maximumThreads,
@@ -121,9 +121,9 @@ public class ThreadPoolBuilder {
     }
 
     public ScheduledThreadPoolExecutor buildSchedule() {
-        PreParameters.nonNull(name, "Name must not null.");
-        handler = PreParameters.cleanNull(handler, DEFAULT_HANDLER);
-        threadFactory = PreParameters.cleanNull(threadFactory, this::generateThreadFactory);
+        Parameters.nonNull(name, "Name must not null.");
+        handler = Parameters.cleanNull(handler, DEFAULT_HANDLER);
+        threadFactory = Parameters.cleanNull(threadFactory, this::generateThreadFactory);
         return new ScheduledThreadPoolExecutor(coreThreads, threadFactory, handler);
     }
 

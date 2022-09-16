@@ -17,7 +17,7 @@
 package io.dingodb.net.netty;
 
 import io.dingodb.common.Location;
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.MessageListenerProvider;
@@ -95,8 +95,8 @@ public class NettyNetService implements NetService {
 
     @Override
     public void setMessageListenerProvider(String tag, MessageListenerProvider listenerProvider) {
-        PreParameters.nonNull(tag, "tag");
-        PreParameters.nonNull(listenerProvider, "listener provider");
+        Parameters.nonNull(tag, "tag");
+        Parameters.nonNull(listenerProvider, "listener provider");
         if (log.isDebugEnabled()) {
             log.debug("Register message listener provider, tag: [{}], listener provider class: [{}], caller: [{}]",
                 tag,
@@ -108,7 +108,7 @@ public class NettyNetService implements NetService {
 
     @Override
     public void unsetMessageListenerProvider(String tag) {
-        PreParameters.nonNull(tag, "tag");
+        Parameters.nonNull(tag, "tag");
         if (log.isDebugEnabled()) {
             log.debug("Unregister message listener provider, tag: [{}], caller: [{}]",
                 tag,
@@ -119,8 +119,8 @@ public class NettyNetService implements NetService {
 
     @Override
     public void registerTagMessageListener(String tag, MessageListener listener) {
-        PreParameters.nonNull(tag, "tag");
-        PreParameters.nonNull(listener, "listener");
+        Parameters.nonNull(tag, "tag");
+        Parameters.nonNull(listener, "listener");
         if (log.isDebugEnabled()) {
             log.info("Register message listener, tag: [{}], listener class: [{}], caller: [{}]",
                 tag,
@@ -132,8 +132,8 @@ public class NettyNetService implements NetService {
 
     @Override
     public void unregisterTagMessageListener(String tag, MessageListener listener) {
-        PreParameters.nonNull(tag, "tag");
-        PreParameters.nonNull(listener, "listener");
+        Parameters.nonNull(tag, "tag");
+        Parameters.nonNull(listener, "listener");
         if (log.isDebugEnabled()) {
             log.debug("Unregister message listener, tag: [{}], listener class: [{}], caller: [{}]",
                 tag,

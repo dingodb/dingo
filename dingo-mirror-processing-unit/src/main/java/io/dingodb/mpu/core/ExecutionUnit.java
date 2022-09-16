@@ -51,10 +51,12 @@ class ExecutionUnit {
         //    InternalInstructions.process(core, instruction.opcode, instruction.operand);
         //    return null;
         //}
-        Reader reader = core.storage.reader();
-        Writer writer = core.storage.writer(instruction);
-        V result = instructions(instruction.instructions).process(reader, writer, instruction);
-        core.storage.flush(writer);
-        return result;
+        try (Reader reader = core.storage.reader();) {
+            Writer writer = core.storage.writer(instruction);
+            V result = instructions(instruction.instructions).process(reader, writer, instruction);
+            core.storage.flush(writer);
+            return result;
+        }
+
     }
 }

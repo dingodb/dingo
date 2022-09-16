@@ -17,7 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +45,7 @@ public class MirrorProcessingUnit {
     }
 
     public Core core(CommonId id) {
-        PreParameters.nonNull(id, "id");
+        Parameters.nonNull(id, "id");
         return subCores.get(id);
     }
 
@@ -57,8 +57,10 @@ public class MirrorProcessingUnit {
             RocksStorage storage = new RocksStorage(local, path.resolve(local.id.toString()).toString(), null);
             if (metas.size() == 0) {
                 core = new Core(this, local, null, null, storage);
-            } else {
+            } else if (metas.size() == 2) {
                 core = new Core(this, local, metas.get(0), metas.get(1), storage);
+            } else {
+                throw new IllegalArgumentException("Mirror size must 0 or 2, but " + metas.size());
             }
             subCores.put(local.coreId, core);
             log.info("Create core {} for {} success", local.coreId, id);

@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.zip.Checksum;
 
-import static io.dingodb.common.util.PreParameters.cleanNull;
+import static io.dingodb.common.util.Parameters.cleanNull;
 import static io.dingodb.raft.RaftServiceFactory.createRaftNode;
 
 @Slf4j
