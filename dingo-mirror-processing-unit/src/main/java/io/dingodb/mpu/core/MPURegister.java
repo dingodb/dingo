@@ -17,7 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.PreParameters;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.api.StorageApi;
 
@@ -37,17 +37,17 @@ public final class MPURegister {
     private static final Map<CommonId, MirrorProcessingUnit> mpus = new ConcurrentHashMap<>();
 
     public static MirrorProcessingUnit mpu(CommonId id) {
-        PreParameters.nonNull(id, "id");
+        Parameters.nonNull(id, "id");
         return mpus.get(id);
     }
 
     public static void put(MirrorProcessingUnit mpu) {
-        PreParameters.nonNull(mpu, "mpu");
+        Parameters.nonNull(mpu, "mpu");
         mpus.put(mpu.id, mpu);
     }
 
     public static void remove(CommonId id) {
-        PreParameters.nonNull(id, "id");
+        Parameters.nonNull(id, "id");
         mpus.remove(id);
     }
 

@@ -24,9 +24,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @Slf4j
-public class PreParameters {
+public final class Parameters {
 
-    private PreParameters() {
+    private Parameters() {
     }
 
     /**

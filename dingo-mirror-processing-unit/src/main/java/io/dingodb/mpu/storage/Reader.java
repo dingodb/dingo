@@ -21,7 +21,7 @@ import io.dingodb.common.store.KeyValue;
 import java.util.Iterator;
 import java.util.List;
 
-public interface Reader {
+public interface Reader extends AutoCloseable {
 
     Iterator<KeyValue> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
 
@@ -30,4 +30,7 @@ public interface Reader {
     byte[] get(byte[] key);
 
     List<KeyValue> get(List<byte[]> keys);
+
+    @Override
+    void close();
 }

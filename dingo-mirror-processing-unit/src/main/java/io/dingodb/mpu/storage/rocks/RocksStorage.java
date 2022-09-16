@@ -106,6 +106,8 @@ public class RocksStorage implements Storage {
     private ColumnFamilyDescriptor mcfDesc;
     private ColumnFamilyDescriptor icfDesc;
 
+    private boolean destroy = false;
+
     public RocksStorage(CoreMeta coreMeta, String path, String options) throws Exception {
         this.coreMeta = coreMeta;
         this.runner = new LinkedRunner(coreMeta.label);
@@ -136,10 +138,11 @@ public class RocksStorage implements Storage {
         DBOptions options = new DBOptions();
         options.setCreateIfMissing(true);
         options.setCreateMissingColumnFamilies(true);
-        options.setWalDir(this.instructionPath.resolve("wal").toString());
+        options.setListeners(Collections.singletonList(new Listener()));
         options.optimizeForSmallDb();
+        options.setWalDir(this.instructionPath.resolve("wal").toString());
         List<ColumnFamilyDescriptor> cfs = Arrays.asList(
-            icfDesc = icfDesc(icfPath)
+            icfDesc = icfDesc()
         );
         List<ColumnFamilyHandle> handles = new ArrayList<>();
         RocksDB instruction = RocksDB.open(options, instructionPath.toString(), cfs, handles);
@@ -153,8 +156,8 @@ public class RocksStorage implements Storage {
         options.setWalDir(this.dbPath.resolve("wal").toString());
         options.setListeners(Collections.singletonList(new Listener()));
         List<ColumnFamilyDescriptor> cfs = Arrays.asList(
-            dcfDesc = dcfDesc(dcfPath),
-            mcfDesc = mcfDesc(mcfPath)
+            dcfDesc = dcfDesc(),
+            mcfDesc = mcfDesc()
         );
         List<ColumnFamilyHandle> handles = new ArrayList<>(4);
         RocksDB db = RocksDB.open(options, dbPath.toString(), cfs, handles);
@@ -171,6 +174,7 @@ public class RocksStorage implements Storage {
 
     @Override
     public void destroy() {
+        destroy = true;
         closeDB();
         this.instruction.close();
         this.icfHandler.close();
@@ -203,7 +207,7 @@ public class RocksStorage implements Storage {
     }
 
     private void flushMeta() {
-        try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(false)) {
+        try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(true)) {
             db.flush(flushOptions, mcfHandler);
         } catch (RocksDBException e) {
             log.error("Flush instruction error.", e);
@@ -211,7 +215,7 @@ public class RocksStorage implements Storage {
     }
 
     private void flushInstruction() {
-        try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(false)) {
+        try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(true)) {
             instruction.flush(flushOptions);
         } catch (RocksDBException e) {
             log.error("Flush instruction error.", e);
@@ -219,6 +223,9 @@ public class RocksStorage implements Storage {
     }
 
     public void backup() {
+        if (destroy) {
+            return;
+        }
         try {
             backup.createNewBackup(db);
             backup.purgeOldBackups(3);
@@ -235,6 +242,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public void applyBackup() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             backup.close();
             backup = BackupEngine.open(db.getEnv(), new BackupEngineOptions(backupPath.toString()));
@@ -251,6 +261,9 @@ public class RocksStorage implements Storage {
     @Override
     public long approximateCount() {
         try {
+            if (destroy) {
+                throw new RuntimeException();
+            }
             return db.getLongProperty(dcfHandler, "rocksdb.estimate-num-keys");
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
@@ -259,6 +272,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public long approximateSize() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try (
             Snapshot snapshot = db.getSnapshot();
             ReadOptions readOptions = new ReadOptions().setSnapshot(snapshot)
@@ -287,8 +303,14 @@ public class RocksStorage implements Storage {
 
     @Override
     public void clearClock(long clock) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
-            instruction.deleteRange(icfHandler, encodeLong(0), encodeLong(clock));
+            instruction.delete(icfHandler, encodeLong(clock));
+            if (clock % 1000000 == 0) {
+                instruction.deleteRange(icfHandler, encodeLong(0), encodeLong(clock));
+            }
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -296,6 +318,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public long clocked() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             return Optional.mapOrGet(db.get(mcfHandler, CLOCK_K), PrimitiveCodec::readLong, () -> 0L);
         } catch (RocksDBException e) {
@@ -305,6 +330,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public long clock() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             return Optional.mapOrGet(instruction.get(icfHandler, CLOCK_K), PrimitiveCodec::readLong, () -> 0L);
         } catch (RocksDBException e) {
@@ -314,6 +342,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public void tick(long clock) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             this.instruction.put(icfHandler, CLOCK_K, PrimitiveCodec.encodeLong(clock));
         } catch (RocksDBException e) {
@@ -323,6 +354,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public void saveInstruction(long clock, byte[] instruction) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             this.instruction.put(icfHandler, PrimitiveCodec.encodeLong(clock), instruction);
         } catch (RocksDBException e) {
@@ -332,6 +366,9 @@ public class RocksStorage implements Storage {
 
     @Override
     public byte[] reappearInstruction(long clock) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             return instruction.get(icfHandler, PrimitiveCodec.encodeLong(clock));
         } catch (RocksDBException e) {
@@ -346,16 +383,25 @@ public class RocksStorage implements Storage {
 
     @Override
     public Reader reader() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         return new Reader(db, dcfHandler);
     }
 
     @Override
     public Writer writer(Instruction instruction) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         return new Writer(db, instruction, dcfHandler);
     }
 
     @Override
     public void flush(io.dingodb.mpu.storage.Writer writer) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
         try {
             Instruction instruction = writer.instruction();
             WriteBatch batch = ((Writer) writer).writeBatch();
@@ -372,16 +418,16 @@ public class RocksStorage implements Storage {
         }
     }
 
-    private static ColumnFamilyDescriptor dcfDesc(Path dcfPath) {
+    private static ColumnFamilyDescriptor dcfDesc() {
         return new ColumnFamilyDescriptor(CF_DEFAULT, new ColumnFamilyOptions());
     }
 
-    private static ColumnFamilyDescriptor icfDesc(Path icfPath) {
+    private static ColumnFamilyDescriptor icfDesc() {
         return new ColumnFamilyDescriptor(CF_DEFAULT, new ColumnFamilyOptions());
     }
 
 
-    private static ColumnFamilyDescriptor mcfDesc(Path mcfPath) {
+    private static ColumnFamilyDescriptor mcfDesc() {
         return new ColumnFamilyDescriptor(CF_META, new ColumnFamilyOptions());
     }
 
@@ -390,9 +436,12 @@ public class RocksStorage implements Storage {
         @Override
         public void onFlushCompleted(RocksDB db, FlushJobInfo flushJobInfo) {
             log.info("{} on flush completed, info: {}", coreMeta.label, flushJobInfo);
-            if (flushJobInfo.getColumnFamilyId() == dcfHandler.getID()) {
+            if (
+                db.getName().equals(RocksStorage.this.db.getName())
+                && flushJobInfo.getColumnFamilyId() == dcfHandler.getID()
+            ) {
+                log.info("Flush on db default, will flush instruction and meta, and backup default db.");
                 runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
-                runner.forceFollow(RocksStorage.this::flushInstruction);
                 runner.forceFollow(RocksStorage.this::flushMeta);
                 runner.forceFollow(RocksStorage.this::backup);
             }
@@ -417,7 +466,13 @@ public class RocksStorage implements Storage {
         @Override
         public void onCompactionCompleted(RocksDB db, CompactionJobInfo compactionJobInfo) {
             log.info("{} on compaction completed, info: {}", coreMeta.label, compactionJobInfo);
-            //runner.forceFollow(RocksStorage.this::backup);
+            if (
+                db.getName().equals(RocksStorage.this.db.getName())
+                && Arrays.equals(compactionJobInfo.columnFamilyName(), CF_DEFAULT)
+            ) {
+                runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
+                runner.forceFollow(RocksStorage.this::backup);
+            }
 
         }
 
