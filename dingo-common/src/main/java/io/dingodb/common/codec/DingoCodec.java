@@ -55,6 +55,11 @@ public class DingoCodec implements Codec {
     }
 
     @Override
+    public byte[] encodeKeyForRangeScan(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+        return re.encodeKeyWithoutLength(tuple);
+    }
+
+    @Override
     public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping)
         throws IOException, ClassCastException {
         Object[] newTuple = new Object[mapping.size()];

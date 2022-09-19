@@ -57,7 +57,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         this.ranges = ranges;
         this.definition = definition;
         this.keySchema = definition.getDingoType(true);
-        this.codec = new DingoCodec(definition.getDingoSchemaOfKey());
+        this.codec = new DingoCodec(definition.getDingoSchemaOfKey(), null, true);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     @Override
     public ComparableByteArray calcPartId(@Nonnull Object[] keyTuple) {
         try {
-            return calcPartId(codec.encode((Object[]) keySchema.convertTo(keyTuple, DingoConverter.INSTANCE)));
+            return calcPartId(codec.encodeKey((Object[]) keySchema.convertTo(keyTuple, DingoConverter.INSTANCE)));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

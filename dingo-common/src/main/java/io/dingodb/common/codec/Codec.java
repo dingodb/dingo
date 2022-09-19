@@ -42,6 +42,10 @@ public interface Codec {
         return encode(origin, tuple, schemaIndex);
     }
 
+    default byte[] encodeKeyForRangeScan(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+        return encode(tuple);
+    }
+
     Object[] decode(@Nonnull byte[] bytes) throws IOException;
 
     Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException;

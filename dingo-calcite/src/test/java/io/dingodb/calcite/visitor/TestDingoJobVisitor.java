@@ -206,11 +206,8 @@ public class TestDingoJobVisitor {
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
-        Assert.job(job).taskNum(2)
-            .task("0001", t -> t.location(MockMetaServiceProvider.LOC_0).operatorNum(2)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isA(PartModifyOperator.class))
-            .task("0003", t -> t.location(MockMetaServiceProvider.LOC_1).operatorNum(2)
+        Assert.job(job).taskNum(1)
+            .task("0001", t -> t.location(MockMetaServiceProvider.LOC_1).operatorNum(2)
                 .soleSource().isA(ValuesOperator.class)
                 .soleOutput().isA(PartModifyOperator.class));
     }

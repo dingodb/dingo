@@ -98,8 +98,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)
-        ));
+            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)), null, true);
         if (rel.getFilter().getKind() == SqlKind.AND) {
             RexCall filter = (RexCall) rel.getFilter();
             byte[] left = ByteArrayUtils.EMPTY_BYTES;
@@ -127,7 +126,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case LESS_THAN:
                             includeEnd = false;
                         case LESS_THAN_OR_EQUAL:
-                            right = codec.encodeKey(new Object[]{RexConverter.convertFromRexLiteral(
+                            right = codec.encodeKeyForRangeScan(new Object[]{RexConverter.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});
@@ -135,7 +134,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case GREATER_THAN:
                             includeStart = false;
                         case GREATER_THAN_OR_EQUAL:
-                            left = codec.encodeKey(new Object[]{RexConverter.convertFromRexLiteral(
+                            left = codec.encodeKeyForRangeScan(new Object[]{RexConverter.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});

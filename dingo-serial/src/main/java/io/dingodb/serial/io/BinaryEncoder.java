@@ -829,4 +829,11 @@ public class BinaryEncoder {
         }
         return buf;
     }
+
+    public byte[] getByteArrayWithoutLength() {
+        if (forwardPosition != buf.length) {
+            buf = Arrays.copyOf(buf, forwardPosition);
+        }
+        return buf;
+    }
 }

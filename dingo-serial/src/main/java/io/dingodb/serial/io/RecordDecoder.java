@@ -36,7 +36,6 @@ public class RecordDecoder {
         if (!isKey) {
             Utils.sortSchema(schemas);
         }
-        Utils.sortSchema(schemas);
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;
     }

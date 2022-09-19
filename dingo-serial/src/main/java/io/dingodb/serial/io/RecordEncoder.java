@@ -213,62 +213,7 @@ public class RecordEncoder {
     }
 
     public byte[] encodeKey(Object[] record) throws IOException {
-        BinaryEncoder be = new BinaryEncoder(new byte[approPerRecordSize], new byte[perRecordKeySize]);
-        be.writeShort(schemaVersion);
-        for (DingoSchema schema : schemas) {
-            switch (schema.getType()) {
-                case BOOLEAN:
-                    be.writeBoolean(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case BOOLEANLIST:
-                    be.writeBooleanList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case SHORT:
-                    be.writeKeyShort(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case SHORTLIST:
-                    be.writeShortList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case INTEGER:
-                    be.writeKeyInt(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case INTEGERLIST:
-                    be.writeIntegerList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case FLOAT:
-                    be.writeKeyFloat(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case FLOATLIST:
-                    be.writeFloatList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case LONG:
-                    be.writeKeyLong(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case LONGLIST:
-                    be.writeLongList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case DOUBLE:
-                    be.writeKeyDouble(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case DOUBLELIST:
-                    be.writeDoubleList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case BYTES:
-                    be.writeKeyBytes(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case BYTESLIST:
-                    be.writeBytesList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case STRING:
-                    be.writeKeyString(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                case STRINGLIST:
-                    be.writeStringList(Utils.processNullColumn(schema, record[schema.getIndex()]));
-                    break;
-                default:
-            }
-        }
-        return be.getByteArray();
+        return internalEncodeKey(record).getByteArray();
     }
 
     public byte[] encodeKey(byte[] record, int[] index, Object[] columns) throws IOException {
@@ -381,5 +326,68 @@ public class RecordEncoder {
         } else {
             throw new RuntimeException("Schema version Wrong!");
         }
+    }
+
+    public byte[] encodeKeyWithoutLength(Object[] record) throws IOException {
+        return internalEncodeKey(record).getByteArrayWithoutLength();
+    }
+
+    private BinaryEncoder internalEncodeKey(Object[] record) throws IOException {
+        BinaryEncoder be = new BinaryEncoder(new byte[approPerRecordSize], new byte[perRecordKeySize]);
+        be.writeShort(schemaVersion);
+        for (DingoSchema schema : schemas) {
+            switch (schema.getType()) {
+                case BOOLEAN:
+                    be.writeBoolean(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case BOOLEANLIST:
+                    be.writeBooleanList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case SHORT:
+                    be.writeKeyShort(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case SHORTLIST:
+                    be.writeShortList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case INTEGER:
+                    be.writeKeyInt(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case INTEGERLIST:
+                    be.writeIntegerList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case FLOAT:
+                    be.writeKeyFloat(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case FLOATLIST:
+                    be.writeFloatList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case LONG:
+                    be.writeKeyLong(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case LONGLIST:
+                    be.writeLongList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case DOUBLE:
+                    be.writeKeyDouble(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case DOUBLELIST:
+                    be.writeDoubleList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case BYTES:
+                    be.writeKeyBytes(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case BYTESLIST:
+                    be.writeBytesList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case STRING:
+                    be.writeKeyString(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                case STRINGLIST:
+                    be.writeStringList(Utils.processNullColumn(schema, record[schema.getIndex()]));
+                    break;
+                default:
+            }
+        }
+        return be;
     }
 }
