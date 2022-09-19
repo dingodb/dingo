@@ -171,7 +171,7 @@ public class MetaController {
             .toArray(Object[]::new)
         ));
         return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(CommonId.decode(parts.floorEntry(
-            new ComparableByteArray(new DingoCodec(def.getDingoSchemaOfKey()).encode(keys))
+            new ComparableByteArray(new DingoCodec(def.getDingoSchemaOfKey(), null, true).encodeKey(keys))
         ).getValue().getId()))));
     }
 
@@ -189,7 +189,7 @@ public class MetaController {
             .map(params::get)
             .toArray(Object[]::new)
         ));
-        return ResponseEntity.ok(mapper.mapping(new DingoCodec(def.getDingoSchemaOfKey()).encode(keys)));
+        return ResponseEntity.ok(mapper.mapping(new DingoCodec(def.getDingoSchemaOfKey(), null, true).encodeKey(keys)));
     }
 
     @ApiOperation("Decode primary key.")
@@ -199,7 +199,7 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         TableDefinition def = metaApi.tableDefinition(table);
-        Object[] keys = new DingoCodec(def.getDingoSchemaOfKey()).decode(mapper.mapping(input));
+        Object[] keys = new DingoCodec(def.getDingoSchemaOfKey(), null, true).decodeKey(mapper.mapping(input));
         int[] mappings = def.getKeyMapping().getMappings();
         Map<String, Object> result = new HashMap<>();
         for (int i = 0; i < mappings.length; i++) {

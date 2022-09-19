@@ -165,7 +165,7 @@ public class ScheduleController {
             .map(params::get)
             .toArray(Object[]::new)
         ));
-        scheduleApi.splitPart(tableId, partId, new DingoCodec(def.getDingoSchemaOfKey()).encode(keys));
+        scheduleApi.splitPart(tableId, partId, new DingoCodec(def.getDingoSchemaOfKey(), null, true).encodeKey(keys));
         return ResponseEntity.ok("ok");
     }
 
@@ -191,7 +191,7 @@ public class ScheduleController {
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
         NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
-        byte[] keys = new DingoCodec(def.getDingoSchemaOfKey()).encode(
+        byte[] keys = new DingoCodec(def.getDingoSchemaOfKey(), null, true).encodeKey(
             def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
                 .map(ColumnDefinition::getName)
                 .map(params::get)
