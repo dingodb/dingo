@@ -25,7 +25,7 @@ dependencies {
     implementation project(":dingo-net-netty")
 
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
-    implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+    implementation group: 'io.dingodb', name: 'rocksdbjni', version: 'rocksdb'.v()
 
 }
 
