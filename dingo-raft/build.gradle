@@ -23,7 +23,7 @@ dependencies {
     compile group: 'net.openhft', name: 'affinity', version: 'affinity'.v()
     compile group: 'org.apache.commons', name: 'commons-compress', version: 'commons-compress'.v()
     compile group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
-    compile group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+    compile group: 'io.dingodb', name: 'rocksdbjni', version: 'rocksdb'.v()
     compile group: 'com.alipay.sofa', name: 'hessian', version: 'hessian'.v()
 
 

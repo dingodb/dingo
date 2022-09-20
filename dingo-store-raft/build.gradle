@@ -23,7 +23,7 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
-    implementation group: 'org.rocksdb', name: 'rocksdbjni', version: 'rocksdb'.v()
+    implementation group: 'io.dingodb', name: 'rocksdbjni', version: 'rocksdb'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
 
     implementation project(':dingo-store-api')
