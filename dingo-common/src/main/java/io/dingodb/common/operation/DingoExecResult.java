@@ -70,7 +70,7 @@ public class DingoExecResult implements Serializable {
     public Value get(String key, String column) {
         Value mapValue = record.get(key);
         if (mapValue.getType() == ParticleType.MAP) {
-            Map map = (Map) mapValue;
+            Map map = (Map) mapValue.getObject();
             return Value.get(map.get(column));
         }
         return mapValue;

@@ -42,6 +42,10 @@ import java.util.stream.Collectors;
 
 public interface CollectionOperation<D extends OperationContext, T, R> extends Executive<D, T, R> {
 
+    default String arrayToString(Object[] keys) {
+        return String.join(",", Arrays.stream(keys).map(Object::toString).toArray(String[]::new));
+    }
+
     default Object convertValueTo(Object value) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -86,7 +90,7 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
                     Map<String, Object> values = getCollectionSize(columns, objects);
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+                    result.put(arrayToString(key), Value.get(values));
                 } catch (IOException e) {
                     return new DingoExecResult(false, "Size operation decode failed, " + e.getMessage());
                 }
@@ -130,10 +134,12 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
                         List value = (List) objects[i];
-                        values.put(columns[i].name, value.size() > context.index ? value.get(context.index) : null);
+                        if (value.size() > context.index) {
+                            values.put(columns[i].name, value.get(context.index));
+                        }
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+                    result.put(arrayToString(key), Value.get(values));
                 } catch (IOException e) {
                     return new DingoExecResult(false, "Get by index operation decode failed, " + e.getMessage());
                 }
@@ -159,15 +165,15 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
                         List list = (List) objects[i];
-                        int size = context.index + context.count > list.size() ? list.size() : context.count;
+                        int size = context.index + context.count >= list.size() ? list.size() : context.count;
                         List<Object> value = new ArrayList<>();
-                        for (int j = context.index; j <= size; j++) {
+                        for (int j = context.index; j < size; j++) {
                             value.add(list.get(j));
                         }
                         values.put(columns[i].name, value);
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+                    result.put(arrayToString(key), Value.get(values));
                 } catch (IOException e) {
                     return new DingoExecResult(
                         false, "Get by index range operation decode failed, " + e.getMessage());
@@ -193,15 +199,23 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Object[] objects = context.dingoValueCodec().decode(keyValue.getValue(), indexes);
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
-                        values.put(columns[i].name, objects[i]);
+                        values.put(columns[i].name, convert(objects[i]));
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+
+                    result.put(arrayToString(key), Value.get(values));
                 } catch (IOException e) {
                     return new DingoExecResult(false, "Get all operation decode failed, " + e.getMessage());
                 }
             }
             return new DingoExecResult(result, true, "OK", CollectionType.GET_ALL.name());
+        }
+
+        private Object convert(Object object) {
+            if (object instanceof byte[]) {
+                return convertValueFrom(object);
+            }
+            return object;
         }
     }
 
@@ -266,13 +280,16 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
         }
 
         private Object[] convert(Object[] objects) {
-            for (Object object : objects) {
+            for (int i = 0; i < objects.length; i++) {
+                Object object = objects[i];
                 if (object instanceof List) {
                     List<?> list = (List<?>) object;
                     list.clear();
-                } else if (object instanceof Map) {
+                    objects[i] = list;
+                } else if (object instanceof byte[]) {
                     Map<?, ?> map = convertValueFrom(object);
                     map.clear();
+                    objects[i] = convertValueTo(map);
                 }
             }
             return objects;
@@ -415,7 +432,7 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     }
                     if (!values.isEmpty()) {
                         Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                        result.put(Arrays.toString(key), Value.get(values));
+                        result.put(arrayToString(key), Value.get(values));
                     } else {
                         log.info("Collection get by key operation, The key:{} was not found in the map",
                             context.key.getObject());
@@ -452,7 +469,7 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                         values.put(columns[i].name, value);
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
-                    result.put(Arrays.toString(key), Value.get(values));
+                    result.put(arrayToString(key), Value.get(values));
                 } catch (IOException e) {
                     return new DingoExecResult(false, "Get by value operation decode failed, " + e.getMessage());
                 }
