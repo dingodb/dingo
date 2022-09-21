@@ -88,6 +88,9 @@ public class InstructionSyncChannel implements Channel, MessageListener {
     }
 
     public synchronized void assignControlUnit(ControlUnit controlUnit) {
+        if (channel == null || channel.isClosed()) {
+            return;
+        }
         if (this.controlUnit == null) {
             this.controlUnit = controlUnit;
             controlUnit.onMirrorConnect(mirror, this);

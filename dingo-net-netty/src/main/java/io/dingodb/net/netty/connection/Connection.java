@@ -19,7 +19,6 @@ package io.dingodb.net.netty.connection;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.channel.Channel;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelOutboundInvoker;
@@ -96,6 +95,9 @@ public abstract class Connection  {
         channel.shutdown();
         channels.values().forEach(Channel::shutdown);
         channels.clear();
+        if (socketChannel.isActive()) {
+            socketChannel.disconnect();
+        }
     }
 
 }

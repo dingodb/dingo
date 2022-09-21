@@ -58,7 +58,7 @@ public interface ApiRegistry {
     }
 
     default <T> T proxy(Class<T> api, Location location, int timeout) {
-        return proxy(api, location, timeout);
+        return proxy(api, () -> location, timeout);
     }
 
 }

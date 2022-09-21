@@ -21,7 +21,7 @@ import io.dingodb.net.netty.NetServiceConfiguration;
 import io.dingodb.net.netty.connection.ConnectionManager;
 import io.dingodb.net.netty.connection.ServerConnection;
 import io.dingodb.net.netty.handler.ExceptionHandler;
-import io.dingodb.net.netty.handler.MessageDecoder;
+import io.dingodb.net.netty.handler.MessageHandler;
 import io.dingodb.net.netty.listener.PortListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -69,8 +69,7 @@ public class NettyServer implements PortListener {
             protected void initChannel(SocketChannel ch) throws Exception {
                 ServerConnection connection = new ServerConnection(ch);
                 ch.pipeline()
-                    //.addLast(new MessageEncoder())
-                    .addLast(new MessageDecoder(connection))
+                    .addLast(new MessageHandler(connection))
                     .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.getHeartbeat(), 0, 0, SECONDS))
                     .addLast(new ExceptionHandler(connection));
                 connectionManager.onOpen(connection);
