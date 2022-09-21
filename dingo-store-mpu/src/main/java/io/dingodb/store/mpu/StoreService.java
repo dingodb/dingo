@@ -48,8 +48,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     @Override
     public StoreInstance getOrCreateInstance(@Nonnull CommonId id) {
         Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
-        return storeInstanceMap.compute(id, (l, i) -> i == null
-                                                      ? new StoreInstance(id, instancePath) : i);
+        return storeInstanceMap.compute(id, (l, i) -> i == null ? new StoreInstance(id, instancePath,
+            StoreConfiguration.dbRocksOptionsFile(), StoreConfiguration.logRocksOptionsFile()) : i);
     }
 
     @Override

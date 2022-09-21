@@ -48,8 +48,18 @@ public class StoreConfiguration {
     }
 
     private String dbPath;
+    private String dbRocksOptionsFile;
+    private String logRocksOptionsFile;
 
     public static String dbPath() {
         return INSTANCE.dbPath;
+    }
+
+    public static String dbRocksOptionsFile() {
+        return INSTANCE.dbRocksOptionsFile;
+    }
+
+    public static String logRocksOptionsFile() {
+        return INSTANCE.logRocksOptionsFile;
     }
 }
