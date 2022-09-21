@@ -18,7 +18,7 @@ package io.dingodb.test;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.driver.client.DingoDriverClient;
-import io.dingodb.test.asserts.AssertResultSet;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -85,7 +85,7 @@ public class DingoDriverClientIT {
         Connection connection = sqlHelper.getConnection();
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{5, "Emily", 5.5},
                     new Object[]{6, "Alice", 6.0},
                     new Object[]{7, "Betty", 6.5}
@@ -103,7 +103,7 @@ public class DingoDriverClientIT {
             statement.setInt(1, 8);
             statement.setDouble(2, 5.0);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{5, "Emily", 5.5},
                     new Object[]{6, "Alice", 6.0},
                     new Object[]{7, "Betty", 6.5}
@@ -111,7 +111,7 @@ public class DingoDriverClientIT {
             }
             statement.setDouble(2, 6.0);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{7, "Betty", 6.5}
                 ));
             }

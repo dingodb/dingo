@@ -31,14 +31,12 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.TreeMap;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @AutoService(MetaServiceProvider.class)
 public class MockMetaServiceProvider implements MetaServiceProvider {
-    public static final String SCHEMA_NAME = "MOCK".toLowerCase();
-    public static final String TABLE_NAME = "TEST".toLowerCase();
-    public static final String TABLE_1_NAME = "TEST1".toLowerCase();
+    public static final String SCHEMA_NAME = "MOCK";
+    public static final String TABLE_NAME = "TEST";
     public static final Location LOC_0 = new Location("host1", 26535);
     public static final Location LOC_1 = new Location("host2", 26535);
 
@@ -49,10 +47,11 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
             when(metaService.getName()).thenReturn(SCHEMA_NAME);
             when(metaService.getTableDefinitions()).thenReturn(ImmutableMap.of(
                 TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
-                TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json")),
-                "table-with-date", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-date.json"))
+                "test1", TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json")),
+                "table-with-date", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-date.json")),
+                "table-with-array", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-array.json"))
             ));
-            when(metaService.getTableId(anyString())).thenReturn(CommonId.prefix((byte) 0));
+            when(metaService.getTableId(TABLE_NAME)).thenReturn(CommonId.prefix((byte) 0));
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,0 +1,8 @@
+id  ,name     ,sex   ,born_date          ,phone      ,boyfriend_id,id0,boyName   ,userCP
+INT ,STRING   ,STRING,TIMESTAMP          ,STRING     ,INT         ,INT,STRING    ,INT
+3   ,Angela   ,female,1989-02-03 00:00:00,18209876567,3           ,3  ,Xiao Ming ,50
+6   ,zhiRuo   ,female,1988-02-03 00:00:00,18209876577,1           ,1  ,Zhang Wuji,100
+8   ,Xiao Zhao,female,1989-02-03 00:00:00,18209876567,1           ,1  ,Zhang Wuji,100
+12  ,Zhao Min ,female,1992-02-03 00:00:00,18209179577,1           ,1  ,Zhang Wuji,100
+null,null     ,null  ,null               ,null       ,null        ,5  ,Zhang Fei ,1000
+null,null     ,null  ,null               ,null       ,null        ,6  ,Panan     ,500

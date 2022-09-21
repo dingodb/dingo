@@ -44,13 +44,13 @@ public final class DingoCoalesce extends SingleRel implements DingoRel {
     }
 
     @Override
-    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
-        return mq.getRowCount(input) * DingoTableScan.ASSUME_PARTS;
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeZeroCost();
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeZeroCost();
+    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+        return mq.getRowCount(input) * DingoTableScan.ASSUME_PARTS;
     }
 
     @Override

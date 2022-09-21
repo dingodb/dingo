@@ -41,14 +41,10 @@ public class TestDingoParser {
         parser = new DingoParser(context);
     }
 
-    private static SqlNode parse(String sql) throws SqlParseException {
-        SqlNode sqlNode = parser.parse(sql);
-        return parser.validate(sqlNode);
-    }
-
     @Test
     public void testGetValidatedNodeType() throws SqlParseException {
-        SqlNode sqlNode = parse("select id, name, amount from test");
+        SqlNode sqlNode = parser.parse("select id, name, amount from test");
+        parser.validate(sqlNode);
         RelDataType type = parser.getValidatedNodeType(sqlNode);
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         assertThat(type.toString()).isEqualTo(
@@ -69,10 +65,11 @@ public class TestDingoParser {
 
     @Test
     public void testGetFieldOrigins() throws SqlParseException {
-        SqlNode sqlNode = parse("select id, name, amount from test");
+        SqlNode sqlNode = parser.parse("select id, name, amount from test");
+        parser.validate(sqlNode);
         List<List<String>> fieldOrigins = parser.getFieldOrigins(sqlNode);
-        String tableName = "TEST".toLowerCase();
-        String schemaName = "MOCK".toLowerCase();
+        String tableName = "TEST";
+        String schemaName = "MOCK";
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
             ImmutableList.of("DINGO_ROOT", schemaName, tableName, "ID"),
             ImmutableList.of("DINGO_ROOT", schemaName, tableName, "NAME"),

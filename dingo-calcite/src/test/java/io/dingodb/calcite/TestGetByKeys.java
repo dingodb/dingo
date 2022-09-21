@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
@@ -25,6 +24,7 @@ import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -54,14 +54,14 @@ public class TestGetByKeys {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
@@ -73,14 +73,14 @@ public class TestGetByKeys {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoGetByKeys.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
             getByKeys.getKeyItems(),
@@ -96,14 +96,14 @@ public class TestGetByKeys {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoGetByKeys.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
             getByKeys.getKeyItems(),
@@ -119,14 +119,14 @@ public class TestGetByKeys {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoGetByKeys.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
             getByKeys.getKeyItems(),

@@ -17,13 +17,13 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
+import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -50,7 +50,7 @@ public class TestRelBuilder {
             .build();
         final RelBuilder builder = RelBuilder.create(config);
         final RelOptCluster cluster = builder.getCluster();
-        final RelNode relNode = builder.scan("test")
+        final RelNode relNode = builder.scan("TEST")
             .project(builder.field("ID"), builder.field("NAME"))
             .filter(builder.call(SqlStdOperatorTable.EQUALS, builder.field("ID"), builder.literal(1)))
             .push(new DingoRoot(cluster, cluster.traitSet(), builder.build()))
@@ -61,8 +61,8 @@ public class TestRelBuilder {
         RelTraitSet traitSet = planner.emptyTraitSet().replace(DingoConventions.ROOT);
         RelNode optimized = program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class)
-            .singleInput().isA(DingoGetByKeys.class);
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class)
+            .soleInput().isA(DingoGetByKeys.class);
     }
 }

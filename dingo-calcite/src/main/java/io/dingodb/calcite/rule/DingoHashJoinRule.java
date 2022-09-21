@@ -64,16 +64,25 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
         );
     }
 
+    /**
+     * Non-equiv join condition is extracted by {@link org.apache.calcite.rel.rules.JoinExtractFilterRule}, so check
+     * with this method to process only equiv join.
+     */
+    public static boolean match(@Nonnull LogicalJoin rel) {
+        JoinInfo joinInfo = rel.analyzeCondition();
+        return joinInfo.isEqui();
+    }
+
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         LogicalJoin rel = call.rel(0);
         JoinInfo joinInfo = rel.analyzeCondition();
         if (!joinInfo.isEqui()) {
-            // If the conditions have been extracted to a Filter above, do HashJoin with empty key.
-            if (!joinInfo.nonEquiConditions.isEmpty()) {
-                // else we cannot handle.
-                return;
-            }
+            return;
+        }
+        if (joinInfo.leftKeys.size() == 0 || joinInfo.rightKeys.size() == 0) {
+            // No keys for redistribute, should be processed by HashJoinRoot rule.
+            return;
         }
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traitSet = rel.getTraitSet().replace(DingoConventions.DISTRIBUTED);
@@ -95,7 +104,7 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoHashJoinRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(LogicalJoin.class).anyInputs()
+                b0.operand(LogicalJoin.class).predicate(DingoHashJoinRule::match).anyInputs()
             )
             .description("DingoHashJoinRule")
             .build();

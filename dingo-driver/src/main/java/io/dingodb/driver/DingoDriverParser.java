@@ -49,7 +49,6 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -64,8 +63,7 @@ import javax.annotation.Nonnull;
 public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(DingoParserContext context) {
         super(context);
-        PARSER_CONFIG = SqlParser.config()
-            .withParserFactory(DingoDdlParserFactory.INSTANCE);
+        PARSER_CONFIG = PARSER_CONFIG.withParserFactory(DingoDdlParserFactory.INSTANCE);
     }
 
     private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @Nonnull RelDataType type) {

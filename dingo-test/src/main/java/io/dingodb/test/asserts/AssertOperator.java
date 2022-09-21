@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Input;

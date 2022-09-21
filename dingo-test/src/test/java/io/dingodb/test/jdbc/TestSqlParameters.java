@@ -18,7 +18,7 @@ package io.dingodb.test.jdbc;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.test.SqlHelper;
-import io.dingodb.test.asserts.AssertResultSet;
+import io.dingodb.test.asserts.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ public class TestSqlParameters {
             try (PreparedStatement statement = sqlHelper.getConnection().prepareStatement(sql)) {
                 statement.setInt(1, 1);
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                    Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                         new Object[]{1}
                     ));
                 }
@@ -70,13 +70,13 @@ public class TestSqlParameters {
         try (PreparedStatement statement = sqlHelper.getConnection().prepareStatement(sql)) {
             statement.setInt(1, 1);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{2}
                 ));
             }
             statement.setInt(1, 2);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{3}
                 ));
             }
@@ -91,7 +91,7 @@ public class TestSqlParameters {
             statement.setInt(1, 8);
             statement.setDouble(2, 5.0);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{5, "Emily", 5.5},
                     new Object[]{6, "Alice", 6.0},
                     new Object[]{7, "Betty", 6.5}
@@ -99,7 +99,7 @@ public class TestSqlParameters {
             }
             statement.setDouble(2, 6.0);
             try (ResultSet resultSet = statement.executeQuery()) {
-                AssertResultSet.of(resultSet).isRecords(ImmutableList.of(
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{7, "Betty", 6.5}
                 ));
             }

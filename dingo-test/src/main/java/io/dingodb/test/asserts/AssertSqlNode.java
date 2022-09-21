@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;

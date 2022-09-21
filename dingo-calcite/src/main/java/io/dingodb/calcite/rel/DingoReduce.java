@@ -74,14 +74,14 @@ public final class DingoReduce extends SingleRel implements DingoRel {
     }
 
     @Override
-    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
-        return mq.getRowCount(input) / DingoTableScan.ASSUME_PARTS;
-    }
-
-    @Override
     public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
         // Assume that all reduces are needed.
         return planner.getCostFactory().makeZeroCost();
+    }
+
+    @Override
+    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+        return mq.getRowCount(input) / DingoTableScan.ASSUME_PARTS;
     }
 
     @Nonnull

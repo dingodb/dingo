@@ -17,13 +17,13 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.CsvConverter;
+import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlKind;
@@ -60,7 +60,7 @@ public class TestValues {
         RelRoot relRoot = parser.convert(sqlNode);
         RelNode optimized = parser.optimize(relRoot.rel);
         return (DingoValues) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoValues.class)
+            .soleInput().isA(DingoValues.class)
             .getInstance();
     }
 
