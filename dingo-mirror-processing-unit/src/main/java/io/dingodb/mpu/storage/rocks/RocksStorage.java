@@ -31,15 +31,18 @@ import org.rocksdb.AbstractEventListener;
 import org.rocksdb.BackgroundErrorReason;
 import org.rocksdb.BackupEngine;
 import org.rocksdb.BackupEngineOptions;
+import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionJobInfo;
+import org.rocksdb.ConfigOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.FileOperationInfo;
 import org.rocksdb.FlushJobInfo;
 import org.rocksdb.FlushOptions;
 import org.rocksdb.MemTableInfo;
+import org.rocksdb.OptionsUtil;
 import org.rocksdb.Range;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RestoreOptions;
@@ -50,6 +53,7 @@ import org.rocksdb.SizeApproximationFlag;
 import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Status;
+import org.rocksdb.StringAppendOperator;
 import org.rocksdb.TableFileCreationBriefInfo;
 import org.rocksdb.TableFileCreationInfo;
 import org.rocksdb.TableFileDeletionInfo;
@@ -57,6 +61,7 @@ import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 import org.rocksdb.WriteStallInfo;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -90,7 +95,9 @@ public class RocksStorage implements Storage {
     public final Path mcfPath;
     public final Path icfPath;
 
-    public final DBOptions options;
+    public final String dbRocksOptionsFile;
+    public final String logRocksOptionsFile;
+
     public final WriteOptions writeOptions;
     public final LinkedRunner runner;
 
@@ -108,10 +115,13 @@ public class RocksStorage implements Storage {
 
     private boolean destroy = false;
 
-    public RocksStorage(CoreMeta coreMeta, String path, String options) throws Exception {
+    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
+                        final String logRocksOptionsFile) throws Exception {
         this.coreMeta = coreMeta;
         this.runner = new LinkedRunner(coreMeta.label);
         this.path = Paths.get(path).toAbsolutePath();
+        this.dbRocksOptionsFile = dbRocksOptionsFile;
+        this.logRocksOptionsFile = logRocksOptionsFile;
 
         this.backupPath = this.path.resolve("backup");
 
@@ -121,7 +131,6 @@ public class RocksStorage implements Storage {
 
         this.instructionPath = this.path.resolve("instruction");
         this.icfPath = this.instructionPath.resolve("data");
-        this.options = new DBOptions();
         FileUtils.createDirectories(this.instructionPath);
         FileUtils.createDirectories(this.backupPath);
         FileUtils.createDirectories(this.dbPath);
@@ -136,20 +145,43 @@ public class RocksStorage implements Storage {
 
     private RocksDB createInstruction() throws RocksDBException {
         DBOptions options = new DBOptions();
+        loadDBOptions(this.logRocksOptionsFile, options);
+
         options.setCreateIfMissing(true);
         options.setCreateMissingColumnFamilies(true);
         options.setListeners(Collections.singletonList(new Listener()));
         options.setWalDir(this.instructionPath.resolve("wal").toString());
-        List<ColumnFamilyDescriptor> cfs = Arrays.asList(
-            icfDesc = icfDesc()
-        );
+
+        final ColumnFamilyOptions cfOption = new ColumnFamilyOptions();
+        BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
+        tableConfig.setBlockSize(128 * 1024);
+        tableConfig.setBlockCacheSize(200 / 4 * 1024 * 1024 * 1024L);
+        cfOption.setTableFormatConfig(tableConfig);
+        cfOption.setArenaBlockSize(128 * 1024 * 1024);
+        cfOption.setMinWriteBufferNumberToMerge(4);
+        cfOption.setMaxWriteBufferNumber(5);
+        cfOption.setMaxCompactionBytes(512 * 1024 * 1024);
+        cfOption.setWriteBufferSize(1 * 1024 * 1024 * 1024);
+        cfOption.useFixedLengthPrefixExtractor(8);
+        cfOption.setMergeOperator(new StringAppendOperator());
+
+        icfDesc = icfDesc(cfOption);
+        List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+        cfs.add(icfDesc);
+
         List<ColumnFamilyHandle> handles = new ArrayList<>();
-        RocksDB instruction = RocksDB.open(options, instructionPath.toString(), cfs, handles);
-        icfHandler = handles.get(0);
+        RocksDB instruction = RocksDB.open(options, this.instructionPath.toString(), cfs, handles);
+        log.info("RocksStorage createInstruction, RocksDB open, path: {}, options file: {}, handles size: {}.",
+            this.instructionPath, this.logRocksOptionsFile, handles.size());
+        this.icfHandler = handles.get(0);
+        assert (this.icfHandler != null);
+
         return instruction;
     }
 
     private RocksDB createDB() throws Exception {
+        DBOptions options = new DBOptions();
+        loadDBOptions(this.dbRocksOptionsFile, options);
         options.setCreateIfMissing(true);
         options.setCreateMissingColumnFamilies(true);
         options.setWalDir(this.dbPath.resolve("wal").toString());
@@ -160,9 +192,26 @@ public class RocksStorage implements Storage {
         );
         List<ColumnFamilyHandle> handles = new ArrayList<>(4);
         RocksDB db = RocksDB.open(options, dbPath.toString(), cfs, handles);
+        log.info("RocksStorage createDB, RocksDB open, path: {}, options file: {}, handles size: {}.", this.dbPath,
+            this.dbRocksOptionsFile, handles.size());
         this.dcfHandler = handles.get(0);
         this.mcfHandler = handles.get(1);
         return db;
+    }
+
+    private boolean loadDBOptions(final String optionsFile, DBOptions options) {
+        try {
+            if (optionsFile == null || !(new File(optionsFile)).exists()) {
+                log.info("loadDBOptions, rocksdb options file not found: {}, use default options.", optionsFile);
+                return false;
+            }
+
+            OptionsUtil.loadOptionsFromFile(new ConfigOptions(), optionsFile, options, new ArrayList<>());
+            return true;
+        } catch (RocksDBException dbException) {
+            log.warn("loadDBOptions, load {} exception, use default options.", optionsFile, dbException);
+            return false;
+        }
     }
 
     public void closeDB() {
@@ -425,6 +474,9 @@ public class RocksStorage implements Storage {
         return new ColumnFamilyDescriptor(CF_DEFAULT, new ColumnFamilyOptions());
     }
 
+    private static ColumnFamilyDescriptor icfDesc(ColumnFamilyOptions cfOptions) {
+        return new ColumnFamilyDescriptor(CF_DEFAULT, cfOptions);
+    }
 
     private static ColumnFamilyDescriptor mcfDesc() {
         return new ColumnFamilyDescriptor(CF_META, new ColumnFamilyOptions());

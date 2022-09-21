@@ -54,11 +54,15 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public final MirrorProcessingUnit mpu;
     public final Path path;
+    public final String dbRocksOptionsFile;
+    public final String logRocksOptionsFile;
     public Core core;
 
-    public StoreInstance(CommonId id, Path path) {
+    public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile) {
         this.path = path.toAbsolutePath();
-        this.mpu = new MirrorProcessingUnit(id, this.path);
+        this.dbRocksOptionsFile = dbRocksOptionsFile;
+        this.logRocksOptionsFile = logRocksOptionsFile;
+        this.mpu = new MirrorProcessingUnit(id, this.path, dbRocksOptionsFile, logRocksOptionsFile);
     }
 
     @Override
