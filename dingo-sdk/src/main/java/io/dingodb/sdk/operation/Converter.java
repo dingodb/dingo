@@ -49,7 +49,7 @@ public final class Converter {
         String errorMessage = result4Store.getErrorMessage();
         List<Record> records = null;
         if (result4Store.getRecords() != null && !result4Store.getRecords().isEmpty()) {
-            records = result4Store.getRecords().stream().map(kv -> {
+            records = result4Store.getRecords().stream().filter(kv -> kv.getValue() != null).map(kv -> {
                 try {
                     List<Column> columnArray = new ArrayList<>();
                     Object[] columnValues = codec.decode(kv);

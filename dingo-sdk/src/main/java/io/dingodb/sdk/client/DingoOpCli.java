@@ -250,7 +250,13 @@ public class DingoOpCli implements DingoMapper {
                 throw new DingoClientException("Cannot find table name for class " + object.getClass().getName());
             }
 
-            Key key = new Key(entry.getDatabase(), tableName, Arrays.asList(Value.get(entry.getKey(object))));
+            List<Value> userKey = new ArrayList<>();
+            List entryKey = (List) entry.getKey(object);
+            for (Object o : entryKey) {
+                userKey.add(Value.get(o));
+            }
+
+            Key key = new Key(entry.getDatabase(), tableName, userKey);
             Column[] columns = entry.getColumns(object, true);
             Record record = new Record(tableDefinition.getColumns(), columns);
 

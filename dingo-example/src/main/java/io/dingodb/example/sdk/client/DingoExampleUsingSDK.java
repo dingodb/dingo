@@ -101,7 +101,8 @@ public class DingoExampleUsingSDK {
         }
         long endTime = System.currentTimeMillis();
         System.out.println("realInsertCnt:" + totalRealInsertCnt + ",totalTimeCost: " + (endTime - startTime) + "ms");
-        return;
+
+        dingoClient.close();
     }
 
     public static void insert(String tableName) throws Exception {
@@ -135,6 +136,7 @@ public class DingoExampleUsingSDK {
                     + ", TotalCost: " + totalTimeCost + "ms"
                     + ", AvgCost: " + (totalTimeCost * 1.0 / totalRealInsertCnt) + "ms");
             }
+            break;
         }
         while (true);
     }
