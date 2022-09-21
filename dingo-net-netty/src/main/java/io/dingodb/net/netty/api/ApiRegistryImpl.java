@@ -24,6 +24,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.NetError;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.net.api.Ping;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.error.ApiTerminateException;
 import io.dingodb.net.netty.Constant;
@@ -56,6 +57,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     private ApiRegistryImpl() {
         register(HandshakeApi.class, HandshakeApi.INSTANCE);
+        register(Ping.class, Ping.INSTANCE);
     }
 
     public static ApiRegistryImpl instance() {

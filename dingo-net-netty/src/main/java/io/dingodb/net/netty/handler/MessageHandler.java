@@ -27,11 +27,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 @Slf4j
-public class MessageDecoder extends ByteToMessageDecoder {
+public class MessageHandler extends ByteToMessageDecoder {
 
     private final Connection connection;
 
-    public MessageDecoder(Connection connection) {
+    public MessageHandler(Connection connection) {
         this.connection = connection;
     }
 

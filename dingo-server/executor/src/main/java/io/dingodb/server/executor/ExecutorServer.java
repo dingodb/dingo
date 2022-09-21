@@ -22,6 +22,7 @@ import io.dingodb.common.store.Part;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.net.api.Ping;
 import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ServerApi;
@@ -44,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 @Slf4j
 public class ExecutorServer {
@@ -68,7 +71,7 @@ public class ExecutorServer {
         this.netService = loadNetService();
         this.storeService = loadStoreService();
         this.coordinatorConnector = CoordinatorConnector.defaultConnector();
-        this.serverApi = netService.apiRegistry().proxy(ServerApi.class, coordinatorConnector, 5);
+        this.serverApi = netService.apiRegistry().proxy(ServerApi.class, coordinatorConnector);
         this.metaServiceApi = netService.apiRegistry().proxy(MetaServiceApi.class, coordinatorConnector);
     }
 
@@ -94,6 +97,7 @@ public class ExecutorServer {
             Files.createDirectories(path);
             while (true) {
                 try {
+                    Ping.ping(coordinatorConnector.get());
                     this.id = serverApi.registerExecutor(Executor.builder()
                         .host(DingoConfiguration.host())
                         .port(DingoConfiguration.port())
@@ -103,6 +107,7 @@ public class ExecutorServer {
                         .build());
                     break;
                 } catch (Exception ignored) {
+                    LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
                 }
             }
             Files.write(idPath, this.id.encode());
@@ -111,11 +116,13 @@ public class ExecutorServer {
     }
 
     private void initStore() {
-        List<Part> parts = serverApi.storeMap(this.id);
+
         Map<String, Object> storeServiceConfig = new HashMap<>();
         storeServiceConfig.put("MetaServiceApi", metaServiceApi);
         storeService.addConfiguration(storeServiceConfig);
         this.storeInstance = storeService.getOrCreateInstance(this.id);
+
+        List<Part> parts = serverApi.storeMap(this.id);
         log.info("Init store, parts: {}", parts);
         parts.forEach(tableStoreApi::assignTablePart);
     }

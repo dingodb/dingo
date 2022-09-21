@@ -139,7 +139,6 @@ public class RocksStorage implements Storage {
         options.setCreateIfMissing(true);
         options.setCreateMissingColumnFamilies(true);
         options.setListeners(Collections.singletonList(new Listener()));
-        options.optimizeForSmallDb();
         options.setWalDir(this.instructionPath.resolve("wal").toString());
         List<ColumnFamilyDescriptor> cfs = Arrays.asList(
             icfDesc = icfDesc()

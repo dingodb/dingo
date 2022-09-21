@@ -22,7 +22,7 @@ import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.api.HandshakeApi;
 import io.dingodb.net.netty.channel.Channel;
 import io.dingodb.net.netty.handler.ExceptionHandler;
-import io.dingodb.net.netty.handler.MessageDecoder;
+import io.dingodb.net.netty.handler.MessageHandler;
 import io.dingodb.net.netty.packet.Command;
 import io.dingodb.net.netty.packet.Type;
 import io.netty.bootstrap.Bootstrap;
@@ -72,8 +72,7 @@ public class ClientConnection extends Connection {
             protected void initChannel(SocketChannel ch) throws Exception {
                 socketChannel = ch;
                 ch.pipeline()
-                    //.addLast(new MessageEncoder())
-                    .addLast(new MessageDecoder(ClientConnection.this))
+                    .addLast(new MessageHandler(ClientConnection.this))
                     .addLast(new IdleStateHandler(heartbeat(), 0, 0, SECONDS))
                     .addLast(new ExceptionHandler(ClientConnection.this));
             }
@@ -87,7 +86,7 @@ public class ClientConnection extends Connection {
         InetSocketAddress localAddress = socketChannel.localAddress();
         localLocation = new Location(localAddress.getHostName(), localAddress.getPort());
         Executors.scheduleWithFixedDelayAsync(
-            String.format("%s-heartbeat", remoteLocation), this::sendHeartbeat, 0, heartbeat() / 2, SECONDS
+            String.format("%s-heartbeat", remoteLocation), this::sendHeartbeat, 0, 1, SECONDS
         );
     }
 
@@ -122,9 +121,6 @@ public class ClientConnection extends Connection {
     @Override
     public void close() {
         super.close();
-        if (socketChannel.isActive()) {
-            socketChannel.disconnect();
-        }
         if (eventLoopGroup != null) {
             eventLoopGroup.shutdownGracefully();
         }

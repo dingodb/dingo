@@ -281,7 +281,7 @@ public class Core {
     }
 
     public boolean isAvailable() {
-        return isPrimary() && !controlUnit.isClosed();
+        return !close && isPrimary() && !controlUnit.isClosed();
     }
 
     public long clock() {
