@@ -17,41 +17,36 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
-import io.dingodb.calcite.rel.DingoUnion;
+import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.Union;
-import org.apache.calcite.rel.logical.LogicalUnion;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-
-public class DingoUnionRule extends ConverterRule {
+public class DingoTableScanRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
-            LogicalUnion.class,
+            LogicalDingoTableScan.class,
             Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoUnionRule"
+            DingoConventions.DISTRIBUTED,
+            "DingoTableScanRule.DISTRIBUTED"
         )
-        .withRuleFactory(DingoUnionRule::new);
+        .withRuleFactory(DingoTableScanRule::new);
 
-    private DingoUnionRule(Config config) {
+    protected DingoTableScanRule(Config config) {
         super(config);
     }
 
     @Override
-    public @Nullable RelNode convert(@Nonnull RelNode rel) {
-        Union union = (Union) rel;
-        return new DingoUnion(
-            union.getCluster(),
-            union.getTraitSet().replace(DingoConventions.ROOT),
-            union.getInputs().stream()
-                .map(n -> convert(n, DingoConventions.ROOT))
-                .collect(Collectors.toList()),
-            union.all
+    public RelNode convert(RelNode rel) {
+        LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
+        return new DingoTableScan(
+            scan.getCluster(),
+            scan.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+            scan.getHints(),
+            scan.getTable(),
+            scan.getFilter(),
+            scan.getSelection()
         );
     }
 }

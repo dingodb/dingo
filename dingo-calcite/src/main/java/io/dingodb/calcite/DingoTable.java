@@ -17,15 +17,16 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
@@ -33,6 +34,9 @@ import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class DingoTable extends AbstractTable implements TranslatableTable {
@@ -58,21 +62,43 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public RelNode toRel(@Nonnull RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return new DingoTableScan(
+        return new LogicalDingoTableScan(
             context.getCluster(),
             context.getCluster().traitSet(),
             context.getTableHints(),
-            relOptTable
+            relOptTable,
+            null,
+            null
         );
     }
 
     @Override
     public Statistic getStatistic() {
-        return Statistics.of(
-            100.0,
-            // Only the primary keys are unique keys.
-            ImmutableList.of(ImmutableBitSet.of(tableDefinition.getKeyMapping().getMappings()))
-        );
+        List<Integer> keyIndices = Arrays.stream(tableDefinition.getKeyMapping().getMappings())
+            .boxed()
+            .collect(Collectors.toList());
+        List<ImmutableBitSet> keys = ImmutableList.of(ImmutableBitSet.of(keyIndices));
+        return new Statistic() {
+            @Override
+            public Double getRowCount() {
+                return 30000.0d;
+            }
+
+            @Override
+            public boolean isKey(ImmutableBitSet columns) {
+                return keys.stream().allMatch(columns::contains);
+            }
+
+            @Override
+            public List<ImmutableBitSet> getKeys() {
+                return keys;
+            }
+
+            @Override
+            public RelDistribution getDistribution() {
+                return RelDistributions.hash(keyIndices);
+            }
+        };
     }
 
     @Override

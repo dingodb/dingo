@@ -19,12 +19,16 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -42,6 +46,18 @@ public final class DingoHash extends SingleRel implements DingoRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoHash(getCluster(), traitSet, AbstractRelNode.sole(inputs), keys);
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeZeroCost();
+    }
+
+    @Override
+    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(getInput());
+        // Assume hash redistribute input to 3 partitions.
+        return rowCount / 3.0d;
     }
 
     @Nonnull

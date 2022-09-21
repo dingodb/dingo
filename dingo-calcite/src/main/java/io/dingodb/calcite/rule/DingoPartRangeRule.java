@@ -38,9 +38,9 @@ import org.immutables.value.Value;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.List;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 
@@ -173,31 +173,35 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
     public interface Config extends RelRule.Config {
         DingoPartRangeRule.Config DEFAULT = ImmutableDingoPartRangeRule.Config.builder()
             .operandSupplier(
-                b0 -> b0.operand(DingoTableScan.class).predicate(r -> {
-                    RexNode filter = r.getFilter();
-                    if (filter != null) {
-                        if (filter.getKind() == SqlKind.AND) {
-                            return true;
+                b0 -> b0.operand(DingoTableScan.class)
+                    .predicate(r -> {
+                        if (r instanceof DingoPartRangeScan) {
+                            return false;
                         }
-
-                        // Support not between and
-                        if (filter.getKind() == SqlKind.NOT) {
-                            for (RexNode operand : ((RexCall) filter).operands) {
-                                RexCall rexCall;
-                                if (operand instanceof RexCall) {
-                                    rexCall = (RexCall) operand;
-                                } else {
-                                    return false;
-                                }
-                                if (rexCall.getKind() != SqlKind.AND) {
-                                    return false;
-                                }
+                        RexNode filter = r.getFilter();
+                        if (filter != null) {
+                            if (filter.getKind() == SqlKind.AND) {
+                                return true;
                             }
-                            return true;
+
+                            // Support not between and
+                            if (filter.getKind() == SqlKind.NOT) {
+                                for (RexNode operand : ((RexCall) filter).operands) {
+                                    RexCall rexCall;
+                                    if (operand instanceof RexCall) {
+                                        rexCall = (RexCall) operand;
+                                    } else {
+                                        return false;
+                                    }
+                                    if (rexCall.getKind() != SqlKind.AND) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            }
                         }
-                    }
-                    return false;
-                }).noInputs()
+                        return false;
+                    }).noInputs()
             )
             .description("DingoPartRangeRule")
             .build();

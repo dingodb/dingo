@@ -17,42 +17,33 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoConventions;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
-import org.apache.calcite.plan.RelOptCluster;
+import io.dingodb.calcite.rel.DingoRoot;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
-
-public class DingoExchangeRootRule extends ConverterRule {
+public class DingoRootRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
-            RelNode.class,
-            DingoConventions.DISTRIBUTED,
+            DingoRoot.class,
+            Convention.NONE,
             DingoConventions.ROOT,
-            "DingoExchangeRootRule.ROOT"
+            "DingoRootRule.ROOT"
         )
-        .withRuleFactory(DingoExchangeRootRule::new);
+        .withRuleFactory(DingoRootRule::new);
 
-    protected DingoExchangeRootRule(Config config) {
+    protected DingoRootRule(Config config) {
         super(config);
     }
 
     @Override
-    public @Nullable RelNode convert(@Nonnull RelNode rel) {
-        RelOptCluster cluster = rel.getCluster();
-        return new DingoCoalesce(
-            cluster,
-            rel.getTraitSet().replace(DingoConventions.ROOT),
-            new DingoExchange(
-                cluster,
-                // The changing of trait is crucial, or the rule would be recursively applied to it.
-                rel.getTraitSet().replace(DingoConventions.PARTITIONED),
-                rel,
-                true
-            )
+    public @Nullable RelNode convert(RelNode rel) {
+        DingoRoot root = (DingoRoot) rel;
+        return new DingoRoot(
+            root.getCluster(),
+            root.getTraitSet().replace(DingoConventions.ROOT),
+            convert(root.getInput(), DingoConventions.ROOT)
         );
     }
 }

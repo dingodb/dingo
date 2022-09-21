@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.rel;
+package io.dingodb.calcite.meta;
 
-import io.dingodb.calcite.visitor.DingoRelVisitor;
-import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.RelNode;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 
-import javax.annotation.Nonnull;
+public class DingoRelMetadataProvider extends ChainedRelMetadataProvider {
+    public static DingoRelMetadataProvider INSTANCE = new DingoRelMetadataProvider();
 
-public interface DingoRel extends PhysicalNode {
-    static DingoRel dingo(RelNode rel) {
-        return (DingoRel) rel;
+    private DingoRelMetadataProvider() {
+        super(ImmutableList.of(
+            DingoRelMdRowCount.SOURCE,
+            DingoRelMdColumnUniqueness.SOURCE
+        ));
     }
-
-    <T> T accept(@Nonnull DingoRelVisitor<T> visitor);
 }

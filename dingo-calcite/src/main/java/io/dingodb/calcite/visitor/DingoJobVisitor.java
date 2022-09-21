@@ -16,12 +16,12 @@
 
 package io.dingodb.calcite.visitor;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
 import io.dingodb.calcite.rel.DingoExchange;
-import io.dingodb.calcite.rel.DingoExchangeRoot;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHash;
@@ -29,10 +29,10 @@ import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
-import io.dingodb.calcite.rel.DingoPartScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
@@ -133,32 +133,17 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         renderJob(job, input, currentLocation, false);
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean addRoot) {
+    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot) {
         MetaCache.initTableDefinitions();
         IdGenerator idGenerator = new DingoIdGenerator();
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
-        if (addRoot) {
-            if (outputs.size() == 1) {
-                Output output = sole(outputs);
-                Task task = output.getTask();
-                RootOperator root = new RootOperator(DingoTypeFactory.fromRelDataType(input.getRowType()));
-                root.setId(idGenerator.get());
-                task.putOperator(root);
-                output.setLink(root.getInput(0));
-            } else if (!outputs.isEmpty()) {
-                throw new IllegalStateException("There must be zero or one output to job root.");
-            }
+        if (checkRoot && outputs.size() > 0) {
+            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         if (log.isDebugEnabled()) {
             log.info("job = {}", job);
         }
-    }
-
-    private static Collection<Output> illegalRelNode(@Nonnull RelNode rel) {
-        throw new IllegalStateException(
-            "RelNode of type \"" + rel.getClass().getSimpleName() + "\" should not appear in a physical plan."
-        );
     }
 
     @Nonnull
@@ -227,6 +212,39 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 return tuple;
             })
             .collect(Collectors.toList());
+    }
+
+    @Nonnull
+    private static Map<Location, List<String>> groupAllPartKeysByAddress(
+        @Nonnull final NavigableMap<ComparableByteArray, Part> parts
+    ) {
+        Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
+        for (Map.Entry<ComparableByteArray, Part> entry : parts.entrySet()) {
+            Part part = entry.getValue();
+            List<String> startKeys = groupStartKeysByAddress.computeIfAbsent(part.getLeader(), k -> new ArrayList<>());
+            byte[] keyBytes = entry.getKey().getBytes();
+            String startKeyBase64 = ByteArrayUtils.enCodeBytes2Base64(keyBytes);
+            startKeys.add(startKeyBase64);
+            groupStartKeysByAddress.put(part.getLeader(), startKeys);
+            log.info("group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
+                part.getLeader(),
+                Arrays.toString(keyBytes),
+                startKeyBase64);
+        }
+
+        groupStartKeysByAddress.forEach((k, v) -> {
+            StringBuilder builder = new StringBuilder();
+            v.forEach(s -> {
+                byte[] bytes = ByteArrayUtils.deCodeBase64String2Bytes(s);
+                String result = Arrays.toString(bytes);
+                builder.append(result).append(",");
+            });
+
+            log.info("group all part start keys by address:{} startKeys:{}",
+                k.toString(),
+                builder);
+        });
+        return groupStartKeysByAddress;
     }
 
     @Nonnull
@@ -366,18 +384,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         List<Output> outputs = new LinkedList<>();
         DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
         for (Output input : inputs) {
-            outputs.add(exchange(input, input.getTargetLocation(), schema));
-        }
-        return outputs;
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoExchangeRoot rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
-        for (Output input : inputs) {
-            outputs.add(exchange(input, currentLocation, schema));
+            Location targetLocation = rel.isRoot() ? currentLocation : input.getTargetLocation();
+            outputs.add(exchange(input, targetLocation, schema));
         }
         return outputs;
     }
@@ -550,31 +558,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartScan rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        List<Location> distributes = this.metaCache.getDistributes(tableName);
-        CommonId tableId = this.metaCache.getTableId(tableName);
-        List<Output> outputs = new ArrayList<>(distributes.size());
-        RexNode filter = rel.getFilter();
-        for (int i = 0; i < distributes.size(); i++) {
-            PartScanOperator operator = new PartScanOperator(
-                tableId,
-                i,
-                td.getDingoType(),
-                td.getKeyMapping(),
-                filter != null ? RexConverter.toRtExprWithType(filter) : null,
-                rel.getSelection()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(distributes.get(i), idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    @Override
     public Collection<Output> visit(@Nonnull DingoProject rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new ProjectOperator(
@@ -603,6 +586,21 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
+    public Collection<Output> visit(@Nonnull DingoRoot rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        if (inputs.size() != 1) {
+            throw new IllegalStateException("There must be one input to job root.");
+        }
+        Output input = sole(inputs);
+        Operator operator = new RootOperator(DingoTypeFactory.fromRelDataType(rel.getRowType()));
+        Task task = input.getTask();
+        operator.setId(idGenerator.get());
+        task.putOperator(operator);
+        input.setLink(operator.getInput(0));
+        return ImmutableList.of();
+    }
+
+    @Override
     public Collection<Output> visit(@Nonnull DingoSort rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new SortOperator(
@@ -616,7 +614,27 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@Nonnull DingoTableScan rel) {
-        return illegalRelNode(rel);
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        List<Location> distributes = this.metaCache.getDistributes(tableName);
+        CommonId tableId = this.metaCache.getTableId(tableName);
+        List<Output> outputs = new ArrayList<>(distributes.size());
+        RexNode filter = rel.getFilter();
+        for (int i = 0; i < distributes.size(); i++) {
+            PartScanOperator operator = new PartScanOperator(
+                tableId,
+                i,
+                td.getDingoType(),
+                td.getKeyMapping(),
+                filter != null ? RexConverter.toRtExprWithType(filter) : null,
+                rel.getSelection()
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(distributes.get(i), idGenerator);
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
     }
 
     @Override
@@ -742,35 +760,4 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
         return outputs;
     }
-
-    private Map<Location, List<String>> groupAllPartKeysByAddress(final NavigableMap<ComparableByteArray, Part> parts) {
-        Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
-        for (Map.Entry<ComparableByteArray, Part> entry : parts.entrySet()) {
-            Part part = entry.getValue();
-            List<String> startKeys = groupStartKeysByAddress.computeIfAbsent(part.getLeader(), k -> new ArrayList<>());
-            byte[] keyBytes = entry.getKey().getBytes();
-            String startKeyBase64 = ByteArrayUtils.enCodeBytes2Base64(keyBytes);
-            startKeys.add(startKeyBase64);
-            groupStartKeysByAddress.put(part.getLeader(), startKeys);
-            log.info("group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
-                part.getLeader(),
-                Arrays.toString(keyBytes),
-                startKeyBase64);
-        }
-
-        groupStartKeysByAddress.forEach((k, v) -> {
-            StringBuilder builder = new StringBuilder();
-            v.forEach(s -> {
-                byte[] bytes = ByteArrayUtils.deCodeBase64String2Bytes(s);
-                String result = Arrays.toString(bytes);
-                builder.append(result).append(",");
-            });
-
-            log.info("group all part start keys by address:{} startKeys:{}",
-                k.toString(),
-                builder);
-        });
-        return groupStartKeysByAddress;
-    }
-
 }

@@ -16,11 +16,12 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -35,8 +36,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Value.Enclosing
-public class DingoProjectScanRule extends RelRule<DingoProjectScanRule.Config> {
-    protected DingoProjectScanRule(Config config) {
+public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> implements SubstitutionRule {
+    protected DingoScanProjectRule(Config config) {
         super(config);
     }
 
@@ -60,9 +61,9 @@ public class DingoProjectScanRule extends RelRule<DingoProjectScanRule.Config> {
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
         final LogicalProject project = call.rel(0);
-        final DingoTableScan scan = call.rel(1);
+        final LogicalDingoTableScan scan = call.rel(1);
         List<Integer> selectedColumns = getSelectedColumns(project.getProjects());
-        DingoTableScan newScan = new DingoTableScan(
+        LogicalDingoTableScan newScan = new LogicalDingoTableScan(
             scan.getCluster(),
             scan.getTraitSet(),
             scan.getHints(),
@@ -72,33 +73,41 @@ public class DingoProjectScanRule extends RelRule<DingoProjectScanRule.Config> {
         );
         Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
-
         if (RexUtil.isIdentity(newProjectRexNodes, newScan.getRowType())) {
             call.transformTo(newScan);
         } else {
             call.transformTo(
-                call.builder()
-                    .push(newScan)
-                    .project(newProjectRexNodes)
-                    .build()
+                new LogicalProject(
+                    project.getCluster(),
+                    project.getTraitSet(),
+                    project.getHints(),
+                    newScan,
+                    newProjectRexNodes,
+                    project.getRowType()
+                )
             );
         }
     }
 
+    @Override
+    public boolean autoPruneOld() {
+        return true;
+    }
+
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoProjectScanRule.Config.builder()
+        Config DEFAULT = ImmutableDingoScanProjectRule.Config.builder()
             .operandSupplier(b0 ->
                 b0.operand(LogicalProject.class).oneInput(b1 ->
-                    b1.operand(DingoTableScan.class).predicate(rel -> rel.getSelection() == null).noInputs()
+                    b1.operand(LogicalDingoTableScan.class).predicate(rel -> rel.getSelection() == null).noInputs()
                 )
             )
-            .description("DingoProjectScanRule")
+            .description("DingoScanProjectRule")
             .build();
 
         @Override
-        default DingoProjectScanRule toRule() {
-            return new DingoProjectScanRule(this);
+        default DingoScanProjectRule toRule() {
+            return new DingoScanProjectRule(this);
         }
     }
 }

@@ -27,11 +27,15 @@ public final class AssertSqlNode extends Assert<SqlNode, AssertSqlNode> {
         super(obj);
     }
 
+    public AssertSqlNode kind(SqlKind kind) {
+        assertThat(instance).isNotNull();
+        assertThat(instance.getKind()).isEqualTo(kind);
+        return this;
+    }
+
     @SuppressWarnings("UnusedReturnValue")
     public AssertSqlNode isTableName(String... names) {
-        assertThat(instance)
-            .isNotNull()
-            .hasFieldOrPropertyWithValue("kind", SqlKind.IDENTIFIER);
+        kind(SqlKind.IDENTIFIER);
         SqlIdentifier tbl = (SqlIdentifier) instance;
         assertThat(tbl.names).hasSameSizeAs(names);
         for (int i = 0; i < names.length; ++i) {

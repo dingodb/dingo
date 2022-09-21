@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Value.Enclosing
-public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> implements SubstitutionRule {
-    private DingoUnionValuesRule(Config config) {
+public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> implements SubstitutionRule {
+    private DingoValuesUnionRule(Config config) {
         super(config);
     }
 
@@ -72,8 +72,8 @@ public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> i
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoUnionValuesRule.Config.builder()
-            .description("DingoUnionValuesRule")
+        Config DEFAULT = ImmutableDingoValuesUnionRule.Config.builder()
+            .description("DingoValuesUnionRule")
             .operandSupplier(b0 ->
                 b0.operand(LogicalUnion.class).predicate(union -> union.all)
                     .inputs( // Two values can be combined.
@@ -84,8 +84,8 @@ public class DingoUnionValuesRule extends RelRule<DingoUnionValuesRule.Config> i
             .build();
 
         @Override
-        default DingoUnionValuesRule toRule() {
-            return new DingoUnionValuesRule(this);
+        default DingoValuesUnionRule toRule() {
+            return new DingoValuesUnionRule(this);
         }
     }
 }

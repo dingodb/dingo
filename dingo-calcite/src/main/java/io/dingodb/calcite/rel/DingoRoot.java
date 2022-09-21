@@ -18,22 +18,30 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public class DingoExchangeRoot extends SingleRel implements DingoRel {
-    public DingoExchangeRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+public class DingoRoot extends SingleRel implements DingoRel {
+    public DingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
     }
 
-    @Nonnull
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoExchangeRoot(getCluster(), traitSet, sole(inputs));
+        return new DingoRoot(getCluster(), traitSet, sole(inputs));
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeZeroCost();
     }
 
     @Override

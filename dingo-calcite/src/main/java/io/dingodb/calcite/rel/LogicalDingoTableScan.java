@@ -16,63 +16,44 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.calcite.type.RelDataTypeUtils;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class DingoPartScan extends AbstractRelNode implements DingoRel {
+public class LogicalDingoTableScan extends TableScan {
     @Getter
-    private final RelOptTable table;
+    protected final RexNode filter;
     @Getter
-    private final RexNode filter;
-    @Getter
-    private final TupleMapping selection;
+    protected final TupleMapping selection;
 
-    public DingoPartScan(
+    public LogicalDingoTableScan(
         RelOptCluster cluster,
         RelTraitSet traitSet,
-        RelOptTable table
-    ) {
-        this(cluster, traitSet, table, null, null);
-    }
-
-    public DingoPartScan(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
+        List<RelHint> hints,
         RelOptTable table,
         @Nullable RexNode filter,
         @Nullable TupleMapping selection
     ) {
-        super(cluster, traitSet);
-        this.table = table;
+        super(cluster, traitSet, hints, table);
         this.filter = filter;
         this.selection = selection;
     }
 
     @Override
-    protected RelDataType deriveRowType() {
-        return mapRowType(table.getRowType(), selection);
-    }
-
-    @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = table.getRowCount();
-        double cpu = rowCount + 1;
-        double io = 0;
-        return planner.getCostFactory().makeCost(rowCount, cpu, io);
+    public RelDataType deriveRowType() {
+        return RelDataTypeUtils.mapType(getCluster().getTypeFactory(), table.getRowType(), selection);
     }
 
     @Nonnull
@@ -80,14 +61,8 @@ public final class DingoPartScan extends AbstractRelNode implements DingoRel {
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
-        pw.item("table", table.getQualifiedName());
         pw.itemIf("filter", filter, filter != null);
         pw.itemIf("selection", selection, selection != null);
         return pw;
-    }
-
-    @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
-        return visitor.visit(this);
     }
 }

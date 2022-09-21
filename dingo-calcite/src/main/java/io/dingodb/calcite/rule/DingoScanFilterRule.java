@@ -16,26 +16,27 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.immutables.value.Value;
 
 import javax.annotation.Nonnull;
 
 @Value.Enclosing
-public class DingoFilterScanRule extends RelRule<DingoFilterScanRule.Config> {
-    protected DingoFilterScanRule(Config config) {
+public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> implements SubstitutionRule {
+    protected DingoScanFilterRule(Config config) {
         super(config);
     }
 
     @Override
     public void onMatch(@Nonnull RelOptRuleCall call) {
-        final Filter filter = call.rel(0);
-        final DingoTableScan scan = call.rel(1);
+        final LogicalFilter filter = call.rel(0);
+        final LogicalDingoTableScan scan = call.rel(1);
         call.transformTo(
-            new DingoTableScan(
+            new LogicalDingoTableScan(
                 scan.getCluster(),
                 scan.getTraitSet(),
                 scan.getHints(),
@@ -46,20 +47,25 @@ public class DingoFilterScanRule extends RelRule<DingoFilterScanRule.Config> {
         );
     }
 
+    @Override
+    public boolean autoPruneOld() {
+        return true;
+    }
+
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoFilterScanRule.Config.builder()
+        Config DEFAULT = ImmutableDingoScanFilterRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(Filter.class).oneInput(b1 ->
-                    b1.operand(DingoTableScan.class).predicate(rel -> rel.getFilter() == null).noInputs()
+                b0.operand(LogicalFilter.class).oneInput(b1 ->
+                    b1.operand(LogicalDingoTableScan.class).predicate(rel -> rel.getFilter() == null).noInputs()
                 )
             )
-            .description("DingoFilterScanRule")
+            .description("DingoScanFilterRule")
             .build();
 
         @Override
-        default DingoFilterScanRule toRule() {
-            return new DingoFilterScanRule(this);
+        default DingoScanFilterRule toRule() {
+            return new DingoScanFilterRule(this);
         }
     }
 }

@@ -24,26 +24,17 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
-    @Getter
-    private final RelOptTable table;
-    @Getter
-    private final RexNode filter;
-    @Getter
-    private final TupleMapping selection;
+public class DingoPartRangeScan extends DingoTableScan implements DingoRel {
     @Getter
     private final byte[] startKey;
     @Getter
@@ -60,18 +51,15 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
         RelTraitSet traitSet,
         List<RelHint> hints,
         RelOptTable table,
-        @javax.annotation.Nullable RexNode filter,
-        @javax.annotation.Nullable TupleMapping selection,
+        @Nullable RexNode filter,
+        @Nullable TupleMapping selection,
         byte[] startKey,
         byte[] endKey,
         boolean isNotBetween,
         boolean includeStart,
         boolean includeEnd
     ) {
-        super(cluster, traitSet);
-        this.table = table;
-        this.filter = filter;
-        this.selection = selection;
+        super(cluster, traitSet, hints, table, filter, selection);
         this.startKey = startKey;
         this.endKey = endKey;
         this.isNotBetween = isNotBetween;
@@ -80,13 +68,9 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
     }
 
     @Override
-    protected RelDataType deriveRowType() {
-        return mapRowType(table.getRowType(), selection);
-    }
-
-    @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeTinyCost();
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
+        // Assume that part scan has half cost.
+        return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5);
     }
 
     @Nonnull
@@ -94,9 +78,11 @@ public class DingoPartRangeScan extends AbstractRelNode implements DingoRel {
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
-        pw.item("table", table.getQualifiedName());
-        pw.itemIf("filter", filter, filter != null && ((RexCall) filter).op.kind == SqlKind.AND);
-        pw.itemIf("selection", selection, selection != null);
+        pw.item("startKey", startKey);
+        pw.item("endKey", endKey);
+        pw.item("isNotBetween", isNotBetween);
+        pw.item("includeStart", includeStart);
+        pw.item("includeEnd", includeEnd);
         return pw;
     }
 

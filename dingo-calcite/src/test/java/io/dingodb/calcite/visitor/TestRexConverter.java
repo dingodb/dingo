@@ -83,16 +83,20 @@ public class TestRexConverter {
         );
     }
 
+    private static RexNode getRexNode(String sql) throws SqlParseException {
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        LogicalProject project = (LogicalProject) relRoot.rel.getInput(0);
+        RexNode rexNode = project.getProjects().get(0);
+        log.info("rexNode = {}", rexNode);
+        return rexNode;
+    }
+
     @ParameterizedTest
     @MethodSource("getParameters")
     public void test(String rex, String result) throws SqlParseException {
         String sql = "select " + rex + " from test";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        log.info("rexNode = {}", rexNode);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.toString()).isEqualTo(result);
     }
@@ -102,12 +106,7 @@ public class TestRexConverter {
     public void testEval(String rex, String evalResult)
         throws SqlParseException, DingoExprCompileException, FailGetEvaluator {
         String sql = "select " + rex + " from test";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
-        log.info("rexNode = {}", rexNode);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.compileIn(null).eval(null)).isEqualTo(evalResult);
     }
@@ -116,11 +115,7 @@ public class TestRexConverter {
     public void testSubStringCase07() throws Exception {
         String inputStr = "abc";
         String sql = "select substring('" + inputStr + "', 4, 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         try {
             // String index out of range
@@ -134,11 +129,7 @@ public class TestRexConverter {
     public void testSubStringCase08() throws Exception {
         String inputStr = "abc";
         String sql = "select substring('" + inputStr + "', 0, 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         try {
             // String index out of range
@@ -152,11 +143,7 @@ public class TestRexConverter {
     public void testTrimWithBoth() throws Exception {
         String inputStr = "' AAAAA  '";
         String sql = "select trim(" + inputStr + ")";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals(inputStr.replace('\'', ' ').trim()));
@@ -165,11 +152,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithBothArgs() throws Exception {
         String sql = "select trim(BOTH 'A' from 'ABBA')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("BB"));
@@ -178,11 +161,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithAllSpace() throws Exception {
         String sql = "select trim('  ')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals(""));
@@ -191,11 +170,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithSingleChar() throws Exception {
         String sql = "select trim(' A ')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("A"));
@@ -204,11 +179,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithNumber() throws Exception {
         String sql = "select trim(123 from 1234123)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("4"));
@@ -217,11 +188,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithLeadingArgs() throws Exception {
         String sql = "select trim(LEADING 'A' from 'ABBA')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("BBA"));
@@ -230,11 +197,7 @@ public class TestRexConverter {
     @Test
     public void testTrimWithTrailingArgs() throws Exception {
         String sql = "select trim(TRAILING 'A' from 'ABBA')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("ABB"));
@@ -244,11 +207,7 @@ public class TestRexConverter {
     public void testLTrim() throws Exception {
         String value = " AAAA ";
         String sql = "select LTRIM('" + value + "')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("AAAA "));
@@ -258,11 +217,7 @@ public class TestRexConverter {
     public void testRTrim() throws Exception {
         String value = " AAAA ";
         String sql = "select rtrim('" + value + "')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals(" AAAA"));
@@ -271,11 +226,7 @@ public class TestRexConverter {
     @Test
     public void testRTrim02() throws Exception {
         String sql = "select 'a'||rtrim(' ')||'b'";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("ab"));
@@ -284,11 +235,7 @@ public class TestRexConverter {
     @Test
     public void testUCase() throws Exception {
         String sql = "select ucase('aaa')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("AAA"));
@@ -297,11 +244,7 @@ public class TestRexConverter {
     @Test
     public void testLeftString01() throws Exception {
         String sql = "select left('ABC', 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         System.out.println(expr);
@@ -311,11 +254,7 @@ public class TestRexConverter {
     @Test
     public void testLeftString02() throws Exception {
         String sql = "select left('ABCDE', 10)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         System.out.println(expr);
@@ -325,11 +264,7 @@ public class TestRexConverter {
     @Test
     public void testLeftString03() throws Exception {
         String sql = "select left('ABCDE', -3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         RtExpr rtExpr = expr.compileIn(null);
         System.out.println(expr);
@@ -339,11 +274,7 @@ public class TestRexConverter {
     @Test
     public void testRightString01() throws Exception {
         String sql = "select right('ABC', 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -353,11 +284,7 @@ public class TestRexConverter {
     @Test
     public void testRightString02() throws Exception {
         String sql = "select right('ABC', 1.5)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -367,11 +294,7 @@ public class TestRexConverter {
     @Test
     public void testReverseString() throws Exception {
         String sql = "select reverse('ABC')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -381,11 +304,7 @@ public class TestRexConverter {
     @Test
     public void testRepeatString() throws Exception {
         String sql = "select repeat('ABC', 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -395,11 +314,7 @@ public class TestRexConverter {
     @Test
     public void testRepeatStringDecimalIndex() throws Exception {
         String sql = "select repeat('ABC', 2.1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -409,11 +324,7 @@ public class TestRexConverter {
     @Test
     public void testMidString01() throws Exception {
         String sql = "select mid('ABC', 1, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -423,11 +334,7 @@ public class TestRexConverter {
     @Test
     public void testMidString02() throws Exception {
         String sql = "select mid('ABC', 4, 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         // String index out of range
@@ -441,11 +348,7 @@ public class TestRexConverter {
     @Test
     public void testMidInvalidIndex01() throws Exception {
         String sql = "select mid('ABC', 10, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         // String index out of range
@@ -459,11 +362,7 @@ public class TestRexConverter {
     @Test
     public void testMidInvalidIndex02() throws Exception {
         String sql = "select mid('ABC', 2, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -473,11 +372,7 @@ public class TestRexConverter {
     @Test
     public void testMidNegativeIndex01() throws Exception {
         String sql = "select mid('ABCDEFG', -5, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -487,11 +382,7 @@ public class TestRexConverter {
     @Test
     public void testMidNegativeIndex02() throws Exception {
         String sql = "select mid('ABCDEFG', 1, -5)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -501,11 +392,7 @@ public class TestRexConverter {
     @Test
     public void testMidDecimalIndex01() throws Exception {
         String sql = "select mid('ABCDEFG', 2.5, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -515,11 +402,7 @@ public class TestRexConverter {
     @Test
     public void testMidDecimalIndex02() throws Exception {
         String sql = "select mid('ABCDEFG', 2, 3.5)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -529,11 +412,7 @@ public class TestRexConverter {
     @Test
     public void testMidOneParam() throws Exception {
         String sql = "select mid('ABCDEFG', 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -543,11 +422,7 @@ public class TestRexConverter {
     @Test
     public void testStringLocate() throws Exception {
         String sql = "select locate('C', 'ABCd')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -558,11 +433,7 @@ public class TestRexConverter {
     @Test
     public void testStringLocate01() throws Exception {
         String sql = "select locate('\\c', 'ab\\cde')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -573,11 +444,7 @@ public class TestRexConverter {
     @Test
     public void testStringLocate02() throws Exception {
         String sql = "select locate('', '')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -588,11 +455,7 @@ public class TestRexConverter {
     @Test
     public void testStringLocate03() throws Exception {
         String sql = "select locate('abc', '')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -603,14 +466,9 @@ public class TestRexConverter {
     @Test
     public void testStringConcat() throws Exception {
         String sql = "select concat(concat('AA', 'BB'), 'CC')";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
-
         RtExpr rtExpr = expr.compileIn(null);
         Assert.assrt(rtExpr.eval(null).equals("AABBCC"));
     }
@@ -618,11 +476,7 @@ public class TestRexConverter {
     @Test
     public void testStringConcat01() throws Exception {
         String sql = "select 'AA' || 'BB' || 'CC' ";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -632,11 +486,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFormat01() throws Exception {
         String sql = "select format(100.21, 1)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -646,11 +496,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFormat02() throws Exception {
         String sql = "select format(99.00000, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -660,11 +506,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFormat03() throws Exception {
         String sql = "select format(1220.532, 0)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -674,11 +516,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFormat04() throws Exception {
         String sql = "select format(18, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -688,11 +526,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFormatDecimalIndex() throws Exception {
         String sql = "select format(15354.6651, 1.6)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -702,11 +536,7 @@ public class TestRexConverter {
     @Test
     public void testNumberAbs01() throws Exception {
         String sql = "select abs(15354.6651)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -716,11 +546,7 @@ public class TestRexConverter {
     @Test
     public void testNumberAbs02() throws Exception {
         String sql = "select abs(-163.4)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -730,11 +556,7 @@ public class TestRexConverter {
     @Test
     public void testNumberMod01() throws Exception {
         String sql = "select mod(99, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -744,11 +566,7 @@ public class TestRexConverter {
     @Test
     public void testNumberMod02() throws Exception {
         String sql = "select mod(-107, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -758,11 +576,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFloor01() throws Exception {
         String sql = "select floor(125.6)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -772,11 +586,7 @@ public class TestRexConverter {
     @Test
     public void testNumberFloor02() throws Exception {
         String sql = "select floor(-125.3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -786,11 +596,7 @@ public class TestRexConverter {
     @Test
     public void testNumberCeiling01() throws Exception {
         String sql = "select ceiling(4533.66)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -800,11 +606,7 @@ public class TestRexConverter {
     @Test
     public void testNumberCeiling02() throws Exception {
         String sql = "select ceil(-125.3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -814,11 +616,7 @@ public class TestRexConverter {
     @Test
     public void testNumberPow01() throws Exception {
         String sql = "select pow(3, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -828,11 +626,7 @@ public class TestRexConverter {
     @Test
     public void testNumberPow02() throws Exception {
         String sql = "select pow(-3.1, 3)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -842,11 +636,7 @@ public class TestRexConverter {
     @Test
     public void testNumberPow03() throws Exception {
         String sql = "select pow('10',-2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -856,11 +646,7 @@ public class TestRexConverter {
     @Test
     public void testNumberRound01() throws Exception {
         String sql = "select round(12.677, 2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -870,11 +656,7 @@ public class TestRexConverter {
     @Test
     public void testNumberRound02() throws Exception {
         String sql = "select round(195334.12, -4)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -884,11 +666,7 @@ public class TestRexConverter {
     @Test
     public void testNumberRound03() throws Exception {
         String sql = "select round(-155.586,-2)";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         System.out.println(expr.toString());
         RtExpr rtExpr = expr.compileIn(null);
@@ -898,11 +676,7 @@ public class TestRexConverter {
     @Test
     public void testNow() throws Exception {
         String sql = "select now()";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         assertThat((Timestamp) expr.compileIn(null).eval(null))
             .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
@@ -912,11 +686,7 @@ public class TestRexConverter {
     public void formatUnixTime() throws Exception {
         String dateTime = "1980-11-12 23:25:12";
         String sql = "select from_unixtime(" + Timestamp.valueOf(dateTime).getTime() / 1000L + ")";
-        SqlNode sqlNode = parser.parse(sql);
-        sqlNode = parser.validate(sqlNode);
-        RelRoot relRoot = parser.convert(sqlNode);
-        LogicalProject project = (LogicalProject) relRoot.rel;
-        RexNode rexNode = project.getProjects().get(0);
+        RexNode rexNode = getRexNode(sql);
         Expr expr = RexConverter.convert(rexNode);
         assertThat((Timestamp) expr.compileIn(null).eval(null))
             .isEqualTo(Timestamp.valueOf(dateTime));

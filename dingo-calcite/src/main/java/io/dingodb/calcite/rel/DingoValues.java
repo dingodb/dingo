@@ -18,8 +18,12 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -37,5 +41,15 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     @Override
     public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return getTuples().size();
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeTinyCost();
     }
 }

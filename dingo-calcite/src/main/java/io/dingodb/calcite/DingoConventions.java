@@ -20,7 +20,6 @@ import io.dingodb.calcite.rel.DingoRel;
 import org.apache.calcite.plan.Convention;
 
 public final class DingoConventions {
-    // This is not a physical node traits.
     public static Convention DISTRIBUTED = new Convention.Impl("DINGO_DISTRIBUTED", DingoRel.class);
     public static Convention PARTITIONED = new Convention.Impl("DINGO_PARTITIONED", DingoRel.class);
     public static Convention ROOT = new Convention.Impl("DINGO_ROOT", DingoRel.class);
