@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
@@ -30,6 +29,8 @@ import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.asserts.AssertJob;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -57,7 +58,7 @@ public class TestTableScan {
         parser = new DingoParser(context);
         DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
         currentLocation = dingoSchema.getMetaService().currentLocation();
-        tableTestPartNum = dingoSchema.getMetaService().getParts("test").size();
+        tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
     }
 
     @ParameterizedTest
@@ -71,22 +72,22 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
-        Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+        AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
+        assertJob.task("0001").location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -96,23 +97,23 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
-        Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+        AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
+        assertJob.task("0001").location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -122,22 +123,22 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
-        Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+        AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
+        assertJob.task("0001").location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -147,23 +148,23 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
-        Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+        AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
+        assertJob.task("0001").location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -173,23 +174,23 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
         DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoTableScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
-        Assert.job(job).taskNum(tableTestPartNum)
-            .task("0001", t -> t.location(currentLocation).operatorNum(4));
+        AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
+        assertJob.task("0001").location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -199,9 +200,9 @@ public class TestTableScan {
         RelRoot relRoot = parser.convert(sqlNode);
         RelNode optimized = parser.optimize(relRoot.rel);
         RelNode relNode = Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class)
-            .singleInput().isA(DingoPartRangeScan.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class)
+            .soleInput().isA(DingoPartRangeScan.class)
             .getInstance();
         DingoPartRangeScan scan = (DingoPartRangeScan) relNode;
         assertThat((scan).getFilter()).isNotNull();

@@ -39,6 +39,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -53,6 +54,7 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
+import org.apache.calcite.util.Holder;
 
 import java.util.Collections;
 import java.util.List;
@@ -183,6 +185,9 @@ public class DingoParser {
         RelTraitSet traitSet = planner.emptyTraitSet().replace(DingoConventions.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
         final Program program = Programs.ofRules(rules);
-        return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+        // Seems the only way to prevent rex simplifying in optimization.
+        try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
+            return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+        }
     }
 }

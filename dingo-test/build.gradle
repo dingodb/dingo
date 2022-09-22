@@ -41,6 +41,7 @@ configurations {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    implementation 'org.assertj:assertj-core:' + 'assertj'.v()
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation project(':dingo-driver')
@@ -49,9 +50,8 @@ dependencies {
     implementation project(':dingo-net-netty')
     implementation project(':dingo-server:dingo-server-driver-proxy')
     implementation project(':dingo-store-memory')
-    intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
-    intTestImplementation 'org.assertj:assertj-core:' + 'assertj'.v()
+    intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestImplementation 'org.junit.jupiter:junit-jupiter-api:' + 'junit5'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
     testImplementation project(':dingo-calcite')

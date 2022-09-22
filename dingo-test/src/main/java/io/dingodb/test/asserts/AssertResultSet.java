@@ -36,13 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class AssertResultSet {
     private final ResultSet instance;
 
-    private AssertResultSet(ResultSet obj) {
+    AssertResultSet(ResultSet obj) {
         instance = obj;
-    }
-
-    @Nonnull
-    public static AssertResultSet of(ResultSet obj) {
-        return new AssertResultSet(obj);
     }
 
     @Nonnull

@@ -20,9 +20,9 @@ plugins {
 }
 
 dependencies {
+    annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
     api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     api project(':dingo-exec')
-    annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
     compileOnly group: 'org.immutables', name: 'value', version: 'immutables'.v()
     implementation project(':dingo-ddl')
     implementation project(':dingo-expr:dingo-expr-parser')
@@ -30,4 +30,5 @@ dependencies {
     testAnnotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
+    testImplementation project(':dingo-test')
 }

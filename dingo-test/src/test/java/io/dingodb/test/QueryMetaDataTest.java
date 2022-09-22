@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.test.asserts.AssertResultSet;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +60,7 @@ public class QueryMetaDataTest {
     public void testGetSchemas() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getSchemas()) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
                 )
@@ -75,7 +75,7 @@ public class QueryMetaDataTest {
     public void testGetSchemasWithPattern() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getSchemas(null, "T%")) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
                 )
@@ -89,7 +89,7 @@ public class QueryMetaDataTest {
     public void testGetTables() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, null, null)) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
@@ -104,7 +104,7 @@ public class QueryMetaDataTest {
     public void testGetTablesWithPattern() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, "TEST_", null)) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
@@ -118,7 +118,7 @@ public class QueryMetaDataTest {
     public void testGetTablesNullSchema() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getTables(null, null, "%", null)) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
@@ -135,7 +135,7 @@ public class QueryMetaDataTest {
     public void testGetColumns() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null)) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
                         "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
@@ -167,7 +167,7 @@ public class QueryMetaDataTest {
     public void testGetColumnsWithPattern() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", "N%E")) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
                         "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
@@ -189,7 +189,7 @@ public class QueryMetaDataTest {
     public void testGetPrimaryKeys() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
         try (ResultSet resultSet = metaData.getPrimaryKeys(null, SCHEMA_NAME, "TEST")) {
-            AssertResultSet.of(resultSet)
+            Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
                         "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ"

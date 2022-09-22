@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
@@ -24,6 +24,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.assertj.core.api.ObjectAssert;
 
+import java.sql.ResultSet;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +60,11 @@ public class Assert<T, A extends Assert<T, A>> {
     @Nonnull
     public static AssertOperator operator(Operator operator) {
         return new AssertOperator(operator);
+    }
+
+    @Nonnull
+    public static AssertResultSet resultSet(ResultSet obj) {
+        return new AssertResultSet(obj);
     }
 
     @SuppressWarnings("UnusedReturnValue")

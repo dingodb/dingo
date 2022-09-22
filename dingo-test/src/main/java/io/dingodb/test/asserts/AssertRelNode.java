@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptNode;
@@ -43,7 +43,7 @@ public final class AssertRelNode extends Assert<RelNode, AssertRelNode> {
     }
 
     @Nonnull
-    public AssertRelNode singleInput() {
+    public AssertRelNode soleInput() {
         List<RelNode> inputs = instance.getInputs();
         assertThat(inputs).size().isEqualTo(1);
         return new AssertRelNode(inputs.get(0));
@@ -53,5 +53,12 @@ public final class AssertRelNode extends Assert<RelNode, AssertRelNode> {
         List<? extends RelOptNode> inputs = instance.getInputs();
         assertThat(inputs).size().isEqualTo(num);
         return this;
+    }
+
+    @Nonnull
+    public AssertRelNode input(int index) {
+        List<RelNode> inputs = instance.getInputs();
+        assertThat(inputs).size().isGreaterThanOrEqualTo(index);
+        return new AssertRelNode(inputs.get(index));
     }
 }

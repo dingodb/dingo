@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;

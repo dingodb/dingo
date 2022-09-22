@@ -99,7 +99,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()
-            .name(name)
+            .name(name.toUpperCase())
             .type(typeName)
             .elementType(elementTypeName)
             .precision(precision)
@@ -142,10 +142,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (!(schema instanceof MutableSchema)) {
             throw new AssertionError("Schema must be mutable.");
         }
-        return Pair.of((MutableSchema) schema, tableName);
+        return Pair.of((MutableSchema) schema, tableName.toUpperCase());
     }
 
-    @SuppressWarnings({"unused", "MethodMayBeStatic"})
+    @SuppressWarnings({"unused"})
     public void execute(SqlCreateTable create, CalcitePrepare.Context context) {
 
         log.info("DDL execute: {}", create);

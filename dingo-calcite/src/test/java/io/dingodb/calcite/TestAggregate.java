@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoCoalesce;
@@ -28,6 +27,7 @@ import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -62,13 +62,13 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoPartCountDelete.class).prop("doDeleting", false);
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoPartCountDelete.class).prop("doDeleting", false);
     }
 
     @Test
@@ -77,16 +77,16 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -95,16 +95,16 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -113,17 +113,17 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -132,18 +132,18 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -152,17 +152,17 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
-            .singleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -171,21 +171,21 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoAggregate agg = (DingoAggregate) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
             .getInstance();
         assertThat(agg.getAggCallList())
             .map(AggregateCall::getAggregation)
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM);
-        Assert.relNode(agg).singleInput().isA(DingoTableScan.class);
+        Assert.relNode(agg).soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -194,22 +194,22 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoAggregate agg = (DingoAggregate) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
             .getInstance();
         assertThat(agg.getAggCallList())
             .map(AggregateCall::getAggregation)
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM, SqlKind.COUNT);
-        Assert.relNode(agg).singleInput().isA(DingoTableScan.class);
+        Assert.relNode(agg).soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -218,23 +218,23 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoAggregate agg = (DingoAggregate) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
             .getInstance();
         assertThat(agg.getAggCallList())
             .map(AggregateCall::getAggregation)
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM, SqlKind.COUNT);
-        Assert.relNode(agg).singleInput().isA(DingoTableScan.class);
+        Assert.relNode(agg).soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -243,23 +243,23 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoAggregate agg = (DingoAggregate) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
             .getInstance();
         assertThat(agg.getAggCallList())
             .map(AggregateCall::getAggregation)
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM, SqlKind.COUNT, SqlKind.SUM, SqlKind.COUNT);
-        Assert.relNode(agg).singleInput().isA(DingoTableScan.class);
+        Assert.relNode(agg).soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -268,22 +268,22 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoAggregate agg = (DingoAggregate) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoReduce.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoAggregate.class)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoAggregate.class)
             .getInstance();
         assertThat(agg.getAggCallList())
             .map(AggregateCall::getAggregation)
             .map(SqlAggFunction::getKind)
             .containsExactly(SqlKind.SUM0, SqlKind.COUNT, SqlKind.SUM);
-        Assert.relNode(agg).singleInput().isA(DingoTableScan.class);
+        Assert.relNode(agg).soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -292,13 +292,13 @@ public class TestAggregate {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalAggregate.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoHashJoin.class).inputNum(2);
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoHashJoin.class).inputNum(2);
     }
 }

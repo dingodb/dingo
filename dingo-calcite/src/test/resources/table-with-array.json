@@ -1,0 +1,21 @@
+{
+  "name": "table-with-array",
+  "columns": [
+    {
+      "name": "id",
+      "type": "integer",
+      "primary": true,
+      "notNull": true
+    },
+    {
+      "name": "set",
+      "type": "multiset",
+      "elementType": "integer"
+    },
+    {
+      "name": "arr",
+      "type": "array",
+      "elementType": "integer"
+    }
+  ]
+}

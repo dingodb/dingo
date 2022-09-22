@@ -21,7 +21,6 @@ import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoSchema;
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoDistributedValues;
@@ -40,6 +39,9 @@ import io.dingodb.exec.operator.PartModifyOperator;
 import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.ValuesOperator;
+import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.asserts.AssertJob;
+import io.dingodb.test.asserts.AssertTask;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -116,13 +118,13 @@ public class TestDingoJobVisitor {
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, scan, currentLocation);
-        Assert.job(job).taskNum(2)
-            .task("0001", t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_0)
-                .soleSource().isPartScan(TABLE_ID, 0)
-                .soleOutput().isNull())
-            .task("0003", t -> t.operatorNum(1).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(TABLE_ID, 1)
-                .soleOutput().isNull());
+        AssertJob assertJob = Assert.job(job).taskNum(2);
+        assertJob.task("0001").operatorNum(1).location(MockMetaServiceProvider.LOC_0)
+            .soleSource().isPartScan(TABLE_ID, 0)
+            .soleOutput().isNull();
+        assertJob.task("0003").operatorNum(1).location(MockMetaServiceProvider.LOC_1)
+            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleOutput().isNull();
     }
 
     @Test
@@ -143,15 +145,16 @@ public class TestDingoJobVisitor {
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, exchange, currentLocation);
-        Assert.job(job).taskNum(2)
-            .task("0001", t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
-                .source(0, s -> s.isPartScan(TABLE_ID, 0)
-                    .soleOutput().isNull())
-                .source(1, s -> s.isA(ReceiveOperator.class)
-                    .soleOutput().isNull()))
-            .task("0003", t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(TABLE_ID, 1)
-                .soleOutput().isA(SendOperator.class));
+        AssertJob assertJob = Assert.job(job).taskNum(2);
+        AssertTask assertTask =
+            assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
+        assertTask.source(0).isPartScan(TABLE_ID, 0)
+            .soleOutput().isNull();
+        assertTask.source(1).isA(ReceiveOperator.class)
+            .soleOutput().isNull();
+        assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
+            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleOutput().isA(SendOperator.class);
     }
 
     @Test
@@ -176,15 +179,16 @@ public class TestDingoJobVisitor {
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, coalesce, currentLocation);
-        Assert.job(job).taskNum(2)
-            .task("0001", t -> t.operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2)
-                .source(0, s -> s.isPartScan(TABLE_ID, 0)
-                    .soleOutput().isA(CoalesceOperator.class))
-                .source(1, s -> s.isA(ReceiveOperator.class)
-                    .soleOutput().isA(CoalesceOperator.class)))
-            .task("0003", t -> t.operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-                .soleSource().isPartScan(TABLE_ID, 1)
-                .soleOutput().isA(SendOperator.class));
+        AssertJob assertJob = Assert.job(job).taskNum(2);
+        AssertTask assertTask =
+            assertJob.task("0001").operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
+        assertTask.source(0).isPartScan(TABLE_ID, 0)
+            .soleOutput().isA(CoalesceOperator.class);
+        assertTask.source(1).isA(ReceiveOperator.class)
+            .soleOutput().isA(CoalesceOperator.class);
+        assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
+            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleOutput().isA(SendOperator.class);
     }
 
     @Test
@@ -218,8 +222,8 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
-            .task("0001", t -> t.location(MockMetaServiceProvider.LOC_1).operatorNum(2)
-                .soleSource().isA(ValuesOperator.class)
-                .soleOutput().isA(PartModifyOperator.class));
+            .task("0001").location(MockMetaServiceProvider.LOC_1).operatorNum(2)
+            .soleSource().isA(ValuesOperator.class)
+            .soleOutput().isA(PartModifyOperator.class);
     }
 }

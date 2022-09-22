@@ -31,7 +31,6 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.TreeMap;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @AutoService(MetaServiceProvider.class)
@@ -50,7 +49,7 @@ public class Mock1MetaServiceProvider implements MetaServiceProvider {
             when(metaService.getTableDefinitions()).thenReturn(ImmutableMap.of(
                 TABLE_1_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json"))
             ));
-            when(metaService.getTableId(anyString())).thenReturn(CommonId.prefix((byte) 0));
+            when(metaService.getTableId(TABLE_1_NAME)).thenReturn(CommonId.prefix((byte) 0));
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -16,11 +16,11 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
@@ -57,12 +57,12 @@ public class TestSortLimit {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalSort.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalSort.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoSort sort = (DingoSort) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoSort.class)
+            .soleInput().isA(DingoSort.class)
             .getInstance();
         List<RelFieldCollation> collations = sort.getCollation().getFieldCollations();
         assertThat(collations.get(0))
@@ -83,12 +83,12 @@ public class TestSortLimit {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalSort.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalSort.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoSort sort = (DingoSort) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoSort.class)
+            .soleInput().isA(DingoSort.class)
             .getInstance();
         List<RelFieldCollation> collations = sort.getCollation().getFieldCollations();
         assertThat(collations).isEmpty();
@@ -104,12 +104,12 @@ public class TestSortLimit {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalSort.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalSort.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoSort sort = (DingoSort) Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoSort.class)
+            .soleInput().isA(DingoSort.class)
             .getInstance();
         List<RelFieldCollation> collations = sort.getCollation().getFieldCollations();
         assertThat(collations.get(0))

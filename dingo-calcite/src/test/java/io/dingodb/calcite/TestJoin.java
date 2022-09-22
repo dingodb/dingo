@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
@@ -24,6 +23,9 @@ import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.asserts.AssertRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -50,15 +52,15 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
     }
 
@@ -68,17 +70,20 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoFilter.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
-            .inputNum(2);
+        AssertRelNode assertJoin = Assert.relNode(optimized).isA(DingoRoot.class)
+            .soleInput().isA(DingoFilter.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
+        assertJoin.input(0).isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class);
+        assertJoin.input(1).isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -87,16 +92,19 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoFilter.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
-            .inputNum(2);
+        AssertRelNode assertJoin = Assert.relNode(optimized).isA(DingoRoot.class)
+            .soleInput().isA(DingoFilter.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
+        assertJoin.input(0).isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class);
+        assertJoin.input(1).isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoTableScan.class);
     }
 
     @Test
@@ -105,18 +113,18 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoFilter.class)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoFilter.class)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
     }
 
@@ -126,15 +134,15 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.LEFT)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.LEFT)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
     }
 
@@ -144,15 +152,15 @@ public class TestJoin {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.RIGHT)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoProject.class)
-            .singleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.RIGHT)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);
     }
 }

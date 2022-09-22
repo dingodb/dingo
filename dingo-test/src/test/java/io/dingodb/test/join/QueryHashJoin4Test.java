@@ -58,4 +58,12 @@ public class QueryHashJoin4Test {
             "beauties-boys-right-join-filter"
         );
     }
+
+    @Test
+    public void testBeautiesBoysRightFilterNotIn() throws SQLException, IOException {
+        sqlHelper.doQueryTest(
+            this.getClass(),
+            "beauties-boys-right-join-filter-not-in"
+        );
+    }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Id;
@@ -23,7 +23,6 @@ import io.dingodb.exec.base.Task;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,10 +38,12 @@ public final class AssertJob extends Assert<Job, AssertJob> {
     }
 
     @Nonnull
-    public AssertJob task(String strId, @Nonnull Consumer<AssertTask> consumer) {
+    public AssertTask task(String strId) {
         Map<Id, Task> tasks = instance.getTasks();
-        consumer.accept(Assert.task(tasks.get(new Id(strId))));
-        return this;
+        assertThat(tasks).isNotNull();
+        Task task = tasks.get(new Id(strId));
+        assertThat(task).isNotNull();
+        return Assert.task(task);
     }
 
     @Nonnull

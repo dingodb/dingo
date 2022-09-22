@@ -26,6 +26,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.CsvUtils;
 import io.dingodb.common.util.StackTraces;
 import io.dingodb.exec.Services;
+import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertResultSet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -149,7 +150,7 @@ public class SqlHelper {
     ) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet)
+                Assert.resultSet(resultSet)
                     .columnLabels(columns)
                     .isRecords(tuples);
             }
@@ -185,7 +186,7 @@ public class SqlHelper {
     ) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet)
+                Assert.resultSet(resultSet)
                     .columnLabels(columns)
                     .isRecordsInOrder(data);
             }
@@ -209,7 +210,7 @@ public class SqlHelper {
     ) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet)
+                Assert.resultSet(resultSet)
                     .columnLabels(columns)
                     .isRecordsInOrderWithApproxTime(data);
             }
@@ -228,7 +229,7 @@ public class SqlHelper {
     public void explainTest(String sql, String... data) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                AssertResultSet.of(resultSet).isPlan(data);
+                Assert.resultSet(resultSet).isPlan(data);
             }
         }
     }

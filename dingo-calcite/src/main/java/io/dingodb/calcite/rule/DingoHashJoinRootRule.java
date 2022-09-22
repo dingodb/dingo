@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoHashJoin;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -28,6 +29,7 @@ public class DingoHashJoinRootRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalJoin.class,
+            DingoHashJoinRule::match,
             Convention.NONE,
             DingoConventions.ROOT,
             "DingoHashJoinRootRule.ROOT"
@@ -41,6 +43,10 @@ public class DingoHashJoinRootRule extends ConverterRule {
     @Override
     public @Nullable RelNode convert(RelNode rel) {
         LogicalJoin join = (LogicalJoin) rel;
+        JoinInfo joinInfo = join.analyzeCondition();
+        if (!joinInfo.isEqui()) {
+            return null;
+        }
         return new DingoHashJoin(
             join.getCluster(),
             join.getTraitSet().replace(DingoConventions.ROOT),

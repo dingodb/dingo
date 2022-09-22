@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.assertion;
+package io.dingodb.test.asserts;
 
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
@@ -22,7 +22,6 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.SourceOperator;
 
 import java.util.List;
-import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.Utils.sole;
@@ -57,12 +56,10 @@ public final class AssertTask extends Assert<Task, AssertTask> {
     }
 
     @Nonnull
-    public AssertTask source(int index, @Nonnull Consumer<AssertOperator> consumer) {
+    public AssertOperator source(int index) {
         List<Id> runList = instance.getRunList();
         assertThat(runList).size().isGreaterThan(index);
-        AssertOperator assertOperator = Assert.operator(instance.getOperator(runList.get(index)))
+        return Assert.operator(instance.getOperator(runList.get(index)))
             .isA(SourceOperator.class);
-        consumer.accept(assertOperator);
-        return this;
     }
 }

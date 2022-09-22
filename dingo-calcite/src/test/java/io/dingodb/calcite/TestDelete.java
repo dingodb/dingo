@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.assertion.Assert;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoCoalesce;
 import io.dingodb.calcite.rel.DingoExchange;
@@ -24,6 +23,7 @@ import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -52,15 +52,15 @@ public class TestDelete {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .singleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.DELETE)
-            .singleInput().isA(LogicalProject.class)
-            .singleInput().isA(LogicalFilter.class)
-            .singleInput().isA(LogicalDingoTableScan.class);
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.DELETE)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalFilter.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized).isA(DingoRoot.class)
-            .singleInput().isA(DingoCoalesce.class)
-            .singleInput().isA(DingoExchange.class).prop("root", true)
-            .singleInput().isA(DingoPartModify.class).prop("operation", TableModify.Operation.DELETE)
-            .singleInput().isA(DingoGetByKeys.class);
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoPartModify.class).prop("operation", TableModify.Operation.DELETE)
+            .soleInput().isA(DingoGetByKeys.class);
     }
 }
