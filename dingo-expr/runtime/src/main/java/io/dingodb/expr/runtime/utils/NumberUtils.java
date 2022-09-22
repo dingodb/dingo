@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type.converter;
+package io.dingodb.expr.runtime.utils;
 
-import java.math.BigDecimal;
-import javax.annotation.Nonnull;
-
-public class ClientConverter implements DataConverter {
-    public static final ClientConverter INSTANCE = new ClientConverter();
-
-    public ClientConverter() {
+public final class NumberUtils {
+    private NumberUtils() {
     }
 
-    @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
-        if (value instanceof Float) {
-            return BigDecimal.valueOf((Float) value).doubleValue();
+    public static int checkIntRange(long value) {
+        if ((int) value == value) {
+            return (int) value;
         }
-        return (Double) value;
+        throw new ArithmeticException(
+            "Value " + value + " exceeds limits of integers, which is from "
+                + Integer.MIN_VALUE + " to " + Integer.MAX_VALUE + "."
+        );
     }
 }

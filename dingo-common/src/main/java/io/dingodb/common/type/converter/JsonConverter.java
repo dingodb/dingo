@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.dingodb.common.type.DataConverter;
 import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.Base64;
 

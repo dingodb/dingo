@@ -30,6 +30,7 @@ import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalUnion;
@@ -41,6 +42,8 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.util.NlsString;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -48,6 +51,7 @@ import java.util.List;
 
 import static org.apache.calcite.config.CalciteSystemProperty.DEFAULT_CHARSET;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 public class TestInsert {
@@ -169,5 +173,40 @@ public class TestInsert {
             .soleInput().isA(LogicalTableModify.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalValues.class);
+    }
+
+    @Test
+    public void testInsertArrayValue() throws SqlParseException {
+        String sql = "insert into `table-with-array` values (1, multiset[1, 2], array[3, 4])";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(Collect.class)
+            .soleInput().isA(LogicalValues.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized).isA(DingoRoot.class)
+            .soleInput().isA(DingoCoalesce.class)
+            .soleInput().isA(DingoExchange.class).prop("root", true)
+            .soleInput().isA(DingoPartModify.class)
+            .soleInput().isA(DingoDistributedValues.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "insert into `test` values(2147483648, 'WrongId', 1.0)",
+        "insert into `table-with-array` values (1, multiset[1, 2], array[2147483648, 4])",
+        "insert into `table-with-array` values (1, multiset[-2147483649, 2], array[3, 4])"
+    })
+    public void testInsertIntExceedsLimits(String sql) throws SqlParseException {
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            parser.optimize(relRoot.rel);
+        });
+        exception.printStackTrace();
+        assertThat(exception.getCause()).isInstanceOf(ArithmeticException.class)
+            .hasMessageContaining("exceeds limits of integers");
     }
 }

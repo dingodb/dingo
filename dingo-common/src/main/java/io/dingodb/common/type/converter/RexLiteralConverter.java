@@ -16,8 +16,8 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.common.type.DataConverter;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.expr.runtime.utils.NumberUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 
@@ -66,13 +66,7 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public Integer convertIntegerFrom(@Nonnull Object value) {
         long v = ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
-        if ((int) v != v) {
-            throw new ArithmeticException(
-                "Value " + value + " exceeds limits of integer, "
-                    + "which is from " + Integer.MIN_VALUE + " to " + Integer.MAX_VALUE + "."
-            );
-        }
-        return (int) v;
+        return NumberUtils.checkIntRange(v);
     }
 
     @Override

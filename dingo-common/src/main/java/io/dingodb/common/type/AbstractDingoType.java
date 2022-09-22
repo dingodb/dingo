@@ -17,6 +17,7 @@
 package io.dingodb.common.type;
 
 import io.dingodb.common.type.converter.CsvConverter;
+import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
