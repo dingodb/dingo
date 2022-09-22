@@ -23,6 +23,8 @@
 
     <suppress files=".*\.java" checks="MissingJavadocMethod"/>
     <suppress files=".*\.java" checks="NoFinalizer"/>
+    <suppress files=".*\.java" checks="JavadocParagraph"/>
     <suppress files=".*/build/.*" checks=".*"/>
+    <suppress files="dingo-raft/.*" checks=".*"/>
 
 </suppressions>
