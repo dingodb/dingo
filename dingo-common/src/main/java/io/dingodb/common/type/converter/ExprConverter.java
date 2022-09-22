@@ -16,8 +16,6 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.common.type.DataConverter;
-
 import java.math.BigDecimal;
 import javax.annotation.Nonnull;
 

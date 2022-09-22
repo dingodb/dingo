@@ -21,6 +21,7 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import io.dingodb.expr.runtime.utils.NumberUtils;
 
 import java.math.BigDecimal;
 import javax.annotation.Nonnull;
@@ -41,7 +42,7 @@ final class IntegerCastEvaluators {
     }
 
     static int integerCast(long value) {
-        return (int) value;
+        return NumberUtils.checkIntRange(value);
     }
 
     static int integerCast(double value) {

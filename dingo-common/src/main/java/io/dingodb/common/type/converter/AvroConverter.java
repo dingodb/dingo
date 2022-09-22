@@ -16,7 +16,6 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.common.type.DataConverter;
 import io.dingodb.common.type.DingoType;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.util.Utf8;

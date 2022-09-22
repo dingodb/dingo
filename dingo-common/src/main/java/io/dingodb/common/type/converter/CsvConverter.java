@@ -16,7 +16,6 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.common.type.DataConverter;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 

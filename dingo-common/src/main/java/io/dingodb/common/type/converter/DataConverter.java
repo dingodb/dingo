@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type;
+package io.dingodb.common.type.converter;
+
+import io.dingodb.common.type.DingoType;
 
 import java.math.BigDecimal;
 import java.sql.Date;
