@@ -126,6 +126,11 @@ public class DingoMeta extends MetaImpl {
     }
 
     @Nonnull
+    private static Id jobIdFromSh(@Nonnull StatementHandle sh) {
+        return new Id(sh.toString());
+    }
+
+    @Nonnull
     private static Iterator<Object[]> createIterator(@Nonnull AvaticaStatement statement) {
         Signature signature = statement.handle.signature;
         Iterator<Object[]> iterator;
@@ -133,7 +138,7 @@ public class DingoMeta extends MetaImpl {
             DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
             iterator = ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
         } else {
-            Job job = jobManager.getJob(new Id(statement.handle.toString()));
+            Job job = jobManager.getJob(jobIdFromSh(statement.handle));
             if (statement instanceof DingoPreparedStatement) {
                 DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
                 try {
@@ -235,7 +240,7 @@ public class DingoMeta extends MetaImpl {
         try {
             DingoConnection.DingoContext context = dingoConnection.createContext();
             DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
-            sh.signature = parser.parseQuery(jobManager, new Id(sh.toString()), sql, context);
+            sh.signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql, context);
         } catch (SqlParseException e) {
             throw new RuntimeException(e);
         }
@@ -267,7 +272,7 @@ public class DingoMeta extends MetaImpl {
         DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
         try {
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            final Signature signature = parser.parseQuery(jobManager, new Id(sh.toString()), sql, context);
+            final Signature signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql, context);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);
@@ -435,6 +440,7 @@ public class DingoMeta extends MetaImpl {
         if (statement != null) {
             try {
                 statement.close();
+                jobManager.removeJob(jobIdFromSh(sh));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

@@ -26,4 +26,6 @@ public interface JobManager {
     }
 
     Job getJob(Id jobId);
+
+    Job removeJob(Id jobId);
 }

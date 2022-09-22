@@ -45,4 +45,9 @@ public final class JobManagerImpl implements JobManager {
     public Job getJob(Id jobId) {
         return jobMap.get(jobId);
     }
+
+    @Override
+    public Job removeJob(Id jobId) {
+        return jobMap.remove(jobId);
+    }
 }
