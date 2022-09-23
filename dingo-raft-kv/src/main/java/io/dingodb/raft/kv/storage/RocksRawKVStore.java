@@ -410,7 +410,7 @@ public class RocksRawKVStore implements RawKVStore {
                         break;
                     }
                     byte[] key = iterator.key();
-                    if (endKey != null && ByteArrayUtils.compare(iterator.key(), endKey) >= 0) {
+                    if (endKey != null && ByteArrayUtils.greatThanOrEqual(iterator.key(), endKey)) {
                         break;
                     }
                     byte[] value = iterator.value();
@@ -483,7 +483,7 @@ public class RocksRawKVStore implements RawKVStore {
                 }
                 while (true) {
                     byte[] key = iterator.key();
-                    if (endKey != null && ByteArrayUtils.compare(iterator.key(), endKey) >= 0) {
+                    if (endKey != null && ByteArrayUtils.greatThanOrEqual(iterator.key(), endKey)) {
                         break;
                     }
                     byte[] value = iterator.value();
@@ -616,7 +616,7 @@ public class RocksRawKVStore implements RawKVStore {
                 if (hasMore) {
                     iterator.seek(endKey);
                 } else {
-                    Utils.loop(() -> hasNext() && ByteArrayUtils.compare(next().getKey(), endKey) < 0);
+                    Utils.loop(() -> hasNext() && ByteArrayUtils.lessThan(next().getKey(), endKey));
                 }
             }
             load();

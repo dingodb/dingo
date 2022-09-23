@@ -30,9 +30,9 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
 
@@ -85,9 +85,15 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     ) {
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
 
-        SortedSet<ComparableByteArray> subSet = ranges.subSet(
-            ranges.floor(new ComparableByteArray(startKey)), true, new ComparableByteArray(endKey), includeEnd
-        );
+        LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
+        for (ComparableByteArray key : ranges) {
+            if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)
+                && ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
+                keySet.add(key);
+            }
+        }
+
+        LinkedHashSet<ComparableByteArray> subSet = keySet;
 
         byte[] start = startKey;
         byte[] end;

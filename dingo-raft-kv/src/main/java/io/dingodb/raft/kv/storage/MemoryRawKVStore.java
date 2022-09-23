@@ -198,7 +198,7 @@ public class MemoryRawKVStore implements RawKVStore {
             }
             while (iterator.hasNext()) {
                 ByteArrayEntry entry = iterator.next();
-                if (endKey != null && ByteArrayUtils.compare(entry.getKey(), endKey) >= 0) {
+                if (endKey != null && ByteArrayUtils.greatThanOrEqual(entry.getKey(), endKey)) {
                     break;
                 }
                 write(entry.getKey(), buffer, channel);
@@ -255,10 +255,10 @@ public class MemoryRawKVStore implements RawKVStore {
                 if (value == null) {
                     break;
                 }
-                if (startKey != null && ByteArrayUtils.compare(key, startKey) < 0) {
+                if (startKey != null && ByteArrayUtils.lessThan(key, startKey)) {
                     continue;
                 }
-                if (endKey != null && ByteArrayUtils.compare(key, endKey) >= 0) {
+                if (endKey != null && ByteArrayUtils.greatThanOrEqual(key, endKey)) {
                     break;
                 }
                 defaultDB.put(key, new ByteArrayEntry(key, value));

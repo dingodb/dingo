@@ -61,7 +61,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
-import static io.dingodb.common.util.ByteArrayUtils.compare;
+import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 
 @Slf4j
 public class RaftStoreInstance implements StoreInstance {
@@ -215,7 +215,7 @@ public class RaftStoreInstance implements StoreInstance {
     public Part getPart(byte[] primaryKey) {
         return Optional.ofNullable(startKeyPartMap.floorEntry(primaryKey))
             .map(Map.Entry::getValue)
-            .filter(part -> part.getEnd() == null || compare(primaryKey, part.getEnd()) < 0)
+            .filter(part -> part.getEnd() == null || lessThan(primaryKey, part.getEnd()))
             .orNull();
     }
 
@@ -388,7 +388,7 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     private static void isValidRangeKey(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (endPrimaryKey != null && ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
+        if (endPrimaryKey != null && ByteArrayUtils.greatThan(startPrimaryKey, endPrimaryKey)) {
             throw new IllegalArgumentException("Invalid range key, start key should be less than end key");
         }
     }
@@ -432,7 +432,7 @@ public class RaftStoreInstance implements StoreInstance {
 
         for (int i = 0; i < keyArraysList.size(); i++) {
             byte[] keyInList = keyArraysList.get(i);
-            if (ByteArrayUtils.compare(startKey, keyInList) <= 0) {
+            if (ByteArrayUtils.lessThan(startKey, keyInList)) {
                 startIndex = i - 1;
                 break;
             }
@@ -440,7 +440,7 @@ public class RaftStoreInstance implements StoreInstance {
 
         for (int i = keyArraysList.size() - 1; i >= 0; i--) {
             byte[] keyInList = keyArraysList.get(i);
-            if (ByteArrayUtils.compare(endKey, keyInList) >= 0) {
+            if (ByteArrayUtils.greatThanOrEqual(endKey, keyInList)) {
                 endIndex = i;
                 break;
             }

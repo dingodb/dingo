@@ -52,7 +52,7 @@ public class RocksBlockIterator implements Iterator<KeyValue> {
 
     @Override
     public boolean hasNext() {
-        return iterator.isValid() && (end == null || ByteArrayUtils.compare(iterator.key(), end) < 0);
+        return iterator.isValid() && (end == null || ByteArrayUtils.lessThan(iterator.key(), end));
     }
 
     // close rocksdb iterator

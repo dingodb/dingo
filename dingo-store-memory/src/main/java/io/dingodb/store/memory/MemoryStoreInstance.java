@@ -49,7 +49,9 @@ public class MemoryStoreInstance implements StoreInstance {
 
     @Override
     public void deletePart(@Nonnull Part part) {
-        db.subMap(part.getStart(), true, part.getEnd(), false).keySet().forEach(db::remove);
+        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
+            db.entrySet().iterator(), part.getStart(), part.getEnd(), true, false);
+        treeMap.keySet().forEach(db::remove);
         startKeyPartMap.remove(part.getStart());
     }
 
@@ -58,10 +60,12 @@ public class MemoryStoreInstance implements StoreInstance {
         Part part = startKeyPartMap.get(startKey);
         byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
         byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
-        Map<byte[], byte[]> subMap = db.subMap(startKeyInBytes, true, endKeyInBytes, false);
+
+        TreeMap<byte[], byte[]> subMap = getTreeMapByRange(
+            db.entrySet().iterator(), startKeyInBytes, endKeyInBytes, true, false);
         long count = subMap.size();
         if (doDeleting) {
-            subMap.clear();
+            delete(part.getStart(), part.getEnd());
         }
         return count;
     }
@@ -83,7 +87,9 @@ public class MemoryStoreInstance implements StoreInstance {
 
     @Override
     public boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return db.subMap(startPrimaryKey, true, endPrimaryKey, false).size() > 0;
+        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
+            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
+        return treeMap.size() > 0;
     }
 
     @Override
@@ -118,7 +124,9 @@ public class MemoryStoreInstance implements StoreInstance {
 
     @Override
     public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        db.subMap(startPrimaryKey, true, endPrimaryKey, false).keySet().forEach(db::remove);
+        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
+            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
+        treeMap.keySet().forEach(db::remove);
         return true;
     }
 
@@ -147,8 +155,10 @@ public class MemoryStoreInstance implements StoreInstance {
         if (endPrimaryKey == null) {
             endPrimaryKey = db.lastKey();
         }
-        return new KeyValueIterator(
-            new TreeMap<>(db.subMap(startPrimaryKey, true, endPrimaryKey, false)).entrySet().iterator()
+
+        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
+            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
+        return new KeyValueIterator(treeMap.entrySet().iterator()
         );
     }
 
@@ -159,8 +169,39 @@ public class MemoryStoreInstance implements StoreInstance {
         if (endPrimaryKey == null) {
             endPrimaryKey = db.lastKey();
         }
-        return new KeyValueIterator(
-            new TreeMap<>(db.subMap(startPrimaryKey, includeStart, endPrimaryKey, includeEnd)).entrySet().iterator()
-        );
+
+        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
+            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
+        return new KeyValueIterator(treeMap.entrySet().iterator());
+    }
+
+    private TreeMap<byte[], byte[]> getTreeMapByRange(Iterator<Map.Entry<byte[], byte[]>> iterator,
+                                                      byte[] startPrimaryKey,
+                                                      byte[] endPrimaryKey,
+                                                      boolean includeStart,
+                                                      boolean includeEnd) {
+        TreeMap<byte[], byte[]> treeMap = new TreeMap<>(ByteArrayUtils::compareContainsEnd);
+
+        while (iterator.hasNext()) {
+            Map.Entry<byte[], byte[]> next = iterator.next();
+            boolean start = true;
+            boolean end = false;
+            if (includeStart)  {
+                start = ByteArrayUtils.greatThanOrEqual(next.getKey(), startPrimaryKey);
+            } else {
+                start = ByteArrayUtils.greatThan(next.getKey(), startPrimaryKey);
+            }
+
+            if (includeEnd) {
+                end = ByteArrayUtils.lessThanOrEqual(next.getKey(), endPrimaryKey);
+            } else {
+                end = ByteArrayUtils.lessThan(next.getKey(), endPrimaryKey);
+            }
+
+            if (start && end) {
+                treeMap.put(next.getKey(), next.getValue());
+            }
+        }
+        return treeMap;
     }
 }
