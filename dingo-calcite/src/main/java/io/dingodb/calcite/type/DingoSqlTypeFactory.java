@@ -18,12 +18,25 @@ package io.dingodb.calcite.type;
 
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
     public static DingoSqlTypeFactory INSTANCE = new DingoSqlTypeFactory();
 
     private DingoSqlTypeFactory() {
         super();
+    }
+
+    /**
+     * The type created by this method is used for {@link org.apache.calcite.sql.SqlDynamicParam}. The default
+     * returned value is {@link SqlTypeName#UNKNOWN}, which cause operands validation fail for calls, so make it
+     * {@link SqlTypeName#ANY}.
+     *
+     * @return the {@link RelDataType}.
+     */
+    @Override
+    public RelDataType createUnknownType() {
+        return createSqlType(SqlTypeName.ANY);
     }
 
     @Override

@@ -36,7 +36,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 @Slf4j
-public final class DingoGetByKeys extends DingoTableScan implements DingoRel {
+public final class DingoGetByKeys extends LogicalDingoTableScan implements DingoRel {
     @Getter
     private final Collection<Map<Integer, RexLiteral>> keyItems;
 
@@ -53,17 +53,17 @@ public final class DingoGetByKeys extends DingoTableScan implements DingoRel {
         this.keyItems = keyItems;
     }
 
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        return keyItems.size() / DingoTableScan.ASSUME_PARTS;
-    }
-
     @Nonnull
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("keyItems", keyItems);
         return pw;
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return keyItems.size() / DingoTableScan.ASSUME_PARTS;
     }
 
     @Override

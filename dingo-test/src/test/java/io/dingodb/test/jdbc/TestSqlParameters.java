@@ -107,6 +107,32 @@ public class TestSqlParameters {
     }
 
     @Test
+    public void testFilterWithFun() throws SQLException {
+        String sql = "select * from test where locate(?, name) <> 0";
+        Connection connection = sqlHelper.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, "i");
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{1, "Alice", 3.5},
+                    new Object[]{3, "Cindy", 4.5},
+                    new Object[]{4, "Doris", 5.0},
+                    new Object[]{5, "Emily", 5.5},
+                    new Object[]{6, "Alice", 6.0},
+                    new Object[]{8, "Alice", 7.0},
+                    new Object[]{9, "Cindy", 7.5}
+                ));
+            }
+            statement.setString(1, "o");
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
+                    new Object[]{4, "Doris", 5.0}
+                ));
+            }
+        }
+    }
+
+    @Test
     public void testInsert() throws SQLException {
         String sql = "insert into test values(?, ?, ?)";
         Connection connection = sqlHelper.getConnection();

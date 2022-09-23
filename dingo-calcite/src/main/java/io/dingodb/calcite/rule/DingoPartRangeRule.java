@@ -175,9 +175,6 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
             .operandSupplier(
                 b0 -> b0.operand(DingoTableScan.class)
                     .predicate(r -> {
-                        if (r instanceof DingoPartRangeScan) {
-                            return false;
-                        }
                         RexNode filter = r.getFilter();
                         if (filter != null) {
                             if (filter.getKind() == SqlKind.AND) {

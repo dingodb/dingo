@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-public class DingoPartRangeScan extends DingoTableScan implements DingoRel {
+public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRel {
     @Getter
     private final byte[] startKey;
     @Getter
@@ -67,12 +67,6 @@ public class DingoPartRangeScan extends DingoTableScan implements DingoRel {
         this.includeEnd = includeEnd;
     }
 
-    @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
-        // Assume that part scan has half cost.
-        return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5);
-    }
-
     @Nonnull
     @Override
     public RelWriter explainTerms(RelWriter pw) {
@@ -84,6 +78,12 @@ public class DingoPartRangeScan extends DingoTableScan implements DingoRel {
         pw.item("includeStart", includeStart);
         pw.item("includeEnd", includeEnd);
         return pw;
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
+        // Assume that part scan has half cost.
+        return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5d);
     }
 
     @Override
