@@ -185,7 +185,17 @@ public class RocksStorage implements Storage {
         options.setCreateIfMissing(true);
         options.setCreateMissingColumnFamilies(true);
         options.setWalDir(this.dbPath.resolve("wal").toString());
+
+        /**
+         * configuration for performance.
+         * 1. max_background_compaction
+         * 2. max_background_flushes
+         * 3. max_background_jobs
+         * 4. bytes_per_sync: 1M
+         * 5. db_write_buffer_size: 2G
+         */
         options.setListeners(Collections.singletonList(new Listener()));
+
         List<ColumnFamilyDescriptor> cfs = Arrays.asList(
             dcfDesc = dcfDesc(),
             mcfDesc = mcfDesc()
@@ -467,7 +477,14 @@ public class RocksStorage implements Storage {
     }
 
     private static ColumnFamilyDescriptor dcfDesc() {
-        return new ColumnFamilyDescriptor(CF_DEFAULT, new ColumnFamilyOptions());
+        final ColumnFamilyOptions cfOption = new ColumnFamilyOptions();
+        /**
+         * configuration for performance.
+         * write_buffer_size: will control the sst file size
+         */
+        cfOption.setWriteBufferSize(512  * 1024 * 1024);
+        cfOption.setMaxWriteBufferNumber(4);
+        return new ColumnFamilyDescriptor(CF_DEFAULT, cfOption);
     }
 
     private static ColumnFamilyDescriptor icfDesc() {
