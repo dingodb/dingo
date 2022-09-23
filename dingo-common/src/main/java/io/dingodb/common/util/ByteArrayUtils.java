@@ -66,6 +66,20 @@ public class ByteArrayUtils {
         return bytes1.length - bytes2.length;
     }
 
+    public static int compareContainsEnd(byte[] bytes1, byte[] bytes2) {
+        if (Arrays.equals(bytes1, bytes2)) {
+            return 0;
+        }
+        int n = Math.min(bytes1.length, bytes2.length);
+        for (int i = 0; i < n; i++) {
+            if (bytes1[i] == bytes2[i]) {
+                continue;
+            }
+            return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
+        }
+        return 0;
+    }
+
     public static boolean equal(byte[] bytes1, byte[] bytes2) {
         return bytes2 != null && compare(bytes1, bytes2) == 0;
     }
@@ -79,11 +93,11 @@ public class ByteArrayUtils {
     }
 
     public static boolean lessThanOrEqual(byte[] bytes1, byte[] bytes2) {
-        return compare(bytes1, bytes2) <= 0;
+        return compareContainsEnd(bytes1, bytes2) <= 0;
     }
 
     public static boolean greatThanOrEqual(byte[] bytes1, byte[] bytes2) {
-        return compare(bytes1, bytes2) >= 0;
+        return compareContainsEnd(bytes1, bytes2) >= 0;
     }
 
     public static String enCodeBytes2Base64(byte[] input) {

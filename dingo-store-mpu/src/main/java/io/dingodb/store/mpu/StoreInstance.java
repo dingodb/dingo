@@ -224,7 +224,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     private static void isValidRangeKey(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (endPrimaryKey != null && ByteArrayUtils.compare(startPrimaryKey, endPrimaryKey) > 0) {
+        if (endPrimaryKey != null && ByteArrayUtils.greatThan(startPrimaryKey, endPrimaryKey)) {
             throw new IllegalArgumentException("Invalid range key, start key should be less than end key");
         }
     }
