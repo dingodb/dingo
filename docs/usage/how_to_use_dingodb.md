@@ -39,7 +39,7 @@ Class.forName("io.dingodb.driver.client.DingoDriverClient");
 Connection connection = DriverManager.getConnection("jdbc:dingo:thin:url=ip:8765");
 ```
 
-```jdbc:dingo:thin:url=http://172.20.3.200:8765``` is the connection string.
+```jdbc:dingo:thin:url=172.20.3.200:8765``` is the connection string.
 
 **The IP address should be the actual server IP address, and the default port is 8765.**
 
