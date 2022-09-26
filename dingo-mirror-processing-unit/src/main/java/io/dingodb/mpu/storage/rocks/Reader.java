@@ -16,7 +16,10 @@
 
 package io.dingodb.mpu.storage.rocks;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.mpu.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -29,9 +32,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.common.util.ByteArrayUtils.greatThan;
+import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
 
@@ -96,24 +110,81 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
-        long count = 0;
-        try (RocksIterator iterator = db.newIterator(handle, readOptions)) {
-            if (start == null) {
-                iterator.seekToFirst();
-            } else {
-                iterator.seek(start);
-                if (iterator.isValid() && !withStart && Arrays.equals(iterator.key(), start)) {
+        java.util.Iterator<byte[]> keyIterator = db.getLiveFilesMetaData().stream()
+            .filter(meta -> Arrays.equals(meta.columnFamilyName(), Constant.CF_DEFAULT))
+            .flatMap(meta -> Stream.of(meta.smallestKey(), meta.largestKey()))
+            .filter(k -> (end == null || lessThanOrEqual(k, end)) && (start == null || greatThanOrEqual(k, start)))
+            .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
+            .iterator();
+        if (!keyIterator.hasNext()) {
+            return countAsync(start, end, withStart, withEnd).join();
+        }
+        Map<byte[], byte[]> subCounts = new TreeMap<>(ByteArrayUtils::compare);
+        byte[] key = keyIterator.next();
+        if (start == null || lessThan(start, key)) {
+            subCounts.put(EMPTY_BYTES, key);
+        } else if (lessThan(start, key)) {
+            subCounts.put(start, key);
+        }
+        while (keyIterator.hasNext()) {
+            subCounts.put(key, key = keyIterator.next());
+        }
+        if (end == null || greatThan(end, key)) {
+            subCounts.put(key, end);
+        }
+        AtomicLong count = new AtomicLong(0);
+        CountDownLatch countDownLatch = new CountDownLatch(subCounts.size());
+        java.util.Iterator<Map.Entry<byte[], byte[]>> subIterator = subCounts.entrySet().iterator();
+        boolean sWithStart = withStart;
+        boolean sWithEnd = false;
+        while (subIterator.hasNext()) {
+            Map.Entry<byte[], byte[]> entry = subIterator.next();
+            if (!subIterator.hasNext()) {
+                sWithEnd = withEnd;
+            }
+            countAsync(entry.getKey(), entry.getValue(), sWithStart, sWithEnd)
+                .whenComplete((r, e) -> {
+                    try {
+                        if (e == null) {
+                            count.addAndGet(r);
+                        } else {
+                            log.error("Count {} sub {} to {} error.", db.getName(), entry.getKey(), entry.getValue());
+                        }
+                    } finally {
+                        countDownLatch.countDown();
+                    }
+                });
+            sWithStart = true;
+        }
+        try {
+            countDownLatch.await();
+            return count.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public CompletableFuture<Long> countAsync(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
+        Predicate<byte[]> ep = end == null ? k -> true : withEnd ? k -> lessThanOrEqual(k, end) : k -> lessThan(k, end);
+        return Executors.submit("calc-count", () -> {
+            long count = 0;
+            try (RocksIterator iterator = db.newIterator(handle, readOptions)) {
+                if (start == null) {
+                    iterator.seekToFirst();
+                } else {
+                    iterator.seek(start);
+                    if (iterator.isValid() && !withStart && Arrays.equals(iterator.key(), start)) {
+                        iterator.next();
+                    }
+                }
+                while (iterator.isValid() && ep.test(iterator.key())) {
+
+                    count++;
                     iterator.next();
                 }
             }
-            while (iterator.isValid() && (end == null || (withEnd
-                                                          ? lessThanOrEqual(end, iterator.key())
-                                                          : lessThan(end, iterator.key())))) {
-                count++;
-                iterator.next();
-            }
-        }
-        return count;
+            return count;
+        });
     }
 
     @Override

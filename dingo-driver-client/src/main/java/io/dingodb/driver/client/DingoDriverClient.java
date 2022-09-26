@@ -18,6 +18,7 @@ package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
 import io.dingodb.driver.DingoServiceImpl;
+import io.dingodb.net.netty.NetServiceConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.ConnectionConfig;
@@ -192,6 +193,7 @@ public class DingoDriverClient extends Driver {
         Location location = new Location(host, port);
         Supplier<Location> locationSupplier = () -> location;
 
+        NetServiceConfiguration.resetAllTimeout(timeout);
         final Service service = new DingoServiceImpl(locationSupplier, timeout);
         connection.setService(service);
         return new DingoRemoteMeta(connection, service);

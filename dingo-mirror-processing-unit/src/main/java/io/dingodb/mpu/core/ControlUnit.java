@@ -89,10 +89,6 @@ class ControlUnit {
         if (closed) {
             throw new RuntimeException("Control unit closed.");
         }
-        long mirrorClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
-        if (mirrorClock < clock - 1) {
-            channel.sync(Instruction.decode(core.storage.reappearInstruction(clock - 1)));
-        }
         if (mirror == first) {
             firstChannel = channel;
         } else {
@@ -102,6 +98,7 @@ class ControlUnit {
         log.info("{} control unit connect {} on {}.", core.meta.label, mirror.label, clock);
         core.runner.forceFollow(() -> process(ack, EmptyInstructions.id, EmptyInstructions.EMPTY));
         ack.join();
+        log.info("{} control unit connected {} on {}.", core.meta.label, mirror.label, ack.clock);
     }
 
     public synchronized void onMirrorClose(CoreMeta mirror) {
