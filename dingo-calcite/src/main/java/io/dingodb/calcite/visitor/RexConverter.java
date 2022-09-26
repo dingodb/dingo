@@ -149,6 +149,23 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     }
 
     @Nonnull
+    private static Op getCastOpWithCheck(RelDataType type, RelDataType inputType) {
+        Op op;
+        try {
+            op = FunFactory.INS.getCastFun(typeCodeOf(type));
+            if (op instanceof OpWithEvaluator) { // Check if the evaluator exists.
+                EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
+                factory.getEvaluator(EvaluatorKey.of(typeCodeOf(inputType)));
+            }
+        } catch (FailGetEvaluator | UndefinedFunctionName e) {
+            throw new UnsupportedOperationException(
+                "Unsupported cast operation: from \"" + inputType + "\" to \"" + type + "\"."
+            );
+        }
+        return op;
+    }
+
+    @Nonnull
     @Override
     public Expr visitInputRef(@Nonnull RexInputRef inputRef) {
         IndexOp op = new IndexOp();
@@ -233,32 +250,19 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = FunFactory.INS.getFun(kind.name());
                 break;
             case CAST:
-                SqlTypeName sqlTypeName = call.getType().getSqlTypeName();
+                RelDataType type = call.getType();
+                RexNode operand = call.getOperands().get(0);
+                SqlTypeName sqlTypeName = type.getSqlTypeName();
                 if (sqlTypeName == SqlTypeName.ARRAY || sqlTypeName == SqlTypeName.MULTISET) {
                     op = FunFactory.INS.getFun(SqlCastListItemsOp.FUN_NAME);
-                    RexNode listNode = call.getOperands().get(0);
-                    RelDataType oldType = listNode.getType().getComponentType();
-                    RelDataType newType = call.getType().getComponentType();
+                    RelDataType newType = type.getComponentType();
                     op.setExprArray(new Expr[]{
-                        new Value<>(Objects.requireNonNull(oldType).getSqlTypeName().getName()),
                         new Value<>(Objects.requireNonNull(newType).getSqlTypeName().getName()),
-                        listNode.accept(this)
+                        operand.accept(this)
                     });
                     return op;
                 }
-                try {
-                    op = FunFactory.INS.getCastFun(typeCodeOf(call.getType()));
-                    if (op instanceof OpWithEvaluator) { // Check if the evaluator exists.
-                        EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
-                        int[] typeCodes = call.getOperands().stream()
-                            .map(RexNode::getType)
-                            .mapToInt(RexConverter::typeCodeOf)
-                            .toArray();
-                        factory.getEvaluator(EvaluatorKey.of(typeCodes));
-                    }
-                } catch (FailGetEvaluator | UndefinedFunctionName e) {
-                    throw new UnsupportedOperationException("Unsupported cast operation: \"" + call + "\".");
-                }
+                op = getCastOpWithCheck(type, operand.getType());
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
                 op = FunFactory.INS.getFun("LIST");

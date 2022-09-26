@@ -168,6 +168,20 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithDoubleArray() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data double array, primary key(id))",
+            "insert into {table} values(1, array[1, 2.1, 3.2])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.DOUBLE);
+        assertThat(array.getArray()).isEqualTo(new double[]{1, 2.1, 3.2});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
     public void testCreateTableWithStringArray() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data varchar array, primary key(id))",
@@ -233,6 +247,20 @@ public class DdlTest {
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{7, 7, 8, 8});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithDoubleMultiset() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data double multiset, primary key(id))",
+            "insert into {table} values(1, multiset[1, 2.1, 3.2])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.DOUBLE);
+        assertThat(array.getArray()).isEqualTo(new double[]{1, 2.1, 3.2});
         sqlHelper.dropTable(tableName);
     }
 

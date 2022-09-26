@@ -202,7 +202,7 @@ public class TestWithoutVar {
             arguments("array(1, 2, 3)", new Object[]{1L, 2L, 3L}),
             arguments("list(4, 5, 6)", ImmutableList.of(4L, 5L, 6L)),
             arguments("map('a', 1, 'b', 2)", ImmutableMap.of("a", 1L, "b", 2L)),
-            arguments("cast_list_items('LONG', 'INT', list(7, 8, 9))", ImmutableList.of(7, 8, 9))
+            arguments("cast_list_items('INT', list(7, 8, 9))", ImmutableList.of(7, 8, 9))
         );
     }
 
