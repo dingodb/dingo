@@ -55,14 +55,23 @@ public class JsonFetch extends AbstractParser implements Fetch {
             long totalReadCnt = 0L;
             long totalWriteCnt = 0L;
             JSONParser parser = new JSONParser();
-            JSONArray jsonArray = (JSONArray) parser.parse(new FileReader(localFile));
+            Object parserJsonObj = parser.parse(new FileReader(localFile));
 
-            for (Object o : jsonArray) {
-                JSONObject jsonObject = (JSONObject) o;
+            if (parserJsonObj instanceof JSONObject) {
+                String inputStr = parserJsonObj.toString();
                 totalReadCnt++;
                 List<Object[]> records = new ArrayList<>();
-                records.add(parseSingleRow(jsonObject.toString(), tableDefinition));
+                records.add(parseSingleRow(inputStr, tableDefinition));
                 totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+            } else if (parserJsonObj instanceof JSONArray) {
+                JSONArray jsonArray = (JSONArray) (parserJsonObj);
+                for (Object o : jsonArray) {
+                    JSONObject jsonObject = (JSONObject) o;
+                    totalReadCnt++;
+                    List<Object[]> records = new ArrayList<>();
+                    records.add(parseSingleRow(jsonObject.toString(), tableDefinition));
+                    totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                }
             }
             System.out.println("FileMode=>The total read count from File is:" + totalReadCnt
                 + ", real write count:" + totalWriteCnt);
