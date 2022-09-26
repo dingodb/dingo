@@ -21,6 +21,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,6 +38,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 public class DdlTest {
@@ -177,6 +179,17 @@ public class DdlTest {
         assertThat(array.getBaseType()).isEqualTo(Types.VARCHAR);
         assertThat(array.getArray()).isEqualTo(new String[]{"1", "2", "3"});
         sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithStringArrayNull() throws SQLException {
+        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
+            String tableName = sqlHelper.prepareTable(
+                "create table {table} (id int, data varchar array, primary key(id))",
+                "insert into {table} values(1, array['1', null, '3'])"
+            );
+        });
+        assertThat(exception.getMessage()).contains("Null values are not allowed");
     }
 
     @Test

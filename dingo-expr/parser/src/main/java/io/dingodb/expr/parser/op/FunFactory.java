@@ -52,8 +52,6 @@ import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
-import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
-import io.dingodb.expr.runtime.op.sql.RtSqlListConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlSliceFun;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
@@ -110,6 +108,9 @@ public final class FunFactory {
         funSuppliers.put(IsNotTrueOp.FUN_NAME, IsNotTrueOp::fun);
         funSuppliers.put(IsFalseOp.FUN_NAME, IsFalseOp::fun);
         funSuppliers.put(IsNotFalseOp.FUN_NAME, IsNotFalseOp::fun);
+        // Collection type constructors
+        funSuppliers.put(SqlArrayConstructorOp.FUN_NAME, SqlArrayConstructorOp::fun);
+        funSuppliers.put(SqlListConstructorOp.FUN_NAME, SqlListConstructorOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
@@ -188,9 +189,6 @@ public final class FunFactory {
         registerUdf("timestamp_format", TimestampFormatFun::new);
         registerUdf("datediff", DateDiffFun::new);
 
-        // Sql collection types
-        registerUdf("ARRAY", RtSqlArrayConstructorOp::new);
-        registerUdf("LIST", RtSqlListConstructorOp::new);
         registerUdf("MAP", RtSqlMapConstructorOp::new);
         registerUdf("$SLICE", RtSqlSliceFun::new);
     }
