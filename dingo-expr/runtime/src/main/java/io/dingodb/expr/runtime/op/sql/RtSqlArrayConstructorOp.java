@@ -39,7 +39,11 @@ public final class RtSqlArrayConstructorOp extends RtOp {
         Object[] result = new Object[size];
         for (int i = 0; i < size; ++i) {
             RtExpr para = paras[i];
-            result[i] = para.eval(etx);
+            Object v = para.eval(etx);
+            if (v == null) {
+                throw new IllegalArgumentException("Null values are not allowed in arrays.");
+            }
+            result[i] = v;
         }
         return result;
     }

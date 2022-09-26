@@ -40,7 +40,11 @@ public final class RtSqlListConstructorOp extends RtOp {
         int size = paras.length;
         List<Object> result = new ArrayList<>(size);
         for (RtExpr para : paras) {
-            result.add(para.eval(etx));
+            Object v = para.eval(etx);
+            if (v == null) {
+                throw new IllegalArgumentException("Null values are not allowed in arrays/multi-sets.");
+            }
+            result.add(v);
         }
         return result;
     }
