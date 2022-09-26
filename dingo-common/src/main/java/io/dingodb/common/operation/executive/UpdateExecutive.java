@@ -18,7 +18,6 @@ package io.dingodb.common.operation.executive;
 
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.context.BasicContext;
-
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
@@ -55,7 +54,8 @@ public class UpdateExecutive extends BasicExecutive<BasicContext, Iterator<KeyVa
                 if (filter) {
                     try {
                         for (int i = 0; i < columns.length; i++) {
-                            DingoType dingoType = Objects.requireNonNull(definition.getColumn(columns[i].name)).getDingoType();
+                            DingoType dingoType =
+                                Objects.requireNonNull(definition.getColumn(columns[i].name)).getDingoType();
                             values[i] = dingoType.parse(columns[i].value.getObject());
                         }
                         byte[] bytes = context.dingoValueCodec().encode(keyValue.getValue(), values, indexes);

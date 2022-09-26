@@ -219,7 +219,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
-        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations, -1);
+        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations, -1).join();
         return true;
     }
 

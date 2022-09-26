@@ -47,7 +47,6 @@ public class StoreOperationUtils {
     private static Map<String, RouteTable> dingoRouteTables = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static Map<String, TableDefinition> tableDefinitionInCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    private TableDefinition tableDefinition;
     private DingoConnection connection;
     private int retryTimes;
 
@@ -74,6 +73,7 @@ public class StoreOperationUtils {
         do {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
+                TableDefinition tableDefinition = getTableDefinition(tableName);
                 ContextForStore storeContext = Converter.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<String, ContextForStore> keys2Executor =
                     groupKeysByExecutor(routeTable, null, tableName, storeContext);
@@ -133,6 +133,7 @@ public class StoreOperationUtils {
         do {
             try {
                 KeyValueCodec codec = routeTable.getCodec();
+                TableDefinition tableDefinition = getTableDefinition(tableName);
                 IStoreOperation storeOperation = StoreOperationFactory.getStoreOperation(type);
                 ContextForStore context4Store = Converter.getStoreContext(storeParameters, codec, tableDefinition);
                 Map<String, ContextForStore> keys2Executor = groupKeysByExecutor(
@@ -264,7 +265,7 @@ public class StoreOperationUtils {
         RouteTable routeTable = dingoRouteTables.get(tableName);
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
-            tableDefinition = metaClient.getTableDefinition(tableName);
+            TableDefinition tableDefinition = metaClient.getTableDefinition(tableName);
             if (tableDefinition == null) {
                 log.error("Cannot find table:{} definition from meta", tableName);
                 return null;
