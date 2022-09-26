@@ -41,11 +41,11 @@ public final class SqlCastListItemsOp extends Op {
     @Nonnull
     @Override
     protected RtSqlCastListItemsOp createRtOp(@Nonnull RtExpr[] rtExprArray) throws FailGetEvaluator {
-        int fromTypeCode = TypeCode.codeOf((String) Objects.requireNonNull(rtExprArray[0].eval(null)));
-        int toTypeCode = TypeCode.codeOf((String) Objects.requireNonNull(rtExprArray[1].eval(null)));
+        int toTypeCode = TypeCode.codeOf((String) Objects.requireNonNull(rtExprArray[0].eval(null)));
+        // The types of array elements cannot be achieved, even not the same, so cast with universal evaluators.
         return new RtSqlCastListItemsOp(
-            FunFactory.getCastEvaluatorFactory(toTypeCode).getEvaluator(EvaluatorKey.of(fromTypeCode)),
-            new RtExpr[]{rtExprArray[2]}
+            FunFactory.getCastEvaluatorFactory(toTypeCode).getEvaluator(EvaluatorKey.UNIVERSAL),
+            new RtExpr[]{rtExprArray[1]}
         );
     }
 }
