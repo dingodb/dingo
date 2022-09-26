@@ -59,7 +59,7 @@ public class MirrorProcessingUnit {
             Core core;
             CoreMeta local = metas.remove(num);
             log.info("Create core {} for {}", local.coreId, id);
-            RocksStorage storage = new RocksStorage(local, path.resolve(local.id.toString()).toString(),
+            RocksStorage storage = new RocksStorage(local, path.resolve(local.coreId.toString()).toString(),
                 this.dbRocksOptionsFile, this.logRocksOptionsFile);
             if (metas.size() == 0) {
                 core = new Core(this, local, null, null, storage);

@@ -128,7 +128,7 @@ public class Core {
             }
         } catch (Exception ignored) {
         }
-        log.info("Connect {} failed.", primary.label);
+        log.info("Connect primary {} failed, it is not primary or no network connection", primary.label);
         return false;
     }
 
@@ -260,7 +260,7 @@ public class Core {
     }
 
 
-    public void requestConnect(CoreMeta mirror) {
+    public synchronized void requestConnect(CoreMeta mirror) {
         if (close) {
             return;
         }

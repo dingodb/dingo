@@ -68,4 +68,9 @@ public class NetServiceConfiguration {
     public static Integer apiTimeout() {
         return INSTANCE.apiTimeout == null ? 30 : INSTANCE.apiTimeout;
     }
+
+    public static void resetAllTimeout(int timeout) {
+        INSTANCE.apiTimeout = timeout;
+        INSTANCE.heartbeat = timeout;
+    }
 }

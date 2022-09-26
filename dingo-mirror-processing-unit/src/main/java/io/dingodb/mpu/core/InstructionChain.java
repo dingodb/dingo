@@ -98,7 +98,9 @@ public class InstructionChain implements Unsafe {
 
     public void forceFollow(InstructionNode next) {
         while (!last.follow(next)) {
-            if (last.instruction != null && next.instruction.clock <= last.instruction.clock) {
+            if ((last.instruction != null && next.instruction.clock <= last.instruction.clock)
+                || next.instruction.clock <= startClock
+            ) {
                 throw new RuntimeException(
                     "Next clock " + next.instruction.clock + " less than or equal last clock " + last.instruction.clock
                 );
