@@ -59,5 +59,5 @@ public class TablePart implements Meta {
     private int version;
     private long upTime;
     private long downTime;
-
+    private int ttl;
 }

@@ -55,6 +55,7 @@ public class Part {
     private List<CommonId> replicates;
     private List<Location> replicateLocations;
     private int version;
+    private int ttl;
 
 
     @Override
@@ -67,6 +68,7 @@ public class Part {
             .add("leader=" + leaderLocation)
             .add("replicates=" + replicateLocations)
             .add("version=" + version)
+            .add("ttl=" + ttl)
             .toString();
     }
 }

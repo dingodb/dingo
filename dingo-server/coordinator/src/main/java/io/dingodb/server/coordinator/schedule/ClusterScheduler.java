@@ -120,6 +120,7 @@ public class ClusterScheduler implements ServerApi, ReportApi {
                     .replicateId(replica.getId())
                     .replicates(partRep.stream().map(Replica::getId).collect(Collectors.toList()))
                     .replicateLocations(partRep.stream().map(Replica::location).collect(Collectors.toList()))
+                    .ttl(tablePart.getTtl())
                     .build()
                 );
             }

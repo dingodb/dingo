@@ -116,11 +116,10 @@ public class ExecutorServer {
     }
 
     private void initStore() {
-
         Map<String, Object> storeServiceConfig = new HashMap<>();
         storeServiceConfig.put("MetaServiceApi", metaServiceApi);
         storeService.addConfiguration(storeServiceConfig);
-        this.storeInstance = storeService.getOrCreateInstance(this.id);
+        this.storeInstance = storeService.getOrCreateInstance(this.id, -1);
 
         List<Part> parts = serverApi.storeMap(this.id);
         log.info("Init store, parts: {}", parts);

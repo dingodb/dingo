@@ -120,12 +120,15 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
 
+        int ttl = TableAdaptor.getTtl(table);
+        log.info("TableAdaptor create, table id: {}, ttl: {}.", table.getId(), ttl);
         TablePart tablePart = TablePart.builder()
             .version(0)
             .schema(table.getSchema())
             .table(tableId)
             .start(EMPTY_BYTES)
             .createTime(System.currentTimeMillis())
+            .ttl(ttl)
             .build();
         tablePart.setId(tablePartAdaptor.newId(tablePart));
         keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
@@ -144,12 +147,15 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
     public TablePart newPart(CommonId tableId, byte[] start, byte[] end) {
         Table table = get(tableId);
+        int ttl = TableAdaptor.getTtl(table);
+        log.info("TableAdaptor newPart, table id: {}, ttl: {}.", table.getId(), ttl);
         TablePart tablePart = TablePart.builder()
             .version(0)
             .schema(table.getSchema())
             .table(table.getId())
             .start(start)
             .end(end)
+            .ttl(ttl)
             .build();
         tablePart.setId(tablePartAdaptor.newId(tablePart));
         metaStore.upsertKeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart));
@@ -366,5 +372,23 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         public TableAdaptor create(MetaStore metaStore) {
             return new TableAdaptor(metaStore);
         }
+    }
+
+    public static int getTtl(Table table) {
+        int ttl = -1;
+        Map<String, Object> attrMap = table.getAttrMap();
+        if (attrMap == null || attrMap.isEmpty()) {
+            return ttl;
+        }
+        Object ttlObject = attrMap.get("TTL");
+        if (ttlObject == null) {
+            return ttl;
+        }
+        try {
+            ttl = Integer.parseInt(ttlObject.toString());
+        } catch (NumberFormatException numberFormatException) {
+            log.error("get ttl, exception.", numberFormatException);
+        }
+        return ttl;
     }
 }
