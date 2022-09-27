@@ -86,7 +86,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public void destroy() {
         core.destroy();
-        FileUtils.deleteIfExists(path);
+        /**
+         * to avoid file handle leak  when drop table
+         */
+        // FileUtils.deleteIfExists(path);
     }
 
     public ApproximateStats approximateStats() {
