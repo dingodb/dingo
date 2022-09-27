@@ -239,6 +239,7 @@ public class RocksStorage implements Storage {
     }
 
     public void closeDB() {
+        this.db.cancelAllBackgroundWork(true);
         this.db.close();
         this.dcfHandler.close();
         this.mcfHandler.close();
@@ -247,11 +248,15 @@ public class RocksStorage implements Storage {
     @Override
     public void destroy() {
         destroy = true;
+        this.writeOptions.close();
         closeDB();
         this.instruction.close();
         this.icfHandler.close();
         this.backup.close();
-        FileUtils.deleteIfExists(path);
+        /**
+         * to avoid the file handle leak when drop table
+         */
+        // FileUtils.deleteIfExists(path);
     }
 
     @Override
@@ -516,8 +521,14 @@ public class RocksStorage implements Storage {
          * configuration for performance.
          * write_buffer_size: will control the sst file size
          */
-        cfOption.setWriteBufferSize(512  * 1024 * 1024);
+        final long blockSize = 128L * 1024;
+        final long targetFileSize = 256L * 1024 * 1024;
         cfOption.setMaxWriteBufferNumber(4);
+        cfOption.setMinWriteBufferNumberToMerge(2);
+        cfOption.setWriteBufferSize(targetFileSize);
+        BlockBasedTableConfig table_options = new BlockBasedTableConfig();
+        table_options.setBlockSize(blockSize);
+        cfOption.setTableFormatConfig(table_options);
         return new ColumnFamilyDescriptor(CF_DEFAULT, cfOption);
     }
 

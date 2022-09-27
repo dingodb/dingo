@@ -106,7 +106,7 @@ public class DingoExampleUsingSDK {
     }
 
     public static void insert(String tableName) throws Exception {
-        for (int i = 0; i < insertTotalCnt; i++) {
+        for (int i = startScanKey; i < insertTotalCnt; i++) {
             String uuid = UUID.randomUUID().toString();
             Object[] record = new Object[]{i, "k-" + uuid, "v-" + uuid};
             dingoClient.insert(tableName, record);
@@ -116,6 +116,10 @@ public class DingoExampleUsingSDK {
     public static void insertBatch(String tableName) throws Exception {
         do {
             long startTime = System.currentTimeMillis();
+            if (startScanKey != 1) {
+                totalRealInsertCnt = startScanKey;
+            }
+
             while (totalRealInsertCnt < insertTotalCnt) {
                 List<Object[]> records = new ArrayList<Object[]>();
                 for (int i = 0; i < insertBatchCnt; i++) {
