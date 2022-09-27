@@ -18,10 +18,12 @@ package io.dingodb.common.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
+import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
 
 import java.util.List;
@@ -29,20 +31,19 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @JsonTypeName("array")
-public class ArrayType extends AbstractDingoType {
+@JsonPropertyOrder({"element", "nullable"})
+@EqualsAndHashCode(of = {"elementType"}, callSuper = true)
+public class ArrayType extends NullableType {
     @JsonProperty("element")
     private final DingoType elementType;
-    @JsonProperty("nullable")
-    private final boolean nullable;
 
     @JsonCreator
     ArrayType(
         @JsonProperty("element") DingoType elementType,
         @JsonProperty("nullable") boolean nullable
     ) {
-        super(TypeCode.ARRAY);
+        super(TypeCode.ARRAY, nullable);
         this.elementType = elementType;
-        this.nullable = nullable;
     }
 
     @Override
@@ -58,12 +59,6 @@ public class ArrayType extends AbstractDingoType {
     @Override
     public DingoType copy() {
         return new ArrayType(elementType, nullable);
-    }
-
-    @Nonnull
-    @Override
-    public Schema toAvroSchema() {
-        return Schema.createArray(elementType.toAvroSchema());
     }
 
     @Override
@@ -92,6 +87,11 @@ public class ArrayType extends AbstractDingoType {
             return b.toString();
         }
         return NullType.NULL.format(null);
+    }
+
+    @Override
+    protected Schema toAvroSchemaNotNull() {
+        return Schema.createArray(elementType.toAvroSchema());
     }
 
     @Override

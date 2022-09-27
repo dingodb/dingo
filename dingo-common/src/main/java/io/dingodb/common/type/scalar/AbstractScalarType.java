@@ -16,42 +16,26 @@
 
 package io.dingodb.common.type.scalar;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dingodb.common.type.AbstractDingoType;
 import io.dingodb.common.type.NullType;
+import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
-import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
 
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@EqualsAndHashCode(of = {"nullable"}, callSuper = true)
-public abstract class AbstractScalarType extends AbstractDingoType {
-    @JsonProperty(value = "nullable", defaultValue = "false")
-    @JsonInclude(value = JsonInclude.Include.NON_DEFAULT)
-    protected final Boolean nullable;
-
+public abstract class AbstractScalarType extends NullableType {
     protected AbstractScalarType(int typeCode, boolean nullable) {
-        super();
-        this.typeCode = typeCode;
-        this.nullable = nullable;
+        super(typeCode, nullable);
     }
 
-    @Nonnull
     @Override
-    public Schema toAvroSchema() {
+    protected Schema toAvroSchemaNotNull() {
         Schema.Type t = getAvroSchemaType();
-        if (nullable) {
-            // Allow avro to encode `null`.
-            return Schema.createUnion(Schema.create(t), Schema.create(Schema.Type.NULL));
-        } else {
-            return Schema.create(t);
-        }
+        return Schema.create(t);
     }
 
     @Override

@@ -40,4 +40,16 @@ public class ExprConverter implements DataConverter {
         }
         return ((BigDecimal) value).doubleValue();
     }
+
+    @Override
+    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+        if (value instanceof Integer) {
+            return BigDecimal.valueOf((Integer) value);
+        } else if (value instanceof Long) {
+            return BigDecimal.valueOf((Long) value);
+        } else if (value instanceof Double) {
+            return BigDecimal.valueOf((Double) value);
+        }
+        return (BigDecimal) value;
+    }
 }

@@ -18,10 +18,12 @@ package io.dingodb.common.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
+import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
 
 import java.util.List;
@@ -30,13 +32,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @JsonTypeName("map")
-public class MapType extends AbstractDingoType {
+@JsonPropertyOrder({"element", "nullable"})
+@EqualsAndHashCode(of = {"keyType", "valueType"}, callSuper = true)
+public class MapType extends NullableType {
     @JsonProperty("key")
     private final DingoType keyType;
     @JsonProperty("value")
     private final DingoType valueType;
-    @JsonProperty("nullable")
-    private final boolean nullable;
 
     @JsonCreator
     MapType(
@@ -44,10 +46,9 @@ public class MapType extends AbstractDingoType {
         @JsonProperty("value") DingoType valueType,
         @JsonProperty("nullable") boolean nullable
     ) {
-        super(TypeCode.LIST);
+        super(TypeCode.MAP, nullable);
         this.keyType = keyType;
         this.valueType = valueType;
-        this.nullable = nullable;
     }
 
     @Override
@@ -63,12 +64,6 @@ public class MapType extends AbstractDingoType {
     @Override
     public DingoType copy() {
         return new MapType(keyType, valueType, nullable);
-    }
-
-    @Nonnull
-    @Override
-    public Schema toAvroSchema() {
-        return Schema.createMap(valueType.toAvroSchema());
     }
 
     @Override
@@ -101,6 +96,11 @@ public class MapType extends AbstractDingoType {
             return b.toString();
         }
         return NullType.NULL.format(null);
+    }
+
+    @Override
+    protected Schema toAvroSchemaNotNull() {
+        return Schema.createMap(valueType.toAvroSchema());
     }
 
     @Override
