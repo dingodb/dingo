@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -196,14 +197,36 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithStringArrayNull() throws SQLException {
+    public void testCreateTableWithStringArrayContainsNull() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            String tableName = sqlHelper.prepareTable(
+            sqlHelper.prepareTable(
                 "create table {table} (id int, data varchar array, primary key(id))",
                 "insert into {table} values(1, array['1', null, '3'])"
             );
         });
         assertThat(exception.getMessage()).contains("Null values are not allowed");
+    }
+
+    @Test
+    public void testCreateTableWithStringArrayNull() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data varchar array, primary key(id))",
+            "insert into {table} values(1, null)"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isNull();
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithStringArrayNull1() throws SQLException {
+        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
+            sqlHelper.prepareTable(
+                "create table {table} (id int, data varchar array not null, primary key(id))",
+                "insert into {table} values(1, null)"
+            );
+        });
+        assertThat(exception.getMessage()).contains("does not allow NULLs");
     }
 
     @Test
@@ -292,6 +315,40 @@ public class DdlTest {
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithMapNull() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data map, primary key(id))",
+            "insert into {table} values(1, null)"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isNull();
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithMapNull1() throws SQLException {
+        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
+            sqlHelper.prepareTable(
+                "create table {table} (id int, data map not null, primary key(id))",
+                "insert into {table} values(1, null)"
+            );
+        });
+        assertThat(exception.getMessage()).contains("does not allow NULLs");
+    }
+
+    @Test
+    public void testCreateTableWithMapMixedType() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data map, primary key(id))",
+            "insert into {table} values(1, map['a', 1, 'b', 2.5])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Map.class)
+            .isEqualTo(ImmutableMap.of("a", BigDecimal.valueOf(1), "b", BigDecimal.valueOf(2.5)));
         sqlHelper.dropTable(tableName);
     }
 }
