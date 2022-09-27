@@ -23,12 +23,15 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.instruction.Instructions;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
+import io.dingodb.mpu.storage.rocks.RocksUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class OpInstructions implements Instructions {
 
     public static final int SIZE = 16;
@@ -93,9 +96,19 @@ public class OpInstructions implements Instructions {
                     }
                     iterator = execute.iterator();
                 }
-                while (iterator.hasNext()) {
-                    KeyValue entry = iterator.next();
-                    writer.set(entry.getKey(), entry.getValue());
+
+                int timestamp = (int) operand[3];
+                if (timestamp > 0) {
+                    while (iterator.hasNext()) {
+                        KeyValue entry = iterator.next();
+                        byte[] valueWithTs = RocksUtils.getValueWithTs(entry.getValue(), timestamp);
+                        writer.set(entry.getKey(), valueWithTs);
+                    }
+                } else {
+                    while (iterator.hasNext()) {
+                        KeyValue entry = iterator.next();
+                        writer.set(entry.getKey(), entry.getValue());
+                    }
                 }
                 return true;
             }

@@ -92,6 +92,7 @@ public class TableStoreProcessor {
             .end(tablePart.getEnd())
             .leaderLocation(null)
             .replicateLocations(replicaLocations)
+            .ttl(tablePart.getTtl())
             .build();
         log.info("Apply part [{}] on [{}], part info: {}", tablePart.getId(), executor, part);
         if (exist) {
@@ -119,6 +120,7 @@ public class TableStoreProcessor {
             .replicateId(replica.getId())
             .replicateLocations(replicas.stream().map(Replica::location).collect(Collectors.toList()))
             .replicates(replicas.stream().map(Replica::getId).collect(Collectors.toList()))
+            .ttl(tablePart.getTtl())
             .build();
         log.info("Apply part [{}] on [{}], part info: {}", tablePart.getId(), executor, part);
         if (exist) {

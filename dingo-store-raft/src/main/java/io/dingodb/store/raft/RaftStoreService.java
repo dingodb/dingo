@@ -66,7 +66,7 @@ public class RaftStoreService implements StoreService {
     }
 
     @Override
-    public StoreInstance getOrCreateInstance(@Nonnull CommonId id) {
+    public StoreInstance getOrCreateInstance(@Nonnull CommonId id, int ttl) {
         Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
         return storeInstanceMap.compute(id, (l, i) -> i == null
             ? new RaftStoreInstance(instancePath, id, metaServiceApi, 0) : i);

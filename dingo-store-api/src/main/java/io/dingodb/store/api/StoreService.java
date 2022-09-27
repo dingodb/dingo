@@ -24,7 +24,7 @@ import java.util.Map;
 public interface StoreService {
     String name();
 
-    StoreInstance getOrCreateInstance(@Nonnull CommonId id);
+    StoreInstance getOrCreateInstance(@Nonnull CommonId id, int ttl);
 
     StoreInstance getInstance(@Nonnull CommonId id);
 
