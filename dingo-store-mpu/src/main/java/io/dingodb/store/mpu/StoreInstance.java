@@ -18,7 +18,6 @@ package io.dingodb.store.mpu;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
@@ -29,6 +28,7 @@ import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.core.MirrorProcessingUnit;
 import io.dingodb.mpu.instruction.KVInstructions;
+import io.dingodb.mpu.storage.rocks.RocksUtils;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -54,15 +53,19 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public final MirrorProcessingUnit mpu;
     public final Path path;
-    public final String dbRocksOptionsFile;
-    public final String logRocksOptionsFile;
     public Core core;
 
-    public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile) {
+    private int ttl;
+
+    public StoreInstance(CommonId id, Path path) {
+        this(id, path, "", "", -1);
+    }
+
+    public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile,
+                         final int ttl) {
         this.path = path.toAbsolutePath();
-        this.dbRocksOptionsFile = dbRocksOptionsFile;
-        this.logRocksOptionsFile = logRocksOptionsFile;
-        this.mpu = new MirrorProcessingUnit(id, this.path, dbRocksOptionsFile, logRocksOptionsFile);
+        this.ttl = ttl;
+        this.mpu = new MirrorProcessingUnit(id, this.path, dbRocksOptionsFile, logRocksOptionsFile, this.ttl);
     }
 
     @Override
@@ -145,21 +148,30 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        if (RocksUtils.ttlValid(this.ttl)) {
+            core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, RocksUtils.getValueWithNowTs(row)).join();
+        } else {
+            core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        }
         return true;
     }
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, row.getPrimaryKey(), row.getValue()).join();
-        return true;
+        return upsertKeyValue(row.getPrimaryKey(), row.getValue());
     }
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
+        List<KeyValue> kvList;
+        if (RocksUtils.ttlValid(this.ttl)) {
+            kvList = RocksUtils.getValueWithNowTsList(rows);
+        } else {
+            kvList = rows;
+        }
         core.exec(
             KVInstructions.id, KVInstructions.SET_BATCH_OC,
-            rows.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
+            kvList.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
         ).join();
         return true;
     }
@@ -219,7 +231,12 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
-        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations, -1).join();
+        int timestamp = -1;
+        if (RocksUtils.ttlValid(this.ttl)) {
+            timestamp = RocksUtils.getCurrentTimestamp();
+        }
+        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations,
+            timestamp).join();
         return true;
     }
 

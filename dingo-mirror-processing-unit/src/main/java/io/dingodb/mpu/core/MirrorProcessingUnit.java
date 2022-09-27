@@ -33,15 +33,17 @@ public class MirrorProcessingUnit {
     public final Path path;
     public final String dbRocksOptionsFile;
     public final String logRocksOptionsFile;
+    public final int ttl;
 
     private final Map<CommonId, Core> subCores = new ConcurrentHashMap<>();
 
     public MirrorProcessingUnit(CommonId id, Path path, final String dbRocksOptionsFile,
-                                final String logRocksOptionsFile) {
+                                final String logRocksOptionsFile, final int ttl) {
         this.id = id;
         this.path = path;
         this.dbRocksOptionsFile = dbRocksOptionsFile;
         this.logRocksOptionsFile = logRocksOptionsFile;
+        this.ttl = ttl;
         MPURegister.put(this);
     }
 
@@ -60,7 +62,7 @@ public class MirrorProcessingUnit {
             CoreMeta local = metas.remove(num);
             log.info("Create core {} for {}", local.coreId, id);
             RocksStorage storage = new RocksStorage(local, path.resolve(local.coreId.toString()).toString(),
-                this.dbRocksOptionsFile, this.logRocksOptionsFile);
+                this.dbRocksOptionsFile, this.logRocksOptionsFile, this.ttl);
             if (metas.size() == 0) {
                 core = new Core(this, local, null, null, storage);
             } else if (metas.size() == 2) {

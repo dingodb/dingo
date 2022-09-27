@@ -57,6 +57,7 @@ import org.rocksdb.StringAppendOperator;
 import org.rocksdb.TableFileCreationBriefInfo;
 import org.rocksdb.TableFileCreationInfo;
 import org.rocksdb.TableFileDeletionInfo;
+import org.rocksdb.TtlDB;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 import org.rocksdb.WriteStallInfo;
@@ -77,6 +78,7 @@ import static io.dingodb.mpu.Constant.API;
 import static io.dingodb.mpu.Constant.CF_DEFAULT;
 import static io.dingodb.mpu.Constant.CF_META;
 import static io.dingodb.mpu.Constant.CLOCK_K;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class RocksStorage implements Storage {
@@ -97,6 +99,7 @@ public class RocksStorage implements Storage {
 
     public final String dbRocksOptionsFile;
     public final String logRocksOptionsFile;
+    public final int ttl;
 
     public final WriteOptions writeOptions;
     public final LinkedRunner runner;
@@ -116,12 +119,13 @@ public class RocksStorage implements Storage {
     private boolean destroy = false;
 
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
-                        final String logRocksOptionsFile) throws Exception {
+                        final String logRocksOptionsFile, final int ttl) throws Exception {
         this.coreMeta = coreMeta;
         this.runner = new LinkedRunner(coreMeta.label);
         this.path = Paths.get(path).toAbsolutePath();
         this.dbRocksOptionsFile = dbRocksOptionsFile;
         this.logRocksOptionsFile = logRocksOptionsFile;
+        this.ttl = ttl;
 
         this.backupPath = this.path.resolve("backup");
 
@@ -135,10 +139,10 @@ public class RocksStorage implements Storage {
         FileUtils.createDirectories(this.backupPath);
         FileUtils.createDirectories(this.dbPath);
         this.instruction = createInstruction();
-        log.info("Create {} instruction db.", coreMeta.label);
+        log.info("Create {} instruction db, ttl: {}.", coreMeta.label, this.ttl);
         this.db = createDB();
         this.writeOptions = new WriteOptions();
-        log.info("Create {} db", coreMeta.label);
+        log.info("Create {} db.", coreMeta.label);
         backup = BackupEngine.open(db.getEnv(), new BackupEngineOptions(backupPath.toString()));
         log.info("Create rocks storage for {} success.", coreMeta.label);
     }
@@ -200,10 +204,21 @@ public class RocksStorage implements Storage {
             dcfDesc = dcfDesc(),
             mcfDesc = mcfDesc()
         );
+
+        RocksDB db;
         List<ColumnFamilyHandle> handles = new ArrayList<>(4);
-        RocksDB db = RocksDB.open(options, dbPath.toString(), cfs, handles);
-        log.info("RocksStorage createDB, RocksDB open, path: {}, options file: {}, handles size: {}.", this.dbPath,
-            this.dbRocksOptionsFile, handles.size());
+        if (RocksUtils.ttlValid(this.ttl)) {
+            List<Integer> ttlList = new ArrayList<>();
+            ttlList.add(this.ttl);
+            ttlList.add(0);
+            db = TtlDB.open(options, this.dbPath.toString(), cfs, handles, ttlList, false, true);
+            Executors.scheduleWithFixedDelayAsync("kv-compact", this::compact,  60 * 60, 60 * 60,
+                SECONDS);
+        } else {
+            db = RocksDB.open(options, this.dbPath.toString(), cfs, handles);
+        }
+        log.info("RocksStorage createDB, RocksDB open, path: {}, options file: {}, handles size: {}, ttl: {}.",
+            this.dbPath, this.dbRocksOptionsFile, handles.size(), this.ttl);
         this.dcfHandler = handles.get(0);
         this.mcfHandler = handles.get(1);
         return db;
@@ -215,8 +230,7 @@ public class RocksStorage implements Storage {
                 log.info("loadDBOptions, rocksdb options file not found: {}, use default options.", optionsFile);
                 return false;
             }
-
-            OptionsUtil.loadOptionsFromFile(new ConfigOptions(), optionsFile, options, new ArrayList<>());
+            OptionsUtil.loadDBOptionsSimplyFromFile(new ConfigOptions(), optionsFile, options);
             return true;
         } catch (RocksDBException dbException) {
             log.warn("loadDBOptions, load {} exception, use default options.", optionsFile, dbException);
@@ -474,6 +488,22 @@ public class RocksStorage implements Storage {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void compact() {
+        long now = System.currentTimeMillis();
+        try {
+            if (this.db != null) {
+                this.db.compactRange();
+            } else {
+                log.info("RocksStorage compact db is null.");
+            }
+        } catch (final Exception e) {
+            log.error("RocksStorage compact exception, label: {}.", this.coreMeta.label, e);
+            throw new RuntimeException(e);
+        }
+        log.info("RocksStorage compact, label: {}, cost {}s.", this.coreMeta.label,
+            (System.currentTimeMillis() - now) / 1000 );
     }
 
     private static ColumnFamilyDescriptor dcfDesc() {
