@@ -69,10 +69,18 @@ public abstract class Op implements Expr {
 
     @Nonnull
     protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+        if (evalNull(rtExprArray)) {
+            return RtNull.INSTANCE;
+        }
+        return evalConst(rtExprArray);
+    }
+
+    protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
+        return Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull);
+    }
+
+    protected RtExpr evalConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
         try {
-            if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
-                return RtNull.INSTANCE;
-            }
             RtOp rtOp = createRtOp(rtExprArray);
             if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
                 return new RtConst(rtOp.eval(null));
@@ -88,6 +96,18 @@ public abstract class Op implements Expr {
     public RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
         return evalNullConst(rtExprArray);
+    }
+
+    /**
+     * Subclasses call this method in {@link #evalNull(RtExpr[])}to check operands in compiling time so null values
+     * are caught and an exception is thrown even there are also non-const operands.
+     *
+     * @param rtExprArray the compiled operands
+     */
+    protected void checkNoNulls(@Nonnull RtExpr[] rtExprArray) {
+        if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
+            throw new IllegalArgumentException("NULLs are not allowed in \"" + name + "\".");
+        }
     }
 
     protected abstract RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator;
