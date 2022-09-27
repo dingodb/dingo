@@ -26,6 +26,7 @@ import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
 
 import javax.annotation.Nonnull;
+import java.math.BigDecimal;
 
 @JsonTypeName("decimal")
 public class DecimalType extends AbstractScalarType {
@@ -42,6 +43,11 @@ public class DecimalType extends AbstractScalarType {
     @Override
     public DingoSchema toDingoSchema(int index) {
         return new BytesSchema(index);
+    }
+
+    @Override
+    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+        return converter.convert((BigDecimal) value);
     }
 
     @Override
