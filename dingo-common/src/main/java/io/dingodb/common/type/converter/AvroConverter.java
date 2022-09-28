@@ -20,6 +20,7 @@ import io.dingodb.common.type.DingoType;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.util.Utf8;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
@@ -56,6 +57,11 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
+    public Object convert(@Nonnull BigDecimal value) {
+        return ByteBuffer.wrap(value.toString().getBytes());
+    }
+
+    @Override
     public List<Object> convert(@Nonnull Object[] value, DingoType elementType) {
         return Arrays.stream(value)
             .map(v -> elementType.convertTo(v, this))
@@ -68,6 +74,11 @@ public class AvroConverter implements DataConverter {
             return value.toString();
         }
         return (String) value;
+    }
+
+    @Override
+    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+        return new BigDecimal(new String(((ByteBuffer) value).array()));
     }
 
     @Override
