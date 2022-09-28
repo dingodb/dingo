@@ -83,6 +83,7 @@ copyDepends.dependsOn([
     ':dingo-driver-client:fatJar',
     ':dingo-store-raft:fatJar',
     ':dingo-example:fatJar',
+    ':dingo-store-mpu:fatJar',
     ':dingo-web:build'
 ])
 
