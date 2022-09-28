@@ -79,10 +79,15 @@ public final class DingoTypeFactory {
     }
 
     @Nonnull
-    public static AbstractDingoType scalar(@Nonnull String typeString) {
+    public static AbstractScalarType scalar(@Nonnull String typeString) {
         String[] v = typeString.split("\\|", 2);
         boolean nullable = v.length > 1 && v[1].equals(NullType.NULL.toString());
         return scalar(TypeCode.codeOf(v[0]), nullable);
+    }
+
+    @Nonnull
+    public static AbstractScalarType scalar(int typeCode) {
+        return scalar(typeCode, false);
     }
 
     @Nonnull
@@ -95,6 +100,15 @@ public final class DingoTypeFactory {
         return tuple(
             Arrays.stream(types)
                 .map(DingoTypeFactory::scalar)
+                .toArray(DingoType[]::new)
+        );
+    }
+
+    @Nonnull
+    public static TupleType tuple(int... typeCodes) {
+        return tuple(
+            Arrays.stream(typeCodes)
+                .mapToObj(DingoTypeFactory::scalar)
                 .toArray(DingoType[]::new)
         );
     }
@@ -153,7 +167,7 @@ public final class DingoTypeFactory {
             case MULTISET:
                 SqlTypeName elementType = columnDefinition.getElementType();
                 if (log.isDebugEnabled()) {
-                    log.debug("current type is:{}, elementType is:{], definition:{}",
+                    log.debug("current type is:{}, elementType is:{}, definition:{}",
                         type, elementType, columnDefinition);
                 }
                 return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);

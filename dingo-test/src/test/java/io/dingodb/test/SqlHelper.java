@@ -226,10 +226,10 @@ public class SqlHelper {
         queryTestInOrderWithApproxTime(sql, columns, CsvUtils.readCsv(schema, data));
     }
 
-    public void explainTest(String sql, String... data) throws SQLException {
+    public void explainTest(String sql) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
-                Assert.resultSet(resultSet).isPlan(data);
+                Assert.resultSet(resultSet).isPlan();
             }
         }
     }

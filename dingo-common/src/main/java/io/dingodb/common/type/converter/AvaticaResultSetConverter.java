@@ -16,35 +16,34 @@
 
 package io.dingodb.common.type.converter;
 
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.TimeZone;
+import java.util.Calendar;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 public class AvaticaResultSetConverter implements DataConverter {
-    public static final AvaticaResultSetConverter INSTANCE = new AvaticaResultSetConverter();
+    private final Calendar localCalendar;
 
-    private AvaticaResultSetConverter() {
+    public AvaticaResultSetConverter(Calendar localCalendar) {
+        this.localCalendar = localCalendar;
     }
 
+    /**
+     * Convert a timestamp value to the proper value required in a {@link java.sql.ResultSet}.
+     * <p>
+     * NOTE: The value is subtracted by time offset of local calendar when accessed, see `TimestampAccessor` class in
+     * {@link org.apache.calcite.avatica.util.AbstractCursor}. So we add it back to recover the original value.
+     *
+     * @param value the input timestamp value
+     * @return the output timestamp value
+     */
     @Override
-    public Long convert(@Nonnull Date value) {
-        return Instant.ofEpochMilli(value.getTime()).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay();
-    }
-
-    @Override
-    public Long convert(@Nonnull Time value) {
-        return value.getTime();// + TimeZone.getDefault().getRawOffset();
-    }
-
-    @Override
-    public Long convert(@Nonnull Timestamp value) {
-        return value.getTime() + TimeZone.getDefault().getRawOffset();
+    public Timestamp convert(@Nonnull Timestamp value) {
+        // NOTE: The following is not exact the inversion of what done in `TimestampAccessor`.
+        long v = value.getTime();
+        v += localCalendar.getTimeZone().getOffset(v);
+        return new Timestamp(v);
     }
 
     @Override

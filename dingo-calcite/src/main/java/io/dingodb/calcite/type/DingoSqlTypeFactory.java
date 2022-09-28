@@ -18,13 +18,36 @@ package io.dingodb.calcite.type;
 
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
+
+import java.lang.reflect.Type;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 
 public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
     public static DingoSqlTypeFactory INSTANCE = new DingoSqlTypeFactory();
 
     private DingoSqlTypeFactory() {
         super();
+    }
+
+    @Override
+    public Type getJavaClass(RelDataType type) {
+        if (type instanceof BasicSqlType) {
+            switch (type.getSqlTypeName()) {
+                case DATE:
+                    return Date.class;
+                case TIME:
+                    return Time.class;
+                case TIMESTAMP:
+                    return Timestamp.class;
+                default:
+                    break;
+            }
+        }
+        return super.getJavaClass(type);
     }
 
     /**

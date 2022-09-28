@@ -21,12 +21,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
-@Disabled
 @Slf4j
 public class QueryPlanTest {
     private static SqlHelper sqlHelper;
@@ -54,9 +52,7 @@ public class QueryPlanTest {
     public void testExplainSimpleValues() throws SQLException {
         String sql = "explain plan for select 1";
         sqlHelper.explainTest(
-            sql,
-            "EnumerableRoot",
-            "DingoValues"
+            sql
         );
     }
 
@@ -64,24 +60,15 @@ public class QueryPlanTest {
     public void testExplainInsertValues() throws SQLException {
         String sql = "explain plan for insert into test values(1, 'Alice', 1.0)";
         sqlHelper.explainTest(
-            sql,
-            "EnumerableRoot",
-            "DingoCoalesce",
-            "DingoExchange",
-            "DingoPartModify",
-            "DingoDistributedValues"
+            sql
         );
     }
 
     @Test
     public void testExplainScan() throws SQLException {
-        String sql = "explain plan for select * from dingo.test";
+        String sql = "explain plan for select * from test.test";
         sqlHelper.explainTest(
-            sql,
-            "EnumerableRoot",
-            "DingoCoalesce",
-            "DingoExchange",
-            "DingoPartScan"
+            sql
         );
     }
 }

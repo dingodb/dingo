@@ -35,7 +35,10 @@ import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -230,18 +233,19 @@ public class DdlTest {
     }
 
     @Test
-    @Disabled
     public void testCreateTableWithDateArray() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data date array, primary key(id))",
-            "insert into {table} values(1, array['1970-1-1', '1980-2-2', '1990-3-3'])"
+            "insert into {table} values(1, array['1970-01-01', '1980-2-2', '19900303'])"
         );
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DATE);
-        // getArray fails for Calcite Bug.
-        assertThat(array.getArray()).isEqualTo(new Object[]{});
+        List<String> dateStrings = Arrays.stream((Object[]) array.getArray())
+            .map(Object::toString)
+            .collect(Collectors.toList());
+        assertThat(dateStrings).containsExactly("1970-01-01", "1980-02-02", "1990-03-03");
         sqlHelper.dropTable(tableName);
     }
 
@@ -284,6 +288,24 @@ public class DdlTest {
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DOUBLE);
         assertThat(array.getArray()).isEqualTo(new double[]{1, 2.1, 3.2});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    @Disabled
+    public void testCreateTableWithDateMultiset() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data date multiset, primary key(id))",
+            "insert into {table} values(1, multiset['1970-01-01', '1980-2-2', '19900303'])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.DATE);
+        List<String> dateStrings = Arrays.stream((Object[]) array.getArray())
+            .map(Object::toString)
+            .collect(Collectors.toList());
+        assertThat(dateStrings).containsExactly("1970-01-01", "1980-02-02", "1990-03-03");
         sqlHelper.dropTable(tableName);
     }
 
