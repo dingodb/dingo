@@ -16,15 +16,10 @@
 
 package io.dingodb.expr.parser.op;
 
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
-import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
 
-import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 public final class SqlArrayConstructorOp extends Op {
@@ -40,22 +35,10 @@ public final class SqlArrayConstructorOp extends Op {
         return new SqlArrayConstructorOp(OpType.FUN);
     }
 
-    @Nonnull
     @Override
-    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
-        try {
-            // Check here so null values are caught even there are some non-const operands.
-            if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
-                throw new IllegalArgumentException("Null values are not allowed in arrays.");
-            }
-            RtOp rtOp = createRtOp(rtExprArray);
-            if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
-                return new RtConst(rtOp.eval(null));
-            }
-            return rtOp;
-        } catch (FailGetEvaluator e) {
-            throw new DingoExprCompileException(e);
-        }
+    protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
+        checkNoNulls(rtExprArray);
+        return false;
     }
 
     @Nonnull

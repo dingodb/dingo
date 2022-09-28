@@ -204,7 +204,7 @@ public class DdlTest {
                 "insert into {table} values(1, array['1', null, '3'])"
             );
         });
-        assertThat(exception.getMessage()).contains("Null values are not allowed");
+        assertThat(exception.getMessage()).contains("NULLs are not allowed");
     }
 
     @Test
@@ -319,6 +319,17 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithMapNullValue() {
+        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
+            sqlHelper.prepareTable(
+                "create table {table} (id int, data map, primary key(id))",
+                "insert into {table} values(1, map['a', '1', 'b', null])"
+            );
+        });
+        assertThat(exception.getMessage()).contains("NULLs are not allowed");
+    }
+
+    @Test
     public void testCreateTableWithMapNull() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data map, primary key(id))",
@@ -330,7 +341,7 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithMapNull1() throws SQLException {
+    public void testCreateTableWithMapNull1() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
             sqlHelper.prepareTable(
                 "create table {table} (id int, data map not null, primary key(id))",

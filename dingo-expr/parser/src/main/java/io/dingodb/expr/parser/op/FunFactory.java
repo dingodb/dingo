@@ -52,7 +52,6 @@ import io.dingodb.expr.runtime.op.number.DingoNumberFormatOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberModOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberPowOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberRoundOp;
-import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlSliceFun;
 import io.dingodb.expr.runtime.op.string.DingoCharLengthOp;
 import io.dingodb.expr.runtime.op.string.DingoStringConcatOp;
@@ -111,6 +110,7 @@ public final class FunFactory {
         // Collection type constructors
         funSuppliers.put(SqlArrayConstructorOp.FUN_NAME, SqlArrayConstructorOp::fun);
         funSuppliers.put(SqlListConstructorOp.FUN_NAME, SqlListConstructorOp::fun);
+        funSuppliers.put(SqlMapConstructorOp.FUN_NAME, SqlMapConstructorOp::fun);
 
         // min, max
         registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
@@ -189,7 +189,6 @@ public final class FunFactory {
         registerUdf("timestamp_format", TimestampFormatFun::new);
         registerUdf("datediff", DateDiffFun::new);
 
-        registerUdf("MAP", RtSqlMapConstructorOp::new);
         registerUdf("$SLICE", RtSqlSliceFun::new);
     }
 

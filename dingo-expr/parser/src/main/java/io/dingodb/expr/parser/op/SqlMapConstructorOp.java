@@ -18,21 +18,21 @@ package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-import io.dingodb.expr.runtime.op.sql.RtSqlListConstructorOp;
+import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
 
 import javax.annotation.Nonnull;
 
-public final class SqlListConstructorOp extends Op {
-    public static final String FUN_NAME = "LIST";
+public final class SqlMapConstructorOp extends Op {
+    public static final String FUN_NAME = "MAP";
 
-    private SqlListConstructorOp(OpType type) {
+    private SqlMapConstructorOp(OpType type) {
         super(type);
         name = FUN_NAME;
     }
 
     @Nonnull
-    public static SqlListConstructorOp fun() {
-        return new SqlListConstructorOp(OpType.FUN);
+    public static SqlMapConstructorOp fun() {
+        return new SqlMapConstructorOp(OpType.FUN);
     }
 
     @Override
@@ -43,7 +43,7 @@ public final class SqlListConstructorOp extends Op {
 
     @Nonnull
     @Override
-    protected RtSqlListConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
-        return new RtSqlListConstructorOp(rtExprArray);
+    protected RtSqlMapConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+        return new RtSqlMapConstructorOp(rtExprArray);
     }
 }
