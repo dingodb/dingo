@@ -25,9 +25,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,18 +57,11 @@ public final class AssertResultSet {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet isPlan(String... name) throws SQLException {
+    public AssertResultSet isPlan() throws SQLException {
         assertThat(instance.getMetaData().getColumnCount()).isEqualTo(1);
         assertThat(instance.getMetaData().getColumnName(1)).isEqualTo("PLAN");
         int rowCount = 0;
         while (instance.next()) {
-            List<String> plan = Arrays.stream(instance.getString(1).split("\n"))
-                .map(String::trim)
-                .collect(Collectors.toList());
-            assertThat(plan.size()).isEqualTo(name.length);
-            for (int i = 0; i < name.length; ++i) {
-                assertThat(plan.get(i)).startsWith(name[i]);
-            }
             ++rowCount;
         }
         assertThat(rowCount).isEqualTo(1);

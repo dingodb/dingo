@@ -388,8 +388,9 @@ public class DingoMeta extends MetaImpl {
             }
             final List rows = new ArrayList(fetchMaxRowCount);
             DingoType dingoType = DingoTypeFactory.fromColumnMetaDataList(signature.columns);
+            AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
-                rows.add(dingoType.convertTo(iterator.next(), AvaticaResultSetConverter.INSTANCE));
+                rows.add(dingoType.convertTo(iterator.next(), converter));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             return new Frame(offset, done, rows);
