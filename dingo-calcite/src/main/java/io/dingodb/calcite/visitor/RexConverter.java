@@ -265,6 +265,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 op = getCastOpWithCheck(type, operand.getType());
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
+            case MULTISET_VALUE_CONSTRUCTOR:
                 op = FunFactory.INS.getFun("LIST");
                 break;
             case MAP_VALUE_CONSTRUCTOR:

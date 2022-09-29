@@ -24,12 +24,14 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -37,18 +39,22 @@ import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 
 import java.util.Collections;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 
 @Slf4j
 class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory {
     static DingoInitializerExpressionFactory INSTANCE = new DingoInitializerExpressionFactory();
-    private final DingoParser parser;
 
     private DingoInitializerExpressionFactory() {
-        parser = new DingoParser(new DingoParserContext(DingoRootSchema.DEFAULT_SCHEMA_NAME));
     }
 
-    private SqlNode validateExprWithRowType(RelDataType rowType, SqlNode expr) {
+    private static SqlNode validateExprWithRowType(
+        @Nonnull InitializerContext context,
+        RelDataType rowType,
+        SqlNode expr
+    ) {
         final String tableName = "_table_";
         final SqlSelect select0 = new SqlSelect(
             SqlParserPos.ZERO,
@@ -64,7 +70,8 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             null,
             null
         );
-        RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
+        RexBuilder rexBuilder = context.getRexBuilder();
+        RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
         CalciteCatalogReader catalogReader = SqlValidatorUtil.createSingleTableCatalogReader(
             true,
             tableName,
@@ -72,14 +79,17 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             rowType
         );
         SqlValidator validator = SqlValidatorUtil.newValidator(
-            parser.getSqlValidator().getOperatorTable(),
+            rexBuilder.getOpTab(),
             catalogReader,
             typeFactory,
             DingoParser.VALIDATOR_CONFIG
         );
         final SqlSelect select = (SqlSelect) validator.validate(select0);
-        SqlNodeList selectList = select.getSelectList();
-        return selectList.get(0);
+        SqlNode sqlNode = select.getSelectList().get(0);
+        // Assume it is a `SqlRexContext`, so we can get the real validator and set the node type.
+        // SqlRexContext sqlRexContext = (SqlRexContext) context;
+        // sqlRexContext.getValidator().setValidatedNodeType(sqlNode, validator.getValidatedNodeType(sqlNode));
+        return select.getSelectList().get(0);
     }
 
     @Override
@@ -101,13 +111,24 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         Should call the following, but it is not available to validate by our own config in Calcite, so call our
         alternatives.
         NOTE: the type is the table type, not the type of this column.
-        sqlNode = context.validateExpression(table.getRowType(), sqlNode);
-         */
-        sqlNode = validateExprWithRowType(rowType, sqlNode);
-        RexBuilder rexBuilder = parser.getCluster().getRexBuilder();
+        */
+        // sqlNode = context.validateExpression(table.getRowType(), sqlNode);
+        sqlNode = validateExprWithRowType(context, rowType, sqlNode);
+        RexBuilder rexBuilder = context.getRexBuilder();
         RelDataType targetType = table.getRowType().getFieldList().get(column).getType();
         if (sqlNode.getKind() == SqlKind.LITERAL && ((SqlLiteral) sqlNode).getValue() == null) {
             return rexBuilder.makeNullLiteral(targetType);
+        } else if (sqlNode.getKind() == SqlKind.MULTISET_VALUE_CONSTRUCTOR) {
+            // context::convertExpression will try to find a sub query for multiset, which is not applicable, so use
+            // our simplified version.
+            assert sqlNode instanceof SqlCall;
+            SqlCall call = (SqlCall) sqlNode;
+            return rexBuilder.makeCall(
+                SqlStdOperatorTable.MULTISET_VALUE,
+                call.getOperandList().stream()
+                    .map(context::convertExpression)
+                    .collect(Collectors.toList())
+            );
         }
         RexNode rex = context.convertExpression(sqlNode);
         if (!rex.getType().equals(targetType)) {
