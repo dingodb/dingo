@@ -89,7 +89,7 @@ class ControlUnit {
         if (closed) {
             throw new RuntimeException("Control unit closed.");
         }
-        if (mirror == first) {
+        if (mirror.label.equals(first.label)) {
             firstChannel = channel;
         } else {
             secondChannel = channel;
@@ -106,7 +106,7 @@ class ControlUnit {
             return;
         }
         log.info("{} control unit close connection {} on {}.", core.meta.label, mirror.label, clock);
-        if (mirror == first) {
+        if (mirror.label.equals(first.label)) {
             firstChannel = null;
         } else {
             secondChannel = null;
