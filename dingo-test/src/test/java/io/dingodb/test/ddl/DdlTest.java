@@ -278,6 +278,25 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithMultiSetDefault() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id int,"
+                + "name char(8),"
+                + "data int multiset default multiset[1, 2, 3],"
+                + "primary key(id)"
+                + ")",
+            "insert into {table}(id, name) values(1, 'ABC')"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
+        assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
     public void testCreateTableWithDoubleMultiset() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data double multiset, primary key(id))",
