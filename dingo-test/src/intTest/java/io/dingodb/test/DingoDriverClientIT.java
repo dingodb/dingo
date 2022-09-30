@@ -55,7 +55,7 @@ public class DingoDriverClientIT {
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
         Connection connection = DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + "url=server:8765",
+            DingoDriverClient.CONNECT_STRING_PREFIX + "url=las1:8765",
             properties
         );
         sqlHelper = new SqlHelper(connection);
