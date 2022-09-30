@@ -21,6 +21,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.TypedValue;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -47,6 +48,11 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     @Override
     protected List<TypedValue> getParameterValues() {
         return super.getParameterValues();
+    }
+
+    @Override
+    public Calendar getCalendar() {
+        return super.getCalendar();
     }
 
     // This is only used by `ServerMeta`, for local driver, the value is set when JDBC APIs are called.

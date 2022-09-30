@@ -80,11 +80,18 @@ public class SqlHelper {
     }
 
     public String prepareTable(
-        @Nonnull String createSql,
-        @Nonnull String insertSql
+        @Nonnull String createSql
     ) throws SQLException {
         String tableName = randomTableName();
         execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        return tableName;
+    }
+
+    public String prepareTable(
+        @Nonnull String createSql,
+        @Nonnull String insertSql
+    ) throws SQLException {
+        String tableName = prepareTable(createSql);
         execSqlCmd(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
         return tableName;
     }
@@ -94,8 +101,7 @@ public class SqlHelper {
         @Nonnull String insertSql,
         int affectedRows
     ) throws SQLException {
-        String tableName = randomTableName();
-        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+        String tableName = prepareTable(createSql);
         updateTest(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName), affectedRows);
         return tableName;
     }

@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.type.RelDataTypeUtils;
+import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;

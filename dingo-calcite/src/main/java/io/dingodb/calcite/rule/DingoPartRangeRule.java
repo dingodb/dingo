@@ -19,7 +19,7 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
-import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
@@ -126,7 +126,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case LESS_THAN:
                             includeEnd = false;
                         case LESS_THAN_OR_EQUAL:
-                            right = codec.encodeKeyForRangeScan(new Object[]{RexConverter.convertFromRexLiteral(
+                            right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});
@@ -134,7 +134,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case GREATER_THAN:
                             includeStart = false;
                         case GREATER_THAN_OR_EQUAL:
-                            left = codec.encodeKeyForRangeScan(new Object[]{RexConverter.convertFromRexLiteral(
+                            left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
                                 DingoTypeFactory.fromRelDataType(info.value.getType())
                             )});

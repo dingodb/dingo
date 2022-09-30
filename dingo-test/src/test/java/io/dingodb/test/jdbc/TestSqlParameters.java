@@ -45,6 +45,8 @@ public class TestSqlParameters {
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
+        // Drop makes other tests fail, should use random table name in tests.
+        // sqlHelper.dropTable("test");
         sqlHelper.cleanUp();
     }
 

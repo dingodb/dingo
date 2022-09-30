@@ -16,11 +16,9 @@
 
 package io.dingodb.calcite.visitor;
 
+import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.ExprConverter;
-import io.dingodb.common.type.converter.RexLiteralConverter;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.expr.parser.DingoExprParser;
@@ -54,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -68,51 +65,6 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
 
     private RexConverter() {
         super(true);
-    }
-
-    @Nullable
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nonnull DingoType type) {
-        if (!rexLiteral.isNull()) {
-            // `rexLiteral.getType()` is not always the required type.
-            return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
-        }
-        return null;
-    }
-
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral) {
-        DingoType type = DingoTypeFactory.fromRelDataType(rexLiteral.getType());
-        return convertFromRexLiteral(rexLiteral, type);
-    }
-
-    @Nonnull
-    public static Object[] convertFromRexLiteralList(@Nonnull List<RexLiteral> values, @Nonnull DingoType type) {
-        return IntStream.range(0, values.size())
-            .mapToObj(i -> convertFromRexLiteral(values.get(i), Objects.requireNonNull(type.getChild(i))))
-            .toArray(Object[]::new);
-    }
-
-    public static Expr convert(@Nonnull RexNode rexNode) {
-        return rexNode.accept(INSTANCE);
-    }
-
-    @Nonnull
-    public static SqlExpr toRtExprWithType(@Nonnull RexNode rexNode) {
-        return toRtExprWithType(rexNode, rexNode.getType());
-    }
-
-    @Nonnull
-    public static SqlExpr toRtExprWithType(@Nonnull RexNode rexNode, RelDataType type) {
-        return new SqlExpr(
-            convert(rexNode).toString(),
-            DingoTypeFactory.fromRelDataType(type)
-        );
-    }
-
-    @Nonnull
-    public static List<SqlExpr> toRtExprWithType(@Nonnull List<RexNode> rexNodes, RelDataType type) {
-        return IntStream.range(0, rexNodes.size())
-            .mapToObj(i -> toRtExprWithType(rexNodes.get(i), type.getFieldList().get(i).getType()))
-            .collect(Collectors.toList());
     }
 
     @Nullable
@@ -165,6 +117,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return op;
     }
 
+    public static Expr convert(@Nonnull RexNode rexNode) {
+        return rexNode.accept(INSTANCE);
+    }
+
     @Nonnull
     @Override
     public Expr visitInputRef(@Nonnull RexInputRef inputRef) {
@@ -184,7 +140,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             // TODO: should consider the symbol enum, not the string, to avoid misunderstand from a real string.
             value = Objects.requireNonNull(literal.getValue()).toString();
         } else {
-            value = convertFromRexLiteral(literal);
+            value = RexLiteralUtils.convertFromRexLiteral(literal);
         }
         // `null` is implemented by Var in dingo-expr.
         return value != null ? Value.of(value) : Null.INSTANCE;

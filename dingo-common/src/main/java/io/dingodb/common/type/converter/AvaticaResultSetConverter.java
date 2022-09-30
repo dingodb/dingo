@@ -22,11 +22,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
-public class AvaticaResultSetConverter implements DataConverter {
-    private final Calendar localCalendar;
-
+public class AvaticaResultSetConverter extends ConverterWithCalendar {
     public AvaticaResultSetConverter(Calendar localCalendar) {
-        this.localCalendar = localCalendar;
+        super(localCalendar);
     }
 
     /**
@@ -41,9 +39,7 @@ public class AvaticaResultSetConverter implements DataConverter {
     @Override
     public Timestamp convert(@Nonnull Timestamp value) {
         // NOTE: The following is not exact the inversion of what done in `TimestampAccessor`.
-        long v = value.getTime();
-        v += localCalendar.getTimeZone().getOffset(v);
-        return new Timestamp(v);
+        return shiftedTimestamp(value.getTime());
     }
 
     @Override

@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.plan.Convention;
@@ -27,8 +28,6 @@ import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-
-import static io.dingodb.calcite.visitor.RexConverter.convertFromRexLiteralList;
 
 public class LogicalDingoValueRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -53,7 +52,7 @@ public class LogicalDingoValueRule extends ConverterRule {
             rel.getTraitSet(),
             rowType,
             ((LogicalValues) rel).getTuples().stream()
-                .map(t -> convertFromRexLiteralList(t, type))
+                .map(t -> RexLiteralUtils.convertFromRexLiteralList(t, type))
                 .collect(Collectors.toList())
         );
     }

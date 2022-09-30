@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.type;
+package io.dingodb.calcite.utils;
 
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.rel.type.RelDataType;

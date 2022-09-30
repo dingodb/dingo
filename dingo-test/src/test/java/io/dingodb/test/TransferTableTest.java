@@ -29,16 +29,6 @@ import java.sql.SQLException;
 
 @Slf4j
 public class TransferTableTest {
-    private static final String TEST_ALL_DATA
-        = "1, Alice, 3.5\n"
-        + "2, Betty, 4.0\n"
-        + "3, Cindy, 4.5\n"
-        + "4, Doris, 5.0\n"
-        + "5, Emily, 5.5\n"
-        + "6, Alice, 6.0\n"
-        + "7, Betty, 6.5\n"
-        + "8, Alice, 7.0\n"
-        + "9, Cindy, 7.5\n";
     private static SqlHelper sqlHelper;
 
     @BeforeAll

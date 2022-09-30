@@ -59,7 +59,9 @@ public interface DataConverter {
         return value;
     }
 
-    default Object convert(@Nonnull BigDecimal value) {return value;}
+    default Object convert(@Nonnull BigDecimal value) {
+        return value;
+    }
 
     default Object convert(@Nonnull Object[] value, DingoType elementType) {
         return Arrays.stream(value)

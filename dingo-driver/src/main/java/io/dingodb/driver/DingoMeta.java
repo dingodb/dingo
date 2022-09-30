@@ -29,6 +29,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.AvaticaResultSetConverter;
+import io.dingodb.common.type.converter.TypedValueConverter;
 import io.dingodb.exec.JobRunner;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
@@ -143,7 +144,10 @@ public class DingoMeta extends MetaImpl {
                 DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
                 try {
                     Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
-                    job.setParas(parasValue);
+                    job.setParas((Object[]) job.getParasType().convertFrom(
+                        parasValue,
+                        new TypedValueConverter(dingoPreparedStatement.getCalendar())
+                    ));
                 } catch (NullPointerException e) {
                     throw new IllegalStateException("Not all parameters are set.");
                 }

@@ -19,6 +19,7 @@ package io.dingodb.test.ddl;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
@@ -34,6 +35,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
@@ -108,8 +110,8 @@ public class DdlTest {
 
     @ParameterizedTest
     @CsvSource({
-        "timestamp, 1970-01-01 00:00:00",
-        "timestamp, 2022-11-01 11:01:01",
+        "timestamp, 1970-01-01 00:00:00.000",
+        "timestamp, 2022-11-01 11:01:01.000",
     })
     public void testCreateTableTimestampLiteral(@Nonnull String type, String value) throws SQLException {
         String tableName = sqlHelper.prepareTable(
@@ -118,8 +120,7 @@ public class DdlTest {
         );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
-        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
-        assertThat(result).isEqualTo(expected);
+        assertThat(DateTimeUtils.toUtcString((Timestamp) result)).isEqualTo(value);
         sqlHelper.dropTable(tableName);
     }
 

@@ -37,6 +37,8 @@ import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.hash.HashStrategy;
@@ -204,7 +206,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             .map(item -> {
                 Object[] tuple = new Object[item.size()];
                 for (Map.Entry<Integer, RexLiteral> entry : item.entrySet()) {
-                    tuple[revMapping.get(entry.getKey())] = RexConverter.convertFromRexLiteral(
+                    tuple[revMapping.get(entry.getKey())] = RexLiteralUtils.convertFromRexLiteral(
                         entry.getValue(),
                         td.getColumn(entry.getKey()).getDingoType()
                     );
@@ -395,7 +397,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         RexNode condition = rel.getCondition();
         return bridge(inputs, () -> new FilterOperator(
-            RexConverter.toRtExprWithType(condition),
+            SqlExprUtils.toSqlExpr(condition),
             DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
@@ -417,7 +419,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getDingoType(),
                 td.getKeyMapping(),
                 entry.getValue(),
-                RexConverter.toRtExprWithType(rel.getFilter()),
+                SqlExprUtils.toSqlExpr(rel.getFilter()),
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -529,7 +531,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                         td.getKeyMapping(),
                         TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
                         rel.getSourceExpressionList().stream()
-                            .map(RexConverter::toRtExprWithType)
+                            .map(SqlExprUtils::toSqlExpr)
                             .collect(Collectors.toList())
                     );
                     break;
@@ -561,7 +563,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@Nonnull DingoProject rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new ProjectOperator(
-            RexConverter.toRtExprWithType(rel.getProjects(), rel.getRowType()),
+            SqlExprUtils.toSqlExprList(rel.getProjects(), rel.getRowType()),
             DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
         ));
     }
@@ -626,7 +628,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 i,
                 td.getDingoType(),
                 td.getKeyMapping(),
-                filter != null ? RexConverter.toRtExprWithType(filter) : null,
+                filter != null ? SqlExprUtils.toSqlExpr(filter) : null,
                 rel.getSelection()
             );
             operator.setId(idGenerator.get());
@@ -698,7 +700,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
         SqlExpr filter = null;
         if (rel.getFilter() != null) {
-            filter = RexConverter.toRtExprWithType(rel.getFilter());
+            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
 
         NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);

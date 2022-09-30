@@ -17,24 +17,20 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.utils.NumberUtils;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.util.NlsString;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import javax.annotation.Nonnull;
 
-public class RexLiteralConverter implements DataConverter {
-    public static final RexLiteralConverter INSTANCE = new RexLiteralConverter();
+public class TypedValueConverter extends ConverterWithCalendar {
     private static final RuntimeException NEVER_CONVERT_BACK
-        = new IllegalStateException("Convert back to RexLiteral should be avoided.");
+        = new IllegalStateException("Convert back to TypedValue should be avoided.");
 
-    private RexLiteralConverter() {
+    public TypedValueConverter(Calendar localCalendar) {
+        super(localCalendar);
     }
 
     @Override
@@ -62,47 +58,39 @@ public class RexLiteralConverter implements DataConverter {
         throw NEVER_CONVERT_BACK;
     }
 
-    @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
-        long v = ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
-        return NumberUtils.checkIntRange(v);
-    }
-
-    @Override
-    public Long convertLongFrom(@Nonnull Object value) {
-        return ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
-    }
-
-    @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
-        return ((BigDecimal) value).doubleValue();
-    }
-
-    @Override
-    public String convertStringFrom(@Nonnull Object value) {
-        return ((NlsString) value).getValue();
-    }
-
+    /**
+     * Convert from an integer of days to a {@link Date}. See {@link org.apache.calcite.avatica.remote.TypedValue}.
+     *
+     * @param value the days from epoch
+     * @return the {@link Date}
+     */
     @Override
     public Date convertDateFrom(@Nonnull Object value) {
-        return new Date(((Calendar) value).getTimeInMillis());
+        return new Date(((Integer) value) * DateTimeUtils.MILLIS_PER_DAY);
     }
 
+    /**
+     * Convert from an integer of milliseconds to a {@link Time}. See
+     * {@link org.apache.calcite.avatica.remote.TypedValue}.
+     *
+     * @param value the milliseconds from epoch
+     * @return the {@link Time}
+     */
     @Override
     public Time convertTimeFrom(@Nonnull Object value) {
-        return new Time(((Calendar) value).getTimeInMillis());
+        return new Time((Integer) value);
     }
 
+    /**
+     * Convert from an integer of milliseconds to a {@link Timestamp}. See
+     * {@link org.apache.calcite.avatica.remote.TypedValue}.
+     *
+     * @param value the milliseconds from epoch
+     * @return the {@link Timestamp}
+     */
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
-        // This works for literal like `TIMESTAMP '1970-01-01 00:00:00'`, which returns UTC time, not local time
-        Calendar calendar = (Calendar) value;
-        long v = calendar.getTimeInMillis();
-        return new Timestamp(v - calendar.getTimeZone().getOffset(v));
-    }
-
-    @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
-        return ((ByteString) value).getBytes();
+        // Calcite's timestamp are shifted to UTC.
+        return unShiftedTimestamp(((Calendar) value).getTimeInMillis());
     }
 }
