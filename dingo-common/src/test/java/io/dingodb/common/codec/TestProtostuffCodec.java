@@ -19,12 +19,21 @@ package io.dingodb.common.codec;
 import io.dingodb.common.codec.pojo.School;
 import io.dingodb.common.codec.pojo.Student;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestProtoStuffCodec {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestProtostuffCodec {
+    @BeforeAll
+    public static void setupAll() {
+    }
 
     @Test
     public void test() {
@@ -42,5 +51,29 @@ public class TestProtoStuffCodec {
         School deserialValue = ProtostuffCodec.read(bytes);
         System.out.println("After:==> " + deserialValue.toString());
         Assertions.assertEquals(school.toString(), deserialValue.toString());
+    }
+
+    @Test
+    public void testDate() {
+        Date obj = new Date(12345);
+        byte[] bytes = ProtostuffCodec.write(obj);
+        Date obj1 = ProtostuffCodec.read(bytes);
+        assertThat(obj1).isEqualTo(obj);
+    }
+
+    @Test
+    public void testTime() {
+        Time obj = new Time(12345);
+        byte[] bytes = ProtostuffCodec.write(obj);
+        Time obj1 = ProtostuffCodec.read(bytes);
+        assertThat(obj1).isEqualTo(obj);
+    }
+
+    @Test
+    public void testTimestamp() {
+        Timestamp obj = new Timestamp(12345);
+        byte[] bytes = ProtostuffCodec.write(obj);
+        Timestamp obj1 = ProtostuffCodec.read(bytes);
+        assertThat(obj1).isEqualTo(obj);
     }
 }

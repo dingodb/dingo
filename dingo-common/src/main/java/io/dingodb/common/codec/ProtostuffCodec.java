@@ -16,95 +16,88 @@
 
 package io.dingodb.common.codec;
 
-import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.protostuff.DateSchema;
+import io.dingodb.common.codec.protostuff.TimeSchema;
+import io.dingodb.common.codec.protostuff.TimestampSchema;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.util.StackTraces;
 import io.protostuff.ByteBufferInput;
 import io.protostuff.Input;
 import io.protostuff.LinkedBuffer;
-import io.protostuff.Output;
 import io.protostuff.ProtostuffOutput;
 import io.protostuff.Schema;
-import io.protostuff.runtime.DefaultIdStrategy;
-import io.protostuff.runtime.IdStrategy;
 import io.protostuff.runtime.RuntimeSchema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 
-public class ProtostuffCodec {
+public final class ProtostuffCodec {
+    private static final ProtostuffCodec INSTANCE = new ProtostuffCodec();
 
     private static final ThreadLocal<LinkedBuffer> buffer = ThreadLocal.withInitial(() -> LinkedBuffer.allocate(1024));
 
-    private static ConcurrentHashMap<Class<?>, Schema<?>> cachedSchema = new ConcurrentHashMap(256);
-
-    static final DefaultIdStrategy strategy = new DefaultIdStrategy(IdStrategy.DEFAULT_FLAGS
-        | IdStrategy.PRESERVE_NULL_ELEMENTS
-        | IdStrategy.MORPH_COLLECTION_INTERFACES
-        | IdStrategy.MORPH_MAP_INTERFACES
-        | IdStrategy.MORPH_NON_FINAL_POJOS);
+    private final Schema<ProtostuffWrapper> schema;
 
     private ProtostuffCodec() {
+        System.setProperty("protostuff.runtime.preserve_null_elements", "true");
+        System.setProperty("protostuff.runtime.morph_collection_interfaces", "true");
+        System.setProperty("protostuff.runtime.morph_map_interfaces", "true");
+        System.setProperty("protostuff.runtime.morph_non_final_pojos", "true");
+        RuntimeSchema.register(Date.class, DateSchema.INSTANCE);
+        RuntimeSchema.register(Time.class, TimeSchema.INSTANCE);
+        RuntimeSchema.register(Timestamp.class, TimestampSchema.INSTANCE);
+        schema = RuntimeSchema.getSchema(ProtostuffWrapper.class);
     }
-
-    private static  Schema getSchema(Class clz) {
-        Schema schema = cachedSchema.get(clz);
-        if (null == schema) {
-            schema = RuntimeSchema.getSchema(clz, strategy);
-            if (null != schema) {
-                cachedSchema.put(clz, schema);
-            } else {
-                throw new IllegalStateException("Failed to create schema for class " + clz);
-            }
-        }
-        return schema;
-    }
-
 
     public static <T> T read(byte[] bytes) {
-        return read(ByteBuffer.wrap(bytes), null);
+        return INSTANCE.readMessage(ByteBuffer.wrap(bytes), null);
     }
 
     public static <T> T read(byte[] bytes, T source) {
-        return read(ByteBuffer.wrap(bytes), source);
+        return INSTANCE.readMessage(ByteBuffer.wrap(bytes), source);
     }
 
     public static <T> T read(ByteBuffer buffer) {
-        return read(buffer, null);
+        return INSTANCE.readMessage(buffer, null);
     }
 
     public static <T> T read(ByteBuffer buffer, T source) {
-        ProtostuffWrapper<T> wrapper = new ProtostuffWrapper<>(source);
-        Schema<ProtostuffWrapper> schema = getSchema(ProtostuffWrapper.class);
+        return INSTANCE.readMessage(buffer, source);
+    }
 
+    public static byte[] write(Object value) {
+        return INSTANCE.writeMessage(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T readMessage(ByteBuffer buffer, T source) {
+        ProtostuffWrapper wrapper = new ProtostuffWrapper(source);
         final Input input = new ByteBufferInput(buffer, true);
         try {
             schema.mergeFrom(input, wrapper);
         } catch (final IOException e) {
             CommonError.EXEC.throwFormatError("protostuff read", Thread.currentThread(), e.getMessage());
         }
-
-        return wrapper.value;
+        return (T) wrapper.value;
     }
 
-    public static byte[] write(Object value) {
-        Schema schema = getSchema(ProtostuffWrapper.class);
+    private byte[] writeMessage(Object value) {
         final ProtostuffOutput output = new ProtostuffOutput(buffer.get());
         try {
-            schema.writeTo(output, new ProtostuffWrapper<>(value));
+            schema.writeTo(output, new ProtostuffWrapper(value));
             return output.toByteArray();
         } catch (final IOException e) {
             CommonError.EXEC.throwFormatError("protostuff write", Thread.currentThread(), e.getMessage());
         } finally {
             buffer.get().clear();
         }
-
         throw CommonError.UNKNOWN.asException(StackTraces.stack());
     }
 
@@ -112,8 +105,7 @@ public class ProtostuffCodec {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    static class ProtostuffWrapper<T> {
-        private T value;
+    static class ProtostuffWrapper {
+        private Object value;
     }
-
 }

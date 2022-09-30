@@ -250,7 +250,7 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithMultiSet() throws SQLException {
+    public void testCreateTableWithMultiset() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data int multiset, primary key(id))",
             "insert into {table} values(1, multiset[7, 7, 8, 8])"
@@ -264,7 +264,7 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithMultiSet1() throws SQLException {
+    public void testCreateTableWithMultiset1() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
@@ -278,7 +278,7 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithMultiSetDefault() throws SQLException {
+    public void testCreateTableWithMultisetDefault() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} ("
                 + "id int,"
@@ -330,7 +330,7 @@ public class DdlTest {
 
     @Test
     @Disabled
-    public void testCreateTableWithMultiSetAndUpdate() throws SQLException {
+    public void testCreateTableWithMultisetAndUpdate() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
@@ -401,6 +401,23 @@ public class DdlTest {
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", BigDecimal.valueOf(1), "b", BigDecimal.valueOf(2.5)));
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithMapDefault() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id int,"
+                + "name char(8),"
+                + "data map default map['a', 1, 'b', 2],"
+                + "primary key(id)"
+                + ")",
+            "insert into {table}(id, name) values(1, 'ABC')"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Map.class)
+            .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
         sqlHelper.dropTable(tableName);
     }
 }
