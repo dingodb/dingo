@@ -33,6 +33,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.InitializerContext;
@@ -131,7 +132,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             );
         }
         RexNode rex = context.convertExpression(sqlNode);
-        if (!rex.getType().equals(targetType)) {
+        if (!rex.getType().equals(targetType) && targetType.getSqlTypeName() != SqlTypeName.ANY) {
             return rexBuilder.makeCast(targetType, rex, true);
         }
         return rex;
