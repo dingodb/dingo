@@ -312,8 +312,19 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithDateMultisetNull() {
+        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
+            sqlHelper.prepareTable(
+                "create table {table} (id int, data date multiset, primary key(id))",
+                "insert into {table} values(1, multiset[''])"
+            );
+        });
+        assertThat(exception.getMessage()).contains("Null values are not allowed");
+    }
+
+    @Test
     @Disabled
-    public void testCreateTableWithDateMultiset() throws SQLException {
+    public void testCreateTableWithDateMultiset1() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data date multiset, primary key(id))",
             "insert into {table} values(1, multiset['1970-01-01', '1980-2-2', '19900303'])"
