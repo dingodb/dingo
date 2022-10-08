@@ -19,6 +19,7 @@ package io.dingodb.expr.runtime.op.sql;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
+import io.dingodb.expr.runtime.exception.ElementsNullNotAllowed;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtFun;
 
@@ -43,7 +44,12 @@ public final class RtSqlCastListItemsOp extends RtFun {
         List<?> list = (List<?>) values[0];
         List<Object> result = new ArrayList<>(list.size());
         for (Object i : list) {
-            result.add(evaluator.eval(new Object[]{i}));
+            Object v = evaluator.eval(new Object[]{i});
+            if (v != null) {
+                result.add(v);
+            } else {
+                throw new ElementsNullNotAllowed();
+            }
         }
         return result;
     }

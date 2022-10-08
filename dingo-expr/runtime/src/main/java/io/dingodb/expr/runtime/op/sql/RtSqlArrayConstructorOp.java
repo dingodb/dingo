@@ -19,6 +19,7 @@ package io.dingodb.expr.runtime.op.sql;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.runtime.exception.ElementsNullNotAllowed;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 
@@ -41,7 +42,7 @@ public final class RtSqlArrayConstructorOp extends RtOp {
             RtExpr para = paras[i];
             Object v = para.eval(etx);
             if (v == null) {
-                throw new IllegalArgumentException("Null values are not allowed in arrays.");
+                throw new ElementsNullNotAllowed();
             }
             result[i] = v;
         }
