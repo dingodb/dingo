@@ -165,8 +165,14 @@ public interface CollectionOperation<D extends OperationContext, T, R> extends E
                     Map<String, Object> values = new HashMap<>();
                     for (int i = 0; i < objects.length; i++) {
                         List list = (List) objects[i];
-                        List<Object> value = new ArrayList<>(list.subList(
-                            context.index, Math.min(context.index + context.count, list.size())));
+                        int fromIndex = context.index;
+                        int toIndex = Math.min(fromIndex + context.count, list.size());
+                        List<Object> value;
+                        if (fromIndex < 0 || fromIndex > toIndex) {
+                            value = new ArrayList<>();
+                        } else {
+                            value = new ArrayList<Object>(list.subList(fromIndex, toIndex));
+                        }
                         values.put(columns[i].name, value);
                     }
                     Object[] key = context.keyValueCodec().decodeKey(keyValue.getKey());
