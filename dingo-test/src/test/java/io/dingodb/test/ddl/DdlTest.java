@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 import java.sql.Array;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -294,6 +295,25 @@ public class DdlTest {
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithMultisetDefault1() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id int,"
+                + "name char(8),"
+                + "data date multiset default multiset['1970-01-01', '1970-01-02'],"
+                + "primary key(id)"
+                + ")",
+            "insert into {table}(id, name) values(1, 'ABC')"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.DATE);
+        assertThat(array.getArray()).isEqualTo(new Date[]{new Date(0), new Date(86400000)});
         sqlHelper.dropTable(tableName);
     }
 

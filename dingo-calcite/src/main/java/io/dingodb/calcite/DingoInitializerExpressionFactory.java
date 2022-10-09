@@ -117,21 +117,23 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
         sqlNode = validateExprWithRowType(context, rowType, sqlNode);
         RexBuilder rexBuilder = context.getRexBuilder();
         RelDataType targetType = table.getRowType().getFieldList().get(column).getType();
+        RexNode rex;
         if (sqlNode.getKind() == SqlKind.LITERAL && ((SqlLiteral) sqlNode).getValue() == null) {
-            return rexBuilder.makeNullLiteral(targetType);
+            rex = rexBuilder.makeNullLiteral(targetType);
         } else if (sqlNode.getKind() == SqlKind.MULTISET_VALUE_CONSTRUCTOR) {
             // context::convertExpression will try to find a sub query for multiset, which is not applicable, so use
             // our simplified version.
             assert sqlNode instanceof SqlCall;
             SqlCall call = (SqlCall) sqlNode;
-            return rexBuilder.makeCall(
+            rex = rexBuilder.makeCall(
                 SqlStdOperatorTable.MULTISET_VALUE,
                 call.getOperandList().stream()
                     .map(context::convertExpression)
                     .collect(Collectors.toList())
             );
+        } else {
+            rex = context.convertExpression(sqlNode);
         }
-        RexNode rex = context.convertExpression(sqlNode);
         if (!rex.getType().equals(targetType) && targetType.getSqlTypeName() != SqlTypeName.ANY) {
             return rexBuilder.makeCast(targetType, rex, true);
         }
