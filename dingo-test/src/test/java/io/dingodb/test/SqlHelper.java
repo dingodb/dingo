@@ -19,12 +19,11 @@ package io.dingodb.test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import io.dingodb.calcite.Connections;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.CsvUtils;
-import io.dingodb.common.util.StackTraces;
+import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertResultSet;
@@ -37,12 +36,14 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -57,21 +58,30 @@ public class SqlHelper {
     private final Connection connection;
 
     public SqlHelper() throws Exception {
+        // Configure for local test.
         if (DingoConfiguration.instance() == null) {
-            System.out.println(StackTraces.lineNumber());
             DingoConfiguration.parse(
                 Objects.requireNonNull(SqlHelper.class.getResource("/config.yaml")).getPath()
             );
-            System.out.println(StackTraces.lineNumber());
         }
         Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         Services.NET.listenPort(FakeLocation.PORT);
-        connection = Connections.getConnection(MetaTestService.SCHEMA_NAME);
+        connection = getLocalConnection();
     }
 
     public SqlHelper(Connection connection) {
         this.connection = connection;
+    }
+
+    public static Connection getLocalConnection() throws ClassNotFoundException, SQLException, IOException {
+        Class.forName("io.dingodb.driver.DingoDriver");
+        Properties properties = new Properties();
+        properties.load(SqlHelper.class.getResourceAsStream("/test.properties"));
+        return DriverManager.getConnection(
+            DingoDriver.CONNECT_STRING_PREFIX,
+            properties
+        );
     }
 
     @Nonnull

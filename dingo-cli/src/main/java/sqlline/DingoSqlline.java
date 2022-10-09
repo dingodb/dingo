@@ -16,10 +16,14 @@
 
 package sqlline;
 
-import io.dingodb.calcite.Connections;
+import io.dingodb.calcite.DingoRootSchema;
 import lombok.experimental.Delegate;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
+import java.util.TimeZone;
 
 public class DingoSqlline {
 
@@ -40,7 +44,17 @@ public class DingoSqlline {
     }
 
     public void connect() throws SQLException {
-        setConnection(new SqllineDatabaseConnection(this.sqlLine, Connections.getConnection()));
+        try {
+            Class.forName("io.dingodb.driver.DingoDriver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        Properties properties = new Properties();
+        properties.setProperty("defaultSchema", DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        TimeZone timeZone = TimeZone.getDefault();
+        properties.setProperty("timeZone", timeZone.getID());
+        Connection connection = DriverManager.getConnection("jdbc:dingo:", properties);
+        setConnection(new SqllineDatabaseConnection(this.sqlLine, connection));
     }
 
 }

@@ -27,12 +27,14 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestSqlParametersWithDate {
-    private static SqlHelper sqlHelper;
+    protected static SqlHelper sqlHelper;
 
     @BeforeAll
     public static void setupAll() throws Exception {
@@ -49,27 +51,33 @@ public class TestSqlParametersWithDate {
         String tableName = sqlHelper.prepareTable("create table {table} ("
             + "id int,"
             + "data date,"
+            + "data1 time,"
+            + "data2 timestamp,"
             + "primary key(id)"
             + ")"
         );
-        String sql = "insert into " + tableName + " values(?, ?)";
+        String sql = "insert into " + tableName + " values(?, ?, ?, ?)";
         Connection connection = sqlHelper.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, 1);
             statement.setDate(2, new Date(0));
+            statement.setTime(3, new Time(0));
+            statement.setTimestamp(4, new Timestamp(0));
             int count = statement.executeUpdate();
             assertThat(count).isEqualTo(1);
             statement.setInt(1, 2);
             statement.setDate(2, new Date(86400000));
+            statement.setTime(3, new Time(3600000));
+            statement.setTimestamp(4, new Timestamp(1));
             count = statement.executeUpdate();
             assertThat(count).isEqualTo(1);
         }
         sqlHelper.queryTest(
             "select * from " + tableName,
-            new String[]{"id", "data"},
+            new String[]{"id", "data", "data1", "data2"},
             ImmutableList.of(
-                new Object[]{1, "1970-01-01"},
-                new Object[]{2, "1970-01-02"}
+                new Object[]{1, "1970-01-01", "08:00:00", new Timestamp(0)},
+                new Object[]{2, "1970-01-02", "09:00:00", new Timestamp(1)}
             )
         );
         sqlHelper.dropTable(tableName);

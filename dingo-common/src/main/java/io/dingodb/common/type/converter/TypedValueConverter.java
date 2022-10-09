@@ -91,6 +91,6 @@ public class TypedValueConverter extends ConverterWithCalendar {
     @Override
     public Timestamp convertTimestampFrom(@Nonnull Object value) {
         // Calcite's timestamp are shifted to UTC.
-        return unShiftedTimestamp(((Calendar) value).getTimeInMillis());
+        return unShiftedTimestamp((Long) value);
     }
 }
