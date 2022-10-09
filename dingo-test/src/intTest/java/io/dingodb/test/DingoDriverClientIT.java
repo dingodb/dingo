@@ -36,7 +36,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
-import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,17 +46,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DingoDriverClientIT {
     private static SqlHelper sqlHelper;
 
-    @BeforeAll
-    public static void setupAll() throws Exception {
+    public static Connection getConnection() throws ClassNotFoundException, SQLException, IOException {
         Class.forName("io.dingodb.driver.client.DingoDriverClient");
         Properties properties = new Properties();
-        properties.setProperty("defaultSchema", MetaTestService.SCHEMA_NAME);
-        TimeZone timeZone = TimeZone.getDefault();
-        properties.setProperty("timeZone", timeZone.getID());
-        Connection connection = DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + "url=las1:8765",
+        properties.load(DingoDriverClientIT.class.getResourceAsStream("/intTest.properties"));
+        String url = properties.getProperty("url");
+        return DriverManager.getConnection(
+            DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + url,
             properties
         );
+    }
+
+    @BeforeAll
+    public static void setupAll() throws Exception {
+        Connection connection = getConnection();
         sqlHelper = new SqlHelper(connection);
     }
 
