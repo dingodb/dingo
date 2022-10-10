@@ -24,6 +24,7 @@ import io.dingodb.mpu.instruction.Instructions;
 import io.dingodb.mpu.instruction.InternalInstructions;
 import io.dingodb.mpu.protocol.SelectReturn;
 import io.dingodb.mpu.protocol.SyncChannel;
+import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -301,8 +302,9 @@ public class Core {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        Instructions is = InstructionSetRegistry.instructions(instructions);
-        return is.process(storage.reader(), null, opcode, operand);
+        try (Reader reader = storage.reader()) {
+            return InstructionSetRegistry.instructions(instructions).process(reader, null, opcode, operand);
+        }
     }
 
 }
