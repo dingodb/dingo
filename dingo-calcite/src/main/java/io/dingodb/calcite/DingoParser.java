@@ -77,7 +77,6 @@ public class DingoParser {
             }
         });
     public static SqlValidator.Config VALIDATOR_CONFIG = SqlValidator.Config.DEFAULT
-        .withLenientOperatorLookup(true)
         .withConformance(PARSER_CONFIG.conformance());
 
     @Getter
