@@ -58,6 +58,15 @@ tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
 
 publishing {
     repositories {
@@ -86,7 +95,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.dingodb'
             artifactId = 'dingo-sdk'
-            artifacts = [ fatJar ]
+            artifacts = [ fatJar, javadocJar, sourcesJar ]
         }
     }
 }

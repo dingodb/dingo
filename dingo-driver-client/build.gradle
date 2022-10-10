@@ -28,6 +28,16 @@ dependencies {
     implementation project(':dingo-net-netty')
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 task fatJar(type: Jar) {
     classifier 'all'
     from(
@@ -65,7 +75,7 @@ publishing {
         }
         maven {
             name = "OSSRH"
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/content/repositories/releases/"
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
@@ -79,7 +89,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.dingodb'
             artifactId = 'dingo-driver-client'
-            artifacts = [ fatJar ]
+            artifacts = [ fatJar, sourcesJar, javadocJar ]
         }
     }
 }
