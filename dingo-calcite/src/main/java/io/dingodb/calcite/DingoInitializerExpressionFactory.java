@@ -39,19 +39,21 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 
 @Slf4j
 class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory {
     static DingoInitializerExpressionFactory INSTANCE = new DingoInitializerExpressionFactory();
+    private final DingoParser parser;
 
     private DingoInitializerExpressionFactory() {
+        parser = new DingoParser(new DingoParserContext(DingoRootSchema.DEFAULT_SCHEMA_NAME));
     }
 
-    private static SqlNode validateExprWithRowType(
+    private SqlNode validateExprWithRowType(
         @Nonnull InitializerContext context,
         RelDataType rowType,
         SqlNode expr
@@ -80,7 +82,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             rowType
         );
         SqlValidator validator = SqlValidatorUtil.newValidator(
-            rexBuilder.getOpTab(),
+            parser.getSqlValidator().getOperatorTable(),
             catalogReader,
             typeFactory,
             DingoParser.VALIDATOR_CONFIG
