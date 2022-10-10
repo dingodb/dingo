@@ -5,6 +5,9 @@ plugins {
     id 'maven-publish'
 }
 
+apply plugin: 'maven'
+apply plugin: 'signing'
+
 dependencies {
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
@@ -58,23 +61,44 @@ tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+project.gradle.taskGraph.whenReady { graph ->
+    project.tasks.findAll().forEach { task ->
+        if (task.name.contains("signArchives")) {
+            task.enabled = false
+        }
+    }
+}
+
+signing {
+    sign configurations.archives
+}
 
 publishing {
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/dingodb/dingo")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
-
-        maven {
             name = "OSSRH"
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/content/repositories/releases/"
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            /**
+             * will manually release the artifactory
+             */
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : "";
+
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
                 password = System.getenv("MAVEN_TOKEN")
@@ -86,7 +110,48 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.dingodb'
             artifactId = 'dingo-sdk'
-            artifacts = [ fatJar ]
+            artifacts = [ fatJar, javadocJar, sourcesJar ]
+        }
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'dingo-sdk'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'A sdk library to do operation on dingo cluster'
+                url 'http://www.dingodb.datacanvas.com/'
+
+                scm {
+                    connection 'scm:svn:http://foo.googlecode.com/svn/trunk/'
+                    developerConnection 'scm:svn:https://foo.googlecode.com/svn/trunk/'
+                    url 'http://foo.googlecode.com/svn/trunk/'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'dingodb'
+                        name 'DingoDB develop team'
+                        email 'dingodb@zetyun.com'
+                    }
+                }
+            }
         }
     }
 }

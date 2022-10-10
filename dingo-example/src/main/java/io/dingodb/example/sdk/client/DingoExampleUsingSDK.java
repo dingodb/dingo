@@ -183,9 +183,16 @@ public class DingoExampleUsingSDK {
     }
 
     public static void delete(String tableName) throws Exception {
+        long startTime = System.currentTimeMillis();
         for (int i = 0; i < insertTotalCnt; i++) {
             Object[] key = new Object[]{i};
-            System.out.println("delete key: " + Arrays.toString(key));
+            long endTime = System.currentTimeMillis();
+            if (i != 0 && i % 10000 == 0) {
+                System.out.println("AvgTimeCost:" + (endTime - startTime) * 1.0 / i
+                    + ", LoopCnt:" + i
+                    + ", TotalCost:" + (endTime - startTime) / 1000 + "s"
+                );
+            }
             dingoClient.delete(tableName, key);
         }
     }
