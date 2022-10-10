@@ -49,7 +49,6 @@ import org.rocksdb.RestoreOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.SizeApproximationFlag;
 import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Status;
@@ -78,7 +77,10 @@ import static io.dingodb.mpu.Constant.API;
 import static io.dingodb.mpu.Constant.CF_DEFAULT;
 import static io.dingodb.mpu.Constant.CF_META;
 import static io.dingodb.mpu.Constant.CLOCK_K;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.rocksdb.SizeApproximationFlag.INCLUDE_FILES;
+import static org.rocksdb.SizeApproximationFlag.INCLUDE_MEMTABLES;
 
 @Slf4j
 public class RocksStorage implements Storage {
@@ -369,10 +371,12 @@ public class RocksStorage implements Storage {
                 }
                 if (start != null && limit != null) {
                     return Arrays.stream(
-                        db.getApproximateSizes(Collections.singletonList(new Range(start, limit)),
-                        SizeApproximationFlag.INCLUDE_FILES, SizeApproximationFlag.INCLUDE_MEMTABLES
-                    )).sum();
+                        db.getApproximateSizes(singletonList(new Range(start, limit)), INCLUDE_FILES, INCLUDE_MEMTABLES)
+                    ).sum();
                 }
+            } finally {
+                readOptions.setSnapshot(null);
+                db.releaseSnapshot(snapshot);
             }
         }
         return 0;

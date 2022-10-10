@@ -189,6 +189,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     @Override
     public void close() {
+        readOptions.setSnapshot(null);
+        db.releaseSnapshot(snapshot);
         readOptions.close();
         snapshot.close();
     }
