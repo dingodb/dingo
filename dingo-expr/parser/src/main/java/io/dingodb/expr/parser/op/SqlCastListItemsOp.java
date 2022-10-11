@@ -28,14 +28,13 @@ import javax.annotation.Nonnull;
 public final class SqlCastListItemsOp extends Op {
     public static final String FUN_NAME = "CAST_LIST_ITEMS";
 
-    private SqlCastListItemsOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private SqlCastListItemsOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static SqlCastListItemsOp fun() {
-        return new SqlCastListItemsOp(OpType.FUN);
+        return new SqlCastListItemsOp();
     }
 
     @Nonnull

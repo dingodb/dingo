@@ -20,7 +20,6 @@ import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -198,7 +197,6 @@ public class TableWithDefaultValueTest {
         "curdate()",
         "CURRENT_DATE()",
     })
-    @Disabled
     public void testDefaultCurrentDate(String fun) throws SQLException {
         String tableName = SqlHelper.randomTableName();
         String sql = "create table " + tableName + " (\n"
@@ -226,7 +224,6 @@ public class TableWithDefaultValueTest {
         "curtime()",
         "CURRENT_TIME()"
     })
-    @Disabled
     public void testDefaultCurrentTime(String fun) throws Exception {
         String tableName = SqlHelper.randomTableName();
         String sql = "create table " + tableName + " (\n"
@@ -453,7 +450,6 @@ public class TableWithDefaultValueTest {
     }
 
     @Test
-    @Disabled
     public void testCase14() throws Exception {
         String tableName = "testCase14";
         String sql = "create table " + tableName + " (\n"

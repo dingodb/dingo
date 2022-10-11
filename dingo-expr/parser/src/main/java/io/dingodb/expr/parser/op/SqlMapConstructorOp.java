@@ -25,14 +25,13 @@ import javax.annotation.Nonnull;
 public final class SqlMapConstructorOp extends Op {
     public static final String FUN_NAME = "MAP";
 
-    private SqlMapConstructorOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private SqlMapConstructorOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static SqlMapConstructorOp fun() {
-        return new SqlMapConstructorOp(OpType.FUN);
+        return new SqlMapConstructorOp();
     }
 
     @Override

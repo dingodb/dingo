@@ -35,7 +35,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestWithNull {
     @Nonnull
-    private static Stream<Arguments> getParameters() throws ParseException {
+    private static Stream<Arguments> getParameters() {
         return Stream.of(
             // value
             arguments("null", null),

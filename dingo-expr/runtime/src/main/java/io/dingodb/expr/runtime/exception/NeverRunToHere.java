@@ -14,30 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime;
+package io.dingodb.expr.runtime.exception;
 
-import java.io.Serializable;
-import javax.annotation.Nullable;
+public class NeverRunToHere extends IllegalStateException {
+    private static final long serialVersionUID = 5191376904301466523L;
 
-public interface EvalContext extends Serializable {
-    /**
-     * Get the value of a variable by its id.
-     *
-     * @param id the id of the variable
-     * @return the value of the variable
-     */
-    Object get(Object id);
-
-    /**
-     * Set the value of a variable by its id.
-     *
-     * @param id    the id of the variable
-     * @param value the new value of the variable
-     */
-    void set(Object id, Object value);
-
-    @Nullable
-    default EvalEnv getEnv() {
-        return null;
+    public NeverRunToHere(String msg) {
+        super("Should never run to here, often means BUGS: " + msg);
     }
 }

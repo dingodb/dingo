@@ -17,13 +17,9 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.utils.RexLiteralUtils;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.ExprConverter;
 import io.dingodb.exec.expr.SqlExprCompileContext;
-import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.parser.exception.UndefinedFunctionName;
 import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
@@ -54,7 +50,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class RexConverter extends RexVisitorImpl<Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
@@ -65,35 +60,6 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
 
     private RexConverter() {
         super(true);
-    }
-
-    @Nullable
-    public static Object calcValue(
-        RexNode rexNode,
-        @Nonnull DingoType targetType,
-        Object[] tuple,
-        DingoType tupleType
-    ) throws DingoExprCompileException, FailGetEvaluator {
-        Expr expr = convert(rexNode);
-        return targetType.convertFrom(
-            expr.compileIn(new SqlExprCompileContext(tupleType)).eval(new SqlExprEvalContext(tuple)),
-            ExprConverter.INSTANCE
-        );
-    }
-
-    @Nonnull
-    public static Object[] calcValues(
-        @Nonnull List<RexNode> rexNodeList,
-        @Nonnull DingoType targetType,
-        Object[] tuple,
-        DingoType tupleType
-    ) throws DingoExprCompileException, FailGetEvaluator {
-        int size = rexNodeList.size();
-        Object[] result = new Object[size];
-        for (int i = 0; i < size; ++i) {
-            result[i] = calcValue(rexNodeList.get(i), targetType.getChild(i), tuple, tupleType);
-        }
-        return result;
     }
 
     private static int typeCodeOf(@Nonnull RelDataType type) {

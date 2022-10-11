@@ -16,28 +16,13 @@
 
 package io.dingodb.expr.runtime;
 
-import java.io.Serializable;
-import javax.annotation.Nullable;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface EvalContext extends Serializable {
-    /**
-     * Get the value of a variable by its id.
-     *
-     * @param id the id of the variable
-     * @return the value of the variable
-     */
-    Object get(Object id);
+import java.util.TimeZone;
 
-    /**
-     * Set the value of a variable by its id.
-     *
-     * @param id    the id of the variable
-     * @param value the new value of the variable
-     */
-    void set(Object id, Object value);
-
-    @Nullable
-    default EvalEnv getEnv() {
-        return null;
-    }
+@Getter
+@Setter
+public class EvalEnv {
+    private TimeZone timeZone;
 }

@@ -19,6 +19,7 @@ package io.dingodb.expr.parser.op;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class Op implements Expr {
     @Getter
@@ -68,22 +70,25 @@ public abstract class Op implements Expr {
     }
 
     @Nonnull
-    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected RtExpr evalNullConstEnv(
+        @Nonnull RtExpr[] rtExprArray,
+        @Nullable EvalEnv env
+    ) throws DingoExprCompileException {
         if (evalNull(rtExprArray)) {
             return RtNull.INSTANCE;
         }
-        return evalConst(rtExprArray);
+        return evalConst(rtExprArray, env);
     }
 
     protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
         return Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull);
     }
 
-    protected RtExpr evalConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected RtExpr evalConst(@Nonnull RtExpr[] rtExprArray, @Nullable EvalEnv env) throws DingoExprCompileException {
         try {
             RtOp rtOp = createRtOp(rtExprArray);
             if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
-                return new RtConst(rtOp.eval(null));
+                return new RtConst(rtOp.eval(new ConstEvalContext(env)));
             }
             return rtOp;
         } catch (FailGetEvaluator e) {
@@ -93,9 +98,9 @@ public abstract class Op implements Expr {
 
     @Nonnull
     @Override
-    public RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
+    public RtExpr compileIn(@Nullable CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
-        return evalNullConst(rtExprArray);
+        return evalNullConstEnv(rtExprArray, ctx != null ? ctx.getEnv() : null);
     }
 
     /**

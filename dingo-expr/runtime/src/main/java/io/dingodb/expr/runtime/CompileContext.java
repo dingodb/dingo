@@ -51,4 +51,13 @@ public interface CompileContext {
         Object id = getId();
         return id != null ? new RtVar(id, getTypeCode()) : null;
     }
+
+    /**
+     * Get an {@link EvalEnv} to eval const.
+     *
+     * @return the {@link EvalEnv}
+     */
+    default EvalEnv getEnv() {
+        return null;
+    }
 }

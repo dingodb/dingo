@@ -76,8 +76,8 @@ public class TestSqlParametersWithDate {
             "select * from " + tableName,
             new String[]{"id", "data", "data1", "data2"},
             ImmutableList.of(
-                new Object[]{1, "1970-01-01", "08:00:00", new Timestamp(0)},
-                new Object[]{2, "1970-01-02", "09:00:00", new Timestamp(1)}
+                new Object[]{1, new Date(0).toString(), new Time(0).toString(), new Timestamp(0)},
+                new Object[]{2, new Date(86400000).toString(), new Time(3600000).toString(), new Timestamp(1)}
             )
         );
         sqlHelper.dropTable(tableName);

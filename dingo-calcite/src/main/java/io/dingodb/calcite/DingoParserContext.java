@@ -20,23 +20,37 @@ import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Properties;
+import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
 
 // These are static for every sql parsing.
-public final class DingoParserContext {
+public final class DingoParserContext implements Context {
     @Getter
     private final CalciteSchema rootSchema;
     @Getter
     private final String defaultSchemaName;
+    @Getter
+    private final TimeZone timeZone;
 
     public DingoParserContext(@Nonnull String defaultSchemaName) {
+        this(defaultSchemaName, null);
+    }
+
+    public DingoParserContext(@Nonnull String defaultSchemaName, @Nullable Properties options) {
         this.defaultSchemaName = defaultSchemaName;
+
+        String timeZoneId = options != null ? options.getProperty("timeZone") : null;
+        timeZone = timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault();
+
         rootSchema = CalciteSchema.createRootSchema(
             true,
             false,
@@ -60,5 +74,13 @@ public final class DingoParserContext {
 
     public CalciteSchema getDefaultSchema() {
         return rootSchema.getSubSchema(defaultSchemaName, true);
+    }
+
+    @Override
+    public <C> @Nullable C unwrap(@Nonnull Class<C> clazz) {
+        if (clazz.isInstance(timeZone)) {
+            return clazz.cast(timeZone);
+        }
+        return null;
     }
 }
