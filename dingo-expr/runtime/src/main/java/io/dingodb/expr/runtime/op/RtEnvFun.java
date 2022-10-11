@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime.op;
 
+import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
@@ -23,17 +24,27 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class RtFun extends RtEnvFun {
-    private static final long serialVersionUID = -2628177417370658354L;
+public abstract class RtEnvFun extends RtOp {
+    private static final long serialVersionUID = -6708361856536230351L;
 
-    protected RtFun(@Nonnull RtExpr[] paras) {
+    protected RtEnvFun(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
-    @Override
-    protected Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator {
-        return fun(values);
-    }
+    protected abstract Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator;
 
-    protected abstract Object fun(@Nonnull Object[] values) throws FailGetEvaluator;
+    @Nullable
+    @Override
+    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+        Object[] paraValues = new Object[paras.length];
+        int i = 0;
+        for (RtExpr para : paras) {
+            Object v = para.eval(etx);
+            if (v == null) {
+                return null;
+            }
+            paraValues[i++] = v;
+        }
+        return envFun(paraValues, etx != null ? etx.getEnv() : null);
+    }
 }

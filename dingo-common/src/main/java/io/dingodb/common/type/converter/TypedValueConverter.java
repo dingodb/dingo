@@ -58,6 +58,15 @@ public class TypedValueConverter extends ConverterWithCalendar {
         throw NEVER_CONVERT_BACK;
     }
 
+    @Override
+    public Integer convertIntegerFrom(@Nonnull Object value) {
+        // Values transferred from remote client are Longs.
+        if (value instanceof Long) {
+            return ((Long) value).intValue();
+        }
+        return super.convertIntegerFrom(value);
+    }
+
     /**
      * Convert from an integer of days to a {@link Date}. See {@link org.apache.calcite.avatica.remote.TypedValue}.
      *

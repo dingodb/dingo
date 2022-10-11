@@ -25,17 +25,16 @@ import io.dingodb.expr.runtime.op.logical.RtIsNull;
 
 import javax.annotation.Nonnull;
 
-public final class IsNullOp extends Op {
+public final class IsNullOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "IS_NULL";
 
-    private IsNullOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private IsNullOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static IsNullOp fun() {
-        return new IsNullOp(OpType.FUN);
+        return new IsNullOp();
     }
 
     @Nonnull

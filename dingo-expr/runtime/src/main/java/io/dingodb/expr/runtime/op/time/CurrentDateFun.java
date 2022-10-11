@@ -17,9 +17,11 @@
 package io.dingodb.expr.runtime.op.time;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.exception.NeverRunToHere;
+import io.dingodb.expr.runtime.op.RtEnvFun;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -30,28 +32,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 @Slf4j
-public class CurrentDateFun extends RtFun {
+public class CurrentDateFun extends RtEnvFun {
     private static final long serialVersionUID = -6855307131187820249L;
 
     public CurrentDateFun(@Nonnull RtExpr[] paras) {
         super(paras);
     }
 
+    @Override
+    protected Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) {
+        return env != null ? DateTimeUtils.currentDate(env.getTimeZone()) : DateTimeUtils.currentDate();
+    }
+
     @Nonnull
     public static Date getCurrentDate() {
-        return DateTimeUtils.currentDate();
+        throw new NeverRunToHere("should never be called.");
     }
 
     @Override
     public int typeCode() {
         return TypeCode.DATE;
-    }
-
-    @Override
-    protected Object fun(@Nonnull Object[] values) {
-        return getCurrentDate();
     }
 
     @AutoService(DingoFuncProvider.class)

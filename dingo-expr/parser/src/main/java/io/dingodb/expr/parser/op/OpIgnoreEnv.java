@@ -14,26 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op;
+package io.dingodb.expr.parser.op;
 
+import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class RtFun extends RtEnvFun {
-    private static final long serialVersionUID = -2628177417370658354L;
-
-    protected RtFun(@Nonnull RtExpr[] paras) {
-        super(paras);
+public abstract class OpIgnoreEnv extends Op {
+    protected OpIgnoreEnv(OpType type) {
+        super(type);
     }
 
+    protected OpIgnoreEnv(String name) {
+        super(name);
+    }
+
+    protected abstract RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException;
+
+    @Nonnull
     @Override
-    protected Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator {
-        return fun(values);
+    protected RtExpr evalNullConstEnv(
+        @Nonnull RtExpr[] rtExprArray,
+        @Nullable EvalEnv env
+    ) throws DingoExprCompileException {
+        return evalNullConst(rtExprArray);
     }
-
-    protected abstract Object fun(@Nonnull Object[] values) throws FailGetEvaluator;
 }

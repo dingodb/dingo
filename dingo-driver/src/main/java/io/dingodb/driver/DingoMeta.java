@@ -242,9 +242,8 @@ public class DingoMeta extends MetaImpl {
         final StatementHandle sh = createStatement(ch);
         DingoConnection dingoConnection = (DingoConnection) connection;
         try {
-            DingoConnection.DingoContext context = dingoConnection.createContext();
-            DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
-            sh.signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql, context);
+            DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+            sh.signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql);
         } catch (SqlParseException e) {
             throw new RuntimeException(e);
         }
@@ -272,11 +271,10 @@ public class DingoMeta extends MetaImpl {
     ) {
         final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
-        DingoConnection.DingoContext context = dingoConnection.createContext();
-        DingoDriverParser parser = new DingoDriverParser(context.getParserContext());
+        DingoDriverParser parser = new DingoDriverParser(dingoConnection);
         try {
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            final Signature signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql, context);
+            final Signature signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);

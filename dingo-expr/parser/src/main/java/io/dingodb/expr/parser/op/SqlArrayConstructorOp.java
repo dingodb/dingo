@@ -25,14 +25,13 @@ import javax.annotation.Nonnull;
 public final class SqlArrayConstructorOp extends Op {
     public static final String FUN_NAME = "ARRAY";
 
-    private SqlArrayConstructorOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private SqlArrayConstructorOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static SqlArrayConstructorOp fun() {
-        return new SqlArrayConstructorOp(OpType.FUN);
+        return new SqlArrayConstructorOp();
     }
 
     @Override

@@ -22,6 +22,7 @@ import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -91,8 +93,12 @@ public class DingoParser {
     private final CalciteCatalogReader catalogReader;
 
     public DingoParser(@Nonnull DingoParserContext context) {
+        this(context, null);
+    }
+
+    public DingoParser(@Nonnull DingoParserContext context, @Nullable CalciteConnectionConfig config) {
         this.context = context;
-        planner = new VolcanoPlanner();
+        planner = new VolcanoPlanner(context);
         // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         // Defines the "order-by" traits.
@@ -107,15 +113,18 @@ public class DingoParser {
             )
         ));
 
-        Properties properties = new Properties();
-        properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
-            String.valueOf(PARSER_CONFIG.caseSensitive()));
-
+        if (config == null) {
+            config = new CalciteConnectionConfigImpl(new Properties());
+        }
+        config = ((CalciteConnectionConfigImpl) config).set(
+            CalciteConnectionProperty.CASE_SENSITIVE,
+            String.valueOf(PARSER_CONFIG.caseSensitive())
+        );
         catalogReader = new CalciteCatalogReader(
             context.getRootSchema(),
             Collections.singletonList(context.getDefaultSchemaName()),
             context.getTypeFactory(),
-            new CalciteConnectionConfigImpl(properties)
+            config
         );
 
         // CatalogReader is also serving as SqlOperatorTable.

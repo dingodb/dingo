@@ -18,6 +18,8 @@ package io.dingodb.exec.expr;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.EvalEnv;
+import lombok.Getter;
 import lombok.ToString;
 
 import javax.annotation.Nonnull;
@@ -28,6 +30,8 @@ public class SqlExprCompileContext implements CompileContext {
     public static final String SQL_DYNAMIC_VAR_NAME = "_P";
     public static final String SQL_TUPLE_VAR_NAME = "_";
 
+    @Getter
+    private final EvalEnv env;
     private final DingoType tupleType;
     private final DingoType parasType;
 
@@ -36,6 +40,11 @@ public class SqlExprCompileContext implements CompileContext {
     }
 
     public SqlExprCompileContext(DingoType tupleType, @Nullable DingoType parasType) {
+        this(tupleType, parasType, null);
+    }
+
+    public SqlExprCompileContext(DingoType tupleType, @Nullable DingoType parasType, @Nullable EvalEnv env) {
+        this.env = env;
         this.tupleType = tupleType;
         this.parasType = parasType;
         // Reset paras id to negative numbers.

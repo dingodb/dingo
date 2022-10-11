@@ -270,10 +270,14 @@ public final class DateTimeUtils {
 
     @Nonnull
     public static Date currentDate() {
+        return currentDate(TimeZone.getDefault());
+    }
+
+    @Nonnull
+    public static Date currentDate(@Nonnull TimeZone timeZone) {
         long millis = System.currentTimeMillis();
-        TimeZone timeZone = TimeZone.getDefault();
         millis = Math.floorDiv(
-            millis + timeZone.getRawOffset(),
+            millis + timeZone.getOffset(millis),
             DateTimeUtils.ONE_DAY_IN_MILLI
         ) * DateTimeUtils.ONE_DAY_IN_MILLI;
         return new Date(millis);
@@ -281,9 +285,16 @@ public final class DateTimeUtils {
 
     @Nonnull
     public static Time currentTime() {
+        return currentTime(TimeZone.getDefault());
+    }
+
+    @Nonnull
+    public static Time currentTime(@Nonnull TimeZone timeZone) {
         long millis = System.currentTimeMillis();
-        TimeZone timeZone = TimeZone.getDefault();
-        millis = Math.floorMod(millis + timeZone.getRawOffset(), DateTimeUtils.ONE_DAY_IN_MILLI);
+        millis = Math.floorMod(
+            millis + timeZone.getOffset(millis),
+            DateTimeUtils.ONE_DAY_IN_MILLI
+        );
         return new Time(millis);
     }
 

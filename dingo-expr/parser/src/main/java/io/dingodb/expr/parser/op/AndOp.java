@@ -28,12 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class AndOp extends Op {
+public final class AndOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "AND";
 
     private AndOp(OpType type) {
         super(type);
-        name = FUN_NAME;
+    }
+
+    private AndOp(String name) {
+        super(name);
     }
 
     @Nonnull
@@ -43,7 +46,7 @@ public final class AndOp extends Op {
 
     @Nonnull
     public static AndOp fun() {
-        return new AndOp(OpType.FUN);
+        return new AndOp(FUN_NAME);
     }
 
     @Nonnull

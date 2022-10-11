@@ -18,7 +18,6 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
-import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -61,8 +60,11 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
-    public DingoDriverParser(DingoParserContext context) {
-        super(context);
+    private final DingoConnection connection;
+
+    public DingoDriverParser(@Nonnull DingoConnection connection) {
+        super(connection.getContext(), connection.config());
+        this.connection = connection;
         PARSER_CONFIG = PARSER_CONFIG.withParserFactory(DingoDdlParserFactory.INSTANCE);
     }
 
@@ -177,14 +179,13 @@ public final class DingoDriverParser extends DingoParser {
     public Meta.Signature parseQuery(
         JobManager jobManager,
         Id jobId,
-        String sql,
-        DingoConnection.DingoContext context
+        String sql
     ) throws SqlParseException {
         MetaCache.initTableDefinitions();
         SqlNode sqlNode = parse(sql);
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
-            ddlExecutor.executeDdl(context, sqlNode);
+            ddlExecutor.executeDdl(connection, sqlNode);
             return new DingoSignature(
                 ImmutableList.of(),
                 sql,
@@ -192,7 +193,7 @@ public final class DingoDriverParser extends DingoParser {
                 Meta.StatementType.OTHER_DDL
             );
         }
-        JavaTypeFactory typeFactory = context.getTypeFactory();
+        JavaTypeFactory typeFactory = connection.getTypeFactory();
         SqlExplain explain = null;
         if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
             explain = (SqlExplain) sqlNode;
@@ -219,8 +220,8 @@ public final class DingoDriverParser extends DingoParser {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
-        CalciteSchema rootSchema = context.getRootSchema();
-        CalciteSchema defaultSchema = rootSchema.getSubSchema(context.getDefaultSchemaPath().get(0), true);
+        CalciteSchema rootSchema = connection.getRootSchema();
+        CalciteSchema defaultSchema = rootSchema.getSubSchema(connection.getDefaultSchemaPath().get(0), true);
         if (defaultSchema == null) {
             throw new RuntimeException("No default schema is found.");
         }

@@ -29,12 +29,15 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-public final class OrOp extends Op {
+public final class OrOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "OR";
 
     private OrOp(OpType type) {
         super(type);
-        name = FUN_NAME;
+    }
+
+    private OrOp(String name) {
+        super(name);
     }
 
     @Nonnull
@@ -44,7 +47,7 @@ public final class OrOp extends Op {
 
     @Nonnull
     public static OrOp fun() {
-        return new OrOp(OpType.FUN);
+        return new OrOp(FUN_NAME);
     }
 
     @Nonnull

@@ -52,7 +52,7 @@ public final class IndexOp extends OpWithEvaluator {
             }
             throw new InvalidIndex(rtExprArray[1]);
         }
-        return evalNullConst(rtExprArray);
+        return evalNullConstEnv(rtExprArray, ctx != null ? ctx.getEnv() : null);
     }
 
     @Override

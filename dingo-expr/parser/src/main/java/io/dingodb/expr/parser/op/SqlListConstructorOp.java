@@ -25,14 +25,13 @@ import javax.annotation.Nonnull;
 public final class SqlListConstructorOp extends Op {
     public static final String FUN_NAME = "LIST";
 
-    private SqlListConstructorOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private SqlListConstructorOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static SqlListConstructorOp fun() {
-        return new SqlListConstructorOp(OpType.FUN);
+        return new SqlListConstructorOp();
     }
 
     @Override

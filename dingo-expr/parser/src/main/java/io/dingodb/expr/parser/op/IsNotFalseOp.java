@@ -26,17 +26,16 @@ import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
 import javax.annotation.Nonnull;
 
-public final class IsNotFalseOp extends Op {
+public final class IsNotFalseOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "IS_NOT_FALSE";
 
-    private IsNotFalseOp(OpType type) {
-        super(type);
-        name = FUN_NAME;
+    private IsNotFalseOp() {
+        super(FUN_NAME);
     }
 
     @Nonnull
     public static IsNotFalseOp fun() {
-        return new IsNotFalseOp(OpType.FUN);
+        return new IsNotFalseOp();
     }
 
     @Nonnull

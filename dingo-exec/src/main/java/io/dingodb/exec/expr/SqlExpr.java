@@ -44,7 +44,8 @@ public class SqlExpr {
     ) {
         this.exprString = exprString;
         this.type = type;
-        this.etx = new SqlExprEvalContext();
+        // TODO: Runtime env
+        this.etx = new SqlExprEvalContext(null);
     }
 
     public void compileIn(DingoType tupleType, DingoType parasType) {

@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.op;
+package io.dingodb.expr.parser.op;
 
+import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.EvalEnv;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import io.dingodb.expr.runtime.exception.NeverRunToHere;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+@RequiredArgsConstructor
+public class ConstEvalContext implements EvalContext {
+    private static final long serialVersionUID = -4297360162936836019L;
 
-public abstract class RtFun extends RtEnvFun {
-    private static final long serialVersionUID = -2628177417370658354L;
+    @Getter
+    private final EvalEnv env;
 
-    protected RtFun(@Nonnull RtExpr[] paras) {
-        super(paras);
+    @Override
+    public Object get(Object id) {
+        throw new NeverRunToHere("Only constants are available in this context.");
     }
 
     @Override
-    protected Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator {
-        return fun(values);
+    public void set(Object id, Object value) {
+        throw new NeverRunToHere("Only constants are available in this context.");
     }
-
-    protected abstract Object fun(@Nonnull Object[] values) throws FailGetEvaluator;
 }
