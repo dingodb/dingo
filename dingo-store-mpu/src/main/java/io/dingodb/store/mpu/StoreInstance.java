@@ -16,13 +16,17 @@
 
 package io.dingodb.store.mpu;
 
+
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.DingoKeyValueCodec;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.FileUtils;
+import io.dingodb.common.util.UdfUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.mpu.core.CoreMeta;
@@ -30,18 +34,25 @@ import io.dingodb.mpu.core.MirrorProcessingUnit;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.mpu.storage.rocks.RocksUtils;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
 import io.dingodb.store.mpu.instruction.OpInstructions;
 import lombok.extern.slf4j.Slf4j;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -51,11 +62,14 @@ import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 @Slf4j
 public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
+    private final CommonId id;
     public final MirrorProcessingUnit mpu;
     public final Path path;
     public Core core;
-
     private int ttl;
+    private Map<String, Globals> globalsMap = new HashMap<>();
+    private Map<String, TableDefinition> definitionMap = new HashMap<>();
+    private Map<String, KeyValueCodec> codecMap = new HashMap<>();
 
     public StoreInstance(CommonId id, Path path) {
         this(id, path, "", "", -1);
@@ -63,6 +77,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile,
                          final int ttl) {
+        this.id = id;
         this.path = path.toAbsolutePath();
         this.ttl = ttl;
         this.mpu = new MirrorProcessingUnit(id, this.path, dbRocksOptionsFile, logRocksOptionsFile, this.ttl);
@@ -264,5 +279,51 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         return core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+    }
+
+    @Override
+    public KeyValue udfGet(byte[] primaryKey, String udfName, String functionName, int version) {
+        try {
+            KeyValue keyValue = new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
+            String cacheKey = udfName + "-" + version;
+            MetaServiceApi metaServiceApi
+                = ApiRegistry.getDefault().proxy(MetaServiceApi.class, CoordinatorConnector.defaultConnector());
+            if (!codecMap.containsKey(cacheKey)) {
+                TableDefinition tableDefinition = metaServiceApi.getTableDefinition(id);
+                DingoKeyValueCodec codec =
+                    new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+                definitionMap.put(cacheKey, tableDefinition);
+                codecMap.put(cacheKey, codec);
+            }
+            KeyValueCodec codec = codecMap.get(cacheKey);
+            Object[] record = codec.decode(keyValue);
+            TableDefinition definition = definitionMap.get(cacheKey);
+            LuaTable table = UdfUtils.getLuaTable(definition.getDingoSchema(), record);
+            if (!globalsMap.containsKey(cacheKey)) {
+                String function = metaServiceApi.getUDF(id, udfName, version);
+                if (function != null) {
+                    Globals globals = JsePlatform.standardGlobals();
+                    globals.load(function).call();
+                    globalsMap.put(cacheKey, globals);
+                } else {
+                    definitionMap.remove(cacheKey);
+                    codecMap.remove(cacheKey);
+                    throw new RuntimeException("UDF not register");
+                }
+            }
+            Globals globals = globalsMap.get(cacheKey);
+            LuaValue udf = globals.get(LuaValue.valueOf(functionName));
+            LuaValue result = udf.call(table);
+            record = UdfUtils.getObject(definition.getDingoSchema(), result);
+            return codec.encode(record);
+        } catch (Exception e) {
+            throw new RuntimeException("UDF ERROR:", e);
+        }
+    }
+
+    @Override
+    public boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
+        KeyValue updatedKeyValue = udfGet(primaryKey, udfName, functionName, version);
+        return upsertKeyValue(updatedKeyValue);
     }
 }
