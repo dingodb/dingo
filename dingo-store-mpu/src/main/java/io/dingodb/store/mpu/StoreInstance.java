@@ -216,6 +216,15 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     @Override
+    public long countDeleteByRange(byte[] startKey, byte[] endKey) {
+        CompletableFuture<Long> count = CompletableFuture.supplyAsync(
+            () -> core.view(KVInstructions.id, KVInstructions.COUNT_OC)
+        );
+        core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+        return count.join();
+    }
+
+    @Override
     public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
         return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }

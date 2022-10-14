@@ -199,6 +199,21 @@ public class RaftStoreInstance implements StoreInstance {
         return parts.get(part.getId()).countOrDeletePart(startKey, doDeleting);
     }
 
+    @Override
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        isValidRangeKey(startPrimaryKey, endPrimaryKey);
+        Part part = getPart(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPart(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+        return parts.get(part.getId()).countDeleteByRange(startPrimaryKey, endPrimaryKey);
+    }
+
     public void onPartAvailable(RaftStoreInstancePart part) {
         log.info("The part {} available change {}", part.getId(), part.getStateMachine().isAvailable());
         if (part.getStateMachine().isAvailable()) {

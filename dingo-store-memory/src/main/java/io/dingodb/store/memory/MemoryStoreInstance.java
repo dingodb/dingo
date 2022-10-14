@@ -71,6 +71,19 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (endPrimaryKey == null) {
+            endPrimaryKey =db.lastKey();
+        }
+        TreeMap<byte[], byte[]> subMap = getTreeMapByRange(
+            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
+        long count = subMap.size();
+        delete(startPrimaryKey, endPrimaryKey);
+
+        return count;
+    }
+
+    @Override
     public boolean exist(byte[] primaryKey) {
         return db.containsKey(primaryKey);
     }

@@ -245,4 +245,14 @@ public final class RaftStoreInstancePart implements StoreInstance {
         }
         return count.join();
     }
+
+    @Override
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        }
+        CompletableFuture<Long> count = raftStore.count(startPrimaryKey, endPrimaryKey);
+        raftStore.delete(startPrimaryKey, endPrimaryKey).join();
+        return count.join();
+    }
 }

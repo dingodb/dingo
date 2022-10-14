@@ -30,6 +30,8 @@ public interface Part {
     @Nonnull
     Iterator<Object[]> getIteratorByRange(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd);
 
+    long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey);
+
     boolean insert(@Nonnull Object[] tuple);
 
     void upsert(@Nonnull Object[] tuple);

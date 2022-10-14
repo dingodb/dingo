@@ -84,15 +84,28 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         @Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd
     ) {
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
-
         LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
-        for (ComparableByteArray key : ranges) {
-            if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)
-                && ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
-                keySet.add(key);
+        // Support > < condition when deleting
+        if (startKey == null) {
+            for (ComparableByteArray key : ranges) {
+                if (ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
+                    keySet.add(key);
+                }
+            }
+        } else if (endKey == null) {
+            for (ComparableByteArray key : ranges) {
+                if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)) {
+                    keySet.add(key);
+                }
+            }
+        } else {
+            for (ComparableByteArray key : ranges) {
+                if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)
+                    && ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
+                    keySet.add(key);
+                }
             }
         }
-
         LinkedHashSet<ComparableByteArray> subSet = keySet;
 
         byte[] start = startKey;
