@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
+import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
@@ -76,4 +77,6 @@ public interface DingoRelVisitor<T> {
     T visit(@Nonnull DingoPartCountDelete rel);
 
     T visit(@Nonnull DingoPartRangeScan rel);
+
+    T visit(@Nonnull DingoPartRangeDelete rel);
 }

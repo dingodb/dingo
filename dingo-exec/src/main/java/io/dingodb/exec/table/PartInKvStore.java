@@ -87,6 +87,11 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return store.countDeleteByRange(startPrimaryKey, endPrimaryKey);
+    }
+
+    @Override
     public boolean insert(@Nonnull Object[] tuple) {
         final long startTime = System.currentTimeMillis();
         try {

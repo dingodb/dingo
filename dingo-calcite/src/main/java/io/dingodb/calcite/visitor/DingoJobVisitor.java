@@ -28,6 +28,7 @@ import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartModify;
+import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
@@ -70,6 +71,7 @@ import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.PartCountOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
+import io.dingodb.exec.operator.PartRangeDeleteOperator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.PartScanOperator;
 import io.dingodb.exec.operator.PartUpdateOperator;
@@ -760,6 +762,37 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             }
         }
 
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@Nonnull DingoPartRangeDelete rel) {
+        String tableName = MetaCache.getTableName(rel.getTable());
+        CommonId tableId = this.metaCache.getTableId(tableName);
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        List<Output> outputs = new ArrayList<>();
+
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        // Get all partitions based on startKey and endKey
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        Map<byte[], byte[]> partMap = ps.calcPartitionRange(rel.getStartKey(), rel.getEndKey(), false);
+        Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
+        while (partIterator.hasNext()) {
+            Map.Entry<byte[], byte[]> next = partIterator.next();
+            PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
+                tableId,
+                td.getDingoType(),
+                td.getKeyMapping(),
+                next.getKey(),
+                next.getValue()
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(
+                parts.get(parts.floorKey(new ComparableByteArray(next.getKey()))).getLeader(), idGenerator
+            );
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
+        }
         return outputs;
     }
 }
