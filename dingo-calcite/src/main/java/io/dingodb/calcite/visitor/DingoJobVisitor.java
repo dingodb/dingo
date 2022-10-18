@@ -42,10 +42,12 @@ import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.hash.HashStrategy;
 import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.partition.RangeStrategy;
+import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -88,9 +90,15 @@ import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.data.SortDirection;
 import io.dingodb.exec.operator.data.SortNullDirection;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.op.IndexOp;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.op.OpType;
+import io.dingodb.expr.parser.value.Value;
 import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -100,11 +108,13 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +151,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         MetaCache.initTableDefinitions();
         IdGenerator idGenerator = new DingoIdGenerator();
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
+        log.info(RelOptUtil.toString(input));
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
@@ -562,6 +573,98 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
+    public Collection<Output> visit(@Nonnull DingoTableScan rel) {
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        List<Location> distributes = this.metaCache.getDistributes(tableName);
+        CommonId tableId = this.metaCache.getTableId(tableName);
+        List<Output> outputs = new ArrayList<>(distributes.size());
+        SqlExpr filter = null;
+        if (rel.getFilter() != null) {
+            filter = new SqlExpr(
+                RexConverter.convert(rel.getFilter()).toString(),
+                DingoTypeFactory.fromRelDataType(rel.getFilter().getType()));
+        }
+
+        // match part start
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        Map<byte[], Integer> allRangeMap = null;
+        try {
+            // allRangeMap size = 1
+            allRangeMap = getRangePart(rel, td);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
+        Iterator<Map.Entry<byte[], Integer>> allRangeIterator = allRangeMap.entrySet().iterator();
+        byte[] startKey = null;
+        byte[] endKey = null;
+        Integer operatorTyp = 0;
+        while (allRangeIterator.hasNext()) {
+            Map.Entry<byte[], Integer> entry = allRangeIterator.next();
+            startKey = entry.getKey();
+            if (startKey.length != 0) {
+                endKey = entry.getKey();
+            } else {
+                endKey = ByteArrayUtils.getMaxByte();
+            }
+
+            operatorTyp = entry.getValue();
+            //match all part
+            if (operatorTyp == 3) {
+                for (int i = 0; i < distributes.size(); i++) {
+                    PartScanOperator operator = new PartScanOperator(
+                        tableId,
+                        i,
+                        td.getDingoType(),
+                        td.getKeyMapping(),
+                        filter,
+                        rel.getSelection()
+                    );
+                    operator.setId(idGenerator.get());
+                    Task task = job.getOrCreate(distributes.get(i), idGenerator);
+                    task.putOperator(operator);
+                    outputs.addAll(operator.getOutputs());
+                }
+            } else {
+                // Get all partitions based on startKey and endKey
+                final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+                // example1 startKey = endKey  example2 startKey, Max
+                // primary key a,b,c   part key a,b    startkey = ab end = ab
+                Map<byte[], byte[]> partMap = ps.calcPartitionPrefixRange(startKey, endKey, true, true);
+
+                Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
+                while (partIterator.hasNext()) {
+                    Map.Entry<byte[], byte[]> next = partIterator.next();
+
+                    PartRangeScanOperator operator = new PartRangeScanOperator(
+                        this.metaCache.getTableId(tableName),
+                        next.getKey(),
+                        td.getDingoType(),
+                        td.getKeyMapping(),
+                        filter,
+                        rel.getSelection(),
+                        next.getKey(),
+                        next.getValue(),
+                        true,
+                        true,
+                        true
+                    );
+                    operator.setId(idGenerator.get());
+                    Task task = job.getOrCreate(
+                        parts.get(parts.floorKey(new ComparableByteArray(next.getKey()))).getLeader(), idGenerator
+                    );
+                    task.putOperator(operator);
+                    outputs.addAll(operator.getOutputs());
+                }
+            }
+        }
+
+        // match part end
+        return outputs;
+    }
+
+    @Override
     public Collection<Output> visit(@Nonnull DingoProject rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new ProjectOperator(
@@ -614,31 +717,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
             rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
         ));
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoTableScan rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        List<Location> distributes = this.metaCache.getDistributes(tableName);
-        CommonId tableId = this.metaCache.getTableId(tableName);
-        List<Output> outputs = new ArrayList<>(distributes.size());
-        RexNode filter = rel.getFilter();
-        for (int i = 0; i < distributes.size(); i++) {
-            PartScanOperator operator = new PartScanOperator(
-                tableId,
-                i,
-                td.getDingoType(),
-                td.getKeyMapping(),
-                filter != null ? SqlExprUtils.toSqlExpr(filter) : null,
-                rel.getSelection()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(distributes.get(i), idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
     }
 
     @Override
@@ -750,7 +828,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     next.getKey(),
                     next.getValue(),
                     includeStart,
-                    next.getValue() != null && rel.isIncludeEnd()
+                    next.getValue() != null && rel.isIncludeEnd(),
+                    false
                 );
                 operator.setId(idGenerator.get());
                 Task task = job.getOrCreate(
@@ -795,4 +874,112 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         }
         return outputs;
     }
+
+    private Map<byte[], Integer> getRangePart(DingoTableScan scan, TableDefinition td) throws IOException {
+        // pre create table partition by   map<byte[], int>  int 1  matched one part
+        //  2 matched muti part 3 matched all part
+        // default create table without default
+        Map<byte[], Integer> allRangeMap = new TreeMap<>(ByteArrayUtils::compare);
+        byte[] start = null;
+        if (td.getDingoTablePart() != null) {
+            TupleMapping partKeyMapping = td.getDingoTablePart().getPartMapping(td);
+            int[] partIndexs = td.getDingoTablePart().getPartMapping(td).getMappings();
+            int firstPrimaryColumnIndex = partIndexs[0];
+
+            RexNode rexNode = scan.getFilter();
+            if (rexNode == null) {
+                allRangeMap.put(ByteArrayUtils.EMPTY_BYTES, 3);
+                return allRangeMap;
+            }
+            Expr expr = RexConverter.convert(rexNode);
+            Op op = (Op) expr;
+            Expr[] exprs = op.getExprArray();
+            Map<Integer, Object> valueMap = new LinkedHashMap<>();
+            for (Integer partIndex : partIndexs) {
+                for (Expr subExpr : exprs) {
+                    if (subExpr instanceof Op) {
+                        Op subOp = (Op) subExpr;
+                        if (subOp.getExprArray().length == 2) {
+                            Expr expr2 = subOp.getExprArray()[0];
+                            if (expr2 instanceof IndexOp) {
+                                IndexOp index = (IndexOp) expr2;
+                                Integer key = (Integer) ((Value) index.getExprArray()[1]).getValue();
+
+                                Expr expr3 = subOp.getExprArray()[1];
+                                if (expr3 instanceof Value) {
+                                    if (partIndex == key && subOp.getType() == OpType.EQ) {
+                                        valueMap.put(key, ((Value) expr3).getValue());
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Expr expr2 = exprs[0];
+                        if (expr2 instanceof IndexOp) {
+                            IndexOp index = (IndexOp) expr2;
+                            Integer key = (Integer) ((Value) index.getExprArray()[1]).getValue();
+
+                            Expr expr3 = exprs[1];
+                            if (expr3 instanceof Value) {
+                                if (partIndex == key && op.getType() == OpType.EQ) {
+                                    valueMap.put(key, ((Value) expr3).getValue());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            int partSize = partIndexs.length;
+
+            if (valueMap.size() == partSize) {
+                // part range(a, b, c)  select where a = a and b = b and c =c
+                KeyValueCodec codec = new DingoKeyValueCodec(td.getDingoType(), partKeyMapping);
+                //Codec codec = new DingoCodec(td.getDingoType().select(partKeyMapping).toDingoSchemas());
+                start = codec.encodeKey(valueMap.values().toArray());
+
+                if (start != null) {
+                    allRangeMap.put(start, 1);
+                }
+            } else if (valueMap.containsKey(firstPrimaryColumnIndex)) {
+                // for example:
+                // part range(a, b, c)  select where a=a and b=b and c > c    | start = a&b  and end = a&b&~
+                // part range(a, b, c)  select where a=a and d=d              | start =a and end = a~
+                // part range(a, b, c)  select where a=a and c=c and d=d      | start =a and end = a~
+
+                List<Object> valueList = new ArrayList<>();
+                List<Integer> keyIndexList = new ArrayList<>();
+                keyIndexList.add(firstPrimaryColumnIndex);
+                valueList.add(valueMap.get(firstPrimaryColumnIndex));
+                Integer partColIndex = 0;
+                for (int i = 1; i < partSize; i++) {
+                    partColIndex = partIndexs[i];
+                    if (!valueMap.containsKey(partColIndex)) {
+                        break;
+                    } else {
+                        valueList.add(valueMap.get(partColIndex));
+                        keyIndexList.add(partColIndex);
+                    }
+                }
+                KeyValueCodec codec = new DingoKeyValueCodec(td.getDingoType(), TupleMapping.of(keyIndexList));
+                start = codec.encodeKey(valueList.toArray());
+                if (start != null) {
+                    allRangeMap.put(start, 2);
+                }
+            } else {
+                start = ByteArrayUtils.EMPTY_BYTES;
+                if (start != null) {
+                    allRangeMap.put(start, 3);
+                }
+            }
+            return allRangeMap;
+        } else {
+            start = ByteArrayUtils.EMPTY_BYTES;
+            if (start != null) {
+                allRangeMap.put(start, 3);
+            }
+            return allRangeMap;
+        }
+    }
+
 }

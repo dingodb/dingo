@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.apache.commons.compress.utils.ByteUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -43,9 +44,19 @@ public class ByteArrayUtils {
         @JsonProperty
         private byte[] bytes;
 
+        private boolean preRange = false;
+
+        public ComparableByteArray(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
         @Override
         public int compareTo(ComparableByteArray other) {
-            return compare(bytes, other.bytes);
+            if (!preRange) {
+                return compare(bytes, other.bytes);
+            } else {
+                return compareContainsEnd(bytes, other.bytes);
+            }
         }
     }
 
@@ -108,6 +119,30 @@ public class ByteArrayUtils {
     public static byte[] deCodeBase64String2Bytes(final String input) {
         byte[] decoded = Base64.getDecoder().decode(input);
         return decoded;
+    }
+
+    public static byte[] getMaxByte() {
+        return hexToByteArray("7F");
+    }
+
+    public static byte[] hexToByteArray(String inHex){
+        int hexlen = inHex.length();
+        byte[] result;
+        if (hexlen % 2 == 1){
+            //奇数
+            hexlen ++;
+            result = new byte[(hexlen/2)];
+            inHex = "0" + inHex;
+        }else {
+            //偶数
+            result = new byte[(hexlen/2)];
+        }
+        int j=0;
+        for (int i = 0; i < hexlen; i += 2){
+            result[j] = (byte)Integer.parseInt(inHex.substring(i, i + 2),16);
+            j ++;
+        }
+        return result;
     }
 
     public static void main(String[] args) {

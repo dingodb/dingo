@@ -55,6 +55,13 @@ public abstract class PartitionStrategy<I> {
         boolean includeEnd
     );
 
+    public abstract Map<byte[], byte[]> calcPartitionPrefixRange(
+        @Nonnull final byte[] startKey,
+        @Nonnull final byte[] endKey,
+        boolean includeEnd,
+        boolean prefixRange
+    );
+
     public Map<I, List<Object[]>> partKeyTuples(
         @Nonnull final Collection<Object[]> keyTuples
     ) {

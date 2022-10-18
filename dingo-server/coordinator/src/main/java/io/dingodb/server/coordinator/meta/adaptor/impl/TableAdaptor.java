@@ -18,10 +18,14 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.Optional;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.ClusterScheduler;
@@ -33,9 +37,11 @@ import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.type.SqlTypeName;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -119,30 +125,123 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         columns.stream()
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
-
         int ttl = TableAdaptor.getTtl(table);
-        log.info("TableAdaptor create, table id: {}, ttl: {}.", table.getId(), ttl);
-        TablePart tablePart = TablePart.builder()
-            .version(0)
-            .schema(table.getSchema())
-            .table(tableId)
-            .start(EMPTY_BYTES)
-            .createTime(System.currentTimeMillis())
-            .ttl(ttl)
-            .build();
-        tablePart.setId(tablePartAdaptor.newId(tablePart));
-        keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
-
+        List<TablePart> tablePartList;
+        if (definition.getDingoTablePart() != null) {
+            try {
+                table.setAutoSplit(false);
+                tablePartList = getPreDefineParts(table, definition);
+            } catch (IOException e) {
+                throw new RuntimeException("Table create partition failed.", e);
+            }
+        } else {
+            TablePart tablePart = TablePart.builder()
+                .version(0)
+                .schema(table.getSchema())
+                .table(tableId)
+                .start(EMPTY_BYTES)
+                .createTime(System.currentTimeMillis())
+                .build();
+            tablePart.setId(tablePartAdaptor.newId(tablePart));
+            tablePartList = new ArrayList<>();
+            tablePartList.add(tablePart);
+        }
         metaStore.upsertKeyValue(keyValues);
         metaMap.put(tableId, table);
         super.save(table);
         columns.forEach(columnAdaptor::save);
-        tablePartAdaptor.save(tablePart);
-        try {
-            ClusterScheduler.instance().getTableScheduler(tableId).assignPart(tablePart).get(30, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new RuntimeException("Table meta save success, but schedule failed.", e);
+        for (TablePart tablePart : tablePartList) {
+            tablePart.setTtl(ttl);
+            keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
+
+            tablePartAdaptor.save(tablePart);
+            try {
+                ClusterScheduler.instance().getTableScheduler(tableId).assignPart(tablePart).get(30, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException("Table meta save success, but schedule failed.", e);
+            }
         }
+    }
+
+    private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) throws IOException {
+        List<TablePart> tablePartList = new ArrayList<>();
+        String partType = definition.getPartType();
+        if ("range".equalsIgnoreCase(partType)) {
+            List<DingoPartDetail> partDetailList = definition.getDingoTablePart().getPartDetailList();
+            // get part key mapping
+            TupleMapping partKeyMapping = definition.getDingoTablePart().getPartMapping(definition);
+            KeyValueCodec partKeyCodec = new DingoKeyValueCodec(definition.getDingoType(), partKeyMapping);
+
+            // 1. sort pre part key start
+            // 2. remove repeat part
+            List<byte[]> prePartKeyList = new ArrayList<>();
+            boolean isRepeat = false;
+            for (int i = 0; i < partDetailList.size(); i ++) {
+                DingoPartDetail dingoPartDetail = partDetailList.get(i);
+                byte[] endKey = partKeyCodec.encodeKey(dingoPartDetail.getOperand().toArray());
+                isRepeat = false;
+                for (byte[] prePartKey : prePartKeyList) {
+                    if (ByteArrayUtils.compare(endKey, prePartKey) == 0) {
+                        isRepeat = true;
+                        break;
+                    }
+                }
+                if (!isRepeat) {
+                    prePartKeyList.add(endKey);
+                }
+            }
+            Collections.sort(prePartKeyList, new Comparator<byte[]>() {
+                @Override
+                public int compare(byte[] o1, byte[] o2) {
+                    return ByteArrayUtils.compare(o1, o2);
+                }
+            });
+            // sort pre part key end
+
+            for (int i = 0; i < prePartKeyList.size(); i ++) {
+                byte[] endKey = prePartKeyList.get(i);
+                TablePart tablePart = null;
+                if (i == 0) {
+                    tablePart = TablePart.builder()
+                        .version(0)
+                        .schema(table.getSchema())
+                        .table(table.getId())
+                        .start(EMPTY_BYTES)
+                        .end(endKey)
+                        .createTime(System.currentTimeMillis())
+                        .build();
+                } else {
+                    TablePart pre = tablePartList.get(tablePartList.size() - 1);
+                    tablePart = TablePart.builder()
+                        .version(0)
+                        .schema(table.getSchema())
+                        .table(table.getId())
+                        .start(pre.getEnd())
+                        .end(endKey)
+                        .createTime(System.currentTimeMillis())
+                        .build();
+                }
+                if (tablePart != null) {
+                    tablePart.setId(tablePartAdaptor.newId(tablePart));
+                    tablePartList.add(tablePart);
+                }
+            }
+            TablePart tablePart = TablePart.builder()
+                .version(0)
+                .schema(table.getSchema())
+                .table(table.getId())
+                .start(tablePartList.get(tablePartList.size() - 1).getEnd())
+                .end(null)
+                .createTime(System.currentTimeMillis())
+                .build();
+            tablePart.setId(tablePartAdaptor.newId(tablePart));
+            tablePartList.add(tablePart);
+            log.info("pre part size:" + tablePartList.size());
+            for (TablePart tmp : tablePartList) {
+                log.info("pre part:" + tmp);
+            }
+        }
+        return tablePartList;
     }
 
     public TablePart newPart(CommonId tableId, byte[] start, byte[] end) {
@@ -241,7 +340,10 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(this::metaToDefinition)
             .collect(Collectors.toList());
         tableDefinition.setColumns(columnDefinitions);
-        if (log.isDebugEnabled()) {
+        tableDefinition.setDingoTablePart(table.getDingoTablePart());
+        tableDefinition.setAttrMap(table.getAttrMap());
+        tableDefinition.setPartType(table.getPartType());
+        if (log.isInfoEnabled()) {
             log.info("Meta to table definition: {}", tableDefinition);
         }
         return tableDefinition;

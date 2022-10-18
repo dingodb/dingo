@@ -62,4 +62,10 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
                                                   boolean includeEnd) {
         return Collections.emptyMap();
     }
+
+    @Override
+    public Map<byte[], byte[]> calcPartitionPrefixRange(@Nonnull byte[] startKey, @Nonnull byte[] endKey,
+                                                        boolean includeEnd, boolean prefixRange) {
+        return null;
+    }
 }

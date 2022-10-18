@@ -28,7 +28,8 @@ public interface Part {
     Iterator<Object[]> getIterator();
 
     @Nonnull
-    Iterator<Object[]> getIteratorByRange(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd);
+    Iterator<Object[]> getIteratorByRange(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd,
+                                          boolean prefixScan);
 
     long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey);
 

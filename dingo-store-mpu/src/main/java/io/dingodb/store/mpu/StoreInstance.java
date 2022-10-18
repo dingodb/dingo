@@ -26,6 +26,9 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.FileUtils;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.UdfUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreListener;
@@ -48,14 +51,21 @@ import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.dingodb.common.util.ByteArrayUtils.lessThan;
+import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
@@ -65,7 +75,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     private final CommonId id;
     public final MirrorProcessingUnit mpu;
     public final Path path;
-    public Core core;
     private int ttl;
     private Map<String, Globals> globalsMap = new HashMap<>();
     private Map<String, TableDefinition> definitionMap = new HashMap<>();
@@ -75,47 +84,54 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         this(id, path, "", "", -1);
     }
 
+    private final Map<CommonId, Core> parts;
+    private final NavigableMap<byte[], Part> startKeyPartMap;
+
     public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile,
                          final int ttl) {
         this.id = id;
         this.path = path.toAbsolutePath();
         this.ttl = ttl;
         this.mpu = new MirrorProcessingUnit(id, this.path, dbRocksOptionsFile, logRocksOptionsFile, this.ttl);
+        this.parts = new ConcurrentHashMap<>();
+        this.startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
     }
 
     @Override
     public synchronized void assignPart(Part part) {
-        if (core != null) {
-            throw new RuntimeException();
-        }
+        Core coreAssign;
         List<CoreMeta> coreMetas = new ArrayList<>();
         List<Location> replicateLocations = part.getReplicateLocations();
         List<CommonId> replicates = part.getReplicates();
         for (int i = 0; i < replicates.size(); i++) {
-            coreMetas.add(i, new CoreMeta(replicates.get(i), part.getId(), mpu.id, replicateLocations.get(i), 3 - i));
+            coreMetas.add(i, new CoreMeta(replicates.get(i), part.getId(), mpu.id,
+                replicateLocations.get(i), 3 - i));
         }
-        core = mpu.createCore(replicates.indexOf(part.getReplicateId()), coreMetas);
-        core.registerListener(CoreListener.primary(__ -> sendStats(core)));
-        core.start();
+        coreAssign = mpu.createCore(replicates.indexOf(part.getReplicateId()), coreMetas);
+        coreAssign.setPart(part);
+        coreAssign.registerListener(CoreListener.primary(__ -> sendStats(coreAssign)));
+        coreAssign.registerListener(CoreListener.primary(__ -> onPartAvailable(coreAssign)));
+        coreAssign.start();
+        this.parts.put(part.getId(), coreAssign);
     }
 
     public void destroy() {
-        core.destroy();
-        /**
-         * to avoid file handle leak  when drop table
-         */
-        // FileUtils.deleteIfExists(path);
+        startKeyPartMap.clear();
+        parts.values().forEach(Core::destroy);
+        parts.clear();
+        FileUtils.deleteIfExists(path);
     }
 
-    public ApproximateStats approximateStats() {
-        return new ApproximateStats(ByteArrayUtils.EMPTY_BYTES, null, approximateCount(), approximateSize());
+    public ApproximateStats approximateStats(Core core) {
+        return new ApproximateStats(ByteArrayUtils.EMPTY_BYTES, null, approximateCount(core),
+            approximateSize(core));
     }
 
-    public long approximateCount() {
+    public long approximateCount(Core core) {
         return core.storage.approximateCount();
     }
 
-    public long approximateSize() {
+    public long approximateSize(Core core) {
         return core.storage.approximateSize();
     }
 
@@ -130,7 +146,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
                 .leader(DingoConfiguration.instance().getServerId())
                 .tablePart(partId)
                 .table(core.meta.mpuId)
-                .approximateStats(Collections.singletonList(approximateStats()))
+                .approximateStats(Collections.singletonList(approximateStats(core)))
                 .time(System.currentTimeMillis())
                 .build();
             ApiRegistry.getDefault().proxy(ReportApi.class, CoordinatorConnector.defaultConnector())
@@ -138,15 +154,36 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         } catch (Exception e) {
             log.error("{} send stats to failed.", core.meta, e);
         }
+
         // todo
         // if (!core.isAvailable() && core.isPrimary()) {
         //     Executors.scheduleAsync(core.meta.label + "-send-stats", () -> sendStats(core), 5, TimeUnit.SECONDS);
         // }
     }
 
+    public void onPartAvailable(Core core) {
+        log.info("onPartAvailable :" + core);
+        try {
+            if (core.isAvailable() && core.isPrimary()) {
+                startKeyPartMap.put(core.getPart().getStart(), core.getPart());
+            } else {
+                startKeyPartMap.remove(core.getPart().getStart());
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
     @Override
     public boolean exist(byte[] primaryKey) {
-        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey) != null;
+        // 获取对应分区
+        Part part = getPartByPrimaryKey(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.GET_OC, primaryKey) != null;
     }
 
     @Override
@@ -166,11 +203,19 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        if (RocksUtils.ttlValid(this.ttl)) {
-            core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, RocksUtils.getValueWithNowTs(row)).join();
-        } else {
-            core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        Part part = getPartByPrimaryKey(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
         }
+        if (RocksUtils.ttlValid(this.ttl)) {
+            parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey,
+                RocksUtils.getValueWithNowTs(row)).join();
+        } else {
+            parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        }
+
         return true;
     }
 
@@ -187,7 +232,23 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         } else {
             kvList = rows;
         }
-        core.exec(
+        Part part = null;
+        for (KeyValue row : rows) {
+            if (part == null && (part = getPartByPrimaryKey(row.getPrimaryKey())) == null) {
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(row.getPrimaryKey()) + " not in current instance."
+                );
+            }
+            if (part != getPartByPrimaryKey(row.getPrimaryKey())) {
+                throw new IllegalArgumentException("The primary key list not in same part.");
+            }
+        }
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The key not in current instance."
+            );
+        }
+        parts.get(part.getId()).exec(
             KVInstructions.id, KVInstructions.SET_BATCH_OC,
             kvList.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
         ).join();
@@ -196,53 +257,117 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
+        Part part = getPartByPrimaryKey(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public void deletePart(Part part) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+        // 1 clean parts
+        // 2 clean startKeyPartMap
+        byte[] EMPTY_BYTES = new byte[0];
+        part.setStart(Parameters.cleanNull(part.getStart(), ByteArrayUtils.EMPTY_BYTES));
+        startKeyPartMap.remove(part.getStart());
+        parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
+            part.getStart(), part.getEnd()).join();
+        parts.remove(part.getId());
     }
 
     @Override
     public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
+        Part part = getPartByPrimaryKey(startKey);
+        if (part == null) {
+            log.warn("Count or delete store by part start key. but find start key:{} not in any part",
+                Arrays.toString(startKey));
+            return 0;
+        }
         CompletableFuture<Long> count = CompletableFuture.supplyAsync(
-            () -> core.view(KVInstructions.id, KVInstructions.COUNT_OC)
+            () -> parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC)
         );
         if (doDeleting) {
-            core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+            parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
+                ByteArrayUtils.EMPTY_BYTES, null).join();
         }
         return count.join();
     }
 
     @Override
     public long countDeleteByRange(byte[] startKey, byte[] endKey) {
+        Part part = getPartByPrimaryKey(startKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endKey == null) {
+            endKey = part.getEnd();
+        } else if (getPartByPrimaryKey(endKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+
         CompletableFuture<Long> count = CompletableFuture.supplyAsync(
-            () -> core.view(KVInstructions.id, KVInstructions.COUNT_OC)
+            () -> parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC)
         );
-        core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+        parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
+            ByteArrayUtils.EMPTY_BYTES, null).join();
         return count.join();
     }
 
     @Override
     public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
-        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
+        Part part = getPartByPrimaryKey(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        return core.view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys);
+        Part part = null;
+        for (byte[] primaryKey : primaryKeys) {
+            if (part == null && (part = getPartByPrimaryKey(primaryKey)) == null) {
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+                );
+            }
+            if (part != getPartByPrimaryKey(primaryKey)) {
+                throw new IllegalArgumentException("The primary key list not in same part.");
+            }
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return core.view(KVInstructions.id, KVInstructions.SCAN_OC);
+        List<Iterator<KeyValue>> iterators = new ArrayList<>();
+        startKeyPartMap.values().stream()
+            .map(Part::getId)
+            .map(parts::get)
+            .forEach(store -> {
+                iterators.add(store.view(KVInstructions.id, KVInstructions.SCAN_OC));
+            });
+        return new FullScanRawIterator(iterators.iterator());
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
-        return core.view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey);
+        Part part = getPartByPrimaryKey(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey);
     }
 
     @Override
@@ -250,9 +375,34 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
     ) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
-        return core.view(
-            KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd
-        );
+        Part part = getPartByPrimaryKey(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey,
+            endPrimaryKey, includeStart, includeEnd);
+    }
+
+    @Override
+    public Iterator<KeyValue> keyValuePrefixScan(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        Part part = getPartByPrimaryKey(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getEndPartByPrimaryKey(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey,
+            endPrimaryKey, includeStart, includeEnd);
     }
 
     @Override
@@ -262,8 +412,19 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         if (RocksUtils.ttlValid(this.ttl)) {
             timestamp = RocksUtils.getCurrentTimestamp();
         }
-        core.exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey, operations,
+        Part part = getPartByPrimaryKey(startPrimaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException("The start and end not in current instance.");
+        }
+        if (endPrimaryKey == null) {
+            endPrimaryKey = part.getEnd();
+        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
+            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        }
+        parts.get(part.getId()).exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey,
+            operations,
             timestamp).join();
+
         return true;
     }
 
@@ -275,19 +436,205 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public boolean delete(byte[] primaryKey) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKey).join();
+        Part part = getPartByPrimaryKey(primaryKey);
+        if (part == null) {
+            throw new IllegalArgumentException(
+                "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
+            );
+        }
+        parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKey).join();
         return true;
     }
 
     @Override
     public boolean delete(List<byte[]> primaryKeys) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKeys.toArray()).join();
-        return true;
+        boolean isSuccess = false;
+        try {
+            Map<Part, List<byte[]>> keysGroupByPart = groupKeysByPart(primaryKeys);
+            for (Map.Entry<Part, List<byte[]>> entry : keysGroupByPart.entrySet()) {
+                Part part = entry.getKey();
+                Optional<List<byte[]>> keysInPart = Optional.of(entry.getValue());
+                if (keysInPart.isPresent()) {
+                    isSuccess = parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_OC,
+                        primaryKeys.toArray()).join();
+                    if (!isSuccess) {
+                        log.error("Delete failed, part: {}, keysCnt: {}", part.getId(), keysInPart.get().size());
+                    }
+                } else {
+                    log.warn("Delete failed, part: {}, keysCnt: 0", part.getId());
+                }
+            }
+            return isSuccess;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     @Override
     public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null).join();
+        boolean isSuccess = true;
+        try {
+            Map<Part, List<byte[]>> mappingByPartToKeys = groupKeysByPart(startPrimaryKey, endPrimaryKey);
+            for (Map.Entry<Part, List<byte[]>> entry : mappingByPartToKeys.entrySet()) {
+                Part part = entry.getKey();
+                List<byte[]> keys = entry.getValue();
+                boolean isOK = parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
+                    keys.get(0), keys.get(1)).join();
+                if (!isOK) {
+                    isSuccess = false;
+                    log.warn("Delete partition failed: part: " + part.getId() + ", keys: " + keys);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Delete failed, startPrimaryKey: {}, endPrimaryKey: {}", startPrimaryKey, endPrimaryKey, e);
+        }
+        return isSuccess;
+    }
+
+    public Part getPartByPrimaryKey(byte[] primaryKey) {
+        List<Part> partList = new ArrayList<>();
+
+        startKeyPartMap.forEach((key, value) -> {
+            if (lessThanOrEqual(key, primaryKey)) {
+                if (value.getEnd() == null || lessThan(primaryKey, value.getEnd())) {
+                    partList.add(value);
+                }
+            }
+        });
+        if (partList.size() == 0) {
+            return null;
+        } else {
+            return partList.get(0);
+        }
+    }
+
+    public Part getEndPartByPrimaryKey(byte[] primaryKey) {
+        List<Part> partList = new ArrayList<>();
+        startKeyPartMap.forEach((key, value) -> {
+            if (lessThanOrEqual(key, primaryKey)) {
+                if (value.getEnd() == null || lessThan(primaryKey, value.getEnd())) {
+                    partList.add(value);
+                }
+            }
+        });
+        if (partList.size() == 0) {
+            return null;
+        } else {
+            return partList.get(partList.size() - 1);
+        }
+    }
+
+    class FullScanRawIterator implements Iterator<KeyValue> {
+        protected Iterator<KeyValue> iterator;
+
+        private final Iterator<Iterator<KeyValue>> partIterator;
+
+        public FullScanRawIterator(Iterator<Iterator<KeyValue>> partIterator) {
+            iterator = partIterator.next();
+            this.partIterator = partIterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (!iterator.hasNext()) {
+                if (!partIterator.hasNext()) {
+                    return false;
+                }
+                iterator = partIterator.next();
+            }
+            return true;
+        }
+
+        @Override
+        public KeyValue next() {
+            return iterator.next();
+        }
+    }
+
+    private Map<Part, List<byte[]>> groupKeysByPart(List<byte[]> primaryKeys) {
+        Map<Part, List<byte[]>> result = new HashMap<>();
+        for (byte[] primaryKey : primaryKeys) {
+            Part part = getPartByPrimaryKey(primaryKey);
+            if (part == null) {
+                throw new IllegalArgumentException(
+                    "The primary key " + Arrays.toString(primaryKey) + " can not compute part info."
+                );
+            }
+            List<byte[]> list = result.get(part);
+            if (list == null) {
+                list = new ArrayList<>();
+                result.put(part, list);
+            }
+            list.add(primaryKey);
+        }
+        return result;
+    }
+
+    public Map<Part, List<byte[]>> groupKeysByPart(byte[] startKey, byte[] endKey) {
+        Part startPart = getPartByPrimaryKey(startKey);
+        Part endPart = getPartByPrimaryKey(endKey);
+
+        // case1. startKey and endKey is in same part, then reture the part
+        if (startPart == endPart) {
+            return Collections.singletonMap(startPart, Arrays.asList(startKey, endKey));
+        }
+
+        // case2. compute the partition list by <startKey, endKey>
+        List<byte[]> keyArraysList = startKeyPartMap.keySet().stream().collect(Collectors.toList());
+        if (keyArraysList.size() <= 1) {
+            throw new IllegalArgumentException("Invalid Key Partition Map, should more than 1.");
+        }
+
+        int startIndex = 0;
+        int endIndex = keyArraysList.size() - 1;
+
+        for (int i = 0; i < keyArraysList.size(); i++) {
+            byte[] keyInList = keyArraysList.get(i);
+            if (ByteArrayUtils.lessThan(startKey, keyInList)) {
+                startIndex = i - 1;
+                break;
+            }
+        }
+
+        for (int i = keyArraysList.size() - 1; i >= 0; i--) {
+            byte[] keyInList = keyArraysList.get(i);
+            if (ByteArrayUtils.greatThanOrEqual(endKey, keyInList)) {
+                endIndex = i;
+                break;
+            }
+        }
+
+        if (startIndex < 0 || endIndex < 0 || startIndex >= endIndex) {
+            log.warn("Invalid Key Partition Map, startIndex: {}, endIndex: {}", startIndex, endIndex);
+            throw new IllegalArgumentException("Invalid Key Partition Map, startIndex: "
+                + startIndex + ", endIndex: " + endIndex);
+        }
+
+        Map<Part, List<byte[]>> result = new HashMap<>();
+        for (int i = startIndex; i <= endIndex; i++) {
+            if (i == startIndex) {
+                // first partition
+                byte[] keyInList = keyArraysList.get(i + 1);
+                Part part = getPartByPrimaryKey(startKey);
+                List<byte[]> list = Arrays.asList(startKey, keyInList);
+                result.put(part, list);
+            } else if (i == endIndex) {
+                // last partition
+                byte[] keyInList = keyArraysList.get(i);
+                Part part = getPartByPrimaryKey(endKey);
+                List<byte[]> list = Arrays.asList(keyInList, endKey);
+                result.put(part, list);
+            } else {
+                // middle partition
+                byte[] keyInList = keyArraysList.get(i);
+                byte[] keyInListNext = keyArraysList.get(i + 1);
+                Part part = getPartByPrimaryKey(keyInList);
+                List<byte[]> list = Arrays.asList(keyInList, keyInListNext);
+                result.put(part, list);
+            }
+        }
+        return result;
     }
 
     @Override

@@ -16,11 +16,16 @@
 
 package io.dingodb.common.partition;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 
 @Getter
@@ -30,12 +35,16 @@ public class DingoTablePart implements Serializable {
 
     private static final long serialVersionUID = 2252446672472101114L;
 
+    @JsonProperty("funcNm")
     String funcNm;
 
+    @JsonProperty("cols")
     List<String> cols;
 
+    @JsonProperty("partSize")
     Integer partSize;
 
+    @JsonProperty("partDetailList")
     List<DingoPartDetail> partDetailList;
 
     public DingoTablePart(String funcNm, List<String> cols) {
@@ -44,5 +53,25 @@ public class DingoTablePart implements Serializable {
     }
 
     public DingoTablePart() {
+    }
+
+    /**
+     * 获取分区键的index.
+     * @param definition tableDefinition
+     * @return TupleMapping
+     */
+    public TupleMapping getPartMapping(TableDefinition definition) {
+        List<String> cols = definition.getDingoTablePart().getCols();
+        List<Integer> indices = new LinkedList<>();
+        List<ColumnDefinition> columnList = definition.getColumns();
+        for (String columnNm : cols) {
+            for (int i = 0; i < columnList.size(); i ++) {
+                if (columnNm.equalsIgnoreCase(columnList.get(i).getName())) {
+                    indices.add(i);
+                    break;
+                }
+            }
+        }
+        return TupleMapping.of(indices);
     }
 }

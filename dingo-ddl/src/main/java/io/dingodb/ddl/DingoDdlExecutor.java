@@ -46,6 +46,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -271,17 +272,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
                 int partColsSize = cols.size();
                 List<DingoPartDetail> rangePartList = dingoTablePart.getPartDetailList();
-                String operator = "";
-                int i = 0;
                 for (DingoPartDetail rangePart : rangePartList) {
-                    if (++i > 1) {
-                        if (!operator.equalsIgnoreCase(rangePart.getOperator())) {
-                            throw new SQLException("keep all partition types consistent!");
-                        }
-                    }
-                    operator = rangePart.getOperator();
                     if (rangePart.getOperand().size() != partColsSize) {
                         throw new SQLException("keep all partition types consistent!");
+                    }
+                    for (int i = 0; i < rangePart.getOperand().size(); i ++) {
+                        Object operand = rangePart.getOperand().get(i);
+                        // becase javacc compile BigInteger for int
+                        if (operand instanceof BigInteger) {
+                            operand = ((BigInteger) operand).intValue();
+                            rangePart.getOperand().set(i, operand);
+                        }
                     }
                 }
 
