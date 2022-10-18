@@ -18,6 +18,7 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.store.Part;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.instruction.Instructions;
@@ -28,6 +29,8 @@ import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -57,6 +60,10 @@ public class Core {
     private Mirror mirror;
 
     private boolean close;
+
+    @Getter
+    @Setter
+    private Part part;
 
     private List<CoreListener> listeners = new CopyOnWriteArrayList<>();
 

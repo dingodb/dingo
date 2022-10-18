@@ -591,6 +591,26 @@ public class RaftStoreInstance implements StoreInstance {
         }
     }
 
+    class RangeScanRawIterator extends KeyValueIterator {
+        private final Iterator<SeekableIterator<byte[], ByteArrayEntry>> partIterator;
+
+        public RangeScanRawIterator(Iterator<SeekableIterator<byte[], ByteArrayEntry>> partIterator) {
+            super(partIterator.next());
+            this.partIterator = partIterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (!iterator.hasNext()) {
+                if (!partIterator.hasNext()) {
+                    return false;
+                }
+                iterator = partIterator.next();
+            }
+            return true;
+        }
+    }
+
     @Override
     public KeyValue udfGet(byte[] primaryKey, String udfName, String functionName, int version) {
         try {

@@ -20,18 +20,21 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.table.TestTableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestDingoCodec {
     private static TableDefinition tableDefinition;
 
     private static KeyValueCodec codec;
 
-    private final Object[] record = new Object[]{1, "name", 0.5d};
+    private final Object[] record = new Object[]{10, 10, "10"};
 
     @BeforeAll
     public static void setupAll() throws IOException {
@@ -45,6 +48,9 @@ public class TestDingoCodec {
     @Test
     public void testRecord() throws IOException {
         KeyValue keyValue = codec.encode(record);
+        for (byte a : keyValue.getPrimaryKey()) {
+            System.out.println("-->" + a);
+        }
         Object[] result = codec.decode(keyValue);
         Assertions.assertArrayEquals(result, record);
     }
@@ -75,6 +81,34 @@ public class TestDingoCodec {
         Object[] value01 = valueCodec.decode(keyValue.getValue(), new int[]{0, 1});
         Assertions.assertEquals(value01[0], record[1]);
         Assertions.assertEquals(value01[1], record[2]);
+    }
+
+    @Test
+    public void testPartKey() throws IOException {
+        List<Integer> index = new ArrayList<>();
+        index.add(0);
+        index.add(1);
+        index.add(2);
+        TupleMapping tupleMapping = TupleMapping.of(index);
+        Codec valueCodec = new DingoCodec(tableDefinition.getDingoType().select(tupleMapping).toDingoSchemas(),
+            tupleMapping, true);
+        Object[] v = new Object[3];
+        v[0] = 10;
+        v[1] = 10;
+        v[2] = "10";
+        byte[] end = valueCodec.encode(v);
+        for (byte e : end) {
+            System.out.println("-->" + e);
+        }
+
+
+        System.out.println("---------------");
+        KeyValueCodec codec =
+            new DingoKeyValueCodec(tableDefinition.getDingoType(), tupleMapping);
+        byte[] cc = codec.encodeKey(v);
+        for (byte c : cc) {
+            System.out.println("--->" + c);
+        }
     }
 
     @Test

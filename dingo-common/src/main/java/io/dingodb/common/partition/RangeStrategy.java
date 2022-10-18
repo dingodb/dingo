@@ -34,6 +34,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeMap;
+import java.util.SortedSet;
 import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"definition", "ranges"})
@@ -107,6 +108,39 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
             }
         }
         LinkedHashSet<ComparableByteArray> subSet = keySet;
+
+        byte[] start = startKey;
+        byte[] end;
+        Iterator<ComparableByteArray> iterator = subSet.iterator();
+        while (iterator.hasNext()) {
+            ComparableByteArray sKey = iterator.next();
+
+            if (start == null) {
+                start = sKey.getBytes();
+            }
+            if (iterator.hasNext()) {
+                end = null;
+            } else {
+                end = endKey;
+            }
+
+            keyMap.put(start, end);
+            start = null;
+        }
+
+        return keyMap;
+    }
+
+    @Override
+    public Map<byte[], byte[]> calcPartitionPrefixRange(@Nonnull byte[] startKey,
+                                                        @Nonnull byte[] endKey, boolean includeEnd,
+                                                        boolean prefixRange) {
+        Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
+
+        SortedSet<ComparableByteArray> subSet = ranges.subSet(
+            ranges.floor(new ComparableByteArray(startKey)), true,
+            new ComparableByteArray(endKey, true), includeEnd
+        );
 
         byte[] start = startKey;
         byte[] end;

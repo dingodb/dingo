@@ -33,7 +33,7 @@ import javax.annotation.Nonnull;
 @JsonTypeName("rangeScan")
 @JsonPropertyOrder({
     "table", "part", "schema", "keyMapping", "filter", "selection", "output",
-    "startKey", "endKey", "includeStart", "includeEnd"
+    "startKey", "endKey", "includeStart", "includeEnd", "prefixScan"
 })
 public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     @JsonProperty("startKey")
@@ -44,6 +44,8 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     private final boolean includeStart;
     @JsonProperty("includeEnd")
     private final boolean includeEnd;
+    @JsonProperty("prefixScan")
+    private final boolean prefixScan;
 
     @JsonCreator
     public PartRangeScanOperator(
@@ -56,18 +58,20 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey,
         @JsonProperty("includeStart") boolean includeStart,
-        @JsonProperty("includeEnd") boolean includeEnd
+        @JsonProperty("includeEnd") boolean includeEnd,
+        @JsonProperty("prefixScan") boolean prefixScan
     ) {
         super(tableId, partId, schema, keyMapping, filter, selection);
         this.startKey = startKey;
         this.endKey = endKey;
         this.includeStart = includeStart;
         this.includeEnd = includeEnd;
+        this.prefixScan = prefixScan;
     }
 
     @Nonnull
     @Override
     protected Iterator<Object[]> createSourceIterator() {
-        return part.getIteratorByRange(startKey, endKey, includeStart, includeEnd);
+        return part.getIteratorByRange(startKey, endKey, includeStart, includeEnd, prefixScan);
     }
 }

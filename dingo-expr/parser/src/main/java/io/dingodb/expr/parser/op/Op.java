@@ -39,6 +39,7 @@ public abstract class Op implements Expr {
     protected OpType type;
     protected String name;
     @Setter
+    @Getter
     protected Expr[] exprArray;
 
     protected Op(OpType type) {

@@ -16,6 +16,7 @@
 
 package io.dingodb.common.partition;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -30,12 +31,16 @@ public class DingoPartDetail implements Serializable {
 
     private static final long serialVersionUID = -2687766895780655226L;
 
+    @JsonProperty("partNm")
     String partNm = null;
 
+    @JsonProperty("operator")
     String operator = null;
 
+    @JsonProperty("operand")
     List<Object> operand = null;
 
+    @JsonProperty("function")
     String function = null;
 
     public DingoPartDetail(Object partNm, String operator, List<Object> operand) {

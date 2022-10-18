@@ -8,15 +8,17 @@
       "notNull": true
     },
     {
+      "name": "value",
+      "type": "integer",
+      "primary": true
+    },
+    {
       "name": "name",
       "type": "varchar",
+      "primary": true,
       "precision": 64,
       "default": "Peso",
       "notNull": true
-    },
-    {
-      "name": "value",
-      "type": "double"
     }
   ]
 }

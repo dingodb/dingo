@@ -17,11 +17,14 @@
 package io.dingodb.common.codec;
 
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import org.apache.avro.util.Utf8;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,12 +36,15 @@ public class TestAvroCodec {
         TableDefinition tableDefinition = TableDefinition.readJson(
             TestAvroCodec.class.getResourceAsStream("/table-test.json")
         );
-        codec = new AvroCodec(tableDefinition.getDingoType().toAvroSchema());
+        List<Integer> index = new ArrayList<>();
+        index.add(0);
+        TupleMapping tupleMapping = TupleMapping.of(index);
+        codec = new AvroCodec(tableDefinition.getDingoType().select(tupleMapping).toAvroSchema());
     }
 
     @Test
     public void testEncodeDecode() throws IOException {
-        Object[] tuple = new Object[]{1, "Alice", 1.0};
+        Object[] tuple = new Object[]{1, '~'};
         byte[] bytes = codec.encode(tuple);
         Object[] result = codec.decode(bytes);
         assertThat(result[0]).isEqualTo(1);
