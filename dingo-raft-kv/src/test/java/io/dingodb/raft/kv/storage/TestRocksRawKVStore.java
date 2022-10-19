@@ -43,6 +43,9 @@ public class TestRocksRawKVStore {
 
     @AfterAll
     public static void afterAll() throws Exception {
+        if (store != null) {
+            store.close();
+        }
         FileUtils.deleteIfExists(DB_PATH);
     }
 
