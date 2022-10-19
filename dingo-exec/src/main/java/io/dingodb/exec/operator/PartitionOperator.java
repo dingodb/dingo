@@ -27,12 +27,12 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.meta.Part;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("partition")
 @JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
@@ -55,12 +55,12 @@ public final class PartitionOperator extends FanOutOperator {
     }
 
     @Override
-    protected int calcOutputIndex(int pin, @Nonnull Object[] tuple) {
+    protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
         Object partId = strategy.calcPartId(tuple, keyMapping);
         return partIndices.get(partId.toString());
     }
 
-    public void createOutputs(@Nonnull NavigableMap<ComparableByteArray, Part> partLocations) {
+    public void createOutputs(@NonNull NavigableMap<ComparableByteArray, Part> partLocations) {
         int size = partLocations.size();
         outputs = new ArrayList<>(size);
         partIndices = new HashMap<>(size);

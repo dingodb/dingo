@@ -17,18 +17,18 @@
 package io.dingodb.common.codec;
 
 import io.dingodb.common.store.KeyValue;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 public interface KeyValueCodec {
-    public Object[] decode(@Nonnull KeyValue keyValue) throws IOException;
+    Object[] decode(KeyValue keyValue) throws IOException;
 
-    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException;
+    Object[] decodeKey(byte @NonNull [] bytes) throws IOException;
 
-    public KeyValue encode(@Nonnull Object[] tuple) throws IOException;
+    KeyValue encode(Object @NonNull [] tuple) throws IOException;
 
-    public byte[] encodeKey(@Nonnull Object[] keys) throws IOException;
+    byte[] encodeKey(Object[] keys) throws IOException;
 
-    public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException;
+    Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException;
 }

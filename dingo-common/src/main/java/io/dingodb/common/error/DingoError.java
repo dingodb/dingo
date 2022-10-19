@@ -16,7 +16,7 @@
 
 package io.dingodb.common.error;
 
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * DingoError is designed as a universal interface, so we use it without fighting with a flat one-dimension enum error
@@ -128,8 +128,7 @@ public interface DingoError {
      * @param message customized error message
      * @return an error object with category same as given error's and message equal to given message.
      */
-    @Nonnull
-    static DingoError from(DingoError err, String message) {
+    static @NonNull DingoError from(DingoError err, String message) {
         return new DerivedError(err, message);
     }
 
@@ -141,8 +140,7 @@ public interface DingoError {
      * @return this throwable object if it is an {@link DingoError}, otherwise construct an error with message from this
      *     throwable, and {@link #UNKNOWN} as its category.
      */
-    @Nonnull
-    static DingoError from(Throwable throwable) {
+    static @NonNull DingoError from(Throwable throwable) {
         if (throwable instanceof DingoError) {
             return (DingoError) throwable;
         }
@@ -160,8 +158,7 @@ public interface DingoError {
      * @param reason error object to be nested to given error
      * @return an error object behaves same as given error except {@link #getDetailMessage()}.
      */
-    @Nonnull
-    static DingoError wrap(DingoError err, DingoError reason) {
+    static @NonNull DingoError wrap(DingoError err, DingoError reason) {
         return new WrappedError(err, reason);
     }
 
@@ -225,7 +222,7 @@ public interface DingoError {
      * @param <T>   type of error category
      * @return true if this error derived from given error category class.
      */
-    default <T extends Enum<T> & DingoError> boolean is(@Nonnull Class<T> clazz) {
+    default <T extends Enum<T> & DingoError> boolean is(@NonNull Class<T> clazz) {
         return clazz.isAssignableFrom(getClazz());
     }
 
@@ -238,7 +235,7 @@ public interface DingoError {
      * @return error object if this error derived from given error category class, otherwise null
      */
     @SuppressWarnings("unchecked")
-    default <T extends Enum<T> & DingoError> T as(@Nonnull Class<T> clazz) {
+    default <T extends Enum<T> & DingoError> T as(@NonNull Class<T> clazz) {
         DingoError category = getCategory();
         if (clazz.isAssignableFrom(category.getClass())) {
             return (T) category;

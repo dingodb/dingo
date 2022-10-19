@@ -26,10 +26,10 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Timestamp;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("timestamp")
 public class TimestampType extends AbstractScalarType {
@@ -49,19 +49,19 @@ public class TimestampType extends AbstractScalarType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(@Nullable Object value) {
         return value != null
             ? DateTimeUtils.timestampFormat((Timestamp) value) + ":" + this
             : NullType.NULL.format(null);
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convert((Timestamp) value);
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertTimestampFrom(value);
     }
 

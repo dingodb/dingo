@@ -26,11 +26,11 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 
@@ -42,7 +42,7 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
         RexNode rexNode = RexUtil.toDnf(rel.getCluster().getRexBuilder(), rel.getFilter());
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();

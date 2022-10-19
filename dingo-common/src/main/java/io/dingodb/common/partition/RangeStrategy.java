@@ -27,15 +27,15 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.TreeMap;
 import java.util.SortedSet;
-import javax.annotation.Nonnull;
+import java.util.TreeMap;
 
 @JsonPropertyOrder({"definition", "ranges"})
 @JsonTypeName("RangeHash")
@@ -52,7 +52,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
     @JsonCreator
     public RangeStrategy(
-        @Nonnull @JsonProperty("definition") TableDefinition definition,
+        @JsonProperty("definition") @NonNull TableDefinition definition,
         @JsonProperty("ranges") NavigableSet<ComparableByteArray> ranges
     ) {
         this.ranges = ranges;
@@ -67,7 +67,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     }
 
     @Override
-    public ComparableByteArray calcPartId(@Nonnull Object[] keyTuple) {
+    public ComparableByteArray calcPartId(Object @NonNull [] keyTuple) {
         try {
             return calcPartId(codec.encodeKey((Object[]) keySchema.convertTo(keyTuple, DingoConverter.INSTANCE)));
         } catch (IOException e) {
@@ -76,13 +76,15 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     }
 
     @Override
-    public ComparableByteArray calcPartId(@Nonnull byte[] keyBytes) {
+    public ComparableByteArray calcPartId(byte @NonNull [] keyBytes) {
         return ranges.floor(new ComparableByteArray(keyBytes));
     }
 
     @Override
     public Map<byte[], byte[]> calcPartitionRange(
-        @Nonnull byte[] startKey, @Nonnull byte[] endKey, boolean includeEnd
+        byte @NonNull [] startKey,
+        byte @NonNull [] endKey,
+        boolean includeEnd
     ) {
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
         LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
@@ -132,9 +134,12 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     }
 
     @Override
-    public Map<byte[], byte[]> calcPartitionPrefixRange(@Nonnull byte[] startKey,
-                                                        @Nonnull byte[] endKey, boolean includeEnd,
-                                                        boolean prefixRange) {
+    public Map<byte[], byte[]> calcPartitionPrefixRange(
+        byte @NonNull [] startKey,
+        byte @NonNull [] endKey,
+        boolean includeEnd,
+        boolean prefixRange
+    ) {
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
 
         SortedSet<ComparableByteArray> subSet = ranges.subSet(

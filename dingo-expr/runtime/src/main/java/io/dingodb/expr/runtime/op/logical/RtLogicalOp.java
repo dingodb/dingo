@@ -22,17 +22,16 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class RtLogicalOp extends RtOp {
     private static final long serialVersionUID = 5800304351907769891L;
 
-    protected RtLogicalOp(@Nonnull RtExpr[] paras) {
+    protected RtLogicalOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static boolean test(Object value) {
+    public static boolean test(@Nullable Object value) {
         if (value == null) {
             return false;
         }

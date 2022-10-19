@@ -21,13 +21,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class FinWithProfiles implements Fin {
     public static final Parser PARSER = Parser.JSON;
@@ -45,15 +45,14 @@ public class FinWithProfiles implements Fin {
         return PARSER.parse(is, FinWithProfiles.class);
     }
 
-    @Nonnull
-    public static FinWithProfiles of(OperatorProfile profile) {
+    public static @NonNull FinWithProfiles of(OperatorProfile profile) {
         List<OperatorProfile> profiles = new LinkedList<>();
         profiles.add(profile);
         return new FinWithProfiles(profiles);
     }
 
     @Override
-    public void writeStream(@Nonnull OutputStream os) throws IOException {
+    public void writeStream(@NonNull OutputStream os) throws IOException {
         PARSER.writeStream(os, this);
     }
 

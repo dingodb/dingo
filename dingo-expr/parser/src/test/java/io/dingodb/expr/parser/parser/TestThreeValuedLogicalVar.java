@@ -18,6 +18,7 @@ package io.dingodb.expr.parser.parser;
 
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.runtime.RtExpr;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +26,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -39,8 +39,7 @@ public class TestThreeValuedLogicalVar {
         "{a: 0, b: 5.0, c: false, d: bar}"
     );
 
-    @Nonnull
-    private static Stream<Arguments> getParameters() {
+    private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             //arguments("a and b", false, false),
             arguments("a and c", true, false),

@@ -20,10 +20,10 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 
 public final class JobManagerImpl implements JobManager {
     public static final JobManagerImpl INSTANCE = new JobManagerImpl();
@@ -33,9 +33,8 @@ public final class JobManagerImpl implements JobManager {
     private JobManagerImpl() {
     }
 
-    @Nonnull
     @Override
-    public Job createJob(Id jobId, DingoType parasType) {
+    public @NonNull Job createJob(Id jobId, DingoType parasType) {
         Job job = new JobImpl(jobId, parasType);
         jobMap.put(jobId, job);
         return job;

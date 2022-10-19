@@ -19,9 +19,7 @@ package io.dingodb.expr.parser;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface Expr {
     /**
@@ -31,6 +29,5 @@ public interface Expr {
      * @return the RtExpr
      * @throws DingoExprCompileException if something is wrong when compiling
      */
-    @Nonnull
-    RtExpr compileIn(@Nullable CompileContext ctx) throws DingoExprCompileException;
+    @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException;
 }

@@ -32,12 +32,12 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
@@ -51,7 +51,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return (DingoTable) table;
     }
 
-    public static DingoTable dingo(@Nonnull RelOptTable table) {
+    public static DingoTable dingo(@NonNull RelOptTable table) {
         return table.unwrap(DingoTable.class);
     }
 
@@ -61,7 +61,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     }
 
     @Override
-    public RelNode toRel(@Nonnull RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+    public RelNode toRel(RelOptTable.@NonNull ToRelContext context, RelOptTable relOptTable) {
         return new LogicalDingoTableScan(
             context.getCluster(),
             context.getCluster().traitSet(),
@@ -102,7 +102,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     }
 
     @Override
-    public <C> @Nullable C unwrap(@Nonnull Class<C> clazz) {
+    public <C> @Nullable C unwrap(@NonNull Class<C> clazz) {
         if (clazz.isAssignableFrom(InitializerExpressionFactory.class)) {
             return clazz.cast(DingoInitializerExpressionFactory.INSTANCE);
         }

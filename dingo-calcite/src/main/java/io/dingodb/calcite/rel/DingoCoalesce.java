@@ -24,10 +24,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * To coalesce a partitioned stream into one.
@@ -37,24 +37,23 @@ public final class DingoCoalesce extends SingleRel implements DingoRel {
         super(cluster, traits, input);
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoCoalesce(getCluster(), traitSet, sole(inputs));
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCostFactory().makeZeroCost();
     }
 
     @Override
-    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+    public double estimateRowCount(@NonNull RelMetadataQuery mq) {
         return mq.getRowCount(input) * DingoTableScan.ASSUME_PARTS;
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

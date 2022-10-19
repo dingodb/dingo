@@ -22,11 +22,11 @@ import io.dingodb.common.type.converter.AvroConverter;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 public final class AvroTxRxCodec implements TxRxCodec {
     public static final int TUPLE_FLAG = 0;
@@ -36,14 +36,13 @@ public final class AvroTxRxCodec implements TxRxCodec {
     private final AvroCodec avroCodec;
     private final DingoType schema;
 
-    public AvroTxRxCodec(@Nonnull DingoType schema) {
+    public AvroTxRxCodec(@NonNull DingoType schema) {
         this.schema = schema;
         this.avroCodec = new AvroCodec(schema.toAvroSchema());
     }
 
-    @Nonnull
     @Override
-    public byte[] encode(Object[] tuple) throws IOException {
+    public byte @NonNull [] encode(Object[] tuple) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         os.write(TUPLE_FLAG);
         Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
@@ -52,8 +51,7 @@ public final class AvroTxRxCodec implements TxRxCodec {
         return os.toByteArray();
     }
 
-    @Nonnull
-    public byte[] encodeFin(@Nonnull Fin fin) throws IOException {
+    public byte @NonNull [] encodeFin(Fin fin) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         if (fin instanceof FinWithProfiles) {
             os.write(NORMAL_FIN_FLAG);

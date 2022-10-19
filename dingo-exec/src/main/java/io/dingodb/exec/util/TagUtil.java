@@ -17,16 +17,13 @@
 package io.dingodb.exec.util;
 
 import io.dingodb.exec.base.Id;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class TagUtil {
     private TagUtil() {
     }
 
-    @Nonnull
-    public static String tag(Id jobId, Id id) {
+    public static @NonNull String tag(Id jobId, Id id) {
         return jobId + ":" + id;
     }
-
 }

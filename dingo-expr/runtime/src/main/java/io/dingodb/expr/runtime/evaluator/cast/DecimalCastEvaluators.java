@@ -21,9 +21,9 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -36,33 +36,27 @@ final class DecimalCastEvaluators {
     private DecimalCastEvaluators() {
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(int value) {
+    static @NonNull BigDecimal decimalCast(int value) {
         return BigDecimal.valueOf(value);
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(long value) {
+    static @NonNull BigDecimal decimalCast(long value) {
         return BigDecimal.valueOf(value);
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(double value) {
+    static @NonNull BigDecimal decimalCast(double value) {
         return BigDecimal.valueOf(value);
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(boolean value) {
+    static @NonNull BigDecimal decimalCast(boolean value) {
         return value ? BigDecimal.ONE : BigDecimal.ZERO;
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(@Nonnull BigDecimal value) {
+    static @NonNull BigDecimal decimalCast(@NonNull BigDecimal value) {
         return value;
     }
 
-    @Nonnull
-    static BigDecimal decimalCast(@Nonnull String value) {
+    static @NonNull BigDecimal decimalCast(@NonNull String value) {
         return new BigDecimal(value);
     }
 }

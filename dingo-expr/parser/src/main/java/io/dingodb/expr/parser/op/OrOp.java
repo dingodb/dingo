@@ -24,10 +24,10 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.expr.runtime.op.logical.RtOrOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class OrOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "OR";
@@ -40,19 +40,16 @@ public final class OrOp extends OpIgnoreEnv {
         super(name);
     }
 
-    @Nonnull
-    public static OrOp op() {
+    public static @NonNull OrOp op() {
         return new OrOp(OpType.OR);
     }
 
-    @Nonnull
-    public static OrOp fun() {
+    public static @NonNull OrOp fun() {
         return new OrOp(FUN_NAME);
     }
 
-    @Nonnull
     @Override
-    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(RtExpr @NonNull [] rtExprArray) throws DingoExprCompileException {
         int size = rtExprArray.length;
         try {
             List<RtExpr> nonConstExprs = new ArrayList<>(size);
@@ -84,9 +81,8 @@ public final class OrOp extends OpIgnoreEnv {
         }
     }
 
-    @Nonnull
     @Override
-    protected RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return new RtOrOp(rtExprArray);
     }
 }

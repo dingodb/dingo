@@ -22,24 +22,23 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class FromUnixTimeFun extends RtFun {
     private static final long serialVersionUID = 9189202071207557600L;
 
-    public FromUnixTimeFun(@Nonnull RtExpr[] paras) {
+    public FromUnixTimeFun(RtExpr[] paras) {
         super(paras);
     }
 
-    @Nonnull
-    public static Timestamp fromUnixTime(final long seconds) {
+    public static @NonNull Timestamp fromUnixTime(final long seconds) {
         return new Timestamp(seconds * 1000L);
     }
 
@@ -49,7 +48,7 @@ public class FromUnixTimeFun extends RtFun {
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         return fromUnixTime(((Number) values[0]).longValue());
     }
 

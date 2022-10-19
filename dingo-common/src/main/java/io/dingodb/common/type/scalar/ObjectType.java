@@ -25,13 +25,13 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("object")
 public class ObjectType extends AbstractScalarType {
@@ -51,7 +51,7 @@ public class ObjectType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         if (converter instanceof AvaticaResultSetConverter) { // Return the origin object to driver.
             return value;
         }
@@ -69,7 +69,7 @@ public class ObjectType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(converter.convertBinaryFrom(value));
             ObjectInputStream ois = new ObjectInputStream(bis);

@@ -20,31 +20,28 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.dingodb.common.util.Utils;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 
 public final class TupleMapping {
-    @Nonnull
     @JsonValue
     @Getter
     private final int[] mappings;
 
-    private TupleMapping(@Nonnull int[] mappings) {
+    private TupleMapping(int[] mappings) {
         this.mappings = mappings;
     }
 
     @JsonCreator
-    @Nonnull
-    public static TupleMapping of(int[] mappings) {
+    public static @NonNull TupleMapping of(int[] mappings) {
         return new TupleMapping(mappings);
     }
 
-    @Nonnull
-    public static TupleMapping of(@Nonnull List<Integer> intList) {
+    public static @NonNull TupleMapping of(@NonNull List<Integer> intList) {
         int[] intArray = new int[intList.size()];
         int i = 0;
         for (Integer integer : intList) {
@@ -62,13 +59,11 @@ public final class TupleMapping {
         return mappings[index];
     }
 
-    @Nonnull
-    public IntStream stream() {
+    public @NonNull IntStream stream() {
         return Arrays.stream(mappings);
     }
 
-    @Nonnull
-    public TupleMapping reverse(int num) {
+    public @NonNull TupleMapping reverse(int num) {
         if (num < 0) {
             num = Utils.max(mappings);
         }
@@ -89,8 +84,7 @@ public final class TupleMapping {
         return false;
     }
 
-    @Nonnull
-    public TupleMapping inverse(int num) {
+    public @NonNull TupleMapping inverse(int num) {
         int[] result = new int[num - mappings.length];
         int j = 0;
         for (int i = 0; i < num; ++i) {
@@ -102,40 +96,38 @@ public final class TupleMapping {
         return new TupleMapping(result);
     }
 
-    public <T> void map(@Nonnull T[] dst, @Nonnull T[] src) {
+    public <T> void map(T[] dst, T[] src) {
         for (int i = 0; i < mappings.length; i++) {
             dst[mappings[i]] = src[i];
         }
     }
 
-    public <T> void map(@Nonnull T[] dst, @Nonnull T[] src, Function<T, T> cloneFunc) {
+    public <T> void map(T[] dst, T[] src, Function<T, T> cloneFunc) {
         for (int i = 0; i < mappings.length; i++) {
             dst[mappings[i]] = cloneFunc.apply(src[i]);
         }
     }
 
-    public <T> void revMap(@Nonnull T[] dst, @Nonnull T[] src) {
+    public <T> void revMap(T[] dst, T[] src) {
         for (int i = 0; i < mappings.length; i++) {
             dst[i] = src[mappings[i]];
         }
     }
 
-    public <T> void revMap(@Nonnull T[] dst, @Nonnull T[] src, Function<T, T> cloneFunc) {
+    public <T> void revMap(T[] dst, T[] src, Function<T, T> cloneFunc) {
         for (int i = 0; i < mappings.length; i++) {
             dst[i] = cloneFunc.apply(src[mappings[i]]);
         }
     }
 
-    @Nonnull
-    public Object[] revMap(Object[] src) {
+    public Object @NonNull [] revMap(Object[] src) {
         Object[] dst = new Object[mappings.length];
         revMap(dst, src);
         return dst;
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return Arrays.toString(mappings);
     }
 }

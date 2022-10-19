@@ -23,29 +23,27 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class TimeFormatFun extends RtFun {
     private static final long serialVersionUID = 6543488500036739938L;
 
-    public TimeFormatFun(@Nonnull RtExpr[] paras) {
+    public TimeFormatFun(RtExpr[] paras) {
         super(paras);
     }
 
-    @Nonnull
-    public static String timeFormat(final Time value, final String format) {
+    public static @NonNull String timeFormat(final Time value, final String format) {
         return DateTimeUtils.timeFormat(value, format);
     }
 
-    @Nonnull
-    public static String timeFormat(final Time value) {
+    public static @NonNull String timeFormat(final Time value) {
         return DateTimeUtils.timeFormat(value);
     }
 
@@ -55,7 +53,7 @@ public class TimeFormatFun extends RtFun {
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         Time value = (Time) values[0];
         if (values.length < 2) {
             return timeFormat(value);

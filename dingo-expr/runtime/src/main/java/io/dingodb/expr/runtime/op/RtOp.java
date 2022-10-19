@@ -17,15 +17,14 @@
 package io.dingodb.expr.runtime.op;
 
 import io.dingodb.expr.runtime.RtExpr;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public abstract class RtOp implements RtExpr {
     private static final long serialVersionUID = 3831182336265497397L;
-    @Nonnull
-    protected final RtExpr[] paras;
 
-    protected RtOp(@Nonnull RtExpr[] paras) {
+    protected final RtExpr @NonNull [] paras;
+
+    protected RtOp(RtExpr @NonNull [] paras) {
         this.paras = paras;
     }
 }

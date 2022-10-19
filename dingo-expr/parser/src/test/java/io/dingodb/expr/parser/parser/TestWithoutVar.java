@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -31,7 +32,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.offset;
@@ -41,8 +41,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public class TestWithoutVar {
     private static final double TAU = Math.PI * 2;
 
-    @Nonnull
-    private static Stream<Arguments> getParameters() {
+    private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             // value
             arguments("true", true),

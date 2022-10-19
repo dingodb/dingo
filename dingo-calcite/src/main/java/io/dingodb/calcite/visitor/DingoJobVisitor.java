@@ -107,6 +107,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -123,7 +124,6 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
@@ -161,8 +161,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         }
     }
 
-    @Nonnull
-    private static SortCollation toSortCollation(@Nonnull RelFieldCollation collation) {
+    private static @NonNull SortCollation toSortCollation(@NonNull RelFieldCollation collation) {
         SortDirection d;
         switch (collation.direction) {
             case DESCENDING:
@@ -187,8 +186,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return new SortCollation(collation.getFieldIndex(), d, n);
     }
 
-    @Nonnull
-    private static TupleMapping getAggKeys(@Nonnull ImmutableBitSet groupSet) {
+    private static @NonNull TupleMapping getAggKeys(@NonNull ImmutableBitSet groupSet) {
         return TupleMapping.of(
             groupSet.asList().stream()
                 .mapToInt(Integer::intValue)
@@ -197,7 +195,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     private static List<Agg> getAggList(
-        @Nonnull List<AggregateCall> aggregateCallList,
+        @NonNull List<AggregateCall> aggregateCallList,
         DingoType schema
     ) {
         return aggregateCallList.stream()
@@ -209,10 +207,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             .collect(Collectors.toList());
     }
 
-    @Nonnull
     public static List<Object[]> getTuplesFromKeyItems(
-        @Nonnull Collection<Map<Integer, RexLiteral>> items,
-        @Nonnull TableDefinition td
+        @NonNull Collection<Map<Integer, RexLiteral>> items,
+        @NonNull TableDefinition td
     ) {
         final TupleMapping revMapping = td.getRevKeyMapping();
         return items.stream()
@@ -229,9 +226,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             .collect(Collectors.toList());
     }
 
-    @Nonnull
-    private static Map<Location, List<String>> groupAllPartKeysByAddress(
-        @Nonnull final NavigableMap<ComparableByteArray, Part> parts
+    private static @NonNull Map<Location, List<String>> groupAllPartKeysByAddress(
+        final @NonNull NavigableMap<ComparableByteArray, Part> parts
     ) {
         Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
         for (Map.Entry<ComparableByteArray, Part> entry : parts.entrySet()) {
@@ -262,8 +258,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return groupStartKeysByAddress;
     }
 
-    @Nonnull
-    private List<Output> coalesceInputsByTask(@Nonnull Collection<Output> inputs) {
+    private @NonNull List<Output> coalesceInputsByTask(@NonNull Collection<Output> inputs) {
         // Coalesce inputs from the same task. taskId --> list of inputs
         Map<Id, List<Output>> inputsMap = new HashMap<>();
         for (Output input : inputs) {
@@ -303,7 +298,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return outputs;
     }
 
-    private Output exchange(@Nonnull Output input, @Nonnull Location target, DingoType schema) {
+    private Output exchange(@NonNull Output input, @NonNull Location target, DingoType schema) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
             return input;
@@ -331,8 +326,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return receive.getSoleOutput();
     }
 
-    @Nonnull
-    private Collection<Output> bridge(@Nonnull Collection<Output> inputs, Supplier<Operator> operatorSupplier) {
+    private @NonNull Collection<Output> bridge(@NonNull Collection<Output> inputs,
+                                               Supplier<Operator> operatorSupplier) {
         List<Output> outputs = new LinkedList<>();
         for (Output input : inputs) {
             Operator operator = operatorSupplier.get();
@@ -347,7 +342,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoAggregate rel) {
+    public Collection<Output> visit(@NonNull DingoAggregate rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return bridge(inputs, () -> new AggregateOperator(
             getAggKeys(rel.getGroupSet()),
@@ -359,13 +354,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoCoalesce rel) {
+    public Collection<Output> visit(@NonNull DingoCoalesce rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         return coalesceInputsByTask(inputs);
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoDistributedValues rel) {
+    public Collection<Output> visit(@NonNull DingoDistributedValues rel) {
         List<Output> outputs = new LinkedList<>();
         String tableName = MetaCache.getTableName(rel.getTable());
         final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
@@ -394,7 +389,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoExchange rel) {
+    public Collection<Output> visit(@NonNull DingoExchange rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
@@ -406,7 +401,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoFilter rel) {
+    public Collection<Output> visit(@NonNull DingoFilter rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         RexNode condition = rel.getCondition();
         return bridge(inputs, () -> new FilterOperator(
@@ -416,7 +411,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoGetByKeys rel) {
+    public Collection<Output> visit(@NonNull DingoGetByKeys rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
         final TableDefinition td = this.metaCache.getTableDefinition(tableName);
@@ -444,7 +439,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoHash rel) {
+    public Collection<Output> visit(@NonNull DingoHash rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         final Collection<Location> locations = Services.CLUSTER.getComputingLocations();
@@ -462,7 +457,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoHashJoin rel) {
+    public Collection<Output> visit(@NonNull DingoHashJoin rel) {
         Collection<Output> leftInputs = dingo(rel.getLeft()).accept(this);
         Collection<Output> rightInputs = dingo(rel.getRight()).accept(this);
         Map<Id, Output> leftInputsMap = new HashMap<>(leftInputs.size());
@@ -495,7 +490,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartition rel) {
+    public Collection<Output> visit(@NonNull DingoPartition rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         String tableName = MetaCache.getTableName(rel.getTable());
@@ -518,7 +513,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartModify rel) {
+    public Collection<Output> visit(@NonNull DingoPartModify rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         String tableName = MetaCache.getTableName(rel.getTable());
@@ -573,7 +568,62 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoTableScan rel) {
+    public Collection<Output> visit(@NonNull DingoProject rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        return bridge(inputs, () -> new ProjectOperator(
+            SqlExprUtils.toSqlExprList(rel.getProjects(), rel.getRowType()),
+            DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
+        ));
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoReduce rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        Operator operator;
+        operator = new ReduceOperator(
+            getAggKeys(rel.getGroupSet()),
+            getAggList(
+                rel.getAggregateCallList(),
+                DingoTypeFactory.fromRelDataType(rel.getOriginalInputType())
+            )
+        );
+        operator.setId(idGenerator.get());
+        Output input = sole(inputs);
+        Task task = input.getTask();
+        task.putOperator(operator);
+        input.setLink(operator.getInput(0));
+        return operator.getOutputs();
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoRoot rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        if (inputs.size() != 1) {
+            throw new IllegalStateException("There must be one input to job root.");
+        }
+        Output input = sole(inputs);
+        Operator operator = new RootOperator(DingoTypeFactory.fromRelDataType(rel.getRowType()));
+        Task task = input.getTask();
+        operator.setId(idGenerator.get());
+        task.putOperator(operator);
+        input.setLink(operator.getInput(0));
+        return ImmutableList.of();
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoSort rel) {
+        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
+        return bridge(inputs, () -> new SortOperator(
+            rel.getCollation().getFieldCollations().stream()
+                .map(DingoJobVisitor::toSortCollation)
+                .collect(Collectors.toList()),
+            rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
+            rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
+        ));
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoTableScan rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
         List<Location> distributes = this.metaCache.getDistributes(tableName);
@@ -665,62 +715,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoProject rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return bridge(inputs, () -> new ProjectOperator(
-            SqlExprUtils.toSqlExprList(rel.getProjects(), rel.getRowType()),
-            DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
-        ));
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoReduce rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        Operator operator;
-        operator = new ReduceOperator(
-            getAggKeys(rel.getGroupSet()),
-            getAggList(
-                rel.getAggregateCallList(),
-                DingoTypeFactory.fromRelDataType(rel.getOriginalInputType())
-            )
-        );
-        operator.setId(idGenerator.get());
-        Output input = sole(inputs);
-        Task task = input.getTask();
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
-        return operator.getOutputs();
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoRoot rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        if (inputs.size() != 1) {
-            throw new IllegalStateException("There must be one input to job root.");
-        }
-        Output input = sole(inputs);
-        Operator operator = new RootOperator(DingoTypeFactory.fromRelDataType(rel.getRowType()));
-        Task task = input.getTask();
-        operator.setId(idGenerator.get());
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
-        return ImmutableList.of();
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoSort rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return bridge(inputs, () -> new SortOperator(
-            rel.getCollation().getFieldCollations().stream()
-                .map(DingoJobVisitor::toSortCollation)
-                .collect(Collectors.toList()),
-            rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
-            rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
-        ));
-    }
-
-    @Override
-    public Collection<Output> visit(@Nonnull DingoUnion rel) {
+    public Collection<Output> visit(@NonNull DingoUnion rel) {
         Collection<Output> inputs = new LinkedList<>();
         for (RelNode node : rel.getInputs()) {
             inputs.addAll(dingo(node).accept(this));
@@ -729,7 +724,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoValues rel) {
+    public Collection<Output> visit(@NonNull DingoValues rel) {
         Task task = job.getOrCreate(currentLocation, idGenerator);
         DingoType type = DingoTypeFactory.fromRelDataType(rel.getRowType());
         ValuesOperator operator = new ValuesOperator(
@@ -742,7 +737,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartCountDelete rel) {
+    public Collection<Output> visit(@NonNull DingoPartCountDelete rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         CommonId tableId = this.metaCache.getTableId(tableName);
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
@@ -775,7 +770,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartRangeScan rel) {
+    public Collection<Output> visit(@NonNull DingoPartRangeScan rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
         SqlExpr filter = null;
@@ -845,7 +840,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@Nonnull DingoPartRangeDelete rel) {
+    public Collection<Output> visit(@NonNull DingoPartRangeDelete rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         CommonId tableId = this.metaCache.getTableId(tableName);
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
@@ -875,7 +870,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return outputs;
     }
 
-    private Map<byte[], Integer> getRangePart(DingoTableScan scan, TableDefinition td) throws IOException {
+    private @NonNull Map<byte[], Integer> getRangePart(
+        DingoTableScan scan,
+        @NonNull TableDefinition td
+    ) throws IOException {
         // pre create table partition by   map<byte[], int>  int 1  matched one part
         //  2 matched muti part 3 matched all part
         // default create table without default

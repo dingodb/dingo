@@ -16,9 +16,8 @@
 
 package io.dingodb.exec.base;
 
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface IdGenerator {
-    @Nonnull
-    Id get();
+    @NonNull Id get();
 }

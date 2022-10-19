@@ -19,7 +19,6 @@ package io.dingodb.server.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 
 import java.util.List;

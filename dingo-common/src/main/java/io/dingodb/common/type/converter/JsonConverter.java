@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.Base64;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 
 public class JsonConverter implements DataConverter {
     public static final JsonConverter INSTANCE = new JsonConverter();
@@ -44,77 +44,77 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public boolean isNull(@Nonnull Object value) {
+    public boolean isNull(@NonNull Object value) {
         return value instanceof NullNode;
     }
 
     @Override
-    public Long convert(@Nonnull Date value) {
+    public Long convert(@NonNull Date value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Time value) {
+    public Long convert(@NonNull Time value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Timestamp value) {
+    public Long convert(@NonNull Timestamp value) {
         return value.getTime();
     }
 
     @Override
-    public String convert(@Nonnull byte[] value) {
+    public String convert(byte @NonNull [] value) {
         return Base64.encodeBytes(value);
     }
 
     @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
+    public Integer convertIntegerFrom(@NonNull Object value) {
         return ((JsonNode) value).intValue();
     }
 
     @Override
-    public Long convertLongFrom(@Nonnull Object value) {
+    public Long convertLongFrom(@NonNull Object value) {
         return ((JsonNode) value).longValue();
     }
 
     @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
+    public Double convertDoubleFrom(@NonNull Object value) {
         return ((JsonNode) value).doubleValue();
     }
 
     @Override
-    public Boolean convertBooleanFrom(@Nonnull Object value) {
+    public Boolean convertBooleanFrom(@NonNull Object value) {
         return ((JsonNode) value).booleanValue();
     }
 
     @Override
-    public String convertStringFrom(@Nonnull Object value) {
+    public String convertStringFrom(@NonNull Object value) {
         return ((JsonNode) value).asText();
     }
 
     @Override
-    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+    public BigDecimal convertDecimalFrom(@NonNull Object value) {
         return ((JsonNode) value).decimalValue();
     }
 
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         return new Date(((JsonNode) value).longValue());
     }
 
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         return new Time(((JsonNode) value).longValue());
     }
 
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         return new Timestamp(((JsonNode) value).longValue());
     }
 
     @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
+    public byte[] convertBinaryFrom(@NonNull Object value) {
         try {
             return Base64.decode(((JsonNode) value).asText());
         } catch (IOException e) {
@@ -123,7 +123,7 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public Object[] convertTupleFrom(@Nonnull Object value, @Nonnull DingoType type) {
+    public Object[] convertTupleFrom(@NonNull Object value, @NonNull DingoType type) {
         ArrayNode arrayNode = (ArrayNode) value;
         return IntStream.range(0, arrayNode.size())
             .mapToObj(i -> Objects.requireNonNull(type.getChild(i)).convertFrom(arrayNode.get(i), this))
@@ -131,7 +131,7 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public Object[] convertArrayFrom(@Nonnull Object value, DingoType elementType) {
+    public Object[] convertArrayFrom(@NonNull Object value, @NonNull DingoType elementType) {
         ArrayNode arrayNode = (ArrayNode) value;
         Object[] tuple = new Object[arrayNode.size()];
         for (int i = 0; i < tuple.length; ++i) {
@@ -141,7 +141,7 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public List<?> convertListFrom(@Nonnull Object value, DingoType elementType) {
+    public List<?> convertListFrom(@NonNull Object value, @NonNull DingoType elementType) {
         ArrayNode arrayNode = (ArrayNode) value;
         List<Object> list = new ArrayList<>(arrayNode.size());
         for (JsonNode node : arrayNode) {
@@ -151,7 +151,11 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public Map<Object, Object> convertMapFrom(@Nonnull Object value, DingoType keyType, DingoType valueType) {
+    public Map<Object, Object> convertMapFrom(
+        @NonNull Object value,
+        @NonNull DingoType keyType,
+        @NonNull DingoType valueType
+    ) {
         ObjectNode objectNode = (ObjectNode) value;
         Map<Object, Object> map = new LinkedHashMap<>();
         for (Iterator<Map.Entry<String, JsonNode>> it = objectNode.fields(); it.hasNext(); ) {

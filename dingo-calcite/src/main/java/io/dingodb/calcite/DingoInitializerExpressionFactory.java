@@ -38,8 +38,8 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
@@ -54,7 +54,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
     }
 
     private SqlNode validateExprWithRowType(
-        @Nonnull InitializerContext context,
+        @NonNull InitializerContext context,
         RelDataType rowType,
         SqlNode expr
     ) {

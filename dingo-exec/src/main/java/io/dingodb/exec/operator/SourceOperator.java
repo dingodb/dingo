@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * Source operator has no inputs and only one output.
@@ -42,7 +41,7 @@ public abstract class SourceOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         return push();
     }
 

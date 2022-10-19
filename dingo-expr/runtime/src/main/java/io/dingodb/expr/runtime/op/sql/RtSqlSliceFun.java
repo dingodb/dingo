@@ -20,16 +20,16 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class RtSqlSliceFun extends RtFun {
     private static final long serialVersionUID = 385165019484223289L;
 
-    public RtSqlSliceFun(@Nonnull RtExpr[] paras) {
+    public RtSqlSliceFun(RtExpr[] paras) {
         super(paras);
     }
 
@@ -40,7 +40,7 @@ public class RtSqlSliceFun extends RtFun {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         List<Object[]> list = (List<Object[]>) values[0];
         return list.stream()
             .map(t -> t[0])

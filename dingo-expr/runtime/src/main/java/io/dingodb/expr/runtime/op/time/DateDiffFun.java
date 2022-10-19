@@ -23,19 +23,19 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DateDiffFun extends RtFun {
     private static final long serialVersionUID = -8589287644033616224L;
 
-    public DateDiffFun(@Nonnull RtExpr[] paras) {
+    public DateDiffFun(RtExpr[] paras) {
         super(paras);
     }
 
@@ -49,7 +49,7 @@ public class DateDiffFun extends RtFun {
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         return dateDiff((Date) values[0], (Date) values[1]);
     }
 

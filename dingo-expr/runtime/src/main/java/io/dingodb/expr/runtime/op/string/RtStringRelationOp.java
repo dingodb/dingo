@@ -20,12 +20,10 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
 
-import javax.annotation.Nonnull;
-
 public abstract class RtStringRelationOp extends RtFun {
     private static final long serialVersionUID = 5064294321044156732L;
 
-    protected RtStringRelationOp(@Nonnull RtExpr[] paras) {
+    protected RtStringRelationOp(RtExpr[] paras) {
         super(paras);
     }
 

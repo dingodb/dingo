@@ -23,11 +23,11 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 
 @AutoService(StoreService.class)
 public class MemoryStoreService implements StoreService {
@@ -40,12 +40,12 @@ public class MemoryStoreService implements StoreService {
     }
 
     @Override
-    public StoreInstance getOrCreateInstance(@Nonnull CommonId id, int ttl) {
+    public StoreInstance getOrCreateInstance(@NonNull CommonId id, int ttl) {
         return getInstance(id);
     }
 
     @Override
-    public StoreInstance getInstance(@Nonnull CommonId id) {
+    public StoreInstance getInstance(@NonNull CommonId id) {
         MemoryStoreInstance instance = store.get(id);
         if (instance == null) {
             instance = new MemoryStoreInstance();
@@ -62,7 +62,7 @@ public class MemoryStoreService implements StoreService {
         store.remove(id);
     }
 
-    private Part createPart(@Nonnull CommonId id, byte[] start, byte[] end) {
+    private Part createPart(@NonNull CommonId id, byte[] start, byte[] end) {
         return Part.builder()
             .id(id)
             .instanceId(id)

@@ -22,25 +22,23 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.exception.ElementsNullNotAllowed;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtFun;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class RtSqlCastListItemsOp extends RtFun {
     private static final long serialVersionUID = -7968394097724524958L;
 
-    @Nonnull
-    private final Evaluator evaluator;
+    private final @NonNull Evaluator evaluator;
 
-    public RtSqlCastListItemsOp(@Nonnull Evaluator evaluator, @Nonnull RtExpr[] paras) {
+    public RtSqlCastListItemsOp(Evaluator evaluator, RtExpr[] paras) {
         super(paras);
         this.evaluator = evaluator;
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) throws FailGetEvaluator {
+    protected @NonNull Object fun(@NonNull Object @NonNull [] values) throws FailGetEvaluator {
         List<?> list = (List<?>) values[0];
         List<Object> result = new ArrayList<>(list.size());
         for (Object i : list) {

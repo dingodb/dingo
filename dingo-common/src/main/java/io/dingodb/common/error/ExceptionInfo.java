@@ -16,10 +16,11 @@
 
 package io.dingodb.common.error;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class ExceptionInfo {
     private final String name;
@@ -38,8 +39,7 @@ public class ExceptionInfo {
      * @param throwable a throwable object
      * @return an exception info
      */
-    @Nonnull
-    public static ExceptionInfo fromThrowable(Throwable throwable) {
+    public static @NonNull ExceptionInfo fromThrowable(Throwable throwable) {
         String name = buildExceptionName(throwable);
         List<String> stacktrace = buildExceptionStacktrace(throwable);
         return new ExceptionInfo(name, throwable.getMessage(), stacktrace);
@@ -51,8 +51,7 @@ public class ExceptionInfo {
      * @param throwable an throwable object
      * @return an exception info chain
      */
-    @Nonnull
-    public static List<ExceptionInfo> buildExceptionChain(Throwable throwable) {
+    public static @NonNull List<ExceptionInfo> buildExceptionChain(Throwable throwable) {
         List<ExceptionInfo> chain = new ArrayList<>();
         do {
             chain.add(fromThrowable(throwable));
@@ -70,8 +69,7 @@ public class ExceptionInfo {
         return throwable.getClass().getCanonicalName();
     }
 
-    @Nonnull
-    private static List<String> buildExceptionStacktrace(@Nonnull Throwable throwable) {
+    private static @NonNull List<String> buildExceptionStacktrace(@NonNull Throwable throwable) {
         List<String> stacktrace = new ArrayList<>();
         for (StackTraceElement element : throwable.getStackTrace()) {
             String stack = String.format("%s.%s at %s:%d",

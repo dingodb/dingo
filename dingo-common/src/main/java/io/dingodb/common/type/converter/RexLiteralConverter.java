@@ -20,6 +20,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.runtime.utils.NumberUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,7 +28,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import javax.annotation.Nonnull;
 
 public class RexLiteralConverter implements DataConverter {
     public static final RexLiteralConverter INSTANCE = new RexLiteralConverter();
@@ -38,63 +38,63 @@ public class RexLiteralConverter implements DataConverter {
     }
 
     @Override
-    public Object convert(@Nonnull Date value) {
+    public Object convert(@NonNull Date value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Time value) {
+    public Object convert(@NonNull Time value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Timestamp value) {
+    public Object convert(@NonNull Timestamp value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull byte[] value) {
+    public Object convert(byte @NonNull [] value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Object[] value, DingoType elementType) {
+    public Object convert(Object @NonNull [] value, @NonNull DingoType elementType) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
+    public Integer convertIntegerFrom(@NonNull Object value) {
         long v = ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
         return NumberUtils.checkIntRange(v);
     }
 
     @Override
-    public Long convertLongFrom(@Nonnull Object value) {
+    public Long convertLongFrom(@NonNull Object value) {
         return ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
     }
 
     @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
+    public Double convertDoubleFrom(@NonNull Object value) {
         return ((BigDecimal) value).doubleValue();
     }
 
     @Override
-    public String convertStringFrom(@Nonnull Object value) {
+    public String convertStringFrom(@NonNull Object value) {
         return ((NlsString) value).getValue();
     }
 
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         return new Date(((Calendar) value).getTimeInMillis());
     }
 
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         return new Time(((Calendar) value).getTimeInMillis());
     }
 
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         // This works for literal like `TIMESTAMP '1970-01-01 00:00:00'`, which returns UTC time, not local time
         Calendar calendar = (Calendar) value;
         long v = calendar.getTimeInMillis();
@@ -102,7 +102,7 @@ public class RexLiteralConverter implements DataConverter {
     }
 
     @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
+    public byte[] convertBinaryFrom(@NonNull Object value) {
         return ((ByteString) value).getBytes();
     }
 }

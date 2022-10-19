@@ -27,20 +27,19 @@ import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.TimeZone;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class CalcValueUtils {
     private CalcValueUtils() {
     }
 
-    @Nullable
     public static Object calcValue(
         RexNode rexNode,
-        @Nonnull DingoType targetType,
+        @NonNull DingoType targetType,
         Object[] tuple,
         DingoType tupleType,
         @Nullable EvalEnv env
@@ -54,10 +53,9 @@ public final class CalcValueUtils {
         );
     }
 
-    @Nonnull
-    public static Object[] calcValues(
-        @Nonnull List<RexNode> rexNodeList,
-        @Nonnull DingoType targetType,
+    public static Object @NonNull [] calcValues(
+        @NonNull List<RexNode> rexNodeList,
+        DingoType targetType,
         Object[] tuple,
         DingoType tupleType,
         @Nullable EvalEnv env
@@ -70,10 +68,9 @@ public final class CalcValueUtils {
         return result;
     }
 
-    @Nonnull
-    public static EvalEnv getEnv(@Nonnull RelOptRuleCall call) {
-        EvalEnv env = new EvalEnv();
-        env.setTimeZone(call.getPlanner().getContext().unwrap(TimeZone.class));
-        return env;
+    public static @NonNull EvalEnv getEnv(@NonNull RelOptRuleCall call) {
+        return EvalEnv.builder()
+            .timeZone(call.getPlanner().getContext().unwrap(TimeZone.class))
+            .build();
     }
 }

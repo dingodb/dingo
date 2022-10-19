@@ -23,19 +23,15 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 public final class RtSqlCaseOp extends RtOp {
     private static final long serialVersionUID = 262253285071682317L;
 
-    public RtSqlCaseOp(@Nonnull RtExpr[] paras) {
+    public RtSqlCaseOp(RtExpr[] paras) {
         super(paras);
     }
 
-    @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+    public Object eval(EvalContext etx) throws FailGetEvaluator {
         int size = paras.length;
         for (int i = 0; i < size - 1; i += 2) {
             RtExpr para = paras[i];

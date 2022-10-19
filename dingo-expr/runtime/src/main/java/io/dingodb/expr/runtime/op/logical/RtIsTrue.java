@@ -19,20 +19,17 @@ package io.dingodb.expr.runtime.op.logical;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class RtIsTrue extends RtLogicalOp {
     private static final long serialVersionUID = -3041596851911629158L;
 
-    public RtIsTrue(@Nonnull RtExpr[] paras) {
+    public RtIsTrue(RtExpr[] paras) {
         super(paras);
     }
 
-    @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+    public @NonNull Object eval(EvalContext etx) throws FailGetEvaluator {
         Object v = paras[0].eval(etx);
         return RtLogicalOp.test(v);
     }

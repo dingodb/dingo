@@ -22,9 +22,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 final class ArrayItemsDeserializer extends StdDeserializer<ArrayItems> {
     private static final long serialVersionUID = 8668916270017428736L;
@@ -35,7 +35,7 @@ final class ArrayItemsDeserializer extends StdDeserializer<ArrayItems> {
 
     @Override
     public ArrayItems deserialize(
-        @Nonnull JsonParser parser,
+        @NonNull JsonParser parser,
         DeserializationContext ctx
     ) throws IOException {
         JsonNode jsonNode = parser.readValueAsTree();

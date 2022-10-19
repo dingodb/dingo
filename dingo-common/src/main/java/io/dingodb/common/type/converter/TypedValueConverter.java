@@ -18,12 +18,12 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import javax.annotation.Nonnull;
 
 public class TypedValueConverter extends ConverterWithCalendar {
     private static final RuntimeException NEVER_CONVERT_BACK
@@ -34,32 +34,32 @@ public class TypedValueConverter extends ConverterWithCalendar {
     }
 
     @Override
-    public Object convert(@Nonnull Date value) {
+    public Object convert(@NonNull Date value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Time value) {
+    public Object convert(@NonNull Time value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Timestamp value) {
+    public Object convert(@NonNull Timestamp value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull byte[] value) {
+    public Object convert(byte @NonNull [] value) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Object convert(@Nonnull Object[] value, DingoType elementType) {
+    public Object convert(Object @NonNull [] value, @NonNull DingoType elementType) {
         throw NEVER_CONVERT_BACK;
     }
 
     @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
+    public Integer convertIntegerFrom(@NonNull Object value) {
         // Values transferred from remote client are Longs.
         if (value instanceof Long) {
             return ((Long) value).intValue();
@@ -74,7 +74,7 @@ public class TypedValueConverter extends ConverterWithCalendar {
      * @return the {@link Date}
      */
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         return new Date(((Integer) value) * DateTimeUtils.MILLIS_PER_DAY);
     }
 
@@ -86,7 +86,7 @@ public class TypedValueConverter extends ConverterWithCalendar {
      * @return the {@link Time}
      */
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         return new Time((Integer) value);
     }
 
@@ -98,7 +98,7 @@ public class TypedValueConverter extends ConverterWithCalendar {
      * @return the {@link Timestamp}
      */
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         // Calcite's timestamp are shifted to UTC.
         return unShiftedTimestamp((Long) value);
     }

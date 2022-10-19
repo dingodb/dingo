@@ -23,29 +23,32 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
 public class DingoNumberFloorOp extends RtFun {
-    public DingoNumberFloorOp(@Nonnull RtExpr[] paras) {
+    private static final long serialVersionUID = 8316649051045203444L;
+
+    public DingoNumberFloorOp(RtExpr[] paras) {
         super(paras);
     }
 
     @org.apache.calcite.linq4j.function.Hints("SqlKind:FLOOR")
-    public static BigDecimal floor(final BigDecimal value) {
+    public static @NonNull BigDecimal floor(final @NonNull BigDecimal value) {
         return value.setScale(0, RoundingMode.FLOOR);
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected @Nullable Object fun(Object @NonNull [] values) {
         if (values[0] == null) {
             return null;
         }
@@ -68,7 +71,7 @@ public class DingoNumberFloorOp extends RtFun {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("floor");
+            return Collections.singletonList("floor");
         }
 
         @Override

@@ -17,6 +17,8 @@
 package io.dingodb.expr.runtime.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -36,8 +38,6 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.time.format.SignStyle;
 import java.util.TimeZone;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -114,8 +114,7 @@ public final class DateTimeUtils {
     private DateTimeUtils() {
     }
 
-    @Nonnull
-    private static DateTimeFormatter dateFormatterWithSeparator(char sep) {
+    private static @NonNull DateTimeFormatter dateFormatterWithSeparator(char sep) {
         return new DateTimeFormatterBuilder().parseCaseInsensitive()
             .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
             .appendLiteral(sep)
@@ -126,11 +125,10 @@ public final class DateTimeUtils {
             .withResolverStyle(ResolverStyle.STRICT);
     }
 
-    @Nonnull
-    private static DateTimeFormatter concatDateTimeFormatter(
+    private static @NonNull DateTimeFormatter concatDateTimeFormatter(
         DateTimeFormatter dateFormatter,
         DateTimeFormatter timeFormatter,
-        Character sep
+        @Nullable Character sep
     ) {
         DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
         builder.append(dateFormatter);
@@ -148,8 +146,7 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the date
      */
-    @Nullable
-    public static Date parseDate(@Nonnull String value) {
+    public static @Nullable Date parseDate(@NonNull String value) {
         if (value.isEmpty()) {
             return null;
         }
@@ -172,8 +169,7 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the time
      */
-    @Nullable
-    public static Time parseTime(@Nonnull String value) {
+    public static @Nullable Time parseTime(@NonNull String value) {
         if (value.isEmpty()) {
             return null;
         }
@@ -196,8 +192,7 @@ public final class DateTimeUtils {
      * @param value the input string
      * @return the timestamp
      */
-    @Nullable
-    public static Timestamp parseTimestamp(@Nonnull String value) {
+    public static @Nullable Timestamp parseTimestamp(@NonNull String value) {
         if (value.isEmpty()) {
             return null;
         }
@@ -214,67 +209,56 @@ public final class DateTimeUtils {
                 + "].");
     }
 
-    @Nonnull
-    public static String dateFormat(@Nonnull Date value, @Nonnull DateTimeFormatter formatter) {
+    public static @NonNull String dateFormat(@NonNull Date value, DateTimeFormatter formatter) {
         return Instant.ofEpochMilli(value.getTime()).atZone(ZoneOffset.UTC).format(formatter);
     }
 
-    @Nonnull
-    public static String dateFormat(@Nonnull Date value, @Nonnull String format) {
+    public static @NonNull String dateFormat(Date value, String format) {
         return dateFormat(
             value,
             DateTimeFormatter.ofPattern(convertFormat(format)).withResolverStyle(ResolverStyle.STRICT)
         );
     }
 
-    @Nonnull
-    public static String dateFormat(@Nonnull Date value) {
+    public static @NonNull String dateFormat(Date value) {
         return dateFormat(value, STD_DATE_FORMATTER);
     }
 
-    @Nonnull
-    public static String timeFormat(@Nonnull Time value, @Nonnull DateTimeFormatter formatter) {
+    public static @NonNull String timeFormat(@NonNull Time value, DateTimeFormatter formatter) {
         return Instant.ofEpochMilli(value.getTime()).atZone(ZoneOffset.UTC).format(formatter);
     }
 
-    @Nonnull
-    public static String timeFormat(@Nonnull Time value, @Nonnull String format) {
+    public static @NonNull String timeFormat(Time value, String format) {
         return timeFormat(
             value,
             DateTimeFormatter.ofPattern(convertFormat(format)).withResolverStyle(ResolverStyle.STRICT)
         );
     }
 
-    @Nonnull
-    public static String timeFormat(@Nonnull Time value) {
+    public static @NonNull String timeFormat(Time value) {
         return timeFormat(value, STD_TIME_FORMATTER);
     }
 
-    @Nonnull
-    public static String timestampFormat(@Nonnull Timestamp value, @Nonnull DateTimeFormatter formatter) {
+    public static @NonNull String timestampFormat(@NonNull Timestamp value, DateTimeFormatter formatter) {
         return value.toLocalDateTime().format(formatter);
     }
 
-    @Nonnull
-    public static String timestampFormat(@Nonnull Timestamp timestamp, @Nonnull String format) {
+    public static @NonNull String timestampFormat(Timestamp timestamp, String format) {
         return timestampFormat(
             timestamp,
             DateTimeFormatter.ofPattern(convertFormat(format)).withResolverStyle(ResolverStyle.STRICT)
         );
     }
 
-    @Nonnull
-    public static String timestampFormat(@Nonnull Timestamp value) {
+    public static @NonNull String timestampFormat(Timestamp value) {
         return timestampFormat(value, STD_DATETIME_FORMATTER);
     }
 
-    @Nonnull
-    public static Date currentDate() {
+    public static @NonNull Date currentDate() {
         return currentDate(TimeZone.getDefault());
     }
 
-    @Nonnull
-    public static Date currentDate(@Nonnull TimeZone timeZone) {
+    public static @NonNull Date currentDate(@NonNull TimeZone timeZone) {
         long millis = System.currentTimeMillis();
         millis = Math.floorDiv(
             millis + timeZone.getOffset(millis),
@@ -283,13 +267,11 @@ public final class DateTimeUtils {
         return new Date(millis);
     }
 
-    @Nonnull
-    public static Time currentTime() {
+    public static @NonNull Time currentTime() {
         return currentTime(TimeZone.getDefault());
     }
 
-    @Nonnull
-    public static Time currentTime(@Nonnull TimeZone timeZone) {
+    public static @NonNull Time currentTime(@NonNull TimeZone timeZone) {
         long millis = System.currentTimeMillis();
         millis = Math.floorMod(
             millis + timeZone.getOffset(millis),
@@ -298,22 +280,20 @@ public final class DateTimeUtils {
         return new Time(millis);
     }
 
-    @Nonnull
-    public static Timestamp currentTimestamp() {
+    public static @NonNull Timestamp currentTimestamp() {
         long millis = System.currentTimeMillis();
         return new Timestamp(millis);
     }
 
-    private static LocalDate localDateOf(@Nonnull Date value) {
+    private static LocalDate localDateOf(@NonNull Date value) {
         return Instant.ofEpochMilli(value.getTime()).atZone(ZoneOffset.UTC).toLocalDate();
     }
 
-    public static long dateDiff(@Nonnull Date value0, @Nonnull Date value1) {
+    public static long dateDiff(Date value0, Date value1) {
         return localDateOf(value0).toEpochDay() - localDateOf(value1).toEpochDay();
     }
 
-    @Nonnull
-    static String convertFormat(@Nonnull String mysqlFormat) {
+    static @NonNull String convertFormat(String mysqlFormat) {
         StringBuilder builder = new StringBuilder();
         CharacterIterator it = new StringCharacterIterator(mysqlFormat);
         boolean literalStarted = false;
@@ -379,8 +359,7 @@ public final class DateTimeUtils {
     }
 
     // For Debugging
-    @Nonnull
-    public static String toUtcString(java.util.Date value) {
+    public static @NonNull String toUtcString(java.util.Date value) {
         final DateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         dtf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return dtf.format(value);

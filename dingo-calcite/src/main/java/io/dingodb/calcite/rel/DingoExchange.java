@@ -27,10 +27,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoExchange extends SingleRel implements DingoRel {
     @Getter
@@ -45,28 +45,26 @@ public final class DingoExchange extends SingleRel implements DingoRel {
         this.root = root;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.itemIf("root", root, root);
         return pw;
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoExchange(getCluster(), traitSet, AbstractRelNode.sole(inputs), root);
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(getInput());
         return planner.getCostFactory().makeCost(rowCount, rowCount + 1.0, rowCount);
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

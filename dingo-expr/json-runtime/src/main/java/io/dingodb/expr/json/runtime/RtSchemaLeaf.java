@@ -20,9 +20,7 @@ import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @RequiredArgsConstructor
 public class RtSchemaLeaf extends RtSchema {
@@ -43,15 +41,13 @@ public class RtSchemaLeaf extends RtSchema {
         return index;
     }
 
-    @Nullable
     @Override
     public CompileContext getChild(Object index) {
         return null;
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return TypeCode.nameOf(typeCode) + "(" + getIndex() + ")";
     }
 }

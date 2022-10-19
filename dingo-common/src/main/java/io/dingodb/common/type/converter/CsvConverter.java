@@ -18,13 +18,13 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class CsvConverter implements DataConverter {
@@ -34,12 +34,12 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public boolean isNull(@Nonnull Object value) {
+    public boolean isNull(@NonNull Object value) {
         return value.equals("null") || value.equals("NULL");
     }
 
     @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
+    public Integer convertIntegerFrom(@NonNull Object value) {
         if (value == null || value.toString().trim().isEmpty()) {
             return null;
         }
@@ -47,7 +47,7 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public Long convertLongFrom(@Nonnull Object value) {
+    public Long convertLongFrom(@NonNull Object value) {
         if (value == null || value.toString().trim().isEmpty()) {
             return null;
         }
@@ -55,7 +55,7 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
+    public Double convertDoubleFrom(@NonNull Object value) {
         if (value == null || value.toString().trim().isEmpty()) {
             return null;
         }
@@ -63,7 +63,7 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public Boolean convertBooleanFrom(@Nonnull Object value) {
+    public Boolean convertBooleanFrom(@NonNull Object value) {
         String str = value.toString();
         if (str.equalsIgnoreCase("true")) {
             return Boolean.TRUE;
@@ -86,7 +86,7 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+    public BigDecimal convertDecimalFrom(@NonNull Object value) {
         if (value == null || value.toString().trim().isEmpty()) {
             return null;
         }
@@ -94,25 +94,25 @@ public class CsvConverter implements DataConverter {
     }
 
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
         return DateTimeUtils.parseDate(strValue);
     }
 
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
         return DateTimeUtils.parseTime(strValue);
     }
 
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
         return DateTimeUtils.parseTimestamp(strValue);
     }
 
     @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
+    public byte[] convertBinaryFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
         return strValue.getBytes(StandardCharsets.UTF_8);
     }

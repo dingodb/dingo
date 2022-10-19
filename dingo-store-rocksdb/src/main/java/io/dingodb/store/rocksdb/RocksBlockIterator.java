@@ -19,10 +19,10 @@ package io.dingodb.store.rocksdb;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rocksdb.RocksDB;
 
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class RocksBlockIterator implements Iterator<KeyValue> {
@@ -31,7 +31,7 @@ public class RocksBlockIterator implements Iterator<KeyValue> {
     private final byte[] start;
     private final byte[] end;
 
-    public RocksBlockIterator(@Nonnull RocksDB db, byte[] start, byte[] end) {
+    public RocksBlockIterator(@NonNull RocksDB db, byte[] start, byte[] end) {
         iterator = db.newIterator();
         this.start = start;
         this.end = end;
@@ -43,16 +43,16 @@ public class RocksBlockIterator implements Iterator<KeyValue> {
     }
 
     @Override
+    public boolean hasNext() {
+        return iterator.isValid() && (end == null || ByteArrayUtils.lessThan(iterator.key(), end));
+    }
+
+    @Override
     public KeyValue next() {
         byte[] key = iterator.key();
         byte[] value = iterator.value();
         iterator.next();
         return new KeyValue(key, value);
-    }
-
-    @Override
-    public boolean hasNext() {
-        return iterator.isValid() && (end == null || ByteArrayUtils.lessThan(iterator.key(), end));
     }
 
     // close rocksdb iterator

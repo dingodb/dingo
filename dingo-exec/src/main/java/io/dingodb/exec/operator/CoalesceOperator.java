@@ -27,7 +27,6 @@ import io.dingodb.exec.fin.OperatorProfile;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("coalesce")
 @JsonPropertyOrder({"inputNum", "output"})
@@ -52,7 +51,7 @@ public final class CoalesceOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         return output.push(tuple);
     }
 

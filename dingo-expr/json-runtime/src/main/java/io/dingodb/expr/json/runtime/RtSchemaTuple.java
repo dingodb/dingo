@@ -19,11 +19,11 @@ package io.dingodb.expr.json.runtime;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
 public final class RtSchemaTuple extends RtSchema {
@@ -55,9 +55,8 @@ public final class RtSchemaTuple extends RtSchema {
         return children[(int) index];
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return "[" + Arrays.stream(children)
             .map(Objects::toString)
             .collect(Collectors.joining(", ")) + "]";

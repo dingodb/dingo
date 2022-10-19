@@ -34,9 +34,9 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +53,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoPartModify rel0 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
@@ -86,46 +86,8 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         );
     }
 
-    @Value.Immutable
-    public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoPartRangeDeleteRule.Config.builder()
-            .operandSupplier(
-                b0 -> b0.operand(DingoPartModify.class)
-                    // It is a delete operation
-                    .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
-                    .oneInput(b1 ->
-                        b1.operand(DingoTableScan.class)
-                            .predicate(r -> {
-                                RexNode filter = r.getFilter();
-                                // Contains filter conditions: > < and
-                                if (filter != null) {
-                                    SqlKind filterKind = filter.getKind();
-                                    switch (filterKind) {
-                                        case AND:
-                                        case LESS_THAN:
-                                        case LESS_THAN_OR_EQUAL:
-                                        case GREATER_THAN:
-                                        case GREATER_THAN_OR_EQUAL:
-                                            return true;
-                                        default:
-                                            return false;
-                                    }
-                                }
-                                return false;
-                            }).noInputs())
-            )
-            .description("DingoPartRangeDeleteRule")
-            .build();
-
-        @Override
-        default DingoPartRangeDeleteRule toRule() {
-            return new DingoPartRangeDeleteRule(this);
-        }
-    }
-
     private List<byte[]> calLeftAndRight(
-        byte[] left, byte[] right, DingoTableScan rel, int firstPrimaryColumnIndex, Codec codec)
-    {
+        byte[] left, byte[] right, DingoTableScan rel, int firstPrimaryColumnIndex, Codec codec) {
         List<byte[]> list = new ArrayList();
         switch (rel.getFilter().getKind()) {
             case AND: {
@@ -157,7 +119,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                                 break;
                         }
                     } catch (IOException e) {
-                        log.error("Some errors occurred in encodeKeyForRangeScan: {}", e);
+                        log.error("Some errors occurred in encodeKeyForRangeScan: ", e);
                         throw new RuntimeException(e);
                     }
                 }
@@ -203,5 +165,42 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         list.add(left);
         list.add(right);
         return list;
+    }
+
+    @Value.Immutable
+    public interface Config extends RelRule.Config {
+        Config DEFAULT = ImmutableDingoPartRangeDeleteRule.Config.builder()
+            .operandSupplier(
+                b0 -> b0.operand(DingoPartModify.class)
+                    // It is a delete operation
+                    .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
+                    .oneInput(b1 ->
+                        b1.operand(DingoTableScan.class)
+                            .predicate(r -> {
+                                RexNode filter = r.getFilter();
+                                // Contains filter conditions: > < and
+                                if (filter != null) {
+                                    SqlKind filterKind = filter.getKind();
+                                    switch (filterKind) {
+                                        case AND:
+                                        case LESS_THAN:
+                                        case LESS_THAN_OR_EQUAL:
+                                        case GREATER_THAN:
+                                        case GREATER_THAN_OR_EQUAL:
+                                            return true;
+                                        default:
+                                            return false;
+                                    }
+                                }
+                                return false;
+                            }).noInputs())
+            )
+            .description("DingoPartRangeDeleteRule")
+            .build();
+
+        @Override
+        default DingoPartRangeDeleteRule toRule() {
+            return new DingoPartRangeDeleteRule(this);
+        }
     }
 }

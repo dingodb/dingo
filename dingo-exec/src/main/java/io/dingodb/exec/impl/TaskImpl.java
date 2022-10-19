@@ -39,14 +39,14 @@ import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SourceOperator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @Slf4j
 @JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
@@ -71,8 +71,7 @@ public final class TaskImpl implements Task {
     private final List<Id> runList;
     @JsonProperty("parasType")
     @Getter
-    @Nullable
-    private final DingoType parasType;
+    private final @Nullable DingoType parasType;
 
     private Object[] paras = null;
 
@@ -88,9 +87,8 @@ public final class TaskImpl implements Task {
         this.runList = new LinkedList<>();
     }
 
-    @Nonnull
     @JsonCreator
-    public static TaskImpl fromJson(
+    public static @NonNull TaskImpl fromJson(
         @JsonProperty("id") Id id,
         @JsonProperty("jobId") Id jobId,
         @JsonProperty("location") Location location,
@@ -120,7 +118,7 @@ public final class TaskImpl implements Task {
     }
 
     @Override
-    public void putOperator(@Nonnull Operator operator) {
+    public void putOperator(@NonNull Operator operator) {
         operator.setTask(this);
         operators.put(operator.getId(), operator);
         if (operator instanceof SourceOperator) {
@@ -129,7 +127,7 @@ public final class TaskImpl implements Task {
     }
 
     @Override
-    public void deleteOperator(@Nonnull Operator operator) {
+    public void deleteOperator(@NonNull Operator operator) {
         operators.remove(operator.getId());
         runList.remove(operator.getId());
     }
@@ -212,9 +210,8 @@ public final class TaskImpl implements Task {
         setParas(paras);
     }
 
-    @Nonnull
     @Override
-    public byte[] serialize() {
+    public byte @NonNull [] serialize() {
         return toString().getBytes(StandardCharsets.UTF_8);
     }
 
@@ -224,9 +221,8 @@ public final class TaskImpl implements Task {
         Task.super.setParas(paras);
     }
 
-    @Nullable
     @JsonProperty("paras")
-    Object[] getParasJson() {
+    Object @Nullable [] getParasJson() {
         if (parasType != null) {
             return (Object[]) parasType.convertTo(paras, JsonConverter.INSTANCE);
         }

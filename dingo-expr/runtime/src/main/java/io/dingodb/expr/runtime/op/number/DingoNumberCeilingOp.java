@@ -23,8 +23,9 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,21 +36,23 @@ import java.util.function.Function;
 
 @Slf4j
 public class DingoNumberCeilingOp extends RtFun {
-    public DingoNumberCeilingOp(@Nonnull RtExpr[] paras) {
+    private static final long serialVersionUID = 343548288100628982L;
+
+    public DingoNumberCeilingOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static BigDecimal ceiling(final BigDecimal value) {
+    public static @NonNull BigDecimal ceiling(final @NonNull BigDecimal value) {
         return value.setScale(0, RoundingMode.CEILING);
     }
 
     @org.apache.calcite.linq4j.function.Hints("SqlKind:CEIL")
-    public static BigDecimal ceil(final BigDecimal value) {
+    public static @NonNull BigDecimal ceil(final BigDecimal value) {
         return ceiling(value);
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected @Nullable Object fun(Object @NonNull [] values) {
         if (values[0] == null) {
             return null;
         }

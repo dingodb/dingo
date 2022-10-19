@@ -16,38 +16,40 @@
 
 package io.dingodb.common.table;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public interface Part {
-    @Nonnull
-    Iterator<Object[]> getIterator();
+    @NonNull Iterator<Object[]> getIterator();
 
-    @Nonnull
-    Iterator<Object[]> getIteratorByRange(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd,
-                                          boolean prefixScan);
+    @NonNull Iterator<Object[]> getIteratorByRange(
+        byte[] startKey,
+        byte[] endKey,
+        boolean includeStart,
+        boolean includeEnd,
+        boolean prefixScan
+    );
 
     long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey);
 
-    boolean insert(@Nonnull Object[] tuple);
+    boolean insert(Object @NonNull [] tuple);
 
-    void upsert(@Nonnull Object[] tuple);
+    void upsert(Object @NonNull [] tuple);
 
-    boolean remove(@Nonnull Object[] tuple);
+    boolean remove(Object @NonNull [] tuple);
 
-    long getEntryCntAndDeleteByPart(@Nonnull List<String> startKey);
+    long getEntryCntAndDeleteByPart(@NonNull List<String> startKey);
 
-    long getEntryCnt(@Nonnull List<String> startKeyList);
+    long getEntryCnt(@NonNull List<String> startKeyList);
 
-    @Nullable
-    Object[] getByKey(@Nonnull Object[] keyTuple);
+    Object @Nullable [] getByKey(Object @NonNull [] keyTuple);
 
-    @Nonnull
-    default List<Object[]> getByMultiKey(@Nonnull final List<Object[]> keyTuples) {
+    default @NonNull List<Object[]> getByMultiKey(final @NonNull List<Object[]> keyTuples) {
         return keyTuples.stream()
             .map(this::getByKey)
             .filter(Objects::nonNull)

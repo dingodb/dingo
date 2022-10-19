@@ -19,6 +19,7 @@ package io.dingodb.common.type.converter;
 import io.dingodb.common.type.DingoType;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.util.Utf8;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -28,7 +29,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class AvroConverter implements DataConverter {
     public static final AvroConverter INSTANCE = new AvroConverter();
@@ -37,39 +37,39 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
-    public Long convert(@Nonnull Date value) {
+    public Long convert(@NonNull Date value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Time value) {
+    public Long convert(@NonNull Time value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Timestamp value) {
+    public Long convert(@NonNull Timestamp value) {
         return value.getTime();
     }
 
     @Override
-    public ByteBuffer convert(@Nonnull byte[] value) {
+    public ByteBuffer convert(byte @NonNull [] value) {
         return ByteBuffer.wrap(value);
     }
 
     @Override
-    public Object convert(@Nonnull BigDecimal value) {
+    public Object convert(@NonNull BigDecimal value) {
         return ByteBuffer.wrap(value.toString().getBytes());
     }
 
     @Override
-    public List<Object> convert(@Nonnull Object[] value, DingoType elementType) {
+    public List<Object> convert(Object @NonNull [] value, @NonNull DingoType elementType) {
         return Arrays.stream(value)
             .map(v -> elementType.convertTo(v, this))
             .collect(Collectors.toList());
     }
 
     @Override
-    public String convertStringFrom(@Nonnull Object value) {
+    public String convertStringFrom(@NonNull Object value) {
         if (value instanceof Utf8) {
             return value.toString();
         }
@@ -77,32 +77,32 @@ public class AvroConverter implements DataConverter {
     }
 
     @Override
-    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+    public BigDecimal convertDecimalFrom(@NonNull Object value) {
         return new BigDecimal(new String(((ByteBuffer) value).array()));
     }
 
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         return new Date((long) value);
     }
 
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         return new Time((long) value);
     }
 
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         return new Timestamp((long) value);
     }
 
     @Override
-    public byte[] convertBinaryFrom(@Nonnull Object value) {
+    public byte[] convertBinaryFrom(@NonNull Object value) {
         return ((ByteBuffer) value).array();
     }
 
     @Override
-    public Object[] convertArrayFrom(@Nonnull Object value, DingoType elementType) {
+    public Object[] convertArrayFrom(@NonNull Object value, @NonNull DingoType elementType) {
         GenericData.Array<?> array = (GenericData.Array<?>) value;
         return array.stream()
             .map(o -> elementType.convertFrom(o, this))

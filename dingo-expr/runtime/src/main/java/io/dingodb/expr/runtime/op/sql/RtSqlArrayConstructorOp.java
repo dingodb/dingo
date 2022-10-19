@@ -22,20 +22,17 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.exception.ElementsNullNotAllowed;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class RtSqlArrayConstructorOp extends RtOp {
     private static final long serialVersionUID = -2386239654203654097L;
 
-    public RtSqlArrayConstructorOp(@Nonnull RtExpr[] paras) {
+    public RtSqlArrayConstructorOp(RtExpr[] paras) {
         super(paras);
     }
 
-    @Nonnull
     @Override
-    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+    public @NonNull Object eval(EvalContext etx) throws FailGetEvaluator {
         int size = paras.length;
         Object[] result = new Object[size];
         for (int i = 0; i < size; ++i) {

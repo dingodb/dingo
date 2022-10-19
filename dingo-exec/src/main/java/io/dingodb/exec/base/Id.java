@@ -19,9 +19,9 @@ package io.dingodb.exec.base;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.UUID;
-import javax.annotation.Nonnull;
 
 @EqualsAndHashCode(of = {"value"})
 public final class Id implements Comparable<Id> {
@@ -35,13 +35,12 @@ public final class Id implements Comparable<Id> {
         this.value = value;
     }
 
-    @Nonnull
-    public static Id random() {
+    public static @NonNull Id random() {
         return new Id(UUID.randomUUID().toString());
     }
 
     @Override
-    public int compareTo(@Nonnull Id obj) {
+    public int compareTo(@NonNull Id obj) {
         return value.compareTo(obj.value);
     }
 

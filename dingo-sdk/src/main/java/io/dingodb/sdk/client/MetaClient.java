@@ -20,9 +20,9 @@ import io.dingodb.common.Location;
 import io.dingodb.meta.MetaService;
 import io.dingodb.server.api.MetaServiceApi;
 import lombok.experimental.Delegate;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
-import javax.annotation.Nullable;
 
 public class MetaClient extends ClientBase implements MetaService {
     @Delegate

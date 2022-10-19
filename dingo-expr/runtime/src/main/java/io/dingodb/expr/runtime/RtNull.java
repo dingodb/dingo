@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.runtime;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class RtNull implements RtExpr {
     public static final RtNull INSTANCE = new RtNull();
@@ -25,9 +25,8 @@ public final class RtNull implements RtExpr {
     private RtNull() {
     }
 
-    @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) {
+    public @Nullable Object eval(@Nullable EvalContext etx) {
         return null;
     }
 

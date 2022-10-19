@@ -24,8 +24,7 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("binary")
 public class BinaryType extends AbstractScalarType {
@@ -45,12 +44,12 @@ public class BinaryType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convert((byte[]) value);
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertBinaryFrom(value);
     }
 

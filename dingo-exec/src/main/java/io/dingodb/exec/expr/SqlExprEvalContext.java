@@ -20,8 +20,7 @@ import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class SqlExprEvalContext implements EvalContext {
     private static final long serialVersionUID = 9182182810857271788L;

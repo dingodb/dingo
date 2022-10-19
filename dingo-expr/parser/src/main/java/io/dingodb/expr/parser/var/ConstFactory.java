@@ -20,7 +20,6 @@ import io.dingodb.expr.runtime.RtConst;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 public final class ConstFactory {
     public static final ConstFactory INS = new ConstFactory();
@@ -39,7 +38,6 @@ public final class ConstFactory {
      * @param name the name
      * @return the RtConst
      */
-    @Nullable
     public RtConst getConst(String name) {
         return constDefinitions.get(name);
     }

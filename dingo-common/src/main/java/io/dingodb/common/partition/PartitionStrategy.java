@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.type.TupleMapping;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -40,30 +40,30 @@ public abstract class PartitionStrategy<I> {
     public abstract int getPartNum();
 
     // Should be `String` for json serialization.
-    public abstract I calcPartId(@Nonnull final Object[] keyTuple);
+    public abstract I calcPartId(final Object @NonNull [] keyTuple);
 
-    public abstract I calcPartId(@Nonnull final byte[] keyBytes);
+    public abstract I calcPartId(final byte @NonNull [] keyBytes);
 
-    public I calcPartId(@Nonnull final Object[] tuple, @Nonnull TupleMapping keyMapping) {
+    public I calcPartId(final @NonNull Object[] tuple, @NonNull TupleMapping keyMapping) {
         Object[] keyTuple = keyMapping.revMap(tuple);
         return calcPartId(keyTuple);
     }
 
     public abstract Map<byte[], byte[]> calcPartitionRange(
-        @Nonnull final byte[] startKey,
-        @Nonnull final byte[] endKey,
+        final byte @NonNull [] startKey,
+        final byte @NonNull [] endKey,
         boolean includeEnd
     );
 
     public abstract Map<byte[], byte[]> calcPartitionPrefixRange(
-        @Nonnull final byte[] startKey,
-        @Nonnull final byte[] endKey,
+        final byte @NonNull [] startKey,
+        final byte @NonNull [] endKey,
         boolean includeEnd,
         boolean prefixRange
     );
 
     public Map<I, List<Object[]>> partKeyTuples(
-        @Nonnull final Collection<Object[]> keyTuples
+        final @NonNull Collection<Object[]> keyTuples
     ) {
         Map<I, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
         for (Object[] tuple : keyTuples) {
@@ -75,8 +75,8 @@ public abstract class PartitionStrategy<I> {
     }
 
     public Map<I, List<Object[]>> partTuples(
-        @Nonnull final Collection<Object[]> tuples,
-        @Nonnull TupleMapping keyMappings
+        final @NonNull Collection<Object[]> tuples,
+        @NonNull TupleMapping keyMappings
     ) {
         Map<I, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
         for (Object[] tuple : tuples) {

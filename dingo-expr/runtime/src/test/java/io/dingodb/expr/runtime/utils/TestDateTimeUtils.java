@@ -16,19 +16,18 @@
 
 package io.dingodb.expr.runtime.utils;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class TestDateTimeUtils {
-    @Nonnull
-    public static Stream<Arguments> getTestConvertFormatParameters() {
+    public static @NonNull Stream<Arguments> getTestConvertFormatParameters() {
         return Stream.of(
             arguments("%Y", "uuuu"),
             arguments("%Y-%m-%d", "uuuu'-'MM'-'dd"),

@@ -21,14 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 
-import javax.annotation.Nonnull;
-
 @JsonTypeName("sum0")
 public class Sum0Agg extends SumAgg {
     @JsonCreator
     public Sum0Agg(
         @JsonProperty("index") int index,
-        @Nonnull @JsonProperty("type") DingoType type
+        @JsonProperty("type") DingoType type
     ) {
         super(index, type);
     }

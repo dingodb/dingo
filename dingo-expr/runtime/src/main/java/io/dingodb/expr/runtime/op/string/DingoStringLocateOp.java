@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoStringLocateOp extends RtStringConversionOp {
@@ -38,11 +38,11 @@ public class DingoStringLocateOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoStringLocateOp(@Nonnull RtExpr[] paras) {
+    public DingoStringLocateOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static long locateString(final String subString, final String inputStr) {
+    public static long locateString(final @NonNull String subString, final String inputStr) {
         if (subString.equals("")) {
             return Long.valueOf(1);
         }
@@ -54,9 +54,8 @@ public class DingoStringLocateOp extends RtStringConversionOp {
         }
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         String subString = (String) (values[0]);
         String inputStr = (String) (values[1]);
 
@@ -72,7 +71,7 @@ public class DingoStringLocateOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("locate");
+            return Collections.singletonList("locate");
         }
 
         @Override

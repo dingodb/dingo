@@ -43,13 +43,13 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 public final class RexConverter extends RexVisitorImpl<Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
@@ -62,11 +62,10 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         super(true);
     }
 
-    private static int typeCodeOf(@Nonnull RelDataType type) {
+    private static int typeCodeOf(@NonNull RelDataType type) {
         return TypeCode.codeOf(type.getSqlTypeName().getName());
     }
 
-    @Nonnull
     private static Op getCastOpWithCheck(RelDataType type, RelDataType inputType) {
         Op op;
         try {
@@ -83,13 +82,12 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return op;
     }
 
-    public static Expr convert(@Nonnull RexNode rexNode) {
+    public static Expr convert(@NonNull RexNode rexNode) {
         return rexNode.accept(INSTANCE);
     }
 
-    @Nonnull
     @Override
-    public Expr visitInputRef(@Nonnull RexInputRef inputRef) {
+    public @NonNull Expr visitInputRef(@NonNull RexInputRef inputRef) {
         IndexOp op = new IndexOp();
         op.setExprArray(new Expr[]{
             new Var(SqlExprCompileContext.SQL_TUPLE_VAR_NAME),
@@ -98,9 +96,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return op;
     }
 
-    @Nonnull
     @Override
-    public Expr visitLiteral(@Nonnull RexLiteral literal) {
+    public Expr visitLiteral(@NonNull RexLiteral literal) {
         Object value;
         if (literal.getType().getSqlTypeName() == SqlTypeName.SYMBOL) {
             // TODO: should consider the symbol enum, not the string, to avoid misunderstand from a real string.
@@ -112,9 +109,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return value != null ? Value.of(value) : Null.INSTANCE;
     }
 
-    @Nonnull
     @Override
-    public Expr visitCall(@Nonnull RexCall call) {
+    public @NonNull Expr visitCall(@NonNull RexCall call) {
         Op op;
         SqlKind kind = call.getKind();
         switch (kind) {
@@ -223,9 +219,8 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return op;
     }
 
-    @Nonnull
     @Override
-    public Expr visitDynamicParam(@Nonnull RexDynamicParam dynamicParam) {
+    public @NonNull Expr visitDynamicParam(@NonNull RexDynamicParam dynamicParam) {
         IndexOp op = new IndexOp();
         op.setExprArray(new Expr[]{
             new Var(SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME),

@@ -26,10 +26,10 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("list")
 @JsonPropertyOrder({"element", "nullable"})
@@ -48,12 +48,12 @@ public class ListType extends NullableType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convert((List<?>) value, elementType);
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertListFrom(value, elementType);
     }
 
@@ -75,7 +75,7 @@ public class ListType extends NullableType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             List<?> list = (List<?>) value;
             StringBuilder b = new StringBuilder();

@@ -23,41 +23,40 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
 import io.dingodb.server.api.MetaServiceApi;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import javax.annotation.Nonnull;
 
 public class MockMetaServiceAPI implements MetaServiceApi {
 
     @Override
-    public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
-        return ;
+    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
     }
 
     @Override
-    public boolean dropTable(@Nonnull String tableName) {
+    public boolean dropTable(@NonNull String tableName) {
         return false;
     }
 
     @Override
-    public byte[] getTableKey(@Nonnull String tableName) {
+    public byte[] getTableKey(@NonNull String tableName) {
         return new byte[0];
     }
 
     @Override
-    public CommonId getTableId(@Nonnull String tableName) {
+    public CommonId getTableId(@NonNull String tableName) {
         return new CommonId(
             (byte) 'T',
-            new byte[] {'D', 'T'},
+            new byte[]{'D', 'T'},
             PrimitiveCodec.encodeInt(0),
             PrimitiveCodec.encodeInt(tableName.hashCode())
         );
     }
 
     @Override
-    public byte[] getIndexId(@Nonnull String tableName) {
+    public byte[] getIndexId(@NonNull String tableName) {
         return new byte[0];
     }
 
@@ -77,7 +76,7 @@ public class MockMetaServiceAPI implements MetaServiceApi {
     }
 
     @Override
-    public TableDefinition getTableDefinition(@Nonnull CommonId commonId) {
+    public TableDefinition getTableDefinition(@NonNull CommonId commonId) {
         return null;
     }
 

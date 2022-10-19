@@ -33,11 +33,11 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class LogicalDingoTableScan extends TableScan {
     @Getter
@@ -87,7 +87,7 @@ public class LogicalDingoTableScan extends TableScan {
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = estimateRowCount(mq);
         double cpu = rowCount + 1;
         if (selection != null) {
@@ -101,9 +101,8 @@ public class LogicalDingoTableScan extends TableScan {
         return RelDataTypeUtils.mapType(getCluster().getTypeFactory(), table.getRowType(), selection);
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
         pw.itemIf("filter", filter, filter != null);

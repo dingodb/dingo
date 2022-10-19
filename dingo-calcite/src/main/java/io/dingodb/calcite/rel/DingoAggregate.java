@@ -26,10 +26,10 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoAggregate extends Aggregate implements DingoRel {
     public DingoAggregate(
@@ -56,9 +56,8 @@ public final class DingoAggregate extends Aggregate implements DingoRel {
         }
     }
 
-    @Nonnull
     @Override
-    public DingoAggregate copy(
+    public @NonNull DingoAggregate copy(
         RelTraitSet traitSet,
         RelNode input,
         ImmutableBitSet groupSet,
@@ -69,7 +68,7 @@ public final class DingoAggregate extends Aggregate implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

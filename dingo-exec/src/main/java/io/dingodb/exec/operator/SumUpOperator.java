@@ -20,8 +20,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("sumUp")
 @JsonPropertyOrder({"inputNum"})
@@ -36,7 +35,7 @@ public class SumUpOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
         sum += (long) tuple[0];
         return true;
     }

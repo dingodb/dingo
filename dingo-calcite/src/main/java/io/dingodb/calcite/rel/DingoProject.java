@@ -24,9 +24,9 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoProject extends Project implements DingoRel {
     public DingoProject(
@@ -40,9 +40,8 @@ public final class DingoProject extends Project implements DingoRel {
         super(cluster, traits, hints, input, projects, rowType);
     }
 
-    @Nonnull
     @Override
-    public Project copy(
+    public @NonNull Project copy(
         RelTraitSet traitSet,
         RelNode input,
         List<RexNode> projects,
@@ -59,7 +58,7 @@ public final class DingoProject extends Project implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

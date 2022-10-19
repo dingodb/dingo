@@ -23,20 +23,21 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoNumberFormatOp extends RtFun {
     private static final long serialVersionUID = 4805636716328583550L;
 
-    public DingoNumberFormatOp(@Nonnull RtExpr[] paras) {
+    public DingoNumberFormatOp(RtExpr[] paras) {
         super(paras);
     }
 
@@ -45,19 +46,19 @@ public class DingoNumberFormatOp extends RtFun {
             scale = 0;
         }
 
-        BigDecimal decimal = new BigDecimal(value).setScale(scale, BigDecimal.ROUND_HALF_UP);
+        BigDecimal decimal = new BigDecimal(value).setScale(scale, RoundingMode.HALF_UP);
         return decimal.toString();
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         int inputScalar = new BigDecimal(String.valueOf(values[1]))
-            .setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+            .setScale(0, RoundingMode.HALF_UP).intValue();
         if (inputScalar < 0) {
             inputScalar = 0;
         }
 
-        BigDecimal decimal = new BigDecimal(String.valueOf(values[0])).setScale(inputScalar, BigDecimal.ROUND_HALF_UP);
+        BigDecimal decimal = new BigDecimal(String.valueOf(values[0])).setScale(inputScalar, RoundingMode.HALF_UP);
         return formatNumber(decimal.doubleValue(), inputScalar);
     }
 
@@ -75,7 +76,7 @@ public class DingoNumberFormatOp extends RtFun {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("format");
+            return Collections.singletonList("format");
         }
 
         @Override

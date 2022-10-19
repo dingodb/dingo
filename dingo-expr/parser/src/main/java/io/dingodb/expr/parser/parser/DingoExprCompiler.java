@@ -27,9 +27,9 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoExprCompiler {
     private static final DingoExprCompiler INS = new DingoExprCompiler();
@@ -47,7 +47,6 @@ public final class DingoExprCompiler {
         visitor = new DingoExprParserVisitorImpl(realAsBigDecimal);
     }
 
-    @Nonnull
     public static Expr parse(String input) throws DingoExprParseException {
         return parse(input, false);
     }
@@ -68,8 +67,7 @@ public final class DingoExprCompiler {
         }
     }
 
-    @Nonnull
-    private DingoExprParser getParser(String input) {
+    private @NonNull DingoExprParser getParser(String input) {
         CharStream stream = CharStreams.fromString(input);
         DingoExprLexer lexer = new DingoExprLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);

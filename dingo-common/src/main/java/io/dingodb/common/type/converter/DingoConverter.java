@@ -16,10 +16,11 @@
 
 package io.dingodb.common.type.converter;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import javax.annotation.Nonnull;
 
 public class DingoConverter implements DataConverter {
     public static final DingoConverter INSTANCE = new DingoConverter();
@@ -28,32 +29,32 @@ public class DingoConverter implements DataConverter {
     }
 
     @Override
-    public Long convert(@Nonnull Date value) {
+    public Long convert(@NonNull Date value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Time value) {
+    public Long convert(@NonNull Time value) {
         return value.getTime();
     }
 
     @Override
-    public Long convert(@Nonnull Timestamp value) {
+    public Long convert(@NonNull Timestamp value) {
         return value.getTime();
     }
 
     @Override
-    public Date convertDateFrom(@Nonnull Object value) {
+    public Date convertDateFrom(@NonNull Object value) {
         return new Date((long) value);
     }
 
     @Override
-    public Time convertTimeFrom(@Nonnull Object value) {
+    public Time convertTimeFrom(@NonNull Object value) {
         return new Time((long) value);
     }
 
     @Override
-    public Timestamp convertTimestampFrom(@Nonnull Object value) {
+    public Timestamp convertTimestampFrom(@NonNull Object value) {
         return new Timestamp((long) value);
     }
 }

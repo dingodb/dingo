@@ -19,10 +19,10 @@ package io.dingodb.expr.json.runtime;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
 public final class RtSchemaDict extends RtSchema {
@@ -57,9 +57,8 @@ public final class RtSchemaDict extends RtSchema {
         throw new IllegalArgumentException("Index must be a string, but is \"" + index + "\"");
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return "{" + children.entrySet().stream()
             .map(e -> e.getKey() + ": " + e.getValue())
             .collect(Collectors.joining(", ")) + "}";

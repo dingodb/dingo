@@ -27,10 +27,10 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("hash")
 @JsonPropertyOrder({"strategy", "keyMapping"})
@@ -61,11 +61,11 @@ public class HashOperator extends FanOutOperator {
     }
 
     @Override
-    protected int calcOutputIndex(int pin, @Nonnull Object[] tuple) {
+    protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
         return strategy.selectOutput(keyMapping.revMap(tuple));
     }
 
-    public void createOutputs(@Nonnull Collection<Location> locations) {
+    public void createOutputs(@NonNull Collection<Location> locations) {
         outputs = new ArrayList<>(locations.size());
         for (Location location : locations) {
             OutputHint hint = new OutputHint();

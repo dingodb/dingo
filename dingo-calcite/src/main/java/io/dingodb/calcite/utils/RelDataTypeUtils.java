@@ -20,18 +20,18 @@ import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class RelDataTypeUtils {
     private RelDataTypeUtils() {
     }
 
     public static RelDataType mapType(
-        @Nonnull RelDataTypeFactory typeFactory,
-        @Nonnull RelDataType relDataType,
+        @NonNull RelDataTypeFactory typeFactory,
+        @NonNull RelDataType relDataType,
         @Nullable TupleMapping selection
     ) {
         if (selection == null) {

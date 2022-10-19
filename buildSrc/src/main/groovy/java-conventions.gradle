@@ -52,8 +52,10 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:' + 'slf4j'.v()
     // static check
     checkstyle 'com.puppycrawl.tools:checkstyle:' + 'checkstyle'.v()
-    compileOnly 'com.google.code.findbugs:jsr305:' + 'jsr305'.v()
-    testCompileOnly 'com.google.code.findbugs:jsr305:' + 'jsr305'.v()
+    //compileOnly 'com.google.code.findbugs:jsr305:' + 'jsr305'.v()
+    compileOnly 'org.checkerframework:checker-qual:' + 'checkerframework'.v()
+    //testCompileOnly 'com.google.code.findbugs:jsr305:' + 'jsr305'.v()
+    testCompileOnly 'org.checkerframework:checker-qual:' + 'checkerframework'.v()
 }
 
 test {

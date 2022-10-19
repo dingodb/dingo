@@ -26,10 +26,10 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("date")
 public class DateType extends AbstractScalarType {
@@ -49,19 +49,19 @@ public class DateType extends AbstractScalarType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(@Nullable Object value) {
         return value != null
             ? DateTimeUtils.dateFormat((Date) value) + ":" + this
             : NullType.NULL.format(null);
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convert((Date) value);
     }
 
     @Override
-    protected Date convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Date convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertDateFrom(value);
     }
 

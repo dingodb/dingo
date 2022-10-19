@@ -29,10 +29,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
@@ -40,9 +40,8 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
         super(config);
     }
 
-    @Nonnull
-    private static RelNode hashRedistribute(
-        @Nonnull Join join,
+    private static @NonNull RelNode hashRedistribute(
+        @NonNull Join join,
         RelNode rel,
         List<Integer> keys
     ) {
@@ -68,13 +67,13 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
      * Non-equiv join condition is extracted by {@link org.apache.calcite.rel.rules.JoinExtractFilterRule}, so check
      * with this method to process only equiv join.
      */
-    public static boolean match(@Nonnull LogicalJoin rel) {
+    public static boolean match(@NonNull LogicalJoin rel) {
         JoinInfo joinInfo = rel.analyzeCondition();
         return joinInfo.isEqui();
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         LogicalJoin rel = call.rel(0);
         JoinInfo joinInfo = rel.analyzeCondition();
         if (!joinInfo.isEqui()) {

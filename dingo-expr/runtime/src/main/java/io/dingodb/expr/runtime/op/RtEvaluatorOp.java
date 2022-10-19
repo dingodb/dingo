@@ -19,12 +19,10 @@ package io.dingodb.expr.runtime.op;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class RtEvaluatorOp extends RtFun {
     private static final long serialVersionUID = -2145574267641248415L;
-    @Nonnull
     private final Evaluator evaluator;
 
     /**
@@ -33,13 +31,13 @@ public class RtEvaluatorOp extends RtFun {
      * @param evaluator the Evaluator
      * @param paras     the parameters of the op
      */
-    public RtEvaluatorOp(@Nonnull Evaluator evaluator, @Nonnull RtExpr[] paras) {
+    public RtEvaluatorOp(@NonNull Evaluator evaluator, @NonNull RtExpr[] paras) {
         super(paras);
         this.evaluator = evaluator;
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) throws FailGetEvaluator {
+    protected Object fun(@NonNull Object[] values) throws FailGetEvaluator {
         return evaluator.eval(values);
     }
 

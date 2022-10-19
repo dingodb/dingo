@@ -21,8 +21,7 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -35,13 +34,11 @@ final class StringEvaluators {
     private StringEvaluators() {
     }
 
-    @Nonnull
-    static String substring(@Nonnull String str, int begin, int end) {
+    static @NonNull String substring(@NonNull String str, int begin, int end) {
         return str.substring(begin, end);
     }
 
-    @Nonnull
-    static String substring(@Nonnull String str, int begin) {
+    static @NonNull String substring(@NonNull String str, int begin) {
         return str.substring(begin);
     }
 }

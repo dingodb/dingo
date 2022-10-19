@@ -19,10 +19,11 @@ package io.dingodb.expr.runtime.exception;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @Getter
 public final class FailGetEvaluator extends Exception {
@@ -31,7 +32,7 @@ public final class FailGetEvaluator extends Exception {
     private final EvaluatorFactory factory;
     private final int[] paraTypeCodes;
 
-    public FailGetEvaluator(@Nonnull EvaluatorFactory factory, int[] paraTypeCodes) {
+    public FailGetEvaluator(@NonNull EvaluatorFactory factory, @Nullable int[] paraTypeCodes) {
         super(
             "Cannot find evaluator in \""
                 + factory.getClass().getSimpleName()

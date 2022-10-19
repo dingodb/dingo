@@ -16,7 +16,7 @@
 
 package io.dingodb.common.error;
 
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 enum NoError implements DingoError {
     OK;
@@ -27,14 +27,12 @@ enum NoError implements DingoError {
     }
 
     @Override
-    @Nonnull
-    public String getInfo() {
+    public @NonNull String getInfo() {
         return "No error";
     }
 
     @Override
-    @Nonnull
-    public String toString() {
+    public @NonNull String toString() {
         return getInfo();
     }
 }

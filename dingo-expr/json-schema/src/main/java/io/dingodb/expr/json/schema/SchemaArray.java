@@ -24,8 +24,7 @@ import io.dingodb.expr.json.runtime.RtSchemaArray;
 import io.dingodb.expr.json.runtime.RtSchemaLeaf;
 import io.dingodb.expr.json.runtime.RtSchemaTuple;
 import io.dingodb.expr.runtime.TypeCode;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("array")
 @JsonPropertyOrder({"items", "additionalItems"})
@@ -37,8 +36,7 @@ public final class SchemaArray extends Schema {
     private Boolean additionalItems;
 
     @Override
-    @Nonnull
-    public RtSchema createRtSchema() {
+    public @NonNull RtSchema createRtSchema() {
         if (additionalItems == null || additionalItems) {
             if (items == null) {
                 return new RtSchemaLeaf(TypeCode.LIST);

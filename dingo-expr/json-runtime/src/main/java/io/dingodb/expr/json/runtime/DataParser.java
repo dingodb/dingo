@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import io.dingodb.expr.runtime.TypeCode;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,15 +34,13 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class DataParser extends Parser {
     private static final long serialVersionUID = -6849693677072717377L;
 
     private final RtSchemaRoot schemaRoot;
 
-    private DataParser(@Nonnull DataFormat format, RtSchemaRoot schemaRoot) {
+    private DataParser(DataFormat format, RtSchemaRoot schemaRoot) {
         super(format);
         this.schemaRoot = schemaRoot;
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -52,8 +52,7 @@ public final class DataParser extends Parser {
      *
      * @return a DataParser
      */
-    @Nonnull
-    public static DataParser json(RtSchemaRoot schemaRoot) {
+    public static @NonNull DataParser json(RtSchemaRoot schemaRoot) {
         return new DataParser(DataFormat.APPLICATION_JSON, schemaRoot);
     }
 
@@ -62,8 +61,7 @@ public final class DataParser extends Parser {
      *
      * @return a new DataParser
      */
-    @Nonnull
-    public static DataParser yaml(RtSchemaRoot schemaRoot) {
+    public static @NonNull DataParser yaml(RtSchemaRoot schemaRoot) {
         return new DataParser(DataFormat.APPLICATION_YAML, schemaRoot);
     }
 
@@ -73,13 +71,11 @@ public final class DataParser extends Parser {
      * @param format the DataFormat
      * @return a new DataParser
      */
-    @Nonnull
-    public static DataParser get(@Nonnull DataFormat format, RtSchemaRoot schemaRoot) {
+    public static @NonNull DataParser get(DataFormat format, RtSchemaRoot schemaRoot) {
         return new DataParser(format, schemaRoot);
     }
 
-    @Nullable
-    private static Object jsonNodeValue(@Nonnull JsonNode jsonNode) {
+    private static @Nullable Object jsonNodeValue(@NonNull JsonNode jsonNode) {
         JsonNodeType type = jsonNode.getNodeType();
         switch (type) {
             case NUMBER:
@@ -115,8 +111,8 @@ public final class DataParser extends Parser {
 
     private static void parseAccordingSchema(
         Object[] tuple,
-        @Nonnull JsonNode jsonNode,
-        @Nonnull RtSchema rtSchema
+        @NonNull JsonNode jsonNode,
+        @NonNull RtSchema rtSchema
     ) {
         if (jsonNode.isNull()) {
             tuple[rtSchema.getIndex()] = null;
@@ -217,7 +213,7 @@ public final class DataParser extends Parser {
         }
     }
 
-    private static Object toListMapAccordingSchema(Object[] tuple, @Nonnull RtSchema rtSchema) {
+    private static Object toListMapAccordingSchema(Object[] tuple, @NonNull RtSchema rtSchema) {
         int typeCode = rtSchema.getTypeCode();
         if (typeCode == TypeCode.TUPLE) {
             List<Object> list = new LinkedList<>();
@@ -245,8 +241,7 @@ public final class DataParser extends Parser {
      * @return the tuple
      * @throws JsonProcessingException if something is wrong
      */
-    @Nonnull
-    public Object[] parse(String text) throws JsonProcessingException {
+    public Object @NonNull [] parse(String text) throws JsonProcessingException {
         JsonNode jsonNode = mapper.readTree(text);
         return jsonNodeToTuple(jsonNode);
     }
@@ -258,8 +253,7 @@ public final class DataParser extends Parser {
      * @return the tuple
      * @throws IOException if something is wrong
      */
-    @Nonnull
-    public Object[] parse(InputStream is) throws IOException {
+    public Object @NonNull [] parse(InputStream is) throws IOException {
         JsonNode jsonNode = mapper.readTree(new InputStreamReader(is));
         return jsonNodeToTuple(jsonNode);
     }
@@ -276,8 +270,7 @@ public final class DataParser extends Parser {
         return mapper.writeValueAsString(object);
     }
 
-    @Nonnull
-    private Object[] jsonNodeToTuple(JsonNode jsonNode) {
+    private Object @NonNull [] jsonNodeToTuple(JsonNode jsonNode) {
         Object[] tuple = new Object[schemaRoot.getMaxIndex()];
         parseAccordingSchema(tuple, jsonNode, schemaRoot.getSchema());
         return tuple;

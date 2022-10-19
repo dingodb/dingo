@@ -22,10 +22,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public abstract class FanOutOperator extends AbstractOperator {
     @JsonProperty("outputs")
@@ -33,10 +33,10 @@ public abstract class FanOutOperator extends AbstractOperator {
     @JsonDeserialize(contentAs = OutputIml.class)
     protected List<Output> outputs;
 
-    protected abstract int calcOutputIndex(int pin, @Nonnull Object[] tuple);
+    protected abstract int calcOutputIndex(int pin, Object @NonNull [] tuple);
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
         int index = calcOutputIndex(pin, tuple);
         return outputs.get(index).push(tuple);
     }
@@ -48,9 +48,8 @@ public abstract class FanOutOperator extends AbstractOperator {
         }
     }
 
-    @Nonnull
     @Override
-    public Collection<Output> getOutputs() {
+    public @NonNull Collection<Output> getOutputs() {
         return outputs;
     }
 }

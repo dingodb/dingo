@@ -16,13 +16,13 @@
 
 package io.dingodb.expr.runtime;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.TimeZone;
 
 @Getter
-@Setter
+@Builder
 public class EvalEnv {
-    private TimeZone timeZone;
+    private final TimeZone timeZone;
 }

@@ -25,9 +25,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class LogicalDingoValueRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -44,7 +44,7 @@ public class LogicalDingoValueRule extends ConverterRule {
     }
 
     @Override
-    public RelNode convert(@Nonnull RelNode rel) {
+    public RelNode convert(@NonNull RelNode rel) {
         RelDataType rowType = rel.getRowType();
         DingoType type = DingoTypeFactory.fromRelDataType(rowType);
         return new LogicalDingoValues(

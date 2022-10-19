@@ -17,12 +17,10 @@
 package io.dingodb.common.concurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class ThreadFactoryBuilder {
@@ -61,8 +59,9 @@ public class ThreadFactoryBuilder {
     public ThreadFactory build() {
         return new ThreadFactory() {
             private final AtomicInteger index = new AtomicInteger(0);
+
             @Override
-            public Thread newThread(@Nonnull Runnable runnable) {
+            public Thread newThread(@NonNull Runnable runnable) {
                 String threadName = String.format("%s-thread-%d", name, this.index.incrementAndGet());
                 Thread thread = new Thread(group, runnable, threadName);
 

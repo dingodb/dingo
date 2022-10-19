@@ -19,11 +19,11 @@ package io.dingodb.exec.base;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.operator.RootOperator;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public interface Task {
     Id getId();
@@ -46,9 +46,9 @@ public interface Task {
      *
      * @param operator the operator
      */
-    void putOperator(@Nonnull Operator operator);
+    void putOperator(@NonNull Operator operator);
 
-    void deleteOperator(@Nonnull Operator operator);
+    void deleteOperator(@NonNull Operator operator);
 
     List<Id> getRunList();
 
@@ -58,8 +58,7 @@ public interface Task {
 
     void reset();
 
-    @Nullable
-    default Operator getOperator(Id id) {
+    default @Nullable Operator getOperator(Id id) {
         return getOperators().get(id);
     }
 

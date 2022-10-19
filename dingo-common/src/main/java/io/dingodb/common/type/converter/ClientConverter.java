@@ -16,8 +16,9 @@
 
 package io.dingodb.common.type.converter;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 public class ClientConverter implements DataConverter {
     public static final ClientConverter INSTANCE = new ClientConverter();
@@ -26,7 +27,7 @@ public class ClientConverter implements DataConverter {
     }
 
     @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
+    public Double convertDoubleFrom(@NonNull Object value) {
         if (value instanceof Float) {
             return BigDecimal.valueOf((Float) value).doubleValue();
         }

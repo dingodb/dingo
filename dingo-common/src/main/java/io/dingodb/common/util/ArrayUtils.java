@@ -16,15 +16,15 @@
 
 package io.dingodb.common.util;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.Arrays;
-import javax.annotation.Nonnull;
 
 public final class ArrayUtils {
     private ArrayUtils() {
     }
 
-    @Nonnull
-    public static <T> T[] concat(@Nonnull T[] array1, @Nonnull T[] array2) {
+    public static <T> T @NonNull [] concat(T @NonNull [] array1, T @NonNull [] array2) {
         T[] result = Arrays.copyOf(array1, array1.length + array2.length);
         System.arraycopy(array2, 0, result, array1.length, array2.length);
         return result;

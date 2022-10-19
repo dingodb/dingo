@@ -23,9 +23,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import javax.annotation.Nonnull;
 
 public class DingoAggregateRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -42,7 +41,7 @@ public class DingoAggregateRule extends ConverterRule {
         super(config);
     }
 
-    public static boolean match(@Nonnull LogicalAggregate rel) {
+    public static boolean match(@NonNull LogicalAggregate rel) {
         return rel.getAggCallList().stream().noneMatch(agg -> {
             SqlKind kind = agg.getAggregation().getKind();
             // AVG must be transformed to SUM/COUNT before.

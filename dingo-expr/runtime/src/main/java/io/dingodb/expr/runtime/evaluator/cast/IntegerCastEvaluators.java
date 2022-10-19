@@ -22,9 +22,9 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.NumberUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -53,11 +53,11 @@ final class IntegerCastEvaluators {
         return value ? 1 : 0;
     }
 
-    static int integerCast(@Nonnull BigDecimal value) {
+    static int integerCast(@NonNull BigDecimal value) {
         return value.intValue();
     }
 
-    static int integerCast(@Nonnull String value) {
+    static int integerCast(@NonNull String value) {
         return Integer.parseInt(value);
     }
 }

@@ -22,17 +22,16 @@ import io.dingodb.expr.runtime.RtConst;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.StringEscapeUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 @RequiredArgsConstructor
 public class Value<T> implements Expr {
     @Getter
     private final T value;
 
-    @Nonnull
-    public static <T> Value<T> of(T value) {
+    public static <T> @NonNull Value<T> of(T value) {
         return new Value<>(value);
     }
 
@@ -42,8 +41,7 @@ public class Value<T> implements Expr {
      * @param text the String
      * @return the Value
      */
-    @Nonnull
-    public static Value<Boolean> parseBoolean(String text) {
+    public static @NonNull Value<Boolean> parseBoolean(String text) {
         return of(Boolean.parseBoolean(text));
     }
 
@@ -53,8 +51,7 @@ public class Value<T> implements Expr {
      * @param text the String
      * @return the Value
      */
-    @Nonnull
-    public static Value<Long> parseLong(String text) {
+    public static @NonNull Value<Long> parseLong(String text) {
         return new Value<>(Long.parseLong(text));
     }
 
@@ -64,8 +61,7 @@ public class Value<T> implements Expr {
      * @param text the String
      * @return the Value
      */
-    @Nonnull
-    public static Value<Double> parseDouble(String text) {
+    public static @NonNull Value<Double> parseDouble(String text) {
         return new Value<>(Double.parseDouble(text));
     }
 
@@ -75,19 +71,16 @@ public class Value<T> implements Expr {
      * @param text the String
      * @return the Value
      */
-    @Nonnull
-    public static Value<String> parseString(@Nonnull String text) {
+    public static @NonNull Value<String> parseString(@NonNull String text) {
         return new Value<>(StringEscapeUtils.unescapeJson(text.substring(1, text.length() - 1)));
     }
 
-    @Nonnull
-    public static Value<BigDecimal> parseDecimal(@Nonnull String text) {
+    public static @NonNull Value<BigDecimal> parseDecimal(String text) {
         return new Value<>(new BigDecimal(text));
     }
 
-    @Nonnull
     @Override
-    public RtConst compileIn(CompileContext ctx) {
+    public @NonNull RtConst compileIn(CompileContext ctx) {
         return new RtConst(getValue());
     }
 

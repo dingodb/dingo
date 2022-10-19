@@ -16,14 +16,15 @@
 
 package io.dingodb.exec.util;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.concurrent.BlockingQueue;
-import javax.annotation.Nonnull;
 
 public final class QueueUtil {
     private QueueUtil() {
     }
 
-    public static <T> void forcePut(@Nonnull BlockingQueue<T> queue, T item) {
+    public static <T> void forcePut(@NonNull BlockingQueue<T> queue, T item) {
         while (true) {
             try {
                 queue.put(item);
@@ -33,8 +34,7 @@ public final class QueueUtil {
         }
     }
 
-    @Nonnull
-    public static <T> T forceTake(@Nonnull BlockingQueue<T> queue) {
+    public static <T> @NonNull T forceTake(@NonNull BlockingQueue<T> queue) {
         while (true) {
             try {
                 return queue.take();

@@ -16,11 +16,12 @@
 
 package io.dingodb.common.type.converter;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 public class AvaticaResultSetConverter extends ConverterWithCalendar {
     public AvaticaResultSetConverter(Calendar localCalendar) {
@@ -37,13 +38,13 @@ public class AvaticaResultSetConverter extends ConverterWithCalendar {
      * @return the output timestamp value
      */
     @Override
-    public Timestamp convert(@Nonnull Timestamp value) {
+    public Timestamp convert(@NonNull Timestamp value) {
         // NOTE: The following is not exact the inversion of what done in `TimestampAccessor`.
         return shiftedTimestamp(value.getTime());
     }
 
     @Override
-    public Object collectTuple(@Nonnull Stream<Object> stream) {
+    public Object collectTuple(@NonNull Stream<Object> stream) {
         return stream.collect(Collectors.toList());
     }
 }

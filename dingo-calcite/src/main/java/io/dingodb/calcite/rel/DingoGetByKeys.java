@@ -28,12 +28,12 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public final class DingoGetByKeys extends LogicalDingoTableScan implements DingoRel {
@@ -53,21 +53,20 @@ public final class DingoGetByKeys extends LogicalDingoTableScan implements Dingo
         this.keyItems = keyItems;
     }
 
-    @Nonnull
-    @Override
-    public RelWriter explainTerms(RelWriter pw) {
-        super.explainTerms(pw);
-        pw.item("keyItems", keyItems);
-        return pw;
-    }
-
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
         return keyItems.size() / DingoTableScan.ASSUME_PARTS;
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("keyItems", keyItems);
+        return pw;
+    }
+
+    @Override
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

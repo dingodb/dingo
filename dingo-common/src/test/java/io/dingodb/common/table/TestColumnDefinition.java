@@ -20,36 +20,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.expr.json.runtime.Parser;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class TestColumnDefinition {
-    @Test
-    public void testBuilder() {
-        ColumnDefinition definition = ColumnDefinition.builder()
-            .name("test")
-            .type(SqlTypeName.INTEGER)
-            .build();
-        assertThat(definition)
-            .hasFieldOrPropertyWithValue("name", "test")
-            .hasFieldOrPropertyWithValue("type", SqlTypeName.INTEGER)
-            .hasFieldOrPropertyWithValue("precision", RelDataType.PRECISION_NOT_SPECIFIED)
-            .hasFieldOrPropertyWithValue("scale", RelDataType.SCALE_NOT_SPECIFIED)
-            .hasFieldOrPropertyWithValue("notNull", false)
-            .hasFieldOrPropertyWithValue("primary", false)
-            .hasFieldOrPropertyWithValue("defaultValue", null);
-    }
-
-    @Nonnull
-    public static Stream<Arguments> argumentsForTestSerDes() {
+    public static @NonNull Stream<Arguments> argumentsForTestSerDes() {
         return Stream.of(
             arguments(
                 SqlTypeName.INTEGER,
@@ -73,6 +56,22 @@ public class TestColumnDefinition {
                 RelDataType.SCALE_NOT_SPECIFIED
             )
         );
+    }
+
+    @Test
+    public void testBuilder() {
+        ColumnDefinition definition = ColumnDefinition.builder()
+            .name("test")
+            .type(SqlTypeName.INTEGER)
+            .build();
+        assertThat(definition)
+            .hasFieldOrPropertyWithValue("name", "test")
+            .hasFieldOrPropertyWithValue("type", SqlTypeName.INTEGER)
+            .hasFieldOrPropertyWithValue("precision", RelDataType.PRECISION_NOT_SPECIFIED)
+            .hasFieldOrPropertyWithValue("scale", RelDataType.SCALE_NOT_SPECIFIED)
+            .hasFieldOrPropertyWithValue("notNull", false)
+            .hasFieldOrPropertyWithValue("primary", false)
+            .hasFieldOrPropertyWithValue("defaultValue", null);
     }
 
     @ParameterizedTest

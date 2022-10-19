@@ -19,10 +19,10 @@ package io.dingodb.exec.channel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public final class EndpointManager {
@@ -36,7 +36,7 @@ public final class EndpointManager {
         signals = new ConcurrentHashMap<>();
     }
 
-    public void onControlMessage(@Nonnull Message message) {
+    public void onControlMessage(@NonNull Message message) {
         ControlMessage msg;
         try {
             msg = ControlMessage.fromMessage(message);
@@ -60,12 +60,12 @@ public final class EndpointManager {
         sendEndpointMap.put(endpoint.getTag(), endpoint);
     }
 
-    public void unregisterSendEndpoint(SendEndpoint endpoint) {
+    public void unregisterSendEndpoint(@NonNull SendEndpoint endpoint) {
         sendEndpointMap.remove(endpoint.getTag());
         signals.remove(endpoint.getTag());
     }
 
-    public ControlStatus getStatus(@Nonnull String tag) {
+    public ControlStatus getStatus(@NonNull String tag) {
         return signals.get(tag);
     }
 }

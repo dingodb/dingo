@@ -26,7 +26,6 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class DingoUnionRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -43,7 +42,7 @@ public class DingoUnionRule extends ConverterRule {
     }
 
     @Override
-    public @Nullable RelNode convert(@Nonnull RelNode rel) {
+    public @Nullable RelNode convert(RelNode rel) {
         Union union = (Union) rel;
         return new DingoUnion(
             union.getCluster(),

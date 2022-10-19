@@ -18,9 +18,9 @@ package io.dingodb.expr.annotations;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 import javax.annotation.processing.ProcessingEnvironment;
 
 public final class ProcessorUtils {
@@ -37,7 +37,7 @@ public final class ProcessorUtils {
      * @param typeSpec      the TypeSpec of the class/interface
      */
     public static void saveSourceFile(
-        @Nonnull ProcessingEnvironment processingEnv,
+        @NonNull ProcessingEnvironment processingEnv,
         String packageName,
         TypeSpec typeSpec
     ) throws IOException {

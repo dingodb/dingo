@@ -29,8 +29,6 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
-
 public class DingoAggregateReduceRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
@@ -47,7 +45,7 @@ public class DingoAggregateReduceRule extends ConverterRule {
     }
 
     @Override
-    public @Nullable RelNode convert(@Nonnull RelNode rel) {
+    public @Nullable RelNode convert(RelNode rel) {
         LogicalAggregate agg = (LogicalAggregate) rel;
         RelOptCluster cluster = agg.getCluster();
         RelTraitSet rootTraits = agg.getTraitSet().replace(DingoConventions.ROOT);

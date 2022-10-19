@@ -16,8 +16,9 @@
 
 package io.dingodb.common.type.converter;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 public class ExprConverter implements DataConverter {
     public static final ExprConverter INSTANCE = new ExprConverter();
@@ -26,7 +27,7 @@ public class ExprConverter implements DataConverter {
     }
 
     @Override
-    public Integer convertIntegerFrom(@Nonnull Object value) {
+    public Integer convertIntegerFrom(@NonNull Object value) {
         if (value instanceof Long) {
             return ((Long) value).intValue();
         }
@@ -34,7 +35,7 @@ public class ExprConverter implements DataConverter {
     }
 
     @Override
-    public Double convertDoubleFrom(@Nonnull Object value) {
+    public Double convertDoubleFrom(@NonNull Object value) {
         if (value instanceof Double) {
             return (Double) value;
         }
@@ -42,7 +43,7 @@ public class ExprConverter implements DataConverter {
     }
 
     @Override
-    public BigDecimal convertDecimalFrom(@Nonnull Object value) {
+    public BigDecimal convertDecimalFrom(@NonNull Object value) {
         if (value instanceof Integer) {
             return BigDecimal.valueOf((Integer) value);
         } else if (value instanceof Long) {

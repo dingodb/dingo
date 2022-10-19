@@ -27,9 +27,9 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.util.Objects;
 
 public final class DingoPartRangeDelete extends AbstractRelNode implements DingoRel {
@@ -62,13 +62,12 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5d);
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table.getQualifiedName());
         pw.item("startKey", startKey);
@@ -77,7 +76,7 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

@@ -19,9 +19,7 @@ package io.dingodb.expr.parser.op;
 import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public abstract class OpIgnoreEnv extends Op {
     protected OpIgnoreEnv(OpType type) {
@@ -32,13 +30,12 @@ public abstract class OpIgnoreEnv extends Op {
         super(name);
     }
 
-    protected abstract RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException;
+    protected abstract @NonNull RtExpr evalNullConst(RtExpr[] rtExprArray) throws DingoExprCompileException;
 
-    @Nonnull
     @Override
-    protected RtExpr evalNullConstEnv(
-        @Nonnull RtExpr[] rtExprArray,
-        @Nullable EvalEnv env
+    protected @NonNull RtExpr evalNullConstEnv(
+        RtExpr[] rtExprArray,
+        EvalEnv env
     ) throws DingoExprCompileException {
         return evalNullConst(rtExprArray);
     }

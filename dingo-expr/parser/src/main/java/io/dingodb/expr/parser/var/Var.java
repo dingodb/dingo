@@ -22,23 +22,20 @@ import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.RequiredArgsConstructor;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @RequiredArgsConstructor
 public class Var implements Expr {
     private final String name;
 
-    @Nonnull
-    static RtExpr createVar(@Nonnull CompileContext ctx) {
+    static @NonNull RtExpr createVar(@NonNull CompileContext ctx) {
         RtExpr rtExpr = ctx.createVar();
         return rtExpr != null ? rtExpr : new VarStub(ctx);
     }
 
-    @Nonnull
     @Override
-    public RtExpr compileIn(@Nullable CompileContext ctx) throws ElementNotExists {
+    public @NonNull RtExpr compileIn(@Nullable CompileContext ctx) throws ElementNotExists {
         RtConst rtConst = ConstFactory.INS.getConst(name);
         if (rtConst != null) {
             return rtConst;

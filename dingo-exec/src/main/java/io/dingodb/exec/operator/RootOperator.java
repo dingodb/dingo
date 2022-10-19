@@ -25,11 +25,11 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.util.QueueUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("root")
@@ -77,8 +77,7 @@ public final class RootOperator extends SinkOperator {
         QueueUtil.forcePut(tupleQueue, FIN);
     }
 
-    @Nonnull
-    public Object[] popValue() {
+    public Object @NonNull [] popValue() {
         return QueueUtil.forceTake(tupleQueue);
     }
 
@@ -88,8 +87,7 @@ public final class RootOperator extends SinkOperator {
         tupleQueue.clear();
     }
 
-    @Nonnull
-    public TupleIterator getIterator() {
+    public @NonNull TupleIterator getIterator() {
         return new TupleIterator();
     }
 

@@ -56,13 +56,13 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -92,11 +92,11 @@ public class DingoParser {
     @Getter
     private final CalciteCatalogReader catalogReader;
 
-    public DingoParser(@Nonnull DingoParserContext context) {
+    public DingoParser(@NonNull DingoParserContext context) {
         this(context, null);
     }
 
-    public DingoParser(@Nonnull DingoParserContext context, @Nullable CalciteConnectionConfig config) {
+    public DingoParser(@NonNull DingoParserContext context, @Nullable CalciteConnectionConfig config) {
         this.context = context;
         planner = new VolcanoPlanner(context);
         // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
@@ -164,11 +164,11 @@ public class DingoParser {
         return sqlValidator.getParameterRowType(sqlNode);
     }
 
-    public RelRoot convert(@Nonnull SqlNode sqlNode) {
+    public RelRoot convert(@NonNull SqlNode sqlNode) {
         return convert(sqlNode, true);
     }
 
-    public RelRoot convert(@Nonnull SqlNode sqlNode, boolean needsValidation) {
+    public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
         SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             .withExpand(false)

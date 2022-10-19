@@ -17,6 +17,7 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DingoType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 public interface DataConverter {
     /**
@@ -39,43 +39,43 @@ public interface DataConverter {
     DataConverter DEFAULT = new DataConverter() {
     };
 
-    default boolean isNull(@Nonnull Object value) {
+    default boolean isNull(@NonNull Object value) {
         return false;
     }
 
-    default Object convert(@Nonnull Date value) {
+    default Object convert(@NonNull Date value) {
         return value;
     }
 
-    default Object convert(@Nonnull Time value) {
+    default Object convert(@NonNull Time value) {
         return value;
     }
 
-    default Object convert(@Nonnull Timestamp value) {
+    default Object convert(@NonNull Timestamp value) {
         return value;
     }
 
-    default Object convert(@Nonnull byte[] value) {
+    default Object convert(byte @NonNull [] value) {
         return value;
     }
 
-    default Object convert(@Nonnull BigDecimal value) {
+    default Object convert(@NonNull BigDecimal value) {
         return value;
     }
 
-    default Object convert(@Nonnull Object[] value, DingoType elementType) {
+    default Object convert(Object @NonNull [] value, @NonNull DingoType elementType) {
         return Arrays.stream(value)
             .map(v -> elementType.convertTo(v, this))
             .toArray(Object[]::new);
     }
 
-    default Object convert(@Nonnull List<?> value, DingoType elementType) {
+    default Object convert(@NonNull List<?> value, @NonNull DingoType elementType) {
         return value.stream()
             .map(v -> elementType.convertTo(v, this))
             .collect(Collectors.toList());
     }
 
-    default Object convert(@Nonnull Map<?, ?> value, DingoType keyType, DingoType valueType) {
+    default Object convert(@NonNull Map<?, ?> value, @NonNull DingoType keyType, @NonNull DingoType valueType) {
         Map<Object, Object> result = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : value.entrySet()) {
             result.put(
@@ -86,66 +86,70 @@ public interface DataConverter {
         return result;
     }
 
-    default Integer convertIntegerFrom(@Nonnull Object value) {
+    default Integer convertIntegerFrom(@NonNull Object value) {
         return (Integer) value;
     }
 
-    default Long convertLongFrom(@Nonnull Object value) {
+    default Long convertLongFrom(@NonNull Object value) {
         return (Long) value;
     }
 
-    default Double convertDoubleFrom(@Nonnull Object value) {
+    default Double convertDoubleFrom(@NonNull Object value) {
         return (Double) value;
     }
 
-    default Boolean convertBooleanFrom(@Nonnull Object value) {
+    default Boolean convertBooleanFrom(@NonNull Object value) {
         return (Boolean) value;
     }
 
-    default String convertStringFrom(@Nonnull Object value) {
+    default String convertStringFrom(@NonNull Object value) {
         return (String) value;
     }
 
-    default BigDecimal convertDecimalFrom(@Nonnull Object value) {
+    default BigDecimal convertDecimalFrom(@NonNull Object value) {
         return (BigDecimal) value;
     }
 
-    default Date convertDateFrom(@Nonnull Object value) {
+    default Date convertDateFrom(@NonNull Object value) {
         return (Date) value;
     }
 
-    default Time convertTimeFrom(@Nonnull Object value) {
+    default Time convertTimeFrom(@NonNull Object value) {
         return (Time) value;
     }
 
-    default Timestamp convertTimestampFrom(@Nonnull Object value) {
+    default Timestamp convertTimestampFrom(@NonNull Object value) {
         return (Timestamp) value;
     }
 
-    default byte[] convertBinaryFrom(@Nonnull Object value) {
+    default byte[] convertBinaryFrom(@NonNull Object value) {
         return (byte[]) value;
     }
 
-    default Object[] convertTupleFrom(@Nonnull Object value, @Nonnull DingoType type) {
+    default Object[] convertTupleFrom(@NonNull Object value, @NonNull DingoType type) {
         Object[] tuple = (Object[]) value;
         return IntStream.range(0, tuple.length)
             .mapToObj(i -> Objects.requireNonNull(type.getChild(i)).convertFrom(tuple[i], this))
             .toArray(Object[]::new);
     }
 
-    default Object[] convertArrayFrom(@Nonnull Object value, DingoType elementType) {
+    default Object[] convertArrayFrom(@NonNull Object value, @NonNull DingoType elementType) {
         return Arrays.stream((Object[]) value)
             .map(e -> elementType.convertFrom(e, this))
             .toArray(Object[]::new);
     }
 
-    default List<?> convertListFrom(@Nonnull Object value, DingoType elementType) {
+    default List<?> convertListFrom(@NonNull Object value, @NonNull DingoType elementType) {
         return ((List<?>) value).stream()
             .map(e -> elementType.convertFrom(e, this))
             .collect(Collectors.toList());
     }
 
-    default Map<Object, Object> convertMapFrom(@Nonnull Object value, DingoType keyType, DingoType valueType) {
+    default Map<Object, Object> convertMapFrom(
+        @NonNull Object value,
+        @NonNull DingoType keyType,
+        @NonNull DingoType valueType
+    ) {
         Map<Object, Object> result = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
             result.put(
@@ -156,7 +160,7 @@ public interface DataConverter {
         return result;
     }
 
-    default Object collectTuple(@Nonnull Stream<Object> stream) {
+    default Object collectTuple(@NonNull Stream<Object> stream) {
         return stream.toArray(Object[]::new);
     }
 }

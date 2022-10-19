@@ -16,9 +16,10 @@
 
 package io.dingodb.common.error;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.HashMap;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 /**
  * DingoException is a RuntimeException implementing DingoError. It has stack trace populated by JVM, at the same time
@@ -57,6 +58,7 @@ import javax.annotation.Nonnull;
  * }</pre>
  */
 public class DingoException extends RuntimeException implements IndirectError {
+    private static final long serialVersionUID = 5564571207617481306L;
     /**
      * The following exception patterns are used to convert to DingoException from Calcite.
      */
@@ -72,12 +74,14 @@ public class DingoException extends RuntimeException implements IndirectError {
     public static Integer JOIN_NAME_DUPLICATED = 90015;
     public static Integer JOIN_NO_CONDITION = 90016;
     public static Integer JOIN_SELECT_COLUMN_AMBIGUOUS = 90017;
-
     public static Integer INTERPRET_ERROR = 90019;
     public static Integer FUNCTION_NOT_SUPPORT = 90022;
     public static Integer EXECUTOR_NODE_FAIL = 90024;
     public static HashMap<Pattern, Integer> CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
     public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
+    // TODO
+    //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
+    //public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
 
     static {
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
@@ -105,7 +109,7 @@ public class DingoException extends RuntimeException implements IndirectError {
             .put(Pattern.compile("No match found for function signature"), FUNCTION_NOT_SUPPORT);
 
         // Join name duplicated
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put( Pattern.compile(" Duplicate relation name"),
+        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(" Duplicate relation name"),
             JOIN_NAME_DUPLICATED);
         // Join need join condition
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("INNER, LEFT, RIGHT or FULL join"
@@ -139,13 +143,9 @@ public class DingoException extends RuntimeException implements IndirectError {
         // "Number Range Error"
         RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exceeds max .* or lower min value"), TYPE_CAST_ERROR);
         // "Coordinator Failover Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table meta save success, but schedule failed"), EXECUTOR_NODE_FAIL);
+        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table meta save success, but schedule failed"),
+            EXECUTOR_NODE_FAIL);
     }
-    // TODO
-    //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
-    //public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
-
-    private static final long serialVersionUID = 5564571207617481306L;
 
     private final DingoError category;
     private final DingoError reason;
@@ -165,7 +165,7 @@ public class DingoException extends RuntimeException implements IndirectError {
         this(err, reason, err.getMessage());
     }
 
-    private DingoException(@Nonnull DingoError err, DingoError reason, String message) {
+    private DingoException(@NonNull DingoError err, DingoError reason, String message) {
         super(message);
         this.category = err.getCategory();
         this.reason = reason;
@@ -177,8 +177,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      *
      * @param err error object
      */
-    @Nonnull
-    public static DingoException from(DingoError err) {
+    public static @NonNull DingoException from(DingoError err) {
         if (err instanceof DingoException) {
             return (DingoException) err;
         }
@@ -192,8 +191,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @param err     error object
      * @param message error message
      */
-    @Nonnull
-    public static DingoException from(DingoError err, String message) {
+    public static @NonNull DingoException from(DingoError err, String message) {
         return new DingoException(err, message);
     }
 
@@ -206,8 +204,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @return this throwable if it is DingoException, otherwise a new DingoException with category {@link
      *     DingoError#UNKNOWN} and message, stack trace from that throwable.
      */
-    @Nonnull
-    public static DingoException from(Throwable throwable) {
+    public static @NonNull DingoException from(Throwable throwable) {
         if (throwable instanceof DingoException) {
             return (DingoException) throwable;
         }
@@ -223,8 +220,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @param reason reason error
      * @return an DingoException with same category and message as given error, but a reason error beneath it
      */
-    @Nonnull
-    public static DingoException wrap(DingoError err, DingoError reason) {
+    public static @NonNull DingoException wrap(DingoError err, DingoError reason) {
         if (reason instanceof Throwable) {
             return wrap(err, (Throwable) reason);
         }
@@ -240,8 +236,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @return an DingoException with same category and message as given error, with given reason as it's reason and
      *     exception cause.
      */
-    @Nonnull
-    public static DingoException wrap(DingoError err, Throwable reason) {
+    public static @NonNull DingoException wrap(DingoError err, Throwable reason) {
         DingoException ex = new DingoException(err, DingoError.from(reason));
         ex.initCause(reason);
         return ex;
@@ -256,8 +251,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @return an DingoException with same category and message as given error, with given exception as its reason and
      *     exception cause.
      */
-    @Nonnull
-    public static DingoException wrap(DingoError err, DingoException reason) {
+    public static @NonNull DingoException wrap(DingoError err, DingoException reason) {
         return wrap(err, (Throwable) reason);
     }
 

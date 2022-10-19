@@ -22,13 +22,13 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -41,53 +41,43 @@ final class StringCastEvaluators {
     private StringCastEvaluators() {
     }
 
-    @Nonnull
-    static String stringCast(int value) {
+    static @NonNull String stringCast(int value) {
         return Integer.toString(value);
     }
 
-    @Nonnull
-    static String stringCast(long value) {
+    static @NonNull String stringCast(long value) {
         return Long.toString(value);
     }
 
-    @Nonnull
-    static String stringCast(double value) {
+    static @NonNull String stringCast(double value) {
         return Double.toString(value);
     }
 
-    @Nonnull
-    static String stringCast(boolean value) {
+    static @NonNull String stringCast(boolean value) {
         return Boolean.toString(value);
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull BigDecimal value) {
+    static @NonNull String stringCast(@NonNull BigDecimal value) {
         return value.toPlainString();
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull String value) {
+    static @NonNull String stringCast(@NonNull String value) {
         return value;
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull Date value) {
+    static @NonNull String stringCast(@NonNull Date value) {
         return DateTimeUtils.dateFormat(value);
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull Time value) {
+    static @NonNull String stringCast(@NonNull Time value) {
         return DateTimeUtils.timeFormat(value);
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull Timestamp value) {
+    static @NonNull String stringCast(@NonNull Timestamp value) {
         return DateTimeUtils.timestampFormat(value);
     }
 
-    @Nonnull
-    static String stringCast(@Nonnull byte[] value) {
+    static @NonNull String stringCast(byte[] value) {
         return new String(value, StandardCharsets.UTF_8);
     }
 }

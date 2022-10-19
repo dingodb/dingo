@@ -28,13 +28,13 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.json.runtime.Parser;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -42,8 +42,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public class TestDingoType {
     private static final Parser PARSER = Parser.JSON;
 
-    @Nonnull
-    public static Stream<Arguments> getParametersForScalar() {
+    public static @NonNull Stream<Arguments> getParametersForScalar() {
         return Stream.of(
             arguments(new BinaryType(false)),
             arguments(new BinaryType(true)),
@@ -70,8 +69,7 @@ public class TestDingoType {
         );
     }
 
-    @Nonnull
-    public static Stream<Arguments> getParametersForComposite() {
+    public static @NonNull Stream<Arguments> getParametersForComposite() {
         return Stream.of(
             arguments(DingoTypeFactory.tuple("INT", "DOUBLE")),
             arguments(DingoTypeFactory.tuple("INT|NULL", "TIME")),

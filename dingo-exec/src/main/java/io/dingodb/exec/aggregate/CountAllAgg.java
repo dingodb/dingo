@@ -17,19 +17,18 @@
 package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @JsonTypeName("countAll")
 public class CountAllAgg extends AbstractAgg {
     @Override
-    public Object first(@Nonnull Object[] tuple) {
+    public Object first(Object[] tuple) {
         return 1L;
     }
 
     @Override
-    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
+    public Object add(@NonNull Object var, Object[] tuple) {
         return (long) var + 1L;
     }
 

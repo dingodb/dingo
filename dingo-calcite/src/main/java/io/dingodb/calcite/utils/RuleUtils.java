@@ -21,13 +21,11 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class RuleUtils {
-    @Nullable
-    public static ConditionInfo checkCondition(@Nonnull RexNode rexNode) {
+    public static @Nullable ConditionInfo checkCondition(@NonNull RexNode rexNode) {
         switch (rexNode.getKind()) {
             case LESS_THAN:
                 return getConditionInfo((RexCall) rexNode, SqlKind.GREATER_THAN);
@@ -43,8 +41,7 @@ public class RuleUtils {
         return null;
     }
 
-    @Nullable
-    private static ConditionInfo getConditionInfo(@Nonnull RexCall rexCall, SqlKind reverseKind) {
+    private static @Nullable ConditionInfo getConditionInfo(@NonNull RexCall rexCall, SqlKind reverseKind) {
         RexNode op0 = rexCall.operands.get(0);
         RexNode op1 = rexCall.operands.get(1);
         ConditionInfo info = new ConditionInfo();
@@ -58,7 +55,7 @@ public class RuleUtils {
         return info;
     }
 
-    private static boolean checkConditionOp(@Nonnull RexNode op0, RexNode op1, ConditionInfo info) {
+    private static boolean checkConditionOp(@NonNull RexNode op0, RexNode op1, ConditionInfo info) {
         if (op0.getKind() == SqlKind.INPUT_REF && op1.getKind() == SqlKind.LITERAL) {
             info.index = ((RexInputRef) op0).getIndex();
             info.value = (RexLiteral) op1;

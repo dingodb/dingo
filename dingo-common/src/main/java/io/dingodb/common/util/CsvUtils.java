@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.json.runtime.Parser;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +29,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public final class CsvUtils {
     private static final Parser PARSER = Parser.CSV;
@@ -36,18 +36,15 @@ public final class CsvUtils {
     private CsvUtils() {
     }
 
-    @Nonnull
-    public static Iterator<String[]> readCsv(InputStream is) throws IOException {
+    public static @NonNull Iterator<String[]> readCsv(InputStream is) throws IOException {
         return PARSER.readValues(is, String[].class);
     }
 
-    @Nonnull
-    public static Iterator<Object[]> readCsv(@Nonnull DingoType schema, InputStream is) throws IOException {
+    public static @NonNull Iterator<Object[]> readCsv(DingoType schema, InputStream is) throws IOException {
         return Iterators.transform(readCsv(is), i -> (Object[]) schema.parse(i));
     }
 
-    @Nonnull
-    public static List<Object[]> readCsv(@Nonnull DingoType schema, String lines) throws JsonProcessingException {
+    public static @NonNull List<Object[]> readCsv(DingoType schema, String lines) throws JsonProcessingException {
         return Arrays.stream(PARSER.parse(lines, String[][].class))
             .map(i -> (Object[]) schema.parse(i))
             .collect(Collectors.toList());
@@ -60,8 +57,7 @@ public final class CsvUtils {
      * @return iterator of tuples
      * @throws IOException when errors occurred in reading the stream
      */
-    @Nonnull
-    public static Iterator<Object[]> readCsvWithSchema(InputStream is) throws IOException {
+    public static @NonNull Iterator<Object[]> readCsvWithSchema(InputStream is) throws IOException {
         final Iterator<String[]> it = PARSER.readValues(is, String[].class);
         if (it.hasNext()) {
             String[] types = it.next();

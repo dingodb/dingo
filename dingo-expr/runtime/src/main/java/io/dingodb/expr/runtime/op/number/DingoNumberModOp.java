@@ -23,27 +23,30 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
 public class DingoNumberModOp extends RtFun {
-    public DingoNumberModOp(@Nonnull RtExpr[] paras) {
+    private static final long serialVersionUID = -3265352946134284041L;
+
+    public DingoNumberModOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static BigDecimal mod(final BigDecimal value1, final BigDecimal value2) {
+    public static @NonNull BigDecimal mod(final @NonNull BigDecimal value1, final BigDecimal value2) {
         return value1.remainder(value2);
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected @Nullable Object fun(Object @NonNull [] values) {
         if (values[0] == null || values[1] == null) {
             return null;
         }
@@ -70,7 +73,7 @@ public class DingoNumberModOp extends RtFun {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("mod");
+            return Collections.singletonList("mod");
         }
 
         @Override

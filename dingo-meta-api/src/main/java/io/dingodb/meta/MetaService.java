@@ -20,12 +20,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public interface MetaService {
     String getName();
@@ -34,28 +34,29 @@ public interface MetaService {
 
     void clear();
 
-    default Object get(@Nonnull String name) {
+    default Object get(@NonNull String name) {
         throw new IllegalArgumentException("Unsupported property name \"" + name + "\".");
     }
 
-    void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition);
+    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
-    boolean dropTable(@Nonnull String tableName);
+    boolean dropTable(@NonNull String tableName);
 
-    byte[] getTableKey(@Nonnull String tableName);
+    byte[] getTableKey(@NonNull String tableName);
 
-    CommonId getTableId(@Nonnull String tableName);
+    CommonId getTableId(@NonNull String tableName);
 
-    byte[] getIndexId(@Nonnull String tableName);
+    byte[] getIndexId(@NonNull String tableName);
 
     Map<String, TableDefinition> getTableDefinitions();
 
     /**
      * get table definition by table name.
+     *
      * @param name the input table name must be upper case.
      * @return TableDefinition or null if not found.
      */
-    default TableDefinition getTableDefinition(String name) {
+    default TableDefinition getTableDefinition(@NonNull String name) {
         return getTableDefinitions().get(name.toUpperCase());
     }
 

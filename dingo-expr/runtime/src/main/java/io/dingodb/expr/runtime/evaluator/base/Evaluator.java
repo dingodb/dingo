@@ -17,6 +17,8 @@
 package io.dingodb.expr.runtime.evaluator.base;
 
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 
@@ -28,7 +30,7 @@ public interface Evaluator extends Serializable {
      * @return the result
      * @throws FailGetEvaluator if there is no appropriate Evaluator for the given parameter types
      */
-    Object eval(Object[] paras) throws FailGetEvaluator;
+    @Nullable Object eval(@NonNull Object[] paras) throws FailGetEvaluator;
 
     /**
      * Get the type code of results. Must return they type code without call <code>eval</code> for compiling use.

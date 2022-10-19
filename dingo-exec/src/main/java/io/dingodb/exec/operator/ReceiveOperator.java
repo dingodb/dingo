@@ -38,11 +38,11 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonPropertyOrder({"host", "port", "schema", "output"})
@@ -151,7 +151,7 @@ public final class ReceiveOperator extends SourceOperator {
 
     private class ReceiveMessageListener implements MessageListener {
         @Override
-        public void onMessage(@Nonnull Message message, Channel channel) {
+        public void onMessage(@NonNull Message message, Channel channel) {
             try {
                 final byte[] content = message.content();
                 int count = 0;

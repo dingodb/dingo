@@ -25,9 +25,8 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
-
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRule.Config> {
@@ -36,7 +35,7 @@ public class DingoDistributedValuesRule extends RelRule<DingoDistributedValuesRu
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         LogicalTableModify modify = call.rel(0);
         LogicalDingoValues values = call.rel(1);
         RelOptCluster cluster = modify.getCluster();

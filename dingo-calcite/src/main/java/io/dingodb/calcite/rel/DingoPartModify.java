@@ -29,9 +29,9 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoPartModify extends SingleRel implements DingoRel {
     @Getter
@@ -59,9 +59,8 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
         this.sourceExpressionList = sourceExpressionList;
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoPartModify(
             getCluster(),
             traitSet,
@@ -73,9 +72,8 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
         );
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table.getQualifiedName());
         pw.item("operation", operation);
@@ -90,7 +88,7 @@ public final class DingoPartModify extends SingleRel implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

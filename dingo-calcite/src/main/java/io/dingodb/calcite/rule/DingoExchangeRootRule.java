@@ -22,9 +22,8 @@ import io.dingodb.calcite.rel.DingoExchange;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import javax.annotation.Nonnull;
 
 public class DingoExchangeRootRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -41,7 +40,7 @@ public class DingoExchangeRootRule extends ConverterRule {
     }
 
     @Override
-    public @Nullable RelNode convert(@Nonnull RelNode rel) {
+    public @Nullable RelNode convert(@NonNull RelNode rel) {
         RelOptCluster cluster = rel.getCluster();
         return new DingoCoalesce(
             cluster,

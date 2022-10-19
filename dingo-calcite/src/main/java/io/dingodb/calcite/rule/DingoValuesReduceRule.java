@@ -30,11 +30,11 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config> implements SubstitutionRule {
@@ -43,8 +43,8 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
     }
 
     private static void matchProject(
-        @Nonnull DingoValuesReduceRule rule,
-        @Nonnull RelOptRuleCall call
+        DingoValuesReduceRule rule,
+        @NonNull RelOptRuleCall call
     ) {
         LogicalProject project = call.rel(0);
         LogicalDingoValues values = call.rel(1);
@@ -70,8 +70,8 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
     }
 
     private static void matchFilter(
-        @Nonnull DingoValuesReduceRule rule,
-        @Nonnull RelOptRuleCall call
+        DingoValuesReduceRule rule,
+        @NonNull RelOptRuleCall call
     ) {
         LogicalFilter filter = call.rel(0);
         LogicalDingoValues values = call.rel(1);

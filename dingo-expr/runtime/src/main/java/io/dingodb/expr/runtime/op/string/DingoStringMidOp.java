@@ -21,14 +21,15 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoStringMidOp extends RtStringConversionOp {
@@ -39,11 +40,11 @@ public class DingoStringMidOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoStringMidOp(@Nonnull RtExpr[] paras) {
+    public DingoStringMidOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static String midString(final String inputStr, int startIndex) {
+    public static @NonNull String midString(final String inputStr, int startIndex) {
         if (inputStr == null || inputStr.length() == 0) {
             return "";
         }
@@ -59,7 +60,7 @@ public class DingoStringMidOp extends RtStringConversionOp {
         return inputStr.substring(startIndex - 1);
     }
 
-    public static String midString(final String inputStr, int startIndex, int cnt) {
+    public static @NonNull String midString(final String inputStr, int startIndex, int cnt) {
         if (inputStr == null || inputStr.length() == 0 || cnt < 0) {
             return "";
         }
@@ -76,20 +77,19 @@ public class DingoStringMidOp extends RtStringConversionOp {
         return inputStr.substring(startIndex - 1, endIndex);
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         String inputStr = ((String) values[0]);
 
         BigDecimal decimal = new BigDecimal(values[1].toString());
-        Integer startIndex = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        Integer startIndex = decimal.setScale(0, RoundingMode.HALF_UP).intValue();
 
         if (values.length == 2) {
             return midString(inputStr, startIndex);
         }
 
         decimal = new BigDecimal(values[2].toString());
-        Integer cnt = decimal.setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        Integer cnt = decimal.setScale(0, RoundingMode.HALF_UP).intValue();
         return midString(inputStr, startIndex, cnt);
     }
 
@@ -102,7 +102,7 @@ public class DingoStringMidOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("mid");
+            return Collections.singletonList("mid");
         }
 
         @Override

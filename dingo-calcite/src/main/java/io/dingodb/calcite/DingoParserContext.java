@@ -25,11 +25,11 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Properties;
 import java.util.TimeZone;
-import javax.annotation.Nonnull;
 
 
 // These are static for every sql parsing.
@@ -41,11 +41,11 @@ public final class DingoParserContext implements Context {
     @Getter
     private final TimeZone timeZone;
 
-    public DingoParserContext(@Nonnull String defaultSchemaName) {
+    public DingoParserContext(@NonNull String defaultSchemaName) {
         this(defaultSchemaName, null);
     }
 
-    public DingoParserContext(@Nonnull String defaultSchemaName, @Nullable Properties options) {
+    public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options) {
         this.defaultSchemaName = defaultSchemaName;
 
         String timeZoneId = options != null ? options.getProperty("timeZone") : null;
@@ -77,7 +77,7 @@ public final class DingoParserContext implements Context {
     }
 
     @Override
-    public <C> @Nullable C unwrap(@Nonnull Class<C> clazz) {
+    public <C> @Nullable C unwrap(@NonNull Class<C> clazz) {
         if (clazz.isInstance(timeZone)) {
             return clazz.cast(timeZone);
         }

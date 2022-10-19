@@ -19,8 +19,7 @@ package io.dingodb.expr.json.runtime;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Getter
 public enum DataFormat {
@@ -43,8 +42,7 @@ public enum DataFormat {
      * @return the DataFormat
      */
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-    @Nonnull
-    public static DataFormat fromString(String str) {
+    public static @NonNull DataFormat fromString(String str) {
         for (DataFormat dataFormat : DataFormat.values()) {
             if (str.equals(dataFormat.getValue())) {
                 return dataFormat;
@@ -61,8 +59,7 @@ public enum DataFormat {
      * @param fileName the file name
      * @return the DataFormat
      */
-    @Nonnull
-    public static DataFormat fromExtension(@Nonnull String fileName) {
+    public static @NonNull DataFormat fromExtension(@NonNull String fileName) {
         if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
             return APPLICATION_YAML;
         } else if (fileName.endsWith(".json")) {

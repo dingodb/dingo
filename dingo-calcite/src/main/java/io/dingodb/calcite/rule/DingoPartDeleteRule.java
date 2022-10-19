@@ -25,9 +25,8 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.TableModify;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
-
-import javax.annotation.Nonnull;
 
 @Slf4j
 @Value.Enclosing
@@ -37,7 +36,7 @@ public class DingoPartDeleteRule extends RelRule<DingoPartDeleteRule.Config> {
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoPartModify rel = call.rel(0);
         final DingoTableScan scan = call.rel(1);
 

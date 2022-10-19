@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("update")
@@ -60,7 +59,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         Object[] newTuple = Arrays.copyOf(tuple, tuple.length);
         boolean updated = false;
         int i = 0;

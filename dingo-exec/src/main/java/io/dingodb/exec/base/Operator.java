@@ -18,6 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
 
@@ -47,9 +48,9 @@ public interface Operator {
      * @param tuple the tuple pushed in
      * @return `true` means another push needed, `false` means the task is canceled or finished
      */
-    boolean push(int pin, Object[] tuple);
+    boolean push(int pin, @Nullable Object[] tuple);
 
-    void fin(int pin, Fin fin);
+    void fin(int pin, @Nullable Fin fin);
 
     void reset();
 

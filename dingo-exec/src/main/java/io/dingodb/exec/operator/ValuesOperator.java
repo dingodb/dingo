@@ -26,11 +26,11 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.JsonConverter;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("values")
 @JsonPropertyOrder({"tuples", "output"})
@@ -41,18 +41,17 @@ public final class ValuesOperator extends IteratorSourceOperator {
     @Getter
     private final DingoType schema;
 
-    public ValuesOperator(@Nonnull List<Object[]> tuples, @Nonnull DingoType schema) {
+    public ValuesOperator(@NonNull List<Object[]> tuples, @NonNull DingoType schema) {
         super();
         this.tuples = tuples;
         this.schema = schema;
     }
 
-    @Nonnull
     @JsonCreator
-    public static ValuesOperator fromJson(
+    public static @NonNull ValuesOperator fromJson(
         @JsonDeserialize(using = RawJsonDeserializer.class)
-        @Nonnull @JsonProperty("tuples") JsonNode jsonNode,
-        @Nonnull @JsonProperty("schema") DingoType schema
+        @JsonProperty("tuples") JsonNode jsonNode,
+        @JsonProperty("schema") DingoType schema
     ) {
         return new ValuesOperator(RawJsonDeserializer.convertBySchema(jsonNode, schema), schema);
     }
@@ -65,9 +64,8 @@ public final class ValuesOperator extends IteratorSourceOperator {
             .collect(Collectors.toList());
     }
 
-    @Nonnull
     @Override
-    protected Iterator<Object[]> createIterator() {
+    protected @NonNull Iterator<Object[]> createIterator() {
         return tuples.iterator();
     }
 }

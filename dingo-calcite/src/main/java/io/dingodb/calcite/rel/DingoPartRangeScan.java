@@ -28,11 +28,11 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRel {
     @Getter
@@ -67,9 +67,14 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
         this.includeEnd = includeEnd;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
+        // Assume that part scan has half cost.
+        return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5d);
+    }
+
+    @Override
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
         pw.item("startKey", startKey);
@@ -81,13 +86,7 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, @Nonnull RelMetadataQuery mq) {
-        // Assume that part scan has half cost.
-        return Objects.requireNonNull(super.computeSelfCost(planner, mq)).multiplyBy(0.5d);
-    }
-
-    @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

@@ -16,8 +16,9 @@
 
 package io.dingodb.expr.runtime;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
-import javax.annotation.Nullable;
 
 public interface EvalContext extends Serializable {
     /**
@@ -36,8 +37,7 @@ public interface EvalContext extends Serializable {
      */
     void set(Object id, Object value);
 
-    @Nullable
-    default EvalEnv getEnv() {
+    default @Nullable EvalEnv getEnv() {
         return null;
     }
 }

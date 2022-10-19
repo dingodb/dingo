@@ -19,9 +19,8 @@ package io.dingodb.exec.aggregate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @JsonTypeName("count")
 public class CountAgg extends UnityAgg {
@@ -43,13 +42,13 @@ public class CountAgg extends UnityAgg {
     }
 
     @Override
-    public Object first(@Nonnull Object[] tuple) {
+    public Object first(Object @NonNull [] tuple) {
         Object value = tuple[index];
         return value != null ? 1L : null;
     }
 
     @Override
-    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
+    public Object add(@NonNull Object var, Object @NonNull [] tuple) {
         Object value = tuple[index];
         if (value != null) {
             return (long) var + 1L;

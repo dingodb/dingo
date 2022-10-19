@@ -29,6 +29,7 @@ import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.client.connector.Connector;
 import io.dingodb.server.protocol.Tags;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -40,7 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -65,23 +65,21 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
         }
     }
 
-    public static CoordinatorConnector defaultConnector() {
-        return DEFAULT_CONNECTOR;
-    }
-
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
     private final AtomicReference<Channel> leaderChannel = new AtomicReference<>();
     private final AtomicReference<Location> leaderAddress = new AtomicReference<>();
-
     private final Set<Location> coordinatorAddresses = new HashSet<>();
     private final Map<Location, Channel> listenLeaderChannels = new ConcurrentHashMap<>();
-
     private long lastUpdateLeaderTime;
     private long lastUpdateNotLeaderChannelsTime;
 
     public CoordinatorConnector(List<Location> coordinatorAddresses) {
         this.coordinatorAddresses.addAll(coordinatorAddresses);
         refresh();
+    }
+
+    public static CoordinatorConnector defaultConnector() {
+        return DEFAULT_CONNECTOR;
     }
 
     @Override
@@ -169,8 +167,7 @@ public class CoordinatorConnector implements Connector, Supplier<Location> {
         }
     }
 
-    @Nonnull
-    private Channel connectFollow(Location address) {
+    private @NonNull Channel connectFollow(Location address) {
         Channel ch = netService.newChannel(address);
         ch.setMessageListener(this::connected);
         ch.send(new Message(Tags.LISTEN_RAFT_LEADER, ByteArrayUtils.EMPTY_BYTES));
