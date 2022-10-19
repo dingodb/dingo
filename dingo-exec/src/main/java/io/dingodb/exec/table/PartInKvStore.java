@@ -71,14 +71,23 @@ public final class PartInKvStore implements Part {
     @Override
     @Nonnull
     public Iterator<Object[]> getIteratorByRange(
-        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd
+        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd, boolean prefixScan
     ) {
         final long startTime = System.currentTimeMillis();
         try {
-            return Iterators.transform(
-                store.keyValueScan(startKey, endKey, includeStart, includeEnd),
-                wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-            );
+            // todo replace
+            if (!prefixScan) {
+                return Iterators.transform(
+                    store.keyValueScan(startKey, endKey, includeStart, includeEnd),
+                    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+                );
+            } else {
+                includeEnd = true;
+                return Iterators.transform(
+                    store.keyValuePrefixScan(startKey, endKey, includeStart, includeEnd),
+                    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+                );
+            }
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -150,8 +159,8 @@ public final class PartInKvStore implements Part {
                     currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
                 }
                 totalCnt += currentCnt;
-                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}" +
-                        ", doDeleting: {}.",
+                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}"
+                        + ", doDeleting: {}.",
                     partStartKey,
                     isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
                     currentCnt,

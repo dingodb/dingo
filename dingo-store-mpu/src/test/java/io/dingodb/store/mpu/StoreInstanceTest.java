@@ -51,6 +51,7 @@ class StoreInstanceTest {
 
     @AfterAll
     public static void afterAll() {
+        storeInstance.destroy();
         FileUtils.deleteIfExists(PATH);
     }
 
