@@ -26,7 +26,6 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalSort;
 
 import java.util.Collections;
-import javax.annotation.Nonnull;
 
 public class DingoSortRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -43,7 +42,7 @@ public class DingoSortRule extends ConverterRule {
     }
 
     @Override
-    public RelNode convert(@Nonnull RelNode rel) {
+    public RelNode convert(RelNode rel) {
         LogicalSort sort = (LogicalSort) rel;
         RelTraitSet traitSet = sort.getTraitSet().replace(DingoConventions.ROOT);
         // The input need not be sorted.

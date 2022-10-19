@@ -18,8 +18,7 @@ package io.dingodb.expr.runtime;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @RequiredArgsConstructor
 @Getter
@@ -33,9 +32,8 @@ public class RtConst implements RtExpr {
 
     private final Object value;
 
-    @Nullable
     @Override
-    public Object eval(EvalContext etx) {
+    public @Nullable Object eval(EvalContext etx) {
         return value;
     }
 

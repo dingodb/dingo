@@ -23,9 +23,9 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class DingoDistributedValues extends LogicalDingoValues implements DingoRel {
     @Getter
@@ -42,16 +42,15 @@ public class DingoDistributedValues extends LogicalDingoValues implements DingoR
         this.table = table;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table.getQualifiedName());
         return pw;
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

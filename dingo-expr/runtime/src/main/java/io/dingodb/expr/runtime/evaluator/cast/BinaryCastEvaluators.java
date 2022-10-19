@@ -21,9 +21,9 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -36,8 +36,7 @@ final class BinaryCastEvaluators {
     private BinaryCastEvaluators() {
     }
 
-    @Nonnull
-    static byte[] binaryCast(@Nonnull String value) {
+    static byte @NonNull [] binaryCast(@NonNull String value) {
         return value.getBytes(StandardCharsets.UTF_8);
     }
 }

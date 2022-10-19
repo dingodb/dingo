@@ -24,8 +24,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 
-import javax.annotation.Nonnull;
-
 @JsonTypeName("insert")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
 public final class PartInsertOperator extends PartModifyOperator {
@@ -45,7 +43,7 @@ public final class PartInsertOperator extends PartModifyOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nonnull Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple) {
         if (part.insert(tuple)) {
             count++;
         }

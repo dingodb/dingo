@@ -25,9 +25,9 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoPartition extends SingleRel implements DingoRel {
     @Getter
@@ -38,22 +38,20 @@ public final class DingoPartition extends SingleRel implements DingoRel {
         this.table = table;
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoPartition(getCluster(), traitSet, AbstractRelNode.sole(inputs), table);
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("table", table.getQualifiedName());
         return pw;
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

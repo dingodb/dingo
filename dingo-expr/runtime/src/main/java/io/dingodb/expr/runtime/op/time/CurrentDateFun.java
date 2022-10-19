@@ -25,31 +25,29 @@ import io.dingodb.expr.runtime.op.RtEnvFun;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Method;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @Slf4j
 public class CurrentDateFun extends RtEnvFun {
     private static final long serialVersionUID = -6855307131187820249L;
 
-    public CurrentDateFun(@Nonnull RtExpr[] paras) {
+    public CurrentDateFun(RtExpr[] paras) {
         super(paras);
     }
 
-    @Override
-    protected Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) {
-        return env != null ? DateTimeUtils.currentDate(env.getTimeZone()) : DateTimeUtils.currentDate();
-    }
-
-    @Nonnull
     public static Date getCurrentDate() {
         throw new NeverRunToHere("should never be called.");
+    }
+
+    @Override
+    protected Object envFun(Object[] values, @Nullable EvalEnv env) {
+        return env != null ? DateTimeUtils.currentDate(env.getTimeZone()) : DateTimeUtils.currentDate();
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.TypeName;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -49,7 +49,7 @@ public class TypeCodeInfo {
      * @param type the name of the type
      * @return the type code
      */
-    public static int typeCode(@Nonnull String type) {
+    public static int typeCode(@NonNull String type) {
         String name = type.replaceAll("<.*>", "");
         return name.hashCode();
     }
@@ -60,12 +60,11 @@ public class TypeCodeInfo {
      * @param type the TypeName
      * @return the type code
      */
-    public static int typeCode(@Nonnull TypeName type) {
+    public static int typeCode(@NonNull TypeName type) {
         return typeCode(type.toString());
     }
 
-    @Nonnull
-    public static TypeCodeInfo createFromEnv(@Nonnull RoundEnvironment roundEnv) {
+    public static @NonNull TypeCodeInfo createFromEnv(@NonNull RoundEnvironment roundEnv) {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(GenerateTypeCodes.class);
         if (elements.size() != 1) {
             throw new IllegalStateException(
@@ -98,10 +97,9 @@ public class TypeCodeInfo {
         return new TypeCodeInfo(className, map);
     }
 
-    @Nonnull
-    public CodeBlock evaluatorKeyOf(
+    public @NonNull CodeBlock evaluatorKeyOf(
         TypeElement evaluatorKey,
-        @Nonnull List<TypeName> paraTypeNames
+        @NonNull List<TypeName> paraTypeNames
     ) {
         CodeBlock.Builder builder = CodeBlock.builder();
         builder.add("$T.of(", evaluatorKey);
@@ -117,8 +115,7 @@ public class TypeCodeInfo {
         return builder.build();
     }
 
-    @Nonnull
-    public CodeBlock typeOf(TypeName typeName) {
+    public @NonNull CodeBlock typeOf(TypeName typeName) {
         CodeBlock.Builder builder = CodeBlock.builder();
         List<String> names = nameMap.get(typeCode(typeName));
         if (names == null || names.isEmpty()) {

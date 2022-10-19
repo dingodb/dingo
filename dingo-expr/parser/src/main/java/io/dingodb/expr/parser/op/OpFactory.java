@@ -35,8 +35,7 @@ import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
 import io.dingodb.expr.runtime.op.string.RtMatchesOp;
 import io.dingodb.expr.runtime.op.string.RtStartsWithOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class OpFactory {
     private OpFactory() {
@@ -48,8 +47,7 @@ public final class OpFactory {
      * @param type the type
      * @return the Op
      */
-    @Nonnull
-    public static Op getUnary(int type) {
+    public static @NonNull Op getUnary(int type) {
         switch (type) {
             case DingoExprParser.ADD:
                 return new OpWithEvaluator(OpType.POS, PosEvaluatorFactory.INSTANCE);
@@ -68,8 +66,7 @@ public final class OpFactory {
      * @param type the type
      * @return the Op
      */
-    @Nonnull
-    public static Op getBinary(int type) {
+    public static @NonNull Op getBinary(int type) {
         switch (type) {
             case DingoExprParser.ADD:
                 return new OpWithEvaluator(OpType.ADD, AddEvaluatorFactory.INSTANCE);

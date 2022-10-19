@@ -18,9 +18,9 @@ package io.dingodb.common.hash;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Setter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("simple")
 public final class SimpleHashStrategy implements HashStrategy {
@@ -28,15 +28,14 @@ public final class SimpleHashStrategy implements HashStrategy {
     private int outputNum;
 
     @Override
-    public int selectOutput(@Nonnull Object[] tuple) {
+    public int selectOutput(Object @NonNull [] tuple) {
         int hash = Objects.hash(tuple);
         int index = hash % outputNum;
         return index >= 0 ? index : index + outputNum;
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return this.getClass().getSimpleName();
     }
 }

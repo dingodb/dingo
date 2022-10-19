@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoStringTrimOp extends RtStringConversionOp {
@@ -39,7 +39,7 @@ public class DingoStringTrimOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoStringTrimOp(@Nonnull RtExpr[] paras) {
+    public DingoStringTrimOp(RtExpr[] paras) {
         super(paras);
     }
 
@@ -52,7 +52,7 @@ public class DingoStringTrimOp extends RtStringConversionOp {
      * @param trimStr  trim string
      * @return index
      */
-    private static int getLastIndexFromLeft(final String inputStr, final String trimStr) {
+    private static int getLastIndexFromLeft(final @NonNull String inputStr, final String trimStr) {
         int result = 0;
         int index = 0;
         boolean isFound = false;
@@ -70,7 +70,7 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         }
     }
 
-    private static int getLastIndexFromRight(final String inputStr, final String trimStr) {
+    private static int getLastIndexFromRight(final @NonNull String inputStr, final @NonNull String trimStr) {
         if (inputStr.length() < trimStr.length()) {
             return inputStr.length() - 1;
         }
@@ -91,7 +91,11 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         }
     }
 
-    public static String trimStr(final String opType, final String trimStr, final String inputStr) {
+    public static @NonNull String trimStr(
+        final @NonNull String opType,
+        final String trimStr,
+        final @NonNull String inputStr
+    ) {
         int startIndex = 0;
         int endIndex = inputStr.length();
         switch (opType) {
@@ -119,9 +123,8 @@ public class DingoStringTrimOp extends RtStringConversionOp {
         }
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         if (values.length != 3) {
             return ((String) values[0]).trim();
         }
@@ -142,7 +145,7 @@ public class DingoStringTrimOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("trim");
+            return Collections.singletonList("trim");
         }
 
         @Override

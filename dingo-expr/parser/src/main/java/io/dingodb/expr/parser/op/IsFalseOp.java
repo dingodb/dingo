@@ -23,8 +23,7 @@ import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.logical.RtIsFalse;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class IsFalseOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "IS_FALSE";
@@ -33,14 +32,12 @@ public final class IsFalseOp extends OpIgnoreEnv {
         super(FUN_NAME);
     }
 
-    @Nonnull
-    public static IsFalseOp fun() {
+    public static @NonNull IsFalseOp fun() {
         return new IsFalseOp();
     }
 
-    @Nonnull
     @Override
-    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(RtExpr @NonNull [] rtExprArray) throws DingoExprCompileException {
         RtExpr rtExpr = rtExprArray[0];
         try {
             if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
@@ -53,9 +50,8 @@ public final class IsFalseOp extends OpIgnoreEnv {
         }
     }
 
-    @Nonnull
     @Override
-    protected RtIsFalse createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtIsFalse createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return new RtIsFalse(rtExprArray);
     }
 }

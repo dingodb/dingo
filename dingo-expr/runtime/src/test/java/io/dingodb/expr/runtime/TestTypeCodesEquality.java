@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,15 +34,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestTypeCodesEquality {
-    @Nonnull
-    private static Stream<Arguments> getParameters() {
+    private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             // scalar types
             arguments(Boolean.class, TypeCode.BOOL),

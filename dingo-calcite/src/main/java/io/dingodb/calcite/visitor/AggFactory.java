@@ -25,9 +25,9 @@ import io.dingodb.exec.aggregate.MinAgg;
 import io.dingodb.exec.aggregate.Sum0Agg;
 import io.dingodb.exec.aggregate.SumAgg;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -35,8 +35,7 @@ final class AggFactory {
     private AggFactory() {
     }
 
-    @Nonnull
-    static Agg getAgg(@Nonnull SqlKind kind, @Nonnull List<Integer> args, DingoType schema) {
+    static @NonNull Agg getAgg(SqlKind kind, @NonNull List<Integer> args, DingoType schema) {
         if (args.isEmpty() && kind == SqlKind.COUNT) {
             return new CountAllAgg();
         }

@@ -21,9 +21,9 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.sql.RtSqlCastListItemsOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 public final class SqlCastListItemsOp extends Op {
     public static final String FUN_NAME = "CAST_LIST_ITEMS";
@@ -32,14 +32,12 @@ public final class SqlCastListItemsOp extends Op {
         super(FUN_NAME);
     }
 
-    @Nonnull
-    public static SqlCastListItemsOp fun() {
+    public static @NonNull SqlCastListItemsOp fun() {
         return new SqlCastListItemsOp();
     }
 
-    @Nonnull
     @Override
-    protected RtSqlCastListItemsOp createRtOp(@Nonnull RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtSqlCastListItemsOp createRtOp(RtExpr @NonNull [] rtExprArray) throws FailGetEvaluator {
         int toTypeCode = TypeCode.codeOf((String) Objects.requireNonNull(rtExprArray[0].eval(null)));
         // The types of array elements cannot be achieved, even not the same, so cast with universal evaluators.
         return new RtSqlCastListItemsOp(

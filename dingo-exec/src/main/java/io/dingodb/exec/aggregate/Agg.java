@@ -16,8 +16,8 @@
 
 package io.dingodb.exec.aggregate;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public interface Agg {
     /**
@@ -26,9 +26,9 @@ public interface Agg {
      * @param tuple the tuple
      * @return the aggregating context, may be a compound type
      */
-    Object first(@Nonnull Object[] tuple);
+    Object first(@NonNull Object[] tuple);
 
-    Object add(@Nonnull Object var, @Nonnull Object[] tuple);
+    Object add(@NonNull Object var, @NonNull Object[] tuple);
 
     /**
      * Called to merge two aggregating context.

@@ -19,12 +19,13 @@ package io.dingodb.expr.runtime.evaluator.base;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
 import lombok.ToString;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @ToString
 public final class EvaluatorKey implements Serializable {
@@ -32,9 +33,9 @@ public final class EvaluatorKey implements Serializable {
     private static final long serialVersionUID = 3094073337324796122L;
 
     @Getter
-    private final int[] paraTypeCodes;
+    private final int @Nullable [] paraTypeCodes;
 
-    private EvaluatorKey(int[] paraTypeCodes) {
+    private EvaluatorKey(int @Nullable [] paraTypeCodes) {
         this.paraTypeCodes = paraTypeCodes;
     }
 
@@ -44,14 +45,12 @@ public final class EvaluatorKey implements Serializable {
      * @param paraTypeCodes the type codes
      * @return the EvaluatorKey
      */
-    @Nonnull
-    public static EvaluatorKey of(int... paraTypeCodes) {
+    public static @NonNull EvaluatorKey of(int... paraTypeCodes) {
         return new EvaluatorKey(paraTypeCodes);
     }
 
-    @Nonnull
-    private EvaluatorKey copy() {
-        return new EvaluatorKey(paraTypeCodes.clone());
+    private @NonNull EvaluatorKey copy() {
+        return paraTypeCodes != null ? new EvaluatorKey(paraTypeCodes.clone()) : UNIVERSAL;
     }
 
     /**
@@ -59,15 +58,16 @@ public final class EvaluatorKey implements Serializable {
      *
      * @return the list
      */
-    @Nonnull
-    public List<EvaluatorKey> generalize() {
+    public @NonNull List<EvaluatorKey> generalize() {
         List<EvaluatorKey> keys = new ArrayList<>(9);
         int i = 0;
         EvaluatorKey key = copy();
         while (true) {
+            assert paraTypeCodes != null;
             if (i == paraTypeCodes.length) {
                 keys.add(key.copy());
                 i--;
+                assert key.paraTypeCodes != null;
                 if (key.paraTypeCodes[i] == TypeCode.OBJECT) {
                     while (i >= 0 && key.paraTypeCodes[i] == TypeCode.OBJECT) {
                         key.paraTypeCodes[i] = this.paraTypeCodes[i];
@@ -91,7 +91,7 @@ public final class EvaluatorKey implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (obj instanceof EvaluatorKey) {
             return Arrays.equals(paraTypeCodes, ((EvaluatorKey) obj).paraTypeCodes);
         }

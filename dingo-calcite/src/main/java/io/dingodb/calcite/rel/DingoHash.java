@@ -28,10 +28,10 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class DingoHash extends SingleRel implements DingoRel {
     @Getter
@@ -42,27 +42,25 @@ public final class DingoHash extends SingleRel implements DingoRel {
         this.keys = keys;
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoHash(getCluster(), traitSet, AbstractRelNode.sole(inputs), keys);
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCostFactory().makeZeroCost();
     }
 
     @Override
-    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+    public double estimateRowCount(@NonNull RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(getInput());
         // Assume hash redistribute input to 3 partitions.
         return rowCount / 3.0d;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         // crucial, this is how Calcite distinguish between different node with different props.
         pw.itemIf("keys", keys, keys != null);
@@ -75,7 +73,7 @@ public final class DingoHash extends SingleRel implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

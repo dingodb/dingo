@@ -19,13 +19,12 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DingoRel extends PhysicalNode {
     static DingoRel dingo(RelNode rel) {
         return (DingoRel) rel;
     }
 
-    <T> T accept(@Nonnull DingoRelVisitor<T> visitor);
+    <T> T accept(@NonNull DingoRelVisitor<T> visitor);
 }

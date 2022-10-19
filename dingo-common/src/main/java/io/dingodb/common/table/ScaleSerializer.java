@@ -19,8 +19,7 @@ package io.dingodb.common.table;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.NumberSerializers;
 import org.apache.calcite.rel.type.RelDataType;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class ScaleSerializer extends NumberSerializers.IntegerSerializer {
     private static final long serialVersionUID = 3060735844820138100L;
@@ -30,7 +29,7 @@ public class ScaleSerializer extends NumberSerializers.IntegerSerializer {
     }
 
     @Override
-    public boolean isEmpty(SerializerProvider provider, @Nonnull Object value) {
+    public boolean isEmpty(SerializerProvider provider, @NonNull Object value) {
         return value.equals(RelDataType.SCALE_NOT_SPECIFIED);
     }
 }

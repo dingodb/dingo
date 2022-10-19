@@ -26,6 +26,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Sarg;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> {
     private final TableDefinition tableDefinition;
@@ -42,7 +42,7 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
     private final RexBuilder rexBuilder;
     private boolean operandHasNonPrimaryKey = false;
 
-    public KeyFilterRexVisitor(@Nonnull TableDefinition tableDefinition, RexBuilder rexBuilder) {
+    public KeyFilterRexVisitor(@NonNull TableDefinition tableDefinition, RexBuilder rexBuilder) {
         super(true);
         this.tableDefinition = tableDefinition;
         this.primaryKeyCount = tableDefinition.getKeyMapping().size();
@@ -51,10 +51,9 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
     }
 
     // `null` means conflict.
-    @Nullable
-    private static Map<Integer, RexLiteral> merge(
-        @Nonnull final Map<Integer, RexLiteral> item0,
-        @Nonnull final Map<Integer, RexLiteral> item1
+    private static @Nullable Map<Integer, RexLiteral> merge(
+        final Map<Integer, RexLiteral> item0,
+        final @NonNull Map<Integer, RexLiteral> item1
     ) {
         for (Map.Entry<Integer, RexLiteral> entry : item1.entrySet()) {
             int index = entry.getKey();
@@ -71,17 +70,15 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return item0;
     }
 
-    @Nonnull
-    private static Set<Map<Integer, RexLiteral>> product(
-        @Nonnull final Set<Map<Integer, RexLiteral>> items,
-        @Nonnull final Map<Integer, RexLiteral> item
+    private static @NonNull Set<Map<Integer, RexLiteral>> product(
+        final @NonNull Set<Map<Integer, RexLiteral>> items,
+        final Map<Integer, RexLiteral> item
     ) {
         items.removeIf(v -> merge(v, item) == null);
         return items;
     }
 
-    @Nonnull
-    private static Set<Map<Integer, RexLiteral>> singleton(Map<Integer, RexLiteral> item) {
+    private static @NonNull Set<Map<Integer, RexLiteral>> singleton(Map<Integer, RexLiteral> item) {
         Set<Map<Integer, RexLiteral>> items = new HashSet<>();
         items.add(item);
         return items;
@@ -129,7 +126,7 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return newItems;
     }
 
-    private Set<Map<Integer, RexLiteral>> copyItems(@Nonnull final Set<Map<Integer, RexLiteral>> items) {
+    private Set<Map<Integer, RexLiteral>> copyItems(final @NonNull Set<Map<Integer, RexLiteral>> items) {
         return items.stream().map(item -> {
             Map<Integer, RexLiteral> map = new HashMap<>(primaryKeyCount);
             map.putAll(item);
@@ -138,13 +135,13 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
     }
 
     @Override
-    public Set<Map<Integer, RexLiteral>> visitInputRef(@Nonnull RexInputRef inputRef) {
+    public Set<Map<Integer, RexLiteral>> visitInputRef(@NonNull RexInputRef inputRef) {
         return singleton(makeItem(inputRef.getIndex(), rexBuilder.makeLiteral(true)));
     }
 
     // `null` means the RexNode is not related to primary column
     @Override
-    public Set<Map<Integer, RexLiteral>> visitCall(@Nonnull RexCall call) {
+    public Set<Map<Integer, RexLiteral>> visitCall(@NonNull RexCall call) {
         Set<Map<Integer, RexLiteral>> items;
         List<RexNode> operands = call.getOperands();
         switch (call.getKind()) {
@@ -201,8 +198,7 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         }
     }
 
-    @Nullable
-    private Set<Map<Integer, RexLiteral>> checkOperands(@Nonnull RexNode op0, @Nonnull RexNode op1) {
+    private @Nullable Set<Map<Integer, RexLiteral>> checkOperands(@NonNull RexNode op0, RexNode op1) {
         if (op0.isA(SqlKind.INPUT_REF) && op1.isA(SqlKind.LITERAL)) {
             RexInputRef inputRef = (RexInputRef) op0;
             RexLiteral literal = (RexLiteral) op1;
@@ -211,8 +207,7 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return null;
     }
 
-    @Nonnull
-    private Map<Integer, RexLiteral> makeItem(int index, RexLiteral rexLiteral) {
+    private @NonNull Map<Integer, RexLiteral> makeItem(int index, RexLiteral rexLiteral) {
         Map<Integer, RexLiteral> item = new HashMap<>(primaryKeyCount);
         if (tableDefinition.getColumn(index).isPrimary()) {
             item.put(index, rexLiteral);
@@ -222,8 +217,7 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return item;
     }
 
-    @Nonnull
-    private Map<Integer, RexLiteral> makeItem() {
+    private @NonNull Map<Integer, RexLiteral> makeItem() {
         return new HashMap<>(primaryKeyCount);
     }
 

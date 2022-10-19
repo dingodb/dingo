@@ -28,13 +28,13 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import javax.annotation.Nonnull;
 
 public class AvroCodec implements Codec {
     private static final ThreadLocal<BinaryDecoder> decoderLocal = ThreadLocal.withInitial(() -> null);
@@ -44,7 +44,7 @@ public class AvroCodec implements Codec {
     private final DatumReader<GenericRecord> reader;
     private final DatumWriter<GenericRecord> writer;
 
-    public AvroCodec(@Nonnull Schema schema) {
+    public AvroCodec(Schema schema) {
         this.schema = schema;
         this.reader = new GenericDatumReader<>(schema);
         this.writer = new GenericDatumWriter<>(schema);
@@ -52,7 +52,7 @@ public class AvroCodec implements Codec {
 
     private static GenericRecord decodeBytes(
         InputStream is,
-        @Nonnull DatumReader<GenericRecord> reader
+        @NonNull DatumReader<GenericRecord> reader
     ) throws IOException {
         BinaryDecoder decoder = decoderLocal.get();
         decoder = DecoderFactory.get().directBinaryDecoder(is, decoder);
@@ -63,7 +63,7 @@ public class AvroCodec implements Codec {
     private static void encodeBytes(
         OutputStream os,
         GenericRecord record,
-        @Nonnull DatumWriter<GenericRecord> writer
+        @NonNull DatumWriter<GenericRecord> writer
     ) throws IOException {
         BinaryEncoder encoder = encoderLocal.get();
         encoder = EncoderFactory.get().directBinaryEncoder(os, encoder);
@@ -71,7 +71,7 @@ public class AvroCodec implements Codec {
         writer.write(record, encoder);
     }
 
-    public void encode(OutputStream os, @Nonnull Object[] tuple) throws IOException {
+    public void encode(OutputStream os, Object @NonNull [] tuple) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < tuple.length; ++i) {
             record.put(i, tuple[i]);
@@ -81,8 +81,8 @@ public class AvroCodec implements Codec {
 
     public void encode(
         OutputStream os,
-        @Nonnull Object[] tuple,
-        @Nonnull TupleMapping mapping
+        Object[] tuple,
+        @NonNull TupleMapping mapping
     ) throws IOException {
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < mapping.size(); ++i) {
@@ -91,25 +91,41 @@ public class AvroCodec implements Codec {
         encodeBytes(os, record, writer);
     }
 
-    public byte[] encode(@Nonnull Object[] tuple) throws IOException {
+    public byte[] encode(Object[] tuple) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple);
         return os.toByteArray();
     }
 
-    public byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException {
+    public byte[] encode(Object[] tuple, TupleMapping mapping) throws IOException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         encode(os, tuple, mapping);
         return os.toByteArray();
     }
 
     @Override
-    public byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+    public byte[] encode(byte[] origin, Object[] tuple, int[] schemaIndex)
         throws IOException, ClassCastException {
         return new byte[0];
     }
 
-    public Object[] decode(@Nonnull InputStream is) throws IOException {
+    public Object[] decode(byte[] bytes) throws IOException {
+        return decode(new ByteArrayInputStream(bytes));
+    }
+
+    @Override
+    public Object[] decode(Object[] result, byte[] bytes, @NonNull TupleMapping mapping) throws IOException {
+        Object[] tuple = decode(bytes);
+        mapping.map(result, tuple);
+        return result;
+    }
+
+    @Override
+    public Object[] decode(byte[] bytes, int[] schemaIndex) throws IOException {
+        return new Object[0];
+    }
+
+    public Object[] decode(InputStream is) throws IOException {
         final GenericRecord keyRecord = decodeBytes(is, reader);
         int size = schema.getFields().size();
         Object[] tuple = new Object[size];
@@ -117,21 +133,5 @@ public class AvroCodec implements Codec {
             tuple[i] = keyRecord.get(i);
         }
         return tuple;
-    }
-
-    public Object[] decode(@Nonnull byte[] bytes) throws IOException {
-        return decode(new ByteArrayInputStream(bytes));
-    }
-
-    @Override
-    public Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
-        Object[] tuple = decode(bytes);
-        mapping.map(result, tuple);
-        return result;
-    }
-
-    @Override
-    public Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
-        return new Object[0];
     }
 }

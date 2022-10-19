@@ -25,11 +25,11 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("map")
 @JsonPropertyOrder({"element", "nullable"})
@@ -52,12 +52,12 @@ public class MapType extends NullableType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convert((Map<?, ?>) value, keyType, valueType);
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertMapFrom(value, keyType, valueType);
     }
 
@@ -77,7 +77,7 @@ public class MapType extends NullableType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             Map<?, ?> map = (Map<?, ?>) value;
             StringBuilder b = new StringBuilder();

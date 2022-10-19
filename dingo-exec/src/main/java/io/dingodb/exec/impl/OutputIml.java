@@ -26,8 +26,7 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class OutputIml implements Output {
     @Getter
@@ -49,8 +48,7 @@ public class OutputIml implements Output {
         this.link = new Input(operatorId, pin);
     }
 
-    @Nonnull
-    public static OutputIml of(Operator operator) {
+    public static @NonNull OutputIml of(Operator operator) {
         OutputIml outputIml = new OutputIml();
         outputIml.setOperator(operator);
         return outputIml;

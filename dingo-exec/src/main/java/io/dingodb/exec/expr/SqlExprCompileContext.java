@@ -21,9 +21,8 @@ import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import lombok.Getter;
 import lombok.ToString;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @ToString(of = {"tupleType", "parasType"})
 public class SqlExprCompileContext implements CompileContext {
@@ -56,7 +55,7 @@ public class SqlExprCompileContext implements CompileContext {
     }
 
     @Override
-    public CompileContext getChild(@Nonnull Object index) {
+    public CompileContext getChild(@NonNull Object index) {
         if (index.equals(SQL_TUPLE_VAR_NAME)) {
             return tupleType;
         } else if (index.equals(SQL_DYNAMIC_VAR_NAME)) {

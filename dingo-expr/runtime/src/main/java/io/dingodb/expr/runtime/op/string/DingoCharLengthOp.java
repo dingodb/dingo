@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoCharLengthOp extends RtStringConversionOp {
@@ -38,17 +38,16 @@ public class DingoCharLengthOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoCharLengthOp(@Nonnull RtExpr[] paras) {
+    public DingoCharLengthOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static int charLength(String str) {
+    public static int charLength(@NonNull String str) {
         return str.length();
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         if (values[0] == null) {
             return 0;
         }
@@ -64,7 +63,7 @@ public class DingoCharLengthOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("char_length");
+            return Collections.singletonList("char_length");
         }
 
         @Override

@@ -19,48 +19,47 @@ package io.dingodb.common.codec;
 import io.dingodb.common.type.TupleMapping;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 public interface Codec {
-    byte[] encode(@Nonnull Object[] tuple) throws IOException, ClassCastException;
+    byte[] encode(Object[] tuple) throws IOException, ClassCastException;
 
-    byte[] encode(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException;
+    byte[] encode(Object[] tuple, TupleMapping mapping) throws IOException, ClassCastException;
 
-    byte[] encode(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+    byte[] encode(byte[] origin, Object[] tuple, int[] schemaIndex)
         throws IOException, ClassCastException;
 
-    default byte[] encodeKey(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+    default byte[] encodeKey(Object[] tuple) throws IOException, ClassCastException {
         return encode(tuple);
     }
 
-    default byte[] encodeKey(@Nonnull Object[] tuple, @Nonnull TupleMapping mapping) throws IOException, ClassCastException {
+    default byte[] encodeKey(Object[] tuple, TupleMapping mapping) throws IOException, ClassCastException {
         return encode(tuple, mapping);
     }
 
-    default byte[] encodeKey(@Nonnull byte[] origin, @Nonnull Object[] tuple, @Nonnull int[] schemaIndex)
+    default byte[] encodeKey(byte[] origin, Object[] tuple, int[] schemaIndex)
         throws IOException, ClassCastException {
         return encode(origin, tuple, schemaIndex);
     }
 
-    default byte[] encodeKeyForRangeScan(@Nonnull Object[] tuple) throws IOException, ClassCastException {
+    default byte[] encodeKeyForRangeScan(Object[] tuple) throws IOException, ClassCastException {
         return encode(tuple);
     }
 
-    Object[] decode(@Nonnull byte[] bytes) throws IOException;
+    Object[] decode(byte[] bytes) throws IOException;
 
-    Object[] decode(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException;
+    Object[] decode(Object[] result, byte[] bytes, TupleMapping mapping) throws IOException;
 
-    Object[] decode(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException;
+    Object[] decode(byte[] bytes, int[] schemaIndex) throws IOException;
 
-    default Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+    default Object[] decodeKey(byte[] bytes) throws IOException {
         return decode(bytes);
     }
 
-    default Object[] decodeKey(Object[] result, byte[] bytes, @Nonnull TupleMapping mapping) throws IOException {
+    default Object[] decodeKey(Object[] result, byte[] bytes, TupleMapping mapping) throws IOException {
         return decode(result, bytes, mapping);
     }
 
-    default Object[] decodeKey(byte[] bytes, @Nonnull int[] schemaIndex) throws IOException {
+    default Object[] decodeKey(byte[] bytes, int[] schemaIndex) throws IOException {
         return decode(bytes, schemaIndex);
     }
 }

@@ -22,11 +22,10 @@ import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.expr.runtime.op.RtFun;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,12 +51,12 @@ public class TestFunFactory {
     static class HelloOp extends RtFun {
         private static final long serialVersionUID = -8060697833705004059L;
 
-        protected HelloOp(@Nonnull RtExpr[] paras) {
+        protected HelloOp(RtExpr @NonNull [] paras) {
             super(paras);
         }
 
         @Override
-        protected Object fun(@Nonnull Object[] values) {
+        protected Object fun(Object @NonNull [] values) {
             return "Hello " + values[0];
         }
 

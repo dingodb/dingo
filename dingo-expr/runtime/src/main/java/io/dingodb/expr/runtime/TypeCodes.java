@@ -16,10 +16,12 @@
 
 package io.dingodb.expr.runtime;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 public final class TypeCodes implements Serializable {
     private static final long serialVersionUID = 5276659721959556203L;
@@ -32,7 +34,7 @@ public final class TypeCodes implements Serializable {
      * @param type the Class
      * @return the type code
      */
-    public static int getTypeCode(@Nonnull Class<?> type) {
+    public static int getTypeCode(@NonNull Class<?> type) {
         if (type.isArray()) {
             // `byte[]` is looked on as a scalar type.
             if (!type.equals(byte[].class)) {
@@ -53,7 +55,7 @@ public final class TypeCodes implements Serializable {
      * @param value the Object
      * @return the type code
      */
-    public static int getTypeCode(Object value) {
+    public static int getTypeCode(@Nullable Object value) {
         if (value != null) {
             return getTypeCode(value.getClass());
         }
@@ -66,8 +68,7 @@ public final class TypeCodes implements Serializable {
      * @param values the array of the values
      * @return the array of the type codes
      */
-    @Nonnull
-    public static int[] getTypeCodes(@Nonnull Object[] values) {
+    public static int @NonNull [] getTypeCodes(Object @NonNull [] values) {
         int[] typeCodes = new int[values.length];
         int i = 0;
         for (Object para : values) {

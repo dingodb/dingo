@@ -19,8 +19,7 @@ package io.dingodb.expr.parser.op;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.sql.RtSqlMapConstructorOp;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class SqlMapConstructorOp extends Op {
     public static final String FUN_NAME = "MAP";
@@ -29,20 +28,18 @@ public final class SqlMapConstructorOp extends Op {
         super(FUN_NAME);
     }
 
-    @Nonnull
-    public static SqlMapConstructorOp fun() {
+    public static @NonNull SqlMapConstructorOp fun() {
         return new SqlMapConstructorOp();
     }
 
     @Override
-    protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
+    protected boolean evalNull(RtExpr[] rtExprArray) {
         checkNoNulls(rtExprArray);
         return false;
     }
 
-    @Nonnull
     @Override
-    protected RtSqlMapConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtSqlMapConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return new RtSqlMapConstructorOp(rtExprArray);
     }
 }

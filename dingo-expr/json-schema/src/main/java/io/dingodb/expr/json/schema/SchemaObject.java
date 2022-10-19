@@ -24,10 +24,10 @@ import io.dingodb.expr.json.runtime.RtSchemaDict;
 import io.dingodb.expr.json.runtime.RtSchemaLeaf;
 import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("object")
 @JsonPropertyOrder({"properties", "additionalProperties"})
@@ -41,8 +41,7 @@ public final class SchemaObject extends Schema {
     private Boolean additionalProperties;
 
     @Override
-    @Nonnull
-    public RtSchema createRtSchema() {
+    public @NonNull RtSchema createRtSchema() {
         if (additionalProperties == null || additionalProperties) {
             return new RtSchemaLeaf(TypeCode.MAP);
         }

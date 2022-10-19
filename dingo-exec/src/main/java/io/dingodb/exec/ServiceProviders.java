@@ -20,11 +20,11 @@ import io.dingodb.cluster.ClusterServiceProvider;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.store.api.StoreServiceProvider;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class ServiceProviders<T> implements Iterable<T> {
     public static final ServiceProviders<StoreServiceProvider> KV_STORE_PROVIDER
@@ -42,28 +42,24 @@ public final class ServiceProviders<T> implements Iterable<T> {
         this.loader = ServiceLoader.load(clazz);
     }
 
-    @Nonnull
-    public Iterator<T> providers(boolean refresh) {
+    public @NonNull Iterator<T> providers(boolean refresh) {
         if (refresh) {
             loader.reload();
         }
         return loader.iterator();
     }
 
-    @Nullable
-    public T provider(boolean refresh) {
+    public @Nullable T provider(boolean refresh) {
         Iterator<T> iterator = providers(refresh);
         return iterator.hasNext() ? iterator.next() : null;
     }
 
-    @Nullable
-    public T provider() {
+    public @Nullable T provider() {
         return provider(false);
     }
 
-    @Nonnull
     @Override
-    public Iterator<T> iterator() {
+    public @NonNull Iterator<T> iterator() {
         return providers(false);
     }
 }

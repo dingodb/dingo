@@ -16,17 +16,17 @@
 
 package io.dingodb.common.util;
 
-import java.util.Arrays;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 
 public final class Utils {
     private Utils() {
     }
 
-    public static <T> T sole(@Nonnull Collection<T> collection) {
+    public static <T> T sole(@NonNull Collection<T> collection) {
         if (collection.size() == 1) {
             for (T obj : collection) {
                 return obj;
@@ -35,7 +35,7 @@ public final class Utils {
         throw new IllegalArgumentException("The collection contains zero or more than one elements.");
     }
 
-    public static int max(@Nonnull int[] arr) {
+    public static int max(int @NonNull [] arr) {
         assert arr.length > 0;
         int max = arr[0];
         for (int i : arr) {
@@ -46,15 +46,7 @@ public final class Utils {
         return max;
     }
 
-    @Nonnull
-    public static <T> T[] combine(@Nonnull T[] left, @Nonnull T[] right) {
-        T[] res = Arrays.copyOf(left, left.length + right.length);
-        System.arraycopy(right, 0, res, left.length, right.length);
-        return res;
-    }
-
-
-    public static void loop(Supplier<Boolean> predicate) {
+    public static void loop(@NonNull Supplier<Boolean> predicate) {
         while (true) {
             if (!predicate.get()) {
                 break;

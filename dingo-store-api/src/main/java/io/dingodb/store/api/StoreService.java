@@ -17,16 +17,16 @@
 package io.dingodb.store.api;
 
 import io.dingodb.common.CommonId;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 
 public interface StoreService {
     String name();
 
-    StoreInstance getOrCreateInstance(@Nonnull CommonId id, int ttl);
+    StoreInstance getOrCreateInstance(@NonNull CommonId id, int ttl);
 
-    StoreInstance getInstance(@Nonnull CommonId id);
+    StoreInstance getInstance(@NonNull CommonId id);
 
     void deleteInstance(CommonId id);
 

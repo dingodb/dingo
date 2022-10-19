@@ -17,6 +17,7 @@
 package io.dingodb.expr.runtime;
 
 import io.dingodb.expr.runtime.var.RtVar;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public interface CompileContext {
     /**
@@ -24,7 +25,7 @@ public interface CompileContext {
      *
      * @return the id or {@code null}
      */
-    default Object getId() {
+    default @Nullable Object getId() {
         return null;
     }
 
@@ -43,11 +44,11 @@ public interface CompileContext {
      * @param index then index of the child, can be a String (for Map index) or Integer (for Array index)
      * @return the child context
      */
-    default CompileContext getChild(Object index) {
+    default @Nullable CompileContext getChild(Object index) {
         return null;
     }
 
-    default RtExpr createVar() {
+    default @Nullable RtExpr createVar() {
         Object id = getId();
         return id != null ? new RtVar(id, getTypeCode()) : null;
     }
@@ -57,7 +58,7 @@ public interface CompileContext {
      *
      * @return the {@link EvalEnv}
      */
-    default EvalEnv getEnv() {
+    default @Nullable EvalEnv getEnv() {
         return null;
     }
 }

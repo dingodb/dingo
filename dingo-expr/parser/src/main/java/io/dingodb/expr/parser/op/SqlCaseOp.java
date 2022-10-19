@@ -23,10 +23,10 @@ import io.dingodb.expr.runtime.RtNull;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.expr.runtime.op.sql.RtSqlCaseOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class SqlCaseOp extends OpIgnoreEnv {
     public static final String FUN_NAME = "CASE";
@@ -35,14 +35,12 @@ public final class SqlCaseOp extends OpIgnoreEnv {
         super(FUN_NAME);
     }
 
-    @Nonnull
-    public static SqlCaseOp fun() {
+    public static @NonNull SqlCaseOp fun() {
         return new SqlCaseOp();
     }
 
-    @Nonnull
     @Override
-    protected RtExpr evalNullConst(@Nonnull RtExpr[] rtExprArray) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(RtExpr @NonNull [] rtExprArray) throws DingoExprCompileException {
         int size = rtExprArray.length;
         List<RtExpr> nonConstExprs = new ArrayList<>(size);
         try {
@@ -71,9 +69,8 @@ public final class SqlCaseOp extends OpIgnoreEnv {
         }
     }
 
-    @Nonnull
     @Override
-    protected RtSqlCaseOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtSqlCaseOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return new RtSqlCaseOp(rtExprArray);
     }
 }

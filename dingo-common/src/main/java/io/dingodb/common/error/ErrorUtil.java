@@ -16,14 +16,14 @@
 
 package io.dingodb.common.error;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 final class ErrorUtil {
     private ErrorUtil() {
     }
 
-    static String getDetailMessage(@Nonnull DingoError err) {
+    static String getDetailMessage(@NonNull DingoError err) {
         DingoError reason = err.getReason();
         if (reason.isOk()) {
             return err.getMessage();
@@ -38,8 +38,8 @@ final class ErrorUtil {
         return builder.toString();
     }
 
-    @Nullable
-    static String format(@Nonnull FormattingError err, @Nonnull Object... args) {
+
+    static @Nullable String format(@NonNull FormattingError err, Object @NonNull ... args) {
         String fmt = err.getFormat();
         if (args.length == 0 && fmt == null) {
             return null;
@@ -50,7 +50,7 @@ final class ErrorUtil {
         return String.format(fmt, args);
     }
 
-    static String toString(@Nonnull DingoError err) {
+    static String toString(@NonNull DingoError err) {
         String className = err.getClazz().getCanonicalName();
         if (err.isCategory()) {
             return String.format("error class: %s, code: %s, info: %s",

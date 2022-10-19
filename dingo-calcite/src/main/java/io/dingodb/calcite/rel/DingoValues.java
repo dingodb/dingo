@@ -23,10 +23,10 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class DingoValues extends LogicalDingoValues implements DingoRel {
     public DingoValues(
@@ -39,7 +39,7 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
@@ -49,7 +49,7 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCostFactory().makeTinyCost();
     }
 }

@@ -20,14 +20,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.expr.json.runtime.RtSchema;
 import io.dingodb.expr.json.runtime.RtSchemaLeaf;
 import io.dingodb.expr.runtime.TypeCode;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("boolean")
 public final class SchemaBoolean extends Schema {
     @Override
-    @Nonnull
-    public RtSchema createRtSchema() {
+    public @NonNull RtSchema createRtSchema() {
         return new RtSchemaLeaf(TypeCode.BOOL);
     }
 }

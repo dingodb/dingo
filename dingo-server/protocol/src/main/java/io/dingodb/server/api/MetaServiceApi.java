@@ -22,28 +22,28 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.Part;
 import io.dingodb.net.api.annotation.ApiDeclaration;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import javax.annotation.Nonnull;
 
 public interface MetaServiceApi {
 
     @ApiDeclaration
-    void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition);
+    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
     @ApiDeclaration
-    boolean dropTable(@Nonnull String tableName);
+    boolean dropTable(@NonNull String tableName);
 
     @ApiDeclaration
-    byte[] getTableKey(@Nonnull String tableName);
+    byte[] getTableKey(@NonNull String tableName);
 
     @ApiDeclaration
-    CommonId getTableId(@Nonnull String tableName);
+    CommonId getTableId(@NonNull String tableName);
 
     @ApiDeclaration
-    byte[] getIndexId(@Nonnull String tableName);
+    byte[] getIndexId(@NonNull String tableName);
 
     @ApiDeclaration
     Map<String, TableDefinition> getTableDefinitions();
@@ -55,7 +55,7 @@ public interface MetaServiceApi {
     List<Location> getDistributes(String name);
 
     @ApiDeclaration
-    TableDefinition getTableDefinition(@Nonnull CommonId commonId);
+    TableDefinition getTableDefinition(@NonNull CommonId commonId);
 
     @ApiDeclaration
     int registerUDF(CommonId id, String udfName, String function);

@@ -18,14 +18,12 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class DingoIdGenerator implements IdGenerator {
     private long currentValue = 0;
 
-    @Nonnull
-    public Id get() {
+    public @NonNull Id get() {
         return new Id(String.format("%04X", currentValue++));
     }
 }

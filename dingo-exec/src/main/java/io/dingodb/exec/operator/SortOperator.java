@@ -22,11 +22,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.SortCollation;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("sort")
 @JsonPropertyOrder({"collations", "limit", "offset", "output"})
@@ -43,7 +43,7 @@ public class SortOperator extends SoleOutOperator {
 
     @JsonCreator
     public SortOperator(
-        @Nonnull @JsonProperty("collations") List<SortCollation> collations,
+        @JsonProperty("collations") @NonNull List<SortCollation> collations,
         @JsonProperty("limit") int limit,
         @JsonProperty("offset") int offset
     ) {

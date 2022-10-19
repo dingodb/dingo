@@ -25,14 +25,14 @@ import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("tuple")
 @EqualsAndHashCode(of = {"fields"}, callSuper = true)
@@ -57,7 +57,7 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    public Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         Object[] tuple = (Object[]) value;
         checkFieldCount(tuple);
         return converter.collectTuple(
@@ -67,7 +67,7 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    public Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return checkFieldCount(converter.convertTupleFrom(value, this));
     }
 
@@ -77,12 +77,12 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public DingoType getChild(@Nonnull Object index) {
+    public DingoType getChild(@NonNull Object index) {
         return fields[(int) index];
     }
 
     @Override
-    public TupleType select(@Nonnull TupleMapping mapping) {
+    public @NonNull TupleType select(@NonNull TupleMapping mapping) {
         DingoType[] newElements = new DingoType[mapping.size()];
         // Must do deep copying here
         mapping.revMap(newElements, fields, DingoType::copy);
@@ -98,9 +98,8 @@ public class TupleType extends AbstractDingoType {
         );
     }
 
-    @Nonnull
     @Override
-    public Schema toAvroSchema() {
+    public @NonNull Schema toAvroSchema() {
         return Schema.createRecord(
             getClass().getSimpleName(),
             null,
@@ -127,7 +126,7 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             Object[] tuple = (Object[]) value;
             checkFieldCount(tuple);
@@ -159,8 +158,7 @@ public class TupleType extends AbstractDingoType {
         return b.toString();
     }
 
-    @Nonnull
-    private Object[] checkFieldCount(@Nonnull Object[] tuple) {
+    private Object @NonNull [] checkFieldCount(Object @NonNull [] tuple) {
         if (tuple.length == fieldCount()) {
             return tuple;
         }

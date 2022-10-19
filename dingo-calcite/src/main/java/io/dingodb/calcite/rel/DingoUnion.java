@@ -20,11 +20,10 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class DingoUnion extends Union implements DingoRel {
     public DingoUnion(
@@ -37,12 +36,12 @@ public class DingoUnion extends Union implements DingoRel {
     }
 
     @Override
-    public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+    public DingoUnion copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new DingoUnion(getCluster(), traitSet, inputs, all);
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

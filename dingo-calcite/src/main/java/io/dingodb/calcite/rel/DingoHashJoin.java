@@ -25,10 +25,10 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 public class DingoHashJoin extends Join implements DingoRel {
     public DingoHashJoin(
@@ -66,7 +66,7 @@ public class DingoHashJoin extends Join implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

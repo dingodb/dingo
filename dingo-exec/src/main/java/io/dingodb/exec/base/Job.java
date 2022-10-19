@@ -18,17 +18,16 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public interface Job {
     Map<Id, Task> getTasks();
 
-    @Nonnull
-    Task create(Id id, Location location, DingoType parasType);
+    @NonNull Task create(Id id, Location location, DingoType parasType);
 
     DingoType getParasType();
 

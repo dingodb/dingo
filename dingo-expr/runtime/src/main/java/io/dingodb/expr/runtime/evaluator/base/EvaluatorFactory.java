@@ -17,12 +17,12 @@
 package io.dingodb.expr.runtime.evaluator.base;
 
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 public abstract class EvaluatorFactory implements Serializable {
     private static final long serialVersionUID = 5023860384673216809L;
@@ -42,8 +42,7 @@ public abstract class EvaluatorFactory implements Serializable {
      * @return the Evaluator
      * @throws FailGetEvaluator if there is no appropriate Evaluator
      */
-    @Nonnull
-    public final Evaluator getEvaluator(@Nonnull EvaluatorKey key) throws FailGetEvaluator {
+    public final @NonNull Evaluator getEvaluator(EvaluatorKey key) throws FailGetEvaluator {
         Evaluator evaluator = evaluators.get(key);
         if (evaluator != null) {
             return evaluator;

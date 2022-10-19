@@ -20,9 +20,9 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.jmx.JmxReporter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
 
 public class DingoMetrics {
     private static final MetricRegistry metricRegistry = new MetricRegistry();
@@ -32,23 +32,23 @@ public class DingoMetrics {
         jmxReporter.start();
     }
 
-    public static Meter meter(@Nonnull final String name) {
+    public static Meter meter(final @NonNull String name) {
         return metricRegistry.meter(name);
     }
 
-    private static Timer timer(@Nonnull final String name) {
+    private static Timer timer(final @NonNull String name) {
         return metricRegistry.timer(name);
     }
 
-    public static Timer.Context getTimeContext(@Nonnull final String name) {
+    public static Timer.Context getTimeContext(final @NonNull String name) {
         return timer(name).time();
     }
 
-    public static void latency(@Nonnull final String name, final long durationMs) {
+    public static void latency(final @NonNull String name, final long durationMs) {
         metricRegistry.timer(name).update(durationMs, TimeUnit.MILLISECONDS);
     }
 
-    public static void histogram(@Nonnull final String name, final long size) {
+    public static void histogram(final @NonNull String name, final long size) {
         metricRegistry.histogram(name).update(size);
     }
 }

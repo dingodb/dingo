@@ -26,14 +26,12 @@ import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.type.SqlTypeName;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default"})
 @EqualsAndHashCode
@@ -93,7 +91,7 @@ public class ColumnDefinition {
     @JsonCreator
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
-        @Nonnull @JsonProperty("type") String typeName,
+        @JsonProperty("type") @NonNull String typeName,
         @JsonProperty("elementType") String elementTypeName,
         @JsonProperty("precision") Integer precision,
         @JsonProperty("scale") Integer scale,

@@ -22,9 +22,8 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class UnityEvaluatorAgg extends UnityAgg {
     @JsonProperty("type")
@@ -32,12 +31,12 @@ public abstract class UnityEvaluatorAgg extends UnityAgg {
 
     private Evaluator evaluator;
 
-    protected UnityEvaluatorAgg(Integer index, @Nonnull DingoType type) {
+    protected UnityEvaluatorAgg(Integer index, @NonNull DingoType type) {
         super(index);
         this.type = type;
     }
 
-    protected void setEvaluator(@Nonnull EvaluatorFactory factory) {
+    protected void setEvaluator(@NonNull EvaluatorFactory factory) {
         EvaluatorKey evaluatorKey = EvaluatorKey.of(type.getTypeCode(), type.getTypeCode());
         try {
             evaluator = factory.getEvaluator(evaluatorKey);
@@ -55,12 +54,12 @@ public abstract class UnityEvaluatorAgg extends UnityAgg {
     }
 
     @Override
-    public Object first(@Nonnull Object[] tuple) {
+    public Object first(Object @NonNull [] tuple) {
         return tuple[index];
     }
 
     @Override
-    public Object add(@Nonnull Object var, @Nonnull Object[] tuple) {
+    public Object add(@NonNull Object var, Object @NonNull [] tuple) {
         Object value = tuple[index];
         if (value != null) {
             return eval(var, value);

@@ -18,9 +18,9 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.fin.OperatorProfile;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
@@ -48,8 +48,7 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         return false;
     }
 
-    @Nonnull
-    protected abstract Iterator<Object[]> createIterator();
+    protected abstract @NonNull Iterator<Object[]> createIterator();
 
     @Override
     public void reset() {

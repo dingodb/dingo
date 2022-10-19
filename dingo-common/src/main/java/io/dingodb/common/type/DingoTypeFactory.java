@@ -35,20 +35,19 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public final class DingoTypeFactory {
     private DingoTypeFactory() {
     }
 
-    @Nonnull
-    public static AbstractScalarType scalar(int typeCode, boolean nullable) {
+    public static @NonNull AbstractScalarType scalar(int typeCode, boolean nullable) {
         switch (typeCode) {
             case TypeCode.INT:
                 return new IntegerType(nullable);
@@ -78,25 +77,21 @@ public final class DingoTypeFactory {
         throw new IllegalArgumentException("Cannot create scalar type \"" + TypeCode.nameOf(typeCode) + "\".");
     }
 
-    @Nonnull
-    public static AbstractScalarType scalar(@Nonnull String typeString) {
+    public static @NonNull AbstractScalarType scalar(@NonNull String typeString) {
         String[] v = typeString.split("\\|", 2);
         boolean nullable = v.length > 1 && v[1].equals(NullType.NULL.toString());
         return scalar(TypeCode.codeOf(v[0]), nullable);
     }
 
-    @Nonnull
-    public static AbstractScalarType scalar(int typeCode) {
+    public static @NonNull AbstractScalarType scalar(int typeCode) {
         return scalar(typeCode, false);
     }
 
-    @Nonnull
-    public static TupleType tuple(DingoType[] fields) {
+    public static @NonNull TupleType tuple(DingoType[] fields) {
         return new TupleType(fields);
     }
 
-    @Nonnull
-    public static TupleType tuple(String... types) {
+    public static @NonNull TupleType tuple(String... types) {
         return tuple(
             Arrays.stream(types)
                 .map(DingoTypeFactory::scalar)
@@ -104,8 +99,7 @@ public final class DingoTypeFactory {
         );
     }
 
-    @Nonnull
-    public static TupleType tuple(int... typeCodes) {
+    public static @NonNull TupleType tuple(int... typeCodes) {
         return tuple(
             Arrays.stream(typeCodes)
                 .mapToObj(DingoTypeFactory::scalar)
@@ -113,53 +107,43 @@ public final class DingoTypeFactory {
         );
     }
 
-    @Nonnull
-    public static ArrayType array(DingoType elementType, boolean nullable) {
+    public static @NonNull ArrayType array(DingoType elementType, boolean nullable) {
         return new ArrayType(elementType, nullable);
     }
 
-    @Nonnull
-    public static ArrayType array(int elementTypeCode, boolean nullable) {
+    public static @NonNull ArrayType array(int elementTypeCode, boolean nullable) {
         return array(scalar(elementTypeCode, false), nullable);
     }
 
-    @Nonnull
-    public static ArrayType array(String type, boolean nullable) {
+    public static @NonNull ArrayType array(String type, boolean nullable) {
         return array(scalar(type), nullable);
     }
 
-    @Nonnull
-    public static ListType list(DingoType elementType, boolean nullable) {
+    public static @NonNull ListType list(DingoType elementType, boolean nullable) {
         return new ListType(elementType, nullable);
     }
 
-    @Nonnull
-    public static ListType list(int elementTypeCode, boolean nullable) {
+    public static @NonNull ListType list(int elementTypeCode, boolean nullable) {
         return list(scalar(elementTypeCode, false), nullable);
     }
 
-    @Nonnull
-    public static ListType list(String type, boolean nullable) {
+    public static @NonNull ListType list(String type, boolean nullable) {
         return list(scalar(type), nullable);
     }
 
-    @Nonnull
-    public static MapType map(DingoType keyType, DingoType valueType, boolean nullable) {
+    public static @NonNull MapType map(DingoType keyType, DingoType valueType, boolean nullable) {
         return new MapType(keyType, valueType, nullable);
     }
 
-    @Nonnull
-    public static MapType map(int keyTypeCode, int valueTypeCode, boolean nullable) {
+    public static @NonNull MapType map(int keyTypeCode, int valueTypeCode, boolean nullable) {
         return map(scalar(keyTypeCode, false), scalar(valueTypeCode, false), nullable);
     }
 
-    @Nonnull
-    public static MapType map(String keyType, String valueType, boolean nullable) {
+    public static @NonNull MapType map(String keyType, String valueType, boolean nullable) {
         return map(scalar(keyType), scalar(valueType), nullable);
     }
 
-    @Nonnull
-    public static DingoType fromColumnDefinition(@Nonnull ColumnDefinition columnDefinition) {
+    public static @NonNull DingoType fromColumnDefinition(@NonNull ColumnDefinition columnDefinition) {
         SqlTypeName type = columnDefinition.getType();
         boolean notNull = columnDefinition.isNotNull();
         switch (type) {
@@ -176,8 +160,7 @@ public final class DingoTypeFactory {
         }
     }
 
-    @Nonnull
-    public static DingoType fromRelDataType(@Nonnull RelDataType relDataType) {
+    public static @NonNull DingoType fromRelDataType(@NonNull RelDataType relDataType) {
         if (!relDataType.isStruct()) {
             SqlTypeName sqlTypeName = relDataType.getSqlTypeName();
             switch (sqlTypeName) {
@@ -208,7 +191,6 @@ public final class DingoTypeFactory {
         }
     }
 
-    @Nonnull
     private static DingoType fromAvaticaType(ColumnMetaData.AvaticaType avaticaType) {
         if (avaticaType instanceof ColumnMetaData.ScalarType) {
             return scalar(convertSqlTypeId(avaticaType.id), false);
@@ -223,8 +205,7 @@ public final class DingoTypeFactory {
         throw new IllegalStateException("Unsupported avatica type \"" + avaticaType + "\".");
     }
 
-    @Nonnull
-    public static DingoType fromColumnMetaData(@Nonnull ColumnMetaData colMeta) {
+    public static DingoType fromColumnMetaData(@NonNull ColumnMetaData colMeta) {
         switch (colMeta.type.id) {
             case Types.ARRAY:
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
@@ -238,8 +219,7 @@ public final class DingoTypeFactory {
         }
     }
 
-    @Nonnull
-    public static TupleType fromColumnMetaDataList(@Nonnull List<ColumnMetaData> colMetaList) {
+    public static @NonNull TupleType fromColumnMetaDataList(@NonNull List<ColumnMetaData> colMetaList) {
         return tuple(colMetaList.stream()
             .map(DingoTypeFactory::fromColumnMetaData)
             .toArray(DingoType[]::new));

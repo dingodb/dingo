@@ -24,9 +24,9 @@ import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.DoubleSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 @JsonTypeName("double")
 public class DoubleType extends AbstractScalarType {
@@ -46,7 +46,7 @@ public class DoubleType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         if (value instanceof Float) {
             return BigDecimal.valueOf((Float) value).doubleValue();
         }
@@ -54,7 +54,7 @@ public class DoubleType extends AbstractScalarType {
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertDoubleFrom(value);
     }
 

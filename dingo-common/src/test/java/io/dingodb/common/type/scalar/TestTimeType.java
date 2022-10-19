@@ -25,20 +25,19 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.sql.Time;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class TestTimeType {
-    @Nonnull
-    public static Stream<Arguments> getParameters() {
+    public static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             arguments("00:00:00", new Time(0)),
             arguments("01:00:00", new Time(60 * 60 * 1000)),

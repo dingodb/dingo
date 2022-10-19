@@ -20,9 +20,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 public class SqlTypeNameSerializer extends StdSerializer<SqlTypeName> {
     private static final long serialVersionUID = -3716419483226088191L;
@@ -33,8 +33,8 @@ public class SqlTypeNameSerializer extends StdSerializer<SqlTypeName> {
 
     @Override
     public void serialize(
-        @Nonnull SqlTypeName type,
-        @Nonnull JsonGenerator generator,
+        @NonNull SqlTypeName type,
+        @NonNull JsonGenerator generator,
         SerializerProvider provider
     ) throws IOException {
         generator.writeString(type.getName().toLowerCase());

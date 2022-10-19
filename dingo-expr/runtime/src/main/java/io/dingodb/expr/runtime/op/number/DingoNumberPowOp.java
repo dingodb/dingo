@@ -23,23 +23,26 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
 public class DingoNumberPowOp extends RtFun {
-    public DingoNumberPowOp(@Nonnull RtExpr[] paras) {
+    private static final long serialVersionUID = 2219616474020952033L;
+
+    public DingoNumberPowOp(RtExpr[] paras) {
         super(paras);
     }
 
-    public static BigDecimal pow(final BigDecimal value, final BigDecimal power) {
+    public static BigDecimal pow(final BigDecimal value, final @NonNull BigDecimal power) {
         int powerInt = power.intValue();
         if (powerInt < 0) {
             try {
@@ -50,7 +53,7 @@ public class DingoNumberPowOp extends RtFun {
 
         }
 
-        BigDecimal intDecimal = value.setScale(0, BigDecimal.ROUND_FLOOR);
+        BigDecimal intDecimal = value.setScale(0, RoundingMode.FLOOR);
         if (value.compareTo(intDecimal) == 0) {
             return intDecimal.pow(powerInt);
         }
@@ -58,7 +61,7 @@ public class DingoNumberPowOp extends RtFun {
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected @Nullable Object fun(Object @NonNull [] values) {
         if (values[0] == null || values[1] == null) {
             return null;
         }
@@ -85,7 +88,7 @@ public class DingoNumberPowOp extends RtFun {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("pow");
+            return Collections.singletonList("pow");
         }
 
         @Override

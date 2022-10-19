@@ -23,10 +23,10 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.exec.Services.TASK_TAG;
 
@@ -35,8 +35,7 @@ import static io.dingodb.exec.Services.TASK_TAG;
 public final class JobRunner {
     private final Job job;
 
-    @Nonnull
-    public Iterator<Object[]> createIterator() {
+    public @NonNull Iterator<Object[]> createIterator() {
         if (job.isEmpty()) {
             return Collections.emptyIterator();
         }

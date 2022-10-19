@@ -20,8 +20,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Getter;
 import org.apache.calcite.schema.impl.AbstractSchema;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public abstract class MutableSchema extends AbstractSchema {
     @Getter
@@ -31,11 +30,11 @@ public abstract class MutableSchema extends AbstractSchema {
         this.metaService = metaService;
     }
 
-    public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
+    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         metaService.createTable(tableName, tableDefinition);
     }
 
-    public boolean dropTable(@Nonnull String tableName) {
+    public boolean dropTable(@NonNull String tableName) {
         return metaService.dropTable(tableName);
     }
 

@@ -29,10 +29,10 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * To reduce the results of partitioned aggregation.
@@ -60,9 +60,8 @@ public final class DingoReduce extends SingleRel implements DingoRel {
         this.originalInputType = originalInputType;
     }
 
-    @Nonnull
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoReduce(
             getCluster(),
             traitSet,
@@ -74,19 +73,18 @@ public final class DingoReduce extends SingleRel implements DingoRel {
     }
 
     @Override
-    public @Nullable RelOptCost computeSelfCost(@Nonnull RelOptPlanner planner, RelMetadataQuery mq) {
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
         // Assume that all reduces are needed.
         return planner.getCostFactory().makeZeroCost();
     }
 
     @Override
-    public double estimateRowCount(@Nonnull RelMetadataQuery mq) {
+    public double estimateRowCount(@NonNull RelMetadataQuery mq) {
         return mq.getRowCount(input) / DingoTableScan.ASSUME_PARTS;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         pw.item("groupSet", groupSet);
         pw.item("aggregateCallList", aggregateCallList);
@@ -95,7 +93,7 @@ public final class DingoReduce extends SingleRel implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

@@ -27,11 +27,11 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 
@@ -41,7 +41,7 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
         super(config);
     }
 
-    private static void checkUpdateInPart(@Nonnull LogicalTableModify rel) {
+    private static void checkUpdateInPart(@NonNull LogicalTableModify rel) {
         DingoTable table = dingo(rel.getTable());
         assert table != null;
         TableDefinition td = table.getTableDefinition();
@@ -56,7 +56,7 @@ public class DingoPartModifyRule extends RelRule<DingoPartModifyRule.Config> {
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         LogicalTableModify rel = call.rel(0);
         RelNode input = rel.getInput();
         RelNode convertedInput = null;

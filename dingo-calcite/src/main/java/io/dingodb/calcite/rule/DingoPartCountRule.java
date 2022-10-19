@@ -26,10 +26,10 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @Value.Enclosing
@@ -39,7 +39,7 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalAggregate aggregate = call.rel(0);
         final LogicalDingoTableScan scan = call.rel(1);
         RelOptCluster cluster = scan.getCluster();

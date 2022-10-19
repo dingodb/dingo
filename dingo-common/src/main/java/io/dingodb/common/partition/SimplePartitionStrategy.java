@@ -21,11 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 @JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
@@ -42,30 +43,34 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
         this.partNum = partNum;
     }
 
-    @Nonnull
     @Override
-    public String calcPartId(@Nonnull Object[] keyTuples) {
+    public @NonNull String calcPartId(Object @NonNull [] keyTuples) {
         int hash = Objects.hash(keyTuples);
         return Integer.toString(Math.abs(hash) % partNum);
     }
 
-    @Nonnull
     @Override
-    public String calcPartId(@Nonnull byte[] keyBytes) {
+    public @NonNull String calcPartId(byte @NonNull [] keyBytes) {
         int hash = Objects.hash(keyBytes);
         return Integer.toString(Math.abs(hash) % partNum);
     }
 
     @Override
-    public Map<byte[], byte[]> calcPartitionRange(@Nonnull byte[] startKey,
-                                                  @Nonnull byte[] endKey,
-                                                  boolean includeEnd) {
+    public @NonNull Map<byte[], byte[]> calcPartitionRange(
+        byte @NonNull [] startKey,
+        byte @NonNull [] endKey,
+        boolean includeEnd
+    ) {
         return Collections.emptyMap();
     }
 
     @Override
-    public Map<byte[], byte[]> calcPartitionPrefixRange(@Nonnull byte[] startKey, @Nonnull byte[] endKey,
-                                                        boolean includeEnd, boolean prefixRange) {
+    public @Nullable Map<byte[], byte[]> calcPartitionPrefixRange(
+        byte @NonNull [] startKey,
+        byte @NonNull [] endKey,
+        boolean includeEnd,
+        boolean prefixRange
+    ) {
         return null;
     }
 }

@@ -21,10 +21,11 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -37,15 +38,15 @@ final class IndexEvaluators {
     private IndexEvaluators() {
     }
 
-    static Object index(@Nonnull Object[] array, int index) {
+    static @Nullable Object index(Object @NonNull [] array, int index) {
         return array[index];
     }
 
-    static Object index(@Nonnull List<?> array, int index) {
+    static @Nullable Object index(@NonNull List<?> array, int index) {
         return array.get(index);
     }
 
-    static Object index(@Nonnull Map<String, ?> map, String index) {
+    static @Nullable Object index(@NonNull Map<String, ?> map, String index) {
         return map.get(index);
     }
 }

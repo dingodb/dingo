@@ -21,9 +21,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.exec.Services.CTRL_TAG;
 
@@ -47,7 +47,7 @@ public class ReceiveEndpoint {
         emittedStatus = new AtomicReference<>(ControlStatus.HALT);
     }
 
-    public void sendControlMessage(@Nonnull ControlStatus status) {
+    public void sendControlMessage(@NonNull ControlStatus status) {
         switch (status) {
             case READY:
                 if (!emittedStatus.compareAndSet(ControlStatus.HALT, ControlStatus.READY)) {

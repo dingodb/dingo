@@ -20,6 +20,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 
 @Slf4j
@@ -29,18 +30,18 @@ public class MockMetaClient extends MetaClient {
     }
 
     @Override
-    public void createTable(String tableName, TableDefinition tableDefinition) {
+    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         log.info("mock to create table:{}, definition:{}", tableName, tableDefinition);
     }
 
     @Override
-    public boolean dropTable(String tableName) {
+    public boolean dropTable(@NonNull String tableName) {
         log.info("mock to drop table:{}", tableName);
         return true;
     }
 
     @Override
-    public TableDefinition getTableDefinition(String name) {
+    public TableDefinition getTableDefinition(@NonNull String name) {
         return MetaServiceUtils.getSimpleTableDefinition(name);
     }
 }

@@ -23,11 +23,11 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.JsonConverter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public final class RawJsonDeserializer extends StdDeserializer<JsonNode> {
     private static final long serialVersionUID = -1878986711147886876L;
@@ -36,8 +36,7 @@ public final class RawJsonDeserializer extends StdDeserializer<JsonNode> {
         super(JsonNode.class);
     }
 
-    @Nonnull
-    public static List<Object[]> convertBySchema(@Nonnull JsonNode jsonNode, DingoType schema) {
+    public static @NonNull List<Object[]> convertBySchema(@NonNull JsonNode jsonNode, DingoType schema) {
         if (jsonNode.isArray()) {
             List<Object[]> tuples = new LinkedList<>();
             ArrayNode arrayNode = (ArrayNode) jsonNode;
@@ -51,7 +50,7 @@ public final class RawJsonDeserializer extends StdDeserializer<JsonNode> {
 
     @Override
     public JsonNode deserialize(
-        @Nonnull JsonParser parser,
+        @NonNull JsonParser parser,
         DeserializationContext ctx
     ) throws IOException {
         // Return raw `JsonNode` to parse with schema.

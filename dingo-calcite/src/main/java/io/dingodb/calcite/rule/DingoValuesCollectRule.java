@@ -22,10 +22,10 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.Collections;
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoValuesCollectRule extends RelRule<DingoValuesCollectRule.Config> implements SubstitutionRule {
@@ -34,7 +34,7 @@ public class DingoValuesCollectRule extends RelRule<DingoValuesCollectRule.Confi
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         Collect collect = call.rel(0);
         LogicalDingoValues values = call.rel(1);
         if (collect.getCollectionType() == SqlTypeName.MULTISET) {

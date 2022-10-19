@@ -18,20 +18,17 @@ package io.dingodb.server.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import io.dingodb.net.NetService;
-import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.annotation.ApiDeclaration;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.LoggerFactory;
-
-import java.util.ServiceLoader;
-import javax.annotation.Nonnull;
 
 public interface LogLevelApi {
 
-    LogLevelApi INSTANCE = new LogLevelApi() {};
+    LogLevelApi INSTANCE = new LogLevelApi() {
+    };
 
     @ApiDeclaration
-    default void setLevel(@Nonnull String className, @Nonnull String level) throws ClassNotFoundException {
+    default void setLevel(@NonNull String className, @NonNull String level) throws ClassNotFoundException {
         Class<?> cls = Class.forName(className);
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         context.getLogger(cls).setLevel(Level.toLevel(level));

@@ -21,9 +21,9 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -52,11 +52,11 @@ final class LongCastEvaluators {
         return value ? 1L : 0L;
     }
 
-    static long longCast(@Nonnull BigDecimal value) {
+    static long longCast(@NonNull BigDecimal value) {
         return value.longValue();
     }
 
-    static long longCast(@Nonnull String value) {
+    static long longCast(@NonNull String value) {
         return Long.parseLong(value);
     }
 }

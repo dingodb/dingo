@@ -81,12 +81,12 @@ import io.dingodb.expr.runtime.op.time.FromUnixTimeFun;
 import io.dingodb.expr.runtime.op.time.TimeFormatFun;
 import io.dingodb.expr.runtime.op.time.TimestampFormatFun;
 import io.dingodb.expr.runtime.op.time.UnixTimestampFun;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 
 public final class FunFactory {
     public static final FunFactory INS = new FunFactory();
@@ -248,8 +248,7 @@ public final class FunFactory {
      * @param funName the name of the function
      * @return the function (Op)
      */
-    @Nonnull
-    public Op getFun(@Nonnull String funName) {
+    public @NonNull Op getFun(String funName) {
         Supplier<Op> supplier = funSuppliers.get(funName);
         if (supplier != null) {
             return supplier.get();
@@ -257,8 +256,7 @@ public final class FunFactory {
         throw new UndefinedFunctionName(funName);
     }
 
-    @Nonnull
-    public Op getCastFun(int typeCode) {
+    public @NonNull Op getCastFun(int typeCode) {
         return getFun(TypeCode.nameOf(typeCode));
     }
 }

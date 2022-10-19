@@ -30,12 +30,12 @@ import io.dingodb.common.type.converter.JsonConverter;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("get")
@@ -48,7 +48,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         Object partId,
         DingoType schema,
         TupleMapping keyMapping,
-        @Nonnull List<Object[]> keyTuples,
+        List<Object[]> keyTuples,
         SqlExpr filter,
         TupleMapping selection
     ) {
@@ -56,15 +56,14 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         this.keyTuples = keyTuples;
     }
 
-    @Nonnull
     @JsonCreator
-    public static GetByKeysOperator fromJson(
+    public static @NonNull GetByKeysOperator fromJson(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") Object partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonDeserialize(using = RawJsonDeserializer.class)
-        @Nonnull @JsonProperty("keys") JsonNode jsonNode,
+        @JsonProperty("keys") JsonNode jsonNode,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection
     ) {
@@ -79,9 +78,8 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         );
     }
 
-    @Nonnull
     @Override
-    protected Iterator<Object[]> createSourceIterator() {
+    protected @NonNull Iterator<Object[]> createSourceIterator() {
         if (keyTuples.size() == 1) {
             for (Object[] keyTuple : keyTuples) {
                 Object[] tuple = part.getByKey(keyTuple);

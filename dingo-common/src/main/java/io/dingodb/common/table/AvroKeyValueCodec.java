@@ -23,9 +23,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.AvroConverter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 
 @Slf4j
@@ -36,7 +36,7 @@ public class AvroKeyValueCodec implements KeyValueCodec {
     private final TupleMapping valueMapping;
     private final DingoType schema;
 
-    public AvroKeyValueCodec(@Nonnull DingoType schema, @Nonnull TupleMapping keyMapping) {
+    public AvroKeyValueCodec(@NonNull DingoType schema, @NonNull TupleMapping keyMapping) {
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.valueMapping = keyMapping.inverse(schema.fieldCount());
@@ -45,7 +45,7 @@ public class AvroKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
+    public Object[] decode(@NonNull KeyValue keyValue) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyCodec.decode(result, keyValue.getKey(), keyMapping);
         valueCodec.decode(result, keyValue.getValue(), valueMapping);
@@ -53,14 +53,14 @@ public class AvroKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+    public Object[] decodeKey(byte @NonNull [] bytes) throws IOException {
         Object[] result = new Object[keyMapping.size()];
         keyCodec.decode(result, bytes, keyMapping);
         return (Object[]) schema.convertFrom(result, AvroConverter.INSTANCE);
     }
 
     @Override
-    public KeyValue encode(@Nonnull Object[] tuple) throws IOException {
+    public KeyValue encode(Object @NonNull [] tuple) throws IOException {
         Object[] converted = (Object[]) schema.convertTo(tuple, AvroConverter.INSTANCE);
         return new KeyValue(
             keyCodec.encode(converted, keyMapping),
@@ -69,12 +69,12 @@ public class AvroKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
+    public byte[] encodeKey(Object[] keys) throws IOException {
         return keyCodec.encode(keys);
     }
 
     @Override
-    public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException {
+    public Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException {
         Object[] result = new Object[keyMapping.size() + valueMapping.size()];
         keyMapping.map(result, keys);
         valueCodec.decode(result, bytes, valueMapping);

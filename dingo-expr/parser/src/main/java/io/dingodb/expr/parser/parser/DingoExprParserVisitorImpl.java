@@ -26,9 +26,9 @@ import io.dingodb.expr.parser.op.OpFactory;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> {
     private final boolean realAsBigDecimal;
@@ -37,7 +37,7 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         this.realAsBigDecimal = realAsBigDecimal;
     }
 
-    private void setParaList(@Nonnull Op op, @Nonnull List<DingoExprParser.ExprContext> exprList) {
+    private void setParaList(@NonNull Op op, @NonNull List<DingoExprParser.ExprContext> exprList) {
         op.setExprArray(
             exprList.stream()
                 .map(this::visit)
@@ -45,18 +45,16 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         );
     }
 
-    @Nonnull
-    private Expr internalVisitBinaryOp(
+    private @NonNull Expr internalVisitBinaryOp(
         int type,
-        @Nonnull List<DingoExprParser.ExprContext> exprList
+        List<DingoExprParser.ExprContext> exprList
     ) {
         Op op = OpFactory.getBinary(type);
         setParaList(op, exprList);
         return op;
     }
 
-    @Nonnull
-    private Expr internalVisitUnaryOp(
+    private @NonNull Expr internalVisitUnaryOp(
         int type,
         DingoExprParser.ExprContext expr
     ) {
@@ -65,27 +63,23 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         return op;
     }
 
-    @Nonnull
     @Override
-    public Expr visitOr(@Nonnull DingoExprParser.OrContext ctx) {
+    public @NonNull Expr visitOr(DingoExprParser.@NonNull OrContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitMulDiv(@Nonnull DingoExprParser.MulDivContext ctx) {
+    public @NonNull Expr visitMulDiv(DingoExprParser.@NonNull MulDivContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitAddSub(@Nonnull DingoExprParser.AddSubContext ctx) {
+    public @NonNull Expr visitAddSub(DingoExprParser.@NonNull AddSubContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitVar(@Nonnull DingoExprParser.VarContext ctx) {
+    public Expr visitVar(DingoExprParser.@NonNull VarContext ctx) {
         String name = ctx.ID().getText();
         if (name.equals("null") || name.equals("NULL")) {
             return Null.INSTANCE;
@@ -93,29 +87,25 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         return new Var(ctx.ID().getText());
     }
 
-    @Nonnull
     @Override
-    public Expr visitPosNeg(@Nonnull DingoExprParser.PosNegContext ctx) {
+    public @NonNull Expr visitPosNeg(DingoExprParser.@NonNull PosNegContext ctx) {
         return internalVisitUnaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitStringOp(@Nonnull DingoExprParser.StringOpContext ctx) {
+    public @NonNull Expr visitStringOp(DingoExprParser.@NonNull StringOpContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitIndex(@Nonnull DingoExprParser.IndexContext ctx) {
+    public @NonNull Expr visitIndex(DingoExprParser.@NonNull IndexContext ctx) {
         Op op = new IndexOp();
         setParaList(op, ctx.expr());
         return op;
     }
 
-    @Nonnull
     @Override
-    public Expr visitInt(@Nonnull DingoExprParser.IntContext ctx) {
+    public @NonNull Expr visitInt(DingoExprParser.@NonNull IntContext ctx) {
         try {
             return Value.parseLong(ctx.INT().getText());
         } catch (NumberFormatException e) { // overflow
@@ -123,53 +113,45 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         }
     }
 
-    @Nonnull
     @Override
-    public Expr visitStr(@Nonnull DingoExprParser.StrContext ctx) {
+    public @NonNull Expr visitStr(DingoExprParser.@NonNull StrContext ctx) {
         return Value.parseString(ctx.STR().getText());
     }
 
-    @Nonnull
     @Override
-    public Expr visitNot(@Nonnull DingoExprParser.NotContext ctx) {
+    public @NonNull Expr visitNot(DingoExprParser.@NonNull NotContext ctx) {
         return internalVisitUnaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitRelation(@Nonnull DingoExprParser.RelationContext ctx) {
+    public @NonNull Expr visitRelation(DingoExprParser.@NonNull RelationContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitStrIndex(@Nonnull DingoExprParser.StrIndexContext ctx) {
+    public @NonNull Expr visitStrIndex(DingoExprParser.@NonNull StrIndexContext ctx) {
         Op op = new IndexOp();
         op.setExprArray(new Expr[]{visit(ctx.expr()), Value.of(ctx.ID().getText())});
         return op;
     }
 
-    @Nonnull
     @Override
-    public Expr visitBool(@Nonnull DingoExprParser.BoolContext ctx) {
+    public @NonNull Expr visitBool(DingoExprParser.@NonNull BoolContext ctx) {
         return Value.parseBoolean(ctx.BOOL().getText());
     }
 
-    @Nonnull
     @Override
-    public Expr visitAnd(@Nonnull DingoExprParser.AndContext ctx) {
+    public @NonNull Expr visitAnd(DingoExprParser.@NonNull AndContext ctx) {
         return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitPars(@Nonnull DingoExprParser.ParsContext ctx) {
+    public @NonNull Expr visitPars(DingoExprParser.@NonNull ParsContext ctx) {
         return visit(ctx.expr());
     }
 
-    @Nonnull
     @Override
-    public Expr visitReal(@Nonnull DingoExprParser.RealContext ctx) {
+    public @NonNull Expr visitReal(DingoExprParser.@NonNull RealContext ctx) {
         if (realAsBigDecimal) {
             return Value.parseDecimal(ctx.REAL().getText());
         } else {
@@ -177,9 +159,8 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         }
     }
 
-    @Nonnull
     @Override
-    public Expr visitFun(@Nonnull DingoExprParser.FunContext ctx) {
+    public @NonNull Expr visitFun(DingoExprParser.@NonNull FunContext ctx) {
         String funName = ctx.ID().getText();
         Op op = FunFactory.INS.getFun(funName);
         setParaList(op, ctx.expr());

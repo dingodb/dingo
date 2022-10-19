@@ -22,8 +22,7 @@ import io.dingodb.calcite.rel.LogicalDingoValues;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoValuesRule extends ConverterRule {
     public static final Config ROOT = Config.INSTANCE
@@ -49,7 +48,7 @@ public class DingoValuesRule extends ConverterRule {
     }
 
     @Override
-    public RelNode convert(@Nonnull RelNode rel) {
+    public RelNode convert(@NonNull RelNode rel) {
         Convention convention = this.getOutConvention();
         return new DingoValues(
             rel.getCluster(),

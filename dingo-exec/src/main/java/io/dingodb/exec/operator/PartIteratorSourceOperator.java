@@ -30,9 +30,9 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.store.api.StoreInstance;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 public abstract class PartIteratorSourceOperator extends IteratorSourceOperator {
     @JsonProperty("table")
@@ -93,9 +93,8 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
         }
     }
 
-    @Nonnull
     @Override
-    protected Iterator<Object[]> createIterator() {
+    protected @NonNull Iterator<Object[]> createIterator() {
         Iterator<Object[]> iterator = createSourceIterator();
         if (filter != null) {
             iterator = Iterators.filter(
@@ -109,6 +108,5 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
         return iterator;
     }
 
-    @Nonnull
-    protected abstract Iterator<Object[]> createSourceIterator();
+    protected abstract @NonNull Iterator<Object[]> createSourceIterator();
 }

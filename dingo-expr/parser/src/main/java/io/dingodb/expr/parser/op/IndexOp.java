@@ -25,8 +25,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.index.IndexEvaluatorFactory;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class IndexOp extends OpWithEvaluator {
     /**
@@ -36,9 +35,8 @@ public final class IndexOp extends OpWithEvaluator {
         super(OpType.INDEX, IndexEvaluatorFactory.INSTANCE);
     }
 
-    @Nonnull
     @Override
-    public RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
+    public @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
         if (rtExprArray[0] instanceof VarStub) {
             VarStub stub = (VarStub) rtExprArray[0];
@@ -56,7 +54,7 @@ public final class IndexOp extends OpWithEvaluator {
     }
 
     @Override
-    protected RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return super.createRtOp(rtExprArray);
     }
 }

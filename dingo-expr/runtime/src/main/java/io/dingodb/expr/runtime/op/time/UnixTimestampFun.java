@@ -23,18 +23,18 @@ import io.dingodb.expr.runtime.op.RtFun;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class UnixTimestampFun extends RtFun {
 
-    public UnixTimestampFun(@Nonnull RtExpr[] paras) {
+    public UnixTimestampFun(RtExpr[] paras) {
         super(paras);
     }
 
@@ -42,7 +42,7 @@ public class UnixTimestampFun extends RtFun {
         return unixTimestamp(DateTimeUtils.currentTimestamp());
     }
 
-    public static long unixTimestamp(@Nonnull Timestamp value) {
+    public static long unixTimestamp(@NonNull Timestamp value) {
         return Math.floorDiv(value.getTime(), 1000L);
     }
 
@@ -52,7 +52,7 @@ public class UnixTimestampFun extends RtFun {
     }
 
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         return values.length > 0 ? unixTimestamp((Timestamp) values[0]) : unixTimestamp();
     }
 

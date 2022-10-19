@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.evaluator.base.Evaluator;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -56,11 +56,11 @@ final class EqEvaluators {
         return value0 == value1;
     }
 
-    static boolean eq(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static boolean eq(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.compareTo(value1) == 0;
     }
 
-    static boolean eq(@Nonnull String value0, String value1) {
+    static boolean eq(@NonNull String value0, String value1) {
         return value0.equals(value1);
     }
 
@@ -68,15 +68,15 @@ final class EqEvaluators {
         return Arrays.equals(value0, value1);
     }
 
-    static boolean eq(@Nonnull Date value0, Date value1) {
+    static boolean eq(@NonNull Date value0, Date value1) {
         return value0.equals(value1);
     }
 
-    static boolean eq(@Nonnull Time value0, Time value1) {
+    static boolean eq(@NonNull Time value0, Time value1) {
         return value0.equals(value1);
     }
 
-    static boolean eq(@Nonnull Timestamp value0, Timestamp value1) {
+    static boolean eq(@NonNull Timestamp value0, Timestamp value1) {
         return value0.equals(value1);
     }
 }

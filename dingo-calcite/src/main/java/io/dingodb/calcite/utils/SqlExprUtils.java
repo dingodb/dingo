@@ -21,31 +21,28 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.expr.SqlExpr;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 
 public final class SqlExprUtils {
     private SqlExprUtils() {
     }
 
-    @Nonnull
-    public static SqlExpr toSqlExpr(@Nonnull RexNode rexNode) {
+    public static @NonNull SqlExpr toSqlExpr(RexNode rexNode) {
         return toSqlExpr(rexNode, rexNode.getType());
     }
 
-    @Nonnull
-    public static SqlExpr toSqlExpr(@Nonnull RexNode rexNode, RelDataType type) {
+    public static @NonNull SqlExpr toSqlExpr(RexNode rexNode, RelDataType type) {
         return new SqlExpr(
             RexConverter.convert(rexNode).toString(),
             DingoTypeFactory.fromRelDataType(type)
         );
     }
 
-    @Nonnull
-    public static List<SqlExpr> toSqlExprList(@Nonnull List<RexNode> rexNodes, RelDataType type) {
+    public static List<SqlExpr> toSqlExprList(@NonNull List<RexNode> rexNodes, RelDataType type) {
         return IntStream.range(0, rexNodes.size())
             .mapToObj(i -> toSqlExpr(rexNodes.get(i), type.getFieldList().get(i).getType()))
             .collect(Collectors.toList());

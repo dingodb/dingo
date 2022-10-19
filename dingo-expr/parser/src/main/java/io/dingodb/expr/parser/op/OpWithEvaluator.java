@@ -24,6 +24,7 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtEvaluatorOp;
 import io.dingodb.expr.runtime.op.RtOp;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 
@@ -42,7 +43,7 @@ public class OpWithEvaluator extends Op {
     }
 
     @Override
-    protected RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         int[] typeCodes = Arrays.stream(rtExprArray).mapToInt(RtExpr::typeCode).toArray();
         Evaluator evaluator = factory.getEvaluator(EvaluatorKey.of(typeCodes));
         return new RtEvaluatorOp(evaluator, rtExprArray);

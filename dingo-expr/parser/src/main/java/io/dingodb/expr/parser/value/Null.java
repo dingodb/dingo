@@ -21,9 +21,7 @@ import io.dingodb.expr.parser.exception.DingoExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class Null implements Expr {
     public static final Null INSTANCE = new Null();
@@ -31,15 +29,13 @@ public final class Null implements Expr {
     private Null() {
     }
 
-    @Nonnull
     @Override
-    public RtExpr compileIn(@Nullable CompileContext ctx) throws DingoExprCompileException {
+    public @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
         return RtNull.INSTANCE;
     }
 
-    @Nonnull
     @Override
-    public String toString() {
+    public @NonNull String toString() {
         return "NULL";
     }
 }

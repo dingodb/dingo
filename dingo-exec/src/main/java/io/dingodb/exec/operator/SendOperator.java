@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonPropertyOrder({"host", "port", "tag", "schema"})
@@ -86,7 +85,7 @@ public final class SendOperator extends SinkOperator {
     }
 
     @Override
-    public boolean push(@Nonnull Object[] tuple) {
+    public boolean push(Object[] tuple) {
         try {
             byte[] encodeArr = codec.encode(tuple);
             byte[] array = PrimitiveCodec.encodeArray(encodeArr);
@@ -119,7 +118,7 @@ public final class SendOperator extends SinkOperator {
     }
 
     @Override
-    public void fin(@Nonnull Fin fin) {
+    public void fin(Fin fin) {
         try {
             byte[] encodeArr = codec.encodeFin(fin);
             byte[] array = PrimitiveCodec.encodeArray(encodeArr);

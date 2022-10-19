@@ -21,9 +21,8 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
-
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> implements SubstitutionRule {
@@ -32,7 +31,7 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalFilter filter = call.rel(0);
         final LogicalDingoTableScan scan = call.rel(1);
         call.transformTo(

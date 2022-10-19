@@ -31,11 +31,11 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> implements SubstitutionRule {
@@ -44,7 +44,7 @@ public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> imp
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
         LogicalDingoValues value0 = call.rel(1);
         LogicalDingoValues value1 = call.rel(2);

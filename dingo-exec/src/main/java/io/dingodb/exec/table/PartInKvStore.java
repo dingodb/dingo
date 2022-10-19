@@ -27,6 +27,8 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,8 +38,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -53,8 +53,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    @Nonnull
-    public Iterator<Object[]> getIterator() {
+    public @NonNull Iterator<Object[]> getIterator() {
         final long startTime = System.currentTimeMillis();
         try {
             return Iterators.transform(
@@ -69,8 +68,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    @Nonnull
-    public Iterator<Object[]> getIteratorByRange(
+    public @NonNull Iterator<Object[]> getIteratorByRange(
         byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd, boolean prefixScan
     ) {
         final long startTime = System.currentTimeMillis();
@@ -101,7 +99,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public boolean insert(@Nonnull Object[] tuple) {
+    public boolean insert(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
@@ -120,7 +118,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public void upsert(@Nonnull Object[] tuple) {
+    public void upsert(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
@@ -135,50 +133,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public long getEntryCntAndDeleteByPart(@Nonnull List<String> startKeyList) {
-        return getEntryCntOrDeleteByPart(startKeyList, true);
-    }
-
-    @Override
-    public long getEntryCnt(@Nonnull List<String> startKeyList) {
-        return getEntryCntOrDeleteByPart(startKeyList, false);
-    }
-
-    private long getEntryCntOrDeleteByPart(@Nonnull List<String> startKeyList, boolean doDeleting) {
-        final long startTime = System.currentTimeMillis();
-        long totalCnt = 0L;
-        try {
-            for (String partStartKey : startKeyList) {
-                long currentCnt = 0;
-                boolean isOK = false;
-                byte[] partStartKeyInBytes = ByteArrayUtils.deCodeBase64String2Bytes(partStartKey);
-                if (partStartKeyInBytes != null && partStartKeyInBytes.length > 0) {
-                    isOK = true;
-                    currentCnt = store.countOrDeletePart(partStartKeyInBytes, doDeleting);
-                } else {
-                    currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
-                }
-                totalCnt += currentCnt;
-                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}"
-                        + ", doDeleting: {}.",
-                    partStartKey,
-                    isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
-                    currentCnt,
-                    totalCnt,
-                    doDeleting);
-            }
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("getEntryCntAndDeleteByPart total part:{} delete cost: {} ms.",
-                    startKeyList.size(),
-                    System.currentTimeMillis() - startTime);
-            }
-        }
-        return totalCnt;
-    }
-
-    @Override
-    public boolean remove(@Nonnull Object[] tuple) {
+    public boolean remove(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
             KeyValue row = codec.encode(tuple);
@@ -194,8 +149,17 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    @Nullable
-    public Object[] getByKey(@Nonnull Object[] keyTuple) {
+    public long getEntryCntAndDeleteByPart(@NonNull List<String> startKeyList) {
+        return getEntryCntOrDeleteByPart(startKeyList, true);
+    }
+
+    @Override
+    public long getEntryCnt(@NonNull List<String> startKeyList) {
+        return getEntryCntOrDeleteByPart(startKeyList, false);
+    }
+
+    @Override
+    public Object @Nullable [] getByKey(Object @NonNull [] keyTuple) {
         final long startTime = System.currentTimeMillis();
         try {
             byte[] key = codec.encodeKey(keyTuple);
@@ -214,8 +178,7 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    @Nonnull
-    public List<Object[]> getByMultiKey(@Nonnull final List<Object[]> keyTuples) {
+    public @NonNull List<Object[]> getByMultiKey(final @NonNull List<Object[]> keyTuples) {
         List<byte[]> keyList = keyTuples.stream()
             .map(wrap(codec::encodeKey, e -> log.error("GetByMultiKey: encode key error.", e)))
             .filter(Objects::nonNull)
@@ -246,5 +209,38 @@ public final class PartInKvStore implements Part {
             }
         }
         return tuples;
+    }
+
+    private long getEntryCntOrDeleteByPart(@NonNull List<String> startKeyList, boolean doDeleting) {
+        final long startTime = System.currentTimeMillis();
+        long totalCnt = 0L;
+        try {
+            for (String partStartKey : startKeyList) {
+                long currentCnt = 0;
+                boolean isOK = false;
+                byte[] partStartKeyInBytes = ByteArrayUtils.deCodeBase64String2Bytes(partStartKey);
+                if (partStartKeyInBytes != null && partStartKeyInBytes.length > 0) {
+                    isOK = true;
+                    currentCnt = store.countOrDeletePart(partStartKeyInBytes, doDeleting);
+                } else {
+                    currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
+                }
+                totalCnt += currentCnt;
+                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}"
+                        + ", doDeleting: {}.",
+                    partStartKey,
+                    isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
+                    currentCnt,
+                    totalCnt,
+                    doDeleting);
+            }
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("getEntryCntAndDeleteByPart total part:{} delete cost: {} ms.",
+                    startKeyList.size(),
+                    System.currentTimeMillis() - startTime);
+            }
+        }
+        return totalCnt;
     }
 }

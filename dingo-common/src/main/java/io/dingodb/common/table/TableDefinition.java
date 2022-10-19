@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -34,6 +33,8 @@ import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ColumnStrategy;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,8 +44,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonPropertyOrder({"name", "columns"})
 @EqualsAndHashCode
@@ -59,22 +58,27 @@ public class TableDefinition {
     @Setter
     private List<ColumnDefinition> columns;
 
-    @JsonProperty("partType")
     private String partType;
 
-    @JsonProperty("attrMap")
-    private Map<String,Object> attrMap;
+    private Map<String, Object> attrMap;
 
-    @JsonProperty("dingoTablePart")
     private DingoTablePart dingoTablePart;
-
-    public String getName() {
-        return name.toUpperCase();
-    }
 
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
+    }
+
+    public static TableDefinition fromJson(String json) throws IOException {
+        return PARSER.parse(json, TableDefinition.class);
+    }
+
+    public static TableDefinition readJson(InputStream is) throws IOException {
+        return PARSER.parse(is, TableDefinition.class);
+    }
+
+    public String getName() {
+        return name.toUpperCase();
     }
 
     public String getPartType() {
@@ -101,14 +105,6 @@ public class TableDefinition {
         this.dingoTablePart = dingoTablePart;
     }
 
-    public static TableDefinition fromJson(String json) throws IOException {
-        return PARSER.parse(json, TableDefinition.class);
-    }
-
-    public static TableDefinition readJson(InputStream is) throws IOException {
-        return PARSER.parse(is, TableDefinition.class);
-    }
-
     public TableDefinition addColumn(ColumnDefinition column) {
         if (columns == null) {
             columns = new LinkedList<>();
@@ -121,8 +117,7 @@ public class TableDefinition {
         return columns.get(index);
     }
 
-    @Nullable
-    public ColumnDefinition getColumn(String name) {
+    public @Nullable ColumnDefinition getColumn(String name) {
         for (ColumnDefinition column : columns) {
             // `name` may be uppercase.
             if (column.getName().equalsIgnoreCase(name)) {
@@ -148,7 +143,7 @@ public class TableDefinition {
         return -1;
     }
 
-    public int[] getColumnIndices(@Nonnull List<String> names) {
+    public int[] getColumnIndices(@NonNull List<String> names) {
         int[] indices = new int[names.size()];
         for (int i = 0; i < names.size(); ++i) {
             indices[i] = getColumnIndex(names.get(i));
@@ -170,7 +165,7 @@ public class TableDefinition {
         return columns.size();
     }
 
-    public RelDataType getRelDataType(@Nonnull RelDataTypeFactory typeFactory) {
+    public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
         // make column name uppercase to adapt to calcite
         return typeFactory.createStructType(
             columns.stream().map(c -> c.getRelDataType(typeFactory)).collect(Collectors.toList()),
@@ -211,8 +206,7 @@ public class TableDefinition {
         return -1;
     }
 
-    @Nonnull
-    private TupleMapping getColumnMapping(boolean keyOrValue) {
+    private @NonNull TupleMapping getColumnMapping(boolean keyOrValue) {
         List<Integer> indices = new LinkedList<>();
         int index = 0;
         for (ColumnDefinition column : columns) {
@@ -254,7 +248,6 @@ public class TableDefinition {
         return schema;
     }
 
-    @Nonnull
     public DingoType getDingoType() {
         return DingoTypeFactory.tuple(
             columns.stream()
@@ -263,7 +256,6 @@ public class TableDefinition {
         );
     }
 
-    @Nonnull
     public DingoType getDingoType(boolean keyOrValue) {
         return DingoTypeFactory.tuple(
             getColumnMapping(keyOrValue).stream()

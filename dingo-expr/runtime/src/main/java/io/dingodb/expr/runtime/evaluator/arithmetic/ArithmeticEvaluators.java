@@ -22,13 +22,13 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @Evaluators(
@@ -74,8 +74,7 @@ final class ArithmeticEvaluators {
         return -value;
     }
 
-    @Nonnull
-    static BigDecimal neg(@Nonnull BigDecimal value) {
+    static @NonNull BigDecimal neg(@NonNull BigDecimal value) {
         return value.negate();
     }
 
@@ -95,14 +94,12 @@ final class ArithmeticEvaluators {
         return value0 + value1;
     }
 
-    @Nonnull
-    static BigDecimal add(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static @NonNull BigDecimal add(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.add(value1);
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Nonnull
-    static String add(String s0, String s1) {
+    static @NonNull String add(String s0, String s1) {
         return s0 + s1;
     }
 
@@ -118,8 +115,7 @@ final class ArithmeticEvaluators {
         return value0 - value1;
     }
 
-    @Nonnull
-    static BigDecimal sub(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static @NonNull BigDecimal sub(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.subtract(value1);
     }
 
@@ -135,8 +131,7 @@ final class ArithmeticEvaluators {
         return value0 * value1;
     }
 
-    @Nonnull
-    static BigDecimal mul(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static @NonNull BigDecimal mul(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.multiply(value1);
     }
 
@@ -152,8 +147,7 @@ final class ArithmeticEvaluators {
         return value0 / value1;
     }
 
-    @Nonnull
-    static BigDecimal div(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static @NonNull BigDecimal div(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.divide(value1, RoundingMode.HALF_EVEN);
     }
 
@@ -181,28 +175,27 @@ final class ArithmeticEvaluators {
         return Math.min(value0, value1);
     }
 
-    static BigDecimal min(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static BigDecimal min(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static String min(@Nonnull String value0, String value1) {
+    static String min(@NonNull String value0, String value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static Date min(@Nonnull Date value0, Date value1) {
+    static Date min(@NonNull Date value0, Date value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Nonnull
-    static Time min(@Nonnull Time value0, @Nonnull Time value1) {
+    static Time min(@NonNull Time value0, Time value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static Timestamp min(@Nonnull Timestamp value0, Timestamp value1) {
+    static Timestamp min(@NonNull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) < 0 ? value0 : value1;
     }
 
@@ -218,28 +211,27 @@ final class ArithmeticEvaluators {
         return Math.max(value0, value1);
     }
 
-    static BigDecimal max(@Nonnull BigDecimal value0, BigDecimal value1) {
+    static BigDecimal max(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static String max(@Nonnull String value0, String value1) {
+    static String max(@NonNull String value0, String value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static Date max(@Nonnull Date value0, Date value1) {
+    static Date max(@NonNull Date value0, Date value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    @Nonnull
-    static Time max(@Nonnull Time value0, @Nonnull Time value1) {
+    static Time max(@NonNull Time value0, Time value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 
     // This is not arithmetic op, but put here to share the same evaluator factory.
-    static Timestamp max(@Nonnull Timestamp value0, Timestamp value1) {
+    static Timestamp max(@NonNull Timestamp value0, Timestamp value1) {
         return value0.compareTo(value1) >= 0 ? value0 : value1;
     }
 }

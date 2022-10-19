@@ -20,22 +20,20 @@ import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class RtEnvFun extends RtOp {
     private static final long serialVersionUID = -6708361856536230351L;
 
-    protected RtEnvFun(@Nonnull RtExpr[] paras) {
+    protected RtEnvFun(RtExpr[] paras) {
         super(paras);
     }
 
-    protected abstract Object envFun(@Nonnull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator;
+    protected abstract @Nullable Object envFun(@NonNull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator;
 
-    @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) throws FailGetEvaluator {
+    public @Nullable Object eval(EvalContext etx) throws FailGetEvaluator {
         Object[] paraValues = new Object[paras.length];
         int i = 0;
         for (RtExpr para : paras) {

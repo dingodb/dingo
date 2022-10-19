@@ -22,10 +22,9 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeName("null")
 public class NullType extends AbstractDingoType {
@@ -41,12 +40,12 @@ public class NullType extends AbstractDingoType {
     }
 
     @Override
-    protected Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return null;
     }
 
     @Override
-    protected Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter) {
+    protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return null;
     }
 
@@ -60,9 +59,8 @@ public class NullType extends AbstractDingoType {
         return this;
     }
 
-    @Nonnull
     @Override
-    public Schema toAvroSchema() {
+    public @NonNull Schema toAvroSchema() {
         return Schema.create(Schema.Type.NULL);
     }
 
@@ -79,7 +77,7 @@ public class NullType extends AbstractDingoType {
     }
 
     @Override
-    public String format(@Nullable Object value) {
+    public @NonNull String format(Object value) {
         return "NULL";
     }
 }

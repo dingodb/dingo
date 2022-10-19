@@ -18,8 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
 import io.dingodb.exec.fin.Fin;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface Output {
     Input getLink();
@@ -56,7 +55,7 @@ public interface Output {
 
     void setHint(OutputHint hint);
 
-    default void copyHint(@Nonnull Output output) {
+    default void copyHint(@NonNull Output output) {
         setHint(output.getHint());
     }
 

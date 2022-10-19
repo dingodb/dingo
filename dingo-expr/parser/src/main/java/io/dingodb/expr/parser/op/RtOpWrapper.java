@@ -18,6 +18,7 @@ package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.function.Function;
 
@@ -35,7 +36,7 @@ final class RtOpWrapper extends Op {
     }
 
     @Override
-    protected RtOp createRtOp(RtExpr[] rtExprArray) {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) {
         return rtOpMaker.apply(rtExprArray);
     }
 }

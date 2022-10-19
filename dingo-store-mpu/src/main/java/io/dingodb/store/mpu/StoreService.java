@@ -22,12 +22,12 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.store.mpu.instruction.OpInstructions;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class StoreService implements io.dingodb.store.api.StoreService {
@@ -48,14 +48,14 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     }
 
     @Override
-    public StoreInstance getOrCreateInstance(@Nonnull CommonId id, int ttl) {
+    public StoreInstance getOrCreateInstance(@NonNull CommonId id, int ttl) {
         Path instancePath = Paths.get(StoreConfiguration.dbPath(), id.toString());
         return storeInstanceMap.compute(id, (l, i) -> i == null ? new StoreInstance(id, instancePath,
             StoreConfiguration.dbRocksOptionsFile(), StoreConfiguration.logRocksOptionsFile(), ttl) : i);
     }
 
     @Override
-    public StoreInstance getInstance(@Nonnull CommonId id) {
+    public StoreInstance getInstance(@NonNull CommonId id) {
         return storeInstanceMap.get(id);
     }
 

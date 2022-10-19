@@ -17,9 +17,9 @@
 package io.dingodb.expr.json.runtime;
 
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serializable;
-import javax.annotation.Nonnull;
 
 public final class RtSchemaRoot implements Serializable {
     private static final long serialVersionUID = -7987188049979019761L;
@@ -35,7 +35,7 @@ public final class RtSchemaRoot implements Serializable {
      *
      * @param schema the RtSchema
      */
-    public RtSchemaRoot(@Nonnull RtSchema schema) {
+    public RtSchemaRoot(@NonNull RtSchema schema) {
         this.schema = schema;
         this.maxIndex = schema.createIndex(0);
     }

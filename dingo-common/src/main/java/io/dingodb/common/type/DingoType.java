@@ -33,10 +33,10 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.serial.schema.DingoSchema;
 import org.apache.avro.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
     @JsonSubTypes.Type(TupleType.class),
 })
 public interface DingoType extends CompileContext {
-    void setId(@Nonnull Integer id);
+    void setId(Integer id);
 
     DingoType copy();
 
@@ -74,7 +74,7 @@ public interface DingoType extends CompileContext {
     int fieldCount();
 
     @Override
-    DingoType getChild(@Nonnull Object index);
+    DingoType getChild(Object index);
 
     /**
      * Get a new type with the selected fields according to the mapping. Illegal for scalar types.
@@ -82,14 +82,13 @@ public interface DingoType extends CompileContext {
      * @param mapping the mapping
      * @return the new type
      */
-    DingoType select(@Nonnull TupleMapping mapping);
+    @NonNull DingoType select(@NonNull TupleMapping mapping);
 
-    Object convertTo(@Nullable Object value, @Nonnull DataConverter converter);
+    @Nullable Object convertTo(@Nullable Object value, @NonNull DataConverter converter);
 
-    Object convertFrom(@Nullable Object value, @Nonnull DataConverter converter);
+    @Nullable Object convertFrom(@Nullable Object value, @NonNull DataConverter converter);
 
-    @Nonnull
-    Schema toAvroSchema();
+    @NonNull Schema toAvroSchema();
 
     List<DingoSchema> toDingoSchemas();
 
@@ -101,7 +100,7 @@ public interface DingoType extends CompileContext {
      * @param value the input string(s)
      * @return the value(s) of this type
      */
-    Object parse(@Nullable Object value);
+    Object parse(Object value);
 
     /**
      * Format data to a {@link String} for debugging.
@@ -109,5 +108,5 @@ public interface DingoType extends CompileContext {
      * @param value the data to format
      * @return the formatted {@link String}
      */
-    String format(@Nullable Object value);
+    @NonNull String format(@Nullable Object value);
 }

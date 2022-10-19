@@ -19,9 +19,9 @@ package io.dingodb.common.codec.protostuff;
 import io.protostuff.Input;
 import io.protostuff.Output;
 import io.protostuff.Schema;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 public abstract class SqlDateTimeSchema<T extends java.util.Date> implements Schema<T> {
     protected static final String T_FILED = "T";
@@ -31,7 +31,7 @@ public abstract class SqlDateTimeSchema<T extends java.util.Date> implements Sch
         return (number == T_INDEX) ? T_FILED : null;
     }
 
-    public int getFieldNumber(@Nonnull String name) {
+    public int getFieldNumber(@NonNull String name) {
         return name.equals(T_FILED) ? T_INDEX : 0;
     }
 
@@ -47,7 +47,7 @@ public abstract class SqlDateTimeSchema<T extends java.util.Date> implements Sch
         return typeClass().getName();
     }
 
-    public void mergeFrom(@Nonnull Input input, T message) throws IOException {
+    public void mergeFrom(@NonNull Input input, T message) throws IOException {
         while (true) {
             int number = input.readFieldNumber(this);
             switch (number) {
@@ -62,7 +62,7 @@ public abstract class SqlDateTimeSchema<T extends java.util.Date> implements Sch
         }
     }
 
-    public void writeTo(@Nonnull Output output, @Nonnull T message) throws IOException {
+    public void writeTo(@NonNull Output output, @NonNull T message) throws IOException {
         output.writeInt64(1, message.getTime(), false);
     }
 }

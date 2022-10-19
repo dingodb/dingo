@@ -24,12 +24,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @Value.Enclosing
 public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> implements SubstitutionRule {
@@ -38,7 +38,7 @@ public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> i
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         Union union = call.rel(0);
         LogicalDingoValues value0 = call.rel(1);
         LogicalDingoValues value1 = call.rel(2);

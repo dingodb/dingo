@@ -25,8 +25,7 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoRelMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.ColumnUniqueness> {
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
@@ -52,7 +51,7 @@ public class DingoRelMdColumnUniqueness implements MetadataHandler<BuiltInMetada
      */
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public Boolean areColumnsUnique(
-        @Nonnull DingoTableScan rel,
+        @NonNull DingoTableScan rel,
         RelMetadataQuery mq,
         ImmutableBitSet columns,
         boolean ignoreNulls

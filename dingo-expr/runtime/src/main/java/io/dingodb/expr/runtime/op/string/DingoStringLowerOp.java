@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoStringLowerOp extends RtStringConversionOp {
@@ -38,7 +38,7 @@ public class DingoStringLowerOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoStringLowerOp(@Nonnull RtExpr[] paras) {
+    public DingoStringLowerOp(RtExpr[] paras) {
         super(paras);
     }
 
@@ -50,9 +50,8 @@ public class DingoStringLowerOp extends RtStringConversionOp {
         }
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         return toLowCase((String) values[0]);
     }
 
@@ -65,7 +64,7 @@ public class DingoStringLowerOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("lcase");
+            return Collections.singletonList("lcase");
         }
 
         @Override

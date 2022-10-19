@@ -23,10 +23,10 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
     public static final double ASSUME_PARTS = 3.0d;
@@ -43,7 +43,7 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
     }
 
     @Override
-    public <T> T accept(@Nonnull DingoRelVisitor<T> visitor) {
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

@@ -16,7 +16,7 @@
 
 package io.dingodb.common.error;
 
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * DerivedError is error wrapper around given error.
@@ -25,7 +25,7 @@ class DerivedError extends AbstractError implements IndirectError {
     private final DingoError category;
     private final String message;
 
-    DerivedError(@Nonnull DingoError err, String message) {
+    DerivedError(@NonNull DingoError err, String message) {
         // Avoid holding not category error.
         this.category = err.getCategory();
         this.message = message;

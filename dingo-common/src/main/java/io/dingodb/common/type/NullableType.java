@@ -20,8 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @EqualsAndHashCode(of = {"nullable"}, callSuper = true)
 public abstract class NullableType extends AbstractDingoType {
@@ -32,9 +31,8 @@ public abstract class NullableType extends AbstractDingoType {
         this.nullable = nullable;
     }
 
-    @Nonnull
     @Override
-    public Schema toAvroSchema() {
+    public @NonNull Schema toAvroSchema() {
         Schema schema = toAvroSchemaNotNull();
         if (nullable) {
             // Allow avro to encode `null`.

@@ -21,7 +21,6 @@ import io.dingodb.expr.runtime.RtExpr;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 @RequiredArgsConstructor
 public final class RtVar implements RtExpr {
@@ -29,9 +28,8 @@ public final class RtVar implements RtExpr {
     private final Object id;
     private final int typeCode;
 
-    @Nullable
     @Override
-    public Object eval(@Nullable EvalContext etx) {
+    public Object eval(EvalContext etx) {
         return Objects.requireNonNull(etx).get(id);
     }
 
@@ -47,7 +45,7 @@ public final class RtVar implements RtExpr {
      * @param value the new value
      */
     @SuppressWarnings("unused")
-    public void set(@Nullable EvalContext etx, Object value) {
+    public void set(EvalContext etx, Object value) {
         Objects.requireNonNull(etx).set(id, value);
     }
 }

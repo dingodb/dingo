@@ -20,19 +20,18 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.RexLiteralConverter;
 import org.apache.calcite.rex.RexLiteral;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class RexLiteralUtils {
     private RexLiteralUtils() {
     }
 
-    @Nullable
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral, @Nonnull DingoType type) {
+    public static @Nullable Object convertFromRexLiteral(@NonNull RexLiteral rexLiteral, DingoType type) {
         if (!rexLiteral.isNull()) {
             // `rexLiteral.getType()` is not always the required type.
             return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
@@ -40,13 +39,12 @@ public final class RexLiteralUtils {
         return null;
     }
 
-    public static Object convertFromRexLiteral(@Nonnull RexLiteral rexLiteral) {
+    public static Object convertFromRexLiteral(@NonNull RexLiteral rexLiteral) {
         DingoType type = DingoTypeFactory.fromRelDataType(rexLiteral.getType());
         return convertFromRexLiteral(rexLiteral, type);
     }
 
-    @Nonnull
-    public static Object[] convertFromRexLiteralList(@Nonnull List<RexLiteral> values, @Nonnull DingoType type) {
+    public static Object @NonNull [] convertFromRexLiteralList(@NonNull List<RexLiteral> values, DingoType type) {
         return IntStream.range(0, values.size())
             .mapToObj(i -> convertFromRexLiteral(values.get(i), Objects.requireNonNull(type.getChild(i))))
             .toArray(Object[]::new);

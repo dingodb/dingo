@@ -25,6 +25,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class MetaCache {
@@ -88,7 +88,7 @@ public class MetaCache {
         }
     }
 
-    public static String getTableName(@Nonnull RelOptTable table) {
+    public static String getTableName(@NonNull RelOptTable table) {
         List<String> fullName = table.getQualifiedName();
         return fullName.stream().skip(2).collect(Collectors.joining("."));
     }

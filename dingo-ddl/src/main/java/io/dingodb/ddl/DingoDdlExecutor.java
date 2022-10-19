@@ -45,6 +45,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
@@ -52,8 +54,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -64,9 +64,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     private DingoDdlExecutor() {
     }
 
-    @Nullable
-    private static ColumnDefinition fromSqlColumnDeclaration(
-        @Nonnull SqlColumnDeclaration scd,
+    private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
+        @NonNull SqlColumnDeclaration scd,
         SqlValidator validator,
         List<String> primaryKeyList
     ) {
@@ -111,10 +110,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
     }
 
-    @Nonnull
-    private static Pair<MutableSchema, String> getSchemaAndTableName(
-        @Nonnull SqlIdentifier id,
-        @Nonnull CalcitePrepare.Context context
+    private static @NonNull Pair<MutableSchema, String> getSchemaAndTableName(
+        @NonNull SqlIdentifier id,
+        CalcitePrepare.@NonNull Context context
     ) {
         CalciteSchema rootSchema = context.getMutableRootSchema();
         assert rootSchema != null : "No root schema.";
@@ -235,7 +233,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    public void execute(SqlTruncate truncate, CalcitePrepare.Context context) {
+    public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) {
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
         final Pair<MutableSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
@@ -252,7 +250,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         assert schema != null;
         assert tableName != null;
         existed = schema.dropTable(tableName);
-        if (!existed && !true) {
+        if (false) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString())

@@ -18,20 +18,19 @@ package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.text.ParseException;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class TestOpToString {
-    @Nonnull
-    private static Stream<Arguments> getParameters() throws ParseException {
+    private static @NonNull Stream<Arguments> getParameters() throws ParseException {
         return Stream.of(
             arguments("1 + 2", "1 + 2"),
             arguments("1 + 2*3", "1 + 2*3"),

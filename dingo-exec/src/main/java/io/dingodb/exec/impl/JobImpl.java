@@ -30,11 +30,11 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @JsonPropertyOrder({"tasks"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -67,9 +67,8 @@ public final class JobImpl implements Job {
         return PARSER.parse(str, JobImpl.class);
     }
 
-    @Nonnull
     @Override
-    public Task create(Id id, Location location, DingoType parasType) {
+    public @NonNull Task create(Id id, Location location, DingoType parasType) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }

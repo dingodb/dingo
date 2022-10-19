@@ -21,13 +21,13 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.func.DingoFuncProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoStringRTrimOp extends RtStringConversionOp {
@@ -39,7 +39,7 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
      *
      * @param paras the parameters of the op
      */
-    public DingoStringRTrimOp(@Nonnull RtExpr[] paras) {
+    public DingoStringRTrimOp(RtExpr[] paras) {
         super(paras);
     }
 
@@ -58,9 +58,8 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
         }
     }
 
-    @Nonnull
     @Override
-    protected Object fun(@Nonnull Object[] values) {
+    protected Object fun(Object @NonNull [] values) {
         String str = (String) values[0];
         return trimRight(str);
     }
@@ -74,7 +73,7 @@ public class DingoStringRTrimOp extends RtStringConversionOp {
 
         @Override
         public List<String> name() {
-            return Arrays.asList("rtrim");
+            return Collections.singletonList("rtrim");
         }
 
         @Override

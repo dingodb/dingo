@@ -22,9 +22,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.net.Message;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nonnull;
 
 public class ControlMessage {
     private static final Parser PARSER = Parser.JSON;
@@ -44,16 +44,15 @@ public class ControlMessage {
         this.status = status;
     }
 
-    @Nonnull
     @JsonCreator
-    public static ControlMessage of(
+    public static @NonNull ControlMessage of(
         @JsonProperty("tag") String tag,
         @JsonProperty("status") ControlStatus status
     ) {
         return new ControlMessage(tag, status);
     }
 
-    public static ControlMessage fromMessage(@Nonnull Message message) throws JsonProcessingException {
+    public static ControlMessage fromMessage(@NonNull Message message) throws JsonProcessingException {
         String str = new String(message.content(), StandardCharsets.UTF_8);
         return PARSER.parse(str, ControlMessage.class);
     }

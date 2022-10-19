@@ -23,8 +23,7 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoRelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> {
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
@@ -46,7 +45,7 @@ public class DingoRelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCo
      * does not.
      */
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
-    public Double getRowCount(@Nonnull SingleRel rel, @Nonnull RelMetadataQuery mq) {
+    public Double getRowCount(@NonNull SingleRel rel, @NonNull RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }

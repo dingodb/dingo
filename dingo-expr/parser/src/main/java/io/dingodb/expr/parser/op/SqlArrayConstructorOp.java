@@ -19,8 +19,7 @@ package io.dingodb.expr.parser.op;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.sql.RtSqlArrayConstructorOp;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class SqlArrayConstructorOp extends Op {
     public static final String FUN_NAME = "ARRAY";
@@ -29,20 +28,18 @@ public final class SqlArrayConstructorOp extends Op {
         super(FUN_NAME);
     }
 
-    @Nonnull
-    public static SqlArrayConstructorOp fun() {
+    public static @NonNull SqlArrayConstructorOp fun() {
         return new SqlArrayConstructorOp();
     }
 
     @Override
-    protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
+    protected boolean evalNull(RtExpr[] rtExprArray) {
         checkNoNulls(rtExprArray);
         return false;
     }
 
-    @Nonnull
     @Override
-    protected RtSqlArrayConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtSqlArrayConstructorOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
         return new RtSqlArrayConstructorOp(rtExprArray);
     }
 }

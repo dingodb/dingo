@@ -39,6 +39,8 @@ import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -46,8 +48,6 @@ import java.util.NavigableMap;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getStatsMetaAdaptor;
@@ -62,11 +62,11 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
 
     public static final String NAME = "DINGO";
     public static final CommonId DINGO_ID = new CommonId(
-                                                    CommonIdConstant.ID_TYPE.table,
-                                                    CommonIdConstant.TABLE_IDENTIFIER.schema,
-                                                    PrimitiveCodec.encodeInt(0),
-                                                    PrimitiveCodec.encodeInt(0)
-                                                );
+        CommonIdConstant.ID_TYPE.table,
+        CommonIdConstant.TABLE_IDENTIFIER.schema,
+        PrimitiveCodec.encodeInt(0),
+        PrimitiveCodec.encodeInt(0)
+    );
     public static final Location CURRENT_LOCATION = new Location(DingoConfiguration.host(), DingoConfiguration.port());
 
     private Map<String, Object> props;
@@ -83,17 +83,21 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
-    public void init(@Nullable Map<String, Object> props) {
-        this.props = props;
-    }
-
-    @Override
     public String getName() {
         return NAME;
     }
 
     @Override
-    public synchronized void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
+    public void init(@Nullable Map<String, Object> props) {
+        this.props = props;
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    @Override
+    public synchronized void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         if (getTableDefinitions().containsKey(tableName)) {
             throw new RuntimeException("Table " + tableName + " already exists");
         }
@@ -101,31 +105,32 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
-    public byte[] getIndexId(@Nonnull String tableName) {
-        return new byte[0];
-    }
-
-    @Override
-    public byte[] getTableKey(@Nonnull String tableName) {
-        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName).encode();
-    }
-
-    @Override
-    public CommonId getTableId(@Nonnull String tableName) {
-        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName);
-    }
-
-    public CommonId getTableIdByIdString(CommonId id) {
-        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableIdByIdString(id);
-    }
-
-    @Override
-    public boolean dropTable(@Nonnull String tableName) {
+    public boolean dropTable(@NonNull String tableName) {
         CommonId tableId = ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName);
         if (tableId == null || !((TableAdaptor) getMetaAdaptor(Table.class)).delete(tableName)) {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public byte[] getTableKey(@NonNull String tableName) {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName).encode();
+    }
+
+    @Override
+    public CommonId getTableId(@NonNull String tableName) {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableId(tableName);
+    }
+
+    @Override
+    public byte[] getIndexId(@NonNull String tableName) {
+        return new byte[0];
+    }
+
+    @Override
+    public Map<String, TableDefinition> getTableDefinitions() {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getAllDefinition();
     }
 
     @Override
@@ -157,11 +162,6 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
-    public Map<String, TableDefinition> getTableDefinitions() {
-        return ((TableAdaptor) getMetaAdaptor(Table.class)).getAllDefinition();
-    }
-
-    @Override
     public List<Location> getDistributes(String name) {
         return getParts(name).values().stream()
             .map(Part::getLeader)
@@ -170,7 +170,16 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
-    public TableDefinition getTableDefinition(@Nonnull CommonId commonId) {
+    public Location currentLocation() {
+        return CURRENT_LOCATION;
+    }
+
+    public CommonId getTableIdByIdString(CommonId id) {
+        return ((TableAdaptor) getMetaAdaptor(Table.class)).getTableIdByIdString(id);
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(@NonNull CommonId commonId) {
         return ((TableAdaptor) getMetaAdaptor(Table.class)).getDefinition(commonId);
     }
 
@@ -214,15 +223,6 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
             version--;
         }
         return udf;
-    }
-
-    @Override
-    public Location currentLocation() {
-        return CURRENT_LOCATION;
-    }
-
-    @Override
-    public void clear() {
     }
 
     private boolean isCoordinatorLeader() {

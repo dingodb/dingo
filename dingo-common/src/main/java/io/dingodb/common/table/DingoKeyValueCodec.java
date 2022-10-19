@@ -24,9 +24,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.DingoConverter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoKeyValueCodec implements KeyValueCodec {
@@ -38,7 +38,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     Codec keyCodec;
     Codec valueCodec;
 
-    public DingoKeyValueCodec(@Nonnull DingoType schema, @Nonnull TupleMapping keyMapping) {
+    public DingoKeyValueCodec(@NonNull DingoType schema, TupleMapping keyMapping) {
         this.schema = schema;
         this.keySchema = schema.select(keyMapping);
         this.keyMapping = keyMapping;
@@ -48,7 +48,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public Object[] decode(@Nonnull KeyValue keyValue) throws IOException {
+    public Object[] decode(@NonNull KeyValue keyValue) throws IOException {
         Object[] record = new Object[keyMapping.size() + valueMapping.size()];
         Object[] key = keyCodec.decodeKey(keyValue.getKey());
         Object[] value = valueCodec.decode(keyValue.getValue());
@@ -62,12 +62,12 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public Object[] decodeKey(@Nonnull byte[] bytes) throws IOException {
+    public Object[] decodeKey(byte @NonNull [] bytes) throws IOException {
         return keyCodec.decodeKey(bytes);
     }
 
     @Override
-    public KeyValue encode(@Nonnull Object[] tuple) throws IOException {
+    public KeyValue encode(Object @NonNull [] tuple) throws IOException {
         Object[] converted = (Object[]) schema.convertTo(tuple, DingoConverter.INSTANCE);
         Object[] key = new Object[keyMapping.size()];
         Object[] value = new Object[valueMapping.size()];
@@ -83,13 +83,13 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     }
 
     @Override
-    public byte[] encodeKey(@Nonnull Object[] keys) throws IOException {
+    public byte[] encodeKey(Object[] keys) throws IOException {
         Object[] key = (Object[]) keySchema.convertTo(keys, DingoConverter.INSTANCE);
         return keyCodec.encodeKey(key);
     }
 
     @Override
-    public Object[] mapKeyAndDecodeValue(@Nonnull Object[] keys, byte[] bytes) throws IOException {
+    public Object[] mapKeyAndDecodeValue(Object @NonNull [] keys, byte[] bytes) throws IOException {
         Object[] value = valueCodec.decode(bytes);
         Object[] record = new Object[keyMapping.size() + valueMapping.size()];
         for (int i = 0; i < keys.length; i++) {

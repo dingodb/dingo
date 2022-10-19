@@ -27,13 +27,13 @@ import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 public class Parser implements Serializable {
     public static final Parser JSON = new Parser(DataFormat.APPLICATION_JSON);
@@ -43,7 +43,7 @@ public class Parser implements Serializable {
     private static final long serialVersionUID = -4801322278537134701L;
     protected final ObjectMapper mapper;
 
-    protected Parser(@Nonnull DataFormat format) {
+    protected Parser(@NonNull DataFormat format) {
         switch (format) {
             case APPLICATION_JSON:
                 mapper = JsonMapper.builder()
@@ -68,7 +68,7 @@ public class Parser implements Serializable {
         }
     }
 
-    private static void setJsonFeature(@Nonnull ObjectMapper mapper) {
+    private static void setJsonFeature(@NonNull ObjectMapper mapper) {
         mapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
         mapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
         mapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
@@ -79,16 +79,14 @@ public class Parser implements Serializable {
         mapper.enable(DeserializationFeature.USE_LONG_FOR_INTS);
     }
 
-    @Nonnull
-    private static CsvMapper setCsvFeature(@Nonnull CsvMapper mapper) {
+    private static @NonNull CsvMapper setCsvFeature(@NonNull CsvMapper mapper) {
         mapper.enable(CsvParser.Feature.WRAP_AS_ARRAY);
         mapper.enable(CsvParser.Feature.SKIP_EMPTY_LINES);
         mapper.enable(CsvParser.Feature.TRIM_SPACES);
         return mapper;
     }
 
-    @Nonnull
-    public static Parser get(@Nonnull DataFormat format) {
+    public static Parser get(@NonNull DataFormat format) {
         switch (format) {
             case APPLICATION_JSON:
                 return JSON;

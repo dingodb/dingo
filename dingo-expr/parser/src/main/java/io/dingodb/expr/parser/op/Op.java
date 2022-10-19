@@ -27,12 +27,11 @@ import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import lombok.Getter;
 import lombok.Setter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public abstract class Op implements Expr {
     @Getter
@@ -60,8 +59,7 @@ public abstract class Op implements Expr {
         return type.getPrecedence();
     }
 
-    @Nonnull
-    protected final RtExpr[] compileExprArray(CompileContext ctx) throws DingoExprCompileException {
+    protected final RtExpr @NonNull [] compileExprArray(CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = new RtExpr[exprArray.length];
         int i = 0;
         for (Expr expr : exprArray) {
@@ -70,10 +68,9 @@ public abstract class Op implements Expr {
         return rtExprArray;
     }
 
-    @Nonnull
-    protected RtExpr evalNullConstEnv(
-        @Nonnull RtExpr[] rtExprArray,
-        @Nullable EvalEnv env
+    protected @NonNull RtExpr evalNullConstEnv(
+        RtExpr[] rtExprArray,
+        EvalEnv env
     ) throws DingoExprCompileException {
         if (evalNull(rtExprArray)) {
             return RtNull.INSTANCE;
@@ -81,11 +78,11 @@ public abstract class Op implements Expr {
         return evalConst(rtExprArray, env);
     }
 
-    protected boolean evalNull(@Nonnull RtExpr[] rtExprArray) {
+    protected boolean evalNull(RtExpr[] rtExprArray) {
         return Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull);
     }
 
-    protected RtExpr evalConst(@Nonnull RtExpr[] rtExprArray, @Nullable EvalEnv env) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalConst(RtExpr[] rtExprArray, EvalEnv env) throws DingoExprCompileException {
         try {
             RtOp rtOp = createRtOp(rtExprArray);
             if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
@@ -97,9 +94,8 @@ public abstract class Op implements Expr {
         }
     }
 
-    @Nonnull
     @Override
-    public RtExpr compileIn(@Nullable CompileContext ctx) throws DingoExprCompileException {
+    public @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
         return evalNullConstEnv(rtExprArray, ctx != null ? ctx.getEnv() : null);
     }
@@ -110,13 +106,13 @@ public abstract class Op implements Expr {
      *
      * @param rtExprArray the compiled operands
      */
-    protected void checkNoNulls(@Nonnull RtExpr[] rtExprArray) {
+    protected void checkNoNulls(RtExpr[] rtExprArray) {
         if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
             throw new IllegalArgumentException("NULLs are not allowed in \"" + name + "\".");
         }
     }
 
-    protected abstract RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator;
+    protected abstract @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator;
 
     @Override
     public String toString() {

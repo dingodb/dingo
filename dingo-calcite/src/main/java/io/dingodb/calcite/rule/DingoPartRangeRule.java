@@ -32,13 +32,13 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 
@@ -50,7 +50,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
@@ -100,7 +100,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                             break;
                     }
                 } catch (IOException e) {
-                    log.error("Some errors occurred in encodeKeyForRangeScan: {}", e);
+                    log.error("Some errors occurred in encodeKeyForRangeScan: ", e);
                     throw new RuntimeException(e);
                 }
             }

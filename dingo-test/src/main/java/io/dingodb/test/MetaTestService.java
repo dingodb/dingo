@@ -25,6 +25,7 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -65,12 +66,12 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public void createTable(@Nonnull String tableName, @Nonnull TableDefinition tableDefinition) {
+    public void createTable(@Nonnull @NonNull String tableName, @Nonnull @NonNull TableDefinition tableDefinition) {
         tableDefinitionMap.put(tableName, tableDefinition);
     }
 
     @Override
-    public boolean dropTable(@Nonnull String tableName) {
+    public boolean dropTable(@Nonnull @NonNull String tableName) {
         if (tableDefinitionMap.containsKey(tableName)) {
             tableDefinitionMap.remove(tableName);
             return true;
@@ -79,12 +80,12 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public byte[] getTableKey(@Nonnull String tableName) {
+    public byte[] getTableKey(@Nonnull @NonNull String tableName) {
         return tableName.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
-    public CommonId getTableId(@Nonnull String tableName) {
+    public CommonId getTableId(@Nonnull @NonNull String tableName) {
         return new CommonId(
             (byte) 'T',
             new byte[]{'D', 'T'},
@@ -94,7 +95,7 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public byte[] getIndexId(@Nonnull String tableName) {
+    public byte[] getIndexId(@Nonnull @NonNull String tableName) {
         return new byte[0];
     }
 

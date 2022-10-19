@@ -25,9 +25,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
-import javax.annotation.Nonnull;
 
 @Slf4j
 @JsonTypeName("scan")
@@ -46,9 +46,8 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
         super(tableId, partId, schema, keyMapping, filter, selection);
     }
 
-    @Nonnull
     @Override
-    protected Iterator<Object[]> createSourceIterator() {
+    protected @NonNull Iterator<Object[]> createSourceIterator() {
         return part.getIterator();
     }
 }

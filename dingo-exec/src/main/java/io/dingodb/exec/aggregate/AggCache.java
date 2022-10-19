@@ -18,9 +18,10 @@ package io.dingodb.exec.aggregate;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.Utils;
+import io.dingodb.common.util.ArrayUtils;
 import io.dingodb.exec.tuple.TupleKey;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class AggCache implements Iterable<Object[]> {
@@ -36,14 +36,13 @@ public class AggCache implements Iterable<Object[]> {
     private final List<Agg> aggList;
     private final Map<TupleKey, Object[]> cache;
 
-    public AggCache(TupleMapping keyMapping, @Nonnull List<Agg> aggList) {
+    public AggCache(TupleMapping keyMapping, @NonNull List<Agg> aggList) {
         this.keyMapping = keyMapping;
         this.aggList = aggList;
         this.cache = new ConcurrentHashMap<>();
     }
 
-    @Nonnull
-    private Object[] getVars(TupleKey key) {
+    private Object @NonNull [] getVars(TupleKey key) {
         return cache.computeIfAbsent(key, k -> new Object[aggList.size()]);
     }
 
@@ -70,8 +69,7 @@ public class AggCache implements Iterable<Object[]> {
         }
     }
 
-    @Nonnull
-    private Object[] calValue(@Nonnull Object[] vars) {
+    private Object @NonNull [] calValue(Object @NonNull [] vars) {
         Object[] result = new Object[vars.length];
         for (int i = 0; i < vars.length; ++i) {
             result[i] = aggList.get(i).getValue(vars[i]);
@@ -86,14 +84,14 @@ public class AggCache implements Iterable<Object[]> {
         }
         return Iterators.transform(
             cache.entrySet().iterator(),
-            e -> Utils.combine(e.getKey().getTuple(), calValue(e.getValue()))
+            e -> ArrayUtils.concat(e.getKey().getTuple(), calValue(e.getValue()))
         );
     }
 
     public Iterator<Object[]> iteratorCache() {
         return Iterators.transform(
             cache.entrySet().iterator(),
-            e -> Utils.combine(e.getKey().getTuple(), e.getValue())
+            e -> ArrayUtils.concat(e.getKey().getTuple(), e.getValue())
         );
     }
 }

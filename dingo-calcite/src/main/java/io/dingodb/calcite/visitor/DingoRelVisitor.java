@@ -36,47 +36,46 @@ import io.dingodb.calcite.rel.DingoSort;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DingoRelVisitor<T> {
-    T visit(@Nonnull DingoAggregate rel);
+    T visit(@NonNull DingoAggregate rel);
 
-    T visit(@Nonnull DingoCoalesce rel);
+    T visit(@NonNull DingoCoalesce rel);
 
-    T visit(@Nonnull DingoDistributedValues rel);
+    T visit(@NonNull DingoDistributedValues rel);
 
-    T visit(@Nonnull DingoExchange rel);
+    T visit(@NonNull DingoExchange rel);
 
-    T visit(@Nonnull DingoFilter rel);
+    T visit(@NonNull DingoFilter rel);
 
-    T visit(@Nonnull DingoGetByKeys rel);
+    T visit(@NonNull DingoGetByKeys rel);
 
-    T visit(@Nonnull DingoHash rel);
+    T visit(@NonNull DingoHash rel);
 
-    T visit(@Nonnull DingoHashJoin rel);
+    T visit(@NonNull DingoHashJoin rel);
 
-    T visit(@Nonnull DingoPartition rel);
+    T visit(@NonNull DingoPartition rel);
 
-    T visit(@Nonnull DingoPartModify rel);
+    T visit(@NonNull DingoPartModify rel);
 
-    T visit(@Nonnull DingoProject rel);
+    T visit(@NonNull DingoProject rel);
 
-    T visit(@Nonnull DingoReduce rel);
+    T visit(@NonNull DingoReduce rel);
 
-    T visit(@Nonnull DingoRoot rel);
+    T visit(@NonNull DingoRoot rel);
 
-    T visit(@Nonnull DingoSort rel);
+    T visit(@NonNull DingoSort rel);
 
-    T visit(@Nonnull DingoTableScan rel);
+    T visit(@NonNull DingoTableScan rel);
 
-    T visit(@Nonnull DingoUnion rel);
+    T visit(@NonNull DingoUnion rel);
 
-    T visit(@Nonnull DingoValues rel);
+    T visit(@NonNull DingoValues rel);
 
-    T visit(@Nonnull DingoPartCountDelete rel);
+    T visit(@NonNull DingoPartCountDelete rel);
 
-    T visit(@Nonnull DingoPartRangeScan rel);
+    T visit(@NonNull DingoPartRangeScan rel);
 
-    T visit(@Nonnull DingoPartRangeDelete rel);
+    T visit(@NonNull DingoPartRangeDelete rel);
 }

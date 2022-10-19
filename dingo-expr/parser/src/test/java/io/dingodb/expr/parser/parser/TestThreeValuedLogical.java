@@ -20,21 +20,20 @@ import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestThreeValuedLogical {
-    @Nonnull
-    private static Stream<Arguments> getParameters() {
+    private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             arguments("null and null", null),
             arguments("null and false", false),

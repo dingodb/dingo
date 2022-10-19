@@ -22,9 +22,10 @@ import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
-import javax.annotation.Nonnull;
 
 @Evaluators(
     evaluatorKey = EvaluatorKey.class,
@@ -37,13 +38,11 @@ final class DateCastEvaluators {
     private DateCastEvaluators() {
     }
 
-    @Nonnull
-    static Date dateCast(@Nonnull String value) {
+    static @Nullable Date dateCast(@NonNull String value) {
         return DateTimeUtils.parseDate(value);
     }
 
-    @Nonnull
-    static Date dateCast(@Nonnull Date value) {
+    static Date dateCast(@NonNull Date value) {
         return value;
     }
 }

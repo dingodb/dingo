@@ -28,12 +28,12 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @Value.Enclosing
 public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> implements SubstitutionRule {
@@ -41,13 +41,11 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         super(config);
     }
 
-    @Nonnull
-    private static List<Integer> getSelectedColumns(List<RexNode> rexNodes) {
+    private static @NonNull List<Integer> getSelectedColumns(List<RexNode> rexNodes) {
         final List<Integer> selectedColumns = new ArrayList<>();
         final RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
-            @Nullable
             @Override
-            public Void visitInputRef(@Nonnull RexInputRef inputRef) {
+            public @Nullable Void visitInputRef(@NonNull RexInputRef inputRef) {
                 if (!selectedColumns.contains(inputRef.getIndex())) {
                     selectedColumns.add(inputRef.getIndex());
                 }
@@ -59,7 +57,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
     }
 
     @Override
-    public void onMatch(@Nonnull RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalProject project = call.rel(0);
         final LogicalDingoTableScan scan = call.rel(1);
         List<Integer> selectedColumns = getSelectedColumns(project.getProjects());

@@ -24,10 +24,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 public class LogicalDingoValues extends AbstractRelNode {
     @Getter
@@ -50,9 +50,8 @@ public class LogicalDingoValues extends AbstractRelNode {
         return rowType;
     }
 
-    @Nonnull
     @Override
-    public RelWriter explainTerms(RelWriter pw) {
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
         DingoType type = DingoTypeFactory.fromRelDataType(rowType);
         pw.item("tuples", tuples.stream().map(type::format).collect(Collectors.joining(", ")));

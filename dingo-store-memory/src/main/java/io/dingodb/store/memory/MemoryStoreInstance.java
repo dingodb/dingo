@@ -20,6 +20,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 import java.util.List;
@@ -28,7 +29,6 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
@@ -48,7 +48,7 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public void deletePart(@Nonnull Part part) {
+    public void deletePart(@NonNull Part part) {
         TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
             db.entrySet().iterator(), part.getStart(), part.getEnd(), true, false);
         treeMap.keySet().forEach(db::remove);
@@ -73,7 +73,7 @@ public class MemoryStoreInstance implements StoreInstance {
     @Override
     public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         if (endPrimaryKey == null) {
-            endPrimaryKey =db.lastKey();
+            endPrimaryKey = db.lastKey();
         }
         TreeMap<byte[], byte[]> subMap = getTreeMapByRange(
             db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
@@ -199,7 +199,7 @@ public class MemoryStoreInstance implements StoreInstance {
             Map.Entry<byte[], byte[]> next = iterator.next();
             boolean start = true;
             boolean end = false;
-            if (includeStart)  {
+            if (includeStart) {
                 start = ByteArrayUtils.greatThanOrEqual(next.getKey(), startPrimaryKey);
             } else {
                 start = ByteArrayUtils.greatThan(next.getKey(), startPrimaryKey);

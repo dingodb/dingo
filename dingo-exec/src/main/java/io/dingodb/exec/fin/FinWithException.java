@@ -21,11 +21,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import javax.annotation.Nonnull;
 
 public class FinWithException implements Fin {
     public static final Parser PARSER = Parser.JSON;
@@ -43,21 +43,18 @@ public class FinWithException implements Fin {
         return PARSER.parse(is, FinWithException.class);
     }
 
-    @Nonnull
-    public static FinWithException of(TaskStatus taskStatus) {
+    public static @NonNull FinWithException of(TaskStatus taskStatus) {
         return new FinWithException(taskStatus);
     }
 
     @Override
-    public void writeStream(@Nonnull OutputStream os) throws IOException {
+    public void writeStream(@NonNull OutputStream os) throws IOException {
         PARSER.writeStream(os, this);
     }
 
     @Override
     public String detail() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(taskStatus.getErrorMsg());
-        return builder.toString();
+        return taskStatus.getErrorMsg();
     }
 
     @Override

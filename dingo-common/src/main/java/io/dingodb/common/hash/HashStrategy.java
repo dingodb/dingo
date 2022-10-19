@@ -18,8 +18,7 @@ package io.dingodb.common.hash;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import javax.annotation.Nonnull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -29,5 +28,5 @@ import javax.annotation.Nonnull;
     @JsonSubTypes.Type(SimpleHashStrategy.class),
 })
 public interface HashStrategy {
-    int selectOutput(@Nonnull final Object[] tuple);
+    int selectOutput(final Object @NonNull [] tuple);
 }

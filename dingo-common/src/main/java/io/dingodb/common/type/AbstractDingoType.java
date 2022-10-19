@@ -22,9 +22,8 @@ import io.dingodb.expr.runtime.TypeCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @EqualsAndHashCode(of = {"typeCode"})
 public abstract class AbstractDingoType implements DingoType {
@@ -35,16 +34,13 @@ public abstract class AbstractDingoType implements DingoType {
     @Setter
     private Integer id;
 
-    public AbstractDingoType() {
-    }
-
     protected AbstractDingoType(int typeCode) {
         this.typeCode = typeCode;
     }
 
-    protected abstract Object convertValueTo(@Nonnull Object value, @Nonnull DataConverter converter);
+    protected abstract @Nullable Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter);
 
-    protected abstract Object convertValueFrom(@Nonnull Object value, @Nonnull DataConverter converter);
+    protected abstract @Nullable Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter);
 
     @Override
     public int fieldCount() {
@@ -52,17 +48,17 @@ public abstract class AbstractDingoType implements DingoType {
     }
 
     @Override
-    public DingoType getChild(@Nonnull Object index) {
+    public DingoType getChild(@NonNull Object index) {
         throw new IllegalStateException("Get child of type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
     }
 
     @Override
-    public DingoType select(@Nonnull TupleMapping mapping) {
+    public @NonNull DingoType select(@NonNull TupleMapping mapping) {
         throw new IllegalStateException("Selecting fields from type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
     }
 
     @Override
-    public Object convertTo(@Nullable Object value, @Nonnull DataConverter converter) {
+    public Object convertTo(@Nullable Object value, @NonNull DataConverter converter) {
         if (value != null) {
             return convertValueTo(value, converter);
         }
@@ -70,7 +66,7 @@ public abstract class AbstractDingoType implements DingoType {
     }
 
     @Override
-    public Object convertFrom(@Nullable Object value, @Nonnull DataConverter converter) {
+    public Object convertFrom(@Nullable Object value, @NonNull DataConverter converter) {
         if (value != null && !converter.isNull(value)) {
             return convertValueFrom(value, converter);
         }
