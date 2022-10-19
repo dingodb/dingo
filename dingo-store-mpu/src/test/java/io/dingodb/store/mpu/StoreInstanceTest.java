@@ -51,13 +51,14 @@ class StoreInstanceTest {
 
     @AfterAll
     public static void afterAll() {
+        storeInstance.destroy();
         FileUtils.deleteIfExists(PATH);
     }
 
-    @Test
-    void testSetGet() {
-        storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
-        System.out.println(new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
-    }
+    //@Test
+    //void testSetGet() {
+        //storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
+        //System.out.println(new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
+    //}
 
 }

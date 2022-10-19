@@ -266,7 +266,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
             <RANGE>
             { partType = "RANGE"; }
             dingoTablePart = partColNm()
-            partList = defPart()
+            partList = defPartNew()
             { dingoTablePart = new DingoTablePart(dingoTablePart.getFuncNm(), dingoTablePart.getCols());
               dingoTablePart.setPartDetailList(partList);
               return DingoSqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
@@ -307,6 +307,29 @@ List<DingoPartDetail> defPart() : {
           <THAN>
           [ operand = getPartVals() ]
           [ <MAXVALUE> { operand = new ArrayList<Object>(); operand.add("MAXVALUE"); } ]
+          { listParts.add(new DingoPartDetail(partNm, operator, operand )); }
+          { partNm = null; operator = null; operand = null; }
+       )*
+    ]
+    <RPAREN>
+    { return listParts; }
+}
+
+List<DingoPartDetail> defPartNew() : {
+    List<DingoPartDetail> listParts = new ArrayList<DingoPartDetail>();
+    Object partNm = null;
+    String operator = null;
+    List<Object> operand = null;
+}{
+    <LPAREN>
+    [
+       <VALUES>
+       operand = getPartVals()
+       { listParts.add(new DingoPartDetail(partNm, operator, operand)); }
+       { partNm = null; operator = null; operand = null; }
+       (
+          <COMMA>
+          operand = getPartVals()
           { listParts.add(new DingoPartDetail(partNm, operator, operand )); }
           { partNm = null; operator = null; operand = null; }
        )*

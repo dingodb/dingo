@@ -68,6 +68,9 @@ public class TestRaftRawKVStore {
 
     @AfterAll
     public static void afterAll() throws Exception {
+        if (store != null) {
+            store.shutdown();
+        }
         FileUtils.deleteIfExists(Paths.get(DB_PATH));
     }
 

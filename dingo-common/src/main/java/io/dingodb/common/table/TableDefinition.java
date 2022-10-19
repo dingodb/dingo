@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -58,10 +59,13 @@ public class TableDefinition {
     @Setter
     private List<ColumnDefinition> columns;
 
+    @JsonProperty("partType")
     private String partType;
 
+    @JsonProperty("attrMap")
     private Map<String,Object> attrMap;
 
+    @JsonProperty("dingoTablePart")
     private DingoTablePart dingoTablePart;
 
     public String getName() {

@@ -69,6 +69,12 @@ public class TestRaftStoreInstance {
 
     @AfterAll
     public static void afterAll() throws Exception {
+        if (store != null) {
+            store.close();
+        }
+        if (storeInstance != null) {
+            storeInstance.clear();
+        }
         FileUtils.deleteIfExists(TEST_PATH);
     }
 
