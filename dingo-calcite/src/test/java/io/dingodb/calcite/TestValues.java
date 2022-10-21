@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.CsvConverter;
@@ -31,6 +32,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -48,23 +50,24 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestValues {
+    private static DingoParserContext context;
     private static DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
-        parser = new DingoParser(context);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
     }
 
-    private static DingoValues getDingoValues(SqlNode sqlNode) throws SqlParseException {
+    private static DingoValues getDingoValues(SqlNode sqlNode) {
         RelRoot relRoot = parser.convert(sqlNode);
         RelNode optimized = parser.optimize(relRoot.rel);
-        return (DingoValues) Assert.relNode(optimized).isA(DingoRoot.class)
+        return (DingoValues) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoValues.class)
             .getInstance();
     }
 
-    private static void assertSelectValues(SqlNode sqlNode) throws SqlParseException {
+    private static void assertSelectValues(SqlNode sqlNode) {
         Assert.sqlNode(sqlNode).kind(SqlKind.SELECT);
         SqlSelect select = (SqlSelect) sqlNode;
         Assert.sqlNode(select.getFrom()).isNull();
@@ -103,6 +106,12 @@ public class TestValues {
                 "select cast(a as date) from (values('1970-1-1')) as t (a)",
                 ImmutableList.of(new Object[]{new Date(0L)})
             ));
+    }
+
+    @BeforeEach
+    public void setup() {
+        // Create each time to clean the statistic info.
+        parser = new DingoParser(context);
     }
 
     @ParameterizedTest

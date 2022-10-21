@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite;
+package io.dingodb.calcite.traits;
 
-import io.dingodb.calcite.rel.DingoRel;
-import org.apache.calcite.plan.Convention;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-public final class DingoConventions {
-    public static Convention DISTRIBUTED = new Convention.Impl("DINGO_DISTRIBUTED", DingoRel.class);
-    public static Convention PARTITIONED = new Convention.Impl("DINGO_PARTITIONED", DingoRel.class);
-    public static Convention ROOT = new Convention.Impl("DINGO_ROOT", DingoRel.class);
+import java.util.List;
 
-    private DingoConventions() {
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+public class DingoRelPartitionByKeys extends DingoRelPartition {
+    @EqualsAndHashCode.Include
+    @Getter
+    private final List<Integer> keys;
+
+    @Override
+    public String toString() {
+        return "KEYS(" + keys + ")";
     }
 }

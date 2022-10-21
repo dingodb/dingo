@@ -16,30 +16,23 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoValuesRule extends ConverterRule {
-    public static final Config ROOT = Config.INSTANCE
+    public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalDingoValues.class,
             Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoValuesRule.ROOT"
-        )
-        .withRuleFactory(DingoValuesRule::new);
-
-    public static final Config DISTRIBUTED = Config.INSTANCE
-        .withConversion(
-            LogicalDingoValues.class,
-            Convention.NONE,
-            DingoConventions.DISTRIBUTED,
-            "DingoValuesRule.DISTRIBUTED"
+            DingoConvention.INSTANCE,
+            "DingoValuesRule"
         )
         .withRuleFactory(DingoValuesRule::new);
 
@@ -49,10 +42,13 @@ public class DingoValuesRule extends ConverterRule {
 
     @Override
     public RelNode convert(@NonNull RelNode rel) {
-        Convention convention = this.getOutConvention();
+        LogicalDingoValues values = (LogicalDingoValues) rel;
+        RelTraitSet traits = values.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         return new DingoValues(
             rel.getCluster(),
-            rel.getTraitSet().replace(convention),
+            traits,
             rel.getRowType(),
             ((LogicalDingoValues) rel).getTuples()
         );

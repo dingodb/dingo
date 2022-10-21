@@ -19,25 +19,25 @@ package io.dingodb.calcite.visitor;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.rel.DingoAggregate;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoDistributedValues;
-import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
-import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
-import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoSort;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.traits.DingoRelPartition;
+import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
+import io.dingodb.calcite.traits.DingoRelPartitionByTable;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.common.CommonId;
@@ -98,7 +98,6 @@ import io.dingodb.expr.parser.value.Value;
 import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -121,6 +120,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -151,7 +151,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         MetaCache.initTableDefinitions();
         IdGenerator idGenerator = new DingoIdGenerator();
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
-        log.info(RelOptUtil.toString(input));
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
@@ -258,7 +257,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return groupStartKeysByAddress;
     }
 
-    private @NonNull List<Output> coalesceInputsByTask(@NonNull Collection<Output> inputs) {
+    private @NonNull List<Output> coalesce(@NonNull Collection<Output> inputs) {
         // Coalesce inputs from the same task. taskId --> list of inputs
         Map<Id, List<Output>> inputsMap = new HashMap<>();
         for (Output input : inputs) {
@@ -341,6 +340,89 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return outputs;
     }
 
+    private @NonNull Collection<Output> partition(
+        @NonNull Collection<Output> inputs,
+        @NonNull DingoRelPartitionByTable partition
+    ) {
+        List<Output> outputs = new LinkedList<>();
+        String tableName = MetaCache.getTableName(partition.getTable());
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        for (Output input : inputs) {
+            Task task = input.getTask();
+            PartitionOperator operator = new PartitionOperator(
+                ps,
+                td.getKeyMapping()
+            );
+            operator.setId(idGenerator.get());
+            operator.createOutputs(parts);
+            task.putOperator(operator);
+            input.setLink(operator.getInput(0));
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+    private @NonNull Collection<Output> hash(
+        @NonNull Collection<Output> inputs,
+        @NonNull DingoRelPartitionByKeys hash
+    ) {
+        List<Output> outputs = new LinkedList<>();
+        final Collection<Location> locations = Services.CLUSTER.getComputingLocations();
+        final HashStrategy hs = new SimpleHashStrategy();
+        for (Output input : inputs) {
+            Task task = input.getTask();
+            HashOperator operator = new HashOperator(hs, TupleMapping.of(hash.getKeys()));
+            operator.setId(idGenerator.get());
+            operator.createOutputs(locations);
+            task.putOperator(operator);
+            input.setLink(operator.getInput(0));
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+    public @NonNull Collection<Output> convertStreaming(
+        @NonNull Collection<Output> inputs,
+        @NonNull DingoRelStreaming srcStreaming,
+        @NonNull DingoRelStreaming dstStreaming,
+        DingoType schema
+    ) {
+        final Set<DingoRelPartition> dstPartitions = dstStreaming.getPartitions();
+        final Set<DingoRelPartition> srcPartitions = srcStreaming.getPartitions();
+        assert dstPartitions != null && srcPartitions != null;
+        final DingoRelPartition dstDistribution = dstStreaming.getDistribution();
+        final DingoRelPartition srcDistribution = srcStreaming.getDistribution();
+        DingoRelStreaming media = dstStreaming.withPartitions(srcPartitions);
+        assert media.getPartitions() != null;
+        Collection<Output> outputs = inputs;
+        if (media.getPartitions().size() > srcPartitions.size()) {
+            for (DingoRelPartition partition : media.getPartitions()) {
+                if (!srcPartitions.contains(partition)) {
+                    if (partition instanceof DingoRelPartitionByTable) {
+                        outputs = partition(outputs, (DingoRelPartitionByTable) partition);
+                    } else if (partition instanceof DingoRelPartitionByKeys) {
+                        outputs = hash(outputs, (DingoRelPartitionByKeys) partition);
+                    } else {
+                        throw new IllegalStateException("Not supported.");
+                    }
+                }
+            }
+        }
+        if (!Objects.equals(dstDistribution, srcDistribution)) {
+            outputs = outputs.stream().map(input -> {
+                Location targetLocation = (dstDistribution == null ? currentLocation : input.getTargetLocation());
+                return exchange(input, targetLocation, schema);
+            }).collect(Collectors.toList());
+        }
+        if (dstPartitions.size() < media.getPartitions().size()) {
+            assert dstDistribution == null && dstPartitions.size() == 0 || dstPartitions.size() == 1;
+            outputs = coalesce(outputs);
+        }
+        return outputs;
+    }
+
     @Override
     public Collection<Output> visit(@NonNull DingoAggregate rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
@@ -351,53 +433,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 DingoTypeFactory.fromRelDataType(rel.getInput().getRowType())
             )
         ));
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoCoalesce rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return coalesceInputsByTask(inputs);
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoDistributedValues rel) {
-        List<Output> outputs = new LinkedList<>();
-        String tableName = MetaCache.getTableName(rel.getTable());
-        final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
-        Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
-            rel.getTuples(),
-            td.getKeyMapping()
-        );
-        for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
-            ValuesOperator operator = new ValuesOperator(
-                entry.getValue(),
-                Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
-            );
-            operator.setId(idGenerator.get());
-            OutputHint hint = new OutputHint();
-            hint.setPartId(entry.getKey());
-            Location location = parts.get(entry.getKey()).getLeader();
-            hint.setLocation(location);
-            operator.getSoleOutput().setHint(hint);
-            Task task = job.getOrCreate(location, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoExchange rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        DingoType schema = DingoTypeFactory.fromRelDataType(rel.getRowType());
-        for (Output input : inputs) {
-            Location targetLocation = rel.isRoot() ? currentLocation : input.getTargetLocation();
-            outputs.add(exchange(input, targetLocation, schema));
-        }
-        return outputs;
     }
 
     @Override
@@ -439,24 +474,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoHash rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        final Collection<Location> locations = Services.CLUSTER.getComputingLocations();
-        final HashStrategy hs = new SimpleHashStrategy();
-        for (Output input : inputs) {
-            Task task = input.getTask();
-            HashOperator operator = new HashOperator(hs, TupleMapping.of(rel.getKeys()));
-            operator.setId(idGenerator.get());
-            operator.createOutputs(locations);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    @Override
     public Collection<Output> visit(@NonNull DingoHashJoin rel) {
         Collection<Output> leftInputs = dingo(rel.getLeft()).accept(this);
         Collection<Output> rightInputs = dingo(rel.getRight()).accept(this);
@@ -490,30 +507,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoPartition rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        String tableName = MetaCache.getTableName(rel.getTable());
-        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
-        for (Output input : inputs) {
-            Task task = input.getTask();
-            PartitionOperator operator = new PartitionOperator(
-                ps,
-                td.getKeyMapping()
-            );
-            operator.setId(idGenerator.get());
-            operator.createOutputs(parts);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoPartModify rel) {
+    public Collection<Output> visit(@NonNull DingoTableModify rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
         String tableName = MetaCache.getTableName(rel.getTable());
@@ -623,6 +617,16 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
+    public Collection<Output> visit(@NonNull DingoStreamingConverter rel) {
+        return convertStreaming(
+            dingo(rel.getInput()).accept(this),
+            dingo(rel.getInput()).getStreaming(),
+            rel.getStreaming(),
+            DingoTypeFactory.fromRelDataType(rel.getRowType())
+        );
+    }
+
+    @Override
     public Collection<Output> visit(@NonNull DingoTableScan rel) {
         String tableName = MetaCache.getTableName(rel.getTable());
         TableDefinition td = this.metaCache.getTableDefinition(tableName);
@@ -720,20 +724,51 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         for (RelNode node : rel.getInputs()) {
             inputs.addAll(dingo(node).accept(this));
         }
-        return coalesceInputsByTask(inputs);
+        return coalesce(inputs);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoValues rel) {
-        Task task = job.getOrCreate(currentLocation, idGenerator);
-        DingoType type = DingoTypeFactory.fromRelDataType(rel.getRowType());
-        ValuesOperator operator = new ValuesOperator(
-            rel.getTuples(),
-            Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
-        );
-        operator.setId(idGenerator.get());
-        task.putOperator(operator);
-        return operator.getOutputs();
+        DingoRelStreaming streaming = rel.getStreaming();
+        if (streaming.equals(DingoRelStreaming.ROOT)) {
+            Task task = job.getOrCreate(currentLocation, idGenerator);
+            ValuesOperator operator = new ValuesOperator(
+                rel.getTuples(),
+                Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
+            );
+            operator.setId(idGenerator.get());
+            task.putOperator(operator);
+            return operator.getOutputs();
+        }
+        DingoRelPartition distribution = streaming.getDistribution();
+        if (distribution instanceof DingoRelPartitionByTable) {
+            List<Output> outputs = new LinkedList<>();
+            String tableName = MetaCache.getTableName(((DingoRelPartitionByTable) distribution).getTable());
+            final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+            final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+            final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+            Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
+                rel.getTuples(),
+                td.getKeyMapping()
+            );
+            for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
+                ValuesOperator operator = new ValuesOperator(
+                    entry.getValue(),
+                    Objects.requireNonNull(DingoTypeFactory.fromRelDataType(rel.getRowType()))
+                );
+                operator.setId(idGenerator.get());
+                OutputHint hint = new OutputHint();
+                hint.setPartId(entry.getKey());
+                Location location = parts.get(entry.getKey()).getLeader();
+                hint.setLocation(location);
+                operator.getSoleOutput().setHint(hint);
+                Task task = job.getOrCreate(location, idGenerator);
+                task.putOperator(operator);
+                outputs.addAll(operator.getOutputs());
+            }
+            return outputs;
+        }
+        throw new IllegalArgumentException("Unsupported streaming \"" + streaming + "\" of values.");
     }
 
     @Override
@@ -979,5 +1014,4 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             return allRangeMap;
         }
     }
-
 }

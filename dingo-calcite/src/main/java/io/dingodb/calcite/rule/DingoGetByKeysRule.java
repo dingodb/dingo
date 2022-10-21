@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.common.table.TableDefinition;
@@ -51,7 +50,7 @@ public class DingoGetByKeysRule extends RelRule<DingoGetByKeysRule.Config> {
         if (visitor.checkKeyItems(items)) {
             call.transformTo(new DingoGetByKeys(
                 rel.getCluster(),
-                rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                rel.getTraitSet(),
                 rel.getHints(),
                 rel.getTable(),
                 rel.getFilter(),

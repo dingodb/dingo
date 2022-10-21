@@ -87,9 +87,14 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Left the old node to allow {@link org.apache.calcite.rel.rules.CoreRules#PROJECT_REMOVE} to work.
+     */
     @Override
     public boolean autoPruneOld() {
-        return true;
+        return false;
     }
 
     @Value.Immutable

@@ -16,6 +16,8 @@
 
 package io.dingodb.test.asserts;
 
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.rel.RelNode;
@@ -23,6 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("UnusedReturnValue")
@@ -39,6 +42,12 @@ public final class AssertRelNode extends Assert<RelNode, AssertRelNode> {
 
     public AssertRelNode convention(Convention convention) {
         assertThat(instance).hasFieldOrPropertyWithValue("convention", convention);
+        return this;
+    }
+
+    public AssertRelNode streaming(DingoRelStreaming streaming) {
+        convention(DingoConvention.INSTANCE);
+        assertThat(dingo(instance)).hasFieldOrPropertyWithValue("streaming", streaming);
         return this;
     }
 

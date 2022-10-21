@@ -16,15 +16,16 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
-import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
@@ -37,16 +38,18 @@ public class DingoPartDeleteRule extends RelRule<DingoPartDeleteRule.Config> {
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        final DingoPartModify rel = call.rel(0);
-        final DingoTableScan scan = call.rel(1);
-
-        RelOptCluster cluster = rel.getCluster();
+        final LogicalTableModify modify = call.rel(0);
+        final LogicalDingoTableScan scan = call.rel(1);
+        assert scan.getTable().getQualifiedName().equals(modify.getTable().getQualifiedName());
+        RelTraitSet traits = modify.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.of(modify.getTable()));
         call.transformTo(new DingoPartCountDelete(
-            cluster,
-            scan.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+            modify.getCluster(),
+            traits,
             scan.getTable(),
             true,
-            rel.getRowType()
+            modify.getRowType()
         ));
     }
 
@@ -54,10 +57,10 @@ public class DingoPartDeleteRule extends RelRule<DingoPartDeleteRule.Config> {
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoPartDeleteRule.Config.builder()
             .operandSupplier(b0 ->
-                b0.operand(DingoPartModify.class)
+                b0.operand(LogicalTableModify.class)
                     .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
                     .oneInput(b1 ->
-                        b1.operand(DingoTableScan.class)
+                        b1.operand(LogicalDingoTableScan.class)
                             .predicate(x -> x.getFilter() == null)
                             .noInputs()
                     )

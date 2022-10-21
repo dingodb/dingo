@@ -17,15 +17,17 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertRelNode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -35,14 +37,24 @@ import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
+@Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestJoin {
+    private static DingoParserContext context;
     private static DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+    }
+
+    @BeforeEach
+    public void setup() {
+        // Create each time to clean the statistic info.
         parser = new DingoParser(context);
     }
 
@@ -51,14 +63,16 @@ public class TestJoin {
         String sql = "select * from test join test1 on test.name = test1.id1";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        log.info("Graph of planner:\n {}", parser.getPlanner().toDot());
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
@@ -69,20 +83,20 @@ public class TestJoin {
         String sql = "select * from test, test1 where test.name = test1.id1";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        AssertRelNode assertJoin = Assert.relNode(optimized).isA(DingoRoot.class)
+        AssertRelNode assertJoin = Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoFilter.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
-        assertJoin.input(0).isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        assertJoin.input(0).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoTableScan.class);
-        assertJoin.input(1).isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        assertJoin.input(1).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoTableScan.class);
     }
 
@@ -91,19 +105,19 @@ public class TestJoin {
         String sql = "select * from test join test1 on test.amount < test1.amount";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        AssertRelNode assertJoin = Assert.relNode(optimized).isA(DingoRoot.class)
+        AssertRelNode assertJoin = Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoFilter.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
-        assertJoin.input(0).isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        assertJoin.input(0).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoTableScan.class);
-        assertJoin.input(1).isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        assertJoin.input(1).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoTableScan.class);
     }
 
@@ -112,16 +126,18 @@ public class TestJoin {
         String sql = "select * from test join test1 on test.name = test1.id1 where test.amount > 3.0";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        log.info("Graph of planner:\n {}", parser.getPlanner().toDot());
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoFilter.class)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
@@ -133,14 +149,15 @@ public class TestJoin {
         String sql = "select * from test left join test1 on test.name = test1.id1";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
@@ -151,14 +168,15 @@ public class TestJoin {
         String sql = "select * from test right join test1 on test.name = test1.id1";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);

@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rel;
 
+import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -47,5 +48,10 @@ public class DingoRoot extends SingleRel implements DingoRel {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public @Nullable RelNode derive(@NonNull RelTraitSet childTraits, int childId) {
+        return DingoRelTraitsUtils.deriveToRelNode(this, childTraits);
     }
 }

@@ -17,17 +17,16 @@
 package io.dingodb.calcite.visitor;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoDistributedValues;
-import io.dingodb.calcite.rel.DingoExchange;
-import io.dingodb.calcite.rel.DingoPartModify;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
@@ -64,8 +63,7 @@ public class TestDingoJobVisitor {
     private static Location currentLocation;
 
     private static RelOptTable table;
-    private static DingoValues values;
-    private static DingoDistributedValues distributedValues;
+    private static RelDataType rowType;
 
     @BeforeAll
     public static void setupAll() {
@@ -73,9 +71,8 @@ public class TestDingoJobVisitor {
         parser = new DingoParser(context);
         currentLocation = ((DingoSchema) context.getDefaultSchema().schema).getMetaService().currentLocation();
         table = parser.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
-        RelOptCluster cluster = parser.getCluster();
         RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
-        RelDataType rowType = typeFactory.createStructType(
+        rowType = typeFactory.createStructType(
             ImmutableList.of(
                 typeFactory.createSqlType(SqlTypeName.INTEGER),
                 typeFactory.createSqlType(SqlTypeName.VARCHAR, 64),
@@ -87,30 +84,15 @@ public class TestDingoJobVisitor {
                 "amount"
             )
         );
-        values = new DingoValues(
-            cluster,
-            cluster.traitSetOf(DingoConventions.ROOT),
-            rowType,
-            ImmutableList.of(
-                new Object[]{1, "Alice", 1.0},
-                new Object[]{2, "Betty", 2.0}
-            )
-        );
-        distributedValues = new DingoDistributedValues(
-            cluster,
-            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-            rowType,
-            values.getTuples(),
-            table
-        );
     }
 
     @Test
     public void testVisitTableScan() {
-        RelOptCluster cluster = parser.getCluster();
         DingoTableScan scan = new DingoTableScan(
-            cluster,
-            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
+            parser.getCluster(),
+            parser.getPlanner().emptyTraitSet()
+                .replace(DingoConvention.INSTANCE)
+                .replace(DingoRelStreaming.of(table)),
             ImmutableList.of(),
             table,
             null,
@@ -128,23 +110,25 @@ public class TestDingoJobVisitor {
     }
 
     @Test
-    public void testVisitExchangeRoot() {
-        RelOptCluster cluster = parser.getCluster();
-        DingoExchange exchange = new DingoExchange(
-            cluster,
-            cluster.traitSetOf(DingoConventions.PARTITIONED),
+    public void testVisitDingoStreamingConverterNotRoot() {
+        DingoStreamingConverter converter = new DingoStreamingConverter(
+            parser.getCluster(),
+            parser.getPlanner().emptyTraitSet()
+                .replace(DingoConvention.INSTANCE)
+                .replace(DingoRelStreaming.of(table).changeDistribution(null)),
             new DingoTableScan(
-                cluster,
-                cluster.traitSetOf(DingoConventions.DISTRIBUTED),
+                parser.getCluster(),
+                parser.getPlanner().emptyTraitSet()
+                    .replace(DingoConvention.INSTANCE)
+                    .replace(DingoRelStreaming.of(table)),
                 ImmutableList.of(),
                 table,
                 null,
                 null
-            ),
-            true
+            )
         );
         Job job = jobManager.createJob(Id.random());
-        DingoJobVisitor.renderJob(job, exchange, currentLocation);
+        DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
             assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
@@ -158,27 +142,25 @@ public class TestDingoJobVisitor {
     }
 
     @Test
-    public void testVisitCoalesce() {
-        RelOptCluster cluster = parser.getCluster();
-        DingoCoalesce coalesce = new DingoCoalesce(
-            cluster,
-            cluster.traitSetOf(DingoConventions.ROOT),
-            new DingoExchange(
-                cluster,
-                cluster.traitSetOf(DingoConventions.PARTITIONED),
-                new DingoTableScan(
-                    cluster,
-                    cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-                    ImmutableList.of(),
-                    table,
-                    null,
-                    null
-                ),
-                true
+    public void testVisitDingoStreamingConverterRoot() {
+        DingoStreamingConverter converter = new DingoStreamingConverter(
+            parser.getCluster(),
+            parser.getPlanner().emptyTraitSet()
+                .replace(DingoConvention.INSTANCE)
+                .replace(DingoRelStreaming.ROOT),
+            new DingoTableScan(
+                parser.getCluster(),
+                parser.getPlanner().emptyTraitSet()
+                    .replace(DingoConvention.INSTANCE)
+                    .replace(DingoRelStreaming.of(table)),
+                ImmutableList.of(),
+                table,
+                null,
+                null
             )
         );
         Job job = jobManager.createJob(Id.random());
-        DingoJobVisitor.renderJob(job, coalesce, currentLocation);
+        DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
             assertJob.task("0001").operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
@@ -193,6 +175,17 @@ public class TestDingoJobVisitor {
 
     @Test
     public void testVisitValues() {
+        DingoValues values = new DingoValues(
+            parser.getCluster(),
+            parser.getPlanner().emptyTraitSet()
+                .replace(DingoConvention.INSTANCE)
+                .replace(DingoRelStreaming.ROOT),
+            rowType,
+            ImmutableList.of(
+                new Object[]{1, "Alice", 1.0},
+                new Object[]{2, "Betty", 2.0}
+            )
+        );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, values, currentLocation);
         ValuesOperator operator = (ValuesOperator) Assert.job(job)
@@ -210,14 +203,26 @@ public class TestDingoJobVisitor {
     @Test
     public void testVisitPartModify() {
         RelOptCluster cluster = parser.getCluster();
-        DingoPartModify partModify = new DingoPartModify(
+        DingoTableModify partModify = new DingoTableModify(
             cluster,
-            cluster.traitSetOf(DingoConventions.DISTRIBUTED),
-            distributedValues,
+            cluster.traitSetOf(DingoConvention.INSTANCE),
             table,
+            parser.getCatalogReader(),
+            new DingoValues(
+                parser.getCluster(),
+                parser.getPlanner().emptyTraitSet()
+                    .replace(DingoConvention.INSTANCE)
+                    .replace(DingoRelStreaming.of(table)),
+                rowType,
+                ImmutableList.of(
+                    new Object[]{1, "Alice", 1.0},
+                    new Object[]{2, "Betty", 2.0}
+                )
+            ),
             TableModify.Operation.INSERT,
             null,
-            null
+            null,
+            true
         );
         Job job = jobManager.createJob(Id.random());
         DingoJobVisitor.renderJob(job, partModify, currentLocation);

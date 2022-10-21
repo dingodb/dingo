@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -41,6 +42,16 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public @Nullable RelNode passThrough(@NonNull RelTraitSet required) {
+        return copy(required, getInputs());
+    }
+
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new DingoValues(getCluster(), traitSet, getRowType(), getTuples());
     }
 
     @Override

@@ -17,20 +17,21 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoDistributedValues;
-import io.dingodb.calcite.rel.DingoExchange;
-import io.dingodb.calcite.rel.DingoPartModify;
-import io.dingodb.calcite.rel.DingoPartition;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Collect;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalUnion;
@@ -41,7 +42,9 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.util.NlsString;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -53,13 +56,20 @@ import static org.apache.calcite.config.CalciteSystemProperty.DEFAULT_CHARSET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
 public class TestInsert {
+    private static DingoParserContext context;
     private static DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+    }
+
+    @BeforeEach
+    public void setup() {
+        // Create each time to clean the statistic info.
         parser = new DingoParser(context);
     }
 
@@ -68,8 +78,9 @@ public class TestInsert {
         String sql = "insert into test values(1, 'Alice', 1.0)";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        LogicalValues logicalValues = (LogicalValues) Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        LogicalValues logicalValues = (LogicalValues) Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalValues.class)
             .getInstance();
         List<? extends List<RexLiteral>> tuples = logicalValues.getTuples();
@@ -89,11 +100,11 @@ public class TestInsert {
             .hasFieldOrPropertyWithValue("value", BigDecimal.valueOf(1.0));
         // To physical plan.
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoDistributedValues values = (DingoDistributedValues) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
-            .soleInput().isA(DingoPartModify.class)
-            .soleInput().isA(DingoDistributedValues.class)
+        DingoValues values = (DingoValues) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(1).containsExactlyInAnyOrder(
             new Object[]{1, "Alice", 1.0}
@@ -105,16 +116,17 @@ public class TestInsert {
         String sql = "insert into test values(1, 'Alice', 1.0), (2, 'Betty', 1.0 + 1.0)";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoDistributedValues values = (DingoDistributedValues) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
-            .soleInput().isA(DingoPartModify.class)
-            .soleInput().isA(DingoDistributedValues.class)
+        DingoValues values = (DingoValues) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
             new Object[]{1, "Alice", 1.0},
@@ -127,16 +139,17 @@ public class TestInsert {
         String sql = "insert into `table-with-date` values(1, 'Peso', '1970-1-1'), (2,'Alice','1970-1-2')";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoDistributedValues values = (DingoDistributedValues) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
-            .soleInput().isA(DingoPartModify.class)
-            .soleInput().isA(DingoDistributedValues.class)
+        DingoValues values = (DingoValues) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
             new Object[]{1, "Peso", new Date(0L)},
@@ -149,17 +162,17 @@ public class TestInsert {
         String sql = "insert into test1 select id as id1, id as id2, id as id3, name, amount from test";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
-            .soleInput().isA(DingoPartModify.class)
-            .soleInput().isA(DingoExchange.class)
-            .soleInput().isA(DingoPartition.class)
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoTableScan.class);
     }
@@ -169,10 +182,17 @@ public class TestInsert {
         String sql = "insert into test(id) values (1)";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalValues.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoValues.class);
     }
 
     @Test
@@ -180,17 +200,18 @@ public class TestInsert {
         String sql = "insert into `table-with-array` values (1, multiset[1, 2], array[3, 4])";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
-            .soleInput().isA(LogicalTableModify.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(Collect.class)
             .soleInput().isA(LogicalValues.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
-            .soleInput().isA(DingoPartModify.class)
-            .soleInput().isA(DingoDistributedValues.class);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoValues.class);
     }
 
     @ParameterizedTest

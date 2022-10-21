@@ -16,9 +16,11 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalAggregate;
@@ -32,8 +34,8 @@ public class DingoAggregateRule extends ConverterRule {
             LogicalAggregate.class,
             DingoAggregateRule::match,
             Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoAggregateRule.ROOT"
+            DingoConvention.INSTANCE,
+            "DingoAggregateRule"
         )
         .withRuleFactory(DingoAggregateRule::new);
 
@@ -61,11 +63,14 @@ public class DingoAggregateRule extends ConverterRule {
     @Override
     public @Nullable RelNode convert(RelNode rel) {
         LogicalAggregate agg = (LogicalAggregate) rel;
+        RelTraitSet traits = agg.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         return new DingoAggregate(
             agg.getCluster(),
-            agg.getTraitSet().replace(DingoConventions.ROOT),
+            traits,
             agg.getHints(),
-            convert(agg.getInput(), DingoConventions.ROOT),
+            convert(agg.getInput(), traits),
             agg.getGroupSet(),
             agg.getGroupSets(),
             agg.getAggCallList()

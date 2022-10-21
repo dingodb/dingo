@@ -17,12 +17,13 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
@@ -32,19 +33,28 @@ import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestGetByKeys {
+    private static DingoParserContext context;
     private static DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+    }
+
+    @BeforeEach
+    public void setup() {
+        // Create each time to clean the statistic info.
         parser = new DingoParser(context);
     }
 
@@ -53,14 +63,15 @@ public class TestGetByKeys {
         String sql = "select * from test1 where id0 = 1";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
@@ -72,14 +83,15 @@ public class TestGetByKeys {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and id2 = true";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
@@ -95,14 +107,15 @@ public class TestGetByKeys {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and not id2";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
@@ -118,14 +131,15 @@ public class TestGetByKeys {
         String sql = "select * from test1 where (id0 = 1 or id0 = 2) and (id1 = 'A' or id1 = 'B') and id2";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoGetByKeys getByKeys = (DingoGetByKeys) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
         List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(

@@ -16,13 +16,14 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
@@ -42,10 +43,12 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
     public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalAggregate aggregate = call.rel(0);
         final LogicalDingoTableScan scan = call.rel(1);
-        RelOptCluster cluster = scan.getCluster();
+        RelTraitSet traits = scan.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.of(scan.getTable()));
         call.transformTo(new DingoPartCountDelete(
-            cluster,
-            scan.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+            scan.getCluster(),
+            traits,
             scan.getTable(),
             false,
             aggregate.getRowType()

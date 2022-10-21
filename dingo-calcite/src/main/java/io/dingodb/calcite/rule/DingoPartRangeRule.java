@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.utils.RexLiteralUtils;
@@ -111,7 +110,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                 call.transformTo(
                     new DingoPartRangeScan(
                         rel.getCluster(),
-                        rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                        rel.getTraitSet(),
                         rel.getHints(),
                         rel.getTable(),
                         rel.getFilter(),

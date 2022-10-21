@@ -176,26 +176,20 @@ public final class TaskImpl implements Task {
 
             Executors.execute("execute-" + jobId + "-" + id, () -> {
                 final long startTime = System.currentTimeMillis();
-                boolean isStatusOK = true;
-                String statusErrMsg = "OK";
                 try {
                     while (operator.push(0, null)) {
                         log.info("Operator {} need another pushing.", operator.getId());
                     }
                     operator.fin(0, null);
                 } catch (RuntimeException e) {
-                    isStatusOK = false;
-                    statusErrMsg = e.toString();
                     log.error("Run Task:{} catch operator:{} run Exception:{}",
                         getId().toString(), operator.getId(), e, e);
+                    TaskStatus taskStatus = new TaskStatus();
+                    taskStatus.setStatus(false);
+                    taskStatus.setTaskId(operator.getTask().getId().toString());
+                    taskStatus.setErrorMsg(e.toString());
+                    operator.fin(0, FinWithException.of(taskStatus));
                 } finally {
-                    if (!isStatusOK) {
-                        TaskStatus taskStatus = new TaskStatus();
-                        taskStatus.setStatus(isStatusOK);
-                        taskStatus.setTaskId(operator.getTask().getId().toString());
-                        taskStatus.setErrorMsg(statusErrMsg);
-                        operator.fin(0, FinWithException.of(taskStatus));
-                    }
                     if (log.isDebugEnabled()) {
                         log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     }
