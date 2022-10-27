@@ -32,15 +32,19 @@ import org.rocksdb.BackgroundErrorReason;
 import org.rocksdb.BackupEngine;
 import org.rocksdb.BackupEngineOptions;
 import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.Cache;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionJobInfo;
+import org.rocksdb.CompressionType;
 import org.rocksdb.ConfigOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.FileOperationInfo;
 import org.rocksdb.FlushJobInfo;
 import org.rocksdb.FlushOptions;
+import org.rocksdb.LRUCache;
 import org.rocksdb.MemTableInfo;
 import org.rocksdb.OptionsUtil;
 import org.rocksdb.Range;
@@ -527,12 +531,35 @@ public class RocksStorage implements Storage {
          */
         final long blockSize = 128L * 1024;
         final long targetFileSize = 256L * 1024 * 1024;
-        cfOption.setMaxWriteBufferNumber(4);
-        cfOption.setMinWriteBufferNumberToMerge(2);
+        cfOption.setMaxWriteBufferNumber(5);
         cfOption.setWriteBufferSize(targetFileSize);
-        BlockBasedTableConfig table_options = new BlockBasedTableConfig();
-        table_options.setBlockSize(blockSize);
-        cfOption.setTableFormatConfig(table_options);
+        cfOption.setMaxBytesForLevelBase(1L * 1024 * 1024 * 1024);
+        cfOption.setTargetFileSizeBase(64L * 1024 * 1024);
+        cfOption.setMinWriteBufferNumberToMerge(1);
+
+        List<CompressionType> compressionTypes = Arrays.asList(
+            CompressionType.NO_COMPRESSION,
+            CompressionType.NO_COMPRESSION,
+            CompressionType.LZ4_COMPRESSION,
+            CompressionType.LZ4_COMPRESSION,
+            CompressionType.LZ4_COMPRESSION,
+            CompressionType.ZSTD_COMPRESSION,
+            CompressionType.ZSTD_COMPRESSION);
+        cfOption.setCompressionPerLevel(compressionTypes);
+
+        BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
+        tableConfig.setBlockSize(blockSize);
+        /*
+        tableConfig.setFilterPolicy(new BloomFilter(16, false));
+        tableConfig.setWholeKeyFiltering(true);
+        tableConfig.setCacheIndexAndFilterBlocks(true);
+        */
+
+        Cache blockCache = new LRUCache(1 * 1024 * 1024 * 1024);
+        tableConfig.setBlockCache(blockCache);
+        Cache compressedBlockCache = new LRUCache(1 * 1024 * 1024 * 1024);
+        tableConfig.setBlockCacheCompressed(compressedBlockCache);
+        cfOption.setTableFormatConfig(tableConfig);
         return new ColumnFamilyDescriptor(CF_DEFAULT, cfOption);
     }
 
