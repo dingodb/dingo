@@ -118,7 +118,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         startKeyPartMap.clear();
         parts.values().forEach(Core::destroy);
         parts.clear();
-        FileUtils.deleteIfExists(path);
+        /**
+         * to avoid file handle leak, when drop table
+         */
+        // FileUtils.deleteIfExists(path);
     }
 
     public ApproximateStats approximateStats(Core core) {
@@ -175,7 +178,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public boolean exist(byte[] primaryKey) {
-        // 获取对应分区
         Part part = getPartByPrimaryKey(primaryKey);
         if (part == null) {
             throw new IllegalArgumentException(
