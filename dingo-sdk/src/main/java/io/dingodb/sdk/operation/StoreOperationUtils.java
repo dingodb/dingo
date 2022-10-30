@@ -286,7 +286,9 @@ public class StoreOperationUtils {
                 partitions,
                 rangeStrategy);
             dingoRouteTables.put(tableName, routeTable);
-            log.info("Refresh route table:{}, tableDef:{}", tableName, tableDefinition);
+            if (log.isDebugEnabled()) {
+                log.debug("Refresh route table:{}, tableDef:{}", tableName, tableDefinition);
+            }
         }
         return routeTable;
     }
