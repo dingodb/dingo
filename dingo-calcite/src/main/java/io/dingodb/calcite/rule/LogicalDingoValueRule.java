@@ -24,12 +24,13 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalValues;
+import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.stream.Collectors;
 
-public class LogicalDingoValueRule extends ConverterRule {
+public class LogicalDingoValueRule extends ConverterRule implements SubstitutionRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalValues.class,

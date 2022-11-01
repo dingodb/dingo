@@ -16,29 +16,23 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoFilter;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.logical.LogicalFilter;
 
 public class DingoFilterRule extends ConverterRule {
-    public static final Config DISTRIBUTED = Config.INSTANCE
+    public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalFilter.class,
             Convention.NONE,
-            DingoConventions.DISTRIBUTED,
-            "DingoFilterRule.DISTRIBUTED"
-        )
-        .withRuleFactory(DingoFilterRule::new);
-    public static final Config ROOT = Config.INSTANCE
-        .withConversion(
-            LogicalFilter.class,
-            Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoFilterRule.ROOT"
+            DingoConvention.INSTANCE,
+            "DingoFilterRule"
         )
         .withRuleFactory(DingoFilterRule::new);
 
@@ -49,11 +43,13 @@ public class DingoFilterRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         Filter filter = (Filter) rel;
-        Convention convention = this.getOutConvention();
+        RelTraitSet traits = filter.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         return new DingoFilter(
             filter.getCluster(),
-            filter.getTraitSet().replace(convention),
-            convert(filter.getInput(), convention),
+            traits,
+            convert(filter.getInput(), traits),
             filter.getCondition()
         );
     }

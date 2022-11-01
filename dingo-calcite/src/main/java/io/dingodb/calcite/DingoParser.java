@@ -18,8 +18,11 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
-import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -28,10 +31,10 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
+import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -84,9 +87,11 @@ public class DingoParser {
     @Getter
     private final DingoParserContext context;
     @Getter
+    private final CalciteConnectionConfig config;
+    @Getter
     private final RelOptCluster cluster;
     @Getter
-    private final RelOptPlanner planner;
+    private final VolcanoPlanner planner;
     @Getter
     private final SqlValidator sqlValidator;
     @Getter
@@ -96,14 +101,34 @@ public class DingoParser {
         this(context, null);
     }
 
-    public DingoParser(@NonNull DingoParserContext context, @Nullable CalciteConnectionConfig config) {
+    public DingoParser(
+        final @NonNull DingoParserContext context,
+        final @Nullable CalciteConnectionConfig config
+    ) {
         this.context = context;
+        CalciteConnectionConfigImpl newConfig;
+        if (config != null) {
+            newConfig = (CalciteConnectionConfigImpl) config;
+        } else {
+            newConfig = new CalciteConnectionConfigImpl(new Properties());
+        }
+        newConfig = newConfig
+            .set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(PARSER_CONFIG.caseSensitive()));
+        //.set(CalciteConnectionProperty.TOPDOWN_OPT, String.valueOf(true));
+        this.config = newConfig;
+
+        // Create Planner.
         planner = new VolcanoPlanner(context);
+        // Set to `true` to use `TopDownRuleDriver`, or `IterativeRuleDriver` is used.
+        // It seems that `TopDownRuleDriver` is faster than `IterativeRuleDriver`.
+        planner.setTopDownOpt(this.config.topDownOpt());
         // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        planner.addRelTraitDef(DingoRelStreamingDef.INSTANCE);
         // Defines the "order-by" traits.
         planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
 
+        // Create Cluster.
         RexBuilder rexBuilder = new RexBuilder(context.getTypeFactory());
         cluster = RelOptCluster.create(planner, rexBuilder);
         cluster.setMetadataProvider(ChainedRelMetadataProvider.of(
@@ -113,20 +138,15 @@ public class DingoParser {
             )
         ));
 
-        if (config == null) {
-            config = new CalciteConnectionConfigImpl(new Properties());
-        }
-        config = ((CalciteConnectionConfigImpl) config).set(
-            CalciteConnectionProperty.CASE_SENSITIVE,
-            String.valueOf(PARSER_CONFIG.caseSensitive())
-        );
+        // Create CatalogReader.
         catalogReader = new CalciteCatalogReader(
             context.getRootSchema(),
             Collections.singletonList(context.getDefaultSchemaName()),
             context.getTypeFactory(),
-            config
+            this.config
         );
 
+        // Create SqlValidator.
         // CatalogReader is also serving as SqlOperatorTable.
         SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         sqlValidator = SqlValidatorUtil.newValidator(
@@ -188,12 +208,27 @@ public class DingoParser {
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);
 
         // Insert a `DingoRoot` to collect the results.
-        return relRoot.withRel(new DingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel));
+        return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel));
     }
 
+    /**
+     * Optimize a {@link RelNode} tree.
+     *
+     * @param relNode the input {@link RelNode}
+     * @return the optimized {@link RelNode}
+     */
     public RelNode optimize(RelNode relNode) {
-        RelTraitSet traitSet = planner.emptyTraitSet().replace(DingoConventions.ROOT);
+        RelTraitSet traitSet = planner.emptyTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
+        if (!config.topDownOpt()) {
+            rules = ImmutableList.<RelOptRule>builder()
+                .addAll(rules)
+                // This is needed for `IterativeRuleDriver`.
+                .add(AbstractConverter.ExpandConversionRule.INSTANCE)
+                .build();
+        }
         final Program program = Programs.ofRules(rules);
         // Seems the only way to prevent rex simplifying in optimization.
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {

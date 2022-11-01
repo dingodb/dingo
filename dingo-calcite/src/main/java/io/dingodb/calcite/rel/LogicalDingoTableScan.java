@@ -86,14 +86,19 @@ public class LogicalDingoTableScan extends TableScan {
         return rowCount;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * NOTE: Currently, the cost is compared by row count only.
+     */
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = estimateRowCount(mq);
         double cpu = rowCount + 1;
         if (selection != null) {
-            cpu = cpu * (double) selection.size() / (double) table.getRowType().getFieldCount();
+            rowCount += rowCount * (double) selection.size() / (double) table.getRowType().getFieldCount();
         }
-        return planner.getCostFactory().makeCost(rowCount, cpu, rowCount);
+        return planner.getCostFactory().makeCost(rowCount, cpu, 0);
     }
 
     @Override

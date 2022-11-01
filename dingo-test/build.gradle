@@ -44,6 +44,7 @@ dependencies {
     implementation 'org.assertj:assertj-core:' + 'assertj'.v()
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
+    implementation project(':dingo-calcite')
     implementation project(':dingo-driver')
     implementation project(':dingo-driver-client')
     implementation project(':dingo-exec')

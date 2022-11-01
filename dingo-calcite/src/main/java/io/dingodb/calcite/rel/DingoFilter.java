@@ -16,13 +16,17 @@
 
 package io.dingodb.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.List;
 
 public final class DingoFilter extends Filter implements DingoRel {
     public DingoFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
@@ -37,5 +41,10 @@ public final class DingoFilter extends Filter implements DingoRel {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        return Pair.of(childTraits, ImmutableList.of(childTraits));
     }
 }

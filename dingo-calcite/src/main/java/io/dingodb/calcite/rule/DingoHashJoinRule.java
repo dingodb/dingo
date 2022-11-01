@@ -16,51 +16,31 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
-import io.dingodb.calcite.rel.DingoHash;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelRule;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.immutables.value.Value;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.List;
+public class DingoHashJoinRule extends ConverterRule {
+    public static final Config DEFAULT = Config.INSTANCE
+        .withConversion(
+            LogicalJoin.class,
+            DingoHashJoinRule::match,
+            Convention.NONE,
+            DingoConvention.INSTANCE,
+            "DingoHashJoinRule"
+        )
+        .withRuleFactory(DingoHashJoinRule::new);
 
-@Value.Enclosing
-public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     protected DingoHashJoinRule(Config config) {
         super(config);
-    }
-
-    private static @NonNull RelNode hashRedistribute(
-        @NonNull Join join,
-        RelNode rel,
-        List<Integer> keys
-    ) {
-        RelOptCluster cluster = join.getCluster();
-        RelTraitSet traitSet = join.getTraitSet().replace(DingoConventions.DISTRIBUTED);
-        return new DingoCoalesce(
-            cluster,
-            traitSet,
-            new DingoExchange(
-                cluster,
-                traitSet,
-                new DingoHash(
-                    cluster,
-                    traitSet,
-                    convert(rel, DingoConventions.DISTRIBUTED),
-                    keys
-                )
-            )
-        );
     }
 
     /**
@@ -73,44 +53,20 @@ public class DingoHashJoinRule extends RelRule<DingoHashJoinRule.Config> {
     }
 
     @Override
-    public void onMatch(@NonNull RelOptRuleCall call) {
-        LogicalJoin rel = call.rel(0);
-        JoinInfo joinInfo = rel.analyzeCondition();
-        if (!joinInfo.isEqui()) {
-            return;
-        }
-        if (joinInfo.leftKeys.size() == 0 || joinInfo.rightKeys.size() == 0) {
-            // No keys for redistribute, should be processed by HashJoinRoot rule.
-            return;
-        }
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traitSet = rel.getTraitSet().replace(DingoConventions.DISTRIBUTED);
-        call.transformTo(
-            new DingoHashJoin(
-                cluster,
-                traitSet,
-                rel.getHints(),
-                hashRedistribute(rel, rel.getLeft(), joinInfo.leftKeys),
-                hashRedistribute(rel, rel.getRight(), joinInfo.rightKeys),
-                rel.getCondition(),
-                rel.getVariablesSet(),
-                rel.getJoinType()
-            )
+    public @Nullable RelNode convert(RelNode rel) {
+        LogicalJoin join = (LogicalJoin) rel;
+        RelTraitSet traits = join.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
+        return new DingoHashJoin(
+            join.getCluster(),
+            traits,
+            join.getHints(),
+            convert(join.getLeft(), traits),
+            convert(join.getRight(), traits),
+            join.getCondition(),
+            join.getVariablesSet(),
+            join.getJoinType()
         );
-    }
-
-    @Value.Immutable
-    public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoHashJoinRule.Config.builder()
-            .operandSupplier(b0 ->
-                b0.operand(LogicalJoin.class).predicate(DingoHashJoinRule::match).anyInputs()
-            )
-            .description("DingoHashJoinRule")
-            .build();
-
-        @Override
-        default DingoHashJoinRule toRule() {
-            return new DingoHashJoinRule(this);
-        }
     }
 }

@@ -17,12 +17,13 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
@@ -38,6 +39,7 @@ import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,17 +50,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestTableScan {
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
-    private static DingoParser parser;
+    private static DingoParserContext context;
     private static Location currentLocation;
     private static int tableTestPartNum;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
-        parser = new DingoParser(context);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
         currentLocation = dingoSchema.getMetaService().currentLocation();
         tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
+    }
+
+    @BeforeEach
+    public void setup() {
+        // Create each time to clean the statistic info.
+        parser = new DingoParser(context);
     }
 
     @ParameterizedTest
@@ -71,14 +79,15 @@ public class TestTableScan {
         // To logical plan.
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
@@ -96,15 +105,16 @@ public class TestTableScan {
         // To logical plan.
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
@@ -122,14 +132,15 @@ public class TestTableScan {
         // To logical plan.
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
@@ -147,15 +158,16 @@ public class TestTableScan {
         // To logical plan.
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
@@ -173,15 +185,16 @@ public class TestTableScan {
         // To logical plan.
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
-        Assert.relNode(relRoot.rel).isA(DingoRoot.class)
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class).prop("root", true)
+        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
@@ -199,9 +212,9 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         RelNode optimized = parser.optimize(relRoot.rel);
-        RelNode relNode = Assert.relNode(optimized).isA(DingoRoot.class)
-            .soleInput().isA(DingoCoalesce.class)
-            .soleInput().isA(DingoExchange.class)
+        RelNode relNode = Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoPartRangeScan.class)
             .getInstance();
         DingoPartRangeScan scan = (DingoPartRangeScan) relNode;

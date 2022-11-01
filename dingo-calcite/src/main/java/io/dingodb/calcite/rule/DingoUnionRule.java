@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoUnion;
+import io.dingodb.calcite.traits.DingoConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -32,7 +32,7 @@ public class DingoUnionRule extends ConverterRule {
         .withConversion(
             LogicalUnion.class,
             Convention.NONE,
-            DingoConventions.ROOT,
+            DingoConvention.INSTANCE,
             "DingoUnionRule"
         )
         .withRuleFactory(DingoUnionRule::new);
@@ -46,9 +46,9 @@ public class DingoUnionRule extends ConverterRule {
         Union union = (Union) rel;
         return new DingoUnion(
             union.getCluster(),
-            union.getTraitSet().replace(DingoConventions.ROOT),
+            union.getTraitSet().replace(DingoConvention.INSTANCE),
             union.getInputs().stream()
-                .map(n -> convert(n, DingoConventions.ROOT))
+                .map(n -> convert(n, DingoConvention.INSTANCE))
                 .collect(Collectors.toList()),
             union.all
         );

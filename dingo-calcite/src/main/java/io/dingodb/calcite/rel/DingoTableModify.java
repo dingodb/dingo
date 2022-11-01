@@ -16,31 +16,43 @@
 
 package io.dingodb.calcite.rel;
 
+import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
-import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
-    public static final double ASSUME_PARTS = 3.0d;
-
-    public DingoTableScan(
+public final class DingoTableModify extends TableModify implements DingoRel {
+    public DingoTableModify(
         RelOptCluster cluster,
         RelTraitSet traitSet,
-        List<RelHint> hints,
         RelOptTable table,
-        @Nullable RexNode filter,
-        @Nullable TupleMapping selection
+        Prepare.CatalogReader catalogReader,
+        RelNode input,
+        Operation operation,
+        @Nullable List<String> updateColumnList,
+        @Nullable List<RexNode> sourceExpressionList,
+        boolean flattened
     ) {
-        super(cluster, traitSet, hints, table, filter, selection);
+        super(
+            cluster,
+            traitSet,
+            table,
+            catalogReader,
+            input,
+            operation,
+            updateColumnList,
+            sourceExpressionList,
+            flattened
+        );
     }
 
     @Override
@@ -49,14 +61,22 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
     }
 
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoTableScan(
+    public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new DingoTableModify(
             getCluster(),
             traitSet,
-            getHints(),
             getTable(),
-            getFilter(),
-            getSelection()
+            getCatalogReader(),
+            sole(inputs),
+            getOperation(),
+            getUpdateColumnList(),
+            getSourceExpressionList(),
+            isFlattened()
         );
+    }
+
+    @Override
+    public @Nullable RelNode derive(@NonNull RelTraitSet childTraits, int childId) {
+        return DingoRelTraitsUtils.deriveToRelNode(this, childTraits);
     }
 }

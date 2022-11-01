@@ -16,9 +16,12 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -26,10 +29,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class DingoRootRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
-            DingoRoot.class,
+            LogicalDingoRoot.class,
             Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoRootRule.ROOT"
+            DingoConvention.INSTANCE,
+            "DingoRootRule"
         )
         .withRuleFactory(DingoRootRule::new);
 
@@ -39,11 +42,14 @@ public class DingoRootRule extends ConverterRule {
 
     @Override
     public @Nullable RelNode convert(RelNode rel) {
-        DingoRoot root = (DingoRoot) rel;
+        LogicalDingoRoot root = (LogicalDingoRoot) rel;
+        RelTraitSet traits = root.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         return new DingoRoot(
             root.getCluster(),
-            root.getTraitSet().replace(DingoConventions.ROOT),
-            convert(root.getInput(), DingoConventions.ROOT)
+            traits,
+            convert(root.getInput(), traits)
         );
     }
 }

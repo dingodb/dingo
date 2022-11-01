@@ -16,63 +16,60 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoAggregate;
-import io.dingodb.calcite.rel.DingoCoalesce;
-import io.dingodb.calcite.rel.DingoExchange;
 import io.dingodb.calcite.rel.DingoReduce;
-import org.apache.calcite.plan.Convention;
+import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.immutables.value.Value;
 
-public class DingoAggregateReduceRule extends ConverterRule {
-    public static final Config DEFAULT = Config.INSTANCE
-        .withConversion(
-            LogicalAggregate.class,
-            DingoAggregateRule::match,
-            Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoAggregateRule.DISTRIBUTED"
-        )
-        .withRuleFactory(DingoAggregateReduceRule::new);
-
+@Value.Enclosing
+public class DingoAggregateReduceRule extends RelRule<RelRule.Config> {
     protected DingoAggregateReduceRule(Config config) {
         super(config);
     }
 
     @Override
-    public @Nullable RelNode convert(RelNode rel) {
-        LogicalAggregate agg = (LogicalAggregate) rel;
-        RelOptCluster cluster = agg.getCluster();
-        RelTraitSet rootTraits = agg.getTraitSet().replace(DingoConventions.ROOT);
-        return new DingoReduce(
-            cluster,
-            rootTraits,
-            new DingoCoalesce(
+    public void onMatch(@NonNull RelOptRuleCall call) {
+        DingoAggregate aggregate = call.rel(0);
+        DingoStreamingConverter converter = call.rel(1);
+        RelOptCluster cluster = aggregate.getCluster();
+        call.transformTo(
+            new DingoReduce(
                 cluster,
-                rootTraits,
-                new DingoExchange(
-                    cluster,
-                    agg.getTraitSet().replace(DingoConventions.PARTITIONED),
-                    new DingoAggregate(
-                        cluster,
-                        agg.getTraitSet().replace(DingoConventions.DISTRIBUTED),
-                        agg.getHints(),
-                        convert(agg.getInput(), DingoConventions.DISTRIBUTED),
-                        agg.getGroupSet(),
-                        agg.getGroupSets(),
-                        agg.getAggCallList()
-                    ),
-                    true
-                )
-            ),
-            agg.getGroupSet(),
-            agg.getAggCallList(),
-            agg.getInput().getRowType()
+                aggregate.getTraitSet(),
+                converter.copy(
+                    converter.getTraitSet(),
+                    ImmutableList.of(aggregate.copy(
+                        converter.getInput().getTraitSet(),
+                        converter.getInputs()
+                    ))
+                ),
+                aggregate.getGroupSet(),
+                aggregate.getAggCallList(),
+                aggregate.getInput().getRowType()
+            )
         );
+    }
+
+    @Value.Immutable
+    public interface Config extends RelRule.Config {
+        Config DEFAULT = ImmutableDingoAggregateReduceRule.Config.builder()
+            .description("DingoAggregateReduceRule")
+            .operandSupplier(b0 ->
+                b0.operand(DingoAggregate.class).trait(DingoRelStreaming.ROOT).oneInput(b1 ->
+                    b1.operand(DingoStreamingConverter.class).anyInputs()
+                )
+            )
+            .build();
+
+        @Override
+        default DingoAggregateReduceRule toRule() {
+            return new DingoAggregateReduceRule(this);
+        }
     }
 }

@@ -16,28 +16,22 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoProject;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalProject;
 
 public class DingoProjectRule extends ConverterRule {
-    public static final Config DISTRIBUTED = Config.INSTANCE
+    public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalProject.class,
             Convention.NONE,
-            DingoConventions.DISTRIBUTED,
-            "DingoProjectRule.DISTRIBUTED"
-        )
-        .withRuleFactory(DingoProjectRule::new);
-    public static final Config ROOT = Config.INSTANCE
-        .withConversion(
-            LogicalProject.class,
-            Convention.NONE,
-            DingoConventions.ROOT,
-            "DingoProjectRule.ROOT"
+            DingoConvention.INSTANCE,
+            "DingoProjectRule"
         )
         .withRuleFactory(DingoProjectRule::new);
 
@@ -48,12 +42,14 @@ public class DingoProjectRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
-        Convention convention = this.getOutConvention();
+        RelTraitSet traits = project.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
         return new DingoProject(
             project.getCluster(),
-            project.getTraitSet().replace(convention),
+            traits,
             project.getHints(),
-            convert(project.getInput(), convention),
+            convert(project.getInput(), traits),
             project.getProjects(),
             project.getRowType()
         );

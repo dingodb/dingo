@@ -16,10 +16,12 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
@@ -28,8 +30,8 @@ public class DingoTableScanRule extends ConverterRule {
         .withConversion(
             LogicalDingoTableScan.class,
             Convention.NONE,
-            DingoConventions.DISTRIBUTED,
-            "DingoTableScanRule.DISTRIBUTED"
+            DingoConvention.INSTANCE,
+            "DingoTableScanRule"
         )
         .withRuleFactory(DingoTableScanRule::new);
 
@@ -40,9 +42,12 @@ public class DingoTableScanRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
+        RelTraitSet traits = scan.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.of(scan.getTable()));
         return new DingoTableScan(
             scan.getCluster(),
-            scan.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+            traits,
             scan.getHints(),
             scan.getTable(),
             scan.getFilter(),

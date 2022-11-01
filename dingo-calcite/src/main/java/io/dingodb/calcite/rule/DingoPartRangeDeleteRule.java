@@ -16,9 +16,8 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoConventions;
-import io.dingodb.calcite.rel.DingoPartModify;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
+import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
@@ -54,7 +53,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        final DingoPartModify rel0 = call.rel(0);
+        final DingoTableModify rel0 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
@@ -77,7 +76,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         call.transformTo(
             new DingoPartRangeDelete(
                 rel0.getCluster(),
-                rel.getTraitSet().replace(DingoConventions.DISTRIBUTED),
+                rel.getTraitSet(),
                 rel.getTable(),
                 rel0.getRowType(),
                 left,
@@ -171,7 +170,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoPartRangeDeleteRule.Config.builder()
             .operandSupplier(
-                b0 -> b0.operand(DingoPartModify.class)
+                b0 -> b0.operand(DingoTableModify.class)
                     // It is a delete operation
                     .predicate(x -> x.getOperation() == TableModify.Operation.DELETE)
                     .oneInput(b1 ->

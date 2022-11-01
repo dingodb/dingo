@@ -17,46 +17,40 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
-public final class DingoProject extends Project implements DingoRel {
-    public DingoProject(
+public class DingoStreamingConverter extends SingleRel implements DingoRel {
+    public DingoStreamingConverter(
         RelOptCluster cluster,
         RelTraitSet traits,
-        List<RelHint> hints,
-        RelNode input,
-        List<? extends RexNode> projects,
-        RelDataType rowType
+        RelNode input
     ) {
-        super(cluster, traits, hints, input, projects, rowType);
+        super(cluster, traits, input);
     }
 
     @Override
-    public @NonNull Project copy(
-        RelTraitSet traitSet,
-        RelNode input,
-        List<RexNode> projects,
-        RelDataType rowType
-    ) {
-        return new DingoProject(
-            getCluster(),
-            traitSet,
-            getHints(),
-            input,
-            projects,
-            rowType
-        );
+    public double estimateRowCount(RelMetadataQuery mq) {
+        double rowCount = super.estimateRowCount(mq);
+        DingoRelStreaming inputStreaming = getInput().getTraitSet().getTrait(DingoRelStreamingDef.INSTANCE);
+        assert inputStreaming != null;
+        if (getStreaming().getDistribution() != null && inputStreaming.getDistribution() == null) {
+            return rowCount / 3.0d;
+        }
+        if (getStreaming().getDistribution() == null && inputStreaming.getDistribution() != null) {
+            return rowCount * 3.0d;
+        }
+        return rowCount;
     }
 
     @Override
@@ -66,6 +60,15 @@ public final class DingoProject extends Project implements DingoRel {
 
     @Override
     public @NonNull Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        return Pair.of(childTraits, ImmutableList.of(childTraits));
+        return Pair.of(getTraitSet(), ImmutableList.of(childTraits));
+    }
+
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new DingoStreamingConverter(
+            getCluster(),
+            traitSet,
+            sole(inputs)
+        );
     }
 }
