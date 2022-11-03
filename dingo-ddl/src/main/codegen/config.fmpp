@@ -33,6 +33,8 @@ data: {
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
       "org.apache.calcite.sql.ddl.DingoSqlDdlNodes"
+      "org.apache.calcite.sql.SqlUserDefinedOperators"
+      "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
       "java.util.Map"
       "java.util.HashMap"
       "java.util.LinkedHashMap"

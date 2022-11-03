@@ -44,6 +44,8 @@ import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
 import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
+import io.dingodb.expr.runtime.op.like.DingoLikeBinaryOp;
+import io.dingodb.expr.runtime.op.like.DingoLikeOp;
 import io.dingodb.expr.runtime.op.RtOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberAbsOp;
 import io.dingodb.expr.runtime.op.number.DingoNumberCeilingOp;
@@ -190,6 +192,8 @@ public final class FunFactory {
         registerUdf("datediff", DateDiffFun::new);
 
         registerUdf("$SLICE", RtSqlSliceFun::new);
+        registerUdf("like", DingoLikeOp::new);
+        registerUdf("like_binary", DingoLikeBinaryOp::new);
     }
 
     public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode) {

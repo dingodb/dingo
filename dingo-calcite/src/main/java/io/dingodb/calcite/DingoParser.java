@@ -45,6 +45,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlUserDefinedOperators;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -54,6 +55,7 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Program;
@@ -149,6 +151,11 @@ public class DingoParser {
         // Create SqlValidator.
         // CatalogReader is also serving as SqlOperatorTable.
         SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
+        // Register operators
+        tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
+        tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
+        SqlLikeBinaryOperator.register();
+
         sqlValidator = SqlValidatorUtil.newValidator(
             SqlOperatorTables.chain(tableInstance, catalogReader),
             catalogReader,
