@@ -32,8 +32,8 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
-import io.dingodb.exec.util.QueueUtil;
-import io.dingodb.exec.util.TagUtil;
+import io.dingodb.exec.utils.QueueUtils;
+import io.dingodb.exec.utils.TagUtils;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
@@ -83,7 +83,7 @@ public final class ReceiveOperator extends SourceOperator {
         codec = new AvroTxRxCodec(schema);
         tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
         messageListener = new ReceiveMessageListener();
-        tag = TagUtil.tag(getTask().getJobId(), getId());
+        tag = TagUtils.tag(getTask().getJobId(), getId());
         Services.NET.registerTagMessageListener(tag, messageListener);
         endpoint = new ReceiveEndpoint(host, port, tag);
         endpoint.init();
@@ -121,7 +121,7 @@ public final class ReceiveOperator extends SourceOperator {
             if (tupleQueue.size() < LOW_WATER_LEVEL) {
                 endpoint.sendControlMessage(ControlStatus.READY);
             }
-            Object[] tuple = QueueUtil.forceTake(tupleQueue);
+            Object[] tuple = QueueUtils.forceTake(tupleQueue);
             if (!(tuple[0] instanceof Fin)) {
                 ++count;
                 if (log.isDebugEnabled()) {
@@ -177,7 +177,7 @@ public final class ReceiveOperator extends SourceOperator {
                     offset += pair.getValue();
                     count++;
                     if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
-                        QueueUtil.forcePut(tupleQueue, tuple);
+                        QueueUtils.forcePut(tupleQueue, tuple);
                     }
                 }
                 if (tupleQueue.remainingCapacity() < SendOperator.SEND_MAX_COUNT * 2) {

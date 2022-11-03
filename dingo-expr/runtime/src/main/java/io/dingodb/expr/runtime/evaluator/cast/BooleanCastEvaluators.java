@@ -17,18 +17,8 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 
-@Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
-)
+@Evaluators
 final class BooleanCastEvaluators {
     private BooleanCastEvaluators() {
     }

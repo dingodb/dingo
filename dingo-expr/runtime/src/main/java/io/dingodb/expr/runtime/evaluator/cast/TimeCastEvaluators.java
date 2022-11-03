@@ -17,10 +17,6 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,17 +24,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Time;
 
 @Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
+    induceSequence = {Long.class, Integer.class}
 )
 final class TimeCastEvaluators {
     private TimeCastEvaluators() {
     }
 
-    static @Nullable Time timeCast(@NonNull String value) {
+    static @NonNull Time timeCast(long value) {
+        return new Time(value);
+    }
+
+    static @Nullable Time timeCast(String value) {
         return DateTimeUtils.parseTime(value);
     }
 

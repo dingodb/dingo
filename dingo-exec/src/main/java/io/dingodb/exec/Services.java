@@ -59,11 +59,9 @@ public final class Services {
         "No cluster service provider was found."
     ).get();
     public static final Map<String, MetaService> metaServices = new HashMap<>();
-
-    private static final ExecutorService executorService = Executors.newWorkStealingPool();
-
     public static final String TASK_TAG = "DINGO_TASK";
     public static final String CTRL_TAG = "DINGO_CTRL";
+    private static final ExecutorService executorService = Executors.newWorkStealingPool();
 
     static {
         initMetaServices();

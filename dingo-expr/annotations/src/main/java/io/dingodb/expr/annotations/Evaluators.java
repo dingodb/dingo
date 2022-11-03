@@ -16,6 +16,11 @@
 
 package io.dingodb.expr.annotations;
 
+import io.dingodb.expr.core.evaluator.Evaluator;
+import io.dingodb.expr.core.evaluator.EvaluatorFactory;
+import io.dingodb.expr.core.evaluator.EvaluatorKey;
+import io.dingodb.expr.core.evaluator.UniversalEvaluator;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,37 +34,33 @@ public @interface Evaluators {
      *
      * @return the EvaluatorKey class
      */
-    Class<?> evaluatorKey();
+    Class<?> evaluatorKey() default EvaluatorKey.class;
 
     /**
      * Specify the base class/interface of the generated Evaluators.
      *
      * @return the base class/interface
      */
-    Class<?> evaluatorBase();
+    Class<?> evaluatorBase() default Evaluator.class;
 
     /**
      * Specify the base class of the generated EvaluatorFactory.
      *
      * @return the EvaluatorFactory base class
      */
-    Class<?> evaluatorFactory();
+    Class<?> evaluatorFactory() default EvaluatorFactory.class;
 
     /**
      * Specify the class of universal evaluator.
      *
      * @return the class of universal evaluator
      */
-    Class<?> universalEvaluator();
+    Class<?> universalEvaluator() default UniversalEvaluator.class;
 
     /**
      * Specify the sequence of the type when inducing evaluators by type.
      *
      * @return an array of class
      */
-    Class<?>[] induceSequence();
-
-    @interface Base {
-        Class<?> value();
-    }
+    Class<?>[] induceSequence() default {};
 }

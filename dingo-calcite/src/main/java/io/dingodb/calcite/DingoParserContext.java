@@ -23,7 +23,6 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -62,9 +61,9 @@ public final class DingoParserContext implements Context {
         rootSchema.add("map", mapType);
 
         // Register all the functions
-        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
-            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
-        });
+//        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
+//            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
+//        });
     }
 
     @SuppressWarnings("MethodMayBeStatic")

@@ -18,22 +18,22 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.exec.expr.SqlExprCompileContext;
+import io.dingodb.exec.fun.DingoFunFactory;
+import io.dingodb.exec.fun.special.CastListItemsOp;
+import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.core.evaluator.EvaluatorFactory;
+import io.dingodb.expr.core.evaluator.EvaluatorKey;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.FunFactory;
+import io.dingodb.expr.parser.OpFactory;
 import io.dingodb.expr.parser.exception.UndefinedFunctionName;
-import io.dingodb.expr.parser.op.FunFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
-import io.dingodb.expr.parser.op.OpFactory;
 import io.dingodb.expr.parser.op.OpWithEvaluator;
-import io.dingodb.expr.parser.op.SqlCastListItemsOp;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
-import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -58,8 +58,11 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         .of("BOTH", "LEADING", "TRAILING")
         .collect(Collectors.toList());
 
+    private final FunFactory funFactory;
+
     private RexConverter() {
         super(true);
+        funFactory = DingoFunFactory.getInstance();
     }
 
     private static int typeCodeOf(@NonNull RelDataType type) {
@@ -69,12 +72,12 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     private static Op getCastOpWithCheck(RelDataType type, RelDataType inputType) {
         Op op;
         try {
-            op = FunFactory.INS.getCastFun(typeCodeOf(type));
+            op = DingoFunFactory.getInstance().getCastFun(typeCodeOf(type));
             if (op instanceof OpWithEvaluator) { // Check if the evaluator exists.
                 EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
                 factory.getEvaluator(EvaluatorKey.of(typeCodeOf(inputType)));
             }
-        } catch (FailGetEvaluator | UndefinedFunctionName e) {
+        } catch (UndefinedFunctionName e) {
             throw new UnsupportedOperationException(
                 "Unsupported cast operation: from \"" + inputType + "\" to \"" + type + "\"."
             );
@@ -165,14 +168,14 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case TRIM:
             case LTRIM:
             case RTRIM:
-                op = FunFactory.INS.getFun(kind.name());
+                op = funFactory.getFun(kind.name());
                 break;
             case CAST:
                 RelDataType type = call.getType();
                 RexNode operand = call.getOperands().get(0);
                 SqlTypeName sqlTypeName = type.getSqlTypeName();
                 if (sqlTypeName == SqlTypeName.ARRAY || sqlTypeName == SqlTypeName.MULTISET) {
-                    op = FunFactory.INS.getFun(SqlCastListItemsOp.FUN_NAME);
+                    op = funFactory.getFun(CastListItemsOp.NAME);
                     RelDataType newType = type.getComponentType();
                     op.setExprArray(new Expr[]{
                         new Value<>(Objects.requireNonNull(newType).getSqlTypeName().getName()),
@@ -184,29 +187,31 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
             case MULTISET_VALUE_CONSTRUCTOR:
-                op = FunFactory.INS.getFun("LIST");
+                op = funFactory.getFun("LIST");
                 break;
             case MAP_VALUE_CONSTRUCTOR:
-                op = FunFactory.INS.getFun("MAP");
+                op = funFactory.getFun("MAP");
                 break;
             case LIKE:
             case OTHER:
                 if (call.op.getName().equals("||")) {
-                    op = FunFactory.INS.getFun("concat");
+                    op = funFactory.getFun("concat");
                 } else {
-                    op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                    op = funFactory.getFun(call.op.getName());
                 }
+                break;
+            case MOD:
+                op = funFactory.getFun(call.op.getName());
                 break;
             case FLOOR:
             case CEIL:
             case OTHER_FUNCTION: {
-                op = FunFactory.INS.getFun(call.op.getName().toLowerCase());
+                op = funFactory.getFun(call.op.getName());
                 break;
             }
             default:
                 throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
         }
-
         List<Expr> exprList = new ArrayList<>();
         for (RexNode node : call.getOperands()) {
             Expr expr = node.accept(this);

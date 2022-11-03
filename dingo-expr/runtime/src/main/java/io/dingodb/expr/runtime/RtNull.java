@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime;
 
+import io.dingodb.expr.core.TypeCode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class RtNull implements RtExpr {
@@ -32,6 +33,6 @@ public final class RtNull implements RtExpr {
 
     @Override
     public int typeCode() {
-        return TypeCodes.getTypeCode((Object) null);
+        return TypeCode.getTypeCode((Object) null);
     }
 }

@@ -17,21 +17,11 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 
-@Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
-)
+@Evaluators
 final class BinaryCastEvaluators {
     private BinaryCastEvaluators() {
     }

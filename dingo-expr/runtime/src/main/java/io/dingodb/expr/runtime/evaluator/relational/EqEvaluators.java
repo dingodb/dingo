@@ -17,10 +17,6 @@
 package io.dingodb.expr.runtime.evaluator.relational;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -30,10 +26,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 
 @Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
     induceSequence = {BigDecimal.class, Double.class, Long.class, Integer.class}
 )
 final class EqEvaluators {

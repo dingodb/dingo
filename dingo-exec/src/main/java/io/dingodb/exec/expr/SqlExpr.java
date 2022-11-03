@@ -20,22 +20,25 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.ExprConverter;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
-import io.dingodb.expr.parser.exception.DingoExprParseException;
+import io.dingodb.exec.fun.DingoFunFactory;
+import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import lombok.Getter;
 
 public class SqlExpr {
+    public static final DingoExprCompiler compiler = new DingoExprCompiler(
+        DingoFunFactory.getInstance()
+    );
+
     @JsonProperty("expr")
     @Getter
     private final String exprString;
     @JsonProperty("type")
     private final DingoType type;
-
-    private RtExpr expr;
     private final SqlExprEvalContext etx;
+    private RtExpr expr;
 
     @JsonCreator
     public SqlExpr(
@@ -50,10 +53,10 @@ public class SqlExpr {
 
     public void compileIn(DingoType tupleType, DingoType parasType) {
         try {
-            expr = DingoExprCompiler.parse(exprString, true).compileIn(
+            expr = compiler.parse(exprString).compileIn(
                 new SqlExprCompileContext(tupleType, parasType)
             );
-        } catch (DingoExprParseException | DingoExprCompileException e) {
+        } catch (ExprParseException | ExprCompileException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -63,11 +66,7 @@ public class SqlExpr {
     }
 
     public Object eval(Object[] tuple) {
-        try {
-            etx.setTuple(tuple);
-            return type.convertFrom(expr.eval(etx), ExprConverter.INSTANCE);
-        } catch (FailGetEvaluator e) {
-            throw new RuntimeException("Error occurred in evaluating expression \"" + exprString + "\".", e);
-        }
+        etx.setTuple(tuple);
+        return type.convertFrom(expr.eval(etx), ExprConverter.INSTANCE);
     }
 }

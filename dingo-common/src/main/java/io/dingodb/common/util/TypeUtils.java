@@ -17,7 +17,7 @@
 package io.dingodb.common.util;
 
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BooleanListSchema;
 import io.dingodb.serial.schema.BytesListSchema;
 import io.dingodb.serial.schema.DingoSchema;

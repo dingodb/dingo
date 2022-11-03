@@ -17,22 +17,13 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.NumberUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
-@Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
-)
+@Evaluators
 final class IntegerCastEvaluators {
     private IntegerCastEvaluators() {
     }
@@ -42,6 +33,7 @@ final class IntegerCastEvaluators {
     }
 
     static int integerCast(long value) {
+        // TODO: is it appropriate to check in runtime?
         return NumberUtils.checkIntRange(value);
     }
 
@@ -54,7 +46,7 @@ final class IntegerCastEvaluators {
     }
 
     static int integerCast(@NonNull BigDecimal value) {
-        return value.intValue();
+        return value.setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
     static int integerCast(@NonNull String value) {

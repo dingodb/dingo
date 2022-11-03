@@ -28,8 +28,6 @@ import javax.lang.model.element.TypeElement;
 @RequiredArgsConstructor
 public class EvaluatorsInfo {
     @Getter
-    private final TypeCodeInfo typeCodeInfo;
-    @Getter
     private final TypeElement evaluatorKey;
     @Getter
     private final TypeElement evaluatorBase;

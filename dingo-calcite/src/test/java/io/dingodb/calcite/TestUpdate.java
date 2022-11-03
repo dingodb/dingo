@@ -50,7 +50,7 @@ import org.junit.jupiter.api.TestInstance;
 @Slf4j
 public class TestUpdate {
     private static DingoParserContext context;
-    private static DingoParser parser;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {

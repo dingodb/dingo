@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.parser;
 
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -27,7 +27,7 @@ public interface Expr {
      *
      * @param ctx the CompileContext
      * @return the RtExpr
-     * @throws DingoExprCompileException if something is wrong when compiling
+     * @throws ExprCompileException if something is wrong when compiling
      */
-    @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException;
+    @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException;
 }

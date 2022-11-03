@@ -18,7 +18,7 @@ package io.dingodb.test.ddl;
 
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -121,7 +121,7 @@ public class DdlTest {
         );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
-        assertThat(DateTimeUtils.toUtcString((Timestamp) result)).isEqualTo(value);
+        assertThat(DateTimeUtils.toUtcString(((Timestamp) result).getTime())).isEqualTo(value);
         sqlHelper.dropTable(tableName);
     }
 

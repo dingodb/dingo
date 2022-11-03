@@ -21,9 +21,6 @@ plugins {
 
 dependencies {
     annotationProcessor project(':dingo-expr:dingo-expr-annotations')
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    api project(':dingo-expr:dingo-expr-core')
     compileOnly project(':dingo-expr:dingo-expr-annotations')
-    compileOnly project(':dingo-func-api')
-    implementation group: 'org.apache.calcite', name: 'calcite-linq4j', version: 'calcite'.v()
 }

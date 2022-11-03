@@ -16,15 +16,15 @@
 
 package io.dingodb.expr.parser.op;
 
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.logical.RtIsNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-public final class IsNullOp extends OpIgnoreEnv {
+public final class IsNullOp extends Op {
     public static final String FUN_NAME = "IS_NULL";
 
     private IsNullOp() {
@@ -36,21 +36,20 @@ public final class IsNullOp extends OpIgnoreEnv {
     }
 
     @Override
-    protected @NonNull RtExpr evalNullConst(RtExpr @NonNull [] rtExprArray) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(
+        RtExpr @NonNull [] rtExprArray,
+        @Nullable EvalEnv env
+    ) {
         RtExpr rtExpr = rtExprArray[0];
-        try {
-            if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
-                Object v = rtExpr.eval(null);
-                return v == null ? RtConst.TRUE : RtConst.FALSE;
-            }
-            return createRtOp(rtExprArray);
-        } catch (FailGetEvaluator e) {
-            throw new DingoExprCompileException(e);
+        if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
+            Object v = rtExpr.eval(null);
+            return v == null ? RtConst.TRUE : RtConst.FALSE;
         }
+        return createRtOp(rtExprArray);
     }
 
     @Override
-    protected @NonNull RtIsNull createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtIsNull createRtOp(RtExpr[] rtExprArray) {
         return new RtIsNull(rtExprArray);
     }
 }

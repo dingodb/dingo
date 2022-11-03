@@ -17,32 +17,26 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
 
-@Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
-)
+@Evaluators
 final class DateCastEvaluators {
     private DateCastEvaluators() {
     }
 
-    static @Nullable Date dateCast(@NonNull String value) {
+    static @NonNull Date dateCast(long value) {
+        return new Date(value);
+    }
+
+    static @Nullable Date dateCast(String value) {
         return DateTimeUtils.parseDate(value);
     }
 
-    static Date dateCast(@NonNull Date value) {
+    static @NonNull Date dateCast(@NonNull Date value) {
         return value;
     }
 }

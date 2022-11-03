@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.util.QueueUtil;
+import io.dingodb.exec.utils.QueueUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -60,7 +60,7 @@ public final class RootOperator extends SinkOperator {
         if (log.isDebugEnabled()) {
             log.debug("Put tuple {} into root queue.", schema.format(tuple));
         }
-        QueueUtil.forcePut(tupleQueue, tuple);
+        QueueUtils.forcePut(tupleQueue, tuple);
         return true;
     }
 
@@ -74,11 +74,11 @@ public final class RootOperator extends SinkOperator {
                 log.debug("Got FIN with detail:\n{}", fin.detail());
             }
         }
-        QueueUtil.forcePut(tupleQueue, FIN);
+        QueueUtils.forcePut(tupleQueue, FIN);
     }
 
     public Object @NonNull [] popValue() {
-        return QueueUtil.forceTake(tupleQueue);
+        return QueueUtils.forceTake(tupleQueue);
     }
 
     @Override

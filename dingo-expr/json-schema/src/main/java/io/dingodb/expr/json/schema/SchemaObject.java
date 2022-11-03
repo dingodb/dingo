@@ -19,10 +19,10 @@ package io.dingodb.expr.json.schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.json.runtime.RtSchema;
 import io.dingodb.expr.json.runtime.RtSchemaDict;
 import io.dingodb.expr.json.runtime.RtSchemaLeaf;
-import io.dingodb.expr.runtime.TypeCode;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

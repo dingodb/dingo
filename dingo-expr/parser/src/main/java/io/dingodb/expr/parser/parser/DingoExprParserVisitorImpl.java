@@ -19,23 +19,23 @@ package io.dingodb.expr.parser.parser;
 import io.dingodb.expr.parser.DingoExprParser;
 import io.dingodb.expr.parser.DingoExprParserBaseVisitor;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.op.FunFactory;
+import io.dingodb.expr.parser.FunFactory;
+import io.dingodb.expr.parser.OpFactory;
 import io.dingodb.expr.parser.op.IndexOp;
 import io.dingodb.expr.parser.op.Op;
-import io.dingodb.expr.parser.op.OpFactory;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> {
-    private final boolean realAsBigDecimal;
-
-    public DingoExprParserVisitorImpl(boolean realAsBigDecimal) {
-        this.realAsBigDecimal = realAsBigDecimal;
-    }
+    @Getter
+    private final FunFactory funFactory;
 
     private void setParaList(@NonNull Op op, @NonNull List<DingoExprParser.ExprContext> exprList) {
         op.setExprArray(
@@ -80,7 +80,7 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
 
     @Override
     public Expr visitVar(DingoExprParser.@NonNull VarContext ctx) {
-        String name = ctx.ID().getText();
+        String name = ctx.getText();
         if (name.equals("null") || name.equals("NULL")) {
             return Null.INSTANCE;
         }
@@ -106,16 +106,12 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
 
     @Override
     public @NonNull Expr visitInt(DingoExprParser.@NonNull IntContext ctx) {
-        try {
-            return Value.parseLong(ctx.INT().getText());
-        } catch (NumberFormatException e) { // overflow
-            return Value.parseDecimal(ctx.INT().getText());
-        }
+        return Value.parseInt(ctx.getText());
     }
 
     @Override
     public @NonNull Expr visitStr(DingoExprParser.@NonNull StrContext ctx) {
-        return Value.parseString(ctx.STR().getText());
+        return Value.parseString(ctx.getText());
     }
 
     @Override
@@ -137,7 +133,7 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
 
     @Override
     public @NonNull Expr visitBool(DingoExprParser.@NonNull BoolContext ctx) {
-        return Value.parseBoolean(ctx.BOOL().getText());
+        return Value.parseBoolean(ctx.getText());
     }
 
     @Override
@@ -152,17 +148,13 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
 
     @Override
     public @NonNull Expr visitReal(DingoExprParser.@NonNull RealContext ctx) {
-        if (realAsBigDecimal) {
-            return Value.parseDecimal(ctx.REAL().getText());
-        } else {
-            return Value.parseDouble(ctx.REAL().getText());
-        }
+        return Value.parseReal(ctx.getText());
     }
 
     @Override
     public @NonNull Expr visitFun(DingoExprParser.@NonNull FunContext ctx) {
         String funName = ctx.ID().getText();
-        Op op = FunFactory.INS.getFun(funName);
+        Op op = funFactory.getFun(funName);
         setParaList(op, ctx.expr());
         return op;
     }

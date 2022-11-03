@@ -17,35 +17,15 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
 @Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
+    induceSequence = {BigDecimal.class, Long.class, Integer.class}
 )
 final class DecimalCastEvaluators {
     private DecimalCastEvaluators() {
-    }
-
-    static @NonNull BigDecimal decimalCast(int value) {
-        return BigDecimal.valueOf(value);
-    }
-
-    static @NonNull BigDecimal decimalCast(long value) {
-        return BigDecimal.valueOf(value);
-    }
-
-    static @NonNull BigDecimal decimalCast(double value) {
-        return BigDecimal.valueOf(value);
     }
 
     static @NonNull BigDecimal decimalCast(boolean value) {

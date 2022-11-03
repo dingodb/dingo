@@ -20,7 +20,7 @@ import lombok.Getter;
 
 import java.util.List;
 
-public final class ExprSyntaxError extends DingoExprParseException {
+public final class ExprSyntaxError extends ExprParseException {
     private static final long serialVersionUID = -729878914565812713L;
     @Getter
     private final List<String> errorMessages;
@@ -32,7 +32,7 @@ public final class ExprSyntaxError extends DingoExprParseException {
      */
     public ExprSyntaxError(List<String> errorMessages) {
         super(
-            "RT expression syntax error:\n" + String.join("\n", errorMessages)
+            "Dingo expression syntax error:\n" + String.join("\n", errorMessages)
         );
         this.errorMessages = errorMessages;
     }

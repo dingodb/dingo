@@ -50,14 +50,11 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
@@ -83,8 +80,6 @@ public class DingoParser {
                 return true;
             }
         });
-    public static SqlValidator.Config VALIDATOR_CONFIG = SqlValidator.Config.DEFAULT
-        .withConformance(PARSER_CONFIG.conformance());
 
     @Getter
     private final DingoParserContext context;
@@ -156,11 +151,9 @@ public class DingoParser {
         tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
         SqlLikeBinaryOperator.register();
 
-        sqlValidator = SqlValidatorUtil.newValidator(
-            SqlOperatorTables.chain(tableInstance, catalogReader),
+        sqlValidator = new DingoSqlValidator(
             catalogReader,
-            context.getTypeFactory(),
-            VALIDATOR_CONFIG
+            context.getTypeFactory()
         );
     }
 
@@ -196,20 +189,12 @@ public class DingoParser {
     }
 
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
-        SqlToRelConverter.Config convertConfig = SqlToRelConverter.config()
-            .withTrimUnusedFields(true)
-            .withExpand(false)
-            .withExplain(sqlNode.getKind() == SqlKind.EXPLAIN)
-            // Disable simplify to use Dingo's own expr evaluation.
-            .addRelBuilderConfigTransform(c -> c.withSimplify(false));
-
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
+        SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
             sqlValidator,
             catalogReader,
             cluster,
-            StandardConvertletTable.INSTANCE,
-            convertConfig
+            sqlNode.getKind() == SqlKind.EXPLAIN
         );
 
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);

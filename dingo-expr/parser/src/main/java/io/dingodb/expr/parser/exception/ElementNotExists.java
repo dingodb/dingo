@@ -19,7 +19,7 @@ package io.dingodb.expr.parser.exception;
 import io.dingodb.expr.runtime.CompileContext;
 import lombok.Getter;
 
-public final class ElementNotExists extends DingoExprCompileException {
+public final class ElementNotExists extends ExprCompileException {
     private static final long serialVersionUID = -3196414862878914396L;
     @Getter
     private final Object index;

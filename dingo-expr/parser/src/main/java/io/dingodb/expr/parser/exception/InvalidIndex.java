@@ -19,7 +19,7 @@ package io.dingodb.expr.parser.exception;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.Getter;
 
-public final class InvalidIndex extends DingoExprCompileException {
+public final class InvalidIndex extends ExprCompileException {
     private static final long serialVersionUID = 152335684688384361L;
 
     @Getter

@@ -51,20 +51,11 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestValues {
     private static DingoParserContext context;
-    private static DingoParser parser;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
-    }
-
-    private static DingoValues getDingoValues(SqlNode sqlNode) {
-        RelRoot relRoot = parser.convert(sqlNode);
-        RelNode optimized = parser.optimize(relRoot.rel);
-        return (DingoValues) Assert.relNode(optimized)
-            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoValues.class)
-            .getInstance();
     }
 
     private static void assertSelectValues(SqlNode sqlNode) {
@@ -106,6 +97,15 @@ public class TestValues {
                 "select cast(a as date) from (values('1970-1-1')) as t (a)",
                 ImmutableList.of(new Object[]{new Date(0L)})
             ));
+    }
+
+    private DingoValues getDingoValues(SqlNode sqlNode) {
+        RelRoot relRoot = parser.convert(sqlNode);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        return (DingoValues) Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoValues.class)
+            .getInstance();
     }
 
     @BeforeEach

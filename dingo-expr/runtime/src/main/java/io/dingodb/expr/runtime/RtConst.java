@@ -16,6 +16,7 @@
 
 package io.dingodb.expr.runtime;
 
+import io.dingodb.expr.core.TypeCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -39,6 +40,6 @@ public class RtConst implements RtExpr {
 
     @Override
     public int typeCode() {
-        return TypeCodes.getTypeCode(value);
+        return TypeCode.getTypeCode(value);
     }
 }

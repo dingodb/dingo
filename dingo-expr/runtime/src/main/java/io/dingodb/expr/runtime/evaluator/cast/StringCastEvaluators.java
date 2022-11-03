@@ -17,10 +17,6 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -30,13 +26,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-@Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
-    induceSequence = {}
-)
+@Evaluators
 final class StringCastEvaluators {
     private StringCastEvaluators() {
     }
@@ -65,19 +55,19 @@ final class StringCastEvaluators {
         return value;
     }
 
-    static @NonNull String stringCast(@NonNull Date value) {
+    static @NonNull String stringCast(byte[] value) {
+        return new String(value, StandardCharsets.UTF_8);
+    }
+
+    static @NonNull String stringCast(Date value) {
         return DateTimeUtils.dateFormat(value);
     }
 
-    static @NonNull String stringCast(@NonNull Time value) {
+    static @NonNull String stringCast(Time value) {
         return DateTimeUtils.timeFormat(value);
     }
 
-    static @NonNull String stringCast(@NonNull Timestamp value) {
+    static @NonNull String stringCast(Timestamp value) {
         return DateTimeUtils.timestampFormat(value);
-    }
-
-    static @NonNull String stringCast(byte[] value) {
-        return new String(value, StandardCharsets.UTF_8);
     }
 }

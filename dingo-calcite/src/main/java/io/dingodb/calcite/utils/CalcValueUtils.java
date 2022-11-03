@@ -22,9 +22,8 @@ import io.dingodb.common.type.converter.ExprConverter;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.EvalEnv;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -43,7 +42,7 @@ public final class CalcValueUtils {
         Object[] tuple,
         DingoType tupleType,
         @Nullable EvalEnv env
-    ) throws DingoExprCompileException, FailGetEvaluator {
+    ) throws ExprCompileException {
         Expr expr = RexConverter.convert(rexNode);
         SqlExprEvalContext etx = new SqlExprEvalContext(env);
         etx.setTuple(tuple);
@@ -59,7 +58,7 @@ public final class CalcValueUtils {
         Object[] tuple,
         DingoType tupleType,
         @Nullable EvalEnv env
-    ) throws DingoExprCompileException, FailGetEvaluator {
+    ) throws ExprCompileException {
         int size = rexNodeList.size();
         Object[] result = new Object[size];
         for (int i = 0; i < size; ++i) {

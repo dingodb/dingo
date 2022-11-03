@@ -16,21 +16,13 @@
 
 package io.dingodb.expr.runtime.op.string;
 
-import com.google.auto.service.AutoService;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtOp;
-import io.dingodb.func.DingoFuncProvider;
+import io.dingodb.expr.runtime.op.RtBooleanFun;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
-
 @Slf4j
-public final class RtStartsWithOp extends RtStringRelationOp {
+public final class RtStartsWithOp extends RtBooleanFun {
     private static final long serialVersionUID = 8984520176203100615L;
 
     /**
@@ -42,37 +34,8 @@ public final class RtStartsWithOp extends RtStringRelationOp {
         super(paras);
     }
 
-    public static boolean startsStr(final @NonNull String str1, final String str2) {
-        return str1.startsWith(str2);
-    }
-
     @Override
     protected @NonNull Object fun(Object @NonNull [] values) {
-        return startsStr((String) values[0], (String) values[1]);
-    }
-
-    @AutoService(DingoFuncProvider.class)
-    public static class Provider implements DingoFuncProvider {
-
-        public Function<RtExpr[], RtOp> supplier() {
-            return RtStartsWithOp::new;
-        }
-
-        @Override
-        public List<String> name() {
-            return Collections.singletonList("startsWith");
-        }
-
-        @Override
-        public List<Method> methods() {
-            try {
-                List<Method> methods = new ArrayList<>();
-                methods.add(RtStartsWithOp.class.getMethod("startsStr", String.class, String.class));
-                return methods;
-            } catch (NoSuchMethodException e) {
-                log.error("Method:{} NoSuchMethodException:{}", this.name(), e, e);
-                throw new RuntimeException(e);
-            }
-        }
+        return ((String) values[0]).startsWith((String) values[1]);
     }
 }

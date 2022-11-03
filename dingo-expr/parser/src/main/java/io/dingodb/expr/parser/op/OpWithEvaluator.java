@@ -16,11 +16,10 @@
 
 package io.dingodb.expr.parser.op;
 
+import io.dingodb.expr.core.evaluator.Evaluator;
+import io.dingodb.expr.core.evaluator.EvaluatorFactory;
+import io.dingodb.expr.core.evaluator.EvaluatorKey;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtEvaluatorOp;
 import io.dingodb.expr.runtime.op.RtOp;
 import lombok.Getter;
@@ -43,7 +42,7 @@ public class OpWithEvaluator extends Op {
     }
 
     @Override
-    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) {
         int[] typeCodes = Arrays.stream(rtExprArray).mapToInt(RtExpr::typeCode).toArray();
         Evaluator evaluator = factory.getEvaluator(EvaluatorKey.of(typeCodes));
         return new RtEvaluatorOp(evaluator, rtExprArray);

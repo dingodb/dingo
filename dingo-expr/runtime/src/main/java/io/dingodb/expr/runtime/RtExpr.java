@@ -16,7 +16,6 @@
 
 package io.dingodb.expr.runtime;
 
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.Serializable;
@@ -27,9 +26,8 @@ public interface RtExpr extends Serializable {
      *
      * @param etx the specified EvalContext
      * @return the result
-     * @throws FailGetEvaluator if there is no appropriate Evaluator
      */
-    @Nullable Object eval(@Nullable EvalContext etx) throws FailGetEvaluator;
+    @Nullable Object eval(@Nullable EvalContext etx);
 
     /**
      * Get the type code of results. Must return they type code without call <code>eval</code> for compiling use.

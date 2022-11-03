@@ -24,7 +24,6 @@ dependencies {
     antlr "org.antlr:antlr4:" + 'antlr'.v()
     api project(':dingo-expr:dingo-expr-runtime')
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
-    testImplementation project(':dingo-expr:dingo-expr-json-schema')
 }
 
 generateGrammarSource {

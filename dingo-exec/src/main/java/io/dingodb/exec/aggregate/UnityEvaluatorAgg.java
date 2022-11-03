@@ -18,10 +18,9 @@ package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
+import io.dingodb.expr.core.evaluator.Evaluator;
+import io.dingodb.expr.core.evaluator.EvaluatorFactory;
+import io.dingodb.expr.core.evaluator.EvaluatorKey;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -38,19 +37,11 @@ public abstract class UnityEvaluatorAgg extends UnityAgg {
 
     protected void setEvaluator(@NonNull EvaluatorFactory factory) {
         EvaluatorKey evaluatorKey = EvaluatorKey.of(type.getTypeCode(), type.getTypeCode());
-        try {
-            evaluator = factory.getEvaluator(evaluatorKey);
-        } catch (FailGetEvaluator e) {
-            throw new RuntimeException(e);
-        }
+        evaluator = factory.getEvaluator(evaluatorKey);
     }
 
     protected Object eval(Object v0, Object v1) {
-        try {
-            return evaluator.eval(new Object[]{v0, v1});
-        } catch (FailGetEvaluator e) {
-            throw new RuntimeException(e);
-        }
+        return evaluator.eval(new Object[]{v0, v1});
     }
 
     @Override
