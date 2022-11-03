@@ -27,4 +27,20 @@ public class Constant {
 
     public static final Message API_VOID = new Message(API_OK, EMPTY_BYTES);
 
+    // message type
+    public static final byte USER_DEFINE_T = 1;
+    public static final byte COMMAND_T = 2;
+    public static final byte API_T = 3;
+    public static final byte HANDSHAKE_T = 4;
+
+    // command message code
+    public static final byte PING_C = 1;
+    public static final byte PONG_C = 2;
+    public static final byte ACK_C = 3;
+    public static final byte HANDSHAKE_C = 4;
+    public static final byte CLOSE_C = 5;
+    public static final byte ERROR_C = 6;
+
+    public static final String AUTH = "auth";
+    public static final String HANDSHAKE = "handshake";
 }

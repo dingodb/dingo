@@ -26,9 +26,7 @@ import java.util.function.Supplier;
 @Slf4j
 public class Optional<T> {
 
-    public static final Optional<?> EMPTY = of(java.util.Optional.empty());
-
-    private final java.util.Optional<T> optional;
+    private java.util.Optional<T> optional;
 
     private Optional(java.util.Optional<T> optional) {
         this.optional = optional;
@@ -46,8 +44,16 @@ public class Optional<T> {
         return of(java.util.Optional.ofNullable(value));
     }
 
+    public static <T> Optional<T> ofNullable(T value, Supplier supplier) {
+        if (value == null) {
+            return (Optional<T>) of(supplier.get());
+        } else {
+            return of(java.util.Optional.ofNullable(value));
+        }
+    }
+
     public static <T> Optional<T> empty() {
-        return (Optional<T>) EMPTY;
+        return of(java.util.Optional.empty());
     }
 
     public T get() {
@@ -97,16 +103,13 @@ public class Optional<T> {
 
     public Optional<T> ifAbsentSet(T other) {
         if (!optional.isPresent()) {
-            return ofNullable(other);
+            optional = java.util.Optional.ofNullable(other);
         }
         return this;
     }
 
     public Optional<T> ifAbsentSet(Supplier<? extends T> other) {
-        if (!optional.isPresent()) {
-            return ofNullable(other.get());
-        }
-        return this;
+        return ifAbsentSet(other.get());
     }
 
     public Optional<T> filter(Predicate<? super T> predicate) {

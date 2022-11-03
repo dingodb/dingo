@@ -14,41 +14,33 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.listener.impl;
+package io.dingodb.net.netty;
 
+import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
-import io.dingodb.net.netty.NetServiceConfiguration;
-import io.dingodb.net.netty.connection.ConnectionManager;
-import io.dingodb.net.netty.connection.ServerConnection;
-import io.dingodb.net.netty.handler.ExceptionHandler;
-import io.dingodb.net.netty.handler.MessageHandler;
-import io.dingodb.net.netty.listener.PortListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.timeout.IdleStateHandler;
 import lombok.Builder;
+import lombok.Getter;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
+@Getter
 @Builder
-public class NettyServer implements PortListener {
+public class NettyServer {
 
-    private final ConnectionManager connectionManager;
-    private final int port;
+    public final int port;
+    private final Set<Connection> connections = new CopyOnWriteArraySet<>();
+
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
 
-    @Override
-    public int port() {
-        return port;
-    }
-
-    @Override
-    public void init() {
+    public void start() throws Exception {
         server = new ServerBootstrap();
         eventLoopGroup = new NioEventLoopGroup(2, new ThreadPoolBuilder().name("Netty server " + port).build());
         server
@@ -56,10 +48,6 @@ public class NettyServer implements PortListener {
             .channel(NioServerSocketChannel.class)
             .group(eventLoopGroup)
             .childHandler(channelInitializer());
-    }
-
-    @Override
-    public void start() throws Exception {
         server.bind().sync().await();
     }
 
@@ -67,18 +55,14 @@ public class NettyServer implements PortListener {
         return new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                ServerConnection connection = new ServerConnection(ch);
-                ch.pipeline()
-                    .addLast(new MessageHandler(connection))
-                    .addLast(new IdleStateHandler(NetServiceConfiguration.INSTANCE.getHeartbeat(), 0, 0, SECONDS))
-                    .addLast(new ExceptionHandler(connection));
-                connectionManager.onOpen(connection);
-                ch.closeFuture().addListener(future -> connectionManager.onClose(connection));
+                Connection connection = new Connection("<%s/%s/server>", new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch, true);
+                NettyHandlers.initChannelPipelineWithHandshake(ch, connection);
+                connections.add(connection);
+                ch.closeFuture().addListener(f -> connections.remove(connection)).addListener(f -> connection.close());
             }
         };
     }
 
-    @Override
     public void close() {
         eventLoopGroup.shutdownGracefully();
     }

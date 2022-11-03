@@ -20,9 +20,15 @@ import java.util.ServiceLoader;
 
 public interface NetServiceProvider {
 
+    /**
+     * Get default net service provider impl.
+     */
     static NetServiceProvider getDefault() {
         return ServiceLoader.load(NetServiceProvider.class).iterator().next();
     }
 
+    /**
+     * Get net service instance.
+     */
     NetService get();
 }

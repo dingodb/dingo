@@ -21,7 +21,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.api.annotation.ApiDeclaration;
-import io.dingodb.net.netty.channel.Channel;
+import io.dingodb.net.netty.Channel;
 import io.netty.buffer.ByteBuf;
 
 import java.lang.reflect.InvocationHandler;
@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static io.dingodb.net.Message.API_OK;
-import static io.dingodb.net.netty.packet.Type.API;
+import static io.dingodb.net.netty.Constant.API_T;
 
 public interface ApiProxy<T> extends InvocationHandler {
 
@@ -62,7 +62,7 @@ public interface ApiProxy<T> extends InvocationHandler {
             byte[] content = ProtostuffCodec.write(args);
             invoke(
                 channel,
-                channel.buffer(API, nameB.length + content.length).writeBytes(nameB).writeBytes(content),
+                channel.buffer(API_T, nameB.length + content.length).writeBytes(nameB).writeBytes(content),
                 future
             );
         } catch (Exception e) {

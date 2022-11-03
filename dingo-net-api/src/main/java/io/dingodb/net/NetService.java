@@ -21,6 +21,9 @@ import io.dingodb.net.api.ApiRegistry;
 
 public interface NetService extends AutoCloseable {
 
+    /**
+     * Get default net service impl.
+     */
     static NetService getDefault() {
         return NetServiceProvider.getDefault().get();
     }
@@ -52,8 +55,18 @@ public interface NetService extends AutoCloseable {
      */
     void unsetMessageListenerProvider(String tag);
 
+    /**
+     * Register message listener for tag, it is global listener.
+     * @param tag message tag
+     * @param listener message listener
+     */
     void registerTagMessageListener(String tag, MessageListener listener);
 
+    /**
+     * Unregister message listener for tag.
+     * @param tag message tag
+     * @param listener message listener
+     */
     void unregisterTagMessageListener(String tag, MessageListener listener);
 
     /**
@@ -62,6 +75,11 @@ public interface NetService extends AutoCloseable {
      * @param port listen port
      */
     void listenPort(int port) throws Exception;
+
+    /**
+     * Close all channel of specified location.
+     */
+    void disconnect(Location location);
 
     /**
      * Cancel listen the port.
