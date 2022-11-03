@@ -189,6 +189,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             case MAP_VALUE_CONSTRUCTOR:
                 op = FunFactory.INS.getFun("MAP");
                 break;
+            case LIKE:
             case OTHER:
                 if (call.op.getName().equals("||")) {
                     op = FunFactory.INS.getFun("concat");

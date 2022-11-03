@@ -3623,6 +3623,8 @@ List<Object> Expression2(ExprContext exprContext) :
                         |
                             <RLIKE> { op = SqlLibraryOperators.NOT_RLIKE; }
                         |
+                            <LIKE_BINARY> { op = SqlUserDefinedOperators.NOT_LIKE_BINARY; }
+                        |
                             <SIMILAR> <TO> { op = SqlStdOperatorTable.NOT_SIMILAR_TO; }
                         )
                     |
@@ -3631,6 +3633,8 @@ List<Object> Expression2(ExprContext exprContext) :
                         <ILIKE> { op = SqlLibraryOperators.ILIKE; }
                     |
                         <RLIKE> { op = SqlLibraryOperators.RLIKE; }
+                    |
+                        <LIKE_BINARY> { op = SqlUserDefinedOperators.LIKE_BINARY; }
                     |
                         <SIMILAR> <TO> { op = SqlStdOperatorTable.SIMILAR_TO; }
                     )
@@ -7581,6 +7585,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LIBRARY: "LIBRARY" >
 |   < LIKE: "LIKE" >
 |   < LIKE_REGEX: "LIKE_REGEX" >
+|   < LIKE_BINARY: "LIKE BINARY" >
 |   < LIMIT: "LIMIT" >
 |   < LN: "LN" >
 |   < LOCAL: "LOCAL" >
