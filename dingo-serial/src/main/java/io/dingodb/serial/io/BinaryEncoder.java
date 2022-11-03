@@ -753,10 +753,14 @@ public class BinaryEncoder {
 
     private void internWriteKeyBytes(byte[] value) throws IndexOutOfBoundsException, ClassCastException {
         int groupNum = value.length / 8;
-        int size = groupNum * 9;
+        int size = (groupNum + 1) * 9;
         int reminderSize = value.length % 8;
-        if (reminderSize > 0) {
-            size += 9;
+        int remindZero;
+        if (reminderSize == 0) {
+            reminderSize = 8;
+            remindZero = 8;
+        } else {
+            remindZero = 8 - reminderSize;
         }
         ensureRemainder(1 + size);
         writeNotNull();
@@ -766,15 +770,14 @@ public class BinaryEncoder {
             forwardPosition += 8;
             buf[forwardPosition++] = (byte) 255;
         }
-        if (reminderSize > 0) {
+        if (reminderSize < 8) {
             System.arraycopy(value, 8 * groupNum, buf, forwardPosition, reminderSize);
             forwardPosition += reminderSize;
-            int remindZero = 8 - reminderSize;
-            for (int i = 0; i < remindZero; i++) {
-                buf[forwardPosition++] = 0;
-            }
-            buf[forwardPosition++] = (byte) (247 + reminderSize);
         }
+        for (int i = 0; i < remindZero; i++) {
+            buf[forwardPosition++] = 0;
+        }
+        buf[forwardPosition++] = (byte) (255 - remindZero);
     }
 
     private boolean readIsNull() throws IndexOutOfBoundsException {
