@@ -14,12 +14,30 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.packet;
+package io.dingodb.net.service;
 
-public enum Type {
-    USER_DEFINE,
-    COMMAND,
-    API,
-    HANDSHAKE,
-    ;
+public interface AuthService<C> {
+
+    interface Provider {
+        <C> AuthService<C> get();
+    }
+
+    /**
+     * Service tag.
+     * @return tag
+     */
+    String tag();
+
+    /**
+     * Create certificate for connect server.
+     * @return certificate
+     */
+    C createCertificate();
+
+    /**
+     * Authentication, return connection id if success, else throw exception.
+     * @param certificate certificate
+     */
+    Object auth(C certificate) throws Exception;
+
 }

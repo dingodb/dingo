@@ -19,9 +19,9 @@ package io.dingodb.net.netty.api;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.Message;
-import io.dingodb.net.netty.NettyNetService;
-import io.dingodb.net.netty.NettyNetServiceProvider;
-import io.dingodb.net.netty.channel.Channel;
+import io.dingodb.net.netty.Channel;
+import io.dingodb.net.netty.NetService;
+import io.dingodb.net.netty.NetServiceProvider;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -38,7 +38,7 @@ import static io.dingodb.net.Message.EMPTY;
 @Accessors(fluent = true)
 public class RandomChannelProxy<T> implements ApiProxy<T> {
 
-    private static final NettyNetService netService = NettyNetServiceProvider.NET_SERVICE_INSTANCE;
+    private static final NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
 
     private final Supplier<Location> locationSupplier;
     @Getter

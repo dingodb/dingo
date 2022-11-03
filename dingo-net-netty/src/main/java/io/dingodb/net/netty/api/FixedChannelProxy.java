@@ -18,7 +18,7 @@ package io.dingodb.net.netty.api;
 
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.Message;
-import io.dingodb.net.netty.channel.Channel;
+import io.dingodb.net.netty.Channel;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.experimental.Accessors;

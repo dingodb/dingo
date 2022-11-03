@@ -20,22 +20,20 @@ import io.dingodb.common.config.DingoConfiguration;
 import lombok.Getter;
 
 @Getter
-public class NetServiceConfiguration {
+public class NetConfiguration {
 
     public static final int MIN_HEARTBEAT = 3;
-    public static final int MIN_QUEUE_CAPACITY = Runtime.getRuntime().availableProcessors() * 2;
-    public static final String HEARTBEAT = "heartbeat";
 
-    public static final NetServiceConfiguration INSTANCE;
+    public static final NetConfiguration INSTANCE;
 
     static {
         try {
             DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
             if (dingoConfiguration == null) {
-                INSTANCE = new NetServiceConfiguration();
+                INSTANCE = new NetConfiguration();
                 INSTANCE.host = "127.0.0.1";
             } else {
-                dingoConfiguration.setNet(NetServiceConfiguration.class);
+                dingoConfiguration.setNet(NetConfiguration.class);
                 INSTANCE = dingoConfiguration.getNet();
                 if (INSTANCE.host == null) {
                     INSTANCE.host = dingoConfiguration.getHost();
@@ -49,7 +47,7 @@ public class NetServiceConfiguration {
         }
     }
 
-    public static NetServiceConfiguration instance() {
+    public static NetConfiguration instance() {
         return INSTANCE;
     }
 

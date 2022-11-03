@@ -25,8 +25,6 @@ public interface FileTransferService {
 
     void transfer(Location location, Path source, Path target);
 
-    void mkdir(Location location, Path target);
-
     static FileTransferService getDefault() {
         return ServiceLoader.load(FileTransferService.class).iterator().next();
     }

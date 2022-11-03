@@ -20,12 +20,17 @@ import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.Message;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.error.ApiTerminateException;
+import io.dingodb.net.netty.Channel;
+import io.dingodb.net.netty.NettyHandlers;
 import io.dingodb.net.netty.Versions;
-import io.dingodb.net.netty.channel.Channel;
-import io.dingodb.net.netty.packet.Command;
+import io.dingodb.net.service.AuthService;
 import lombok.AllArgsConstructor;
 
+import java.util.ServiceLoader;
+
 import static io.dingodb.net.Message.API_ERROR;
+import static io.dingodb.net.netty.Constant.ACK_C;
+import static io.dingodb.net.netty.Constant.HANDSHAKE;
 import static io.dingodb.net.netty.Versions.currentVersion;
 
 public interface HandshakeApi {
@@ -40,14 +45,16 @@ public interface HandshakeApi {
         public static final Handshake INSTANCE = new Handshake(Versions.MAGIC_CODE, Versions.currentVersion());
     }
 
-    @ApiDeclaration
-    default Command handshake(Channel channel, Handshake handshake) {
+    @ApiDeclaration(name = HANDSHAKE)
+    default byte handshake(Channel channel, Handshake handshake) {
         if (Versions.checkCode(handshake.code, 0) && currentVersion() == handshake.version) {
-            return Command.ACK;
+            return ACK_C;
         }
         channel.send(new Message(API_ERROR, ProtostuffCodec.write(VERSION_EXCEPTION)), true);
-        channel.connection().close();
-        throw new ApiTerminateException("Handshake failed, the version [%s] not support.", handshake.version);
+        throw new ApiTerminateException(
+            "Handshake failed from {}, the version [%s] not support",
+            channel.remoteLocation(), handshake.version
+        );
     }
 
 }

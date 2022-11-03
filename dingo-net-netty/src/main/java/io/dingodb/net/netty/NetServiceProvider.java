@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.packet;
+package io.dingodb.net.netty;
 
-import io.dingodb.net.Message;
+import com.google.auto.service.AutoService;
 
-public enum Command {
-    PING,
-    PONG,
-    ACK,
-    HANDSHAKE,
-    CLOSE,
-    ERROR,
-    ;
+@AutoService(io.dingodb.net.NetServiceProvider.class)
+public class NetServiceProvider implements io.dingodb.net.NetServiceProvider {
 
-    public byte code() {
-        return (byte) ordinal();
+    public static final NetService NET_SERVICE_INSTANCE = new NetService();
+
+    @Override
+    public io.dingodb.net.NetService get() {
+        return NET_SERVICE_INSTANCE;
     }
 
-    public static boolean isPingPong(Command command) {
-        return command == PING || command == PONG;
+    public io.dingodb.net.NetService newService() {
+        return new NetService();
     }
 
 }

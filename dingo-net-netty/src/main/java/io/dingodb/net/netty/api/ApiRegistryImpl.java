@@ -27,9 +27,9 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.api.Ping;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.error.ApiTerminateException;
+import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.Constant;
-import io.dingodb.net.netty.NetServiceConfiguration;
-import io.dingodb.net.netty.channel.Channel;
+import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationHandler;
@@ -57,6 +57,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     private ApiRegistryImpl() {
         register(HandshakeApi.class, HandshakeApi.INSTANCE);
+        register(AuthProxyApi.class, AuthProxyApi.INSTANCE);
         register(Ping.class, Ping.INSTANCE);
     }
 
@@ -93,7 +94,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     @Override
     public <T> T proxy(Class<T> api, io.dingodb.net.Channel channel) {
-        return proxy(api, channel, NetServiceConfiguration.apiTimeout());
+        return proxy(api, channel, NetConfiguration.apiTimeout());
     }
 
     @Override
@@ -142,45 +143,54 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     public void invoke(Channel channel, ByteBuffer buffer) {
         String name = PrimitiveCodec.readString(buffer);
+        invoke(name, channel, buffer);
+    }
+
+    public <R> R invoke(String name, Channel channel, ByteBuffer buffer) {
         Method method = declarationMap.get(name);
-        Object result;
+        R result = null;
         Message message = Constant.API_VOID;
         try {
             if (method == null) {
                 NetError.API_NOT_FOUND.throwFormatError(name);
             }
             Object[] args = deserializeArgs(channel, buffer, method.getParameterTypes());
-            result = invoke(definedMap.get(name), method, args);
+            result = (R) invoke(definedMap.get(name), method, args);
             if (result instanceof CompletableFuture) {
                 channel.setMessageListener(listenCancel(name, (CompletableFuture<?>) result));
-                Executors.execute("invoke-api", () -> invokeWithFuture(name, channel, (CompletableFuture<?>) result));
-                return;
+                invokeWithFuture(name, channel, (CompletableFuture<?>) result);
+                return result;
             }
             if (result != null) {
                 message = new Message(API_OK, ProtostuffCodec.write(result));
             }
         } catch (ApiTerminateException e) {
-            log.error("Invoke [{}] from [{}/{}] is termination, message: {}.",
-                name, channel.connection().remoteLocation(), channel.channelId(), e.getMessage(), e);
+            log.error(
+                "Invoke [{}] from [{}/{}] is termination, message: {}.",
+                name, channel.connection().remote(), channel.channelId(), e.getMessage(), e
+            );
         } catch (InvocationTargetException e) {
             message = onError(cleanNull(e.getCause(), () -> cleanNull(e.getTargetException(), () -> e)), name, channel);
         } catch (Throwable e) {
             message = onError(e, name, channel);
         }
         channel.send(message);
+        return result;
     }
 
     private void invokeWithFuture(String name, Channel channel, CompletableFuture<?> future) {
-        try {
-            channel.send(new Message(API_OK, ProtostuffCodec.write(future.join())));
-        } catch (CancellationException e) {
-            log.warn("Invoke [{}] from [{}/{}] is canceled.",
-                name, channel.connection().remoteLocation(), channel.channelId());
-        } catch (CompletionException e) {
-            channel.send(onError(cleanNull(e.getCause(), () -> e), name, channel));
-        } catch (Throwable e) {
-            channel.send(onError(e, name, channel));
-        }
+        Executors.execute("invoke-api", () -> {
+            try {
+                channel.send(new Message(API_OK, ProtostuffCodec.write(future.join())));
+            } catch (CancellationException e) {
+                log.warn("Invoke [{}] from [{}/{}] is canceled.",
+                    name, channel.connection().remote(), channel.channelId());
+            } catch (CompletionException e) {
+                channel.send(onError(cleanNull(e.getCause(), () -> e), name, channel));
+            } catch (Throwable e) {
+                channel.send(onError(e, name, channel));
+            }
+        });
     }
 
     private Object[] deserializeArgs(Channel channel, ByteBuffer buffer, Class<?>[] parameterTypes) {
@@ -204,7 +214,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     private Message onError(Throwable error, String name, Channel channel) {
         log.error("Invoke [{}] from [{}/{}] error, message: {}.",
-            name, channel.connection().remoteLocation(), channel.channelId(), error.getMessage(), error);
+            name, channel.connection().remote(), channel.channelId(), error.getMessage(), error);
         return new Message(API_ERROR, ProtostuffCodec.write(error));
     }
 

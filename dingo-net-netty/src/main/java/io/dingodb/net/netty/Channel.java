@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.net.netty.channel;
+package io.dingodb.net.netty;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
@@ -24,10 +24,6 @@ import io.dingodb.common.util.Parameters;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
-import io.dingodb.net.netty.connection.Connection;
-import io.dingodb.net.netty.handler.TagMessageHandler;
-import io.dingodb.net.netty.packet.Command;
-import io.dingodb.net.netty.packet.Type;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,8 +31,18 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import static io.dingodb.net.netty.Constant.ACK_C;
+import static io.dingodb.net.netty.Constant.API_T;
+import static io.dingodb.net.netty.Constant.CLOSE_C;
+import static io.dingodb.net.netty.Constant.COMMAND_T;
+import static io.dingodb.net.netty.Constant.ERROR_C;
+import static io.dingodb.net.netty.Constant.PING_C;
+import static io.dingodb.net.netty.Constant.PONG_C;
+import static io.dingodb.net.netty.Constant.USER_DEFINE_T;
 
 @Slf4j
 @Getter
@@ -75,12 +81,12 @@ public class Channel implements io.dingodb.net.Channel {
         this.runner = runner;
     }
 
-    public ByteBuf buffer(Type type, int capacity) {
+    public ByteBuf buffer(byte type, int capacity) {
         capacity = capacity + 8 + 1;
         return connection.alloc().buffer(capacity + 4, capacity + 4)
             .writeInt(capacity)
             .writeLong(channelId)
-            .writeByte(type.ordinal());
+            .writeByte(type);
     }
 
     public synchronized void close() {
@@ -90,7 +96,7 @@ public class Channel implements io.dingodb.net.Channel {
         }
         this.shutdown();
         try {
-            this.sendAsync(buffer(Type.COMMAND, 1).writeByte(Command.CLOSE.code()));
+            this.sendAsync(buffer(COMMAND_T, 1).writeByte(CLOSE_C));
         } catch (Exception e) {
             log.error("Send close message error.", e);
         }
@@ -121,13 +127,13 @@ public class Channel implements io.dingodb.net.Channel {
     }
 
     @Override
-    public Location localLocation() {
-        return connection.localLocation();
+    public Map<String, Object[]> auth() {
+        return connection.authContent();
     }
 
     @Override
     public Location remoteLocation() {
-        return connection.remoteLocation();
+        return connection.remote();
     }
 
     @Override
@@ -146,13 +152,13 @@ public class Channel implements io.dingodb.net.Channel {
         }
         if (sync) {
             try {
-                send(buffer(Type.USER_DEFINE, msg.length).writeBytes(msg));
+                send(buffer(USER_DEFINE_T, msg.length).writeBytes(msg));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else {
             try {
-                sendAsync(buffer(Type.USER_DEFINE, msg.length).writeBytes(msg));
+                sendAsync(buffer(USER_DEFINE_T, msg.length).writeBytes(msg));
             } catch (Exception e) {
                 log.error("Send message to {} on {} error.", remoteLocation().getUrl(), channelId, e);
             }
@@ -177,8 +183,9 @@ public class Channel implements io.dingodb.net.Channel {
 
     private void processMessage(ByteBuffer buffer) {
         try {
-            switch (Type.values()[buffer.get()]) {
-                case USER_DEFINE:
+            byte type = buffer.get();
+            switch (type) {
+                case USER_DEFINE_T:
                     if (directListener != null) {
                         directListener.accept(buffer);
                         return;
@@ -187,16 +194,16 @@ public class Channel implements io.dingodb.net.Channel {
                     if (messageListener != null) {
                         messageListener.onMessage(message, this);
                     }
-                    TagMessageHandler.instance().handler(message, this);
+                    TagRegistry.onTagMessage(message, this);
                     break;
-                case COMMAND:
+                case COMMAND_T:
                     processCommand(buffer);
                     break;
-                case API:
+                case API_T:
                     API_REGISTRY.invoke(this, buffer);
                     break;
                 default:
-                    throw new IllegalStateException("Unexpected value: " + Type.values()[buffer.get()]);
+                    throw new IllegalStateException("Unexpected value: " + type);
             }
         } catch (Exception e) {
             log.error("Process message failed.", e);
@@ -204,36 +211,36 @@ public class Channel implements io.dingodb.net.Channel {
     }
 
     private void processCommand(ByteBuffer buffer) {
-        Command type = Command.values()[buffer.get()];
-        switch (type) {
-            case PONG:
+        byte command = buffer.get();
+        switch (command) {
+            case PONG_C:
                 if (log.isTraceEnabled()) {
                     log.trace("Channel [{}] receive pong command.", channelId);
                 }
                 return;
-            case ACK:
+            case ACK_C:
                 if (log.isTraceEnabled()) {
                     log.trace("Channel [{}] receive ack command.", channelId);
                 }
                 return;
-            case PING:
+            case PING_C:
                 if (log.isTraceEnabled()) {
                     log.trace("Channel [{}] receive ping command.", channelId);
                 }
-                sendAsync(buffer(Type.COMMAND, 1).writeByte(Command.PONG.code()));
+                sendAsync(buffer(COMMAND_T, 1).writeByte(PONG_C));
                 return;
-            case CLOSE:
+            case CLOSE_C:
                 if (log.isTraceEnabled()) {
                     log.trace("Channel [{}] receive close command.", channelId);
                 }
                 shutdown();
                 Executors.execute(channelId + "-channel-close", () -> onClose.accept(channelId));
                 return;
-            case ERROR:
+            case ERROR_C:
                 log.error("Receive error: {}.", PrimitiveCodec.readString(buffer));
                 return;
             default:
-                throw new IllegalStateException("Unexpected value: " + type);
+                throw new IllegalStateException("Unexpected value: " + command);
         }
     }
 

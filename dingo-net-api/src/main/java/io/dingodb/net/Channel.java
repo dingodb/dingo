@@ -18,6 +18,7 @@ package io.dingodb.net;
 
 import io.dingodb.common.Location;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface Channel extends AutoCloseable {
@@ -46,14 +47,17 @@ public interface Channel extends AutoCloseable {
     void setCloseListener(Consumer<Channel> listener);
 
     /**
+     * Returns channel auth content.
+     * Result is auth tag to auth return {certificate, return} mapping.
+     *
+     * @return auth map
+     */
+    Map<String, Object[]> auth();
+
+    /**
      * Returns current channel status {@link Status}.
      */
     Status status();
-
-    /**
-     * Returns local location.
-     */
-    Location localLocation();
 
     /**
      * Returns remote-end location.
