@@ -26,16 +26,10 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Slice;
 import org.rocksdb.Snapshot;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,6 +64,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     @Override
     public byte[] get(byte[] key) {
+        log.info("rocksdb reader get: {}", key);
         try {
             return db.get(handle, readOptions, key);
         } catch (RocksDBException e) {
@@ -79,6 +74,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     @Override
     public List<KeyValue> get(List<byte[]> keys) {
+        log.info("rocksdb reader gets: {}", keys);
         try {
             List<byte[]> values = db.multiGetAsList(readOptions, Collections.singletonList(handle), keys);
             List<KeyValue> entries = new ArrayList<>(keys.size());
@@ -92,6 +88,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     public boolean containsKey(byte[] key) {
+        log.info("rocksdb reader containsKey: {}", key);
         try {
             return db.get(handle, readOptions, key) != null;
         } catch (RocksDBException e) {
@@ -99,8 +96,23 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         }
     }
 
+    private static boolean maybePrefixScan(byte[] startKey, byte[] endKey) {
+        if (startKey == null || endKey == null) {
+            return false;
+        }
+        return Arrays.equals(ByteArrayUtils.increment(startKey), endKey);
+    }
+
     @Override
     public Iterator scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd) {
+        log.info("rocksdb reader scan: {} {} {} {}",
+            startKey != null ? new String(startKey) : "null",
+            endKey != null ? new String(endKey) : "null", withStart, withEnd);
+        if (maybePrefixScan(startKey, endKey)) {
+            readOptions.setAutoPrefixMode(true);
+            readOptions.setIterateUpperBound(new Slice(endKey));
+        }
+
         return new Iterator(db.newIterator(handle, readOptions), startKey, endKey, withStart, withEnd);
     }
 
@@ -110,6 +122,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
+        log.info("rocksdb reader count: {} {} {} {}", start, end, withStart, withEnd);
+
         java.util.Iterator<byte[]> keyIterator = db.getLiveFilesMetaData().stream()
             .filter(meta -> Arrays.equals(meta.columnFamilyName(), Constant.CF_DEFAULT))
             .flatMap(meta -> Stream.of(meta.smallestKey(), meta.largestKey()))
@@ -165,6 +179,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     public CompletableFuture<Long> countAsync(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
+        log.info("rocksdb reader countAsync: {} {} {} {}", start, end, withStart, withEnd);
+
         Predicate<byte[]> ep = end == null ? k -> true : withEnd ? k -> lessThanOrEqual(k, end) : k -> lessThan(k, end);
         return Executors.submit("calc-count", () -> {
             long count = 0;
@@ -196,12 +212,12 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     }
 
     static class Iterator implements java.util.Iterator<KeyValue> {
-
         private final RocksIterator iterator;
         private final Predicate<byte[]> _end;
-        private KeyValue current;
+        private final boolean isPrefixScan;
 
         Iterator(RocksIterator iterator, byte[] start, byte[] end, boolean withStart, boolean withEnd) {
+            this.isPrefixScan = maybePrefixScan(start, end);
             this.iterator = iterator;
             this._end = end == null ? __ -> true : withEnd ? __ -> lessThanOrEqual(__, end) : __ -> lessThan(__, end);
             if (start == null) {
@@ -212,30 +228,23 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
             if (this.iterator.isValid() && !withStart && Arrays.equals(this.iterator.key(), start)) {
                 this.iterator.next();
             }
-            if (this.iterator.isValid()) {
-                this.current = new KeyValue(this.iterator.key(), this.iterator.value());
-                this.iterator.next();
-            }
         }
 
         @Override
         public boolean hasNext() {
-            return current != null;
+            return iterator.isValid();
         }
+
 
         @Override
         public KeyValue next() {
-            KeyValue kv = current;
-            if (kv == null) {
-                throw new NoSuchElementException();
-            }
             if (iterator.isValid() && _end.test(iterator.key())) {
-                this.current = new KeyValue(iterator.key(), iterator.value());
+                KeyValue kv = new KeyValue(iterator.key(), iterator.value());
                 iterator.next();
-            } else {
-                this.current = null;
+                return kv;
             }
-            return kv;
+
+            return null;
         }
 
         // close rocksdb iterator

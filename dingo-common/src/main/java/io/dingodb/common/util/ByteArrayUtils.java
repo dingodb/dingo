@@ -145,6 +145,25 @@ public class ByteArrayUtils {
         return result;
     }
 
+    public static byte[] increment(byte[] input) {
+        byte[] ret = new byte[input.length];
+        int carry = 1;
+        for (int i = input.length - 1; i >= 0; i--) {
+            if (input[i] == (byte) 0xFF && carry == 1) {
+                ret[i] = (byte) 0x00;
+            } else {
+                ret[i] = (byte) (input[i] + carry);
+                carry = 0;
+            }
+        }
+
+        if (carry == 0) {
+            return ret;
+        } else {
+            throw new IndexOutOfBoundsException();
+        }
+    }
+
     public static void main(String[] args) {
         String input = "hello world";
         String encoded = enCodeBytes2Base64(input.getBytes(StandardCharsets.UTF_8));

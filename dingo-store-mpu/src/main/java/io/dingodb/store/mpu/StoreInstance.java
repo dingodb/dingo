@@ -405,6 +405,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             endPrimaryKey, includeStart, includeEnd);
     }
 
+    public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
+        return keyValuePrefixScan(prefix, ByteArrayUtils.increment(prefix), true, false);
+    }
+
     @Override
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);

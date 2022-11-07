@@ -18,21 +18,39 @@ package io.dingodb.store.mpu;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.luaj.vm2.ast.Str;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Stream;
+import java.util.Arrays;
+
+import javax.swing.text.html.HTMLDocument;
 
 class StoreInstanceTest {
 
     private static final Path PATH = Paths.get(StoreInstance.class.getName());
     private static StoreInstance storeInstance;
+
+    private List<String> readIterator(Iterator<KeyValue> it) {
+        List<String> result = new ArrayList<String>();
+        while (it.hasNext()) {
+            KeyValue kv = it.next();
+            result.add(new String(kv.getValue()));
+            System.out.printf("%s %s%n", new String(kv.getKey()), new String(kv.getValue()));
+        }
+
+        return result;
+    }
 
     @BeforeAll
     public static void beforeAll() {
@@ -55,10 +73,69 @@ class StoreInstanceTest {
         FileUtils.deleteIfExists(PATH);
     }
 
-    //@Test
-    //void testSetGet() {
-        //storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
-        //System.out.println(new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
-    //}
+    @Test
+    void testSetGet() {
+        storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
+        System.out.println(new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
+    }
+    @Test
+    void testScan() {
+        storeInstance.upsertKeyValue("aaaa1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("abbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("aaaa10002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("abbb100043".getBytes(), "value04".getBytes());
 
+        Iterator<KeyValue> it = storeInstance.keyValueScan();
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value03", "value02", "value04"};
+        Assertions.assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    void testPrefixScan01() {
+        storeInstance.upsertKeyValue("bbbb1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("cbbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("bbbb20002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("cccb100043".getBytes(), "value04".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValuePrefixScan("bbbb".getBytes());
+        List<String> result = readIterator(it);
+        System.out.printf("result size: %d%n", result.size());
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value03"};
+        Assertions.assertArrayEquals(expected, actual);
+    }
+    @Test
+    void testPrefixScan02() {
+        storeInstance.upsertKeyValue("dddd1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("ccbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("dddd20002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("dddb100043".getBytes(), "value04".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValuePrefixScan("ddd".getBytes());
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value04", "value01", "value03"};
+        Assertions.assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    void testPrefixScan03() {
+        storeInstance.upsertKeyValue("eeee1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("fbbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("eeee20002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("fffb100043".getBytes(), "value04".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValuePrefixScan("eeee1".getBytes());
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01"};
+        Assertions.assertArrayEquals(expected, actual);
+    }
 }
