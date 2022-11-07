@@ -405,6 +405,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             endPrimaryKey, includeStart, includeEnd);
     }
 
+    // if prefix is 0xFFFF... will throw exception. user must handle the exception.
+    @Override
     public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
         return keyValuePrefixScan(prefix, ByteArrayUtils.increment(prefix), true, false);
     }

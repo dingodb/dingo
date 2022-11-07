@@ -124,8 +124,8 @@ public class RocksStorage implements Storage {
 
     private boolean destroy = false;
 
-    private final static int MAX_BLOOM_HASH_NUM = 10;
-    private final static int MAX_PREFIX_LENGTH = 4;
+    private static final int MAX_BLOOM_HASH_NUM = 10;
+    private static final int MAX_PREFIX_LENGTH = 4;
 
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
                         final String logRocksOptionsFile, final int ttl) throws Exception {
