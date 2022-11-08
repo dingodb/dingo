@@ -5,6 +5,8 @@
 !.github
 !.gitlab-ci.yml
 
+bin/
+
 # Java Files
 *.class
 !gradle-wrapper.jar

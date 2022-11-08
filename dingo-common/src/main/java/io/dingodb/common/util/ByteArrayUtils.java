@@ -125,24 +125,43 @@ public class ByteArrayUtils {
         return hexToByteArray("7F");
     }
 
-    public static byte[] hexToByteArray(String inHex){
+    public static byte[] hexToByteArray(String inHex) {
         int hexlen = inHex.length();
         byte[] result;
-        if (hexlen % 2 == 1){
+        if (hexlen % 2 == 1) {
             //奇数
             hexlen ++;
-            result = new byte[(hexlen/2)];
+            result = new byte[(hexlen / 2)];
             inHex = "0" + inHex;
-        }else {
+        } else {
             //偶数
-            result = new byte[(hexlen/2)];
+            result = new byte[(hexlen / 2)];
         }
-        int j=0;
-        for (int i = 0; i < hexlen; i += 2){
+        int j = 0;
+        for (int i = 0; i < hexlen; i += 2) {
             result[j] = (byte)Integer.parseInt(inHex.substring(i, i + 2),16);
             j ++;
         }
         return result;
+    }
+
+    public static byte[] increment(byte[] input) {
+        byte[] ret = new byte[input.length];
+        int carry = 1;
+        for (int i = input.length - 1; i >= 0; i--) {
+            if (input[i] == (byte) 0xFF && carry == 1) {
+                ret[i] = (byte) 0x00;
+            } else {
+                ret[i] = (byte) (input[i] + carry);
+                carry = 0;
+            }
+        }
+
+        if (carry == 0) {
+            return ret;
+        } else {
+            throw new IndexOutOfBoundsException();
+        }
     }
 
     public static void main(String[] args) {

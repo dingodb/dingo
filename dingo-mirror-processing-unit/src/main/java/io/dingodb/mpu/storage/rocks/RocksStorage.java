@@ -124,6 +124,9 @@ public class RocksStorage implements Storage {
 
     private boolean destroy = false;
 
+    private static final int MAX_BLOOM_HASH_NUM = 10;
+    private static final int MAX_PREFIX_LENGTH = 4;
+
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
                         final String logRocksOptionsFile, final int ttl) throws Exception {
         this.coreMeta = coreMeta;
@@ -549,11 +552,11 @@ public class RocksStorage implements Storage {
 
         BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
         tableConfig.setBlockSize(blockSize);
-        /*
-        tableConfig.setFilterPolicy(new BloomFilter(16, false));
+
+        tableConfig.setFilterPolicy(new BloomFilter(MAX_BLOOM_HASH_NUM, false));
         tableConfig.setWholeKeyFiltering(true);
-        tableConfig.setCacheIndexAndFilterBlocks(true);
-        */
+        // tableConfig.setCacheIndexAndFilterBlocks(true);
+        cfOption.useCappedPrefixExtractor(MAX_PREFIX_LENGTH);
 
         Cache blockCache = new LRUCache(1 * 1024 * 1024 * 1024);
         tableConfig.setBlockCache(blockCache);

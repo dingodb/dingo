@@ -189,6 +189,9 @@ public interface StoreInstance {
     ) {
         throw new UnsupportedOperationException();
     }
+    default Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
+        throw new UnsupportedOperationException();
+    }
 
     default Iterator<byte[]> columnScan(int columnIndex) {
         throw new UnsupportedOperationException();
