@@ -96,6 +96,24 @@ public final class TupleMapping {
         return new TupleMapping(result);
     }
 
+    public TupleMapping add(int num) {
+        int[] result = new int[mappings.length + 1];
+        System.arraycopy(mappings, 0, result, 0, mappings.length);
+        result[mappings.length] = num;
+        return new TupleMapping(result);
+    }
+
+    public TupleMapping add(int[] nums) {
+        int[] result = new int[mappings.length + nums.length];
+        System.arraycopy(mappings, 0, result, 0, mappings.length);
+        System.arraycopy(nums, 0, result, mappings.length, nums.length);
+        return new TupleMapping(result);
+    }
+
+    public TupleMapping add(TupleMapping tupleMapping) {
+        return add(tupleMapping.mappings);
+    }
+
     public <T> void map(T[] dst, T[] src) {
         for (int i = 0; i < mappings.length; i++) {
             dst[mappings[i]] = src[i];
