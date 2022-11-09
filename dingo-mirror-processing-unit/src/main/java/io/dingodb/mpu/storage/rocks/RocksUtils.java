@@ -17,6 +17,7 @@
 package io.dingodb.mpu.storage.rocks;
 
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +41,7 @@ public class RocksUtils {
     }
 
     public static byte[] getValueWithTs(byte[] value, byte[] tsArray) {
-        byte[] valueWithTs = new byte[value.length + tsArray.length];
-        System.arraycopy(value, 0, valueWithTs, 0, value.length);
-        System.arraycopy(tsArray, 0, valueWithTs, value.length, tsArray.length);
-        return valueWithTs;
+        return ByteArrayUtils.concateByteArray(value, tsArray);
     }
 
     public static byte[] getValueWithTs(byte[] value, int timestamp) {

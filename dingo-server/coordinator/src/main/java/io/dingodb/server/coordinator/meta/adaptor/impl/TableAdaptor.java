@@ -436,23 +436,13 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     private byte[] udfNameCommonIdToBytes(CommonId id, String udfName) {
         byte[] udfNameBytes = udfName.getBytes(StandardCharsets.UTF_8);
         byte[] idBytes = id.encode();
-        byte[] result = new byte[udfNameBytes.length + idBytes.length];
-        System.arraycopy(udfNameBytes, 0,
-            result, 0, udfNameBytes.length);
-        System.arraycopy(idBytes, 0,
-            result, udfNameBytes.length - 1, idBytes.length);
-        return result;
+        return ByteArrayUtils.concateByteArray(udfNameBytes, idBytes);
     }
 
     private byte[] udfNameCommonIdVersionToBytes(CommonId id, String udfName, Integer version) {
         byte[] udfNameCommonIdBytes = udfNameCommonIdToBytes(id, udfName);
         byte[] versionBytes = intToBytes(version);
-        byte[] result = new byte[udfNameCommonIdBytes.length + versionBytes.length];
-        System.arraycopy(udfNameCommonIdBytes, 0,
-            result, 0, udfNameCommonIdBytes.length);
-        System.arraycopy(versionBytes, 0,
-            result, udfNameCommonIdBytes.length - 1, versionBytes.length);
-        return result;
+        return ByteArrayUtils.concateByteArray(udfNameCommonIdBytes, versionBytes);
     }
 
     private byte[] intToBytes(Integer num) {

@@ -17,6 +17,7 @@
 package io.dingodb.raft.storage.impl;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.raft.conf.Configuration;
 import io.dingodb.raft.conf.ConfigurationEntry;
 import io.dingodb.raft.conf.ConfigurationManager;
@@ -122,10 +123,7 @@ public class RocksDBLogStorage implements LogStorage, Describer {
         super();
         this.id = id;
         this.idContent = id.content();
-        byte[] firstLogIndexKey = new byte[idContent.length + firstLogIndexTail.length];
-        System.arraycopy(idContent, 0, firstLogIndexKey, 0, idContent.length);
-        System.arraycopy(firstLogIndexTail, 0, firstLogIndexKey, idContent.length, firstLogIndexTail.length);
-        this.firstLogIndexKey = firstLogIndexKey;
+        this.firstLogIndexKey = ByteArrayUtils.concateByteArray(idContent, firstLogIndexTail);
         this.dbStore = dbStore;
     }
 

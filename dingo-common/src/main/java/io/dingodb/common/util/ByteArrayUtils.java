@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.apache.commons.compress.utils.ByteUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -162,6 +162,13 @@ public class ByteArrayUtils {
         } else {
             throw new IndexOutOfBoundsException();
         }
+    }
+
+    public static byte[] concateByteArray(@NonNull byte[] bytes1, @NonNull byte[] bytes2) {
+        byte[] result = new byte[bytes1.length + bytes2.length];
+        System.arraycopy(bytes1, 0, result, 0, bytes1.length);
+        System.arraycopy(bytes2, 0, result, bytes1.length, bytes2.length);
+        return result;
     }
 
     public static void main(String[] args) {

@@ -20,7 +20,9 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
+import io.dingodb.common.util.ByteArrayUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -99,10 +101,8 @@ public interface StoreInstance {
     }
 
     default boolean compute(byte[] primaryKey, List<byte[]> computes) {
-        byte[] stop = new byte[primaryKey.length];
-        System.arraycopy(primaryKey, 0, stop, 0, primaryKey.length);
-        stop[stop.length - 1]++;
-        return compute(primaryKey, stop, computes);
+        byte[] stopArray = ByteArrayUtils.increment(primaryKey);
+        return compute(primaryKey, stopArray, computes);
     }
 
     default boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
@@ -122,10 +122,8 @@ public interface StoreInstance {
     }
 
     default void deleteByPrefixPrimaryKey(byte[] prefix) {
-        byte[] end = new byte[prefix.length];
-        System.arraycopy(prefix, 0, end, 0, prefix.length);
-        ++end[end.length - 1];
-        delete(prefix, end);
+        byte[] stopInBytes = ByteArrayUtils.increment(prefix);
+        delete(prefix, stopInBytes);
     }
 
     default Row getByPrimaryKey(byte[] primaryKey) {
@@ -153,10 +151,8 @@ public interface StoreInstance {
     }
 
     default Iterator<Row> scan(byte[] key) {
-        byte[] stop = new byte[key.length];
-        System.arraycopy(key, 0, stop, 0, key.length);
-        stop[stop.length - 1]++;
-        return scan(key, stop);
+        byte[] stopInBytes = ByteArrayUtils.increment(key);
+        return scan(key, stopInBytes);
     }
 
     default Iterator<Row> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
@@ -168,10 +164,8 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> keyValueScan(byte[] key) {
-        byte[] stop = new byte[key.length];
-        System.arraycopy(key, 0, stop, 0, key.length);
-        stop[stop.length - 1]++;
-        return keyValueScan(key, stop);
+        byte[] stopInBytes = ByteArrayUtils.increment(key);
+        return keyValueScan(key, stopInBytes);
     }
 
     default Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
