@@ -16,6 +16,7 @@
 
 package io.dingodb.common.codec;
 
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 
 import java.io.ByteArrayInputStream;
@@ -278,11 +279,10 @@ public class PrimitiveCodec {
         }
         byte[] content = str.getBytes(StandardCharsets.UTF_8);
         byte[] len = encodeVarInt(content.length);
-        byte[] result = new byte[len.length + content.length];
-        System.arraycopy(len, 0, result, 0, len.length);
-        System.arraycopy(content, 0, result, len.length, content.length);
+        byte[] result = ByteArrayUtils.concateByteArray(len, content);
         return result;
     }
+
 
     public static String readString(byte[] bytes) {
         Integer len = readVarInt(bytes);
@@ -323,10 +323,7 @@ public class PrimitiveCodec {
             return new byte[] {0};
         }
         byte[] len = encodeVarInt(content.length);
-        byte[] result = new byte[len.length + content.length];
-        System.arraycopy(len, 0, result, 0, len.length);
-        System.arraycopy(content, 0, result, len.length, content.length);
-        return result;
+        return ByteArrayUtils.concateByteArray(len, content);
     }
 
     public static Pair<byte[], Integer> decodeArray(final byte[] bytes, final int offset) {

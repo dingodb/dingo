@@ -17,6 +17,7 @@
 package io.dingodb.raft.kv.storage;
 
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.raft.util.BytesUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,10 +42,7 @@ public class RocksDBUtils {
     }
 
     public static byte[] getValueWithTs(byte[] value, byte[] tsArray) {
-        byte[] valueWithTs = new byte[value.length + tsArray.length];
-        System.arraycopy(value, 0, valueWithTs, 0, value.length);
-        System.arraycopy(tsArray, 0, valueWithTs, value.length, tsArray.length);
-        return valueWithTs;
+        return ByteArrayUtils.concateByteArray(value, tsArray);
     }
 
     public static byte[] getValueWithTs(byte[] value, int timestamp) {

@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +58,7 @@ public class Connection  {
 
     private final Map<Long, Channel> channels = new ConcurrentHashMap<>();
     private final AtomicLong channelIdSeq = new AtomicLong(0);
-    private final String channelFmt;
+    private final String channelType;
     private final boolean alwaysCreate;
     @Getter
     private final Channel channel;
@@ -74,8 +73,8 @@ public class Connection  {
 
     private ScheduledFuture<?> heartbeatFuture;
 
-    public Connection(String chanelFmt, Location remote, SocketChannel socket, boolean alwaysCreate) {
-        this.channelFmt = chanelFmt;
+    public Connection(String chanelType, Location remote, SocketChannel socket, boolean alwaysCreate) {
+        this.channelType = chanelType;
         this.socket = socket;
         this.alwaysCreate = alwaysCreate;
         this.remote = remote;
@@ -99,7 +98,9 @@ public class Connection  {
     }
 
     private String fmtName(String url, long id) {
-        return String.format(channelFmt, url, id);
+        StringBuilder builder = new StringBuilder("<");
+        builder.append(url).append("/").append(id).append("/").append(channelType).append(">");
+        return builder.toString();
     }
 
     private void sendHeartbeat() {

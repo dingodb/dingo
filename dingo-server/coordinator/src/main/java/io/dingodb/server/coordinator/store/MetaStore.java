@@ -19,6 +19,7 @@ package io.dingodb.server.coordinator.store;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.kv.storage.ByteArrayEntry;
@@ -51,9 +52,7 @@ public class MetaStore implements StoreInstance {
     }
 
     public synchronized int generateSeq(byte[] key) {
-        byte[] realKey = new byte[key.length + SEQ_PREFIX.length];
-        System.arraycopy(SEQ_PREFIX, 0, realKey, 0, SEQ_PREFIX.length);
-        System.arraycopy(key, 0, realKey, SEQ_PREFIX.length, key.length);
+        byte[] realKey = ByteArrayUtils.concateByteArray(SEQ_PREFIX, key);
         return Optional.ofNullable(PrimitiveCodec.readVarInt(getValueByPrimaryKey(realKey)))
             .ifAbsentSet(0)
             .map(seq -> seq + 1)

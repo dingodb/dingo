@@ -55,7 +55,7 @@ public class NettyServer {
         return new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                Connection connection = new Connection("<%s/%s/server>", new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch, true);
+                Connection connection = new Connection("server", new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch, true);
                 NettyHandlers.initChannelPipelineWithHandshake(ch, connection);
                 connections.add(connection);
                 ch.closeFuture().addListener(f -> connections.remove(connection)).addListener(f -> connection.close());
