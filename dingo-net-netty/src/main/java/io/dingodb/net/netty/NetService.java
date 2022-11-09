@@ -120,7 +120,7 @@ public class NetService implements io.dingodb.net.NetService {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            connection.ifAbsentSet(new Connection("<%s/%s/client>", location, ch, true));
+                            connection.ifAbsentSet(new Connection("client", location, ch, true));
                             NettyHandlers.initChannelPipeline(ch, connection.get());
                         }
                     });

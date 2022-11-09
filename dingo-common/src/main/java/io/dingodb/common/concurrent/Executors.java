@@ -140,7 +140,9 @@ public final class Executors {
             if (log.isTraceEnabled()) {
                 log.trace("Call [{}] start, thread id [{}], set thread name.", name, thread.getId());
             }
-            thread.setName(String.format(THREAD_NAME_FORMAT, name, thread.getId()));
+            StringBuilder builder = new StringBuilder(name);
+            builder.append("-").append(thread.getId());
+            thread.setName(builder.toString());
             return callable.call();
         } catch (Throwable e) {
             log.error("Execute {} catch error.", name, e);
@@ -159,7 +161,9 @@ public final class Executors {
             if (log.isTraceEnabled()) {
                 log.trace("Run [{}] start, thread id [{}], set thread name.", name, thread.getId());
             }
-            thread.setName(String.format(THREAD_NAME_FORMAT, name, thread.getId()));
+            StringBuilder builder = new StringBuilder(name);
+            builder.append("-").append(thread.getId());
+            thread.setName(builder.toString());
             runnable.run();
         } catch (Throwable e) {
             log.error("Execute {} catch error.", name, e);

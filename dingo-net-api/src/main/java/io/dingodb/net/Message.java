@@ -17,6 +17,7 @@
 package io.dingodb.net;
 
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -52,10 +53,7 @@ public final class Message {
 
     public byte[] encode() {
         byte[] tag = PrimitiveCodec.encodeString(this.tag);
-        byte[] result = new byte[tag.length + content.length];
-        System.arraycopy(tag, 0, result, 0, tag.length);
-        System.arraycopy(content, 0, result, tag.length, content.length);
-        return result;
+        return ByteArrayUtils.concateByteArray(tag, content);
     }
 
     public static Message decode(ByteBuffer buffer) {
