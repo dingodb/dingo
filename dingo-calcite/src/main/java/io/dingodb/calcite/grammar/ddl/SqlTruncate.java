@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.sql;
+package io.dingodb.calcite.grammar.ddl;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlValidator;

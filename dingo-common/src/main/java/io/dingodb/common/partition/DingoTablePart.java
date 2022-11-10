@@ -23,6 +23,12 @@ import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.ddl.SqlCreateTable;
 
 import java.io.Serializable;
 import java.util.LinkedList;
@@ -56,7 +62,7 @@ public class DingoTablePart implements Serializable {
     }
 
     /**
-     * 获取分区键的index.
+     * get part key index.
      * @param definition tableDefinition
      * @return TupleMapping
      */
@@ -73,5 +79,17 @@ public class DingoTablePart implements Serializable {
             }
         }
         return TupleMapping.of(indices);
+    }
+
+    public String getColumnTypeByNm(String columnNm, SqlCreateTable createTable) {
+        for (SqlNode sqlNode : createTable.columnList) {
+            if (sqlNode.getKind() == SqlKind.COLUMN_DECL) {
+                SqlColumnDeclaration scd = (SqlColumnDeclaration) sqlNode;
+                if (columnNm.equalsIgnoreCase(scd.name.getSimple())) {
+                    return scd.dataType.getTypeNameSpec().getTypeName().getSimple();
+                }
+            }
+        }
+        return null;
     }
 }

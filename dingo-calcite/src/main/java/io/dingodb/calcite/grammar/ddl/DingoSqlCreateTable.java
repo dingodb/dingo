@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.sql.ddl;
+package io.dingodb.calcite.grammar.ddl;
 
 import io.dingodb.common.partition.DingoTablePart;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 

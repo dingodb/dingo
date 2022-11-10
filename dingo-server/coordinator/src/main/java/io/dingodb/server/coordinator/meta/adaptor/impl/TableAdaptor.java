@@ -147,6 +147,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             tablePartList.add(tablePart);
         }
         metaStore.upsertKeyValue(keyValues);
+        keyValues.clear();
         metaMap.put(tableId, table);
         super.save(table);
         columns.forEach(columnAdaptor::save);
@@ -161,6 +162,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
                 throw new RuntimeException("Table meta save success, but schedule failed.", e);
             }
         }
+        metaStore.upsertKeyValue(keyValues);
     }
 
     private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) throws IOException {

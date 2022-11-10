@@ -17,7 +17,6 @@
 package io.dingodb.calcite;
 
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.ddl.MutableSchema;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;

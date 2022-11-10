@@ -22,5 +22,4 @@ plugins {
 dependencies {
     api group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation project(':dingo-calcite')
-    implementation project(':dingo-ddl')
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.ddl;
+package io.dingodb.calcite;
 
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;

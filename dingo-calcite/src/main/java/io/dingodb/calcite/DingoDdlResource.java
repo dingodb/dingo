@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.ddl;
+package io.dingodb.calcite;
 
 import org.apache.calcite.runtime.Resources;
 
