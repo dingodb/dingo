@@ -249,9 +249,6 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     DingoTablePart dingoTablePart = null;
-    String partNm = null;
-    String comSymbol = null;
-    String operand = null;
     Map<String,Object> attrList = null;
     List<DingoPartDetail> partList = null;
     String partType = null;
@@ -281,40 +278,6 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
-List<DingoPartDetail> defPart() : {
-    List<DingoPartDetail> listParts = new ArrayList<DingoPartDetail>();
-    Object partNm = null;
-    String operator = null;
-    List<Object> operand = null;
-}{
-    <LPAREN>
-    [
-       <PARTITION>
-       partNm = anything()
-       <VALUES>
-       operator = symbol()
-       <THAN>
-        [ operand = getPartVals() ]
-        [ <MAXVALUE> { operand = new ArrayList<Object>(); operand.add("MAXVALUE"); } ]
-       { listParts.add(new DingoPartDetail(partNm, operator, operand)); }
-       { partNm = null; operator = null; operand = null; }
-       (
-          <COMMA>
-          <PARTITION>
-          partNm = anything()
-          <VALUES>
-          operator = symbol()
-          <THAN>
-          [ operand = getPartVals() ]
-          [ <MAXVALUE> { operand = new ArrayList<Object>(); operand.add("MAXVALUE"); } ]
-          { listParts.add(new DingoPartDetail(partNm, operator, operand )); }
-          { partNm = null; operator = null; operand = null; }
-       )*
-    ]
-    <RPAREN>
-    { return listParts; }
-}
-
 List<DingoPartDetail> defPartNew() : {
     List<DingoPartDetail> listParts = new ArrayList<DingoPartDetail>();
     Object partNm = null;
@@ -336,17 +299,6 @@ List<DingoPartDetail> defPartNew() : {
     ]
     <RPAREN>
     { return listParts; }
-}
-
-Object getPartPairVal() : {
-   Object operand = null;
-}{
-     <LPAREN>
-     [
-        operand = anything()
-     ]
-     <RPAREN>
-     { return operand; }
 }
 
 List<Object> getPartVals() : {
@@ -434,7 +386,7 @@ Map<String,Object> AttrMap() : {
 String symbol() : {
 }{
 	<IDENTIFIER>
-	{ return token.image.toUpperCase(); }
+	{ return token.image; }
 }
 
 String getPartCol() : {
@@ -456,12 +408,16 @@ Object anything() : {
 }{
 	(
 	  x = symbol()
-	| x = number()
+	| <DECIMAL_NUMERIC_LITERAL>
+	| <DATE_LITERAL>
+	| <TIME_LITERAL>
+	| <DATE_TIME>
+	| x = number() { return x; }
 	| x = booleanValue()
 	| x = NonReservedKeyWord()
 	| x = nullValue()
 	)
-	{ return x; }
+	{ return token.image; }
 }
 
 Boolean booleanValue(): {
@@ -481,6 +437,7 @@ Boolean booleanValue(): {
 
 Number number(): {
 	Token t;
+	Number n;
 }{
 	 (
         t = <UNSIGNED_INTEGER_LITERAL>
@@ -491,6 +448,11 @@ Number number(): {
                 return new BigInteger(substringBefore(t.image, '.'));
             }
         }
+      ) | (
+        <MINUS>
+         n = number() {
+            return ((BigInteger) n).multiply(new BigInteger("-1"));
+          }
       )
 }
 

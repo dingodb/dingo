@@ -16,7 +16,14 @@
 
 package io.dingodb.serial.test.util;
 
-import io.dingodb.serial.schema.*;
+import io.dingodb.serial.schema.BooleanSchema;
+import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.DoubleSchema;
+import io.dingodb.serial.schema.FloatSchema;
+import io.dingodb.serial.schema.IntegerSchema;
+import io.dingodb.serial.schema.LongSchema;
+import io.dingodb.serial.schema.ShortSchema;
+import io.dingodb.serial.schema.StringSchema;
 import io.dingodb.serial.util.Utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

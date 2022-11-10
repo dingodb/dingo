@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
@@ -45,7 +46,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlUserDefinedOperators;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;

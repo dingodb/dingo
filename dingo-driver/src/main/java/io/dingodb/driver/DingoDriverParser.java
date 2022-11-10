@@ -17,6 +17,7 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoDdlParserFactory;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.MetaCache;
@@ -24,7 +25,6 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.driver.DingoSignature;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.ddl.DingoDdlParserFactory;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;

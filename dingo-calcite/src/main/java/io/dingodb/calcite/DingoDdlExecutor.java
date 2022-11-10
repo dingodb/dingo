@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.ddl;
+package io.dingodb.calcite;
 
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -33,9 +36,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlTruncate;
 import org.apache.calcite.sql.SqlUtil;
-import org.apache.calcite.sql.ddl.DingoSqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -269,17 +270,31 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 List<String> cols = dingoTablePart.getCols();
 
                 int partColsSize = cols.size();
+
                 List<DingoPartDetail> rangePartList = dingoTablePart.getPartDetailList();
                 for (DingoPartDetail rangePart : rangePartList) {
                     if (rangePart.getOperand().size() != partColsSize) {
                         throw new SQLException("keep all partition types consistent!");
                     }
                     for (int i = 0; i < rangePart.getOperand().size(); i ++) {
+                        String colType = dingoTablePart.getColumnTypeByNm(cols.get(i), create);
                         Object operand = rangePart.getOperand().get(i);
                         // becase javacc compile BigInteger for int
                         if (operand instanceof BigInteger) {
                             operand = ((BigInteger) operand).intValue();
                             rangePart.getOperand().set(i, operand);
+                        }
+
+                        if ("VARCHAR".equalsIgnoreCase(colType)) {
+                            rangePart.getOperand().set(i, new String(operand.toString()));
+                        } else if ("DOUBLE".equalsIgnoreCase(colType)) {
+                            rangePart.getOperand().set(i, new Double(operand.toString()));
+                        } else if ("DATE".equalsIgnoreCase(colType)) {
+                            rangePart.getOperand().set(i, DateTimeUtils.parseDate(operand.toString()));
+                        } else if ("TIME".equalsIgnoreCase(colType)) {
+                            rangePart.getOperand().set(i, DateTimeUtils.parseTime(operand.toString()));
+                        } else if ("TIMESTAMP".equalsIgnoreCase(colType)) {
+                            rangePart.getOperand().set(i, DateTimeUtils.parseTimestamp(operand.toString()));
                         }
                     }
                 }

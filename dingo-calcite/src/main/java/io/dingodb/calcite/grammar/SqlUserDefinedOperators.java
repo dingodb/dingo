@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.sql;
+package io.dingodb.calcite.grammar;
 
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 
 public class SqlUserDefinedOperators {
