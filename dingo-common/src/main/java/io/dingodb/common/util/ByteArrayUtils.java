@@ -24,10 +24,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.apache.commons.compress.utils.ByteUtils;
+import org.luaj.vm2.ast.Str;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ByteArrayUtils {
 
@@ -162,6 +166,10 @@ public class ByteArrayUtils {
         } else {
             throw new IndexOutOfBoundsException();
         }
+    }
+
+    public static List<byte[]> toList(byte[]... bytes) {
+        return Stream.of(bytes).collect(Collectors.toList());
     }
 
     public static void main(String[] args) {
