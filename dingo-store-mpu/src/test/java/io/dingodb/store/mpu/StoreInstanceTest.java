@@ -34,10 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
-import java.util.Arrays;
-
-import javax.swing.text.html.HTMLDocument;
 
 class StoreInstanceTest {
 
@@ -79,22 +75,112 @@ class StoreInstanceTest {
     @Test
     void testSetGet() {
         storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
-        System.out.println(new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
-    }
-    @Test
-    void testScan() {
-        storeInstance.upsertKeyValue("aaaa1000".getBytes(), "value01".getBytes());
-        storeInstance.upsertKeyValue("abbb10001".getBytes(), "value02".getBytes());
-        storeInstance.upsertKeyValue("aaaa10002".getBytes(), "value03".getBytes());
-        storeInstance.upsertKeyValue("abbb100043".getBytes(), "value04".getBytes());
 
-        Iterator<KeyValue> it = storeInstance.keyValueScan();
+        Assertions.assertEquals("value", new String(storeInstance.getValueByPrimaryKey("test".getBytes())));
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanNotIncludeStart() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "2".getBytes(), false, true);
 
         List<String> result = readIterator(it);
         String[] actual = result.toArray(new String[result.size()]);
 
-        String[] expected = {"value01", "value03", "value02", "value04"};
+        String[] expected = {"value02"};
         Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanIncludeStart() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "2".getBytes(), true, true);
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value02"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanContinuousIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "2".getBytes(), true, true);
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value02"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanContinuousNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "2".getBytes(), true, false);
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanNotContinuousIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "3".getBytes(), true, true);
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value02", "value03"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testScanNotContinuousNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("1".getBytes(), "3".getBytes(), true, false);
+
+        List<String> result = readIterator(it);
+        String[] actual = result.toArray(new String[result.size()]);
+
+        String[] expected = {"value01", "value02"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
     @Test
@@ -111,7 +197,10 @@ class StoreInstanceTest {
 
         String[] expected = {"value01", "value03"};
         Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
+
     @Test
     void testPrefixScan02() {
         storeInstance.upsertKeyValue("dddd1000".getBytes(), "value01".getBytes());
@@ -125,6 +214,8 @@ class StoreInstanceTest {
 
         String[] expected = {"value04", "value01", "value03"};
         Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
     @Test
@@ -140,5 +231,46 @@ class StoreInstanceTest {
 
         String[] expected = {"value01"};
         Assertions.assertArrayEquals(expected, actual);
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testDelete01() {
+        storeInstance.upsertKeyValue("oaaa1000".getBytes(), "value01".getBytes());
+
+        Assertions.assertTrue(storeInstance.delete("oaaa1000".getBytes()));
+    }
+
+    @Test
+    void testDeleteRange01() {
+        storeInstance.upsertKeyValue("vaaa1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("vbbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("vvee20002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("vffb100043".getBytes(), "value04".getBytes());
+
+        Assertions.assertTrue(storeInstance.delete("vaaa1000".getBytes(), "vffb100043".getBytes()));
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("vaaa1000".getBytes(), "vffb100043".getBytes());
+        List<String> result = readIterator(it);
+        Assertions.assertEquals(0, result.size());
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Test
+    void testDeleteRange02() {
+        storeInstance.upsertKeyValue("waaa1000".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("wbbb10001".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("wvee20002".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("wffb100043".getBytes(), "value04".getBytes());
+
+        Assertions.assertTrue(storeInstance.delete("000000".getBytes(), "zzzzzz".getBytes()));
+
+        Iterator<KeyValue> it = storeInstance.keyValueScan("000000".getBytes(), "zzzzzz".getBytes());
+        List<String> result = readIterator(it);
+        Assertions.assertEquals(0, result.size());
+
+        storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 }

@@ -114,12 +114,15 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     @Override
     public Iterator scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd) {
-        log.debug("rocksdb reader scan: {} {} {} {}",
-            startKey != null ? new String(startKey) : "null",
-            endKey != null ? new String(endKey) : "null", withStart, withEnd);
+        if (log.isDebugEnabled()) {
+            log.debug("rocksdb reader scan: {} {} {} {}",
+                startKey != null ? Arrays.toString(startKey) : "null",
+                endKey != null ? Arrays.toString(endKey) : "null", withStart, withEnd);
+        }
+
         if (maybePrefixScan(startKey, endKey)) {
             readOptions.setAutoPrefixMode(true);
-            readOptions.setIterateUpperBound(new Slice(endKey));
+            readOptions.setIterateUpperBound(new Slice(withEnd ? ByteArrayUtils.increment(endKey) : endKey));
         }
 
         return new Iterator(db.newIterator(handle, readOptions), startKey, endKey, withStart, withEnd);
@@ -237,7 +240,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
         @Override
         public boolean hasNext() {
-            return iterator.isValid();
+            return iterator.isValid() && _end.test(iterator.key());
         }
 
         @Override

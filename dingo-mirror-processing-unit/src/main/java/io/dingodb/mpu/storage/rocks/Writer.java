@@ -16,18 +16,23 @@
 
 package io.dingodb.mpu.storage.rocks;
 
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.instruction.Instruction;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.List;
+import java.util.zip.DataFormatException;
 
+@Slf4j
 @Accessors(chain = true, fluent = true)
 public class Writer implements io.dingodb.mpu.storage.Writer {
 
@@ -85,21 +90,48 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     @Override
     public void erase(byte[] begin, byte[] end) {
         try {
-            if (end == null) {
-                try (RocksIterator iter = db.newIterator()) {
-                    iter.seekToLast();
-                    if (iter.isValid()) {
-                        end = iter.key();
-                        writeBatch.delete(handler, end);
-                    } else {
-                        return;
-                    }
-                }
+            byte[] minKey = getMinKey();
+            byte[] maxKey = getMaxKey();
+            begin = (begin == null) ? minKey : begin;
+            end = (end == null) ? maxKey : end;
+
+            if (log.isDebugEnabled()) {
+                log.debug("erase range begin: {} end: {}", Arrays.toString(begin), Arrays.toString(end));
             }
-            writeBatch.deleteRange(handler, begin, end);
+
+            db.deleteRange(handler, begin, ByteArrayUtils.increment(end));
+
+            if (ByteArrayUtils.lessThanOrEqual(begin, minKey)
+                && ByteArrayUtils.greatThanOrEqual(end, maxKey)) {
+                db.deleteFilesInRanges(handler, ByteArrayUtils.toList(begin, end), true);
+
+                db.compactRange(handler);
+            }
+
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private byte[] getMinKey() {
+        try (RocksIterator iter = db.newIterator()) {
+            iter.seekToFirst();
+            if (iter.isValid()) {
+                return iter.key();
+            }
+        }
+
+        return ByteArrayUtils.EMPTY_BYTES;
+    }
+
+    private byte[] getMaxKey() {
+        try (RocksIterator iter = db.newIterator()) {
+            iter.seekToLast();
+            if (iter.isValid()) {
+                return iter.key();
+            }
+        }
+
+        return ByteArrayUtils.MAX_BYTES;
+    }
 }
