@@ -85,7 +85,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             parser.getSqlValidator().getOperatorTable(),
             catalogReader,
             typeFactory,
-            DingoParser.VALIDATOR_CONFIG
+            DingoSqlValidator.CONFIG
         );
         final SqlSelect select = (SqlSelect) validator.validate(select0);
         SqlNode sqlNode = select.getSelectList().get(0);

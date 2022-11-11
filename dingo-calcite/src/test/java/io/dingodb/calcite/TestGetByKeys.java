@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestGetByKeys {
     private static DingoParserContext context;
-    private static DingoParser parser;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {

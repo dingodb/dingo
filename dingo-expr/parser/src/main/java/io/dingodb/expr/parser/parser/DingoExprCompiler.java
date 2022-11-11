@@ -16,11 +16,12 @@
 
 package io.dingodb.expr.parser.parser;
 
+import io.dingodb.expr.parser.DefaultFunFactory;
 import io.dingodb.expr.parser.DingoExprLexer;
 import io.dingodb.expr.parser.DingoExprParser;
-import io.dingodb.expr.parser.DingoExprParserVisitor;
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprParseException;
+import io.dingodb.expr.parser.FunFactory;
+import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.exception.ExprSyntaxError;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -32,38 +33,34 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.List;
 
 public final class DingoExprCompiler {
-    private static final DingoExprCompiler INS = new DingoExprCompiler();
-    private static final DingoExprCompiler INS_DECIMAL = new DingoExprCompiler(true);
-
-    private final DingoExprParserVisitor<Expr> visitor;
+    private final DingoExprParserVisitorImpl visitor;
 
     private DingoExprErrorListener errorListener;
 
-    private DingoExprCompiler() {
-        this(false);
+    public DingoExprCompiler() {
+        this(new DefaultFunFactory());
     }
 
-    private DingoExprCompiler(boolean realAsBigDecimal) {
-        visitor = new DingoExprParserVisitorImpl(realAsBigDecimal);
-    }
-
-    public static Expr parse(String input) throws DingoExprParseException {
-        return parse(input, false);
+    public DingoExprCompiler(FunFactory funFactory) {
+        visitor = new DingoExprParserVisitorImpl(funFactory);
     }
 
     /**
      * Parse a given String input into an Expr.
      *
-     * @param input            the given String
-     * @param realAsBigDecimal whether a real should be parsed into a {@code BigDecimal} or {@code Double}
+     * @param input the given String
      * @return the Expr
-     * @throws DingoExprParseException if errors occurred in parsing
+     * @throws ExprParseException if errors occurred in parsing
      */
-    public static Expr parse(String input, boolean realAsBigDecimal) throws DingoExprParseException {
-        if (realAsBigDecimal) {
-            return INS_DECIMAL.parseInternal(input);
-        } else {
-            return INS.parseInternal(input);
+    public Expr parse(String input) throws ExprParseException {
+        errorListener = new DingoExprErrorListener();
+        DingoExprParser parser = getParser(input);
+        ParseTree tree = parser.expr();
+        collectParseError();
+        try {
+            return visitor.visit(tree);
+        } catch (ParseCancellationException e) {
+            throw new ExprParseException(e);
         }
     }
 
@@ -84,15 +81,7 @@ public final class DingoExprCompiler {
         }
     }
 
-    private Expr parseInternal(String input) throws DingoExprParseException {
-        errorListener = new DingoExprErrorListener();
-        DingoExprParser parser = getParser(input);
-        ParseTree tree = parser.expr();
-        collectParseError();
-        try {
-            return visitor.visit(tree);
-        } catch (ParseCancellationException e) {
-            throw new DingoExprParseException(e);
-        }
+    public FunFactory getFunFactory() {
+        return visitor.getFunFactory();
     }
 }

@@ -18,7 +18,6 @@ package io.dingodb.expr.runtime.op;
 
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -30,9 +29,12 @@ public abstract class RtFun extends RtEnvFun {
     }
 
     @Override
-    protected @Nullable Object envFun(@NonNull Object[] values, @Nullable EvalEnv env) throws FailGetEvaluator {
+    protected @Nullable Object envFun(
+        @NonNull Object @NonNull [] values,
+        @Nullable EvalEnv env
+    ) {
         return fun(values);
     }
 
-    protected abstract @Nullable Object fun(@NonNull Object[] values) throws FailGetEvaluator;
+    protected abstract @Nullable Object fun(@NonNull Object @NonNull [] values);
 }

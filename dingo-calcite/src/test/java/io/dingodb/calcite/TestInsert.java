@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Slf4j
 public class TestInsert {
     private static DingoParserContext context;
-    private static DingoParser parser;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {

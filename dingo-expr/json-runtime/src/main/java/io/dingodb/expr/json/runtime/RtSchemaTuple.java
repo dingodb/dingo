@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.json.runtime;
 
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;

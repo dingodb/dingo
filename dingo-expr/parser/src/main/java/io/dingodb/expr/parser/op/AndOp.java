@@ -16,19 +16,19 @@
 
 package io.dingodb.expr.parser.op;
 
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.logical.RtAndOp;
 import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class AndOp extends OpIgnoreEnv {
+public final class AndOp extends Op {
     public static final String FUN_NAME = "AND";
 
     private AndOp(OpType type) {
@@ -48,40 +48,39 @@ public final class AndOp extends OpIgnoreEnv {
     }
 
     @Override
-    protected @NonNull RtExpr evalNullConst(RtExpr @NonNull [] rtExprArray) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(
+        RtExpr @NonNull [] rtExprArray,
+        @Nullable EvalEnv env
+    ) {
         int size = rtExprArray.length;
-        try {
-            List<RtExpr> nonConstExprs = new ArrayList<>(size);
-            RtExpr result = RtConst.TRUE;
-            for (RtExpr rtExpr : rtExprArray) {
-                if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
-                    Object v = rtExpr.eval(null);
-                    if (v == null) {
-                        if (result == RtConst.TRUE) {
-                            result = RtNull.INSTANCE;
-                        }
-                    } else if (!RtLogicalOp.test(v)) {
-                        return RtConst.FALSE;
+        List<RtExpr> nonConstExprs = new ArrayList<>(size);
+        RtExpr result = RtConst.TRUE;
+        for (RtExpr rtExpr : rtExprArray) {
+            if (rtExpr instanceof RtConst || rtExpr instanceof RtNull) {
+                Object v = rtExpr.eval(null);
+                if (v == null) {
+                    if (result == RtConst.TRUE) {
+                        result = RtNull.INSTANCE;
                     }
-                } else {
-                    nonConstExprs.add(rtExpr);
+                } else if (!RtLogicalOp.test(v)) {
+                    return RtConst.FALSE;
                 }
-            }
-            if (nonConstExprs.size() == 0) {
-                return result;
             } else {
-                if (result == RtNull.INSTANCE) {
-                    nonConstExprs.add(result);
-                }
-                return createRtOp(nonConstExprs.toArray(new RtExpr[0]));
+                nonConstExprs.add(rtExpr);
             }
-        } catch (FailGetEvaluator e) {
-            throw new DingoExprCompileException(e);
+        }
+        if (nonConstExprs.size() == 0) {
+            return result;
+        } else {
+            if (result == RtNull.INSTANCE) {
+                nonConstExprs.add(result);
+            }
+            return createRtOp(nonConstExprs.toArray(new RtExpr[0]));
         }
     }
 
     @Override
-    protected @NonNull RtAndOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtAndOp createRtOp(RtExpr[] rtExprArray) {
         return new RtAndOp(rtExprArray);
     }
 }

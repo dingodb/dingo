@@ -16,9 +16,8 @@
 
 package io.dingodb.expr.runtime.op;
 
+import io.dingodb.expr.core.evaluator.Evaluator;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class RtEvaluatorOp extends RtFun {
@@ -37,7 +36,7 @@ public class RtEvaluatorOp extends RtFun {
     }
 
     @Override
-    protected Object fun(@NonNull Object[] values) throws FailGetEvaluator {
+    protected Object fun(@NonNull Object @NonNull [] values) {
         return evaluator.eval(values);
     }
 

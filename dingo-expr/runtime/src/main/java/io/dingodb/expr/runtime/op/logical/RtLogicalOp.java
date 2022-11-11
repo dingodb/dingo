@@ -16,11 +16,10 @@
 
 package io.dingodb.expr.runtime.op.logical;
 
+import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.core.evaluator.EvaluatorKey;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
 import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -35,13 +34,11 @@ public abstract class RtLogicalOp extends RtOp {
         if (value == null) {
             return false;
         }
-        try {
-            return (boolean) BooleanCastEvaluatorFactory.INSTANCE
-                .getEvaluator(EvaluatorKey.UNIVERSAL)
-                .eval(new Object[]{value});
-        } catch (FailGetEvaluator e) {
-            throw new IllegalArgumentException(e);
-        }
+        Object result = BooleanCastEvaluatorFactory.INSTANCE
+            .getEvaluator(EvaluatorKey.UNIVERSAL)
+            .eval(new Object[]{value});
+        assert result != null;
+        return (boolean) result;
     }
 
     @Override

@@ -29,7 +29,7 @@ import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;

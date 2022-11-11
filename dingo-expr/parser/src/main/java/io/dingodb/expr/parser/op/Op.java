@@ -17,17 +17,17 @@
 package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.RtNull;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import lombok.Getter;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +59,7 @@ public abstract class Op implements Expr {
         return type.getPrecedence();
     }
 
-    protected final RtExpr @NonNull [] compileExprArray(CompileContext ctx) throws DingoExprCompileException {
+    protected final RtExpr @NonNull [] compileExprArray(CompileContext ctx) throws ExprCompileException {
         RtExpr[] rtExprArray = new RtExpr[exprArray.length];
         int i = 0;
         for (Expr expr : exprArray) {
@@ -68,36 +68,32 @@ public abstract class Op implements Expr {
         return rtExprArray;
     }
 
-    protected @NonNull RtExpr evalNullConstEnv(
-        RtExpr[] rtExprArray,
-        EvalEnv env
-    ) throws DingoExprCompileException {
+    protected @NonNull RtExpr evalNullConst(
+        RtExpr @NonNull [] rtExprArray,
+        @Nullable EvalEnv env
+    ) {
         if (evalNull(rtExprArray)) {
             return RtNull.INSTANCE;
         }
         return evalConst(rtExprArray, env);
     }
 
-    protected boolean evalNull(RtExpr[] rtExprArray) {
+    protected boolean evalNull(RtExpr @NonNull [] rtExprArray) {
         return Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull);
     }
 
-    protected @NonNull RtExpr evalConst(RtExpr[] rtExprArray, EvalEnv env) throws DingoExprCompileException {
-        try {
-            RtOp rtOp = createRtOp(rtExprArray);
-            if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
-                return new RtConst(rtOp.eval(new ConstEvalContext(env)));
-            }
-            return rtOp;
-        } catch (FailGetEvaluator e) {
-            throw new DingoExprCompileException(e);
+    protected @NonNull RtExpr evalConst(RtExpr @NonNull [] rtExprArray, @Nullable EvalEnv env) {
+        RtOp rtOp = createRtOp(rtExprArray);
+        if (Arrays.stream(rtExprArray).allMatch(e -> e instanceof RtConst)) {
+            return new RtConst(rtOp.eval(new ConstEvalContext(env)));
         }
+        return rtOp;
     }
 
     @Override
-    public @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
+    public @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
-        return evalNullConstEnv(rtExprArray, ctx != null ? ctx.getEnv() : null);
+        return evalNullConst(rtExprArray, ctx != null ? ctx.getEnv() : null);
     }
 
     /**
@@ -112,7 +108,7 @@ public abstract class Op implements Expr {
         }
     }
 
-    protected abstract @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator;
+    protected abstract @NonNull RtOp createRtOp(RtExpr[] rtExprArray);
 
     @Override
     public String toString() {

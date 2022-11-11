@@ -25,7 +25,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,10 +33,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoParser {
-    private static DingoParser parser;
+    private DingoParser parser;
 
-    @BeforeAll
-    public static void setupAll() {
+    @BeforeEach
+    public void setupAll() {
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
     }

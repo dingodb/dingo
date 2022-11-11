@@ -16,10 +16,10 @@
 
 package io.dingodb.expr.json.schema;
 
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.json.runtime.RtSchema;
 import io.dingodb.expr.json.runtime.RtSchemaArray;
 import io.dingodb.expr.json.runtime.RtSchemaRoot;
-import io.dingodb.expr.runtime.TypeCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 

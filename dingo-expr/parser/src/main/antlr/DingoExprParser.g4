@@ -2,8 +2,8 @@ parser grammar DingoExprParser;
 
 options { tokenVocab=DingoExprLexer; }
 
-expr : INT                                                           # Int
-     | REAL                                                          # Real
+expr : (ADD | SUB)? INT                                              # Int
+     | (ADD | SUB)? REAL                                             # Real
      | STR                                                           # Str
      | BOOL                                                          # Bool
      | ID                                                            # Var

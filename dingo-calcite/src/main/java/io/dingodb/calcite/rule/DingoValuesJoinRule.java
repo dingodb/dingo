@@ -21,11 +21,10 @@ import io.dingodb.calcite.utils.CalcValueUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ArrayUtils;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.parser.exception.ElementNotExists;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.EvalEnv;
-import io.dingodb.expr.runtime.TypeCode;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -70,7 +69,7 @@ public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> imp
                 }
             } catch (ElementNotExists e) {
                 return;
-            } catch (DingoExprCompileException | FailGetEvaluator e) {
+            } catch (ExprCompileException e) {
                 throw new RuntimeException(e);
             }
             call.transformTo(new LogicalDingoValues(

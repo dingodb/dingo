@@ -45,7 +45,7 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestJoin {
     private static DingoParserContext context;
-    private static DingoParser parser;
+    private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {

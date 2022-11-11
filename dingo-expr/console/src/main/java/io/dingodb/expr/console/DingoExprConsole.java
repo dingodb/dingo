@@ -17,10 +17,9 @@
 package io.dingodb.expr.console;
 
 import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
-import io.dingodb.expr.parser.exception.DingoExprParseException;
+import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,6 +35,7 @@ public final class DingoExprConsole {
         System.out.println(config.getString("hello"));
         String prompt = config.getString("prompt");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        DingoExprCompiler compiler = new DingoExprCompiler();
         while (true) {
             System.out.print(prompt);
             try {
@@ -43,9 +43,9 @@ public final class DingoExprConsole {
                 if (input.isEmpty()) {
                     break;
                 }
-                Expr expr = DingoExprCompiler.parse(input);
+                Expr expr = compiler.parse(input);
                 System.out.println(expr.compileIn(null).eval(null));
-            } catch (IOException | DingoExprParseException | DingoExprCompileException | FailGetEvaluator e) {
+            } catch (IOException | ExprParseException | ExprCompileException e) {
                 e.printStackTrace();
             }
         }

@@ -17,10 +17,6 @@
 package io.dingodb.expr.runtime.evaluator.arithmetic;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.evaluator.base.Evaluator;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.base.EvaluatorKey;
-import io.dingodb.expr.runtime.evaluator.base.UniversalEvaluator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -32,10 +28,6 @@ import java.sql.Timestamp;
 
 @Slf4j
 @Evaluators(
-    evaluatorKey = EvaluatorKey.class,
-    evaluatorBase = Evaluator.class,
-    evaluatorFactory = EvaluatorFactory.class,
-    universalEvaluator = UniversalEvaluator.class,
     induceSequence = {BigDecimal.class, Double.class, Long.class, Integer.class}
 )
 final class ArithmeticEvaluators {
@@ -149,18 +141,6 @@ final class ArithmeticEvaluators {
 
     static @NonNull BigDecimal div(@NonNull BigDecimal value0, BigDecimal value1) {
         return value0.divide(value1, RoundingMode.HALF_EVEN);
-    }
-
-    static int abs(int num) {
-        return Math.abs(num);
-    }
-
-    static long abs(long num) {
-        return Math.abs(num);
-    }
-
-    static double abs(double num) {
-        return Math.abs(num);
     }
 
     static int min(int value0, int value1) {

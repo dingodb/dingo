@@ -28,7 +28,7 @@ import io.dingodb.exec.codec.AvroTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.util.TagUtil;
+import io.dingodb.exec.utils.TagUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ public final class SendOperator extends SinkOperator {
         super.init();
         codec = new AvroTxRxCodec(schema);
         try {
-            endpoint = new SendEndpoint(host, port, TagUtil.tag(getTask().getJobId(), receiveId));
+            endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
             endpoint.init();
         } catch (Exception e) {
             log.error("Send operator init error, host:{}, port:{}", host, port, e);

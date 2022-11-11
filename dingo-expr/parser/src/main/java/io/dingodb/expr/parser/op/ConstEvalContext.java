@@ -16,9 +16,9 @@
 
 package io.dingodb.expr.parser.op;
 
+import io.dingodb.expr.parser.exception.NeverRunToHere;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.EvalEnv;
-import io.dingodb.expr.runtime.exception.NeverRunToHere;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.util.TypeUtils;
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import org.apache.avro.Schema;

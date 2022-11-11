@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.json.runtime;
 
-import io.dingodb.expr.runtime.TypeCode;
+import io.dingodb.expr.core.TypeCode;
 import lombok.Getter;
 
 public class RtSchemaArray extends RtSchemaLeaf {

@@ -16,14 +16,13 @@
 
 package io.dingodb.expr.parser.op;
 
-import io.dingodb.expr.parser.exception.DingoExprCompileException;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.parser.exception.InvalidIndex;
 import io.dingodb.expr.parser.var.VarStub;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.evaluator.index.IndexEvaluatorFactory;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import io.dingodb.expr.runtime.op.RtOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -36,12 +35,12 @@ public final class IndexOp extends OpWithEvaluator {
     }
 
     @Override
-    public @NonNull RtExpr compileIn(CompileContext ctx) throws DingoExprCompileException {
+    public @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
         if (rtExprArray[0] instanceof VarStub) {
             VarStub stub = (VarStub) rtExprArray[0];
             if (rtExprArray[1] instanceof RtConst) {
-                Object index = ((RtConst) rtExprArray[1]).eval(null);
+                Object index = rtExprArray[1].eval(null);
                 if (index instanceof Number) {
                     return stub.getElement(((Number) index).intValue());
                 } else if (index instanceof String) {
@@ -50,11 +49,11 @@ public final class IndexOp extends OpWithEvaluator {
             }
             throw new InvalidIndex(rtExprArray[1]);
         }
-        return evalNullConstEnv(rtExprArray, ctx != null ? ctx.getEnv() : null);
+        return evalNullConst(rtExprArray, ctx != null ? ctx.getEnv() : null);
     }
 
     @Override
-    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) throws FailGetEvaluator {
+    protected @NonNull RtOp createRtOp(RtExpr[] rtExprArray) {
         return super.createRtOp(rtExprArray);
     }
 }

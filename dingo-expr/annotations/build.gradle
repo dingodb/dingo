@@ -22,7 +22,7 @@ plugins {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     implementation group: 'com.squareup', name: 'javapoet', version: 'javapoet'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
+    implementation project(':dingo-expr:dingo-expr-core')
 }

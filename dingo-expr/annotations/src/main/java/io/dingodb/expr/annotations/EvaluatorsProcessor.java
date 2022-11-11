@@ -17,7 +17,6 @@
 package io.dingodb.expr.annotations;
 
 import com.google.auto.service.AutoService;
-import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
@@ -140,20 +139,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
             .build();
     }
 
-    // Helper to get annotation value of type `Class<?>`
-    private static @Nullable AnnotationValue getAnnotationValue(
-        @NonNull AnnotationMirror annotationMirror,
-        String methodName
-    ) {
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry
-            : annotationMirror.getElementValues().entrySet()) {
-            if (entry.getKey().getSimpleName().toString().equals(methodName)) {
-                return entry.getValue();
-            }
-        }
-        return null;
-    }
-
     private static @Nullable ExecutableElement getMethodByNameAndParaTypes(
         @NonNull TypeElement element,
         String name,
@@ -206,8 +191,11 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         } else if (required.equals(TypeName.get(Long.class))
             || required.equals(TypeName.LONG)
         ) {
-            if (actual.equals((TypeName.get(BigDecimal.class)))
-                || actual.equals(TypeName.get(Integer.class))
+            if (actual.equals(TypeName.get(BigDecimal.class))) {
+                // TODO: to be consistent with cast function
+                builder.add("(($T) $L[$L]).longValue()", actual, paraName, paraIndex);
+                converted = true;
+            } else if (actual.equals(TypeName.get(Integer.class))
                 || actual.equals(TypeName.get(Double.class))
             ) {
                 builder.add("(($T) $L[$L]).longValue()", actual, paraName, paraIndex);
@@ -216,8 +204,11 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         } else if (required.equals(TypeName.get(Integer.class))
             || required.equals(TypeName.INT)
         ) {
-            if (actual.equals(TypeName.get(BigDecimal.class))
-                || actual.equals(TypeName.get(Double.class))
+            if (actual.equals(TypeName.get(BigDecimal.class))) {
+                // TODO: to be consistent with cast function
+                builder.add("(($T) $L[$L]).intValue()", actual, paraName, paraIndex);
+                converted = true;
+            } else if (actual.equals(TypeName.get(Double.class))
                 || actual.equals(TypeName.get(Long.class))
             ) {
                 builder.add("(($T) $L[$L]).intValue()", actual, paraName, paraIndex);
@@ -249,6 +240,20 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         }
         codeBuilder.add(");\n");
         return codeBuilder.build();
+    }
+
+    // Helper to get annotation value of type `Class<?>`
+    private @Nullable AnnotationValue getAnnotationValue(
+        @NonNull AnnotationMirror annotationMirror,
+        String methodName
+    ) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry
+            : processingEnv.getElementUtils().getElementValuesWithDefaults(annotationMirror).entrySet()) {
+            if (entry.getKey().getSimpleName().toString().equals(methodName)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     private List<TypeElement> findSuperTypes(@NonNull TypeElement element) {
@@ -294,18 +299,21 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         return null;
     }
 
-    private @NonNull TypeElement getTypeElementFromAnnotationValue(
+    private @Nullable TypeElement getTypeElementFromAnnotationValue(
         @NonNull AnnotationMirror annotationMirror,
         String methodName
     ) {
         AnnotationValue value = getAnnotationValue(annotationMirror, methodName);
-        // com.sun.tools.javac.code.Type.ClassType
-        TypeMirror type = (TypeMirror) Objects.requireNonNull(value).getValue();
-        TypeElement element = processingEnv.getElementUtils().getTypeElement(type.toString());
-        if (element == null) {
-            throw new IllegalStateException("Cannot find a class of name \"" + type + "\".");
+        if (value != null) {
+            // com.sun.tools.javac.code.Type.ClassType
+            TypeMirror type = (TypeMirror) value.getValue();
+            TypeElement element = processingEnv.getElementUtils().getTypeElement(type.toString());
+            if (element == null) {
+                throw new IllegalStateException("Cannot find a class of name \"" + type + "\".");
+            }
+            return element;
         }
-        return element;
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -371,10 +379,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
             return;
         }
         TypeElement evaluatorBase = info.getEvaluatorBase();
-        AnnotationMirror annotationMirror = getAnnotationMirror(element, Evaluators.Base.class);
-        if (annotationMirror != null) {
-            evaluatorBase = getTypeElementFromAnnotationValue(annotationMirror, "value");
-        }
         ExecutableElement evalMethod = getOverridingMethod(
             evaluatorBase,
             EVALUATOR_EVAL_METHOD,
@@ -395,10 +399,9 @@ public class EvaluatorsProcessor extends AbstractProcessor {
             null
         );
         MethodSpec typeCodeSpec = null;
-        TypeCodeInfo typeCodeInfo = info.getTypeCodeInfo();
         if (typeCodeMethod != null) {
             typeCodeSpec = MethodSpec.overriding(typeCodeMethod)
-                .addStatement("return $L", typeCodeInfo.typeOf(returnType))
+                .addStatement("return $L", TypeCodeUtils.typeOf(returnType))
                 .build();
         }
         String className = getClassName(evaluatorName, newParas);
@@ -478,7 +481,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                 List<TypeName> paraTypeNames = evaluatorInfo.getParaTypeNames();
                 initBuilder.addStatement("$L.put($L, new $T())",
                     EVALUATORS_VAR,
-                    info.getTypeCodeInfo().evaluatorKeyOf(evaluatorKey, paraTypeNames),
+                    TypeCodeUtils.evaluatorKeyOf(evaluatorKey, paraTypeNames),
                     ClassName.get(packageName, evaluatorInfo.getClassName())
                 );
             }
@@ -486,7 +489,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                 EVALUATORS_VAR,
                 evaluatorKey,
                 ClassName.get(universalEvaluator),
-                info.getTypeCodeInfo().typeOf(generalReturnType)
+                TypeCodeUtils.typeOf(generalReturnType)
             );
             ClassName className = ClassName.get(packageName, getFactoryClassName(m));
             TypeSpec typeSpec = TypeSpec.classBuilder(className)
@@ -510,8 +513,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     private void generateEvaluators(@NonNull Element element, EvaluatorsInfo info) throws IOException {
         Element pkg = element.getEnclosingElement();
         if (pkg.getKind() != ElementKind.PACKAGE) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "Class annotated with \"Evaluators\" must not be an inner class.");
+            throw new IllegalStateException("Class annotated with \"Evaluators\" must not be an inner class.");
         }
         info.setPackageName(pkg.asType().toString());
         info.setOriginClassName(TypeName.get(element.asType()));
@@ -526,9 +528,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return ImmutableSet.<String>builder()
-            .add(Evaluators.class.getName())
-            .build();
+        return Collections.singleton(Evaluators.class.getName());
     }
 
     @Override
@@ -544,24 +544,26 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         for (TypeElement annotation : annotations) {
             if (annotation.getQualifiedName().contentEquals(Evaluators.class.getCanonicalName())) {
                 try {
-                    TypeCodeInfo typeCodeInfo = TypeCodeInfo.createFromEnv(roundEnv);
                     Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotation);
                     for (Element element : elements) {
                         AnnotationMirror annotationMirror = getAnnotationMirror(element, Evaluators.class);
+                        if (annotationMirror == null) {
+                            throw new IllegalStateException("This should never show up.");
+                        }
                         TypeElement evaluatorKey = getTypeElementFromAnnotationValue(
-                            Objects.requireNonNull(annotationMirror),
+                            annotationMirror,
                             "evaluatorKey"
                         );
-                        TypeElement evaluator = getTypeElementFromAnnotationValue(
-                            Objects.requireNonNull(annotationMirror),
+                        TypeElement evaluatorBase = getTypeElementFromAnnotationValue(
+                            annotationMirror,
                             "evaluatorBase"
                         );
                         TypeElement evaluatorFactory = getTypeElementFromAnnotationValue(
-                            Objects.requireNonNull(annotationMirror),
+                            annotationMirror,
                             "evaluatorFactory"
                         );
                         TypeElement universalEvaluator = getTypeElementFromAnnotationValue(
-                            Objects.requireNonNull(annotationMirror),
+                            annotationMirror,
                             "universalEvaluator"
                         );
                         List<TypeName> induceSequence = getTypeNamesFromAnnotationValue(
@@ -569,16 +571,15 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                             "induceSequence"
                         );
                         EvaluatorsInfo info = new EvaluatorsInfo(
-                            typeCodeInfo,
                             evaluatorKey,
-                            evaluator,
+                            evaluatorBase,
                             evaluatorFactory,
                             universalEvaluator,
                             induceSequence
                         );
                         generateEvaluators(element, info);
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getLocalizedMessage());
                 }
             }

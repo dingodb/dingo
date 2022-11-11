@@ -18,7 +18,6 @@ package io.dingodb.expr.runtime.op.logical;
 
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.exception.FailGetEvaluator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class RtNotOp extends RtLogicalOp {
@@ -34,7 +33,7 @@ public class RtNotOp extends RtLogicalOp {
     }
 
     @Override
-    public @Nullable Object eval(EvalContext etx) throws FailGetEvaluator {
+    public @Nullable Object eval(EvalContext etx) {
         Object v = paras[0].eval(etx);
         return (v != null) ? !RtLogicalOp.test(v) : null;
     }
