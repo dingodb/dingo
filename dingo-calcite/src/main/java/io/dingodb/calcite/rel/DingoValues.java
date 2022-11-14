@@ -56,7 +56,11 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return getTuples().size();
+        int size = getTuples().size();
+        if (getStreaming().getDistribution() != null) {
+            return size / DingoTableScan.ASSUME_PARTS;
+        }
+        return size;
     }
 
     @Override

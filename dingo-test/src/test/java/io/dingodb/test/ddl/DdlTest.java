@@ -119,7 +119,6 @@ public class DdlTest {
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + type + "'" + value + "')"
         );
-        int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(DateTimeUtils.toUtcString(((Timestamp) result).getTime())).isEqualTo(value);
         sqlHelper.dropTable(tableName);
@@ -450,6 +449,27 @@ public class DdlTest {
         Object result = sqlHelper.querySingleValue("select data from " + tableName);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableDateDoubleWithNull() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id int,"
+                + "name varchar(20),"
+                + "age int,"
+                + "amount double,"
+                + "birthday date,"
+                + "primary key(id)"
+                + ")",
+            "insert into {table} values" +
+                "(1, 'Steven', 19, 23.5, '2010-01-09')," +
+                "(2, 'Lisi', 18, null, '1987-11-11')," +
+                "(3, 'Kitty', 22, 1000.0, '1990-09-15')"
+        );
+        Object result = sqlHelper.querySingleValue("select name from " + tableName + " where id = 3");
+        assertThat(result).isEqualTo("Kitty");
         sqlHelper.dropTable(tableName);
     }
 }
