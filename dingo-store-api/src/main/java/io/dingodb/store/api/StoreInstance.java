@@ -22,7 +22,6 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
 import io.dingodb.common.util.ByteArrayUtils;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 

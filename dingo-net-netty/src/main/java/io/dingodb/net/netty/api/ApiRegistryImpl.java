@@ -19,6 +19,10 @@ package io.dingodb.net.netty.api;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
+import io.dingodb.common.codec.transfer.KeyValueTransferCodeC;
+import io.dingodb.common.codec.transfer.TransferCodeCUtils;
+import io.dingodb.common.codec.transfer.impl.UpsertKeyValueUsingListCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
@@ -31,6 +35,7 @@ import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.Constant;
 import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.MurmurHash3;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -65,8 +70,9 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         return INSTANCE;
     }
 
-    private final Map<String, Object> definedMap = new ConcurrentHashMap<>();
-    private final Map<String, Method> declarationMap = new ConcurrentHashMap<>();
+    private final Map<Long, Object> definedMap = new ConcurrentHashMap<>();
+    private final Map<Long, Method> declarationMap = new ConcurrentHashMap<>();
+    private final Map<Long, KeyValueTransferCodeC> argumentsCodeCMap = new ConcurrentHashMap<>();
 
     @Override
     public <T> void register(Class<T> api, T defined) {
@@ -79,17 +85,48 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             if (name.isEmpty()) {
                 name = method.toGenericString();
             }
-            definedMap.put(name, defined);
-            declarationMap.put(name, method);
-            log.info("Register api: {}, method: {}, defined: {}", api.getName(), name, defined.getClass().getName());
+
+            Long murmurHashOfFn = MurmurHash3.hash64(name.getBytes());
+
+            definedMap.put(murmurHashOfFn, defined);
+            declarationMap.put(murmurHashOfFn, method);
+
+            String argumentCodeC = registerTransferArgsCodeCFn(murmurHashOfFn, method);
+            log.info("Register api: {}, method: {}, hashCode:{} , argumentCodeC:{} defined: {}",
+                api.getName(),
+                name,
+                murmurHashOfFn,
+                argumentCodeC,
+                defined.getClass().getName());
         }
     }
 
     @Override
     public <T> void register(String name, Method method, T defined) {
-        definedMap.put(name, defined);
-        declarationMap.put(name, method);
-        log.info("Register function: {}, defined: {}", name, defined.getClass().getName());
+        Long murmurHashCode = MurmurHash3.hash64(name.getBytes());
+        definedMap.put(murmurHashCode, defined);
+        declarationMap.put(murmurHashCode, method);
+
+        String transferArgsCodeCFn = registerTransferArgsCodeCFn(murmurHashCode, method);
+        log.info("Register function: {}, hashCode:{}, transferCodeC:{}, defined: {}",
+            name,
+            murmurHashCode,
+            transferArgsCodeCFn,
+            defined.getClass().getName());
+    }
+
+
+    private String registerTransferArgsCodeCFn(Long murmurHashOfFn, Method method) {
+        String transferCodeFn = "empty";
+        TransferArgsCodecAnnotation argumentCodeC = method.getAnnotation(TransferArgsCodecAnnotation.class);
+        if (argumentCodeC != null && !argumentCodeC.name().isEmpty()) {
+            KeyValueTransferCodeC transferCodeCObj = TransferCodeCUtils.GLOBAL_TRANSFER_CODEC.get(argumentCodeC.name());
+            if (transferCodeCObj != null) {
+                transferCodeFn = argumentCodeC.name();
+                argumentsCodeCMap.put(murmurHashOfFn, transferCodeCObj);
+            }
+        }
+        return transferCodeFn;
     }
 
     @Override
@@ -147,15 +184,24 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     }
 
     public <R> R invoke(String name, Channel channel, ByteBuffer buffer) {
-        Method method = declarationMap.get(name);
+        Long inputMurMurHashOfMethod = MurmurHash3.hash64(name.getBytes());
+        Method method = declarationMap.get(inputMurMurHashOfMethod);
         R result = null;
         Message message = Constant.API_VOID;
         try {
             if (method == null) {
                 NetError.API_NOT_FOUND.throwFormatError(name);
             }
-            Object[] args = deserializeArgs(channel, buffer, method.getParameterTypes());
-            result = (R) invoke(definedMap.get(name), method, args);
+
+            Object[] args = null;
+            KeyValueTransferCodeC transferCodeC = argumentsCodeCMap.get(inputMurMurHashOfMethod);
+            if (transferCodeC != null) {
+                args = deserializeTransferArgs(buffer, method.getParameterTypes(), transferCodeC);
+            } else {
+                args = deserializeArgs(channel, buffer, method.getParameterTypes());
+            }
+
+            result = (R) invoke(definedMap.get(inputMurMurHashOfMethod), method, args);
             if (result instanceof CompletableFuture) {
                 channel.setMessageListener(listenCancel(name, (CompletableFuture<?>) result));
                 invokeWithFuture(name, channel, (CompletableFuture<?>) result);
@@ -203,6 +249,17 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         }
         return args;
     }
+
+    private Object[] deserializeTransferArgs(ByteBuffer buffer,
+                                             Class<?>[] parameterTypes,
+                                             KeyValueTransferCodeC transferCodeC) {
+        if (parameterTypes == null || parameterTypes.length == 0) {
+            return API_EMPTY_ARGS;
+        }
+        Object[] args = transferCodeC.read(buffer);
+        return args;
+    }
+
 
     private MessageListener listenCancel(String name, CompletableFuture<?> future) {
         return (message, ch) -> {

@@ -23,6 +23,7 @@ dependencies {
     api project(':dingo-net-api')
     implementation project(":dingo-common")
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
+    implementation group: 'commons-codec', name: 'commons-codec', version: 'commons-codec'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
