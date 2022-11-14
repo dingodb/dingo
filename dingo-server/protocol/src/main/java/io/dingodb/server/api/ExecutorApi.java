@@ -17,6 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.api.annotation.ApiDeclaration;
@@ -29,12 +30,15 @@ public interface ExecutorApi {
     boolean exist(CommonId tableId, byte[] primaryKey);
 
     @ApiDeclaration
+    @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingKeyValue")
     boolean upsertKeyValue(CommonId tableId, KeyValue row);
 
     @ApiDeclaration
+    @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingListKeyValue")
     boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows);
 
     @ApiDeclaration
+    @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingByteArray")
     boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row);
 
     @ApiDeclaration

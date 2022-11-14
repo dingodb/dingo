@@ -19,10 +19,16 @@ package io.dingodb.net.netty.api;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
+import io.dingodb.common.codec.transfer.KeyValueTransferCodeC;
+import io.dingodb.common.codec.transfer.TransferCodeCUtils;
+import io.dingodb.common.codec.transfer.impl.UpsertKeyValueUsingListCodec;
+import io.dingodb.common.util.Utils;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.netty.Channel;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.codec.digest.MurmurHash3;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -59,7 +65,23 @@ public interface ApiProxy<T> extends InvocationHandler {
             channel.setMessageListener(callHandler(future));
             channel.setCloseListener(ch -> closeListener(channel, future));
             byte[] nameB = PrimitiveCodec.encodeString(name);
-            byte[] content = ProtostuffCodec.write(args);
+            byte[] content = null;
+
+            boolean isUsingDefaultCodeC = true;
+            TransferArgsCodecAnnotation transferCodecAnnotation = method.getAnnotation(TransferArgsCodecAnnotation.class);
+            if (transferCodecAnnotation != null) {
+                String transferCodeCName = transferCodecAnnotation.name();
+                KeyValueTransferCodeC transferCodeC = TransferCodeCUtils.GLOBAL_TRANSFER_CODEC.get(transferCodeCName);
+                if (transferCodeC != null) {
+                    content = transferCodeC.write(args);
+                    isUsingDefaultCodeC = false;
+                }
+            }
+
+            if (isUsingDefaultCodeC) {
+                content = ProtostuffCodec.write(args);
+            }
+
             invoke(
                 channel,
                 channel.buffer(API_T, nameB.length + content.length).writeBytes(nameB).writeBytes(content),

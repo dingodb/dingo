@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Utils;
 import lombok.EqualsAndHashCode;
 
 import java.io.IOException;
@@ -79,6 +80,55 @@ public class CommonId implements Comparable<CommonId>, Serializable {
             domain[0], domain[1], domain[2], domain[3],
             seq[0], seq[1], seq[2], seq[3],
             };
+    }
+
+    public byte[] toBytes4Transfer() {
+        /**
+         * total_field_cnt * 4 + type + identifier + domain + seqInBytes
+         */
+        int totalLen = 4 * Utils.INTEGER_LEN_IN_BYTES + (1 + identifier.length + domain.length + seq.length);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(totalLen);
+        byteBuffer.putInt(1)
+            .put(type)
+            .putInt(identifier.length)
+            .put(identifier)
+            .putInt(domain.length)
+            .put(domain)
+            .putInt(seq.length)
+            .put(seq);
+        return byteBuffer.array();
+    }
+
+    public static CommonId fromBytes4Transfer(byte[] bytes) {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+
+        /**
+         * get type of byte.
+         */
+        byteBuffer.getInt();
+        byte type = byteBuffer.get();
+
+        /**
+         * get identifier of bytes.
+         */
+        int identifierLen = byteBuffer.getInt();
+        byte[] identifier = new byte[identifierLen];
+        byteBuffer.get(identifier);
+
+        /**
+         * get domain of bytes.
+         */
+        int domainLen = byteBuffer.getInt();
+        byte[] domain = new byte[domainLen];
+        byteBuffer.get(domain);
+
+        /**
+         * get seq in bytes.
+         */
+        int seqLen = byteBuffer.getInt();
+        byte[] seqInBytes = new byte[seqLen];
+        byteBuffer.get(seqInBytes);
+        return new CommonId(type, identifier, domain, seqInBytes);
     }
 
     @Override
