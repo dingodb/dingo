@@ -22,10 +22,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.luaj.vm2.ast.Str;
 
 import java.nio.file.Path;
@@ -235,6 +232,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testDelete01() {
         storeInstance.upsertKeyValue("oaaa1000".getBytes(), "value01".getBytes());
@@ -242,6 +240,7 @@ class StoreInstanceTest {
         Assertions.assertTrue(storeInstance.delete("oaaa1000".getBytes()));
     }
 
+    @Disabled
     @Test
     void testDeleteRange01() {
         storeInstance.upsertKeyValue("vaaa1000".getBytes(), "value01".getBytes());
@@ -258,6 +257,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testDeleteRange02() {
         storeInstance.upsertKeyValue("waaa1000".getBytes(), "value01".getBytes());
