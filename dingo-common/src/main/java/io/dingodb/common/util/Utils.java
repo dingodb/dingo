@@ -79,4 +79,5 @@ public final class Utils {
         }
     }
 
+    public static final int INTEGER_LEN_IN_BYTES = 4;
 }

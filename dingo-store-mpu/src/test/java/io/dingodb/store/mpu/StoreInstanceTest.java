@@ -23,7 +23,6 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
 import org.junit.jupiter.api.*;
-import org.luaj.vm2.ast.Str;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

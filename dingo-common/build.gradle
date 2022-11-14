@@ -25,6 +25,7 @@ dependencies {
     api project(':dingo-expr:dingo-expr-json-runtime')
     api project(':dingo-serial')
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
+    implementation group: 'commons-codec', name: 'commons-codec', version: 'commons-codec'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
     compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()

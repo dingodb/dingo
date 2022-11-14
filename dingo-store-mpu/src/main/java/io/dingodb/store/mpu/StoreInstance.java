@@ -26,7 +26,6 @@ import io.dingodb.common.store.Part;
 import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.UdfUtils;
@@ -68,6 +67,7 @@ import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
+
 
 @Slf4j
 public class StoreInstance implements io.dingodb.store.api.StoreInstance {
@@ -233,22 +233,15 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         } else {
             kvList = rows;
         }
-        Part part = null;
-        for (KeyValue row : rows) {
-            if (part == null && (part = getPartByPrimaryKey(row.getPrimaryKey())) == null) {
-                throw new IllegalArgumentException(
-                    "The primary key " + Arrays.toString(row.getPrimaryKey()) + " not in current instance."
-                );
-            }
-            if (part != getPartByPrimaryKey(row.getPrimaryKey())) {
-                throw new IllegalArgumentException("The primary key list not in same part.");
-            }
+
+        List<byte[]> rowKeyList = kvList.stream().map(KeyValue::getPrimaryKey).collect(Collectors.toList());
+        boolean isAllKeyOnSamePart = isKeysOnSamePart(rowKeyList);
+        if (!isAllKeyOnSamePart) {
+            log.warn("The input keys are not in a same instance.");
+            throw new IllegalArgumentException("The key not in current instance.");
         }
-        if (part == null) {
-            throw new IllegalArgumentException(
-                "The key not in current instance."
-            );
-        }
+
+        Part part = getPartByPrimaryKey(kvList.get(0).getPrimaryKey());
         parts.get(part.getId()).exec(
             KVInstructions.id, KVInstructions.SET_BATCH_OC,
             kvList.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
@@ -290,24 +283,26 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             () -> parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC)
         );
         if (doDeleting) {
-            parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
-                ByteArrayUtils.EMPTY_BYTES, null).join();
+            parts.get(part.getId())
+                .exec(
+                KVInstructions.id,
+                KVInstructions.DEL_RANGE_OC,
+                   ByteArrayUtils.EMPTY_BYTES,
+                null)
+                .join();
         }
         return count.join();
     }
 
     @Override
     public long countDeleteByRange(byte[] startKey, byte[] endKey) {
-        Part part = getPartByPrimaryKey(startKey);
-        if (part == null) {
-            throw new IllegalArgumentException("The start and end not in current instance.");
-        }
-        if (endKey == null) {
-            endKey = part.getEnd();
-        } else if (getPartByPrimaryKey(endKey) != part) {
+        List<byte[]> keysInBytes = Arrays.asList(startKey, endKey);
+        boolean isKeysOnSamePart = isKeysOnSamePart(keysInBytes);
+        if (!isKeysOnSamePart) {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
 
+        Part part = getPartByPrimaryKey(startKey);
         CompletableFuture<Long> count = CompletableFuture.supplyAsync(
             () -> parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC)
         );
@@ -329,17 +324,11 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        Part part = null;
-        for (byte[] primaryKey : primaryKeys) {
-            if (part == null && (part = getPartByPrimaryKey(primaryKey)) == null) {
-                throw new IllegalArgumentException(
-                    "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
-                );
-            }
-            if (part != getPartByPrimaryKey(primaryKey)) {
-                throw new IllegalArgumentException("The primary key list not in same part.");
-            }
+        boolean isKeysOnSamePart = isKeysOnSamePart(primaryKeys);
+        if (!isKeysOnSamePart) {
+            throw new IllegalArgumentException("The primary key list not in same part.");
         }
+        Part part = getPartByPrimaryKey(primaryKeys.get(0));
         return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.GET_BATCH_OC, primaryKeys);
     }
 
@@ -358,54 +347,57 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
+
+        List<byte[]> keysInBytes = Arrays.asList(startPrimaryKey, endPrimaryKey);
+        boolean isKeysOnSamePart = isKeysOnSamePart(keysInBytes);
+        if (!isKeysOnSamePart) {
+            throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
+        }
+
         Part part = getPartByPrimaryKey(startPrimaryKey);
-        if (part == null) {
-            throw new IllegalArgumentException("The start and end not in current instance.");
-        }
-        if (endPrimaryKey == null) {
-            endPrimaryKey = part.getEnd();
-        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
-        }
         return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
+        byte[] startPrimaryKey,
+        byte[] endPrimaryKey,
+        boolean includeStart,
+        boolean includeEnd) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
+        List<byte[]> keysInBytes = Arrays.asList(startPrimaryKey, endPrimaryKey);
+        boolean isKeysOnSamePart = isKeysOnSamePart(keysInBytes);
+        if (!isKeysOnSamePart) {
+            throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
+        }
+
         Part part = getPartByPrimaryKey(startPrimaryKey);
-        if (part == null) {
-            throw new IllegalArgumentException("The start and end not in current instance.");
-        }
-        if (endPrimaryKey == null) {
-            endPrimaryKey = part.getEnd();
-        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
-        }
-        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey,
-            endPrimaryKey, includeStart, includeEnd);
+        return parts.get(part.getId())
+            .view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
     @Override
     public Iterator<KeyValue> keyValuePrefixScan(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
+        byte[] startPrimaryKey,
+        byte[] endPrimaryKey,
+        boolean includeStart,
+        boolean includeEnd) {
+        List<byte[]> keysInBytes = Arrays.asList(startPrimaryKey, endPrimaryKey);
+        boolean isKeysOnSamePart = isKeysOnSamePart(keysInBytes);
+        if (!isKeysOnSamePart) {
+            throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
+        }
+
         Part part = getPartByPrimaryKey(startPrimaryKey);
-        if (part == null) {
-            throw new IllegalArgumentException("The start and end not in current instance.");
-        }
-        if (endPrimaryKey == null) {
-            endPrimaryKey = part.getEnd();
-        } else if (getEndPartByPrimaryKey(endPrimaryKey) != part) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
-        }
-        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey,
-            endPrimaryKey, includeStart, includeEnd);
+        return parts.get(part.getId())
+            .view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
-    // if prefix is 0xFFFF... will throw exception. user must handle the exception.
+    /**
+     * f prefix is 0xFFFF... will throw exception. user must handle the exception.
+     * @param prefix key prefix
+     * @return iterator
+     */
     @Override
     public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
         return keyValuePrefixScan(prefix, ByteArrayUtils.increment(prefix), true, false);
@@ -418,18 +410,17 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         if (RocksUtils.ttlValid(this.ttl)) {
             timestamp = RocksUtils.getCurrentTimestamp();
         }
-        Part part = getPartByPrimaryKey(startPrimaryKey);
-        if (part == null) {
-            throw new IllegalArgumentException("The start and end not in current instance.");
-        }
-        if (endPrimaryKey == null) {
-            endPrimaryKey = part.getEnd();
-        } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
+
+        List<byte[]> keysInBytes = Arrays.asList(startPrimaryKey, endPrimaryKey);
+        boolean isKeysOnSamePart = isKeysOnSamePart(keysInBytes);
+        if (!isKeysOnSamePart) {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
-        parts.get(part.getId()).exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKey, endPrimaryKey,
-            operations,
-            timestamp).join();
+
+        Part part = getPartByPrimaryKey(startPrimaryKey);
+        parts.get(part.getId())
+            .exec(OpInstructions.id, OpInstructions.COMPUTE_OC,
+                startPrimaryKey, endPrimaryKey, operations, timestamp).join();
 
         return true;
     }
@@ -500,7 +491,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public Part getPartByPrimaryKey(byte[] primaryKey) {
         List<Part> partList = new ArrayList<>();
-
         startKeyPartMap.forEach((key, value) -> {
             if (lessThanOrEqual(key, primaryKey)) {
                 if (value.getEnd() == null || lessThan(primaryKey, value.getEnd())) {
@@ -687,5 +677,26 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
         KeyValue updatedKeyValue = udfGet(primaryKey, udfName, functionName, version);
         return upsertKeyValue(updatedKeyValue);
+    }
+
+    private boolean isKeysOnSamePart(List<byte[]> keyArrayList) {
+        if (keyArrayList == null || keyArrayList.size() < 1) {
+            return false;
+        }
+
+        boolean isOnSamePart = true;
+        Part part = getPartByPrimaryKey(keyArrayList.get(0));
+        for (int i = 1; i < keyArrayList.size(); i++) {
+            Part localPart = getPartByPrimaryKey(keyArrayList.get(i));
+            /**
+             * as Part has `Equal and HashCode`
+             */
+            if (!localPart.equals(part)) {
+                isOnSamePart = false;
+                break;
+            }
+        }
+
+        return isOnSamePart;
     }
 }
