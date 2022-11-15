@@ -47,6 +47,7 @@ class StoreInstanceTest {
         return result;
     }
 
+
     @BeforeAll
     public static void beforeAll() {
         FileUtils.createDirectories(PATH);
@@ -68,6 +69,7 @@ class StoreInstanceTest {
         FileUtils.deleteIfExists(PATH);
     }
 
+    @Disabled
     @Test
     void testSetGet() {
         storeInstance.upsertKeyValue("test".getBytes(), "value".getBytes());
@@ -77,6 +79,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanNotIncludeStart() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -94,6 +97,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanIncludeStart() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -111,6 +115,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanContinuousIncludeEnd() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -128,6 +133,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanContinuousNotIncludeEnd() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -145,6 +151,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanNotContinuousIncludeEnd() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -162,6 +169,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testScanNotContinuousNotIncludeEnd() {
         storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
@@ -179,6 +187,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testPrefixScan01() {
         storeInstance.upsertKeyValue("bbbb1000".getBytes(), "value01".getBytes());
@@ -197,6 +206,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testPrefixScan02() {
         storeInstance.upsertKeyValue("dddd1000".getBytes(), "value01".getBytes());
@@ -214,6 +224,7 @@ class StoreInstanceTest {
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
     }
 
+    @Disabled
     @Test
     void testPrefixScan03() {
         storeInstance.upsertKeyValue("eeee1000".getBytes(), "value01".getBytes());
