@@ -92,6 +92,11 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
         try {
             byte[] minKey = getMinKey();
             byte[] maxKey = getMaxKey();
+            if (minKey == null || maxKey == null) {
+                log.warn("minKey or maxKey is null!");
+                return;
+            }
+
             begin = (begin == null) ? minKey : begin;
             end = (end == null) ? maxKey : end;
 
@@ -104,7 +109,6 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
             if (ByteArrayUtils.lessThanOrEqual(begin, minKey)
                 && ByteArrayUtils.greatThanOrEqual(end, maxKey)) {
                 db.deleteFilesInRanges(handler, ByteArrayUtils.toList(begin, end), true);
-
                 db.compactRange(handler);
             }
 
@@ -121,7 +125,7 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
             }
         }
 
-        return ByteArrayUtils.EMPTY_BYTES;
+        return null;
     }
 
     private byte[] getMaxKey() {
@@ -132,6 +136,6 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
             }
         }
 
-        return ByteArrayUtils.MAX_BYTES;
+        return null;
     }
 }

@@ -148,7 +148,7 @@ public class ByteArrayUtils {
         return result;
     }
 
-    public static byte[] increment(byte[] input) {
+    public static byte[] increment(@NonNull byte[] input) {
         byte[] ret = new byte[input.length];
         int carry = 1;
         for (int i = input.length - 1; i >= 0; i--) {
@@ -160,11 +160,7 @@ public class ByteArrayUtils {
             }
         }
 
-        if (carry == 0) {
-            return ret;
-        } else {
-            throw new IndexOutOfBoundsException();
-        }
+        return (carry == 0) ? ret : input;
     }
 
     public static List<byte[]> toList(byte[]... bytes) {

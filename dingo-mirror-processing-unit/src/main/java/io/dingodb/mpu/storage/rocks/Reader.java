@@ -103,13 +103,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         if (startKey == null || endKey == null) {
             return false;
         }
-
-        try {
-            return Arrays.equals(ByteArrayUtils.increment(startKey), endKey);
-        } catch (IndexOutOfBoundsException e) {
-            log.warn("startKey increment failed: ", e);
-        }
-        return false;
+        
+        return Arrays.equals(ByteArrayUtils.increment(startKey), endKey);
     }
 
     @Override

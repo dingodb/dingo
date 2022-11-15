@@ -249,9 +249,12 @@ public class RocksStorage implements Storage {
 
     public void closeDB() {
         this.db.cancelAllBackgroundWork(true);
-        this.db.close();
         this.dcfHandler.close();
+        this.dcfHandler = null;
         this.mcfHandler.close();
+        this.mcfHandler = null;
+        this.db.close();
+        this.db = null;
     }
 
     @Override
@@ -259,9 +262,12 @@ public class RocksStorage implements Storage {
         destroy = true;
         this.writeOptions.close();
         closeDB();
-        this.instruction.close();
         this.icfHandler.close();
+        this.icfHandler = null;
+        this.instruction.close();
+        this.instruction = null;
         this.backup.close();
+        this.backup = null;
         /**
          * to avoid the file handle leak when drop table
          */
@@ -294,7 +300,10 @@ public class RocksStorage implements Storage {
 
     private void flushMeta() {
         try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(true)) {
-            db.flush(flushOptions, mcfHandler);
+
+            if (db != null && mcfHandler != null) {
+                db.flush(flushOptions, mcfHandler);
+            }
         } catch (RocksDBException e) {
             log.error("Flush instruction error.", e);
         }
@@ -302,7 +311,9 @@ public class RocksStorage implements Storage {
 
     private void flushInstruction() {
         try (FlushOptions flushOptions = new FlushOptions().setWaitForFlush(true)) {
-            instruction.flush(flushOptions);
+            if (instruction != null) {
+                instruction.flush(flushOptions);
+            }
         } catch (RocksDBException e) {
             log.error("Flush instruction error.", e);
         }
@@ -313,9 +324,11 @@ public class RocksStorage implements Storage {
             return;
         }
         try {
-            backup.createNewBackup(db);
-            backup.purgeOldBackups(3);
-            backup.garbageCollect();
+            if (backup != null) {
+                backup.createNewBackup(db);
+                backup.purgeOldBackups(3);
+                backup.garbageCollect();
+            }
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -586,6 +599,7 @@ public class RocksStorage implements Storage {
             if (
                 db.getName().equals(RocksStorage.this.db.getName())
                 && flushJobInfo.getColumnFamilyId() == dcfHandler.getID()
+                && !RocksStorage.this.destroy
             ) {
                 log.info("Flush on db default, will flush instruction and meta, and backup default db.");
                 runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
@@ -616,11 +630,11 @@ public class RocksStorage implements Storage {
             if (
                 db.getName().equals(RocksStorage.this.db.getName())
                 && Arrays.equals(compactionJobInfo.columnFamilyName(), CF_DEFAULT)
+                && !RocksStorage.this.destroy
             ) {
                 runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
                 runner.forceFollow(RocksStorage.this::backup);
             }
-
         }
 
         @Override
