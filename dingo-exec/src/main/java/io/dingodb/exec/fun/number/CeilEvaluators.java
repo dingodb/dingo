@@ -14,31 +14,24 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.evaluator.cast;
+package io.dingodb.exec.fun.number;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.sql.Time;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Evaluators(
-    induceSequence = {long.class, int.class}
+    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
 )
-final class TimeCastEvaluators {
-    private TimeCastEvaluators() {
+public final class CeilEvaluators {
+    public static final String NAME = "ceil";
+
+    private CeilEvaluators() {
     }
 
-    static @NonNull Time timeCast(long value) {
-        return new Time(value);
-    }
-
-    static @Nullable Time timeCast(String value) {
-        return DateTimeUtils.parseTime(value);
-    }
-
-    static @NonNull Time timeCast(@NonNull Time value) {
-        return value;
+    static @NonNull BigDecimal ceil(@NonNull BigDecimal value) {
+        return value.setScale(0, RoundingMode.CEILING);
     }
 }

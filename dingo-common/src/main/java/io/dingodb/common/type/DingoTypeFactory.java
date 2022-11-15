@@ -31,15 +31,12 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.core.TypeCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.Types;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -189,72 +186,5 @@ public final class DingoTypeFactory {
                     .toArray(DingoType[]::new)
             );
         }
-    }
-
-    private static DingoType fromAvaticaType(ColumnMetaData.AvaticaType avaticaType) {
-        if (avaticaType instanceof ColumnMetaData.ScalarType) {
-            return scalar(convertSqlTypeId(avaticaType.id), false);
-        } else if (avaticaType instanceof ColumnMetaData.ArrayType) {
-            ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) avaticaType;
-            //return array(fromAvaticaType(arrayType.getComponent()), false);
-            return list(fromAvaticaType(arrayType.getComponent()), false);
-        } else if (avaticaType instanceof ColumnMetaData.StructType) {
-            ColumnMetaData.StructType structType = (ColumnMetaData.StructType) avaticaType;
-            return fromColumnMetaDataList(structType.columns);
-        }
-        throw new IllegalStateException("Unsupported avatica type \"" + avaticaType + "\".");
-    }
-
-    public static DingoType fromColumnMetaData(@NonNull ColumnMetaData colMeta) {
-        switch (colMeta.type.id) {
-            case Types.ARRAY:
-                ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) colMeta.type;
-                //return array(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
-                return list(fromAvaticaType(arrayType.getComponent()), colMeta.nullable != 0);
-            case Types.STRUCT:
-                ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
-                return fromColumnMetaDataList(structType.columns);
-            default:
-                return scalar(convertSqlTypeId(colMeta.type.id), colMeta.nullable != 0);
-        }
-    }
-
-    public static @NonNull TupleType fromColumnMetaDataList(@NonNull List<ColumnMetaData> colMetaList) {
-        return tuple(colMetaList.stream()
-            .map(DingoTypeFactory::fromColumnMetaData)
-            .toArray(DingoType[]::new));
-    }
-
-    private static int convertSqlTypeId(int typeId) {
-        switch (typeId) {
-            case Types.INTEGER:
-                return TypeCode.INT;
-            case Types.BIGINT:
-                return TypeCode.LONG;
-            case Types.FLOAT:
-            case Types.DOUBLE:
-            case Types.REAL:
-                return TypeCode.DOUBLE;
-            case Types.BOOLEAN:
-                return TypeCode.BOOL;
-            case Types.DECIMAL:
-                return TypeCode.DECIMAL;
-            case Types.CHAR:
-            case Types.VARCHAR:
-                return TypeCode.STRING;
-            case Types.DATE:
-                return TypeCode.DATE;
-            case Types.TIME:
-                return TypeCode.TIME;
-            case Types.TIMESTAMP:
-                return TypeCode.TIMESTAMP;
-            case Types.BINARY:
-                return TypeCode.BINARY;
-            case Types.JAVA_OBJECT:
-                return TypeCode.OBJECT;
-            default:
-                break;
-        }
-        throw new IllegalArgumentException("Unsupported sql type id \"" + typeId + "\".");
     }
 }

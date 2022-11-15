@@ -23,7 +23,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
 
-@Evaluators
+@Evaluators(
+    induceSequence = {long.class, int.class}
+)
 final class DateCastEvaluators {
     private DateCastEvaluators() {
     }

@@ -19,7 +19,7 @@ package io.dingodb.exec.expr;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.ExprConverter;
+import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.parser.exception.ExprParseException;

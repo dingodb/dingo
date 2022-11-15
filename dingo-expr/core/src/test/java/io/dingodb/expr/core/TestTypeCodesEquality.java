@@ -46,9 +46,13 @@ public class TestTypeCodesEquality {
             arguments(null, TypeCode.NULL),
             // scalar types
             arguments(Integer.class, TypeCode.INT),
+            arguments(int.class, TypeCode.INT),
             arguments(Long.class, TypeCode.LONG),
+            arguments(long.class, TypeCode.LONG),
             arguments(Boolean.class, TypeCode.BOOL),
+            arguments(boolean.class, TypeCode.BOOL),
             arguments(Double.class, TypeCode.DOUBLE),
+            arguments(double.class, TypeCode.DOUBLE),
             arguments(BigDecimal.class, TypeCode.DECIMAL),
             arguments(String.class, TypeCode.STRING),
             arguments(byte[].class, TypeCode.BINARY),

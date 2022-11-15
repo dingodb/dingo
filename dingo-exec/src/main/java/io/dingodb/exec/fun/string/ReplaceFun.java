@@ -35,16 +35,11 @@ public class ReplaceFun extends RtStringFun {
         super(paras);
     }
 
-    public static String replaceStr(final String inputStr, final String str1, final String str2) {
-        if (inputStr == null || inputStr.equals("")) {
-            return inputStr;
-        }
-
-        return inputStr.replace(str1, str2);
-    }
-
     @Override
-    protected Object fun(Object @NonNull [] values) {
-        return replaceStr((String) values[0], (String) values[1], (String) values[2]);
+    protected Object fun(@NonNull Object @NonNull [] values) {
+        if (values[0].equals("")) {
+            return values[0];
+        }
+        return ((String) values[0]).replace((String) values[1], (String) values[2]);
     }
 }

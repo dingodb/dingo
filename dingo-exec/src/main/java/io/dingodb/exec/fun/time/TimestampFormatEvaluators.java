@@ -18,6 +18,7 @@ package io.dingodb.exec.fun.time;
 
 import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -26,22 +27,25 @@ import java.sql.Timestamp;
 @Evaluators(
     induceSequence = {long.class, double.class, BigDecimal.class, int.class}
 )
-public final class UnixTimestampEvaluators {
-    public static final String NAME = "unix_timestamp";
+public final class TimestampFormatEvaluators {
+    public static final String NAME = "timestamp_format";
 
-    private UnixTimestampEvaluators() {
+    private TimestampFormatEvaluators() {
     }
 
-    static long unixTimestamp(@NonNull Timestamp value) {
-        return DingoDateTimeUtils.toUnixTimestamp(value);
+    static @NonNull String timestampFormat(Timestamp value, String format) {
+        return DingoDateTimeUtils.timestampFormat(value, format);
     }
 
-    static long unixTimestamp() {
-        Timestamp value = DingoDateTimeUtils.currentTimestamp();
-        return DingoDateTimeUtils.toUnixTimestamp(value);
+    static @NonNull String timestampFormat(Timestamp value) {
+        return DateTimeUtils.timestampFormat(value);
     }
 
-    static long unixTimestamp(long value) {
-        return value;
+    static @NonNull String timestampFormat(long value, String format) {
+        return DingoDateTimeUtils.timestampFormat(DingoDateTimeUtils.fromUnixTimestamp(value), format);
+    }
+
+    static @NonNull String timestampFormat(long value) {
+        return DateTimeUtils.timestampFormat(DingoDateTimeUtils.fromUnixTimestamp(value));
     }
 }

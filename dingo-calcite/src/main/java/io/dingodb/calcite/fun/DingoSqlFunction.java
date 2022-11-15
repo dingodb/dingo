@@ -32,20 +32,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class DingoSqlFunction extends SqlFunction {
-    /**
-     * An integer to identify different versions of a function. The default {@link SqlOperator#equals(Object)} only
-     * do comparison of name and kind.
-     */
-    @EqualsAndHashCode.Include
-    private final int id;
-
     public DingoSqlFunction(
         String name,
         @Nullable SqlReturnTypeInference returnTypeInference,
         @Nullable SqlOperandTypeInference operandTypeInference,
         @Nullable SqlOperandTypeChecker operandTypeChecker,
-        SqlFunctionCategory category,
-        int id
+        SqlFunctionCategory category
     ) {
         super(
             name,
@@ -55,7 +47,6 @@ public class DingoSqlFunction extends SqlFunction {
             operandTypeChecker,
             category
         );
-        this.id = id;
     }
 
     @Override

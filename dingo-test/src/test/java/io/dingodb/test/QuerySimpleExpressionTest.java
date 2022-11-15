@@ -16,6 +16,7 @@
 
 package io.dingodb.test;
 
+import io.dingodb.expr.test.ExprTestUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,15 +24,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Slf4j
-public class QueryNoTableTest {
+public class QuerySimpleExpressionTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -45,19 +46,29 @@ public class QueryNoTableTest {
     }
 
     @Nonnull
-    public static Stream<Arguments> getSimpleValuesTestParameters() {
+    public static Stream<Arguments> getParameters() {
         return Stream.of(
-            arguments("select 'hello'", "hello"),
-            arguments("select 'abc' || null", null),
-            arguments("select date_format('', '%Y-%m-%d')", null),
-            arguments("select datediff('', '')", null)
+            arguments("1 + 1", 2),
+            arguments("1 + 100000000.2", BigDecimal.valueOf(100000001.2)),
+            arguments("1 + 100.1", BigDecimal.valueOf(101.1)),
+            arguments("'hello'", "hello"),
+            arguments("'abc' || null", null),
+            arguments("round(123, -2)", 100),
+            arguments("substring('', 1, 3)", ""),
+            arguments("substring(null, 1, 1)", null),
+            arguments("replace(null, null, 'ftest')", null),
+            arguments("date_format('2022/7/2')", "2022-07-02"),
+            arguments("date_format('', '%Y-%m-%d')", null),
+            arguments("time_format('235959')", "23:59:59"),
+            arguments("timestamp_format('2022/07/22 12:00:00')", "2022-07-22 12:00:00"),
+            arguments("datediff('', '')", null)
         );
     }
 
     @ParameterizedTest
-    @MethodSource("getSimpleValuesTestParameters")
-    public void testSimpleValues(String sql, Object result) throws SQLException {
-        // Queries like 'select 1' is bypassed by Calcite.
-        assertThat(sqlHelper.querySingleValue(sql)).isEqualTo(result);
+    @MethodSource("getParameters")
+    public void test(String sql, Object value) throws SQLException {
+        Object result = sqlHelper.querySingleValue("select " + sql);
+        ExprTestUtils.assertEquals(result, value);
     }
 }

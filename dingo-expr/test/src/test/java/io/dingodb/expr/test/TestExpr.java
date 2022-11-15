@@ -93,7 +93,10 @@ public class TestExpr {
             arguments("\"Alice\" + 'Bob'", "AliceBob"),
             // mathematical fun
             arguments("abs(-1)", 1),
-            arguments("abs(-2.3)", 2.3),
+            // Integer.MIN_VALUE will throw exception.
+            arguments("abs(" + (Integer.MIN_VALUE - 1L) + ")", Integer.MAX_VALUE + 2L),
+            arguments("abs(-2.3)", BigDecimal.valueOf(2.3)),
+            arguments("abs(double(-2.3))", 2.3),
             arguments("sin(0)", 0.0),
             arguments("sin(TAU / 12)", 0.5),
             arguments("sin(TAU / 4)", 1.0),

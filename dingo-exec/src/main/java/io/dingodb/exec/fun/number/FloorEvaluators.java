@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.utils;
+package io.dingodb.exec.fun.number;
 
-public final class NumberUtils {
-    private NumberUtils() {
+import io.dingodb.expr.annotations.Evaluators;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+@Evaluators(
+    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
+)
+public final class FloorEvaluators {
+    public static final String NAME = "floor";
+
+    private FloorEvaluators() {
     }
 
-    public static int checkIntRange(long value) {
-        if ((int) value == value) {
-            return (int) value;
-        }
-        throw new ArithmeticException(
-            "Value " + value + " exceeds limits of integers, which is from "
-                + Integer.MIN_VALUE + " to " + Integer.MAX_VALUE + "."
-        );
+    static @NonNull BigDecimal floor(@NonNull BigDecimal value) {
+        return value.setScale(0, RoundingMode.FLOOR);
     }
 }

@@ -41,7 +41,7 @@ public final class ExprTestUtils {
         RtExpr rtExpr = expr.compileIn(null);
         assertThat(rtExpr).isInstanceOf(value != null ? RtConst.class : RtNull.class);
         Object result = rtExpr.eval(null);
-        testEqual(result, value);
+        assertEquals(result, value);
     }
 
     public static void testEvalWithVar(
@@ -54,10 +54,10 @@ public final class ExprTestUtils {
         Expr expr = compiler.parse(exprString);
         RtExpr rtExpr = expr.compileIn(context.getCtx());
         Object result = rtExpr.eval(context.getEtx(etxIndex));
-        testEqual(value, result);
+        assertEquals(result, value);
     }
 
-    private static void testEqual(Object value, Object result) {
+    public static void assertEquals(Object result, Object value) {
         if (result instanceof Double) {
             assertThat((Double) result).isCloseTo((Double) value, offset(1e-6));
         } else {

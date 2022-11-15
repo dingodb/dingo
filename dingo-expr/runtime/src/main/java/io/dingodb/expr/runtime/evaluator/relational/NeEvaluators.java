@@ -26,7 +26,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 
 @Evaluators(
-    induceSequence = {BigDecimal.class, Double.class, Long.class, Integer.class}
+    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
 )
 final class NeEvaluators {
     private NeEvaluators() {

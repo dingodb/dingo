@@ -17,30 +17,21 @@
 package io.dingodb.exec.fun.time;
 
 import io.dingodb.exec.utils.DingoDateTimeUtils;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtStringFun;
+import io.dingodb.expr.annotations.Evaluators;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.Timestamp;
+import java.sql.Time;
 
-@Slf4j
-public class TimestampFormatFun extends RtStringFun {
-    public static final String NAME = "timestamp_format";
-    private static final long serialVersionUID = -4046571111287193650L;
+@Evaluators
+public class TimeFormatEvaluators {
+    public static final String NAME = "time_format";
 
-    public TimestampFormatFun(RtExpr[] paras) {
-        super(paras);
+    static @NonNull String timeFormat(Time value, String format) {
+        return DingoDateTimeUtils.timeFormat(value, format);
     }
 
-    @Override
-    protected Object fun(Object @NonNull [] values) {
-        Timestamp value = (Timestamp) values[0];
-        if (values.length < 2) {
-            return DateTimeUtils.timestampFormat(value);
-        }
-        String format = (String) values[1];
-        return DingoDateTimeUtils.timestampFormat(value, format);
+    static @NonNull String timeFormat(Time value) {
+        return DateTimeUtils.timeFormat(value);
     }
 }

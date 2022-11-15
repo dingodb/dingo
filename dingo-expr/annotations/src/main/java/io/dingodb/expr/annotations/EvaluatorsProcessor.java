@@ -17,26 +17,24 @@
 package io.dingodb.expr.annotations;
 
 import com.google.auto.service.AutoService;
-import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.dingodb.expr.core.TypeCode;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -70,41 +68,17 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     private static final String EVALUATORS_VAR = "evaluators";
 
     private static @NonNull String getSimpleName(TypeName type) {
-        String name;
-        if (type instanceof ArrayTypeName) {
-            name = ((ArrayTypeName) type).componentType.box().toString() + "Array";
-        } else {
-            name = type.toString().replaceAll("<.*>", "");
-        }
-        return name.substring(name.lastIndexOf('.') + 1);
+        return StringUtils.capitalize(TypeCode.nameOf(CoreUtils.typeCode(type)).toLowerCase());
     }
 
     private static @NonNull String getFactoryClassName(String methodName) {
         return StringUtils.capitalize(methodName) + "EvaluatorFactory";
     }
 
-    private static @NonNull String getClassName(String methodName, @Nullable List<TypeName> paraTypes) {
-        StringBuilder b = new StringBuilder();
-        b.append(StringUtils.capitalize(methodName));
-        if (paraTypes != null) {
-            for (TypeName type : paraTypes) {
-                b.append(getSimpleName(type));
-            }
-            return b.toString();
-        } else {
-            b.append("Universal");
-        }
-        return b.toString();
-    }
-
     private static Stream<TypeName> getParaTypeStream(@NonNull ExecutableElement element) {
         return element.getParameters().stream()
             .map(VariableElement::asType)
             .map(TypeName::get);
-    }
-
-    private static List<TypeName> getParaTypeList(@NonNull ExecutableElement element) {
-        return getParaTypeStream(element).collect(Collectors.toList());
     }
 
     /**
@@ -116,8 +90,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
      */
     private static int methodWeight(ExecutableElement element, @NonNull List<TypeName> typeOrder) {
         return getParaTypeStream(element)
-            .map(TypeName::box)
-            .mapToInt(typeOrder::indexOf)
+            .mapToInt(p -> findTypeIndex(typeOrder, p))
             .sum();
     }
 
@@ -162,65 +135,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         return null;
     }
 
-    private static @NonNull CodeBlock codeConvertPara(
-        @NonNull String paraName,
-        int paraIndex,
-        @NonNull TypeName required,
-        @NonNull TypeName actual
-    ) {
-        CodeBlock.Builder builder = CodeBlock.builder();
-        boolean converted = false;
-        if (required.equals(TypeName.get(BigDecimal.class))) {
-            if (actual.equals(TypeName.get(Double.class))
-                || actual.equals(TypeName.get(Long.class))
-                || actual.equals(TypeName.get(Integer.class))
-            ) {
-                builder.add("$T.valueOf(($T) $L[$L])", BigDecimal.class, actual, paraName, paraIndex);
-                converted = true;
-            }
-        } else if (required.equals(TypeName.get(Double.class))
-            || required.equals(TypeName.DOUBLE)
-        ) {
-            if (actual.equals(TypeName.get(BigDecimal.class))
-                || actual.equals(TypeName.get(Long.class))
-                || actual.equals(TypeName.get(Integer.class))
-            ) {
-                builder.add("(($T) $L[$L]).doubleValue()", actual, paraName, paraIndex);
-                converted = true;
-            }
-        } else if (required.equals(TypeName.get(Long.class))
-            || required.equals(TypeName.LONG)
-        ) {
-            if (actual.equals(TypeName.get(BigDecimal.class))) {
-                // TODO: to be consistent with cast function
-                builder.add("(($T) $L[$L]).longValue()", actual, paraName, paraIndex);
-                converted = true;
-            } else if (actual.equals(TypeName.get(Integer.class))
-                || actual.equals(TypeName.get(Double.class))
-            ) {
-                builder.add("(($T) $L[$L]).longValue()", actual, paraName, paraIndex);
-                converted = true;
-            }
-        } else if (required.equals(TypeName.get(Integer.class))
-            || required.equals(TypeName.INT)
-        ) {
-            if (actual.equals(TypeName.get(BigDecimal.class))) {
-                // TODO: to be consistent with cast function
-                builder.add("(($T) $L[$L]).intValue()", actual, paraName, paraIndex);
-                converted = true;
-            } else if (actual.equals(TypeName.get(Double.class))
-                || actual.equals(TypeName.get(Long.class))
-            ) {
-                builder.add("(($T) $L[$L]).intValue()", actual, paraName, paraIndex);
-                converted = true;
-            }
-        }
-        if (!converted) {
-            builder.add("($T) $L[$L]", required, paraName, paraIndex);
-        }
-        return builder.build();
-    }
-
     private static @NonNull CodeBlock codeEvalParas(
         @NonNull EvaluatorsInfo info,
         String methodName,
@@ -230,16 +144,29 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     ) {
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
         codeBuilder.add("return $T.$L(", info.getOriginClassName(), methodName);
-        boolean addComma = false;
-        for (int i = 0; i < paras.size(); i++) {
-            if (addComma) {
-                codeBuilder.add(", ");
-            }
-            codeBuilder.add(codeConvertPara(evalMethodParaName, i, paras.get(i), newParas.get(i)));
-            addComma = true;
+        List<CodeBlock> paraBlocks = new ArrayList<>(paras.size());
+        for (int i = 0; i < paras.size(); ++i) {
+            paraBlocks.add(CoreUtils.codeCasting(
+                CodeBlock.of("$L[$L]", evalMethodParaName, i),
+                paras.get(i),
+                newParas.get(i)
+            ));
         }
+        codeBuilder.add(CodeBlock.join(paraBlocks, ", "));
         codeBuilder.add(");\n");
         return codeBuilder.build();
+    }
+
+    private static int findTypeIndex(@NonNull List<TypeName> typeList, TypeName type) {
+        int index = typeList.indexOf(type);
+        if (index < 0) {
+            if (type.isPrimitive()) {
+                index = typeList.indexOf(type.box());
+            } else if (type.isBoxedPrimitive()) {
+                index = typeList.indexOf(type.unbox());
+            }
+        }
+        return index;
     }
 
     // Helper to get annotation value of type `Class<?>`
@@ -317,46 +244,22 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private List<TypeName> getTypeNamesFromAnnotationValue(
+    private @Nullable List<TypeName> getTypeNamesFromAnnotationValue(
         @NonNull AnnotationMirror annotationMirror,
         @SuppressWarnings("SameParameterValue") String methodName
     ) {
         AnnotationValue value = getAnnotationValue(annotationMirror, methodName);
+        if (value == null) {
+            return null;
+        }
+        List<AnnotationValue> annotationValues = (List<AnnotationValue>) value.getValue();
+        List<TypeName> typeNames = new ArrayList<>(annotationValues.size());
         // com.sun.tools.javac.util.List<com.sun.tools.javac.code.Attribute.Class>
-        return ((List<AnnotationValue>) Objects.requireNonNull(value).getValue()).stream()
-            .map(AnnotationValue::getValue)
-            .map(Object::toString)
-            .map(processingEnv.getElementUtils()::getTypeElement)
-            // Here `null` is returned for primitive types, so filter out it.
-            .filter(Objects::nonNull)
-            .map(Element::asType)
-            .map(TypeName::get)
-            .collect(Collectors.toList());
-    }
-
-    private void generateEvaluatorClassFile(
-        @NonNull EvaluatorsInfo info,
-        String className,
-        @NonNull TypeElement base,
-        @NonNull MethodSpec evalSpec,
-        MethodSpec typeCodeSpec
-    ) throws IOException {
-        TypeSpec.Builder builder = TypeSpec.classBuilder(className)
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addField(serialVersionUid())
-            .addMethod(evalSpec);
-        if (base.getKind().isInterface()) {
-            builder.addSuperinterface(base.asType());
-        } else {
-            builder.superclass(base.asType());
+        for (AnnotationValue attr : (List<AnnotationValue>) value.getValue()) {
+            TypeMirror t = (TypeMirror) attr.getValue();
+            typeNames.add(TypeName.get(t));
         }
-        if (typeCodeSpec != null) {
-            builder.addMethod(typeCodeSpec);
-        }
-        String packageName = info.getPackageName();
-        ProcessorUtils.saveSourceFile(processingEnv, packageName, builder.build());
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-            "Evaluator \"" + className + "\" generated in package \"" + packageName + "\".");
+        return typeNames;
     }
 
     private void generateEvaluator(
@@ -371,7 +274,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         if (!matcher.find()) {
             throw new IllegalArgumentException("Not a valid method name: \"" + methodName + "\".");
         }
-        String evaluatorName = matcher.group(1);
+        String evaluatorName = StringUtils.capitalize(matcher.group(1));
         Map<String, EvaluatorInfo> evaluatorMap = info.getEvaluatorMap()
             .computeIfAbsent(evaluatorName, k -> new HashMap<>());
         String evaluatorKey = getEvaluatorKey(newParas);
@@ -401,11 +304,26 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         MethodSpec typeCodeSpec = null;
         if (typeCodeMethod != null) {
             typeCodeSpec = MethodSpec.overriding(typeCodeMethod)
-                .addStatement("return $L", TypeCodeUtils.typeOf(returnType))
+                .addStatement("return $L", CoreUtils.typeOf(returnType))
                 .build();
         }
-        String className = getClassName(evaluatorName, newParas);
-        generateEvaluatorClassFile(info, className, evaluatorBase, evalSpec, typeCodeSpec);
+        String className = evaluatorName + evaluatorKey;
+        TypeSpec.Builder builder = TypeSpec.classBuilder(className)
+            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+            .addField(serialVersionUid())
+            .addMethod(evalSpec);
+        if (evaluatorBase.getKind().isInterface()) {
+            builder.addSuperinterface(evaluatorBase.asType());
+        } else {
+            builder.superclass(evaluatorBase.asType());
+        }
+        if (typeCodeSpec != null) {
+            builder.addMethod(typeCodeSpec);
+        }
+        String packageName = info.getPackageName();
+        ProcessorUtils.saveSourceFile(processingEnv, packageName, builder.build());
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
+            "Evaluator \"" + className + "\" generated in package \"" + packageName + "\".");
         // must copy newParas, it is volatile.
         evaluatorMap.put(
             evaluatorKey,
@@ -414,7 +332,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     }
 
     private void induceEvaluators(ExecutableElement element, EvaluatorsInfo info) throws IOException {
-        List<TypeName> paras = getParaTypeList(element);
+        List<TypeName> paras = getParaTypeStream(element).collect(Collectors.toList());
         // must make a copy of paras
         List<TypeName> newParas = paras.stream()
             .map(TypeName::box)
@@ -431,15 +349,16 @@ public class EvaluatorsProcessor extends AbstractProcessor {
     ) throws IOException {
         List<TypeName> induceSequence = info.getInduceSequence();
         TypeName type = paras.get(pos);
-        int index = induceSequence.indexOf(type.box());
-        if (index >= 0) {
-            for (int i = index + 1; i < induceSequence.size(); ++i) {
-                TypeName newTypeName = induceSequence.get(i);
-                TypeName oldType = newParas.get(pos);
-                newParas.set(pos, newTypeName);
-                induceEvaluatorsRecursive(element, paras, newParas, info, pos + 1);
-                newParas.set(pos, oldType);
-            }
+        int index = findTypeIndex(induceSequence, type);
+        if (index < 0) {
+            return;
+        }
+        for (int i = index + 1; i < induceSequence.size(); ++i) {
+            TypeName newTypeName = induceSequence.get(i);
+            TypeName oldType = newParas.get(pos);
+            newParas.set(pos, newTypeName);
+            induceEvaluatorsRecursive(element, paras, newParas, info, pos + 1);
+            newParas.set(pos, oldType);
         }
     }
 
@@ -481,7 +400,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                 List<TypeName> paraTypeNames = evaluatorInfo.getParaTypeNames();
                 initBuilder.addStatement("$L.put($L, new $T())",
                     EVALUATORS_VAR,
-                    TypeCodeUtils.evaluatorKeyOf(evaluatorKey, paraTypeNames),
+                    CoreUtils.evaluatorKeyOf(evaluatorKey, paraTypeNames),
                     ClassName.get(packageName, evaluatorInfo.getClassName())
                 );
             }
@@ -489,7 +408,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                 EVALUATORS_VAR,
                 evaluatorKey,
                 ClassName.get(universalEvaluator),
-                TypeCodeUtils.typeOf(generalReturnType)
+                CoreUtils.typeOf(generalReturnType)
             );
             ClassName className = ClassName.get(packageName, getFactoryClassName(m));
             TypeSpec typeSpec = TypeSpec.classBuilder(className)

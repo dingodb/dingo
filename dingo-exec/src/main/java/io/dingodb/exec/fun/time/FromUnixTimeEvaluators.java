@@ -16,30 +16,23 @@
 
 package io.dingodb.exec.fun.time;
 
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.exec.utils.DingoDateTimeUtils;
+import io.dingodb.expr.annotations.Evaluators;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-@Slf4j
-public class FromUnixTimeFun extends RtFun {
+@Evaluators(
+    induceSequence = {long.class, double.class, BigDecimal.class, int.class}
+)
+public final class FromUnixTimeEvaluators {
     public static final String NAME = "from_unixtime";
-    private static final long serialVersionUID = 9189202071207557600L;
 
-    public FromUnixTimeFun(RtExpr[] paras) {
-        super(paras);
+    private FromUnixTimeEvaluators() {
     }
 
-    @Override
-    protected Object fun(Object @NonNull [] values) {
-        return new Timestamp(((Number) values[0]).longValue() * 1000L);
-    }
-
-    @Override
-    public int typeCode() {
-        return TypeCode.TIMESTAMP;
+    static @NonNull Timestamp fromUnixTime(long value) {
+        return DingoDateTimeUtils.fromUnixTimestamp(value);
     }
 }

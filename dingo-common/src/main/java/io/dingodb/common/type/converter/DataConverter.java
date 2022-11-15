@@ -19,6 +19,9 @@ package io.dingodb.common.type.converter;
 import io.dingodb.common.type.DingoType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
@@ -61,6 +64,20 @@ public interface DataConverter {
 
     default Object convert(@NonNull BigDecimal value) {
         return value;
+    }
+
+    default Object convert(@NonNull Object value) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(value);
+            byte[] result = bos.toByteArray();
+            oos.close();
+            bos.close();
+            return convert(result);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     default Object convert(Object @NonNull [] value, @NonNull DingoType elementType) {

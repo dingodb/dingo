@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type.converter;
+package io.dingodb.driver.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import org.apache.calcite.avatica.util.DateTimeUtils;

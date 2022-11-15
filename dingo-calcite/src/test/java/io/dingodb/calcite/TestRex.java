@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.exec.utils.DingoDateTimeUtils;
+import io.dingodb.expr.core.Casting;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
@@ -66,8 +67,8 @@ public class TestRex {
             arguments("1 + 2*3", "1 + 2*3", 7),
             arguments("1*(2 + 3)", "1*(2 + 3)", 5),
             // number
-            arguments("abs(15354.6651)", "abs(15354.6651)", 15354.6651),
-            arguments("abs(-163.4)", "abs(-163.4)", 163.4),
+            arguments("abs(15354.6651)", "abs(15354.6651)", BigDecimal.valueOf(15354.6651)),
+            arguments("abs(-163.4)", "abs(-163.4)", BigDecimal.valueOf(163.4)),
             arguments("floor(125.6)", "floor(125.6)", BigDecimal.valueOf(125)),
             arguments("floor(-125.3)", "floor(-125.3)", BigDecimal.valueOf(-126)),
             arguments("ceiling(4533.66)", "ceil(4533.66)", BigDecimal.valueOf(4534)),
@@ -85,6 +86,8 @@ public class TestRex {
             arguments("round(12.677, 2)", "round(12.677, 2)", BigDecimal.valueOf(12.68)),
             arguments("round(195334.12, -4)", "round(195334.12, -4)", BigDecimal.valueOf(200000)),
             arguments("round(-155.586, -2)", "round(-155.586, -2)", BigDecimal.valueOf(-200)),
+            arguments("round(105, -2)", "round(105, -2)", BigDecimal.valueOf(100)),
+            arguments("round(105, '-2')", "round(105, LONG('-2'))", BigDecimal.valueOf(100)),
             // string
             arguments("'AA' || 'BB' || 'CC'", "concat(concat('AA', 'BB'), 'CC')", "AABBCC"),
             arguments("concat(concat('AA', 'BB'), 'CC')", "concat(concat('AA', 'BB'), 'CC')", "AABBCC"),
@@ -109,6 +112,9 @@ public class TestRex {
             arguments("mid('ABCDEFG', 2, 3.5)", "mid('ABCDEFG', 2, 3.5)", "BCDE"),
             arguments("repeat('ABC', 3)", "repeat('ABC', 3)", "ABCABCABC"),
             arguments("repeat('ABC', 2.1)", "repeat('ABC', 2.1)", "ABCABC"),
+            arguments("replace('MongoDB', 'Mongo', 'Dingo')", "replace('MongoDB', 'Mongo', 'Dingo')", "DingoDB"),
+            arguments("replace(null, 'a', 'b')", "replace(NULL, 'a', 'b')", null),
+            arguments("replace('MongoDB', null, 'b')", "replace('MongoDB', NULL, 'b')", null),
             arguments("reverse('ABC')", "reverse('ABC')", "CBA"),
             arguments("substring('DingoDatabase', 1, 5)", "substring('DingoDatabase', 1, 5)", "Dingo"),
             arguments("substring('DingoDatabase', 1, 100)", "substring('DingoDatabase', 1, 100)", "DingoDatabase"),
@@ -126,7 +132,22 @@ public class TestRex {
             arguments("upper('aaa')", "upper('aaa')", "AAA"),
             arguments("ucase('aaa')", "upper('aaa')", "AAA"),
             arguments("lower('aaA')", "lower('aaA')", "aaa"),
-            arguments("lcase('Aaa')", "lower('Aaa')", "aaa")
+            arguments("lcase('Aaa')", "lower('Aaa')", "aaa"),
+            // date & time
+            unixTimestampCase("1980-11-12 23:25:12"),
+            unixTimestampCase("2022-04-14 00:00:00"),
+            unixTimestampLiteralCase("1980-11-12 23:25:12"),
+            unixTimestampLiteralCase("2022-04-14 00:00:00"),
+            fromUnixTimeCase("1980-11-12 23:25:12"),
+            fromUnixTimeCase("2022-04-14 00:00:00"),
+            arguments("date_format('2022/7/2')", "date_format(DATE('2022\\/7\\/2'))", "2022-07-02"),
+            arguments("time_format('235959')", "time_format(TIME('235959'))", "23:59:59"),
+            arguments(
+                "timestamp_format('2022/07/22 12:00:00')",
+                "timestamp_format(TIMESTAMP('2022\\/07\\/22 12:00:00'))",
+                "2022-07-22 12:00:00"
+            ),
+            timestampFormatNumericCase(1668477663, "%Y-%m-%d %H:%i:%S")
         );
     }
 
@@ -162,15 +183,13 @@ public class TestRex {
         );
     }
 
-    @Nonnull
-    private static Stream<Arguments> getParametersTimestamp() {
-        return Stream.of(
-            unixTimestampCase("1980-11-12 23:25:12"),
-            unixTimestampCase("2022-04-14 00:00:00"),
-            unixTimestampLiteralCase("1980-11-12 23:25:12"),
-            unixTimestampLiteralCase("2022-04-14 00:00:00"),
-            fromUnixTimeCase("1980-11-12 23:25:12"),
-            fromUnixTimeCase("2022-04-14 00:00:00")
+    private static @NonNull Arguments timestampFormatNumericCase(@Nonnull Number timestamp, String format) {
+        return arguments(
+            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
+            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
+            DingoDateTimeUtils.timestampFormat(DingoDateTimeUtils.fromUnixTimestamp(
+                Casting.doubleToLong(timestamp.doubleValue())
+            ), format)
         );
     }
 
@@ -221,7 +240,7 @@ public class TestRex {
     }
 
     @ParameterizedTest
-    @MethodSource({"getParameters", "getParametersTimestamp"})
+    @MethodSource({"getParameters"})
     public void test(String rex, String exprStr, Object result)
         throws SqlParseException, ExprCompileException {
         RexNode rexNode = getRexNode(rex);

@@ -19,7 +19,6 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.converter.AvaticaResultSetConverter;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
@@ -28,10 +27,8 @@ import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 @JsonTypeName("object")
 public class ObjectType extends AbstractScalarType {
@@ -52,20 +49,7 @@ public class ObjectType extends AbstractScalarType {
 
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
-        if (converter instanceof AvaticaResultSetConverter) { // Return the origin object to driver.
-            return value;
-        }
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(value);
-            byte[] result = bos.toByteArray();
-            oos.close();
-            bos.close();
-            return converter.convert(result);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return converter.convert(value);
     }
 
     @Override

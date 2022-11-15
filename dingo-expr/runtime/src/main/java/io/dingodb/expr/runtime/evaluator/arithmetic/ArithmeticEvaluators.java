@@ -28,7 +28,7 @@ import java.sql.Timestamp;
 
 @Slf4j
 @Evaluators(
-    induceSequence = {BigDecimal.class, Double.class, Long.class, Integer.class}
+    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
 )
 final class ArithmeticEvaluators {
     private ArithmeticEvaluators() {
