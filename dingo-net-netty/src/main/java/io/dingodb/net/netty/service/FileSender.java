@@ -25,6 +25,7 @@ import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.NetService;
 import io.dingodb.net.netty.NetServiceProvider;
 import io.netty.buffer.ByteBuf;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -38,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.dingodb.net.Message.FILE_TRANSFER;
 import static io.dingodb.net.netty.Constant.USER_DEFINE_T;
 
+@Slf4j
 @AutoService(io.dingodb.net.service.FileTransferService.class)
 public class FileSender implements io.dingodb.net.service.FileTransferService {
 
@@ -50,6 +52,7 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
 
     @Override
     public void transfer(Location location, Path source, Path target) {
+        log.info(String.format("FileSender::transfer Location=[%s] Path=from [%s] to [%s]", location.toString(), source.toString(), target.toString()));
         if (!Files.exists(source) ) {
             throw new IllegalArgumentException(source + " not found.");
         }
@@ -85,6 +88,7 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
     }
 
     private void recursion(Location location, Path source, Path target) {
+        log.info(String.format("FileSender::recursion Location=[%s] Path=from [%s] to [%s]", location.toString(), source.toString(), target.toString()));
         File[] files = source.toFile().listFiles();
         if (files == null || files.length == 0) {
             return;
