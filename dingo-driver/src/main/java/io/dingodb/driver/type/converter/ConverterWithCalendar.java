@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type.converter;
+package io.dingodb.driver.type.converter;
+
+import io.dingodb.common.type.converter.DataConverter;
 
 import java.sql.Timestamp;
 import java.util.Calendar;

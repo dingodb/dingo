@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type.converter;
+package io.dingodb.exec.type.converter;
 
+import io.dingodb.common.type.converter.DataConverter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -28,18 +29,12 @@ public class ExprConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
-        if (value instanceof Long) {
-            return ((Long) value).intValue();
-        }
-        return (Integer) value;
+        return ((Number) value).intValue();
     }
 
     @Override
     public Double convertDoubleFrom(@NonNull Object value) {
-        if (value instanceof Double) {
-            return (Double) value;
-        }
-        return ((BigDecimal) value).doubleValue();
+        return ((Number) value).doubleValue();
     }
 
     @Override

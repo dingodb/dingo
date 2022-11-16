@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.stream.Stream;
 
@@ -45,6 +46,10 @@ public class TestFun {
 
     private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
+            // number fun
+            arguments("ceil(101.2)", BigDecimal.valueOf(102)),
+            arguments("floor(101.2)", BigDecimal.valueOf(101)),
+            arguments("round(101, -2)", BigDecimal.valueOf(100)),
             // string fun
             arguments("substring('DingoDatabase', 1, 5)", "Dingo"),
             arguments("substring('DingoDatabase', 1, 100)", "DingoDatabase"),

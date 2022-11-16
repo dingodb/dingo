@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.type.converter;
+package io.dingodb.driver.type.converter;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -41,6 +41,11 @@ public class AvaticaResultSetConverter extends ConverterWithCalendar {
     public Timestamp convert(@NonNull Timestamp value) {
         // NOTE: The following is not exact the inversion of what done in `TimestampAccessor`.
         return shiftedTimestamp(value.getTime());
+    }
+
+    @Override
+    public Object convert(@NonNull Object value) {
+        return value;
     }
 
     @Override

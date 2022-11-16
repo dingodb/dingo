@@ -17,26 +17,38 @@
 package io.dingodb.expr.runtime.evaluator.mathematical;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.core.Casting;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
 @Evaluators(
-    induceSequence = {Double.class, BigDecimal.class, Long.class, Integer.class}
+    induceSequence = {double.class, BigDecimal.class, long.class, int.class}
 )
 final class MathematicalEvaluators {
     private MathematicalEvaluators() {
     }
 
     static int abs(int num) {
+        if (num == Integer.MIN_VALUE) {
+            throw Casting.intRangeException("abs(" + num + ")");
+        }
         return Math.abs(num);
     }
 
     static long abs(long num) {
+        if (num == Long.MIN_VALUE) {
+            throw Casting.longRangeException("abs(" + num + ")");
+        }
         return Math.abs(num);
     }
 
     static double abs(double num) {
         return Math.abs(num);
+    }
+
+    static @NonNull BigDecimal abs(@NonNull BigDecimal num) {
+        return num.abs();
     }
 
     static double sin(double num) {

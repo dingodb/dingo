@@ -18,12 +18,15 @@ package io.dingodb.exec.fun;
 
 import io.dingodb.exec.fun.like.LikeBinaryOp;
 import io.dingodb.exec.fun.like.LikeOp;
-import io.dingodb.exec.fun.number.CeilFun;
-import io.dingodb.exec.fun.number.FloorFun;
+import io.dingodb.exec.fun.number.CeilEvaluatorFactory;
+import io.dingodb.exec.fun.number.CeilEvaluators;
+import io.dingodb.exec.fun.number.FloorEvaluatorFactory;
+import io.dingodb.exec.fun.number.FloorEvaluators;
 import io.dingodb.exec.fun.number.FormatFun;
 import io.dingodb.exec.fun.number.ModFun;
 import io.dingodb.exec.fun.number.PowFun;
-import io.dingodb.exec.fun.number.RoundFun;
+import io.dingodb.exec.fun.number.RoundEvaluatorFactory;
+import io.dingodb.exec.fun.number.RoundEvaluators;
 import io.dingodb.exec.fun.special.ArrayConstructorOp;
 import io.dingodb.exec.fun.special.CaseOp;
 import io.dingodb.exec.fun.special.CastListItemsOp;
@@ -49,10 +52,14 @@ import io.dingodb.exec.fun.time.CurrentDateFun;
 import io.dingodb.exec.fun.time.CurrentTimeFun;
 import io.dingodb.exec.fun.time.CurrentTimestampFun;
 import io.dingodb.exec.fun.time.DateDiffFun;
-import io.dingodb.exec.fun.time.DateFormatFun;
-import io.dingodb.exec.fun.time.FromUnixTimeFun;
-import io.dingodb.exec.fun.time.TimeFormatFun;
-import io.dingodb.exec.fun.time.TimestampFormatFun;
+import io.dingodb.exec.fun.time.DateFormatEvaluatorFactory;
+import io.dingodb.exec.fun.time.DateFormatEvaluators;
+import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorFactory;
+import io.dingodb.exec.fun.time.FromUnixTimeEvaluators;
+import io.dingodb.exec.fun.time.TimeFormatEvaluatorFactory;
+import io.dingodb.exec.fun.time.TimeFormatEvaluators;
+import io.dingodb.exec.fun.time.TimestampFormatEvaluatorFactory;
+import io.dingodb.exec.fun.time.TimestampFormatEvaluators;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluators;
 import io.dingodb.expr.parser.DefaultFunFactory;
@@ -77,12 +84,12 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(LikeBinaryOp.NAME, LikeBinaryOp::new);
         registerUdf(LikeOp.NAME, LikeOp::new);
         // number
-        registerUdf(CeilFun.NAME, CeilFun::new);
-        registerUdf(FloorFun.NAME, FloorFun::new);
+        registerEvaluator(CeilEvaluators.NAME, CeilEvaluatorFactory.INSTANCE);
+        registerEvaluator(FloorEvaluators.NAME, FloorEvaluatorFactory.INSTANCE);
         registerUdf(FormatFun.NAME, FormatFun::new);
         registerUdf(ModFun.NAME, ModFun::new);
         registerUdf(PowFun.NAME, PowFun::new);
-        registerUdf(RoundFun.NAME, RoundFun::new);
+        registerEvaluator(RoundEvaluators.NAME, RoundEvaluatorFactory.INSTANCE);
         // special
         funSuppliers.put(ArrayConstructorOp.NAME, ArrayConstructorOp::fun);
         funSuppliers.put(ListConstructorOp.NAME, ListConstructorOp::fun);
@@ -110,11 +117,11 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(CurrentDateFun.NAME, CurrentDateFun::new);
         registerUdf(CurrentTimeFun.NAME, CurrentTimeFun::new);
         registerUdf(CurrentTimestampFun.NAME, CurrentTimestampFun::new);
-        registerUdf(FromUnixTimeFun.NAME, FromUnixTimeFun::new);
+        registerEvaluator(FromUnixTimeEvaluators.NAME, FromUnixTimeEvaluatorFactory.INSTANCE);
         registerEvaluator(UnixTimestampEvaluators.NAME, UnixTimestampEvaluatorFactory.INSTANCE);
         registerUdf(DateDiffFun.NAME, DateDiffFun::new);
-        registerUdf(DateFormatFun.NAME, DateFormatFun::new);
-        registerUdf(TimeFormatFun.NAME, TimeFormatFun::new);
-        registerUdf(TimestampFormatFun.NAME, TimestampFormatFun::new);
+        registerEvaluator(DateFormatEvaluators.NAME, DateFormatEvaluatorFactory.INSTANCE);
+        registerEvaluator(TimeFormatEvaluators.NAME, TimeFormatEvaluatorFactory.INSTANCE);
+        registerEvaluator(TimestampFormatEvaluators.NAME, TimestampFormatEvaluatorFactory.INSTANCE);
     }
 }

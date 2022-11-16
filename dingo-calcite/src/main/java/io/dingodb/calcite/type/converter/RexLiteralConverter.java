@@ -18,13 +18,12 @@ package io.dingodb.calcite.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.runtime.utils.NumberUtils;
+import io.dingodb.expr.core.Casting;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -65,13 +64,12 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
-        long v = ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
-        return NumberUtils.checkIntRange(v);
+        return Casting.decimalToInt((BigDecimal) value);
     }
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
-        return ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
+        return Casting.decimalToLong((BigDecimal) value);
     }
 
     @Override

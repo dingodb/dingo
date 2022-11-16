@@ -56,6 +56,7 @@ dependencies {
     intTestImplementation 'org.junit.jupiter:junit-jupiter-api:' + 'junit5'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
     testImplementation project(':dingo-calcite')
+    testImplementation project(':dingo-expr:dingo-expr-test')
     testRuntimeOnly project(':dingo-driver')
 }
 

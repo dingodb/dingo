@@ -17,13 +17,13 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
+import io.dingodb.expr.core.Casting;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @Evaluators(
-    induceSequence = {Long.class, Integer.class}
+    induceSequence = {long.class, int.class}
 )
 final class LongCastEvaluators {
     private LongCastEvaluators() {
@@ -34,7 +34,7 @@ final class LongCastEvaluators {
     }
 
     static long longCast(double value) {
-        return Math.round(value);
+        return Casting.doubleToLong(value);
     }
 
     static long longCast(boolean value) {
@@ -42,7 +42,7 @@ final class LongCastEvaluators {
     }
 
     static long longCast(@NonNull BigDecimal value) {
-        return value.setScale(0, RoundingMode.HALF_UP).longValue();
+        return Casting.decimalToLong(value);
     }
 
     static long longCast(@NonNull String value) {

@@ -146,13 +146,13 @@ public final class TypeCode {
             } else {
                 return ARRAY;
             }
-        } else if (Integer.class.isAssignableFrom(type)) {
+        } else if (int.class.isAssignableFrom(type) || Integer.class.isAssignableFrom(type)) {
             return INT;
-        } else if (Long.class.isAssignableFrom(type)) {
+        } else if (long.class.isAssignableFrom(type) || Long.class.isAssignableFrom(type)) {
             return LONG;
-        } else if (Boolean.class.isAssignableFrom(type)) {
+        } else if (boolean.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type)) {
             return BOOL;
-        } else if (Double.class.isAssignableFrom(type)) {
+        } else if (double.class.isAssignableFrom(type) || Double.class.isAssignableFrom(type)) {
             return DOUBLE;
         } else if (BigDecimal.class.isAssignableFrom(type)) {
             return DECIMAL;
