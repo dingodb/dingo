@@ -21,6 +21,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.NetService;
 import io.dingodb.net.netty.NetServiceProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,6 +35,7 @@ import java.util.function.Consumer;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.net.Message.FILE_TRANSFER;
 
+@Slf4j
 public class FileReceiver implements Consumer<ByteBuffer> {
 
     private static final NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
@@ -57,6 +59,7 @@ public class FileReceiver implements Consumer<ByteBuffer> {
     private final Channel channel;
 
     public FileReceiver(Path path, Channel channel) throws Exception {
+        log.info(String.format("FileReceiver::FileReceiver Path=[%s] Parent=[%s]", path.toString(), path.getParent().toString()));
         Files.deleteIfExists(path);
         Files.createDirectories(path.getParent());
         this.fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);

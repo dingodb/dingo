@@ -27,45 +27,10 @@ import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.net.service.FileTransferService;
 import lombok.extern.slf4j.Slf4j;
-import org.rocksdb.AbstractEventListener;
-import org.rocksdb.BackgroundErrorReason;
-import org.rocksdb.BackupEngine;
-import org.rocksdb.BackupEngineOptions;
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.BloomFilter;
-import org.rocksdb.Cache;
-import org.rocksdb.ColumnFamilyDescriptor;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.ColumnFamilyOptions;
-import org.rocksdb.CompactionJobInfo;
-import org.rocksdb.CompressionType;
-import org.rocksdb.ConfigOptions;
-import org.rocksdb.DBOptions;
-import org.rocksdb.FileOperationInfo;
-import org.rocksdb.FlushJobInfo;
-import org.rocksdb.FlushOptions;
-import org.rocksdb.LRUCache;
-import org.rocksdb.MemTableInfo;
-import org.rocksdb.OptionsUtil;
-import org.rocksdb.Range;
-import org.rocksdb.ReadOptions;
-import org.rocksdb.RestoreOptions;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
-import org.rocksdb.Slice;
-import org.rocksdb.Snapshot;
-import org.rocksdb.Status;
-import org.rocksdb.StringAppendOperator;
-import org.rocksdb.TableFileCreationBriefInfo;
-import org.rocksdb.TableFileCreationInfo;
-import org.rocksdb.TableFileDeletionInfo;
-import org.rocksdb.TtlDB;
-import org.rocksdb.WriteBatch;
-import org.rocksdb.WriteOptions;
-import org.rocksdb.WriteStallInfo;
+import org.rocksdb.*;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -75,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.Comparator;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.API;
@@ -98,7 +64,7 @@ public class RocksStorage implements Storage {
     public final Path path;
     public final Path instructionPath;
     public final Path dbPath;
-    public final Path backupPath;
+    public final Path checkpointPath;
     public final Path dcfPath;
     public final Path mcfPath;
     public final Path icfPath;
@@ -110,7 +76,7 @@ public class RocksStorage implements Storage {
     public final WriteOptions writeOptions;
     public final LinkedRunner runner;
 
-    public BackupEngine backup;
+    public Checkpoint checkpoint;
     public RocksDB instruction;
     public RocksDB db;
 
@@ -123,9 +89,13 @@ public class RocksStorage implements Storage {
     private ColumnFamilyDescriptor icfDesc;
 
     private boolean destroy = false;
+    private boolean disable_checkpoint_purge = false;
 
     private static final int MAX_BLOOM_HASH_NUM = 10;
     private static final int MAX_PREFIX_LENGTH = 4;
+
+    public static final String LOCAL_CHECKPOINT_PREFIX = "local-";
+    public static final String REMOTE_CHECKPOINT_PREFIX = "remote-";
 
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
                         final String logRocksOptionsFile, final int ttl) throws Exception {
@@ -136,7 +106,7 @@ public class RocksStorage implements Storage {
         this.logRocksOptionsFile = logRocksOptionsFile;
         this.ttl = ttl;
 
-        this.backupPath = this.path.resolve("backup");
+        this.checkpointPath = this.path.resolve("checkpoint");
 
         this.dbPath = this.path.resolve("db");
         this.dcfPath = this.dbPath.resolve("data");
@@ -145,14 +115,14 @@ public class RocksStorage implements Storage {
         this.instructionPath = this.path.resolve("instruction");
         this.icfPath = this.instructionPath.resolve("data");
         FileUtils.createDirectories(this.instructionPath);
-        FileUtils.createDirectories(this.backupPath);
+        FileUtils.createDirectories(this.checkpointPath);
         FileUtils.createDirectories(this.dbPath);
         this.instruction = createInstruction();
         log.info("Create {} instruction db.", coreMeta.label);
         this.db = createDB();
         this.writeOptions = new WriteOptions();
         log.info("Create {} db,  ttl: {}.", coreMeta.label, this.ttl);
-        backup = BackupEngine.open(db.getEnv(), new BackupEngineOptions(backupPath.toString()));
+        checkpoint = Checkpoint.create(db);
         log.info("Create rocks storage for {} success.", coreMeta.label);
     }
 
@@ -266,8 +236,8 @@ public class RocksStorage implements Storage {
         this.icfHandler = null;
         this.instruction.close();
         this.instruction = null;
-        this.backup.close();
-        this.backup = null;
+        this.checkpoint.close();
+        this.checkpoint = null;
         /**
          * to avoid the file handle leak when drop table
          */
@@ -288,11 +258,22 @@ public class RocksStorage implements Storage {
 
     @Override
     public CompletableFuture<Void> transferTo(CoreMeta meta) {
+        log.info(String.format("RocksStorage::transferTo [%s][%s]", meta.label, meta.location.toString()));
         return Executors.submit("transfer-to-" + meta.label, () -> {
+            // call backup() to create new checkpoint
             backup();
+
+            //get remote dir to file transfer
             StorageApi storageApi = API.proxy(StorageApi.class, meta.location);
             String target = storageApi.transferBackup(meta.mpuId, meta.coreId);
-            FileTransferService.transferTo(meta.location, Paths.get(backupPath.toString()), Paths.get(target));
+
+            //disable checkpoint purge while transferring checkpoint
+            this.disable_checkpoint_purge = true;
+            String checkpoint_name = GetLatestCheckpointName(LOCAL_CHECKPOINT_PREFIX);
+            FileTransferService.transferTo(meta.location, checkpointPath.resolve(checkpoint_name), Paths.get(target));
+            this.disable_checkpoint_purge = false;
+
+            //call remote node to apply checkpoint into db
             storageApi.applyBackup(meta.mpuId, meta.coreId);
             return null;
         });
@@ -319,42 +300,161 @@ public class RocksStorage implements Storage {
         }
     }
 
-    public void backup() {
+    /**
+     * Create new RocksDB checkpoint in backup dir
+     *
+     * @throws RuntimeException
+     */
+    public void createNewCheckpoint() {
         if (destroy) {
             return;
         }
         try {
-            if (backup != null) {
-                backup.createNewBackup(db);
-                backup.purgeOldBackups(3);
-                backup.garbageCollect();
+            if (checkpoint != null) {
+                // use nanoTime as checkpoint_name
+                String checkpoint_name = String.format("%s%d", LOCAL_CHECKPOINT_PREFIX, System.nanoTime());
+                String checkpoint_dir_name = this.checkpointPath.resolve(checkpoint_name).toString();
+                checkpoint.createCheckpoint(checkpoint_dir_name);
             }
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
-    public String receiveBackup() {
-        return this.backupPath.toString();
+    /**
+     * Get Latest Checkpoint Dir Name
+     *
+     * @param prefix Prefix of the checkpoint_name
+     *              Use prefix to identify remote or local checkpoint.
+     */
+    public String GetLatestCheckpointName(String prefix){
+        String latest_checkpoint_name = "";
+        if (checkpoint != null) {
+            File[] directories = new File(this.checkpointPath.toString()).listFiles(File::isDirectory);
+            if (directories.length > 0) {
+                for (File checkpoint_dir: directories) {
+                    // dir name end with ".tmp" maybe temp dir or litter dir
+                    if((!checkpoint_dir.getName().endsWith(".tmp")) && checkpoint_dir.getName().startsWith(prefix)) {
+                        if (checkpoint_dir.getName().compareTo(latest_checkpoint_name) > 0) {
+                            latest_checkpoint_name = checkpoint_dir.getName();
+                        }
+                    }
+                }
+            }
+        }
+        return latest_checkpoint_name;
     }
 
+    /**
+     * Purge Old checkpoint, only retain latest [count] checkpoints.
+     *
+     * @param count Count of checkpoint to retain
+     *
+     * @throws RuntimeException
+     */
+    public void purgeOldCheckpoint(int count) {
+        if (destroy || disable_checkpoint_purge) {
+            return;
+        }
+        try {
+            // Sort directory names by alphabetical order
+            Comparator<File> comparatorFileName = new Comparator<File>(){
+                public int compare(File p1,File p2){
+                    return p2.getName().compareTo(p1.getName());
+                }
+            };
+
+            File[] directories = new File(this.checkpointPath.toString()).listFiles(File::isDirectory);
+            Arrays.sort(directories, comparatorFileName);
+
+            // Delete old checkpoint directories
+            int persistCount = 0;
+            if (directories.length > count) {
+                for (int i = 0; i < directories.length; i++) {
+                    // dir name end with ".tmp" is delayed to delete
+                    if(!directories[i].getName().endsWith(".tmp")) {
+                        persistCount++;
+                    }
+
+                    if(persistCount > count){
+                        FileUtils.deleteIfExists(directories[i].toPath());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Restore db from latest checkpoint
+     *
+     * @throws RuntimeException
+     */
     @Override
     public void applyBackup() {
+        log.info("RocksStorage::restoreFromLatestCheckpoint");
         if (destroy) {
             throw new RuntimeException();
         }
         try {
-            backup.close();
-            backup = BackupEngine.open(db.getEnv(), new BackupEngineOptions(backupPath.toString()));
+            String remote_checkpoint_dir = String.format("%s%s", REMOTE_CHECKPOINT_PREFIX, "checkpoint");
+            if (remote_checkpoint_dir.length() == 0){
+                throw new RuntimeException("GetLatestCheckpointName return null string");
+            }
+            log.info("RocksStorage::restoreFromLatestCheckpoint  remote_checkpoint_dir=" + remote_checkpoint_dir);
+
+            //1.generate temp new db dir for new RocksDB
+            Path temp_new_db_path = this.path.resolve("load_from_"+ remote_checkpoint_dir);
+            Path temp_old_db_path = this.path.resolve("will_delete_soon_"+ remote_checkpoint_dir);
+
+            //2.rename remote checkpoint to temp_new_db_path
+            Files.move(this.path.resolve(remote_checkpoint_dir), temp_new_db_path);
+
+            //3.rename old db to will_delete_soon_[checkpoint_name]
+            checkpoint.close();
+            checkpoint = null;
             closeDB();
-            backup.restoreDbFromLatestBackup(
-                dbPath.toString(), dbPath.resolve("wal").toString(), new RestoreOptions(false)
-            );
+            Files.move(this.dbPath, temp_old_db_path);
+
+            //4.rename temp new db dir to new db dir
+            Files.move(temp_new_db_path, this.dbPath);
+
+            //5.createDB()
             db = createDB();
+            checkpoint = Checkpoint.create(db);
+
+            //6.delete old db thoroughly
+            FileUtils.deleteIfExists(temp_old_db_path);
+            log.info("RocksStorage::restoreFromLatestCheckpoint  finished =" + remote_checkpoint_dir);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void backup() {
+        if (destroy) {
+            return;
+        }
+
+        try {
+            createNewCheckpoint();
+            purgeOldCheckpoint(3);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String receiveBackup() {
+        String checkpoint_name = String.format("%s%s", REMOTE_CHECKPOINT_PREFIX, "checkpoint");
+        log.info(String.format("receiveBackup path=[%s]\n", this.path.resolve(checkpoint_name).toString()));
+
+        FileUtils.deleteIfExists(this.path.resolve(checkpoint_name));
+        FileUtils.createDirectories(this.path.resolve(checkpoint_name));
+
+        return this.path.resolve(checkpoint_name).toString();
     }
 
     @Override
@@ -596,16 +696,16 @@ public class RocksStorage implements Storage {
         @Override
         public void onFlushCompleted(RocksDB db, FlushJobInfo flushJobInfo) {
             log.info("{} on flush completed, info: {}", coreMeta.label, flushJobInfo);
-            if (
-                db.getName().equals(RocksStorage.this.db.getName())
-                && flushJobInfo.getColumnFamilyId() == dcfHandler.getID()
-                && !RocksStorage.this.destroy
-            ) {
-                log.info("Flush on db default, will flush instruction and meta, and backup default db.");
-                runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
-                runner.forceFollow(RocksStorage.this::flushMeta);
-                runner.forceFollow(RocksStorage.this::backup);
-            }
+            // if (
+            //     db.getName().equals(RocksStorage.this.db.getName())
+            //     && flushJobInfo.getColumnFamilyId() == dcfHandler.getID()
+            //     && !RocksStorage.this.destroy
+            // ) {
+            //     log.info("Flush on db default, will flush instruction and meta, and backup default db.");
+            //     runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
+            //     runner.forceFollow(RocksStorage.this::flushMeta);
+            //     runner.forceFollow(RocksStorage.this::backup);
+            // }
         }
 
         @Override
@@ -627,14 +727,14 @@ public class RocksStorage implements Storage {
         @Override
         public void onCompactionCompleted(RocksDB db, CompactionJobInfo compactionJobInfo) {
             log.info("{} on compaction completed, info: {}", coreMeta.label, compactionJobInfo);
-            if (
-                db.getName().equals(RocksStorage.this.db.getName())
-                && Arrays.equals(compactionJobInfo.columnFamilyName(), CF_DEFAULT)
-                && !RocksStorage.this.destroy
-            ) {
-                runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
-                runner.forceFollow(RocksStorage.this::backup);
-            }
+            // if (
+            //     db.getName().equals(RocksStorage.this.db.getName())
+            //     && Arrays.equals(compactionJobInfo.columnFamilyName(), CF_DEFAULT)
+            //     && !RocksStorage.this.destroy
+            // ) {
+            //     runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
+            //     runner.forceFollow(RocksStorage.this::backup);
+            // }
         }
 
         @Override
