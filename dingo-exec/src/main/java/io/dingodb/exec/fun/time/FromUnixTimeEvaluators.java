@@ -24,11 +24,14 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Evaluators(
-    induceSequence = {long.class, double.class, BigDecimal.class, int.class}
+    induceSequence = {
+        long.class,
+        double.class,
+        BigDecimal.class,
+        int.class,
+    }
 )
-public final class FromUnixTimeEvaluators {
-    public static final String NAME = "from_unixtime";
-
+final class FromUnixTimeEvaluators {
     private FromUnixTimeEvaluators() {
     }
 

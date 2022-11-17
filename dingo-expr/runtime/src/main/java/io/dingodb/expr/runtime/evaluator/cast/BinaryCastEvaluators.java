@@ -19,14 +19,17 @@ package io.dingodb.expr.runtime.evaluator.cast;
 import io.dingodb.expr.annotations.Evaluators;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.charset.StandardCharsets;
-
-@Evaluators
+@Evaluators(
+    induceSequence = {
+        byte[].class,
+        String.class,
+    }
+)
 final class BinaryCastEvaluators {
     private BinaryCastEvaluators() {
     }
 
-    static byte @NonNull [] binaryCast(@NonNull String value) {
-        return value.getBytes(StandardCharsets.UTF_8);
+    static byte @NonNull [] binaryCast(byte @NonNull [] value) {
+        return value;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.string;
+package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtStringFun;
@@ -22,8 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Slf4j
-public class UpperFun extends RtStringFun {
-    public static final String NAME = "upper";
+public class RtReplaceFun extends RtStringFun {
     private static final long serialVersionUID = -4349256259193399655L;
 
     /**
@@ -31,20 +30,12 @@ public class UpperFun extends RtStringFun {
      *
      * @param paras the parameters of the op
      */
-    public UpperFun(RtExpr[] paras) {
+    public RtReplaceFun(RtExpr[] paras) {
         super(paras);
-    }
-
-    public static String toUpCase(final String str) {
-        if (str == null || str.equals("")) {
-            return str;
-        } else {
-            return str.toUpperCase();
-        }
     }
 
     @Override
     protected Object fun(Object @NonNull [] values) {
-        return toUpCase((String) values[0]);
+        return ((String) values[0]).replace((String) values[1], (String) values[2]);
     }
 }

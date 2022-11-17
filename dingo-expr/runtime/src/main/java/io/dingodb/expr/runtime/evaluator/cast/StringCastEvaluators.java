@@ -26,29 +26,19 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-@Evaluators
+@Evaluators(
+    induceSequence = {
+        String.class,
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+        boolean.class,
+        byte[].class,
+    }
+)
 final class StringCastEvaluators {
     private StringCastEvaluators() {
-    }
-
-    static @NonNull String stringCast(int value) {
-        return Integer.toString(value);
-    }
-
-    static @NonNull String stringCast(long value) {
-        return Long.toString(value);
-    }
-
-    static @NonNull String stringCast(double value) {
-        return Double.toString(value);
-    }
-
-    static @NonNull String stringCast(boolean value) {
-        return Boolean.toString(value);
-    }
-
-    static @NonNull String stringCast(@NonNull BigDecimal value) {
-        return value.toPlainString();
     }
 
     static @NonNull String stringCast(@NonNull String value) {

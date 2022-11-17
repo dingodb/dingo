@@ -24,9 +24,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.Time;
 
 @Evaluators
-public class TimeFormatEvaluators {
-    public static final String NAME = "time_format";
-
+final class TimeFormatEvaluators {
     static @NonNull String timeFormat(Time value, String format) {
         return DingoDateTimeUtils.timeFormat(value, format);
     }

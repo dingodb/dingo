@@ -47,6 +47,9 @@ public class TestFun {
     private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             // number fun
+            arguments("abs(" + (Integer.MIN_VALUE + 1) + ")", Integer.MAX_VALUE),
+            arguments("abs(" + (Integer.MIN_VALUE - 1L) + ")", Integer.MAX_VALUE + 2L),
+            arguments("abs(" + (Long.MIN_VALUE + 1L) + ")", Long.MAX_VALUE),
             arguments("ceil(101.2)", BigDecimal.valueOf(102)),
             arguments("floor(101.2)", BigDecimal.valueOf(101)),
             arguments("round(101, -2)", BigDecimal.valueOf(100)),

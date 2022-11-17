@@ -22,21 +22,20 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.math.BigDecimal;
 
 @Evaluators(
-    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
+    induceSequence = {
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+        boolean.class,
+        String.class,
+    }
 )
 final class DecimalCastEvaluators {
     private DecimalCastEvaluators() {
     }
 
-    static @NonNull BigDecimal decimalCast(boolean value) {
-        return value ? BigDecimal.ONE : BigDecimal.ZERO;
-    }
-
     static @NonNull BigDecimal decimalCast(@NonNull BigDecimal value) {
         return value;
-    }
-
-    static @NonNull BigDecimal decimalCast(@NonNull String value) {
-        return new BigDecimal(value);
     }
 }

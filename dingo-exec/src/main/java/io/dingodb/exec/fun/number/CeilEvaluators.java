@@ -23,11 +23,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Evaluators(
-    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
+    induceSequence = {
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+    }
 )
-public final class CeilEvaluators {
-    public static final String NAME = "ceil";
-
+final class CeilEvaluators {
     private CeilEvaluators() {
     }
 

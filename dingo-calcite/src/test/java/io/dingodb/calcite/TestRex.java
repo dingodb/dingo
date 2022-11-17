@@ -69,6 +69,16 @@ public class TestRex {
             // number
             arguments("abs(15354.6651)", "abs(15354.6651)", BigDecimal.valueOf(15354.6651)),
             arguments("abs(-163.4)", "abs(-163.4)", BigDecimal.valueOf(163.4)),
+            arguments(
+                "abs(" + (Integer.MIN_VALUE + 1) + ")",
+                "abs(" + (Integer.MIN_VALUE + 1) + ")",
+                Integer.MAX_VALUE
+            ),
+            arguments(
+                "abs(" + (Integer.MIN_VALUE - 1L) + ")",
+                "abs(" + (Integer.MIN_VALUE - 1L) + ")",
+                Integer.MAX_VALUE + 2L
+            ),
             arguments("floor(125.6)", "floor(125.6)", BigDecimal.valueOf(125)),
             arguments("floor(-125.3)", "floor(-125.3)", BigDecimal.valueOf(-126)),
             arguments("ceiling(4533.66)", "ceil(4533.66)", BigDecimal.valueOf(4534)),
@@ -196,6 +206,8 @@ public class TestRex {
     @Nonnull
     private static Stream<Arguments> getParametersExprException() {
         return Stream.of(
+            arguments("abs(" + Integer.MIN_VALUE + ")", ArithmeticException.class),
+            arguments("abs(" + Long.MIN_VALUE + ")", ArithmeticException.class),
             arguments("substring('abc', 4, 1)", StringIndexOutOfBoundsException.class),
             arguments("substring('abc', 0, 1)", StringIndexOutOfBoundsException.class),
             arguments("mid('ABC', 4, 1)", StringIndexOutOfBoundsException.class),

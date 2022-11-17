@@ -33,6 +33,6 @@ public final class RtNull implements RtExpr {
 
     @Override
     public int typeCode() {
-        return TypeCode.getTypeCode((Object) null);
+        return TypeCode.getTypeCode(null);
     }
 }

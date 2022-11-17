@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.MaxEvaluatorsFactory;
 
 @JsonTypeName("max")
 public class MaxAgg extends UnityEvaluatorAgg {
@@ -30,6 +30,6 @@ public class MaxAgg extends UnityEvaluatorAgg {
         @JsonProperty("type") DingoType type
     ) {
         super(index, type);
-        setEvaluator(MaxEvaluatorFactory.INSTANCE);
+        setEvaluator(MaxEvaluatorsFactory.INSTANCE);
     }
 }

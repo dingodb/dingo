@@ -14,40 +14,38 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.evaluator.cast;
+package io.dingodb.expr.runtime.evaluator.arithmetic;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.core.Casting;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
-@Evaluators
-final class IntegerCastEvaluators {
-    private IntegerCastEvaluators() {
+@Evaluators(
+    induceSequence = {
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+    }
+)
+final class MulEvaluators {
+    private MulEvaluators() {
     }
 
-    static int integerCast(int value) {
-        return value;
+    static int mul(int value0, int value1) {
+        return value0 * value1;
     }
 
-    static int integerCast(long value) {
-        return Casting.longToInt(value);
+    static long mul(long value0, long value1) {
+        return value0 * value1;
     }
 
-    static int integerCast(double value) {
-        return Casting.doubleToInt(value);
+    static double mul(double value0, double value1) {
+        return value0 * value1;
     }
 
-    static int integerCast(boolean value) {
-        return value ? 1 : 0;
-    }
-
-    static int integerCast(@NonNull BigDecimal value) {
-        return Casting.decimalToInt(value);
-    }
-
-    static int integerCast(@NonNull String value) {
-        return Integer.parseInt(value);
+    static @NonNull BigDecimal mul(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
+        return value0.multiply(value1);
     }
 }

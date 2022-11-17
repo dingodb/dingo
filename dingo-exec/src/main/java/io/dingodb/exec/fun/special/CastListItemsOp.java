@@ -46,7 +46,8 @@ public final class CastListItemsOp extends Op {
         int toTypeCode = TypeCode.codeOf((String) Objects.requireNonNull(rtExprArray[0].eval(null)));
         // The types of array elements cannot be achieved, even not the same, so cast with universal evaluators.
         return new Runtime(
-            DefaultFunFactory.getCastEvaluatorFactory(toTypeCode).getEvaluator(EvaluatorKey.UNIVERSAL),
+            DefaultFunFactory.getCastEvaluatorFactory(toTypeCode, true)
+                .getEvaluator(EvaluatorKey.UNIVERSAL),
             new RtExpr[]{rtExprArray[1]}
         );
     }

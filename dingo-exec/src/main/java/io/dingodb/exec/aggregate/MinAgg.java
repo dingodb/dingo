@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.MinEvaluatorsFactory;
 
 @JsonTypeName("min")
 public class MinAgg extends UnityEvaluatorAgg {
@@ -30,6 +30,6 @@ public class MinAgg extends UnityEvaluatorAgg {
         @JsonProperty("type") DingoType type
     ) {
         super(index, type);
-        setEvaluator(MinEvaluatorFactory.INSTANCE);
+        setEvaluator(MinEvaluatorsFactory.INSTANCE);
     }
 }

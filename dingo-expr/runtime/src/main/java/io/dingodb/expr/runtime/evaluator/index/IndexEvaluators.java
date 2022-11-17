@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 @Evaluators(
-    induceSequence = {int.class, long.class}
+    induceSequence = {
+        int.class,
+        long.class,
+    }
 )
 final class IndexEvaluators {
     private IndexEvaluators() {

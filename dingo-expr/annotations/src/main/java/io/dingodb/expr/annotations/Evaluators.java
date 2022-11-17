@@ -63,4 +63,6 @@ public @interface Evaluators {
      * @return an array of class
      */
     Class<?>[] induceSequence() default {};
+
+    boolean checkRange() default false;
 }

@@ -17,13 +17,18 @@
 package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.core.Casting;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
 @Evaluators(
-    induceSequence = {double.class, long.class, int.class}
+    induceSequence = {
+        double.class,
+        BigDecimal.class,
+        long.class,
+        int.class,
+        boolean.class,
+        String.class,
+    }
 )
 final class DoubleCastEvaluators {
     private DoubleCastEvaluators() {
@@ -31,17 +36,5 @@ final class DoubleCastEvaluators {
 
     static double doubleCast(double value) {
         return value;
-    }
-
-    static double doubleCast(boolean value) {
-        return value ? 1.0 : 0.0;
-    }
-
-    static double doubleCast(@NonNull BigDecimal value) {
-        return Casting.decimalToDouble(value);
-    }
-
-    static double doubleCast(@NonNull String value) {
-        return Double.parseDouble(value);
     }
 }

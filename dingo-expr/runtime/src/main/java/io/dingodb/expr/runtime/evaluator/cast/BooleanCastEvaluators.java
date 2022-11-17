@@ -18,17 +18,15 @@ package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
 
-@Evaluators
+@Evaluators(
+    induceSequence = {
+        boolean.class,
+        long.class,
+        int.class,
+    }
+)
 final class BooleanCastEvaluators {
     private BooleanCastEvaluators() {
-    }
-
-    static boolean booleanCast(int value) {
-        return value != 0;
-    }
-
-    static boolean booleanCast(long value) {
-        return value != 0L;
     }
 
     static boolean booleanCast(boolean value) {

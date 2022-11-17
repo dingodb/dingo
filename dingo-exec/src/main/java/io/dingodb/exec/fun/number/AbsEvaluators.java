@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.evaluator.mathematical;
+package io.dingodb.exec.fun.number;
 
 import io.dingodb.expr.annotations.Evaluators;
 import io.dingodb.expr.core.Casting;
@@ -22,11 +22,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
-@Evaluators(
-    induceSequence = {double.class, BigDecimal.class, long.class, int.class}
-)
-final class MathematicalEvaluators {
-    private MathematicalEvaluators() {
+@Evaluators
+final class AbsEvaluators {
+    private AbsEvaluators() {
     }
 
     static int abs(int num) {
@@ -49,49 +47,5 @@ final class MathematicalEvaluators {
 
     static @NonNull BigDecimal abs(@NonNull BigDecimal num) {
         return num.abs();
-    }
-
-    static double sin(double num) {
-        return Math.sin(num);
-    }
-
-    static double cos(double num) {
-        return Math.cos(num);
-    }
-
-    static double tan(double num) {
-        return Math.tan(num);
-    }
-
-    static double asin(double num) {
-        return Math.asin(num);
-    }
-
-    static double acos(double num) {
-        return Math.acos(num);
-    }
-
-    static double atan(double num) {
-        return Math.atan(num);
-    }
-
-    static double cosh(double num) {
-        return Math.cosh(num);
-    }
-
-    static double sinh(double num) {
-        return Math.sinh(num);
-    }
-
-    static double tanh(double num) {
-        return Math.tanh(num);
-    }
-
-    static double log(double num) {
-        return Math.log(num);
-    }
-
-    static double exp(double num) {
-        return Math.exp(num);
     }
 }
