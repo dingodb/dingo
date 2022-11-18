@@ -40,7 +40,8 @@ public class FileReceiver implements Consumer<ByteBuffer> {
 
     private static final NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
 
-    static {
+    // Note: This function is called in FileSender class's static code
+    public static void registerFileTransferMessageListener() {
         netService.registerTagMessageListener(
             FILE_TRANSFER,
             (msg, ch) -> {
