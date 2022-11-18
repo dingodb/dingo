@@ -60,7 +60,8 @@ public class FileReceiver implements Consumer<ByteBuffer> {
     private final Channel channel;
 
     public FileReceiver(Path path, Channel channel) throws Exception {
-        log.info(String.format("FileReceiver::FileReceiver Path=[%s] Parent=[%s]", path.toString(), path.getParent().toString()));
+        log.info(String.format("FileReceiver::FileReceiver Path=[%s] Parent=[%s]",
+            path.toString(), path.getParent().toString()));
         Files.deleteIfExists(path);
         Files.createDirectories(path.getParent());
         this.fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);

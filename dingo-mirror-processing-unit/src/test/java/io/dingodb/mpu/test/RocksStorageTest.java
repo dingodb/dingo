@@ -18,13 +18,15 @@ package io.dingodb.mpu.test;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import io.dingodb.common.util.FileUtils;
-
-import org.rocksdb.*;
+import org.rocksdb.Checkpoint;
+import org.rocksdb.CompressionType;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -46,9 +48,9 @@ public class RocksStorageTest {
             Location location = new Location("127.0.0.1", 8000);
             int priority = 0;
             CoreMeta coreMeta = new CoreMeta(id, coreId, mpuId, location, priority);
-            String test_db_path = String.format("/tmp/testRocksStorage-%d", System.nanoTime());
+            String testDbPath = String.format("/tmp/testRocksStorage-%d", System.nanoTime());
 
-            storage = new RocksStorage(coreMeta, test_db_path,
+            storage = new RocksStorage(coreMeta, testDbPath,
                 "", "", 0);
 
             Assertions.assertNotNull(storage);
@@ -78,11 +80,10 @@ public class RocksStorageTest {
         Assertions.assertDoesNotThrow(() -> createRocksStorage());
         Assertions.assertNotNull(storage);
 
-        Assertions.assertDoesNotThrow(()->
-            {
+        Assertions.assertDoesNotThrow(() -> {
                 // recreate db, don't use EventListener
                 // close and clean old db
-                storage.checkpoint.close();
+                storage.checkPoint.close();
                 storage.db.close();
                 storage.instruction.close();
                 FileUtils.deleteIfExists(storage.dbPath);
@@ -95,13 +96,13 @@ public class RocksStorageTest {
 
                 storage.db = RocksDB.open(options, storage.dbPath.toString());
                 storage.instruction = RocksDB.open(options, storage.instructionPath.toString());
-                storage.checkpoint = Checkpoint.create(storage.db);
+                storage.checkPoint = Checkpoint.create(storage.db);
 
                 //put test data into new db
-                String test_key = "test_key";
+                String testKey = "test_key";
                 for (int i = 0; i < 1000; i++) {
-                    storage.db.put(String.format("test_key_%d", i).getBytes(), test_key.getBytes());
-                    storage.db.put(test_key.getBytes(), test_key.getBytes());
+                    storage.db.put(String.format("test_key_%d", i).getBytes(), testKey.getBytes());
+                    storage.db.put(testKey.getBytes(), testKey.getBytes());
                 }
 
                 //create new checkpoint
@@ -113,9 +114,9 @@ public class RocksStorageTest {
                 Assertions.assertEquals(directories.length, 3);
 
                 // test GetLatestCheckpointName
-                String latest_checkpoint_name = storage.GetLatestCheckpointName(storage.LOCAL_CHECKPOINT_PREFIX);
-                for (File checkpoint_dir : directories) {
-                    Assertions.assertTrue(checkpoint_dir.getName().compareTo(latest_checkpoint_name) <= 0);
+                String latestCheckpointName = storage.getLatestCheckpointName(storage.LOCAL_CHECKPOINT_PREFIX);
+                for (File checkpointDir : directories) {
+                    Assertions.assertTrue(checkpointDir.getName().compareTo(latestCheckpointName) <= 0);
                 }
 
                 // test purgeOldCheckpoint
@@ -124,21 +125,21 @@ public class RocksStorageTest {
                 Assertions.assertEquals(directories.length, 2);
 
                 // test restoreFromCheckpoint
-                storage.db.delete(test_key.getBytes());
-                byte[] value = storage.db.get(test_key.getBytes());
+                storage.db.delete(testKey.getBytes());
+                byte[] value = storage.db.get(testKey.getBytes());
                 Assertions.assertNull(value);
 
                 // make a fake remote checkpoint
                 Files.move(
-                    storage.checkpointPath.resolve(latest_checkpoint_name),
+                    storage.checkpointPath.resolve(latestCheckpointName),
                     storage.path.resolve(
                         String.format("%s%s", storage.REMOTE_CHECKPOINT_PREFIX, "checkpoint"
                         )
                     )
                 );
                 storage.applyBackup();
-                value = storage.db.get(test_key.getBytes());
-                Assertions.assertEquals(new String(value), test_key);
+                value = storage.db.get(testKey.getBytes());
+                Assertions.assertEquals(new String(value), testKey);
             }
         );
         Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
