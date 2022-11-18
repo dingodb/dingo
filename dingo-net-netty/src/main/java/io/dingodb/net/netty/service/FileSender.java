@@ -52,12 +52,13 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
 
     // registerTagMessageListener for tag FILE_TRANSFER
     static {
-       FileReceiver.registerFileTransferMessageListener();
+        FileReceiver.registerFileTransferMessageListener();
     }
 
     @Override
     public void transfer(Location location, Path source, Path target) {
-        log.info(String.format("FileSender::transfer Location=[%s] Path=from [%s] to [%s]", location.toString(), source.toString(), target.toString()));
+        log.info(String.format("FileSender::transfer Location=[%s] Path=from [%s] to [%s]",
+            location.toString(), source.toString(), target.toString()));
         if (!Files.exists(source) ) {
             throw new IllegalArgumentException(source + " not found.");
         }
@@ -93,7 +94,8 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
     }
 
     private void recursion(Location location, Path source, Path target) {
-        log.info(String.format("FileSender::recursion Location=[%s] Path=from [%s] to [%s]", location.toString(), source.toString(), target.toString()));
+        log.info(String.format("FileSender::recursion Location=[%s] Path=from [%s] to [%s]",
+            location.toString(), source.toString(), target.toString()));
         File[] files = source.toFile().listFiles();
         if (files == null || files.length == 0) {
             return;
