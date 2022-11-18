@@ -22,7 +22,7 @@ import io.dingodb.expr.parser.var.VarStub;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.evaluator.index.IndexEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.index.IndexEvaluatorsFactory;
 import io.dingodb.expr.runtime.op.RtOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -31,7 +31,7 @@ public final class IndexOp extends OpWithEvaluator {
      * Create an IndexOp. IndexOp can get an element of a Map or an Array.
      */
     public IndexOp() {
-        super(OpType.INDEX, IndexEvaluatorFactory.INSTANCE);
+        super(OpType.INDEX, IndexEvaluatorsFactory.INSTANCE);
     }
 
     @Override

@@ -24,9 +24,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.Date;
 
 @Evaluators
-public final class DateFormatEvaluators {
-    public static final String NAME = "date_format";
-
+final class DateFormatEvaluators {
     private DateFormatEvaluators() {
     }
 

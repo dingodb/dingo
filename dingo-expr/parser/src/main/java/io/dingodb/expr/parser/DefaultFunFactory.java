@@ -30,31 +30,38 @@ import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpWithEvaluator;
 import io.dingodb.expr.parser.op.OrOp;
 import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.evaluator.arithmetic.MaxEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.arithmetic.MinEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.BinaryCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.DecimalCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.DoubleCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.IntegerCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.LongCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.StringCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.TimeCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.cast.TimestampCastEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.AbsEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.AcosEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.AsinEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.AtanEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.CosEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.CoshEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.ExpEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.LogEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorFactory;
-import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.cast.BinaryCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DecimalCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.DoubleCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.IntCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.IntCastRCEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.LongCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.LongCastRCEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.StringCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.TimeCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.TimestampCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.AbsEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.AcosEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.AsinEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.AtanEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.CosEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.CoshEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.ExpEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.LogEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.MaxEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.MinEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.SinEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.SinhEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.TanEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.mathematical.TanhEvaluatorsFactory;
 import io.dingodb.expr.runtime.op.RtOp;
+import io.dingodb.expr.runtime.op.string.RtLowerFun;
+import io.dingodb.expr.runtime.op.string.RtReplaceFun;
+import io.dingodb.expr.runtime.op.string.RtTrimFun;
+import io.dingodb.expr.runtime.op.string.RtUpperFun;
+import io.dingodb.expr.runtime.op.string.SubstrEvaluatorsFactory;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
@@ -78,23 +85,21 @@ public class DefaultFunFactory implements FunFactory {
         funSuppliers.put(IsFalseOp.FUN_NAME, IsFalseOp::fun);
         funSuppliers.put(IsNotFalseOp.FUN_NAME, IsNotFalseOp::fun);
 
-        // min, max
-        registerEvaluator("min", MinEvaluatorFactory.INSTANCE);
-        registerEvaluator("max", MaxEvaluatorFactory.INSTANCE);
-
         // Mathematical
-        registerEvaluator("abs", AbsEvaluatorFactory.INSTANCE);
-        registerEvaluator("sin", SinEvaluatorFactory.INSTANCE);
-        registerEvaluator("cos", CosEvaluatorFactory.INSTANCE);
-        registerEvaluator("tan", TanEvaluatorFactory.INSTANCE);
-        registerEvaluator("asin", AsinEvaluatorFactory.INSTANCE);
-        registerEvaluator("acos", AcosEvaluatorFactory.INSTANCE);
-        registerEvaluator("atan", AtanEvaluatorFactory.INSTANCE);
-        registerEvaluator("cosh", CoshEvaluatorFactory.INSTANCE);
-        registerEvaluator("sinh", SinhEvaluatorFactory.INSTANCE);
-        registerEvaluator("tanh", TanhEvaluatorFactory.INSTANCE);
-        registerEvaluator("log", LogEvaluatorFactory.INSTANCE);
-        registerEvaluator("exp", ExpEvaluatorFactory.INSTANCE);
+        registerEvaluator("min", MinEvaluatorsFactory.INSTANCE);
+        registerEvaluator("max", MaxEvaluatorsFactory.INSTANCE);
+        registerEvaluator("abs", AbsEvaluatorsFactory.INSTANCE);
+        registerEvaluator("sin", SinEvaluatorsFactory.INSTANCE);
+        registerEvaluator("cos", CosEvaluatorsFactory.INSTANCE);
+        registerEvaluator("tan", TanEvaluatorsFactory.INSTANCE);
+        registerEvaluator("asin", AsinEvaluatorsFactory.INSTANCE);
+        registerEvaluator("acos", AcosEvaluatorsFactory.INSTANCE);
+        registerEvaluator("atan", AtanEvaluatorsFactory.INSTANCE);
+        registerEvaluator("cosh", CoshEvaluatorsFactory.INSTANCE);
+        registerEvaluator("sinh", SinhEvaluatorsFactory.INSTANCE);
+        registerEvaluator("tanh", TanhEvaluatorsFactory.INSTANCE);
+        registerEvaluator("log", LogEvaluatorsFactory.INSTANCE);
+        registerEvaluator("exp", ExpEvaluatorsFactory.INSTANCE);
 
         // Cast functions
         registerCastFun(TypeCode.INT);
@@ -107,30 +112,41 @@ public class DefaultFunFactory implements FunFactory {
         registerCastFun(TypeCode.TIME);
         registerCastFun(TypeCode.TIMESTAMP);
         registerCastFun(TypeCode.BINARY);
+
+        // String functions
+        registerUdf("lower", RtLowerFun::new);
+        registerUdf("upper", RtUpperFun::new);
+        registerUdf("trim", RtTrimFun::new);
+        registerUdf("replace", RtReplaceFun::new);
+        registerEvaluator("substr", SubstrEvaluatorsFactory.INSTANCE);
     }
 
     public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode) {
+        return getCastEvaluatorFactory(toTypeCode, false);
+    }
+
+    public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode, boolean checkRange) {
         switch (toTypeCode) {
             case TypeCode.INT:
-                return IntegerCastEvaluatorFactory.INSTANCE;
+                return checkRange ? IntCastRCEvaluatorsFactory.INSTANCE : IntCastEvaluatorsFactory.INSTANCE;
             case TypeCode.LONG:
-                return LongCastEvaluatorFactory.INSTANCE;
+                return checkRange ? LongCastRCEvaluatorsFactory.INSTANCE : LongCastEvaluatorsFactory.INSTANCE;
             case TypeCode.DOUBLE:
-                return DoubleCastEvaluatorFactory.INSTANCE;
+                return DoubleCastEvaluatorsFactory.INSTANCE;
             case TypeCode.BOOL:
-                return BooleanCastEvaluatorFactory.INSTANCE;
+                return BooleanCastEvaluatorsFactory.INSTANCE;
             case TypeCode.DECIMAL:
-                return DecimalCastEvaluatorFactory.INSTANCE;
+                return DecimalCastEvaluatorsFactory.INSTANCE;
             case TypeCode.STRING:
-                return StringCastEvaluatorFactory.INSTANCE;
+                return StringCastEvaluatorsFactory.INSTANCE;
             case TypeCode.DATE:
-                return DateCastEvaluatorFactory.INSTANCE;
+                return DateCastEvaluatorsFactory.INSTANCE;
             case TypeCode.TIME:
-                return TimeCastEvaluatorFactory.INSTANCE;
+                return TimeCastEvaluatorsFactory.INSTANCE;
             case TypeCode.TIMESTAMP:
-                return TimestampCastEvaluatorFactory.INSTANCE;
+                return TimestampCastEvaluatorsFactory.INSTANCE;
             case TypeCode.BINARY:
-                return BinaryCastEvaluatorFactory.INSTANCE;
+                return BinaryCastEvaluatorsFactory.INSTANCE;
         }
         throw new IllegalArgumentException("Unsupported cast type: \"" + castFunName(toTypeCode) + "\".");
     }

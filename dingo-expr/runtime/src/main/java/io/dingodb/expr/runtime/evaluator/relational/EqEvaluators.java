@@ -26,7 +26,12 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 
 @Evaluators(
-    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
+    induceSequence = {
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+    }
 )
 final class EqEvaluators {
     private EqEvaluators() {

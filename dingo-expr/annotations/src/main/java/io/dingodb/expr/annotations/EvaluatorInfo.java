@@ -17,6 +17,7 @@
 package io.dingodb.expr.annotations;
 
 import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -28,4 +29,5 @@ public class EvaluatorInfo {
     private final String className;
     private final TypeName returnTypeName;
     private final List<TypeName> paraTypeNames;
+    private final TypeSpec innerClass;
 }

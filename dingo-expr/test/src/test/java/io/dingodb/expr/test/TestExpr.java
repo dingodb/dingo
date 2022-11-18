@@ -93,7 +93,8 @@ public class TestExpr {
             arguments("\"Alice\" + 'Bob'", "AliceBob"),
             // mathematical fun
             arguments("abs(-1)", 1),
-            // Integer.MIN_VALUE will throw exception.
+            // `Math.abs` behavior
+            arguments("abs(" + Integer.MIN_VALUE + ")", Integer.MIN_VALUE),
             arguments("abs(" + (Integer.MIN_VALUE - 1L) + ")", Integer.MAX_VALUE + 2L),
             arguments("abs(-2.3)", BigDecimal.valueOf(2.3)),
             arguments("abs(double(-2.3))", 2.3),
@@ -144,6 +145,13 @@ public class TestExpr {
             arguments("exp(1)", Math.exp(1.0)),
             arguments("log(E)", 1.0),
             arguments("log(double(1.0) / E)", -1.0),
+            // string functions
+            arguments("lower('HeLlO')", "hello"),
+            arguments("upper('HeLlO')", "HELLO"),
+            arguments("substr('DingoExpression', 0, 5)", "Dingo"),
+            arguments("substr('DingoExpression', 2, 3)", "n"),
+            arguments("replace('I love $name', '$name', 'Lucia')", "I love Lucia"),
+            arguments("trim(' HeLlO \\n\\t')", "HeLlO"),
             // date&time
             arguments("date('1970-1-1')", new Date(0)),
             arguments("time('00:00:00')", new Time(0)),

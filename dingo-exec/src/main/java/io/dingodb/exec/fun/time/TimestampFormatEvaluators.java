@@ -25,11 +25,14 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Evaluators(
-    induceSequence = {long.class, double.class, BigDecimal.class, int.class}
+    induceSequence = {
+        long.class,
+        double.class,
+        BigDecimal.class,
+        int.class,
+    }
 )
-public final class TimestampFormatEvaluators {
-    public static final String NAME = "timestamp_format";
-
+final class TimestampFormatEvaluators {
     private TimestampFormatEvaluators() {
     }
 

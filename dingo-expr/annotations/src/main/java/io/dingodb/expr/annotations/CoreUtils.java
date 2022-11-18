@@ -82,6 +82,13 @@ public final class CoreUtils {
         return typeName.equals(TIMESTAMP);
     }
 
+    private static boolean isBinaryType(@NonNull TypeName typeName) {
+        if (typeName instanceof ArrayTypeName) {
+            return ((ArrayTypeName) typeName).componentType.equals(TypeName.BYTE);
+        }
+        return false;
+    }
+
     /**
      * Get the type code of a type.
      *
@@ -92,13 +99,7 @@ public final class CoreUtils {
         if (typeName instanceof ParameterizedTypeName) {
             typeName = ((ParameterizedTypeName) typeName).rawType;
         }
-        if (typeName instanceof ArrayTypeName) {
-            if (((ArrayTypeName) typeName).componentType.equals(TypeName.BYTE)) {
-                return TypeCode.BINARY;
-            } else {
-                return TypeCode.ARRAY;
-            }
-        } else if (isIntType(typeName)) {
+        if (isIntType(typeName)) {
             return TypeCode.INT;
         } else if (isLongType(typeName)) {
             return TypeCode.LONG;
@@ -116,6 +117,10 @@ public final class CoreUtils {
             return TypeCode.TIME;
         } else if (isTimestampType(typeName)) {
             return TypeCode.TIMESTAMP;
+        } else if (isBinaryType(typeName)) {
+            return TypeCode.BINARY;
+        } else if (typeName instanceof ArrayTypeName) {
+            return TypeCode.ARRAY;
         }
         try {
             Class<?> clazz = Class.forName(typeName.toString());
@@ -150,30 +155,52 @@ public final class CoreUtils {
         return builder.build();
     }
 
-    public static @Nullable String getCastingFunName(@NonNull TypeName target, TypeName source) {
+    public static @Nullable String getCastingFunName(@NonNull TypeName target, TypeName source, boolean isCheckRange) {
         if (isIntType(target)) {
             if (isLongType(source)) {
-                return "longToInt";
+                return isCheckRange ? "longToIntRC" : "longToInt";
             } else if (isDoubleType(source)) {
-                return "doubleToInt";
+                return isCheckRange ? "doubleToIntRC" : "doubleToInt";
+            } else if (isBoolType(source)) {
+                return "boolToInt";
             } else if (isDecimalType(source)) {
-                return "decimalToInt";
+                return isCheckRange ? "decimalToIntRC" : "decimalToInt";
+            } else if (isStringType(source)) {
+                return "stringToInt";
             }
         } else if (isLongType(target)) {
             if (isIntType(source)) {
                 return "intToLong";
             } else if (isDoubleType(source)) {
-                return "doubleToLong";
+                return isCheckRange ? "doubleToLongRC" : "doubleToLong";
+            } else if (isBoolType(source)) {
+                return "boolToLong";
             } else if (isDecimalType(source)) {
-                return "decimalToLong";
+                return isCheckRange ? "decimalToLongRC" : "decimalToLong";
+            } else if (isStringType(source)) {
+                return "stringToLong";
+            }
+        } else if (isBoolType(target)) {
+            if (isIntType(source)) {
+                return "intToBool";
+            } else if (isLongType(source)) {
+                return "longToBool";
+            } else if (isDoubleType(source)) {
+                return "doubleToBool";
+            } else if (isDecimalType(source)) {
+                return "decimalToBool";
             }
         } else if (isDoubleType(target)) {
             if (isIntType(source)) {
                 return "intToDouble";
             } else if (isLongType(source)) {
                 return "longToDouble";
+            } else if (isBoolType(source)) {
+                return "boolToDouble";
             } else if (isDecimalType(source)) {
                 return "decimalToDouble";
+            } else if (isStringType(source)) {
+                return "stringToDouble";
             }
         } else if (isDecimalType(target)) {
             if (isIntType(source)) {
@@ -182,6 +209,28 @@ public final class CoreUtils {
                 return "longToDecimal";
             } else if (isDoubleType(source)) {
                 return "doubleToDecimal";
+            } else if (isBoolType(source)) {
+                return "boolToDecimal";
+            } else if (isStringType(source)) {
+                return "stringToDecimal";
+            }
+        } else if (isStringType(target)) {
+            if (isIntType(source)) {
+                return "intToString";
+            } else if (isLongType(source)) {
+                return "longToString";
+            } else if (isDoubleType(source)) {
+                return "doubleToString";
+            } else if (isBoolType(source)) {
+                return "boolToString";
+            } else if (isDecimalType(source)) {
+                return "decimalToString";
+            } else if (isBinaryType(source)) {
+                return "binaryToString";
+            }
+        } else if (isBinaryType(target)) {
+            if (isStringType(source)) {
+                return "stringToBinary";
             }
         }
         return null;
@@ -190,10 +239,11 @@ public final class CoreUtils {
     public static @NonNull CodeBlock codeCasting(
         @NonNull CodeBlock source,
         @NonNull TypeName required,
-        @NonNull TypeName actual
+        @NonNull TypeName actual,
+        boolean isCheckRange
     ) {
         CodeBlock.Builder builder = CodeBlock.builder();
-        String funName = getCastingFunName(required, actual);
+        String funName = getCastingFunName(required, actual, isCheckRange);
         if (funName != null) {
             builder.add("$T.$L(($T) ", Casting.class, funName, actual).add(source).add(")");
         } else {

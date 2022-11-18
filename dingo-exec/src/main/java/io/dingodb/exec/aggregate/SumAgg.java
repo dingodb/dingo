@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.evaluator.arithmetic.AddEvaluatorFactory;
+import io.dingodb.expr.runtime.evaluator.arithmetic.AddEvaluatorsFactory;
 
 @JsonTypeName("sum")
 public class SumAgg extends UnityEvaluatorAgg {
@@ -30,6 +30,6 @@ public class SumAgg extends UnityEvaluatorAgg {
         @JsonProperty("type") DingoType type
     ) {
         super(index, type);
-        setEvaluator(AddEvaluatorFactory.INSTANCE);
+        setEvaluator(AddEvaluatorsFactory.INSTANCE);
     }
 }

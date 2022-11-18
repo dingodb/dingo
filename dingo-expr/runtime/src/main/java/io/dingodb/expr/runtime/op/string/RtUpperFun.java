@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.string;
+package io.dingodb.expr.runtime.op.string;
 
 import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtStringFun;
@@ -22,29 +22,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Slf4j
-public class LowerFun extends RtStringFun {
-    public static final String NAME = "lower";
-    private static final long serialVersionUID = -3546267408443749483L;
+public class RtUpperFun extends RtStringFun {
+    private static final long serialVersionUID = -4349256259193399655L;
 
     /**
-     * Create an RtToLowerCaseOp. RtToLowerCaseOp converts a String to lower case by {@code String::toLowerCase}.
+     * Create an RtToUpperCaseOp. RtToUpperCaseOp converts a String to upper case by {@code String::toUpperCase}.
      *
      * @param paras the parameters of the op
      */
-    public LowerFun(RtExpr[] paras) {
+    public RtUpperFun(RtExpr[] paras) {
         super(paras);
-    }
-
-    public static String toLowCase(final String str) {
-        if (str == null || str.equals("")) {
-            return str;
-        } else {
-            return str.toLowerCase();
-        }
     }
 
     @Override
     protected Object fun(Object @NonNull [] values) {
-        return toLowCase((String) values[0]);
+        return ((String) values[0]).toUpperCase();
     }
 }

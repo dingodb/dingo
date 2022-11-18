@@ -37,14 +37,16 @@ public class EvaluatorsInfo {
     private final TypeElement universalEvaluator;
     @Getter
     private final List<TypeName> induceSequence;
+    @Getter
+    private final boolean checkRange;
 
     @Getter
     @Setter
     private String packageName;
     @Getter
     @Setter
-    private TypeName originClassName;
+    private TypeElement originClass;
     @Getter
     @Setter
-    private Map<String, Map<String, EvaluatorInfo>> evaluatorMap;
+    private Map<String, EvaluatorInfo> evaluatorMap;
 }

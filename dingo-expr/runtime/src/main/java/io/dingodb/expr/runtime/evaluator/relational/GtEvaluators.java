@@ -25,7 +25,12 @@ import java.sql.Time;
 import java.sql.Timestamp;
 
 @Evaluators(
-    induceSequence = {BigDecimal.class, double.class, long.class, int.class}
+    induceSequence = {
+        BigDecimal.class,
+        double.class,
+        long.class,
+        int.class,
+    }
 )
 final class GtEvaluators {
     private GtEvaluators() {

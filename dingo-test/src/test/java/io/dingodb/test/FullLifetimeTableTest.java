@@ -78,4 +78,18 @@ public class FullLifetimeTableTest {
             )
         );
     }
+
+    @Test
+    public void testStringFunNull() throws SQLException {
+        sqlHelper.doTest(
+            "create table {table} (id int not null, s1 varchar(20), s2 varchar(20), primary key(id))",
+            "insert into {table} values (1, null, 'abc')",
+            1,
+            "select concat(s1, s2) as res from {table}",
+            new String[]{"res"},
+            Collections.singletonList(
+                new Object[]{null}
+            )
+        );
+    }
 }

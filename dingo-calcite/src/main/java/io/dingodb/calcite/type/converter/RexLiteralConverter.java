@@ -64,12 +64,12 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
-        return Casting.decimalToInt((BigDecimal) value);
+        return Casting.decimalToIntRC((BigDecimal) value);
     }
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
-        return Casting.decimalToLong((BigDecimal) value);
+        return Casting.decimalToLongRC((BigDecimal) value);
     }
 
     @Override

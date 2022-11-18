@@ -24,7 +24,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Timestamp;
 
 @Evaluators(
-    induceSequence = {long.class, int.class}
+    induceSequence = {
+        long.class,
+        int.class,
+    }
 )
 final class TimestampCastEvaluators {
     private TimestampCastEvaluators() {
