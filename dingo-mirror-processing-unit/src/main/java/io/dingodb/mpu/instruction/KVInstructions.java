@@ -126,12 +126,14 @@ public class KVInstructions implements Instructions {
         // delete range opcode 9
         kv.processor(
             DEL_RANGE_OC,
-            (InProcessor) (writer, operand) -> writer.erase((byte[]) operand[0], (byte[]) operand[1])
+            (InProcessor) (writer, operand) -> writer.erase(
+                (byte[]) operand[0], (byte[]) operand[1])
         );
 
         // out instruction:
         // count opcode 0
-        kv.processor(COUNT_OC, (OutProcessor) (reader, operand) -> reader.count());
+        kv.processor(COUNT_OC, (OutProcessor) (reader, operand) -> reader
+            .count((byte[])operand[0], (byte[])operand[1]));
         // get opcode 2
         kv.processor(GET_OC, (OutProcessor) (reader, operand) -> reader.get((byte[]) operand[0]));
         // scan opcode 4

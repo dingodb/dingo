@@ -149,6 +149,7 @@ public class ByteArrayUtils {
     }
 
     public static byte[] increment(@NonNull byte[] input) {
+        if (input == null) return null;
         byte[] ret = new byte[input.length];
         int carry = 1;
         for (int i = input.length - 1; i >= 0; i--) {

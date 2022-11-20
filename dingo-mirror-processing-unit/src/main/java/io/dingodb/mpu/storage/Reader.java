@@ -25,7 +25,7 @@ public interface Reader extends AutoCloseable {
 
     Iterator<KeyValue> scan(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd);
 
-    long count();
+    long count(byte[] startKey, byte[] endKey);
 
     byte[] get(byte[] key);
 

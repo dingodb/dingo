@@ -895,7 +895,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getDingoType(),
                 td.getKeyMapping(),
                 next.getKey(),
-                next.getValue()
+                next.getValue(),
+                rel.isIncludeStart(),
+                rel.isIncludeEnd()
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(

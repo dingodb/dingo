@@ -34,7 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @JsonTypeName("rangeDelete")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "filter", "selection", "output", "startKey", "endKey"})
+@JsonPropertyOrder({
+    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
+    "startKey", "endKey", "includeStart", "includeEnd"})
 public final class PartRangeDeleteOperator extends SourceOperator {
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -51,6 +53,11 @@ public final class PartRangeDeleteOperator extends SourceOperator {
     @JsonProperty("endKey")
     private final byte[] endKey;
 
+    @JsonProperty("includeStart")
+    private final boolean includeStart;
+    @JsonProperty("includeEnd")
+    private final boolean includeEnd;
+
     private Part part;
 
     @JsonCreator
@@ -59,13 +66,17 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("startKey") byte[] startKey,
-        @JsonProperty("endKey") byte[] endKey
+        @JsonProperty("endKey") byte[] endKey,
+        @JsonProperty("includeStart") boolean includeStart,
+        @JsonProperty("includeEnd") boolean includeEnd
     ) {
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.includeStart = includeStart;
+        this.includeEnd = includeEnd;
     }
 
     @Override
@@ -84,7 +95,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.countDeleteByRange(startKey, endKey);
+        long count = part.countDeleteByRange(startKey, endKey, includeStart, includeEnd);
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
