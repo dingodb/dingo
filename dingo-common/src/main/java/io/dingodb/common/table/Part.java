@@ -35,7 +35,7 @@ public interface Part {
         boolean prefixScan
     );
 
-    long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey);
+    long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd);
 
     boolean insert(Object @NonNull [] tuple);
 

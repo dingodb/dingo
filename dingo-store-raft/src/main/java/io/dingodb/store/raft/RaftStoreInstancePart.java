@@ -256,7 +256,7 @@ public final class RaftStoreInstancePart implements StoreInstance {
     }
 
     @Override
-    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey,boolean includeStart, boolean includeEnd) {
         if (endPrimaryKey == null) {
             endPrimaryKey = part.getEnd();
         }

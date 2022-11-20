@@ -73,6 +73,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.API;
@@ -732,16 +734,6 @@ public class RocksStorage implements Storage {
         @Override
         public void onFlushCompleted(RocksDB db, FlushJobInfo flushJobInfo) {
             log.info("{} on flush completed, info: {}", coreMeta.label, flushJobInfo);
-            // if (
-            //     db.getName().equals(RocksStorage.this.db.getName())
-            //     && flushJobInfo.getColumnFamilyId() == dcfHandler.getID()
-            //     && !RocksStorage.this.destroy
-            // ) {
-            //     log.info("Flush on db default, will flush instruction and meta, and backup default db.");
-            //     runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
-            //     runner.forceFollow(RocksStorage.this::flushMeta);
-            //     runner.forceFollow(RocksStorage.this::backup);
-            // }
         }
 
         @Override
@@ -752,7 +744,6 @@ public class RocksStorage implements Storage {
         @Override
         public void onTableFileDeleted(TableFileDeletionInfo tableFileDeletionInfo) {
             log.info("{} on table file deleted, info: {}", coreMeta.label, tableFileDeletionInfo);
-            //runner.forceFollow(RocksStorage.this::backup);
         }
 
         @Override
@@ -763,14 +754,6 @@ public class RocksStorage implements Storage {
         @Override
         public void onCompactionCompleted(RocksDB db, CompactionJobInfo compactionJobInfo) {
             log.info("{} on compaction completed, info: {}", coreMeta.label, compactionJobInfo);
-            // if (
-            //     db.getName().equals(RocksStorage.this.db.getName())
-            //     && Arrays.equals(compactionJobInfo.columnFamilyName(), CF_DEFAULT)
-            //     && !RocksStorage.this.destroy
-            // ) {
-            //     runner.forceFollow(() -> LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1)));
-            //     runner.forceFollow(RocksStorage.this::backup);
-            // }
         }
 
         @Override
@@ -829,7 +812,6 @@ public class RocksStorage implements Storage {
         @Override
         public void onFileTruncateFinish(FileOperationInfo fileOperationInfo) {
             log.info("{} on file truncate finish, info: {}", coreMeta.label, fileOperationInfo);
-            //runner.forceFollow(RocksStorage.this::backup);
         }
 
         @Override

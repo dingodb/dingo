@@ -94,8 +94,9 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return store.countDeleteByRange(startPrimaryKey, endPrimaryKey);
+    public long countDeleteByRange(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
+        return store.countDeleteByRange(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
     @Override

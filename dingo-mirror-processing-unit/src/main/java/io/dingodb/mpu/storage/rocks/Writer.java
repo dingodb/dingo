@@ -16,6 +16,7 @@
 
 package io.dingodb.mpu.storage.rocks;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.instruction.Instruction;
 import lombok.Getter;
@@ -27,10 +28,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.List;
-import java.util.zip.DataFormatException;
 
 @Slf4j
 @Accessors(chain = true, fluent = true)
@@ -87,6 +85,7 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
         }
     }
 
+    // [start, end)
     @Override
     public void erase(byte[] begin, byte[] end) {
         try {
@@ -98,18 +97,20 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
             }
 
             begin = (begin == null) ? minKey : begin;
-            end = (end == null) ? maxKey : end;
+            end = (end == null) ? ByteArrayUtils.increment(maxKey) : end;
 
             if (log.isDebugEnabled()) {
                 log.debug("erase range begin: {} end: {}", Arrays.toString(begin), Arrays.toString(end));
             }
 
-            db.deleteRange(handler, begin, ByteArrayUtils.increment(end));
+            db.deleteRange(handler, begin, end);
+            db.deleteFilesInRanges(handler, ByteArrayUtils.toList(begin, end), false);
 
             if (ByteArrayUtils.lessThanOrEqual(begin, minKey)
                 && ByteArrayUtils.greatThanOrEqual(end, maxKey)) {
-                db.deleteFilesInRanges(handler, ByteArrayUtils.toList(begin, end), true);
                 db.compactRange(handler);
+            } else {
+                db.compactRange(handler, begin, end);
             }
 
         } catch (RocksDBException e) {

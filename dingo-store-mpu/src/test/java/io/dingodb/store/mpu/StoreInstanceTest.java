@@ -22,7 +22,11 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -282,5 +286,159 @@ class StoreInstanceTest {
         Assertions.assertEquals(0, result.size());
 
         storeInstance.delete("0".getBytes(), "zzzzzzzzzzzzz".getBytes());
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeEndNullAndIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange("3".getBytes(), null, true, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeEndNullAndNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange("3".getBytes(), null, true, false));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeEndNullAndNotIncludeStart() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            2,
+            storeInstance.countDeleteByRange("3".getBytes(), null, false, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeStartNullAndIncludeStart() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange(null, "3".getBytes(), true, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeStartNullAndNotIncludeStart() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange(null, "3".getBytes(), false, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeStartNullAndIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange(null, "3".getBytes(), true, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeStartNullAndNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            2,
+            storeInstance.countDeleteByRange(null, "3".getBytes(), false, false));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeIncludeStartAndIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            3,
+            storeInstance.countDeleteByRange("1".getBytes(), "3".getBytes(), true, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeNotIncludeStartAndIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            2,
+            storeInstance.countDeleteByRange("1".getBytes(), "3".getBytes(), false, true));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeIncludeStartAndNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            2,
+            storeInstance.countDeleteByRange("1".getBytes(), "3".getBytes(), true, false));
+    }
+
+    @Disabled
+    @Test
+    void testCountDeleteByRangeNotIncludeStartAndNotIncludeEnd() {
+        storeInstance.upsertKeyValue("1".getBytes(), "value01".getBytes());
+        storeInstance.upsertKeyValue("2".getBytes(), "value02".getBytes());
+        storeInstance.upsertKeyValue("3".getBytes(), "value03".getBytes());
+        storeInstance.upsertKeyValue("4".getBytes(), "value04".getBytes());
+        storeInstance.upsertKeyValue("5".getBytes(), "value04".getBytes());
+
+        Assertions.assertEquals(
+            1,
+            storeInstance.countDeleteByRange("1".getBytes(), "3".getBytes(), false, false));
     }
 }

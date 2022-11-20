@@ -200,7 +200,7 @@ public class RaftStoreInstance implements StoreInstance {
     }
 
     @Override
-    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+    public long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
         Part part = getPart(startPrimaryKey);
         if (part == null) {
@@ -211,7 +211,7 @@ public class RaftStoreInstance implements StoreInstance {
         } else if (getPart(endPrimaryKey) != part) {
             throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
         }
-        return parts.get(part.getId()).countDeleteByRange(startPrimaryKey, endPrimaryKey);
+        return parts.get(part.getId()).countDeleteByRange(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
     public void onPartAvailable(RaftStoreInstancePart part) {

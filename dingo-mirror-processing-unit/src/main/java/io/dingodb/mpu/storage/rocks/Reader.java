@@ -103,7 +103,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         if (startKey == null || endKey == null) {
             return false;
         }
-        
+
         return Arrays.equals(ByteArrayUtils.increment(startKey), endKey);
     }
 
@@ -123,45 +123,42 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         return new Iterator(db.newIterator(handle, readOptions), startKey, endKey, withStart, withEnd);
     }
 
-    @Override
-    public long count() {
-        return count(null, null, true, true);
-    }
-
-    public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
+    // [start, end)
+    private Map<byte[], byte[]> getRangeForCount(byte[] start, byte[] end) {
+        Map<byte[], byte[]> result = new TreeMap<>(ByteArrayUtils::compare);
         java.util.Iterator<byte[]> keyIterator = db.getLiveFilesMetaData().stream()
             .filter(meta -> Arrays.equals(meta.columnFamilyName(), Constant.CF_DEFAULT))
             .flatMap(meta -> Stream.of(meta.smallestKey(), meta.largestKey()))
-            .filter(k -> (end == null || lessThanOrEqual(k, end)) && (start == null || greatThanOrEqual(k, start)))
+            .filter(k -> (end == null || lessThan(k, end)) && (start == null || greatThanOrEqual(k, start)))
             .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
             .iterator();
         if (!keyIterator.hasNext()) {
-            return countAsync(start, end, withStart, withEnd).join();
+            return result;
         }
-        Map<byte[], byte[]> subCounts = new TreeMap<>(ByteArrayUtils::compare);
+
         byte[] key = keyIterator.next();
-        if (start == null || lessThan(start, key)) {
-            subCounts.put(EMPTY_BYTES, key);
+        if (start == null) {
+            result.put(EMPTY_BYTES, key);
         } else if (lessThan(start, key)) {
-            subCounts.put(start, key);
+            result.put(start, key);
         }
         while (keyIterator.hasNext()) {
-            subCounts.put(key, key = keyIterator.next());
+            result.put(key, key = keyIterator.next());
         }
-        if (end == null || greatThan(end, key)) {
-            subCounts.put(key, end);
+        if (end == null) {
+            result.put(key, null);
+        } else if (lessThan(key, end)) {
+            result.put(key, end);
         }
+
+        return result;
+    }
+
+    private long parallelCount(Map<byte[], byte[]> ranges) throws InterruptedException {
         AtomicLong count = new AtomicLong(0);
-        CountDownLatch countDownLatch = new CountDownLatch(subCounts.size());
-        java.util.Iterator<Map.Entry<byte[], byte[]>> subIterator = subCounts.entrySet().iterator();
-        boolean sWithStart = withStart;
-        boolean sWithEnd = false;
-        while (subIterator.hasNext()) {
-            Map.Entry<byte[], byte[]> entry = subIterator.next();
-            if (!subIterator.hasNext()) {
-                sWithEnd = withEnd;
-            }
-            countAsync(entry.getKey(), entry.getValue(), sWithStart, sWithEnd)
+        CountDownLatch countDownLatch = new CountDownLatch(ranges.size());
+        ranges.entrySet().forEach(entry -> {
+            countAsync(entry.getKey(), entry.getValue())
                 .whenComplete((r, e) -> {
                     try {
                         if (e == null) {
@@ -173,18 +170,39 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
                         countDownLatch.countDown();
                     }
                 });
-            sWithStart = true;
+        });
+
+        countDownLatch.await();
+        return count.get();
+    }
+
+    // [start, end)
+    public long count(byte[] start, byte[] end) {
+        if (log.isDebugEnabled()) {
+            log.debug("rocksdb reader count: {} {}",
+                start != null ? Arrays.toString(start) : "null",
+                end != null ? Arrays.toString(end) : "null");
+        }
+
+        Map<byte[], byte[]> ranges = getRangeForCount(start, end);
+        if (ranges.size() == 0) {
+            return countAsync(start, end).join();
         }
         try {
-            countDownLatch.await();
-            return count.get();
+            return parallelCount(ranges);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public CompletableFuture<Long> countAsync(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
-        Predicate<byte[]> ep = end == null ? k -> true : withEnd ? k -> lessThanOrEqual(k, end) : k -> lessThan(k, end);
+    // [start, end)
+    public CompletableFuture<Long> countAsync(byte[] start, byte[] end) {
+        if (log.isDebugEnabled()) {
+            log.debug("rocksdb reader countAsync: {} {}",
+                start != null ? Arrays.toString(start) : "null",
+                end != null ? Arrays.toString(end) : "null");
+        }
+        Predicate<byte[]> ep = end == null ? k -> true : k -> lessThan(k, end);
         return Executors.submit("calc-count", () -> {
             long count = 0;
             try (RocksIterator iterator = db.newIterator(handle, readOptions)) {
@@ -192,12 +210,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
                     iterator.seekToFirst();
                 } else {
                     iterator.seek(start);
-                    if (iterator.isValid() && !withStart && Arrays.equals(iterator.key(), start)) {
-                        iterator.next();
-                    }
                 }
                 while (iterator.isValid() && ep.test(iterator.key())) {
-
                     count++;
                     iterator.next();
                 }

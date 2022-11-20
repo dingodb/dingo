@@ -51,27 +51,58 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         super(config);
     }
 
+    private boolean[] getIncludeStartAndEnd(RexCall filter, TableDefinition td) {
+        boolean includeStart = true;
+        boolean includeEnd = true;
+        if (filter.op.kind == SqlKind.AND) {
+            for (RexNode operand : filter.operands) {
+                RuleUtils.ConditionInfo info = RuleUtils.checkCondition(operand);
+                if (info == null || info.index != td.getFirstPrimaryColumnIndex()) {
+                    continue;
+                }
+
+                log.info("DingoPartRangeDeleteRule {}", info.kind);
+                switch (info.kind) {
+                    case LESS_THAN:
+                        includeEnd = false;
+                        break;
+                    case GREATER_THAN:
+                        includeStart = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } else if (filter.op.kind == SqlKind.LESS_THAN) {
+            includeEnd = false;
+        } else if (filter.op.kind == SqlKind.GREATER_THAN) {
+            includeStart = false;
+        }
+
+        return new boolean[]{includeStart, includeEnd};
+    }
+
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableModify rel0 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
-        int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)), null, true);
+            td.getColumn(td.getFirstPrimaryColumnIndex()).getDingoType().toDingoSchema(0)), null, true);
 
-        List<byte[]> byteList =
-            calLeftAndRight(ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, firstPrimaryColumnIndex, codec);
+        List<byte[]> byteList = calLeftAndRight(
+            ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, td.getFirstPrimaryColumnIndex(), codec);
         byte[] left = byteList.get(0);
         byte[] right = byteList.get(1);
 
         if (Arrays.equals(left, ByteArrayUtils.EMPTY_BYTES) || Arrays.equals(right, ByteArrayUtils.MAX_BYTES)) {
             return;
         }
-
         if (rel.getFilter().getKind() == SqlKind.AND && !ByteArrayUtils.lessThan(left, right)) {
             return;
         }
+
+        boolean[] includeStartAndEnd = getIncludeStartAndEnd((RexCall) rel.getFilter(), td);
 
         call.transformTo(
             new DingoPartRangeDelete(
@@ -80,7 +111,9 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                 rel.getTable(),
                 rel0.getRowType(),
                 left,
-                right
+                right,
+                includeStartAndEnd[0],
+                includeStartAndEnd[1]
             )
         );
     }

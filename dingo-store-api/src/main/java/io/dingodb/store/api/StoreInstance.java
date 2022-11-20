@@ -59,7 +59,8 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey) {
+    default long countDeleteByRange(
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
         throw new UnsupportedOperationException();
     }
 

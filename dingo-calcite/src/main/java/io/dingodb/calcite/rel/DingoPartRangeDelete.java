@@ -41,19 +41,28 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
     @Getter
     private final byte[] endKey;
 
+    @Getter
+    private final boolean includeStart;
+    @Getter
+    private final boolean includeEnd;
+
     public DingoPartRangeDelete(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable table,
         RelDataType rowType,
         byte[] startKey,
-        byte[] endKey
+        byte[] endKey,
+        boolean includeStart,
+        boolean includeEnd
     ) {
         super(cluster, traits);
         this.table = table;
         this.rowType = rowType;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.includeStart = includeStart;
+        this.includeEnd = includeEnd;
     }
 
     @Override
@@ -72,6 +81,8 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
         pw.item("table", table.getQualifiedName());
         pw.item("startKey", startKey);
         pw.item("endKey", endKey);
+        pw.item("includeStart", includeStart);
+        pw.item("includeEnd", includeEnd);
         return pw;
     }
 
