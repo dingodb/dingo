@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.test.SqlHelper;
 import io.dingodb.test.asserts.Assert;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -28,6 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,7 +43,6 @@ public class TestSqlParameters {
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test-create.sql");
-        sqlHelper.execFile("/table-test-data.sql");
     }
 
     @AfterAll
@@ -48,6 +50,16 @@ public class TestSqlParameters {
         // Drop makes other tests fail, should use random table name in tests.
         // sqlHelper.dropTable("test");
         sqlHelper.cleanUp();
+    }
+
+    @BeforeEach
+    public void setup() throws Exception {
+        sqlHelper.execFile("/table-test-data.sql");
+    }
+
+    @AfterEach
+    public void cleanUp() throws Exception {
+        sqlHelper.clearTable("test");
     }
 
     @Test
@@ -156,6 +168,53 @@ public class TestSqlParameters {
             ImmutableList.of(
                 new Object[]{10, "Alice", 10.0},
                 new Object[]{11, "Betty", 11.0}
+            )
+        );
+    }
+
+    @Test
+    public void testInsertBatch() throws SQLException {
+        String sql = "insert into test values(?, ?, ?)";
+        Connection connection = sqlHelper.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, 12);
+            statement.setString(2, "Alice");
+            statement.setDouble(3, 12.0);
+            statement.addBatch();
+            statement.setInt(1, 13);
+            statement.setString(2, "Betty");
+            statement.setDouble(3, 13.0);
+            statement.addBatch();
+            int[] count = statement.executeBatch();
+            assertThat(count).isEqualTo(new int[]{1, 1});
+        }
+        sqlHelper.queryTest(
+            "select * from test where id >= 10",
+            new String[]{"id", "name", "amount"},
+            ImmutableList.of(
+                new Object[]{12, "Alice", 12.0},
+                new Object[]{13, "Betty", 13.0}
+            )
+        );
+    }
+
+    @Test
+    public void testInsertBatch1() throws SQLException {
+        String sql = "insert into test values(?, ?, ?)";
+        Connection connection = sqlHelper.getConnection();
+        try (Statement statement = connection.createStatement()) {
+            statement.addBatch("insert into test values(14, 'Alice', 14.0)");
+            statement.addBatch("insert into test values(15, 'Betty', 15.0),(16, 'Cindy', 16.0)");
+            int[] count = statement.executeBatch();
+            assertThat(count).isEqualTo(new int[]{1, 2});
+        }
+        sqlHelper.queryTest(
+            "select * from test where id >= 10",
+            new String[]{"id", "name", "amount"},
+            ImmutableList.of(
+                new Object[]{14, "Alice", 14.0},
+                new Object[]{15, "Betty", 15.0},
+                new Object[]{16, "Cindy", 16.0}
             )
         );
     }
