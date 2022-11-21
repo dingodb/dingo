@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.MetaCache;
@@ -27,9 +28,9 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.driver.type.DingoTypeUtils;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
+import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.exec.JobRunner;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
@@ -54,6 +55,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -355,17 +358,65 @@ public class DingoMeta extends MetaImpl {
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch(
         StatementHandle sh,
-        List<String> sqlCommands
-    ) {
-        return null;
+        @NonNull List<String> sqlCommands
+    ) throws NoSuchStatementException {
+        AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
+        final List<Long> updateCounts = new ArrayList<>();
+        final PrepareCallback callback = new PrepareCallback() {
+            long updateCount;
+            @Nullable Signature signature;
+
+            @Override
+            public Object getMonitor() {
+                return statement;
+            }
+
+            @Override
+            public void clear() {
+            }
+
+            @Override
+            public void assign(
+                Signature signature,
+                @Nullable Frame firstFrame,
+                long updateCount
+            ) {
+                this.signature = signature;
+                this.updateCount = updateCount;
+            }
+
+            @Override
+            public void execute() {
+                assert signature != null;
+                if (signature.statementType.canUpdate()) {
+                    final Iterator<Object[]> iterator = createIterator(statement);
+                    updateCount = ((Number) iterator.next()[0]).longValue();
+                }
+                updateCounts.add(updateCount);
+            }
+        };
+        for (String sqlCommand : sqlCommands) {
+            prepareAndExecute(sh, sqlCommand, -1L, -1, callback);
+        }
+        return new ExecuteBatchResult(Longs.toArray(updateCounts));
     }
 
     @Override
     public ExecuteBatchResult executeBatch(
         StatementHandle sh,
-        List<List<TypedValue>> parameterValues
-    ) {
-        return null;
+        @NonNull List<List<TypedValue>> parameterValues
+    ) throws NoSuchStatementException {
+        final List<Long> updateCounts = new ArrayList<>();
+        // TODO: This should be optimized to not redistribute tasks in each iteration.
+        for (List<TypedValue> parameterValue : parameterValues) {
+            ExecuteResult executeResult = execute(sh, parameterValue, -1);
+            final long updateCount =
+                executeResult.resultSets.size() == 1
+                    ? executeResult.resultSets.get(0).updateCount
+                    : -1L;
+            updateCounts.add(updateCount);
+        }
+        return new ExecuteBatchResult(Longs.toArray(updateCounts));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -422,8 +473,10 @@ public class DingoMeta extends MetaImpl {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
-        // parameterValues are not used here, actually they are set to statement before call this function.
         DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
+        // In a non-batch prepared statement call, the parameter values are already set, but we set here to make this
+        // function reusable for batch call.
+        statement.setParameterValues(parameterValues);
         if (statement.getStatementType().canUpdate()) {
             final Iterator<Object[]> iterator = createIterator(statement);
             MetaResultSet metaResultSet = MetaResultSet.count(
