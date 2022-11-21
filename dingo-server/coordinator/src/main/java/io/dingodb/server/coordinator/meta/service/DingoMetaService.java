@@ -83,13 +83,13 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public void init(@Nullable Map<String, Object> props) {
+        this.props = props;
     }
 
     @Override
-    public void init(@Nullable Map<String, Object> props) {
-        this.props = props;
+    public String getName() {
+        return NAME;
     }
 
     @Override

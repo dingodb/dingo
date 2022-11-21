@@ -18,6 +18,8 @@ package io.dingodb.sdk.client;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
@@ -62,6 +64,10 @@ import javax.annotation.Nonnull;
 @Slf4j
 public class DingoClient {
 
+    public String user;
+
+    public String password;
+
     private DingoConnection connection;
 
     private StoreOperationUtils storeOpUtils;
@@ -92,12 +98,21 @@ public class DingoClient {
         this.retryTimes = retryTimes;
     }
 
+    public void setIdentity(String user, String password){
+        this.user = user;
+        this.password = password;
+    }
+
     /**
      * build connection to dingo database cluster.
      * @return true when connection is built successfully, otherwise false.
      */
     public boolean open() {
         try {
+            Domain.role = DingoRole.SDK_CLIENT;
+            Domain domain = Domain.getInstance();
+            domain.setInfo("user", user);
+            domain.setInfo("password", password);
             if (isConnected()) {
                 return true;
             } else {

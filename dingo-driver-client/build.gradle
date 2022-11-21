@@ -25,10 +25,13 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
     implementation project(':dingo-common')
     implementation project(':dingo-net-api')
     implementation project(':dingo-net-netty')
+    implementation project(':dingo-verify')
 }
 
 task javadocJar(type: Jar) {

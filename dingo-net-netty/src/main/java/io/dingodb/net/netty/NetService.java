@@ -143,5 +143,16 @@ public class NetService implements io.dingodb.net.NetService {
         });
     }
 
+    public Map<String, Object[]> auth(Location location) {
+        if (connections != null && connections.size() > 0) {
+            for (Map.Entry<Location, Connection> authEntry : connections.entrySet()) {
+                if (authEntry.getKey().getHost().equals(location.getHost())
+                    && authEntry.getKey().getPort() == location.getPort()) {
+                    return authEntry.getValue().authContent();
+                }
+            }
+        }
+        return null;
+    }
 
 }

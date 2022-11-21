@@ -33,4 +33,5 @@ dependencies {
     compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
     compile group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
+    compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
 }

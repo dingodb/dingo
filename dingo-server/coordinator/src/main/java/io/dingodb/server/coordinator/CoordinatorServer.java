@@ -17,10 +17,13 @@
 package io.dingodb.server.coordinator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.net.netty.service.BroadCastService;
 import io.dingodb.raft.Node;
 import io.dingodb.raft.NodeManager;
 import io.dingodb.raft.conf.Configuration;
@@ -68,7 +71,7 @@ public class CoordinatorServer {
         this.configuration = configuration;
         log.info("Coordinator configuration: {}.", this.configuration);
         log.info("Dingo configuration: {}.", DingoConfiguration.instance());
-
+        Domain.role = DingoRole.COORDINATOR;
         FileUtils.createDirectories(Paths.get(configuration.getDataPath()));
 
         RawKVStore memoryStore = new MemoryRawKVStore();
@@ -83,7 +86,8 @@ public class CoordinatorServer {
 
         Node node = createRaftNode(configuration.getRaft().getGroup(), new PeerId(endpoint, 0));
         MetaStore metaStore = new MetaStore(node, rocksStore);
-        CoordinatorStateMachine stateMachine = new CoordinatorStateMachine(node, memoryStore, rocksStore, metaStore);
+        CoordinatorStateMachine stateMachine =
+            CoordinatorStateMachine.getInstance(node, memoryStore, rocksStore, metaStore);
         NodeOptions nodeOptions = getNodeOptions();
         nodeOptions.setFsm(stateMachine);
         nodeOptions.setLogStorage(createLogStorage(nodeOptions));
@@ -95,6 +99,7 @@ public class CoordinatorServer {
         netService.apiRegistry().register(ClusterServiceApi.class, CoordinatorClusterService.instance());
 
         DingoMetaService.init();
+        BroadCastService.instance.start();
     }
 
     private LogStorage createLogStorage(NodeOptions nodeOptions) {

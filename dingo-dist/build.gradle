@@ -78,10 +78,10 @@ tasks.register('packageDistribution', Zip) {
 copyDepends.dependsOn([
     ':dingo-server:dingo-server-coordinator:fatJar',
     ':dingo-server:dingo-server-executor:fatJar',
-    ':dingo-cli:fatJar',
+    ':dingo-cli:shadowJar',
     ':dingo-driver-client:fatJar',
     ':dingo-store-raft:fatJar',
-    ':dingo-example:fatJar',
+    ':dingo-example:shadowJar',
     ':dingo-store-mpu:fatJar',
     ':dingo-web:build'
 ])

@@ -125,9 +125,11 @@ public class Connection  {
         Map<String, Object> certificates = new HashMap<>();
         for (AuthService.Provider authServiceProvider : AuthProxyApi.serviceProviders) {
             AuthService<Object> authService = authServiceProvider.get();
-            certificates.put(authService.tag(), authService.createCertificate());
+            if (certificates.get(authService.tag()) == null) {
+                certificates.put(authService.tag(), authService.createAuthentication());
+            }
         }
-        ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, certificates);
+        authContent = ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, certificates);
         log.info("Connection auth success, remote: [{}]", remote.getUrl());
         heartbeatFuture = Executors.scheduleWithFixedDelayAsync(
             String.format("%s-heartbeat", remote.getUrl()), this::sendHeartbeat, 0, 1, SECONDS

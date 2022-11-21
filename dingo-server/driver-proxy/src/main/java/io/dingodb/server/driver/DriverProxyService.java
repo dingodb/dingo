@@ -16,8 +16,8 @@
 
 package io.dingodb.server.driver;
 
-import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.driver.ServerMetaFactory;
+import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.LogLevelApi;

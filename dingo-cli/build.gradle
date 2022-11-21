@@ -18,6 +18,7 @@ plugins {
     id 'java-conventions'
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
 repositories {
@@ -45,32 +46,31 @@ dependencies {
     implementation project(":dingo-sdk")
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
-    implementation project(":dingo-driver")
     implementation project(":dingo-driver-client")
-    implementation project(':dingo-sdk')
+    implementation project(":dingo-driver")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(':dingo-server:dingo-server-driver-proxy')
+    implementation project(':dingo-verify')
 }
 
-task fatJar(type: Jar) {
+shadowJar {
     classifier 'all'
-    from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-    )
+    exclude "META-INF/SF"
+    exclude "META-INF/DSA"
+    exclude "META-INF/RSA"
+    mergeServiceFiles {
+        path = 'META-INF/services/io.dingodb.net.service.AuthService$Provider'
+    }
     with jar
-
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
 }
 
-fatJar.dependsOn([
+shadowJar.dependsOn([
     ':dingo-driver-client:fatJar',
     ':dingo-server:dingo-server-driver-proxy:jar'
 ])
 
 tasks.named("build") { x ->
-    x.finalizedBy("fatJar")
+    x.finalizedBy("shadowJar")
 }

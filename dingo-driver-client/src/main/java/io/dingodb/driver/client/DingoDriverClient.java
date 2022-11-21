@@ -17,6 +17,8 @@
 package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import org.apache.calcite.avatica.remote.Driver;
 import org.apache.calcite.avatica.remote.Service;
 
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -70,21 +73,30 @@ public class DingoDriverClient extends Driver {
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
+        Domain.role = DingoRole.JDBC_CLIENT;
+        Domain domain = Domain.getInstance();
         if ((props = this.parseURL(url, info)) == null) {
             throw new IllegalArgumentException("Bad url: " + url);
         } else {
             log.info("info:" + props);
+            domain.putAll(props);
             return super.connect(url, info);
         }
     }
 
     private Properties parseURL(String url, Properties defaults) throws SQLException {
-        Properties urlProps = defaults != null ? new Properties(defaults) : new Properties();
+        Properties urlProps = defaults;
         if (url == null) {
             return null;
         } else if (!startsWithIgnoreCase(url, CONNECT_STRING_PREFIX)) {
             return null;
         } else {
+            try {
+                InetAddress localHost = InetAddress.getLocalHost();
+                urlProps.put("host", localHost.getHostAddress());
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
             int beginningOfSlashes = url.indexOf("url=");
             int index = url.indexOf("?");
             String hostStuff;
@@ -145,7 +157,7 @@ public class DingoDriverClient extends Driver {
             }
 
             if (defaults != null) {
-                urlProps.putAll(urlProps);
+                urlProps.putAll(defaults);
             }
             return urlProps;
         }

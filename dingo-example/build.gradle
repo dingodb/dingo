@@ -1,6 +1,8 @@
+
 plugins {
     id 'java-conventions'
     id 'java-library'
+    id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
 
@@ -14,24 +16,22 @@ test {
     useJUnitPlatform()
 }
 
-
-task fatJar(type: Jar) {
+shadowJar {
     classifier 'all'
-    from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-    )
+    exclude "META-INF/SF"
+    exclude "META-INF/DSA"
+    exclude "META-INF/RSA"
+    mergeServiceFiles {
+        path = 'META-INF/services/io.dingodb.net.service.AuthService$Provider'
+    }
     with jar
-
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
 }
 
-fatJar.dependsOn([
+shadowJar.dependsOn([
     ':dingo-driver-client:fatJar',
     ':dingo-sdk:build',
 ])
 
 tasks.named("build") { x ->
-    x.finalizedBy("fatJar")
+    x.finalizedBy("shadowJar")
 }

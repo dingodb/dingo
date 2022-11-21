@@ -25,6 +25,8 @@ application {
 }
 
 dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
 
     implementation project(":dingo-common")
@@ -36,6 +38,7 @@ dependencies {
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-server:dingo-server-driver-proxy")
+    implementation project(":dingo-verify")
 
 }
 

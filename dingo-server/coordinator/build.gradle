@@ -37,6 +37,7 @@ dependencies {
     implementation project(":dingo-raft")
     implementation project(":dingo-raft-kv")
     implementation project(":dingo-store-api")
+    implementation project(":dingo-verify")
 }
 
 task fatJar(type: Jar) {

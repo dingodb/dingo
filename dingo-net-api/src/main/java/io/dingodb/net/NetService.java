@@ -19,6 +19,8 @@ package io.dingodb.net;
 import io.dingodb.common.Location;
 import io.dingodb.net.api.ApiRegistry;
 
+import java.util.Map;
+
 public interface NetService extends AutoCloseable {
 
     /**
@@ -92,4 +94,6 @@ public interface NetService extends AutoCloseable {
      * @return api registry instance
      */
     ApiRegistry apiRegistry();
+
+    Map<String, Object[]> auth(Location location);
 }

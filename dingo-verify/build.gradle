@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+    id 'java-conventions'
+    id 'java-library'
+}
+
+group 'io.dingodb'
+version '0.5.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
+    implementation project(":dingo-common")
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

@@ -29,15 +29,15 @@ public interface AuthService<C> {
     String tag();
 
     /**
-     * Create certificate for connect server.
+     * Create authentication for connect server.
      * @return certificate
      */
-    C createCertificate();
+    C createAuthentication();
 
     /**
      * Authentication, return connection id if success, else throw exception.
-     * @param certificate certificate
+     * @param authentication authentication
      */
-    Object auth(C certificate) throws Exception;
+    Object auth(C authentication) throws Exception;
 
 }

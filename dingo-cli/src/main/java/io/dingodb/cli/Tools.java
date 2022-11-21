@@ -19,7 +19,9 @@ package io.dingodb.cli;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.Location;
+import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
@@ -86,6 +88,7 @@ public class Tools {
                 }
                 break;
             case "DRIVER":
+                Domain.role = DingoRole.DRIVER;
                 Services.initControlMsgService();
                 netService.listenPort(port);
                 DingoConfiguration.instance().setPort(port);

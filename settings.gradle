@@ -72,4 +72,5 @@ include 'dingo-example'
 include 'dingo-serial'
 include 'dingo-mirror-processing-unit'
 include 'dingo-store-mpu'
+include 'dingo-verify'
 
