@@ -73,8 +73,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.API;
@@ -105,6 +103,9 @@ public class RocksStorage implements Storage {
 
     public final String dbRocksOptionsFile;
     public final String logRocksOptionsFile;
+    public ColumnFamilyConfiguration dcfConf;
+    public ColumnFamilyConfiguration mcfConf;
+    public ColumnFamilyConfiguration icfConf;
     public final int ttl;
 
     public final WriteOptions writeOptions;
@@ -132,7 +133,7 @@ public class RocksStorage implements Storage {
     public static final String REMOTE_CHECKPOINT_PREFIX = "remote-";
 
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
-                        final String logRocksOptionsFile, final int ttl) throws Exception {
+                        final String logRocksOptionsFile, final int ttl)  throws Exception {
         this.coreMeta = coreMeta;
         this.runner = new LinkedRunner(coreMeta.label);
         this.path = Paths.get(path).toAbsolutePath();
@@ -145,6 +146,12 @@ public class RocksStorage implements Storage {
         this.dbPath = this.path.resolve("db");
         this.dcfPath = this.dbPath.resolve("data");
         this.mcfPath = this.dbPath.resolve("meta");
+
+        RocksConfiguration rocksConfiguration = RocksConfiguration.refreshRocksConfiguration();
+        log.info("Loading User Defined RocksConfiguration");
+        this.dcfConf = rocksConfiguration.dcfConfiguration();
+        this.mcfConf = rocksConfiguration.mcfConfiguration();
+        this.icfConf = rocksConfiguration.icfConfiguration();
 
         this.instructionPath = this.path.resolve("instruction");
         this.icfPath = this.instructionPath.resolve("data");
@@ -171,18 +178,25 @@ public class RocksStorage implements Storage {
 
         final ColumnFamilyOptions cfOption = new ColumnFamilyOptions();
         BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
-        tableConfig.setBlockSize(128 * 1024);
+        tableConfig.setBlockSize(icfConf.getTcBlockSize() == null ? 128 * 1024 :
+            Integer.parseInt(icfConf.getTcBlockSize()));
 
-        // remove deprecated API: tableConfig.setBlockCacheSize(200 / 4 * 1024 * 1024 * 1024L);
-        Cache blockCache = new LRUCache(200 / 4 * 1024 * 1024 * 1024L);
+        Cache blockCache = new LRUCache(icfConf.getTcBlockCacheSize() == null ? 200 / 4 * 1024 * 1024 * 1024L :
+            Integer.parseInt(icfConf.getTcBlockCacheSize()));
         tableConfig.setBlockCache(blockCache);
         cfOption.setTableFormatConfig(tableConfig);
-        cfOption.setArenaBlockSize(128 * 1024 * 1024);
-        cfOption.setMinWriteBufferNumberToMerge(4);
-        cfOption.setMaxWriteBufferNumber(5);
-        cfOption.setMaxCompactionBytes(512 * 1024 * 1024);
-        cfOption.setWriteBufferSize(1 * 1024 * 1024 * 1024);
-        cfOption.useFixedLengthPrefixExtractor(8);
+        cfOption.setArenaBlockSize(icfConf.getCfArenaBlockSize() == null ? 128 * 1024 * 1024 :
+            Integer.parseInt(icfConf.getCfArenaBlockSize()));
+        cfOption.setMinWriteBufferNumberToMerge(icfConf.getCfMinWriteBufferNumberToMerge() == null ? 4 :
+            Integer.parseInt(icfConf.getCfMinWriteBufferNumberToMerge()));
+        cfOption.setMaxWriteBufferNumber(icfConf.getCfMaxWriteBufferNumber() == null ? 5 :
+            Integer.parseInt(icfConf.getCfMaxWriteBufferNumber()));
+        cfOption.setMaxCompactionBytes(icfConf.getCfMaxCompactionBytes() == null ? 512 * 1024 * 1024 :
+            Integer.parseInt(icfConf.getCfMaxCompactionBytes()));
+        cfOption.setWriteBufferSize(icfConf.getCfWriteBufferSize() == null ? 1024 * 1024 * 1024 :
+            Integer.parseInt(icfConf.getCfWriteBufferSize()));
+        cfOption.useFixedLengthPrefixExtractor(icfConf.getCfFixedLengthPrefixExtractor() == null ? 8 :
+            Integer.parseInt(icfConf.getCfFixedLengthPrefixExtractor()));
         cfOption.setMergeOperator(new StringAppendOperator());
 
         icfDesc = icfDesc(cfOption);
@@ -206,7 +220,7 @@ public class RocksStorage implements Storage {
         options.setCreateMissingColumnFamilies(true);
         options.setWalDir(this.dbPath.resolve("wal").toString());
 
-        /**
+        /*
          * configuration for performance.
          * 1. max_background_compaction
          * 2. max_background_flushes
@@ -275,7 +289,7 @@ public class RocksStorage implements Storage {
         this.instruction = null;
         this.checkPoint.close();
         this.checkPoint = null;
-        /**
+        /*
          * to avoid the file handle leak when drop table
          */
         // FileUtils.deleteIfExists(path);
@@ -680,19 +694,22 @@ public class RocksStorage implements Storage {
             (System.currentTimeMillis() - now) / 1000 );
     }
 
-    private static ColumnFamilyDescriptor dcfDesc() {
+    private ColumnFamilyDescriptor dcfDesc() {
         final ColumnFamilyOptions cfOption = new ColumnFamilyOptions();
-        /**
+        /*
          * configuration for performance.
          * write_buffer_size: will control the sst file size
          */
-        final long blockSize = 128L * 1024;
-        final long targetFileSize = 256L * 1024 * 1024;
-        cfOption.setMaxWriteBufferNumber(5);
-        cfOption.setWriteBufferSize(targetFileSize);
-        cfOption.setMaxBytesForLevelBase(1L * 1024 * 1024 * 1024);
-        cfOption.setTargetFileSizeBase(64L * 1024 * 1024);
-        cfOption.setMinWriteBufferNumberToMerge(1);
+        cfOption.setMaxWriteBufferNumber(dcfConf.getCfMaxWriteBufferNumber() == null ? 5 :
+            Integer.parseInt(dcfConf.getCfMaxWriteBufferNumber()));
+        cfOption.setWriteBufferSize(dcfConf.getCfWriteBufferSize() == null ? 256L * 1024 * 1024 :
+            Integer.parseInt(dcfConf.getCfWriteBufferSize()));
+        cfOption.setMaxBytesForLevelBase(dcfConf.getCfMaxBytesForLevelBase() == null ? 1024 * 1024 * 1024L :
+            Integer.parseInt(dcfConf.getCfMaxBytesForLevelBase()));
+        cfOption.setTargetFileSizeBase(dcfConf.getCfTargetFileSizeBase() == null ? 64L * 1024 * 1024 :
+            Integer.parseInt(dcfConf.getCfTargetFileSizeBase()));
+        cfOption.setMinWriteBufferNumberToMerge(dcfConf.getCfMinWriteBufferNumberToMerge() == null ? 1 :
+            Integer.parseInt(dcfConf.getCfMinWriteBufferNumberToMerge()));
 
         List<CompressionType> compressionTypes = Arrays.asList(
             CompressionType.NO_COMPRESSION,
@@ -705,16 +722,19 @@ public class RocksStorage implements Storage {
         cfOption.setCompressionPerLevel(compressionTypes);
 
         BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
-        tableConfig.setBlockSize(blockSize);
+        tableConfig.setBlockSize(dcfConf.getTcBlockSize() == null ? 128L * 1024 :
+            Integer.parseInt(dcfConf.getTcBlockSize()));
 
         tableConfig.setFilterPolicy(new BloomFilter(MAX_BLOOM_HASH_NUM, false));
         tableConfig.setWholeKeyFiltering(true);
         // tableConfig.setCacheIndexAndFilterBlocks(true);
         cfOption.useCappedPrefixExtractor(MAX_PREFIX_LENGTH);
 
-        Cache blockCache = new LRUCache(1 * 1024 * 1024 * 1024);
+        Cache blockCache = new LRUCache(dcfConf.getTcBlockCacheSize() == null ?  1024 * 1024 * 1024 :
+            Integer.parseInt(dcfConf.getTcBlockCacheSize()));
         tableConfig.setBlockCache(blockCache);
-        Cache compressedBlockCache = new LRUCache(1 * 1024 * 1024 * 1024);
+        Cache compressedBlockCache = new LRUCache(dcfConf.getTcBlockCacheCompressedSize() == null
+            ? 1024 * 1024 * 1024 : Integer.parseInt(dcfConf.getTcBlockCacheCompressedSize()));
         tableConfig.setBlockCacheCompressed(compressedBlockCache);
         cfOption.setTableFormatConfig(tableConfig);
         return new ColumnFamilyDescriptor(CF_DEFAULT, cfOption);
@@ -841,3 +861,4 @@ public class RocksStorage implements Storage {
 
     }
 }
+
