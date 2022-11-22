@@ -55,4 +55,6 @@ public interface Part {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
+
+    public Iterator<Object[]> keyValuePrefixScan(byte[] prefix);
 }

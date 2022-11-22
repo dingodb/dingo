@@ -62,6 +62,8 @@ public abstract class PartitionStrategy<I> {
         boolean prefixRange
     );
 
+    public abstract Map<byte[], byte[]> calcPartitionByPrefix(final byte @NonNull [] prefix);
+
     public Map<I, List<Object[]>> partKeyTuples(
         final @NonNull Collection<Object[]> keyTuples
     ) {

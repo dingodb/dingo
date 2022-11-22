@@ -243,4 +243,11 @@ public final class PartInKvStore implements Part {
         }
         return totalCnt;
     }
+
+    public Iterator<Object[]> keyValuePrefixScan(byte[] prefix) {
+        return Iterators.transform(
+            store.keyValuePrefixScan(prefix),
+            wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+        );
+    }
 }

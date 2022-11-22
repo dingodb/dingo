@@ -35,6 +35,8 @@ public final class DingoRules {
         = DingoHashJoinDistributeRule.Config.DEFAULT.toRule();
     public static final DingoHashJoinRule DINGO_HASH_JOIN_RULE
         = DingoHashJoinRule.DEFAULT.toRule(DingoHashJoinRule.class);
+    public static final DingoLikeRule DINGO_LIKE_RULE
+        = DingoLikeRule.Config.DEFAULT.toRule();
     public static final DingoPartCountRule DINGO_PART_COUNT_RULE
         = DingoPartCountRule.Config.DEFAULT.toRule();
     public static final DingoPartDeleteRule DINGO_PART_DELETE_RULE
@@ -87,6 +89,7 @@ public final class DingoRules {
         DINGO_GET_BY_KEYS_RULE,
         DINGO_HASH_JOIN_DISTRIBUTE_RULE,
         DINGO_HASH_JOIN_RULE,
+        DINGO_LIKE_RULE,
         DINGO_PART_COUNT_RULE,
         DINGO_PART_DELETE_RULE,
         DINGO_PART_RANGE_RULE,

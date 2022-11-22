@@ -217,4 +217,9 @@ public class MemoryStoreInstance implements StoreInstance {
         }
         return treeMap;
     }
+
+    @Override
+    public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
+        return keyValueScan(prefix, prefix, true, true);
+    }
 }
