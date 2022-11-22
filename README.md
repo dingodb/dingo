@@ -84,3 +84,11 @@ Check it out at https://www.yourkit.com/
 
 DingoDB is an open-source project licensed in **Apache License Version 2.0**, welcome any feedback from the community.
 For any support or suggestion, please contact us.
+
+## Contact us
+
+If you have any technical questions or business needs, please contact us.
+
+Attach the Wetchat QR Code
+
+![](./docs/images/dingo_contact.jpg)
