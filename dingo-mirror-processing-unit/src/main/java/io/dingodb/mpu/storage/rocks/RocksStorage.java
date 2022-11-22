@@ -170,7 +170,10 @@ public class RocksStorage implements Storage {
         final ColumnFamilyOptions cfOption = new ColumnFamilyOptions();
         BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
         tableConfig.setBlockSize(128 * 1024);
-        tableConfig.setBlockCacheSize(200 / 4 * 1024 * 1024 * 1024L);
+
+        // remove deprecated API: tableConfig.setBlockCacheSize(200 / 4 * 1024 * 1024 * 1024L);
+        Cache blockCache = new LRUCache(200 / 4 * 1024 * 1024 * 1024L);
+        tableConfig.setBlockCache(blockCache);
         cfOption.setTableFormatConfig(tableConfig);
         cfOption.setArenaBlockSize(128 * 1024 * 1024);
         cfOption.setMinWriteBufferNumberToMerge(4);
