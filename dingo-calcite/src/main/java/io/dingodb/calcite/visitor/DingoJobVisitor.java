@@ -22,6 +22,7 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
+import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoPartRangeScan;
@@ -70,6 +71,7 @@ import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
+import io.dingodb.exec.operator.LikeScanOperator;
 import io.dingodb.exec.operator.PartCountOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
 import io.dingodb.exec.operator.PartInsertOperator;
@@ -894,6 +896,41 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 td.getKeyMapping(),
                 next.getKey(),
                 next.getValue()
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(
+                parts.get(parts.floorKey(new ComparableByteArray(next.getKey()))).getLeader(), idGenerator
+            );
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
+        }
+        return outputs;
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoLikeScan rel) {
+        String tableName = MetaCache.getTableName(rel.getTable());
+        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        SqlExpr filter = null;
+        if (rel.getFilter() != null) {
+            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
+        }
+        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        Map<byte[], byte[]> prefixRange = ps.calcPartitionByPrefix(rel.getPrefix());
+        List<Output> outputs = new ArrayList<>();
+
+        Iterator<Map.Entry<byte[], byte[]>> partIterator = prefixRange.entrySet().iterator();
+        while (partIterator.hasNext()) {
+            Map.Entry<byte[], byte[]> next = partIterator.next();
+            LikeScanOperator operator = new LikeScanOperator(
+                this.metaCache.getTableId(tableName),
+                next.getKey(),
+                td.getDingoType(),
+                td.getKeyMapping(),
+                filter,
+                rel.getSelection(),
+                rel.getPrefix()
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(

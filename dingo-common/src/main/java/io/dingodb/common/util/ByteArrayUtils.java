@@ -174,6 +174,12 @@ public class ByteArrayUtils {
         return result;
     }
 
+    public static void copyByteArray(@NonNull byte[] origins, int originsPos,
+                                       @NonNull byte[] dest, int destPos,
+                                       int length) {
+        System.arraycopy(origins, originsPos, dest, destPos, length);
+    }
+
     public static void main(String[] args) {
         String input = "hello world";
         String encoded = enCodeBytes2Base64(input.getBytes(StandardCharsets.UTF_8));

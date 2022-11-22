@@ -144,7 +144,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
         SortedSet<ComparableByteArray> subSet = ranges.subSet(
             ranges.floor(new ComparableByteArray(startKey)), true,
-            new ComparableByteArray(endKey, true), includeEnd
+            new ComparableByteArray(endKey, prefixRange), includeEnd
         );
 
         byte[] start = startKey;
@@ -164,6 +164,50 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
             keyMap.put(start, end);
             start = null;
+        }
+
+        return keyMap;
+    }
+
+    @Override
+    public Map<byte[], byte[]> calcPartitionByPrefix(byte @NonNull [] prefix) {
+        Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
+        LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
+
+        // Identify left boundary
+        boolean isLeft = true;
+        ComparableByteArray previousKey = null;
+        // Traverse to find partitions
+        for (ComparableByteArray key : ranges) {
+            if (isLeft) {
+                if (ByteArrayUtils.lessThanOrEqual(prefix, key.getBytes())) {
+                    if (previousKey != null) {
+                        keySet.add(previousKey);
+                    } else {
+                        keySet.add(key);
+                    }
+                    isLeft = false;
+                }
+            } else {
+                if (ByteArrayUtils.greatThanOrEqual(prefix, key.getBytes())) {
+                    keySet.add(key);
+                }
+            }
+            previousKey = key;
+        }
+
+        // If there is no satisfied partition, take the last partition
+        if (keySet.size() == 0) {
+            keyMap.put(ranges.last().getBytes(), null);
+            return keyMap;
+        }
+
+        // Traverse all keys, add them to the map, and return
+        LinkedHashSet<ComparableByteArray> subSet = keySet;
+        Iterator<ComparableByteArray> iterator = subSet.iterator();
+        while (iterator.hasNext()) {
+            ComparableByteArray sKey = iterator.next();
+            keyMap.put(sKey.getBytes(), null);
         }
 
         return keyMap;

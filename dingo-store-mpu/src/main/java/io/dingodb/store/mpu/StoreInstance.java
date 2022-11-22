@@ -400,7 +400,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
      */
     @Override
     public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
-        return keyValuePrefixScan(prefix, ByteArrayUtils.increment(prefix), true, false);
+        return keyValuePrefixScan(prefix, prefix, true, true);
     }
 
     @Override
