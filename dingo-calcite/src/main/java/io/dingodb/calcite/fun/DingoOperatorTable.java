@@ -130,9 +130,9 @@ public class DingoOperatorTable implements SqlOperatorTable {
             MidFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER_INTEGER,
-            OperandTypes.family(
-                ImmutableList.of(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
-                i -> i == 2
+            OperandTypes.or(
+                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
+                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC)
             ),
             SqlFunctionCategory.STRING
         );
