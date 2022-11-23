@@ -32,7 +32,6 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -87,8 +86,6 @@ public interface DingoType extends CompileContext {
     @Nullable Object convertTo(@Nullable Object value, @NonNull DataConverter converter);
 
     @Nullable Object convertFrom(@Nullable Object value, @NonNull DataConverter converter);
-
-    @NonNull Schema toAvroSchema();
 
     List<DingoSchema> toDingoSchemas();
 

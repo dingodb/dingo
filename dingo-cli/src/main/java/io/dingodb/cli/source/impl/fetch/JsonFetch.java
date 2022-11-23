@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 @Slf4j
@@ -91,6 +90,13 @@ public class JsonFetch extends AbstractParser implements Fetch {
         }
     }
 
+    @Override
+    public void fetch(Properties props,
+        String topic,
+        DingoClient dingoClient,
+        TableDefinition tableDefinition) {
+    }
+
     private void doParseJsonRecord(final String localFile,
                                    final DingoClient dingoClient,
                                    final TableDefinition tableDefinition) throws IOException {
@@ -128,19 +134,14 @@ public class JsonFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void fetch(Properties props,
-                      String topic,
-                      DingoClient dingoClient,
-                      TableDefinition tableDefinition) {
-    }
-
-    @Override
     public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
         return super.parse(tableDefinition, records, dingoClient);
     }
 
     private Object[] parseSingleRow(String line, TableDefinition definition) throws JsonProcessingException {
-        LinkedHashMap<String, Object> resultOfLinkedMap = mapper.readValue(line, new TypeReference<LinkedHashMap<String, Object>>() {});
+        LinkedHashMap<String, Object> resultOfLinkedMap = mapper.readValue(
+            line, new TypeReference<LinkedHashMap<String, Object>>() {}
+        );
 
         int columnSize = resultOfLinkedMap.keySet().size();
         List<Object> resultList = new ArrayList<>(columnSize);
@@ -164,11 +165,11 @@ public class JsonFetch extends AbstractParser implements Fetch {
         }
 
         String line = inputLine.trim();
-        if (line != null && line.length() == 1 && line.charAt(0) == '[') {
+        if (line.length() == 1 && line.charAt(0) == '[') {
             return false;
         }
 
-        if (line != null && line.length() == 1 && line.charAt(0) == ']') {
+        if (line.length() == 1 && line.charAt(0) == ']') {
             return false;
         }
         return true;

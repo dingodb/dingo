@@ -16,59 +16,78 @@
 
 package io.dingodb.server.client.meta.service;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.protocol.meta.Schema;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 @Slf4j
+@Accessors(fluent = true)
 public class MetaServiceClient implements MetaService {
 
-    public static final Location CURRENT_LOCATION = new Location(DingoConfiguration.host(), DingoConfiguration.port());
-
-    private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-
+    @Delegate
+    private final MetaServiceApi api;
     private final CoordinatorConnector connector;
 
-    @Delegate
-    private final MetaServiceApi metaServiceApi;
+    @Getter
+    private final CommonId id;
+    @Getter
+    private final String name;
 
     public MetaServiceClient() {
-        this(CoordinatorConnector.defaultConnector());
+        this(CoordinatorConnector.getDefault());
     }
 
     public MetaServiceClient(CoordinatorConnector connector) {
+        this.api = ApiRegistry.getDefault().proxy(MetaServiceApi.class, connector);
         this.connector = connector;
-        metaServiceApi = netService.apiRegistry().proxy(MetaServiceApi.class, connector);
+        this.id = api.rootId();
+        this.name = MetaService.ROOT_NAME;
+    }
+
+    private MetaServiceClient(CommonId id, String name, CoordinatorConnector connector, MetaServiceApi api) {
+        this.connector = connector;
+        this.api = api;
+        this.id = id;
+        this.name = name;
     }
 
     @Override
-    public String getName() {
-        return "DINGO";
+    public Map<String, MetaService> getSubMetaServices(CommonId id) {
+        return getSubSchemas(id).entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> new MetaServiceClient(e.getValue().getId(), e.getValue().getName(), connector, api))
+            );
     }
 
     @Override
-    public void init(@Nullable Map<String, Object> props) {
-
+    public MetaService getSubMetaService(CommonId id, String name) {
+        Schema subSchema = getSubSchema(id, name);
+        return new MetaServiceClient(subSchema.getId(), subSchema.getName(), connector, api);
     }
 
     @Override
-    public void clear() {
-
+    public boolean dropSubMetaService(CommonId id, String name) {
+        return api.dropSchema(id, name);
     }
 
     @Override
     public Location currentLocation() {
-        return CURRENT_LOCATION;
+        return DingoConfiguration.location();
     }
-
 }

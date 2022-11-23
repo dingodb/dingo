@@ -17,18 +17,15 @@
 package io.dingodb.net.netty.api;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
 import io.dingodb.common.codec.transfer.KeyValueTransferCodeC;
 import io.dingodb.common.codec.transfer.TransferCodeCUtils;
-import io.dingodb.common.codec.transfer.impl.UpsertKeyValueUsingListCodec;
-import io.dingodb.common.util.Utils;
 import io.dingodb.net.MessageListener;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.netty.Channel;
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.codec.digest.MurmurHash3;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -68,7 +65,9 @@ public interface ApiProxy<T> extends InvocationHandler {
             byte[] content = null;
 
             boolean isUsingDefaultCodeC = true;
-            TransferArgsCodecAnnotation transferCodecAnnotation = method.getAnnotation(TransferArgsCodecAnnotation.class);
+            TransferArgsCodecAnnotation transferCodecAnnotation = method.getAnnotation(
+                TransferArgsCodecAnnotation.class
+            );
             if (transferCodecAnnotation != null) {
                 String transferCodeCName = transferCodecAnnotation.name();
                 KeyValueTransferCodeC transferCodeC = TransferCodeCUtils.GLOBAL_TRANSFER_CODEC.get(transferCodeCName);
@@ -131,7 +130,7 @@ public interface ApiProxy<T> extends InvocationHandler {
 
     static void completeExceptionally(CompletableFuture<?> future, Throwable throwable, Location location) {
         future.completeExceptionally(
-            new InvocationTargetException(throwable, String.format("Invoke on [%s] failed.", location.getUrl()))
+            new InvocationTargetException(throwable, String.format("Invoke on [%s] failed.", location.url()))
         );
     }
 

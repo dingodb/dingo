@@ -17,6 +17,7 @@
 package io.dingodb.calcite.grammar.ddl;
 
 import io.dingodb.common.partition.DingoTablePart;
+import lombok.Getter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -27,10 +28,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Map;
 
 public class DingoSqlCreateTable extends SqlCreateTable {
+
+    @Getter
     Map<String,Object> attrMap;
 
+    @Getter
     DingoTablePart dingoTablePart;
 
+
+    @Getter
     String partType;
 
     /**
@@ -43,25 +49,20 @@ public class DingoSqlCreateTable extends SqlCreateTable {
      * @param columnList columns
      * @param query as query
      */
-    protected DingoSqlCreateTable(SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name,
-                                  @Nullable SqlNodeList columnList, @Nullable SqlNode query,
-                                  Map<String,Object> attrMap, String partType,
-                                  DingoTablePart dingoTablePart) {
+    protected DingoSqlCreateTable(
+        SqlParserPos pos,
+        boolean replace,
+        boolean ifNotExists,
+        SqlIdentifier name,
+        @Nullable SqlNodeList columnList,
+        @Nullable SqlNode query,
+        Map<String,Object> attrMap,
+        String partType,
+        DingoTablePart dingoTablePart
+    ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.attrMap = attrMap;
         this.partType = partType;
         this.dingoTablePart = dingoTablePart;
-    }
-
-    public Map<String, Object> getAttrMap() {
-        return attrMap;
-    }
-
-    public DingoTablePart getDingoTablePart() {
-        return dingoTablePart;
-    }
-
-    public String getPartType() {
-        return partType;
     }
 }

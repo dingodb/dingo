@@ -79,10 +79,7 @@ public class SendEndpoint {
     public boolean send(byte[] content, boolean needed) {
         ControlStatus status = checkStatus();
         if (status == ControlStatus.READY || needed) {
-            Message msg = Message.builder()
-                .tag(tag)
-                .content(content)
-                .build();
+            Message msg = new Message(tag, content);
             channel.send(msg);
         }
         return status != ControlStatus.STOP;

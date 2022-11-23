@@ -19,6 +19,7 @@ package io.dingodb.server.client.meta.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -28,7 +29,11 @@ public class MetaServiceClientProvider implements MetaServiceProvider {
     private static final MetaServiceClient META_SERVICE_CLIENT = new MetaServiceClient();
 
     @Override
-    public MetaService get() {
+    public MetaService root() {
         return META_SERVICE_CLIENT;
+    }
+
+    public MetaService root(CoordinatorConnector connector) {
+        return new MetaServiceClient(connector);
     }
 }

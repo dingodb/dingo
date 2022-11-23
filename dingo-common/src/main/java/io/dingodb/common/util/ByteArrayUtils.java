@@ -26,7 +26,6 @@ import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,18 +46,19 @@ public class ByteArrayUtils {
         @JsonProperty
         private byte[] bytes;
 
-        private boolean preRange = false;
+        @JsonProperty
+        private boolean ignoreLen = false;
 
         public ComparableByteArray(byte[] bytes) {
             this.bytes = bytes;
         }
 
         @Override
-        public int compareTo(ComparableByteArray other) {
-            if (!preRange) {
+        public int compareTo(@NonNull ComparableByteArray other) {
+            if (!ignoreLen) {
                 return compare(bytes, other.bytes);
             } else {
-                return compareContainsEnd(bytes, other.bytes);
+                return compareWithoutLen(bytes, other.bytes);
             }
         }
     }
@@ -66,8 +66,8 @@ public class ByteArrayUtils {
     public static final byte[] EMPTY_BYTES = new byte[0];
     public static final byte[] MAX_BYTES = new byte[] {(byte) 0xFF };
 
-    public static int compare(byte[] bytes1, byte[] bytes2) {
-        if (Arrays.equals(bytes1, bytes2)) {
+    public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen) {
+        if (bytes1 == bytes2) {
             return 0;
         }
         int n = Math.min(bytes1.length, bytes2.length);
@@ -77,21 +77,15 @@ public class ByteArrayUtils {
             }
             return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
         }
-        return bytes1.length - bytes2.length;
+        return ignoreLen ? 0 : bytes1.length - bytes2.length;
     }
 
-    public static int compareContainsEnd(byte[] bytes1, byte[] bytes2) {
-        if (Arrays.equals(bytes1, bytes2)) {
-            return 0;
-        }
-        int n = Math.min(bytes1.length, bytes2.length);
-        for (int i = 0; i < n; i++) {
-            if (bytes1[i] == bytes2[i]) {
-                continue;
-            }
-            return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
-        }
-        return 0;
+    public static int compare(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2, false);
+    }
+
+    public static int compareWithoutLen(byte[] bytes1, byte[] bytes2) {
+        return compare(bytes1, bytes2, true);
     }
 
     public static boolean equal(byte[] bytes1, byte[] bytes2) {
@@ -107,49 +101,25 @@ public class ByteArrayUtils {
     }
 
     public static boolean lessThanOrEqual(byte[] bytes1, byte[] bytes2) {
-        return compareContainsEnd(bytes1, bytes2) <= 0;
+        return compareWithoutLen(bytes1, bytes2) <= 0;
     }
 
     public static boolean greatThanOrEqual(byte[] bytes1, byte[] bytes2) {
-        return compareContainsEnd(bytes1, bytes2) >= 0;
+        return compareWithoutLen(bytes1, bytes2) >= 0;
     }
 
     public static String enCodeBytes2Base64(byte[] input) {
-        byte[] encoded = Base64.getEncoder().encode(input);
-        return new String(encoded, StandardCharsets.UTF_8);
+        return new String(Base64.getEncoder().encode(input), StandardCharsets.UTF_8);
     }
 
     public static byte[] deCodeBase64String2Bytes(final String input) {
-        byte[] decoded = Base64.getDecoder().decode(input);
-        return decoded;
-    }
-
-    public static byte[] getMaxByte() {
-        return hexToByteArray("7F");
-    }
-
-    public static byte[] hexToByteArray(String inHex) {
-        int hexlen = inHex.length();
-        byte[] result;
-        if (hexlen % 2 == 1) {
-            //奇数
-            hexlen ++;
-            result = new byte[(hexlen / 2)];
-            inHex = "0" + inHex;
-        } else {
-            //偶数
-            result = new byte[(hexlen / 2)];
-        }
-        int j = 0;
-        for (int i = 0; i < hexlen; i += 2) {
-            result[j] = (byte)Integer.parseInt(inHex.substring(i, i + 2),16);
-            j ++;
-        }
-        return result;
+        return Base64.getDecoder().decode(input);
     }
 
     public static byte[] increment(@NonNull byte[] input) {
-        if (input == null) return null;
+        if (input == null) {
+            return null;
+        }
         byte[] ret = new byte[input.length];
         int carry = 1;
         for (int i = input.length - 1; i >= 0; i--) {
@@ -168,26 +138,17 @@ public class ByteArrayUtils {
         return Stream.of(bytes).collect(Collectors.toList());
     }
 
-    public static byte[] concateByteArray(@NonNull byte[] bytes1, @NonNull byte[] bytes2) {
+    public static byte[] concatByteArray(byte @NonNull [] bytes1, byte @NonNull [] bytes2) {
         byte[] result = new byte[bytes1.length + bytes2.length];
         System.arraycopy(bytes1, 0, result, 0, bytes1.length);
         System.arraycopy(bytes2, 0, result, bytes1.length, bytes2.length);
         return result;
     }
 
-    public static void copyByteArray(@NonNull byte[] origins, int originsPos,
-                                       @NonNull byte[] dest, int destPos,
-                                       int length) {
-        System.arraycopy(origins, originsPos, dest, destPos, length);
-    }
-
-    public static void main(String[] args) {
-        String input = "hello world";
-        String encoded = enCodeBytes2Base64(input.getBytes(StandardCharsets.UTF_8));
-
-        byte[] decodeBytes = deCodeBase64String2Bytes(encoded);
-        String decodeInStr = new String(decodeBytes, StandardCharsets.UTF_8);
-        System.out.println("=====> DeEncode: " + decodeInStr);
+    public static byte[] slice(byte @NonNull[] source, int pos, int len) {
+        byte[] slice = new byte[len];
+        System.arraycopy(source, pos, slice, 0, len);
+        return slice;
     }
 
 }

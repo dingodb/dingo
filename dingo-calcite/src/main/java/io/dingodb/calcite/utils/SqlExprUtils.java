@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.utils;
 
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.RexConverter;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.expr.SqlExpr;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -38,7 +38,7 @@ public final class SqlExprUtils {
     public static @NonNull SqlExpr toSqlExpr(RexNode rexNode, RelDataType type) {
         return new SqlExpr(
             RexConverter.convert(rexNode).toString(),
-            DingoTypeFactory.fromRelDataType(type)
+            DefinitionMapper.mapToDingoType(type)
         );
     }
 

@@ -16,6 +16,7 @@
 
 package io.dingodb.test.ddl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.core.TypeCode;
@@ -470,6 +471,54 @@ public class DdlTest {
         );
         Object result = sqlHelper.querySingleValue("select name from " + tableName + " where id = 3");
         assertThat(result).isEqualTo("Kitty");
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithPartition() throws SQLException, JsonProcessingException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id int,"
+                + "name varchar(20),"
+                + "primary key(id)"
+                + ") "
+                + "partition by range values (2),(3)",
+            "insert into {table} values"
+                + "(1, 'name1'),"
+                + "(2, 'name2'),"
+                + "(3, 'name3'),"
+                + "(4, 'name4')"
+        );
+        sqlHelper.queryTest(
+            "select * from " + tableName,
+            new String[] {"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "1, name1\n2, name2\n3, name3\n4, name4"
+        );
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
+    public void testCreateTableWithPartition1() throws SQLException, JsonProcessingException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} ("
+                + "id varchar(20),"
+                + "name varchar(20),"
+                + "primary key(id, name)"
+                + ") "
+                + "partition by range values (2),(3)",
+            "insert into {table} values"
+                + "('11', 'name1'),"
+                + "('12', 'name2'),"
+                + "('13', 'name3'),"
+                + "('14', 'name4')"
+        );
+        sqlHelper.queryTest(
+            "select * from " + tableName + " where id like '1%'",
+            new String[] {"id", "name"},
+            DingoTypeFactory.tuple("STRING", "STRING"),
+            "11, name1\n12, name2\n13, name3\n14, name4"
+        );
         sqlHelper.dropTable(tableName);
     }
 }

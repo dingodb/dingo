@@ -23,14 +23,11 @@ import io.dingodb.meta.MetaServiceProvider;
 @AutoService(MetaServiceProvider.class)
 public class DingoMetaServiceProvider implements MetaServiceProvider {
 
-    private final String name;
-
-    public DingoMetaServiceProvider(String name) {
-        this.name = name;
+    public DingoMetaServiceProvider() {
     }
 
     @Override
-    public MetaService get() {
-        return DingoMetaService.instance();
+    public MetaService root() {
+        return DingoMetaService.ROOT;
     }
 }

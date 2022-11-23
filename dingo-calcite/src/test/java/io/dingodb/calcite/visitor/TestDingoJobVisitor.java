@@ -38,6 +38,7 @@ import io.dingodb.exec.operator.PartModifyOperator;
 import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.ValuesOperator;
+import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertJob;
 import io.dingodb.test.asserts.AssertTask;
@@ -56,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoJobVisitor {
     private static final String FULL_TABLE_NAME = MockMetaServiceProvider.TABLE_NAME;
-    private static final CommonId TABLE_ID = CommonId.prefix((byte) 0);
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
 
     private static DingoParser parser;
@@ -102,10 +102,10 @@ public class TestDingoJobVisitor {
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         assertJob.task("0001").operatorNum(1).location(MockMetaServiceProvider.LOC_0)
-            .soleSource().isPartScan(TABLE_ID, 0)
+            .soleSource().isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 0)
             .soleOutput().isNull();
         assertJob.task("0003").operatorNum(1).location(MockMetaServiceProvider.LOC_1)
-            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleSource().isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 1)
             .soleOutput().isNull();
     }
 
@@ -132,12 +132,12 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
             assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        assertTask.source(0).isPartScan(TABLE_ID, 0)
+        assertTask.source(0).isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 0)
             .soleOutput().isNull();
         assertTask.source(1).isA(ReceiveOperator.class)
             .soleOutput().isNull();
         assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleSource().isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 1)
             .soleOutput().isA(SendOperator.class);
     }
 
@@ -164,12 +164,12 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
             assertJob.task("0001").operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        assertTask.source(0).isPartScan(TABLE_ID, 0)
+        assertTask.source(0).isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 0)
             .soleOutput().isA(CoalesceOperator.class);
         assertTask.source(1).isA(ReceiveOperator.class)
             .soleOutput().isA(CoalesceOperator.class);
         assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-            .soleSource().isPartScan(TABLE_ID, 1)
+            .soleSource().isPartScan(MetaService.root().getTableId(FULL_TABLE_NAME), 1)
             .soleOutput().isA(SendOperator.class);
     }
 

@@ -24,11 +24,11 @@ import java.util.HashMap;
 
 public class TransferCodeCUtils {
 
-    public static HashMap<String, KeyValueTransferCodeC> GLOBAL_TRANSFER_CODEC = new HashMap<String, KeyValueTransferCodeC>() {
-        {
-            this.put("UpsertKeyValueCodeCUsingListKeyValue", UpsertKeyValueUsingListCodec.INSTANCE);
-            this.put("UpsertKeyValueCodeCUsingByteArray", UpsertKeyValueUsingByteArray.INSTANCE);
-            this.put("UpsertKeyValueCodeCUsingKeyValue", UpsertKeyValueUsingKeyValueCodec.INSTANCE);
-        }
-    };
+    public static HashMap<String, KeyValueTransferCodeC> GLOBAL_TRANSFER_CODEC =
+        new HashMap<String, KeyValueTransferCodeC>() {
+            {
+                this.put("UpsertKeyValueCodeCUsingListKeyValue", UpsertKeyValueUsingListCodec.INSTANCE);
+                this.put("UpsertKeyValueCodeCUsingByteArray", UpsertKeyValueUsingByteArray.INSTANCE);
+                this.put("UpsertKeyValueCodeCUsingKeyValue", UpsertKeyValueUsingKeyValueCodec.INSTANCE);
+            }};
 }

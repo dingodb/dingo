@@ -55,6 +55,7 @@ public class Core {
     final ExecutionUnit executionUnit;
     final LinkedRunner runner;
 
+    @Getter
     private CoreMeta primary;
     private ControlUnit controlUnit;
     private Mirror mirror;
@@ -80,7 +81,8 @@ public class Core {
         log.info("Start core {}", meta.label);
         if (firstMirror == null && secondMirror == null) {
             log.info("Core {} start without mirror.", meta.label);
-            controlUnit = new ControlUnit(this, storage.clocked(), firstMirror, secondMirror);
+            controlUnit = new ControlUnit(this, storage.clocked(), null, null);
+            primary = meta;
             listeners.forEach(__ -> execute(meta.label + "-primary", () -> __.primary(clock())));
         }
         Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);

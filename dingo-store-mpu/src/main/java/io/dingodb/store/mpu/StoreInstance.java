@@ -19,15 +19,14 @@ package io.dingodb.store.mpu;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.UdfUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreListener;
@@ -36,6 +35,7 @@ import io.dingodb.mpu.core.MirrorProcessingUnit;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.mpu.storage.rocks.RocksUtils;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.api.CodeUDFApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ReportApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
@@ -144,14 +144,14 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             }
             CommonId partId = core.meta.coreId;
             TablePartStats stats = TablePartStats.builder()
-                .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()))
+                .id(new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domain(), partId.seq()))
                 .leader(DingoConfiguration.instance().getServerId())
                 .tablePart(partId)
                 .table(core.meta.mpuId)
                 .approximateStats(Collections.singletonList(approximateStats(core)))
                 .time(System.currentTimeMillis())
                 .build();
-            ApiRegistry.getDefault().proxy(ReportApi.class, CoordinatorConnector.defaultConnector())
+            ApiRegistry.getDefault().proxy(ReportApi.class, CoordinatorConnector.getDefault())
                 .report(stats);
         } catch (Exception e) {
             log.error("{} send stats to failed.", core.meta, e);
@@ -263,11 +263,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public void deletePart(Part part) {
         // 1 clean parts
         // 2 clean startKeyPartMap
-        part.setStart(Parameters.cleanNull(part.getStart(), ByteArrayUtils.EMPTY_BYTES));
         startKeyPartMap.remove(part.getStart());
-        parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC,
-            part.getStart(), ByteArrayUtils.increment(part.getEnd())).join();
-        parts.remove(part.getId());
+        parts.remove(part.getId()).destroy();
     }
 
     @Override
@@ -632,7 +629,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             KeyValue keyValue = new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
             String cacheKey = udfName + "-" + version;
             MetaServiceApi metaServiceApi
-                = ApiRegistry.getDefault().proxy(MetaServiceApi.class, CoordinatorConnector.defaultConnector());
+                = ApiRegistry.getDefault().proxy(MetaServiceApi.class, CoordinatorConnector.getDefault());
             if (!codecMap.containsKey(cacheKey)) {
                 TableDefinition tableDefinition = metaServiceApi.getTableDefinition(id);
                 DingoKeyValueCodec codec =
@@ -645,7 +642,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             TableDefinition definition = definitionMap.get(cacheKey);
             LuaTable table = UdfUtils.getLuaTable(definition.getDingoSchema(), record);
             if (!globalsMap.containsKey(cacheKey)) {
-                String function = metaServiceApi.getUDF(id, udfName, version);
+                String function = ApiRegistry.getDefault()
+                    .proxy(CodeUDFApi.class, CoordinatorConnector.getDefault()).get(udfName, version);
                 if (function != null) {
                     Globals globals = JsePlatform.standardGlobals();
                     globals.load(function).call();

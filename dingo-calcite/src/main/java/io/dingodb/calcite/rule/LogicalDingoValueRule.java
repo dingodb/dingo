@@ -17,9 +17,9 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -47,7 +47,7 @@ public class LogicalDingoValueRule extends ConverterRule implements Substitution
     @Override
     public RelNode convert(@NonNull RelNode rel) {
         RelDataType rowType = rel.getRowType();
-        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
+        DingoType type = DefinitionMapper.mapToDingoType(rowType);
         return new LogicalDingoValues(
             rel.getCluster(),
             rel.getTraitSet(),

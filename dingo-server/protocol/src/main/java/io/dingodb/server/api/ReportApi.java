@@ -16,9 +16,8 @@
 
 package io.dingodb.server.api;
 
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.server.protocol.meta.ExecutorStats;
-import io.dingodb.server.protocol.meta.Stats;
 import io.dingodb.server.protocol.meta.TablePartStats;
 
 public interface ReportApi {

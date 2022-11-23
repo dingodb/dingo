@@ -26,7 +26,7 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ControlStatus;
 import io.dingodb.exec.channel.ReceiveEndpoint;
-import io.dingodb.exec.codec.AvroTxRxCodec;
+import io.dingodb.exec.codec.DingoSerialTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
@@ -80,7 +80,7 @@ public final class ReceiveOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        codec = new AvroTxRxCodec(schema);
+        codec = new DingoSerialTxRxCodec(schema);
         tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
         messageListener = new ReceiveMessageListener();
         tag = TagUtils.tag(getTask().getJobId(), getId());

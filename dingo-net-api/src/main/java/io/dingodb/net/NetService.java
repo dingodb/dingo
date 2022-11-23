@@ -19,6 +19,8 @@ package io.dingodb.net;
 import io.dingodb.common.Location;
 import io.dingodb.net.api.ApiRegistry;
 
+import java.util.Map;
+
 public interface NetService extends AutoCloseable {
 
     /**
@@ -27,6 +29,14 @@ public interface NetService extends AutoCloseable {
     static NetService getDefault() {
         return NetServiceProvider.getDefault().get();
     }
+
+    /**
+     * Returns channel auth content.
+     * Result is auth tag to auth return {certificate, return} mapping.
+     *
+     * @return auth map
+     */
+    Map<String, Object[]> auth(Location location);
 
     /**
      * Return a new channel connected to the remote-end.

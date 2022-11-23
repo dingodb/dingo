@@ -68,7 +68,7 @@ public interface DTOMapper {
     }
 
     default String mapping(Location location) {
-        return location.getUrl();
+        return location.url();
     }
 
     default String mapping(byte[] bytes) {

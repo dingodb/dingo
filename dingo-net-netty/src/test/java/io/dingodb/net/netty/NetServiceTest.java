@@ -17,10 +17,10 @@
 package io.dingodb.net.netty;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.net.Channel;
-import io.dingodb.net.service.FileTransferService;
 import io.dingodb.net.Message;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.net.service.FileTransferService;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +59,7 @@ public class NetServiceTest {
         netService.listenPort(19199);
         netService.registerTagMessageListener(tag, (message, ch) -> {
             System.out.println(new String(message.content()));
-            ch.send(new Message(null, new byte[0]));
+            ch.send(new Message(Message.EMPTY_TAG, new byte[0]));
         });
         Channel channel = netService.newChannel(new Location("localhost", 19199));
         channel.setMessageListener((message, ch) -> {

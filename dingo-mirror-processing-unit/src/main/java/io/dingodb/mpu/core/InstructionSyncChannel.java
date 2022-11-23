@@ -136,12 +136,12 @@ public class InstructionSyncChannel implements Channel, MessageListener {
                             syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
                         } else {
                             reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
-                            channel.send(new Message(null, reappearInstruction));
+                            channel.send(new Message(Message.EMPTY_TAG, reappearInstruction));
                         }
                         chainRunner.forceFollow(() -> executeChain.reset(syncClock, false));
                     }
                     executeChain.forceFollow(instruction, () -> controlUnit.onSynced(mirror, instruction));
-                    channel.send(new Message(null, instruction.encode()), true);
+                    channel.send(new Message(Message.EMPTY_TAG, instruction.encode()), true);
                     syncClock = instruction.clock;
                 } catch (Exception e) {
                     log.error("Sync to {} error.", mirror.label, e);
@@ -155,7 +155,7 @@ public class InstructionSyncChannel implements Channel, MessageListener {
         if (isClosed()) {
             return;
         }
-        channel.send(new Message(null, new TagClock(Constant.T_EXECUTE_CLOCK, clock).encode()));
+        channel.send(new Message(Message.EMPTY_TAG, new TagClock(Constant.T_EXECUTE_CLOCK, clock).encode()));
     }
 
 }

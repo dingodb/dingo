@@ -17,12 +17,10 @@
 package io.dingodb.sdk.client;
 
 import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;

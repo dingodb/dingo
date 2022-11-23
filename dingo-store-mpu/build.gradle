@@ -27,9 +27,12 @@ dependencies {
     implementation project(':dingo-store-api')
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
+    implementation project(":dingo-meta-api")
     implementation project(":dingo-mirror-processing-unit")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
+
+    testImplementation project(":dingo-net-netty")
 
 }
 
@@ -44,6 +47,10 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
 }
+
+fatJar.dependsOn([
+    ':dingo-server:dingo-server-client:jar'
+])
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")

@@ -16,152 +16,78 @@
 
 package io.dingodb.server.coordinator.store;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
-import io.dingodb.raft.Node;
-import io.dingodb.raft.kv.storage.ByteArrayEntry;
-import io.dingodb.raft.kv.storage.RaftRawKVOperation;
-import io.dingodb.raft.kv.storage.RawKVStore;
-import io.dingodb.raft.kv.storage.ReadIndexRunner;
-import io.dingodb.raft.kv.storage.SeekableIterator;
-import io.dingodb.server.protocol.CommonIdConstant;
+import io.dingodb.mpu.core.Core;
+import io.dingodb.mpu.instruction.InstructionSetRegistry;
+import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.store.api.StoreInstance;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MetaStore implements StoreInstance {
-    private static final byte[] SEQ_PREFIX = CommonId.prefix(
-        CommonIdConstant.ID_TYPE.data,
-        CommonIdConstant.DATA_IDENTIFIER.seq
-    ).content();
 
-    private final Node node;
-    private final ReadIndexRunner readIndexRunner;
-    private final RawKVStore store;
-
-    public MetaStore(Node node, RawKVStore store) {
-        this.node = node;
-        this.store = store;
-        this.readIndexRunner = new ReadIndexRunner(node, this::readInStore);
+    static {
+        InstructionSetRegistry.register(SeqInstructions.id, SeqInstructions.SEQ_INSTRUCTIONS);
     }
 
-    public synchronized int generateSeq(byte[] key) {
-        byte[] realKey = ByteArrayUtils.concateByteArray(SEQ_PREFIX, key);
-        return Optional.ofNullable(PrimitiveCodec.readVarInt(getValueByPrimaryKey(realKey)))
-            .ifAbsentSet(0)
-            .map(seq -> seq + 1)
-            .ifPresent(seq -> upsertKeyValue(realKey, PrimitiveCodec.encodeVarInt(seq)))
-            .get();
+    private final Core core;
+
+    public MetaStore(Core core) {
+        this.core = core;
     }
 
-    private <T> T write(RaftRawKVOperation operation) {
-        return (T) operation.applyOnNode(this.node).join();
-    }
-
-    private <T> T read(RaftRawKVOperation operation) {
-        return (T) readIndexRunner.readIndex(operation).join();
-    }
-
-    private Object readInStore(RaftRawKVOperation operation) {
-        switch (operation.getOp()) {
-            case GET:
-                return store.get(operation.getKey());
-            case MULTI_GET:
-                return store.get((List<byte[]>) operation.getExt1());
-            case ITERATOR:
-                return store.iterator();
-            case SCAN:
-                return store.scan(operation.getKey(), operation.getExtKey());
-            case CONTAINS_KEY:
-                return store.containsKey(operation.getKey());
-            default:
-                throw new IllegalStateException("Not read operation: " + operation.getOp());
-        }
-    }
-
-    public SeekableIterator<byte[], ByteArrayEntry> iterator() {
-        return read(RaftRawKVOperation.iterator());
-    }
-
-    @Override
-    public boolean exist(byte[] primaryKey) {
-        return read(RaftRawKVOperation.containsKey(primaryKey));
-    }
-
-    @Override
-    public boolean existAny(List<byte[]> primaryKeys) {
-        for (byte[] primaryKey : primaryKeys) {
-            if (read(RaftRawKVOperation.containsKey(primaryKey))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return keyValueScan(startPrimaryKey, endPrimaryKey).hasNext();
+    public int generateSeq(byte[] key) {
+        return core.exec(SeqInstructions.id, 0, key).join();
     }
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        return read(RaftRawKVOperation.get(primaryKey));
-    }
-
-    @Override
-    public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        return ((List<KeyValue>) read(RaftRawKVOperation.get(primaryKeys))).stream()
-            .filter(Objects::nonNull)
-            .map(e -> new KeyValue(e.getKey(), e.getValue())).collect(Collectors.toList());
+        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return new KeyValueIterator(iterator());
+        return core.view(KVInstructions.id, KVInstructions.SCAN_OC);
     }
 
     @Override
-    public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return new KeyValueIterator(read(RaftRawKVOperation.scan(startPrimaryKey, endPrimaryKey)));
+    public Iterator<KeyValue> keyValueScan(byte[] start, byte[] end, boolean includeStart, boolean includeEnd) {
+        return core.view(KVInstructions.id, KVInstructions.SCAN_OC, start, end, includeStart, includeEnd);
     }
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
-        return write(RaftRawKVOperation.put(row.getKey(), row.getValue()));
+        core.exec(KVInstructions.id, KVInstructions.SET_OC, row.getKey(), row.getValue()).join();
+        return true;
     }
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        return write(RaftRawKVOperation.put(primaryKey, row));
+        core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        return true;
     }
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
-        return write(RaftRawKVOperation.put(rows.stream()
-            .filter(Objects::nonNull)
-            .map(row -> new ByteArrayEntry(row.getPrimaryKey(), row.getValue()))
-            .collect(Collectors.toList())));
+        core.exec(
+            KVInstructions.id, KVInstructions.SET_BATCH_OC,
+            rows.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
+        ).join();
+        return true;
     }
 
     @Override
     public boolean delete(byte[] key) {
-        return write(RaftRawKVOperation.delete(key));
+        core.exec(KVInstructions.id, KVInstructions.DEL_OC, key).join();
+        return true;
     }
 
     @Override
     public boolean delete(List<byte[]> primaryKeys) {
-        return write(RaftRawKVOperation.delete(primaryKeys));
-    }
-
-    @Override
-    public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return write(RaftRawKVOperation.delete(startPrimaryKey, endPrimaryKey));
+        core.exec(KVInstructions.id, KVInstructions.DEL_BATCH_OC, primaryKeys.toArray()).join();
+        return true;
     }
 
 }

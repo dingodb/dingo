@@ -69,12 +69,11 @@ public abstract class BaseStatsAdaptor<S extends Stats> implements StatsAdaptor<
         return metaStatsMap.get(id);
     }
 
-    public List<S> getByDomain(byte[] domain) {
-        CommonId prefix = statsId();
-        prefix = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        ++domain[domain.length - 1];
-        CommonId stop = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        return new ArrayList<>(metaStatsMap.subMap(prefix, true, stop, false).values());
+    public List<S> getByDomain(int domain) {
+        return new ArrayList<>(metaStatsMap.subMap(
+            CommonId.prefix(statsId().type(), statsId().identifier(), domain), true,
+            CommonId.prefix(statsId().type(), statsId().identifier(), domain + 1), false
+        ).values());
     }
 
     @Override

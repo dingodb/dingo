@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
@@ -57,7 +58,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return tableDefinition.getRelDataType(typeFactory);
+        return DefinitionMapper.mapToRelDataType(tableDefinition, typeFactory);
     }
 
     @Override

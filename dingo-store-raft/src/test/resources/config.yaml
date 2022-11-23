@@ -1,7 +1,0 @@
-exchange:
-    host: localhost
-    port: 0
-store:
-    raft:
-        port: 19999
-        collectStatsInterval: 5

@@ -17,10 +17,10 @@
 package io.dingodb.common.operation.context;
 
 import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.operation.Column;
 import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 
 public abstract class OperationContext {

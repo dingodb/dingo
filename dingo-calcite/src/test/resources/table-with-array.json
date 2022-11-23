@@ -5,17 +5,19 @@
       "name": "id",
       "type": "integer",
       "primary": true,
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "set",
       "type": "multiset",
-      "elementType": "integer"
+      "elementType": "integer",
+      "nullable": true
     },
     {
       "name": "arr",
       "type": "array",
-      "elementType": "integer"
+      "elementType": "integer",
+      "nullable": true
     }
   ]
 }

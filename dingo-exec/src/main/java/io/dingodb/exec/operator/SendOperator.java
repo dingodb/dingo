@@ -24,7 +24,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.channel.SendEndpoint;
-import io.dingodb.exec.codec.AvroTxRxCodec;
+import io.dingodb.exec.codec.DingoSerialTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
@@ -75,7 +75,7 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void init() {
         super.init();
-        codec = new AvroTxRxCodec(schema);
+        codec = new DingoSerialTxRxCodec(schema);
         try {
             endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
             endpoint.init();

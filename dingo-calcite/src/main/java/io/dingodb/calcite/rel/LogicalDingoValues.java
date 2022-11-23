@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.rel;
 
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -53,7 +53,7 @@ public class LogicalDingoValues extends AbstractRelNode {
     @Override
     public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
-        DingoType type = DingoTypeFactory.fromRelDataType(rowType);
+        DingoType type = DefinitionMapper.mapToDingoType(rowType);
         pw.item("tuples", tuples.stream().map(type::format).collect(Collectors.joining(", ")));
         return pw;
     }

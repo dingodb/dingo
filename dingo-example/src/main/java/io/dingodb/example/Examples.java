@@ -135,6 +135,7 @@ public class Examples {
         }
     }
 
+    @SuppressWarnings("checkstyle:FallThrough")
     public void runOperation(Runner runner) throws Exception {
         switch (operation.toUpperCase()) {
             case "CREATE": {

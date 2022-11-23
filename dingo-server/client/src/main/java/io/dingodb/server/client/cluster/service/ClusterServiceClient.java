@@ -17,7 +17,6 @@
 package io.dingodb.server.client.cluster.service;
 
 import io.dingodb.cluster.ClusterService;
-import io.dingodb.common.Location;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.ClusterServiceApi;
@@ -25,8 +24,6 @@ import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.ServiceLoader;
 
 @Slf4j
@@ -37,7 +34,7 @@ public class ClusterServiceClient implements ClusterService {
     private ClusterServiceApi clusterServiceApi;
 
     public ClusterServiceClient() {
-        this(CoordinatorConnector.defaultConnector());
+        this(CoordinatorConnector.getDefault());
     }
 
     public ClusterServiceClient(CoordinatorConnector connector) {

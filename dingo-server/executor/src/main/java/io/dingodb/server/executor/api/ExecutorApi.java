@@ -21,7 +21,6 @@ import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;

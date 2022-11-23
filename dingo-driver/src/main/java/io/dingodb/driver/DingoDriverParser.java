@@ -21,10 +21,9 @@ import io.dingodb.calcite.DingoDdlParserFactory;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.MetaCache;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
-import io.dingodb.common.driver.DingoSignature;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -227,7 +226,7 @@ public final class DingoDriverParser extends DingoParser {
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
         RelDataType parasType = getParameterRowType(sqlNode);
-        Job job = jobManager.createJob(jobId, DingoTypeFactory.fromRelDataType(parasType));
+        Job job = jobManager.createJob(jobId, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;

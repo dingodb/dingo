@@ -16,7 +16,7 @@
 
 package io.dingodb.server.protocol;
 
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.codec.VarNumberCodec;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.error.FormattingError;
@@ -27,8 +27,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import static io.dingodb.common.codec.PrimitiveCodec.encodeZigZagInt;
 
 /**
  * Server error. 11XXX Server error. 12XXX Meta service error. 19XXX other error.
@@ -97,11 +95,11 @@ public enum ServerError implements FormattingError {
     }
 
     public Message message() {
-        return Message.builder().content(encodeZigZagInt(getCode())).build();
+        return new Message(VarNumberCodec.encodeZigZagInt(getCode()));
     }
 
     public static Message message(DingoException err) {
-        return Message.builder().content(encodeZigZagInt(err.getCode())).build();
+        return new Message(VarNumberCodec.encodeZigZagInt(err.getCode()));
     }
 
     private static Map<Integer, ServerError> valueOfCache;
@@ -121,7 +119,7 @@ public enum ServerError implements FormattingError {
     }
 
     public static ServerError valueOf(byte[] bytes) {
-        Integer code = PrimitiveCodec.readZigZagInt(bytes);
+        Integer code = VarNumberCodec.readZigZagInt(bytes);
         return valueOfCache.computeIfAbsent(
             code,
             k -> Arrays.stream(ServerError.values()).filter(c -> c.code == code).findAny().orElse(null)
@@ -129,7 +127,7 @@ public enum ServerError implements FormattingError {
     }
 
     public static ServerError valueOf(ByteBuffer buffer) {
-        Integer code = PrimitiveCodec.readZigZagInt(buffer);
+        Integer code = VarNumberCodec.readZigZagInt(buffer);
         return valueOfCache.computeIfAbsent(
             code,
             k -> Arrays.stream(ServerError.values()).filter(c -> c.code == code).findAny().orElse(null)

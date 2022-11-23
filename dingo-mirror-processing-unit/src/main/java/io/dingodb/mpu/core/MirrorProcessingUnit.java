@@ -37,6 +37,10 @@ public class MirrorProcessingUnit {
 
     private final Map<CommonId, Core> subCores = new ConcurrentHashMap<>();
 
+    public MirrorProcessingUnit(CommonId id, Path path, String dbRocksOptionsFile, String logRocksOptionsFile) {
+        this(id, path, dbRocksOptionsFile, logRocksOptionsFile, 0);
+    }
+
     public MirrorProcessingUnit(CommonId id, Path path, final String dbRocksOptionsFile,
                                 final String logRocksOptionsFile, final int ttl) {
         this.id = id;

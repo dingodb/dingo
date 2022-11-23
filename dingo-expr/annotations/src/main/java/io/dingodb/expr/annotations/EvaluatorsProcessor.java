@@ -312,7 +312,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         if (typeCodeSpec != null) {
             builder.addMethod(typeCodeSpec);
         }
-        String packageName = info.getPackageName();
         // must copy newParas, it is volatile.
         evaluatorMap.put(
             evaluatorKey,

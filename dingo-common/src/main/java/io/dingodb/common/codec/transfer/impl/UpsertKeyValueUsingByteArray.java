@@ -29,17 +29,18 @@ public class UpsertKeyValueUsingByteArray implements KeyValueTransferCodeC {
 
     public static UpsertKeyValueUsingByteArray INSTANCE = new UpsertKeyValueUsingByteArray();
 
+    /**
+     * .
+     * input: size|commonId in bytes|len(key)|key|len(value)|value
+     * output: object[]
+     */
     public Object[] read(ByteBuffer byteBuffer) {
-        /**
-         * input: size|commonId in bytes|len(key)|key|len(value)|value
-         * output: object[]
-         */
         List<Object> objectArray = new ArrayList<>(3);
         int commonIdLen = byteBuffer.getInt();
         byte[] commonIdInBytes = new byte[commonIdLen];
         byteBuffer.get(commonIdInBytes);
 
-        CommonId commonId = CommonId.fromBytes4Transfer(commonIdInBytes);
+        CommonId commonId = CommonId.decode(commonIdInBytes);
         objectArray.add(commonId);
 
         int keyLen = byteBuffer.getInt();
@@ -55,21 +56,22 @@ public class UpsertKeyValueUsingByteArray implements KeyValueTransferCodeC {
         return objectArray.toArray();
     }
 
+    /**
+     * .
+     * input args: CommonId, byte[] key, byte[] value
+     * output format:
+     *  size|commonId in bytes|len(key)|key|len(value)|value
+     */
     public byte[] write(Object[] objectArray) {
-        /**
-         * input args: CommonId, byte[] key, byte[] value
-         * output format:
-         *  size|commonId in bytes|len(key)|key|len(value)|value
-         */
         if (objectArray.length != 3) {
             return null;
         }
 
         CommonId commonId = (CommonId) objectArray[0];
-        byte[] commonIdInBytes = commonId.toBytes4Transfer();
+        byte[] commonIdInBytes = commonId.encode();
 
-        int keyLen = ((byte[]) objectArray[1]) == null ? 0 : ((byte[]) objectArray[1]).length;
-        int valueLen = ((byte[]) objectArray[2]) == null ? 0 : ((byte[]) objectArray[2]).length;
+        int keyLen = objectArray[1] == null ? 0 : ((byte[]) objectArray[1]).length;
+        int valueLen = objectArray[2] == null ? 0 : ((byte[]) objectArray[2]).length;
 
         int totalLen = commonIdInBytes.length + keyLen + valueLen;
         ByteBuffer byteBuffer = ByteBuffer.allocate(totalLen);

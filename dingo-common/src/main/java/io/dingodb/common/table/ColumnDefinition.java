@@ -27,10 +27,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ColumnStrategy;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default"})
@@ -38,41 +34,41 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @Builder
 @Slf4j
 public class ColumnDefinition {
+    public static final int DEFAULT_PRECISION = -1;
+    public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
+
     @JsonProperty(value = "name", required = true)
     @Getter
     private final String name;
 
-    @JsonProperty(value = "type", required = true)
-    @JsonSerialize(using = SqlTypeNameSerializer.class)
-    @Getter
-    private final SqlTypeName type;
+    @JsonProperty(value = "sqlType", required = true)
+    private final String type;
 
     // Element type of ARRAY & MULTISET
     @JsonProperty(value = "elementType")
-    @JsonSerialize(using = SqlTypeNameSerializer.class)
     @Getter
-    private final SqlTypeName elementType;
+    private final String elementType;
 
     @JsonProperty(value = "precision")
     @JsonSerialize(using = PrecisionSerializer.class)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @Getter
     @Builder.Default
-    private final int precision = RelDataType.PRECISION_NOT_SPECIFIED;
+    private final int precision = DEFAULT_PRECISION;
 
     @JsonProperty("scale")
     @JsonSerialize(using = ScaleSerializer.class)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @Getter
     @Builder.Default
-    private final int scale = RelDataType.SCALE_NOT_SPECIFIED;
+    private final int scale = DEFAULT_SCALE;
 
     @SuppressWarnings("FieldMayBeStatic")
-    @JsonProperty("notNull")
+    @JsonProperty("nullable")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
     @Builder.Default
-    private final boolean notNull = false;
+    private final boolean nullable = true;
 
     @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("primary")
@@ -91,71 +87,32 @@ public class ColumnDefinition {
     @JsonCreator
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
-        @JsonProperty("type") @NonNull String typeName,
+        @JsonProperty("type") @NonNull String type,
         @JsonProperty("elementType") String elementTypeName,
         @JsonProperty("precision") Integer precision,
         @JsonProperty("scale") Integer scale,
-        @JsonProperty("notNull") boolean notNull,
+        @JsonProperty("nullable") boolean nullable,
         @JsonProperty("primary") boolean primary,
         @JsonProperty("default") String defaultValue
     ) {
-        SqlTypeName type = SqlTypeName.get(typeName.toUpperCase());
-        if (type != null) {
-            return builder()
-                .name(name)
-                .type(type)
-                .elementType(elementTypeName == null ? null : SqlTypeName.get(elementTypeName.toUpperCase()))
-                .precision(precision != null ? precision : RelDataType.PRECISION_NOT_SPECIFIED)
-                .scale(scale != null ? scale : RelDataType.SCALE_NOT_SPECIFIED)
-                .notNull(notNull)
-                .primary(primary)
-                .defaultValue(defaultValue)
-                .build();
-        }
-        throw new AssertionError("Invalid type name \"" + typeName + "\".");
+        return builder()
+            .name(name)
+            .type(type)
+            .elementType(elementTypeName)
+            .precision(precision == null ? DEFAULT_PRECISION : precision)
+            .scale(scale == null ? DEFAULT_SCALE : scale)
+            .nullable(nullable)
+            .primary(primary)
+            .defaultValue(defaultValue)
+            .build();
     }
 
-    public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
-        RelDataType relDataType;
-        switch (type) {
-            case ARRAY:
-                relDataType = typeFactory.createArrayType(typeFactory.createSqlType(elementType), -1);
-                break;
-            case MULTISET:
-                relDataType = typeFactory.createMultisetType(typeFactory.createSqlType(elementType), -1);
-                break;
-            case MAP:
-                relDataType = typeFactory.createMapType(
-                    typeFactory.createSqlType(SqlTypeName.VARCHAR),
-                    typeFactory.createSqlType(SqlTypeName.INTEGER)
-                );
-                break;
-            default:
-                if (precision != RelDataType.PRECISION_NOT_SPECIFIED) {
-                    if (scale != RelDataType.SCALE_NOT_SPECIFIED) {
-                        relDataType = typeFactory.createSqlType(type, precision, scale);
-                    } else {
-                        relDataType = typeFactory.createSqlType(type, precision);
-                    }
-                } else {
-                    relDataType = typeFactory.createSqlType(type);
-                }
-        }
-        return typeFactory.createTypeWithNullability(relDataType, !this.notNull);
+    public DingoType getType() {
+        return DingoTypeFactory.fromName(type, elementType, nullable);
     }
 
-    public DingoType getDingoType() {
-        return DingoTypeFactory.fromColumnDefinition(this);
+    public String getTypeName() {
+        return type;
     }
 
-    @SuppressWarnings("ConstantConditions")
-    public ColumnStrategy getColumnStrategy() {
-        if (defaultValue != null) {
-            return ColumnStrategy.DEFAULT;
-        } else if (notNull) {
-            return ColumnStrategy.NOT_NULLABLE;
-        } else {
-            return ColumnStrategy.NULLABLE;
-        }
-    }
 }

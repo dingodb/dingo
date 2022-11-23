@@ -18,7 +18,7 @@ package io.dingodb.test.type;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.exec.Services;
+import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
@@ -43,7 +43,8 @@ public class BooleanTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         connection.close();
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
+        MetaService.clear();
+        MetaTestService.INSTANCE.clear();
     }
 
     @Test

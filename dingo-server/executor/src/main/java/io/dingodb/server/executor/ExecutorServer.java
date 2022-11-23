@@ -70,7 +70,7 @@ public class ExecutorServer {
     public ExecutorServer() {
         this.netService = loadNetService();
         this.storeService = loadStoreService();
-        this.coordinatorConnector = CoordinatorConnector.defaultConnector();
+        this.coordinatorConnector = CoordinatorConnector.getDefault();
         this.serverApi = netService.apiRegistry().proxy(ServerApi.class, coordinatorConnector);
         this.metaServiceApi = netService.apiRegistry().proxy(MetaServiceApi.class, coordinatorConnector);
     }
@@ -101,7 +101,6 @@ public class ExecutorServer {
                     this.id = serverApi.registerExecutor(Executor.builder()
                         .host(DingoConfiguration.host())
                         .port(DingoConfiguration.port())
-                        .raftPort(DingoConfiguration.instance().getRaftPort())
                         .processors(Runtime.getRuntime().availableProcessors())
                         .memory(Runtime.getRuntime().maxMemory())
                         .build());

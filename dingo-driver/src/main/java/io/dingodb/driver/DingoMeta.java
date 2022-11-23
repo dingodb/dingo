@@ -22,15 +22,14 @@ import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.MetaCache;
-import io.dingodb.common.driver.DingoMetaPrimaryKey;
+import io.dingodb.calcite.type.converter.AvaticaResultSetConverter;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.type.converter.TypedValueConverter;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.driver.type.DingoTypeUtils;
-import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
-import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.exec.JobRunner;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
@@ -440,7 +439,7 @@ public class DingoMeta extends MetaImpl {
                 resultSet.setIterator(iterator);
             }
             final List rows = new ArrayList(fetchMaxRowCount);
-            DingoType dingoType = DingoTypeUtils.fromColumnMetaDataList(signature.columns);
+            DingoType dingoType = DefinitionMapper.mapToDingoType(signature.columns);
             AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
             for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                 rows.add(dingoType.convertTo(iterator.next(), converter));

@@ -14,6 +14,7 @@ dependencies {
     implementation group: 'javax.validation', name: 'validation-api', version: 'validation'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
+    implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
 
     compile project(":dingo-common")

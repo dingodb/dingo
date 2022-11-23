@@ -16,7 +16,7 @@
 
 package io.dingodb.test.exception;
 
-import io.dingodb.exec.Services;
+import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,8 @@ public class ExceptionTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         connection.close();
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
+        MetaService.clear();
+        MetaTestService.INSTANCE.clear();
     }
 
     // Table not found (90002)

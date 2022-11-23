@@ -16,17 +16,13 @@
 
 package io.dingodb.net.netty.api;
 
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.Message;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.error.ApiTerminateException;
 import io.dingodb.net.netty.Channel;
-import io.dingodb.net.netty.NettyHandlers;
 import io.dingodb.net.netty.Versions;
-import io.dingodb.net.service.AuthService;
 import lombok.AllArgsConstructor;
-
-import java.util.ServiceLoader;
 
 import static io.dingodb.net.Message.API_ERROR;
 import static io.dingodb.net.netty.Constant.ACK_C;

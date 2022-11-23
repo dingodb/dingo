@@ -18,6 +18,7 @@ package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -54,7 +55,7 @@ public class Column implements Meta {
     private CommonId schema;
     private CommonId table;
     private String alias;
-    private boolean notNull;
+    private boolean nullable;
     private boolean primary;
     private int scale;
     private int precision;

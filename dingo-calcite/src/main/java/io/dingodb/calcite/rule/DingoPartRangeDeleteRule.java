@@ -19,12 +19,12 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -88,7 +88,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(td.getFirstPrimaryColumnIndex()).getDingoType().toDingoSchema(0)), null, true);
+            td.getColumn(td.getFirstPrimaryColumnIndex()).getType().toDingoSchema(0)), null, true);
 
         List<byte[]> byteList = calLeftAndRight(
             ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, td.getFirstPrimaryColumnIndex(), codec);
@@ -137,14 +137,14 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                             case LESS_THAN_OR_EQUAL:
                                 right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
-                                    DingoTypeFactory.fromRelDataType(info.value.getType())
+                                    DefinitionMapper.mapToDingoType(info.value.getType())
                                 )});
                                 break;
                             case GREATER_THAN:
                             case GREATER_THAN_OR_EQUAL:
                                 left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
-                                    DingoTypeFactory.fromRelDataType(info.value.getType())
+                                    DefinitionMapper.mapToDingoType(info.value.getType())
                                 )});
                                 break;
                             default:
@@ -166,7 +166,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                 try {
                     right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                         info.value,
-                        DingoTypeFactory.fromRelDataType(info.value.getType())
+                        DefinitionMapper.mapToDingoType(info.value.getType())
                     )});
                     left = null;
                 } catch (IOException e) {
@@ -183,7 +183,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                 try {
                     left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                         info.value,
-                        DingoTypeFactory.fromRelDataType(info.value.getType())
+                        DefinitionMapper.mapToDingoType(info.value.getType())
                     )});
                     right = null;
                 } catch (IOException e) {

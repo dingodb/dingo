@@ -18,12 +18,12 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -48,13 +48,14 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         super(config);
     }
 
+    @SuppressWarnings("checkstyle:FallThrough")
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
         TableDefinition td = dingo(rel.getTable()).getTableDefinition();
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)), null, true);
+            td.getColumn(firstPrimaryColumnIndex).getType().toDingoSchema(0)), null, true);
         if (rel.getFilter().getKind() == SqlKind.AND) {
             RexCall filter = (RexCall) rel.getFilter();
             byte[] left = ByteArrayUtils.EMPTY_BYTES;
@@ -84,7 +85,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case LESS_THAN_OR_EQUAL:
                             right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
-                                DingoTypeFactory.fromRelDataType(info.value.getType())
+                                DefinitionMapper.mapToDingoType(info.value.getType())
                             )});
                             break;
                         case GREATER_THAN:
@@ -92,7 +93,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case GREATER_THAN_OR_EQUAL:
                             left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
-                                DingoTypeFactory.fromRelDataType(info.value.getType())
+                                DefinitionMapper.mapToDingoType(info.value.getType())
                             )});
                             break;
                         default:

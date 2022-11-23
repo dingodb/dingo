@@ -23,7 +23,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("long")
@@ -48,8 +47,4 @@ public class LongType extends AbstractScalarType {
         return converter.convertLongFrom(value);
     }
 
-    @Override
-    protected Schema.Type getAvroSchemaType() {
-        return Schema.Type.LONG;
-    }
 }

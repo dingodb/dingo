@@ -18,7 +18,7 @@ package io.dingodb.server.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.LoggerFactory;
 

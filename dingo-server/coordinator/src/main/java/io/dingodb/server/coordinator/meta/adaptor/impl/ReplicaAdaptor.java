@@ -76,13 +76,13 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
         return null;
     }
 
-    public List<Location> getLocationsByDomain(byte[] domain) {
+    public List<Location> getLocationsByDomain(int domain) {
         return getByDomain(domain).stream().map(Replica::location).collect(Collectors.toList());
     }
 
     public List<Replica> getOrCreateByPart(TablePart tablePart, Collection<Executor> executors) {
         List<Replica> replicas = MetaAdaptorRegistry.getMetaAdaptor(Replica.class)
-            .getByDomain(tablePart.getId().seqContent());
+            .getByDomain(tablePart.getId().seq());
         if (replicas == null || replicas.isEmpty()) {
             return executors.stream()
                 .map(executor -> newReplica(tablePart, executor)).peek(this::save)
@@ -99,13 +99,12 @@ public class ReplicaAdaptor extends BaseAdaptor<Replica> {
             .executor(executor.getId())
             .host(executor.getHost())
             .port(executor.getPort())
-            .raftPort(executor.getRaftPort())
             .build();
     }
 
     @Override
     protected CommonId newId(Replica replica) {
-        byte[] partSeq = replica.getPart().seqContent();
+        int partSeq = replica.getPart().seq();
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),

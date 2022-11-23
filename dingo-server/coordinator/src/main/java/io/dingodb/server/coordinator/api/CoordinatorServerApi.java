@@ -19,16 +19,15 @@ package io.dingodb.server.coordinator.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.net.NetService;
-import io.dingodb.raft.Node;
-import io.dingodb.raft.entity.PeerId;
-import io.dingodb.raft.error.RemotingException;
-import io.dingodb.raft.rpc.RpcClient;
-import io.dingodb.raft.rpc.impl.cli.GetLocationProcessor;
+import io.dingodb.common.util.Optional;
+import io.dingodb.mpu.core.Core;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaApi;
+import io.dingodb.server.api.ServiceConnectApi;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
+import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.ExecutorStats;
@@ -40,63 +39,46 @@ import io.dingodb.server.protocol.meta.TablePartStats;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
-public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorServerApi, MetaApi {
+public class CoordinatorServerApi implements ServiceConnectApi, MetaApi {
 
-    private final Node node;
-    private final RpcClient rpcClient;
+    private final Core core;
 
-    public CoordinatorServerApi(Node node, RpcClient rpcClient, NetService netService) {
-        this.node = node;
-        this.rpcClient = rpcClient;
-        netService.apiRegistry().register(io.dingodb.server.api.CoordinatorServerApi.class, this);
-        netService.apiRegistry().register(io.dingodb.server.api.MetaApi.class, this);
+    public CoordinatorServerApi(Core core) {
+        this.core = core;
+        ApiRegistry.getDefault().register(io.dingodb.server.api.ServiceConnectApi.class, this);
+        ApiRegistry.getDefault().register(io.dingodb.server.api.MetaApi.class, this);
     }
 
     @Override
-    public Location leader() {
-        try {
-            return ((GetLocationProcessor.GetLocationResponse) rpcClient.invokeSync(
-                node.getLeaderId().getEndpoint(),
-                GetLocationProcessor.GetLocationRequest.INSTANCE,
-                3000
-            )).getLocation();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public Location leader(CommonId ignore) {
+        return Optional.mapOrNull(core.getPrimary(), __ -> __.location);
     }
 
     @Override
-    public List<Location> getAll() {
-        List<PeerId> peerIds = node.listPeers();
-        List<Location> locations = new ArrayList<>();
-        for (PeerId peerId : peerIds) {
-            try {
-                locations.add(((GetLocationProcessor.GetLocationResponse) rpcClient.invokeSync(
-                    peerId.getEndpoint(),
-                    GetLocationProcessor.GetLocationRequest.INSTANCE,
-                    3000
-                )).getLocation());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (RemotingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return locations;
+    public List<Location> getAll(CommonId ignore) {
+        return Stream.of(core.meta, core.firstMirror, core.secondMirror)
+            .filter(Objects::nonNull)
+            .map(__ -> __.location)
+            .collect(Collectors.toList());
     }
 
     @Override
     public CommonId tableId(String name) {
-        return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(name);
+        return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class))
+            .getTableId(DingoMetaService.ROOT_ID, name);
     }
 
     @Override
     public Table table(CommonId tableId) {
-        return MetaAdaptorRegistry.getMetaAdaptor(Table.class).get(tableId);
+        return MetaAdaptorRegistry.getMetaAdaptor(Table.class)
+            .get(tableId);
     }
 
     @Override
@@ -111,7 +93,7 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
 
     @Override
     public TableDefinition tableDefinition(String tableName) {
-        return ((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).get(tableName);
+        return ((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getDefinition(tableId(tableName));
     }
 
     @Override
@@ -121,12 +103,12 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
 
     @Override
     public List<Column> columns(CommonId tableId) {
-        return MetaAdaptorRegistry.getMetaAdaptor(Column.class).getByDomain(tableId.seqContent());
+        return MetaAdaptorRegistry.getMetaAdaptor(Column.class).getByDomain(tableId.seq());
     }
 
     @Override
     public List<Column> columns(String tableName) {
-        return columns(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
+        return columns(tableId(tableName));
     }
 
     @Override
@@ -142,7 +124,7 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
     @Override
     public ExecutorStats executorStats(CommonId executorId) {
         return MetaAdaptorRegistry.getStatsMetaAdaptor(ExecutorStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.executor, executorId.domainContent(), executorId.seqContent())
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.executor, executorId.domain(), executorId.seq())
         );
     }
 
@@ -153,12 +135,12 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
 
     @Override
     public List<Replica> replicas(CommonId tablePartId) {
-        return MetaAdaptorRegistry.getMetaAdaptor(Replica.class).getByDomain(tablePartId.seqContent());
+        return MetaAdaptorRegistry.getMetaAdaptor(Replica.class).getByDomain(tablePartId.seq());
     }
 
     @Override
     public List<Replica> replicas(String tableName) {
-        return replicas(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
+        return replicas(tableId(tableName));
     }
 
     @Override
@@ -173,18 +155,18 @@ public class CoordinatorServerApi implements io.dingodb.server.api.CoordinatorSe
 
     @Override
     public List<TablePart> tableParts(CommonId tableId) {
-        return MetaAdaptorRegistry.getMetaAdaptor(TablePart.class).getByDomain(tableId.seqContent());
+        return MetaAdaptorRegistry.getMetaAdaptor(TablePart.class).getByDomain(tableId.seq());
     }
 
     @Override
     public List<TablePart> tableParts(String tableName) {
-        return tableParts(((TableAdaptor) MetaAdaptorRegistry.getMetaAdaptor(Table.class)).getTableId(tableName));
+        return tableParts(tableId(tableName));
     }
 
     @Override
     public TablePartStats tablePartStats(CommonId tablePartId) {
         return MetaAdaptorRegistry.getStatsMetaAdaptor(TablePartStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, tablePartId.domainContent(), tablePartId.seqContent())
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, tablePartId.domain(), tablePartId.seq())
         );
     }
 

@@ -28,21 +28,22 @@ public final class Utils {
 
     public static <T> T sole(@NonNull Collection<T> collection) {
         if (collection.size() == 1) {
-            for (T obj : collection) {
-                return obj;
-            }
+            return collection.iterator().next();
         }
         throw new IllegalArgumentException("The collection contains zero or more than one elements.");
     }
 
     public static int max(int @NonNull [] arr) {
         assert arr.length > 0;
-        int max = arr[0];
-        for (int i : arr) {
-            if (i > max) {
-                max = i;
+        int len = arr.length;
+        int i = 0;
+        int max = Integer.MIN_VALUE;
+        do {
+            if (arr[i] > max) {
+                max = arr[i];
             }
         }
+        while (++i < len);
         return max;
     }
 
@@ -55,6 +56,12 @@ public final class Utils {
     }
 
     public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate) {
+        try {
+            while (predicate.get()) {
+            }
+        } catch (Exception e) {
+            return;
+        }
         while (true) {
             try {
                 if (!predicate.get()) {

@@ -20,17 +20,16 @@ plugins {
 }
 
 dependencies {
-    api group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
-    api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     api project(':dingo-expr:dingo-expr-json-runtime')
     api project(':dingo-serial')
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
-    implementation group: 'commons-codec', name: 'commons-codec', version: 'commons-codec'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'jackson'.v()
     compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
     compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
     compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
     compile group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
+    compile group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
 }

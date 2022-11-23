@@ -16,7 +16,6 @@
 
 package io.dingodb.common.type;
 
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.scalar.AbstractScalarType;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -31,17 +30,30 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.core.TypeCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 @Slf4j
 public final class DingoTypeFactory {
     private DingoTypeFactory() {
+    }
+
+    public static DingoType fromName(String typeName, String elementTypeName, boolean nullable) {
+        if (typeName == null) {
+            throw new IllegalArgumentException("Invalid column type: null.");
+        }
+        typeName = typeName.toUpperCase();
+        switch (typeName) {
+            case "ARRAY":
+            case "MULTISET":
+                if (elementTypeName == null) {
+                    elementTypeName = "OBJECT";
+                }
+                return list(TypeCode.codeOf(elementTypeName.toUpperCase()), nullable);
+            default:
+                return scalar(TypeCode.codeOf(typeName), nullable);
+        }
     }
 
     public static @NonNull AbstractScalarType scalar(int typeCode, boolean nullable) {
@@ -140,51 +152,5 @@ public final class DingoTypeFactory {
         return map(scalar(keyType), scalar(valueType), nullable);
     }
 
-    public static @NonNull DingoType fromColumnDefinition(@NonNull ColumnDefinition columnDefinition) {
-        SqlTypeName type = columnDefinition.getType();
-        boolean notNull = columnDefinition.isNotNull();
-        switch (type) {
-            case ARRAY:
-            case MULTISET:
-                SqlTypeName elementType = columnDefinition.getElementType();
-                if (log.isDebugEnabled()) {
-                    log.debug("current type is:{}, elementType is:{}, definition:{}",
-                        type, elementType, columnDefinition);
-                }
-                return DingoTypeFactory.list(TypeCode.codeOf(elementType.getName()), !notNull);
-            default:
-                return DingoTypeFactory.scalar(TypeCode.codeOf(type.getName()), !notNull);
-        }
-    }
 
-    public static @NonNull DingoType fromRelDataType(@NonNull RelDataType relDataType) {
-        if (!relDataType.isStruct()) {
-            SqlTypeName sqlTypeName = relDataType.getSqlTypeName();
-            switch (sqlTypeName) {
-                case NULL:
-                    return NullType.NULL;
-                case ARRAY:
-                case MULTISET: // MultiSet is implemented by list.
-                    DingoType elementType = fromRelDataType(Objects.requireNonNull(relDataType.getComponentType()));
-                    //return array(elementType, relDataType.isNullable());
-                    return list(elementType, relDataType.isNullable());
-                case MAP:
-                    DingoType keyType = fromRelDataType(Objects.requireNonNull(relDataType.getKeyType()));
-                    DingoType valueType = fromRelDataType(Objects.requireNonNull(relDataType.getValueType()));
-                    return map(keyType, valueType, relDataType.isNullable());
-                default:
-                    return scalar(
-                        TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
-                        relDataType.isNullable()
-                    );
-            }
-        } else {
-            return tuple(
-                relDataType.getFieldList().stream()
-                    .map(RelDataTypeField::getType)
-                    .map(DingoTypeFactory::fromRelDataType)
-                    .toArray(DingoType[]::new)
-            );
-        }
-    }
 }

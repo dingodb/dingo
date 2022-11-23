@@ -18,8 +18,8 @@ package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.store.Part;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 
 public interface TableStoreApi {
 

@@ -24,14 +24,12 @@ import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @JsonTypeName("tuple")
@@ -95,19 +93,6 @@ public class TupleType extends AbstractDingoType {
             Arrays.stream(fields)
                 .map(DingoType::copy)
                 .toArray(DingoType[]::new)
-        );
-    }
-
-    @Override
-    public @NonNull Schema toAvroSchema() {
-        return Schema.createRecord(
-            getClass().getSimpleName(),
-            null,
-            getClass().getPackage().getName(),
-            false,
-            IntStream.range(0, fields.length)
-                .mapToObj(i -> new Schema.Field("_" + i, fields[i].toAvroSchema()))
-                .collect(Collectors.toList())
         );
     }
 

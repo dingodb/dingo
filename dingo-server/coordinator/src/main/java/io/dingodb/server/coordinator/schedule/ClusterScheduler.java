@@ -109,7 +109,7 @@ public class ClusterScheduler implements ServerApi, ReportApi {
             CommonId part = replica.getPart();
             TablePart tablePart = tablePartAdaptor.get(part);
             if (tablePart != null) {
-                List<Replica> partRep = replicaAdaptor.getByDomain(tablePart.getId().seqContent());
+                List<Replica> partRep = replicaAdaptor.getByDomain(tablePart.getId().seq());
                 parts.add(
                     Part.builder()
                     .id(tablePart.getId())

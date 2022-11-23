@@ -311,13 +311,13 @@ public class DingoClient {
             .map(c ->
                 ColumnDefinition.builder()
                     .name(c.getName())
-                    .type(c.getType())
+                    .type(c.getTypeName())
                     .elementType(c.getElementType())
                     .primary(c.isPrimary())
                     .scale(c.getScale())
                     .precision(c.getPrecision())
                     .defaultValue(c.getDefaultValue())
-                    .notNull(c.isPrimary() || c.isNotNull())
+                    .nullable(c.isNullable())
                     .build())
             .collect(Collectors.toList());
         tableDef.setColumns(columnDefinitions);
@@ -796,12 +796,12 @@ public class DingoClient {
      */
     public int registerUDF(String tableName, String udfName, String function) {
         CommonId id = connection.getMetaClient().getTableId(tableName);
-        return connection.getMetaClient().registerUDF(id, udfName, function);
+        return connection.getMetaClient().register(udfName, function);
     }
 
     public boolean unregisterUDF(String tableName, String udfName, int version) {
         CommonId id = connection.getMetaClient().getTableId(tableName);
-        return connection.getMetaClient().unregisterUDF(id, udfName, version);
+        return connection.getMetaClient().unregister(udfName, version);
     }
 
     public boolean updateRecordUsingUDF(String tableName, String udfName,

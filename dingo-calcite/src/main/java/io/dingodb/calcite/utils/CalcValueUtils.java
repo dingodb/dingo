@@ -18,9 +18,9 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.expr.SqlExprEvalContext;
+import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.EvalEnv;

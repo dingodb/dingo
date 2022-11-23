@@ -23,6 +23,10 @@ import io.dingodb.net.NetServiceProvider;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
+/**
+ * Api registry.
+ * If api parameter types have {@link io.dingodb.net.Channel}, must first parameter and set {@code null}.
+ */
 public interface ApiRegistry {
 
     static ApiRegistry getDefault() {

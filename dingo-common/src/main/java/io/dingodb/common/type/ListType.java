@@ -21,11 +21,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.common.util.TypeUtils;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
-import org.apache.avro.Schema;
+import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -35,6 +34,7 @@ import java.util.List;
 @JsonPropertyOrder({"element", "nullable"})
 @EqualsAndHashCode(of = {"elementType"}, callSuper = true)
 public class ListType extends NullableType {
+    @Getter
     @JsonProperty("element")
     private final DingoType elementType;
 
@@ -90,11 +90,6 @@ public class ListType extends NullableType {
             return b.toString();
         }
         return NullType.NULL.format(null);
-    }
-
-    @Override
-    protected Schema toAvroSchemaNotNull() {
-        return Schema.createArray(elementType.toAvroSchema());
     }
 
     @Override

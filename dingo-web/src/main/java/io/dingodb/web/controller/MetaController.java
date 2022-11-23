@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
@@ -127,7 +126,7 @@ public class MetaController {
     @GetMapping("/{table}/{part}/stats")
     public ResponseEntity<TablePartStatsDTO> getTablePartStats(@PathVariable String table, @PathVariable Integer part) {
         return ResponseEntity.ok(mapper.mapping(metaApi.tablePartStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seqContent(), part)
+            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seq(), part)
         )));
     }
 
@@ -135,7 +134,7 @@ public class MetaController {
     @GetMapping("/{table}/{part}/part")
     public ResponseEntity<TablePartDTO> getTablePart(@PathVariable String table, @PathVariable Integer part) {
         return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(
-            new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seqContent(), part)
+            new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seq(), part)
         )));
     }
 
@@ -148,7 +147,7 @@ public class MetaController {
             .replicas(new CommonId(
                 ID_TYPE.table,
                 TABLE_IDENTIFIER.part,
-                metaApi.tableId(table.toUpperCase()).seqContent(),
+                metaApi.tableId(table.toUpperCase()).seq(),
                 part
             )).stream()
             .map(mapper::mapping)
@@ -163,7 +162,7 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
-        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
+        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(metaServiceApi.rootId(), table);
         TableDefinition def = metaApi.tableDefinition(table);
         Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
@@ -182,7 +181,7 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
-        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(table);
+        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(metaServiceApi.rootId(), table);
         TableDefinition def = metaApi.tableDefinition(table);
         Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
@@ -218,7 +217,7 @@ public class MetaController {
     @GetMapping("/executor/{id}")
     public ResponseEntity<ExecutorDTO> getExecutor(@PathVariable Integer id) {
         return ResponseEntity.ok(mapper.mapping(metaApi.executor(
-            new CommonId(ID_TYPE.service, SERVICE_IDENTIFIER.executor, encodeInt(0), id)
+            new CommonId(ID_TYPE.service, SERVICE_IDENTIFIER.executor, 0, id)
         )));
     }
 

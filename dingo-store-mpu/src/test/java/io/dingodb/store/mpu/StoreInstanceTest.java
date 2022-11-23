@@ -55,7 +55,7 @@ class StoreInstanceTest {
     @BeforeAll
     public static void beforeAll() {
         FileUtils.createDirectories(PATH);
-        CommonId id = CommonId.prefix((byte) 'T');
+        CommonId id = CommonId.prefix((byte) 'T', new byte[] {'T', 'T'});
         storeInstance = new StoreInstance(id, PATH);
         Part part = Part.builder()
             .id(id)

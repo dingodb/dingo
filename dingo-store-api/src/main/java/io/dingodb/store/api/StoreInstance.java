@@ -164,12 +164,11 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> keyValueScan(byte[] key) {
-        byte[] stopInBytes = ByteArrayUtils.increment(key);
-        return keyValueScan(key, stopInBytes);
+        return keyValueScan(key, ByteArrayUtils.increment(key));
     }
 
     default Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        throw new UnsupportedOperationException();
+        return keyValueScan(startPrimaryKey, endPrimaryKey, true, false);
     }
 
     default Iterator<KeyValue> keyValueScan(
@@ -183,6 +182,7 @@ public interface StoreInstance {
     ) {
         throw new UnsupportedOperationException();
     }
+
     default Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
         throw new UnsupportedOperationException();
     }

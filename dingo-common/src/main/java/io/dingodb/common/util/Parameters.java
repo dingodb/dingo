@@ -17,6 +17,7 @@
 package io.dingodb.common.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -34,7 +35,7 @@ public final class Parameters {
      * @param input check object
      * @return input
      */
-    public static <T> T nonNull(T input, String message) {
+    public static <T> @NonNull T nonNull(T input, String message) {
         return check(input, Objects::nonNull, () -> new NullPointerException(message));
     }
 
@@ -44,7 +45,7 @@ public final class Parameters {
      * @param throwableSupplier throwable supplier
      * @return input
      */
-    public static <T> T nonNull(T input, Supplier<RuntimeException> throwableSupplier) {
+    public static <T> @NonNull T nonNull(T input, Supplier<RuntimeException> throwableSupplier) {
         return check(input, Objects::nonNull, throwableSupplier);
     }
 

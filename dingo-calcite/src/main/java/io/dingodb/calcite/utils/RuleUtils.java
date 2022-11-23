@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.utils;
 
-import io.dingodb.common.util.ByteArrayUtils;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -26,13 +25,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class RuleUtils {
-
-    public static byte[] getBytesByInterceptingNBits(byte[] origins, int n) {
-        int destLength = origins.length - Math.abs(n);
-        byte[] dest = new byte[destLength];
-        ByteArrayUtils.copyByteArray(origins, 0, dest, 0, destLength);
-        return dest;
-    }
 
     public static @Nullable ConditionInfo checkCondition(@NonNull RexNode rexNode) {
         switch (rexNode.getKind()) {

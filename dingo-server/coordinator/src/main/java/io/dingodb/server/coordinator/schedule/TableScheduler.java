@@ -17,8 +17,6 @@
 package io.dingodb.server.coordinator.schedule;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.NetService;
@@ -83,7 +81,7 @@ public class TableScheduler {
 
         this.tablePartStatsAdaptor = getStatsMetaAdaptor(TablePartStats.class);
 
-        splitTaskAdaptor.getByDomain(PrimitiveCodec.encodeInt(1))
+        splitTaskAdaptor.getByDomain(1)
             .forEach((task -> Executors.submit("split-" + task.getId().toString(), () -> {
                 try {
                     busy.compareAndSet(false, true);
@@ -97,79 +95,6 @@ public class TableScheduler {
             })));
     }
 
-    public void addReplica(CommonId partId, CommonId executorId) {
-        if (!busy.compareAndSet(false, true)) {
-            throw new RuntimeException("Busy.");
-        }
-        try {
-            log.info("Add part [{}] replica on [{}]", partId, executorId);
-            TablePart tablePart = tablePartAdaptor.get(partId);
-            Replica replica = replicaAdaptor.getByExecutor(executorId, partId);
-            if (replica == null) {
-                replica = replicaAdaptor.newReplica(tablePart, executorAdaptor.get(executorId));
-                log.info("Save mate for part [{}] replica [{}] on [{}]", partId, replica.getId(), executorId);
-                replicaAdaptor.save(replica);
-            } else {
-                log.info("The replica meta [{}] on [{}] is exist.", partId, executorId);
-            }
-            TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
-            List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
-            log.info("Update part [{}] on leader.", partId);
-            try {
-                applyTablePart(tablePart, partStats.getLeader(), locations, true);
-            } catch (Exception e) {
-                log.error("Update part [{}] on leader error.", partId, e);
-            }
-            try {
-                log.info("Start part [{}] replica [{}] on [{}].", partId, replica.getId(), executorId);
-                applyTablePart(tablePart, executorId, locations, false);
-            } catch (Exception e) {
-                log.info("Start part [{}] replica [{}] on [{}] error.", partId, replica.getId(), executorId, e);
-            }
-            log.info("Add part [{}] replica [{}] on [{}] finish", partId, replica.getId(), executorId);
-        } catch (Exception e ) {
-            System.out.println(e);
-        } finally {
-            busy.set(false);
-        }
-    }
-
-    public void removeReplica(CommonId partId, CommonId executorId) {
-        if (!busy.compareAndSet(false, true)) {
-            throw new RuntimeException("Busy.");
-        }
-        try {
-            log.info("Remove part [{}] replica on [{}]", partId, executorId);
-            TablePart tablePart = tablePartAdaptor.get(partId);
-            Replica replica = replicaAdaptor.getByExecutor(executorId, partId);
-            if (replica == null) {
-                log.info("Not found replica meta [{}] on [{}].", partId, executorId);
-            } else {
-                log.info("Delete mata for part [{}] replica [{}] on [{}]", partId, replica.getId(), executorId);
-                replicaAdaptor.delete(replica.getId());
-            }
-            TablePartStats partStats = tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent()));
-            List<Location> locations = replicaAdaptor.getLocationsByDomain(partId.seqContent());
-            log.info("Update part [{}] on leader.", partId);
-            try {
-                applyTablePart(tablePart, partStats.getLeader(), locations, true);
-            } catch (Exception e) {
-                log.error("Update part [{}] on leader.", partId, e);
-            }
-            log.info("Stop part [{}] replica on [{}].", partId, executorId);
-            try {
-                TableStoreProcessor.removeReplica(executorId, tablePart);
-            } catch (Exception e) {
-                log.warn("Stop part [{}] replica on [{}] error.", partId, executorId, e);
-            }
-            log.info("Remove part replica [{}] on [{}] finish", partId, executorId);
-        } finally {
-            busy.set(false);
-        }
-    }
-
     public void transferLeader(CommonId partId, CommonId executorId) {
         if (!busy.compareAndSet(false, true)) {
             throw new RuntimeException("Busy.");
@@ -179,7 +104,7 @@ public class TableScheduler {
             TablePart tablePart = tablePartAdaptor.get(partId);
             Replica newLeader = replicaAdaptor.getByExecutor(executorId, partId);
             Replica current = replicaAdaptor.getByExecutor(tablePartStatsAdaptor.getStats(
-                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domainContent(), partId.seqContent())
+                new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, partId.domain(), partId.seq())
             ).getLeader()).get(0);
 
             if (newLeader == null) {
@@ -187,7 +112,8 @@ public class TableScheduler {
             }
             log.info("Update part [{}] on current leader.", partId);
             try {
-                applyTablePart(tablePart, current, replicaAdaptor.getByDomain(partId.seqContent()), newLeader, true);
+                // todo now, mpu unsupported
+                // applyTablePart(tablePart, current, replicaAdaptor.getByDomain(partId.seq()), newLeader, true);
             } catch (Exception e) {
                 log.error("Update part [{}] on current leader error.", partId, e);
             }
@@ -195,22 +121,6 @@ public class TableScheduler {
         } finally {
             busy.set(false);
         }
-    }
-
-    public void split(CommonId part) {
-        TablePartStats stats = getStatsMetaAdaptor(TablePartStats.class).getStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, part.domainContent(), part.seqContent())
-        );
-        if (stats.getApproximateStats().size() < 2) {
-            log.warn("The part approximate stats size less than 2, unsupported split.");
-            return;
-        }
-        int index = stats.getApproximateStats().size() / 2;
-        split(part, stats.getApproximateStats().get(index).getEndKey());
-    }
-
-    public void split(CommonId part, byte[] split) {
-        runTask(() -> splitPartProcessor.split(part, split));
     }
 
     public void deleteTable() {

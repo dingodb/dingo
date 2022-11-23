@@ -58,6 +58,7 @@ dependencies {
     testImplementation project(':dingo-calcite')
     testImplementation project(':dingo-expr:dingo-expr-test')
     testRuntimeOnly project(':dingo-driver')
+    testImplementation project(':dingo-test:dingo-meta-local')
 }
 
 task intTest(type: Test) {

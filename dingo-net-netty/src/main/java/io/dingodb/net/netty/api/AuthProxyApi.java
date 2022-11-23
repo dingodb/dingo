@@ -16,13 +16,12 @@
 
 package io.dingodb.net.netty.api;
 
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.Message;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.net.error.ApiTerminateException;
 import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.Constant;
-import io.dingodb.net.netty.NettyHandlers;
 import io.dingodb.net.service.AuthService;
 
 import java.util.HashMap;
@@ -54,7 +53,7 @@ public interface AuthProxyApi {
             channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);
             throw new ApiTerminateException(
                 "Auth failed from [%s], message: %s",
-                channel.remoteLocation().getUrl(), e.getMessage()
+                channel.remoteLocation().url(), e.getMessage()
             );
         }
     }

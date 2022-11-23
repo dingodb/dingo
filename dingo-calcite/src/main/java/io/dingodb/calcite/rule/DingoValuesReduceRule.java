@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.CalcValueUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -47,8 +48,8 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
     ) {
         LogicalProject project = call.rel(0);
         LogicalDingoValues values = call.rel(1);
-        DingoType tupleType = DingoTypeFactory.fromRelDataType(values.getRowType());
-        DingoType rowType = DingoTypeFactory.fromRelDataType(project.getRowType());
+        DingoType tupleType = DefinitionMapper.mapToDingoType(values.getRowType());
+        DingoType rowType = DefinitionMapper.mapToDingoType(project.getRowType());
         List<Object[]> tuples = new LinkedList<>();
         EvalEnv env = CalcValueUtils.getEnv(call);
         try {
@@ -74,7 +75,7 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
     ) {
         LogicalFilter filter = call.rel(0);
         LogicalDingoValues values = call.rel(1);
-        DingoType tupleType = DingoTypeFactory.fromRelDataType(values.getRowType());
+        DingoType tupleType = DefinitionMapper.mapToDingoType(values.getRowType());
         List<Object[]> tuples = new LinkedList<>();
         EvalEnv env = CalcValueUtils.getEnv(call);
         try {

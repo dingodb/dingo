@@ -24,7 +24,7 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-@ToString(of = {"host", "port", "raftPort"})
+@ToString(of = {"host", "port"})
 public class Location implements Serializable {
     private static final long serialVersionUID = 4013504472715015258L;
 
@@ -34,29 +34,16 @@ public class Location implements Serializable {
     @JsonProperty("port")
     @Getter
     private final int port;
-    @JsonProperty("raftPort")
-    @Getter
-    private final int raftPort;
-    @Getter
-    private final String url;
 
-    public Location(
-        String host,
-        int port
-    ) {
-        this(host, port, 0);
-    }
+    private transient String url;
 
     @JsonCreator
     public Location(
         @JsonProperty("host") String host,
-        @JsonProperty("port") int port,
-        @JsonProperty("raftPort") int raftPort
+        @JsonProperty("port") int port
     ) {
         this.host = host;
         this.port = port;
-        this.raftPort = raftPort;
-        this.url = String.format("%s:%s", host, port);
     }
 
     public String host() {
@@ -67,8 +54,11 @@ public class Location implements Serializable {
         return port;
     }
 
-    public int raftPort() {
-        return raftPort;
+    public String url() {
+        if (this.url == null) {
+            this.url = host + ":" + port;
+        }
+        return this.url;
     }
 
     public InetSocketAddress toSocketAddress() {
@@ -76,10 +66,10 @@ public class Location implements Serializable {
     }
 
     public boolean equals(final Object other) {
-        return other == this || other instanceof Location && url.equals(((Location) other).url);
+        return other == this || other instanceof Location && url().equals(((Location) other).url());
     }
 
     public int hashCode() {
-        return url.hashCode();
+        return url().hashCode();
     }
 }

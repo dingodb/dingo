@@ -17,10 +17,9 @@
 package io.dingodb.exec.table;
 
 import com.google.common.collect.Iterators;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.DingoKeyValueCodec;
-import io.dingodb.common.table.Part;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -49,6 +48,7 @@ public final class PartInKvStore implements Part {
 
     public PartInKvStore(StoreInstance store, DingoType schema, TupleMapping keyMapping) {
         this.store = store;
+
         this.codec = new DingoKeyValueCodec(schema, keyMapping);
     }
 

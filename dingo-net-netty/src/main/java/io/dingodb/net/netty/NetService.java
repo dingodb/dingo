@@ -86,6 +86,11 @@ public class NetService implements io.dingodb.net.NetService {
     }
 
     @Override
+    public Map<String, Object[]> auth(Location location) {
+        return connections.get(location).authContent();
+    }
+
+    @Override
     public Channel newChannel(Location location) {
         return newChannel(location, true);
     }
@@ -110,7 +115,7 @@ public class NetService implements io.dingodb.net.NetService {
     private Connection connect(Location location) {
         return connections.computeIfAbsent(location, k -> {
             Optional<Connection> connection = Optional.empty();
-            NioEventLoopGroup executor = new NioEventLoopGroup(0, executor(location.getUrl() + "/connection"));
+            NioEventLoopGroup executor = new NioEventLoopGroup(0, executor(location.url() + "/connection"));
             try {
                 Bootstrap bootstrap = new Bootstrap();
                 bootstrap

@@ -61,47 +61,6 @@ public class TableStoreProcessor {
         APIS.values().forEach(api -> Executors.execute("delete-table", () -> api.deleteTable(tableId)));
     }
 
-    public static void addReplica(CommonId executor, CommonId table, CommonId part, Location replica) {
-        TableStoreApi api = getOrAddStore(executor);
-        api.addTablePartReplica(table, part, replica);
-    }
-
-    public static void removeReplica(CommonId executor, TablePart tablePart) {
-        TableStoreApi api = getOrAddStore(executor);
-        api.deleteTablePart(Part.builder()
-            .id(tablePart.getId())
-            .instanceId(tablePart.getTable())
-            .type(Part.PartType.ROW_STORE)
-            .start(tablePart.getStart())
-            .end(tablePart.getEnd())
-            .build());
-    }
-
-    public static void applyTablePart(
-        TablePart tablePart, CommonId executor, List<Location> replicaLocations, boolean exist
-    ) {
-        TableStoreApi api = APIS.get(executor);
-        if (api == null) {
-            api = addStore(executor, MetaAdaptorRegistry.getMetaAdaptor(Executor.class).get(executor).location());
-        }
-        Part part = Part.builder()
-            .id(tablePart.getId())
-            .instanceId(tablePart.getTable())
-            .type(Part.PartType.ROW_STORE)
-            .start(tablePart.getStart())
-            .end(tablePart.getEnd())
-            .leaderLocation(null)
-            .replicateLocations(replicaLocations)
-            .ttl(tablePart.getTtl())
-            .build();
-        log.info("Apply part [{}] on [{}], part info: {}", tablePart.getId(), executor, part);
-        if (exist) {
-            api.reassignTablePart(part);
-        } else {
-            api.assignTablePart(part);
-        }
-    }
-
     public static void applyTablePart(
         TablePart tablePart, Replica replica, List<Replica> replicas, Replica leader, boolean exist
     ) {

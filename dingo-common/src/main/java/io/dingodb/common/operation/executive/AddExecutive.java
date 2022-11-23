@@ -24,6 +24,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.ClientConverter;
 import io.dingodb.common.type.converter.DingoConverter;
@@ -60,7 +61,7 @@ public class AddExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                         Object[] values = new Object[objects.length];
                         for (int i = 0; i < objects.length; i++) {
                             DingoType dingoType =
-                                Objects.requireNonNull(definition.getColumn(columns[i].name)).getDingoType();
+                                Objects.requireNonNull(definition.getColumn(columns[i].name)).getType();
                             Object v = columns[i].value.getObject();
                             ComputeNumber number = convertType(v == null ? 0 : v, dingoType);
                             ComputeNumber value = number.add(convertType(objects[i], dingoType));
@@ -86,12 +87,12 @@ public class AddExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     .map(ColumnDefinition::getDefaultValue)
                     .toArray();
                 for (ColumnDefinition column : columnDefinitions) {
-                    if (column.isNotNull() && column.getDefaultValue() == null) {
+                    if (!((NullableType) column.getType()).isNullable() && column.getDefaultValue() == null) {
                         throw new IllegalArgumentException("Missing default value for fields that do not allow null");
                     }
                 }
                 for (int i = 0; i < indexes.length; i++) {
-                    DingoType dingoType = Objects.requireNonNull(definition.getColumn(columns[i].name)).getDingoType();
+                    DingoType dingoType = Objects.requireNonNull(definition.getColumn(columns[i].name)).getType();
                     Object v = columns[i].value.getObject();
                     ComputeNumber number = convertType(v == null ? 0 : v, dingoType);
                     Object defValue = defValues[indexes[i]];

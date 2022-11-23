@@ -16,10 +16,22 @@
 
 package org.apache.calcite.avatica.remote;
 
+import io.dingodb.driver.DingoServiceImpl;
+import io.dingodb.driver.api.MetaApi;
 import org.apache.calcite.avatica.AvaticaConnection;
 
 public class DingoRemoteMeta extends RemoteMeta {
-    public DingoRemoteMeta(AvaticaConnection connection, Service service) {
+    private final DingoServiceImpl service;
+    private final MetaApi metaApi;
+
+    public DingoRemoteMeta(AvaticaConnection connection, DingoServiceImpl service, MetaApi metaApi) {
         super(connection, service);
+        this.service = service;
+        this.metaApi = metaApi;
+    }
+
+    @Override
+    public StatementHandle prepare(ConnectionHandle ch, String sql, long maxRowCount) {
+        return StatementHandle.fromProto(metaApi.prepare(ch, sql, maxRowCount));
     }
 }

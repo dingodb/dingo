@@ -31,8 +31,8 @@ public class DingoPartDetail implements Serializable {
 
     private static final long serialVersionUID = -2687766895780655226L;
 
-    @JsonProperty("partNm")
-    String partNm = null;
+    @JsonProperty("partName")
+    String partName = null;
 
     @JsonProperty("operator")
     String operator = null;
@@ -43,9 +43,9 @@ public class DingoPartDetail implements Serializable {
     @JsonProperty("function")
     String function = null;
 
-    public DingoPartDetail(Object partNm, String operator, List<Object> operand) {
-        if (partNm != null) {
-            this.partNm = partNm.toString();
+    public DingoPartDetail(Object partName, String operator, List<Object> operand) {
+        if (partName != null) {
+            this.partName = partName.toString();
         }
         this.operator = operator;
         this.operand = operand;

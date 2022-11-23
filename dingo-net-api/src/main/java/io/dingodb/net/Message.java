@@ -19,32 +19,58 @@ package io.dingodb.net;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.nio.ByteBuffer;
 
-@Builder
+import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
 public final class Message {
 
-    public static final String EMPTY_TAG = "";
+    public static final byte[] EMPTY_TAG = new byte[] {0};
 
     public static final String API_OK = "API_OK";
     public static final String API_ERROR = "API_ERROR";
     public static final String API_CANCEL = "API_CANCEL";
     public static final String FILE_TRANSFER = "FILE_TRANSFER";
 
-    public static final Message EMPTY = new Message(EMPTY_TAG, new byte[0]);
+    public static final byte[] API_OK_B = PrimitiveCodec.encodeString(API_OK);
+    public static final byte[] API_ERROR_B = PrimitiveCodec.encodeString(API_ERROR);
+    public static final byte[] API_CANCEL_B = PrimitiveCodec.encodeString(API_CANCEL);
+    public static final byte[] FILE_TRANSFER_B = PrimitiveCodec.encodeString(FILE_TRANSFER);
 
-    private final String tag;
+    public static final Message EMPTY = new Message(EMPTY_TAG, EMPTY_BYTES);
+
+    private final byte[] tag;
     private final byte[] content;
+    private String tagStr;
+
+    public Message(byte[] content) {
+        this(EMPTY_TAG, content);
+    }
+
+    public Message(String tag) {
+        this(tag, EMPTY_BYTES);
+    }
+
+    public Message(String tag, byte[] content) {
+        this.tag = PrimitiveCodec.encodeString(tag);
+        this.content = content;
+        this.tagStr = tag;
+    }
+
+    public Message(byte[] tag, byte[] content) {
+        this.tag = tag;
+        this.content = content;
+        this.tagStr = new String(tag);
+    }
 
     public String tag() {
-        return tag;
+        return tagStr;
     }
 
     public byte[] content() {
@@ -52,8 +78,7 @@ public final class Message {
     }
 
     public byte[] encode() {
-        byte[] tag = PrimitiveCodec.encodeString(this.tag);
-        return ByteArrayUtils.concateByteArray(tag, content);
+        return ByteArrayUtils.concatByteArray(tag, content);
     }
 
     public static Message decode(ByteBuffer buffer) {
@@ -62,5 +87,4 @@ public final class Message {
         buffer.get(content);
         return new Message(tag, content);
     }
-
 }

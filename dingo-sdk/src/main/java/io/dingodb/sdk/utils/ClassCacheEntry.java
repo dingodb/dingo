@@ -21,6 +21,7 @@ import io.dingodb.common.operation.MapOrder;
 import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoConstructor;
 import io.dingodb.sdk.annotation.DingoExclude;
@@ -923,7 +924,7 @@ public class ClassCacheEntry<T> {
                 elementTypeName,
                 sqlTypeInfo.getPrecision(),
                 sqlTypeInfo.getScale(),
-                isKey ? true : false,
+                !isKey,
                 isKey,
                 sqlTypeInfo.getDefaultValue()
             );

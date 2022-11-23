@@ -17,7 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 
 // todo A temporary solution need refactor report stats
 @Deprecated

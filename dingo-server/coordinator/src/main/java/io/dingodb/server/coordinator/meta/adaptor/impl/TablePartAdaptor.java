@@ -43,7 +43,7 @@ public class TablePartAdaptor extends BaseAdaptor<TablePart> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            tablePart.getTable().seqContent(),
+            tablePart.getTable().seq(),
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }

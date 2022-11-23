@@ -23,8 +23,8 @@ import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Schema;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
-import static io.dingodb.server.protocol.CommonIdConstant.ZERO_DOMAIN;
 
 public class SchemaAdaptor extends BaseAdaptor<Schema> {
 
@@ -42,9 +42,9 @@ public class SchemaAdaptor extends BaseAdaptor<Schema> {
 
     @Override
     protected CommonId newId(Schema schema) {
-        byte[] parent = ZERO_DOMAIN;
+        int parent = ROOT_DOMAIN;
         if (schema.getParent() != null) {
-            parent = schema.getParent().seqContent();
+            parent = schema.getParent().seq();
         }
         return new CommonId(
             META_ID.type(),

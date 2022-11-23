@@ -21,5 +21,4 @@ plugins {
 
 dependencies {
     implementation project(":dingo-common")
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
 }

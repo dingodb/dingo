@@ -23,7 +23,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
@@ -66,8 +65,4 @@ public class ObjectType extends AbstractScalarType {
         }
     }
 
-    @Override
-    protected Schema.Type getAvroSchemaType() {
-        return Schema.Type.BYTES;
-    }
 }

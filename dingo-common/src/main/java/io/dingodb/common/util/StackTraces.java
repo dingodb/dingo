@@ -24,7 +24,7 @@ import java.util.StringJoiner;
  * 0) StackTraces method.
  * 1) Current invoke method.
  */
-public class StackTraces {
+public final class StackTraces {
 
     public static final int CURRENT_STACK = 1;
 

@@ -20,7 +20,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
-import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.protocol.meta.Table;
 
 public class ScheduleApi implements io.dingodb.server.api.ScheduleApi {
@@ -54,23 +53,13 @@ public class ScheduleApi implements io.dingodb.server.api.ScheduleApi {
     }
 
     @Override
-    public void addReplica(CommonId tableId, CommonId partId, CommonId executorId) {
-        ClusterScheduler.instance().getTableScheduler(tableId).addReplica(partId, executorId);
-    }
-
-    @Override
-    public void removeReplica(CommonId tableId, CommonId partId, CommonId executorId) {
-        ClusterScheduler.instance().getTableScheduler(tableId).removeReplica(partId, executorId);
-    }
-
-    @Override
     public void transferLeader(CommonId tableId, CommonId partId, CommonId executorId) {
-        ClusterScheduler.instance().getTableScheduler(tableId).transferLeader(partId, executorId);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void splitPart(CommonId tableId, CommonId partId) {
-        ClusterScheduler.instance().getTableScheduler(tableId).split(partId);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -79,6 +68,16 @@ public class ScheduleApi implements io.dingodb.server.api.ScheduleApi {
             splitPart(tableId, partId);
             return;
         }
-        ClusterScheduler.instance().getTableScheduler(tableId).split(partId, key);
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addReplica(CommonId tableId, CommonId partId, CommonId executorId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeReplica(CommonId tableId, CommonId partId, CommonId executorId) {
+        throw new UnsupportedOperationException();
     }
 }

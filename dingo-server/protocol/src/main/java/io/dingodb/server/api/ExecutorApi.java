@@ -17,10 +17,10 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 
 import java.util.List;
 
@@ -72,12 +72,12 @@ public interface ExecutorApi {
     }
 
     @ApiDeclaration
+    KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
+
+    @ApiDeclaration
     default boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName) {
         return udfUpdate(tableId, primaryKey, udfName, functionName, 0);
     }
-
-    @ApiDeclaration
-    KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
 
     @ApiDeclaration
     boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);

@@ -65,6 +65,7 @@ import io.dingodb.expr.runtime.op.string.SubstrEvaluatorsFactory;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -147,8 +148,9 @@ public class DefaultFunFactory implements FunFactory {
                 return TimestampCastEvaluatorsFactory.INSTANCE;
             case TypeCode.BINARY:
                 return BinaryCastEvaluatorsFactory.INSTANCE;
+            default:
+                throw new IllegalArgumentException("Unsupported cast type: \"" + castFunName(toTypeCode) + "\".");
         }
-        throw new IllegalArgumentException("Unsupported cast type: \"" + castFunName(toTypeCode) + "\".");
     }
 
     @NonNull
