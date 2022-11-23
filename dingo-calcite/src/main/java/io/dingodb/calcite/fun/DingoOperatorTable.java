@@ -100,14 +100,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
         // string
         registerFunction(
             ConcatFun.NAME,
-            ReturnTypes.ARG0_NULLABLE,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
             LeftFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
@@ -121,14 +121,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             LTrimFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
             MidFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER_INTEGER,
             OperandTypes.family(
                 ImmutableList.of(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
@@ -138,28 +138,28 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             RepeatFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
             ReverseFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
             RightFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
             RTrimFun.NAME,
-            ReturnTypes.ARG0,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING
