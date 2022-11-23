@@ -18,8 +18,11 @@ package io.dingodb.mpu.test;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.storage.rocks.ColumnFamilyConfiguration;
+import io.dingodb.mpu.storage.rocks.RocksConfiguration;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,7 @@ import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.nio.file.Files;
 
 public class RocksStorageTest {
@@ -50,6 +54,9 @@ public class RocksStorageTest {
             CoreMeta coreMeta = new CoreMeta(id, coreId, mpuId, location, priority);
             String testDbPath = String.format("/tmp/testRocksStorage-%d", System.nanoTime());
 
+            //String tmpDingoConfigPath = genTmpConfigFile();
+            //DingoConfiguration.parse(tmpDingoConfigPath);
+
             storage = new RocksStorage(coreMeta, testDbPath,
                 "", "", 0);
 
@@ -68,12 +75,12 @@ public class RocksStorageTest {
         }
     }
 
-    @Test
+    /*@Test
     public void testCreateRocksStorage() {
         Assertions.assertDoesNotThrow(() -> createRocksStorage());
         Assertions.assertNotNull(storage);
         Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
-    }
+    }*/
 
     @Test
     public void testCheckpoint() {
@@ -144,4 +151,60 @@ public class RocksStorageTest {
         );
         Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
     }
+
+    public String genTmpConfigFile() {
+        String tmpDingoConfigPath = "/tmp/dingo.yaml";
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("cluster:\n");
+            sb.append("    name: dingo\n");
+            sb.append("exchange:\n");
+            sb.append("    host: server1\n");
+            sb.append("    port: 19191\n");
+            sb.append("server:\n");
+            sb.append("    coordinatorExchangeSvrList: server1:19181,server1:19182,server1:19183\n");
+            sb.append("    dataPath: /data/dingo_data/executor1/meta\n");
+            sb.append("    monitorPort: 9091\n");
+            sb.append("store:\n");
+            sb.append("    dbPath: /data/dingo_data/executor1/raftDb\n");
+            sb.append("    dbRocksOptionsFile: /home/user/dingo_bin/conf/db_rocks.ini\n");
+            sb.append("    logRocksOptionsFile: /home/user/dingo_bin/conf/log_rocks.ini\n");
+            sb.append("    dcfConfiguration:\n");
+            sb.append("       cfMaxWriteBufferNumber: 5\n");
+            sb.append("    raft:\n");
+            sb.append("       port: 9191\n");
+            sb.append("       raftPath: /data/dingo_data/executor1/raftLog\n");
+            sb.append("    collectStatsInterval: 5\n");
+
+            FileWriter tmpWriter = new FileWriter(tmpDingoConfigPath);
+            tmpWriter.write(sb.toString());
+            tmpWriter.close();
+        } catch (Exception e) {
+            System.out.println("genTmpConfigFile " + e.toString());
+        }
+
+        return tmpDingoConfigPath;
+    }
+
+    @Test
+    public void testColumnFamilyConfiguration() {
+        Assertions.assertDoesNotThrow(() -> {
+            String tmpDingoConfigPath = genTmpConfigFile();
+            DingoConfiguration.parse(tmpDingoConfigPath);
+
+            RocksConfiguration rocksConfiguration = RocksConfiguration.refreshRocksConfiguration();
+            ColumnFamilyConfiguration dcfConfig = rocksConfiguration.dcfConfiguration();
+            Assertions.assertEquals(5, Integer.parseInt(dcfConfig.getCfMaxWriteBufferNumber()));
+            Assertions.assertEquals(true, dcfConfig.getCfMaxCompactionBytes() == null);
+        });
+    }
+
+    @Test
+    public void testNoColumnFamilyConfiguration() {
+        Assertions.assertDoesNotThrow(() -> {
+            ColumnFamilyConfiguration dcfConfig = new ColumnFamilyConfiguration();
+            Assertions.assertEquals(true, dcfConfig.getCfMaxCompactionBytes() == null);
+        });
+    }
 }
+

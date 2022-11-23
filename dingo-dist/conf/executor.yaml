@@ -9,6 +9,28 @@ server:
     monitorPort: 9099
 store:
     dbPath: /opt/dingo/data/executor/db
+    dcfConfiguration:
+      tcBlockSize: 131072
+      tcBlockCacheSize: 67108864
+      cfArenaBlockSize: 67108864
+      cfMinWriteBufferNumberToMerge: 4
+      cfMaxWriteBufferNumber: 2
+      cfMaxCompactionBytes: 134217728
+      cfWriteBufferSize: 67108864
+      cfFixedLengthPrefixExtractor: 8
+      cfMaxBytesForLevelBase: 134217728
+      cfTargetFileSizeBase: 67108864
+    icfConfiguration:
+      tcBlockSize: 131072
+      tcBlockCacheSize: 67108864
+      cfArenaBlockSize: 67108864
+      cfMinWriteBufferNumberToMerge: 4
+      cfMaxWriteBufferNumber: 3
+      cfMaxCompactionBytes: 134217728
+      cfWriteBufferSize: 67108864
+      cfFixedLengthPrefixExtractor: 8
+      cfMaxBytesForLevelBase: 134217728
+      cfTargetFileSizeBase: 67108864
     raft:
         raftPath: /opt/dingo/data/executor/raft
         port: 9191
