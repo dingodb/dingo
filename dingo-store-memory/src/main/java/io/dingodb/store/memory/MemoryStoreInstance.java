@@ -194,7 +194,7 @@ public class MemoryStoreInstance implements StoreInstance {
                                                       byte[] endPrimaryKey,
                                                       boolean includeStart,
                                                       boolean includeEnd) {
-        TreeMap<byte[], byte[]> treeMap = new TreeMap<>(ByteArrayUtils::compareContainsEnd);
+        TreeMap<byte[], byte[]> treeMap = new TreeMap<>(ByteArrayUtils::compareWithoutLen);
 
         while (iterator.hasNext()) {
             Map.Entry<byte[], byte[]> next = iterator.next();

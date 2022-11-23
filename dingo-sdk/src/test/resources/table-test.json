@@ -5,19 +5,19 @@
       "name": "id",
       "type": "integer",
       "primary": true,
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "n1",
       "type": "varchar",
       "precision": 64,
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "n2",
       "type": "varchar",
       "precision": 64,
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "value",

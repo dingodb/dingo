@@ -27,6 +27,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -41,6 +42,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -51,10 +54,12 @@ import java.util.Map;
 public class DingoConfiguration {
 
     private static DingoConfiguration INSTANCE;
+
     private ClusterConfiguration cluster;
     private CommonId serverId;
     @Delegate
     private ExchangeConfiguration exchange;
+    private List<String> servicePkgs;
     private Map<String, Object> server;
     private Map<String, Object> store;
     private Map<String, Object> net;
@@ -100,16 +105,16 @@ public class DingoConfiguration {
         return INSTANCE == null ? 0 : INSTANCE.getPort();
     }
 
-    public static int raftPort() {
-        return INSTANCE == null ? 0 : INSTANCE.getRaftPort();
-    }
-
     public static CommonId serverId() {
         return INSTANCE.serverId;
     }
 
     public static @NonNull Location location() {
-        return new Location(host(), port(), raftPort());
+        return new Location(host(), port());
+    }
+
+    public static List<String> servicePkgs() {
+        return Optional.ofNullable(INSTANCE).map(DingoConfiguration::getServicePkgs).orElseGet(Collections::emptyList);
     }
 
     public static <T> T mapToBean(Map<String, Object> map, Class<T> cls) throws Exception {
@@ -215,22 +220,6 @@ public class DingoConfiguration {
         if (storeConfiguration == null) {
             storeConfiguration = newInstance(cls);
         }
-    }
-
-    public int getRaftPort() {
-        Object raftPort = ((Map<String, Object>) store.get("raft")).get("port");
-        if (raftPort == null) {
-            log.error("Miss configuration store->raft->port");
-            return 0;
-        }
-
-        if (raftPort instanceof Integer) {
-            return (Integer) raftPort;
-        } else if (raftPort instanceof String) {
-            return Integer.parseInt((String) raftPort);
-        }
-        log.error("Cannot cast raft port");
-        return 0;
     }
 
     public <T> T getClient() {

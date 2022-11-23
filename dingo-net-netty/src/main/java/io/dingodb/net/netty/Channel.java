@@ -148,7 +148,7 @@ public class Channel implements io.dingodb.net.Channel {
         }
         byte[] msg = message.encode();
         if (log.isTraceEnabled()) {
-            log.trace("Send message to [{}] on [{}].", remoteLocation().getUrl(), channelId);
+            log.trace("Send message to [{}] on [{}].", remoteLocation().url(), channelId);
         }
         if (sync) {
             try {
@@ -160,7 +160,7 @@ public class Channel implements io.dingodb.net.Channel {
             try {
                 sendAsync(buffer(USER_DEFINE_T, msg.length).writeBytes(msg));
             } catch (Exception e) {
-                log.error("Send message to {} on {} error.", remoteLocation().getUrl(), channelId, e);
+                log.error("Send message to {} on {} error.", remoteLocation().url(), channelId, e);
             }
         }
     }

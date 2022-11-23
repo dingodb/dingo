@@ -55,7 +55,7 @@ public class UpdateExecutive extends BasicExecutive<BasicContext, Iterator<KeyVa
                     try {
                         for (int i = 0; i < columns.length; i++) {
                             DingoType dingoType =
-                                Objects.requireNonNull(definition.getColumn(columns[i].name)).getDingoType();
+                                Objects.requireNonNull(definition.getColumn(columns[i].name)).getType();
                             values[i] = dingoType.parse(columns[i].value.getObject());
                         }
                         byte[] bytes = context.dingoValueCodec().encode(keyValue.getValue(), values, indexes);

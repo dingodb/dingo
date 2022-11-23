@@ -18,7 +18,6 @@ package io.dingodb.test;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -27,7 +26,6 @@ import io.dingodb.meta.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +33,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 @Slf4j
 public class MetaTestService implements MetaService {
@@ -45,22 +42,22 @@ public class MetaTestService implements MetaService {
     private final Map<String, TableDefinition> tableDefinitionMap = new LinkedHashMap<>();
 
     @Override
-    public String getName() {
+    public CommonId id() {
+        return null;
+    }
+
+    @Override
+    public String name() {
         return SCHEMA_NAME;
     }
 
-    @Override
-    public void init(@Nullable Map<String, Object> props) {
-    }
-
-    @Override
     public void clear() {
         tableDefinitionMap.keySet().stream()
             .map(name -> new CommonId(
                 (byte) 'T',
                 new byte[]{'D', 'T'},
-                PrimitiveCodec.encodeInt(0),
-                PrimitiveCodec.encodeInt(name.hashCode())
+                0,
+                name.hashCode()
             )).forEach(StoreTestServiceProvider.STORE_SERVICE::deleteInstance);
         tableDefinitionMap.clear();
     }
@@ -68,6 +65,11 @@ public class MetaTestService implements MetaService {
     @Override
     public void createTable(@Nonnull @NonNull String tableName, @Nonnull @NonNull TableDefinition tableDefinition) {
         tableDefinitionMap.put(tableName, tableDefinition);
+    }
+
+    @Override
+    public void createTable(CommonId id, @NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+
     }
 
     @Override
@@ -80,8 +82,8 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public byte[] getTableKey(@Nonnull @NonNull String tableName) {
-        return tableName.getBytes(StandardCharsets.UTF_8);
+    public boolean dropTable(CommonId id, @NonNull String tableName) {
+        return false;
     }
 
     @Override
@@ -89,19 +91,29 @@ public class MetaTestService implements MetaService {
         return new CommonId(
             (byte) 'T',
             new byte[]{'D', 'T'},
-            PrimitiveCodec.encodeInt(0),
-            PrimitiveCodec.encodeInt(tableName.hashCode())
+            0,
+            tableName.hashCode()
         );
     }
 
     @Override
-    public byte[] getIndexId(@Nonnull @NonNull String tableName) {
-        return new byte[0];
+    public CommonId getTableId(CommonId id, @NonNull String tableName) {
+        return null;
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(CommonId id, @NonNull String name) {
+        return null;
     }
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
         return tableDefinitionMap;
+    }
+
+    @Override
+    public Map<String, TableDefinition> getTableDefinitions(CommonId id) {
+        return null;
     }
 
     @Override
@@ -116,27 +128,12 @@ public class MetaTestService implements MetaService {
             startKey,
             endKey
         ));
-        /*
-        startKey = endKey;
-        endKey = PrimitiveCodec.encodeVarInt(6);
-        result.put(new ComparableByteArray(startKey), new Part(
-            startKey,
-            new FakeLocation(1),
-            Collections.singletonList(new FakeLocation(1)),
-            startKey,
-            endKey
-        ));
-        startKey = endKey;
-        endKey = ByteArrayUtils.MAX_BYTES;
-        result.put(new ComparableByteArray(startKey), new Part(
-            startKey,
-            new FakeLocation(2),
-            Collections.singletonList(new FakeLocation(2)),
-            startKey,
-            endKey
-        ));
-         */
         return result;
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String name) {
+        return null;
     }
 
     @Override
@@ -147,5 +144,25 @@ public class MetaTestService implements MetaService {
     @Override
     public Location currentLocation() {
         return new FakeLocation(0);
+    }
+
+    @Override
+    public void createSubMetaService(CommonId id, String name) {
+
+    }
+
+    @Override
+    public Map<String, MetaService> getSubMetaServices(CommonId id) {
+        return Collections.singletonMap(SCHEMA_NAME, new MetaTestService());
+    }
+
+    @Override
+    public MetaService getSubMetaService(CommonId id, String name) {
+        return null;
+    }
+
+    @Override
+    public boolean dropSubMetaService(CommonId id, String name) {
+        return false;
     }
 }

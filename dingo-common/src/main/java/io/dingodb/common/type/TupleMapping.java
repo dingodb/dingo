@@ -18,7 +18,6 @@ package io.dingodb.common.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.dingodb.common.util.Utils;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -65,7 +64,7 @@ public final class TupleMapping {
 
     public @NonNull TupleMapping reverse(int num) {
         if (num < 0) {
-            num = Utils.max(mappings);
+            num = Arrays.stream(mappings).max().getAsInt();
         }
         int[] result = new int[num];
         Arrays.fill(result, -1);

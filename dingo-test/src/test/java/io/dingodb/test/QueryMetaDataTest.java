@@ -16,6 +16,7 @@
 
 package io.dingodb.test;
 
+import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -32,7 +33,7 @@ import java.util.Collections;
 
 @Slf4j
 public class QueryMetaDataTest {
-    private static final String SCHEMA_NAME = MetaTestService.SCHEMA_NAME;
+    private static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
 
     private static SqlHelper sqlHelper;
 
@@ -66,7 +67,7 @@ public class QueryMetaDataTest {
                 )
                 .isRecords(Arrays.asList(
                     new Object[]{"metadata", null},
-                    new Object[]{MetaTestService.SCHEMA_NAME, null}
+                    new Object[]{DingoRootSchema.DEFAULT_SCHEMA_NAME, null}
                 ));
         }
     }
@@ -74,13 +75,13 @@ public class QueryMetaDataTest {
     @Test
     public void testGetSchemasWithPattern() throws SQLException {
         DatabaseMetaData metaData = sqlHelper.metaData();
-        try (ResultSet resultSet = metaData.getSchemas(null, "T%")) {
+        try (ResultSet resultSet = metaData.getSchemas(null, "D%")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
                 )
                 .isRecords(Collections.singletonList(
-                    new Object[]{MetaTestService.SCHEMA_NAME, null}
+                    new Object[]{DingoRootSchema.DEFAULT_SCHEMA_NAME, null}
                 ));
         }
     }

@@ -21,8 +21,6 @@ import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.meta.Column;
 
-import java.util.stream.Collectors;
-
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
@@ -42,7 +40,7 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
 
     @Override
     protected CommonId newId(Column column) {
-        byte[] tableSeq = column.getTable().seqContent();
+        int tableSeq = column.getTable().seq();
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
@@ -55,13 +53,11 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
     protected void doSave(Column meta) {
     }
 
-    public void deleteByDomain(byte[] domain) {
-        CommonId prefix = metaId();
-        prefix = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        ++domain[domain.length - 1];
-        CommonId stop = CommonId.prefix(prefix.type(), prefix.identifier(), domain);
-        metaMap.putAll(metaMap.subMap(prefix, true, stop, false).keySet().stream()
-            .collect(Collectors.<CommonId, CommonId, Column>toMap(k -> k, k -> null)));
+    public void deleteByDomain(int domain) {
+        metaMap.subMap(
+            CommonId.prefix(metaId().type(), metaId().identifier(), domain), true,
+            CommonId.prefix(metaId().type(), metaId().identifier(), domain + 1), false
+        ).keySet().forEach(metaMap::remove);
     }
 
     @Override

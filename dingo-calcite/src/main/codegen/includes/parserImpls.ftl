@@ -259,100 +259,62 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     [ <WITH> attrList = AttrMap() ]
     [
        <PARTITION> <BY>
-       [
-            <RANGE>
-            { partType = "RANGE"; }
-            dingoTablePart = partColNm()
-            partList = defPartNew()
-            { dingoTablePart = new DingoTablePart(dingoTablePart.getFuncNm(), dingoTablePart.getCols());
-              dingoTablePart.setPartDetailList(partList);
-              return DingoSqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
-                          tableElementList, query, attrList, partType, dingoTablePart);
-             }
-       ]
+        {
+            dingoTablePart = new DingoTablePart();
+            dingoTablePart.setFuncName(partType = getNextToken().image);
+            dingoTablePart.setCols(readNames());
+            dingoTablePart.setPartDetails(readPartDetails());
+        }
     ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
-        return DingoSqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query, attrList, partType, dingoTablePart);
+        return DingoSqlDdlNodes.createTable(
+            s.end(this), replace, ifNotExists, id, tableElementList, query, attrList, partType, dingoTablePart
+        );
     }
 }
 
-List<DingoPartDetail> defPartNew() : {
-    List<DingoPartDetail> listParts = new ArrayList<DingoPartDetail>();
-    Object partNm = null;
-    String operator = null;
-    List<Object> operand = null;
+List<DingoPartDetail> readPartDetails() : {
+    List<DingoPartDetail> partDetails = new ArrayList<DingoPartDetail>();
 }{
-    <LPAREN>
     [
-       <VALUES>
-       operand = getPartVals()
-       { listParts.add(new DingoPartDetail(partNm, operator, operand)); }
-       { partNm = null; operator = null; operand = null; }
-       (
-          <COMMA>
-          operand = getPartVals()
-          { listParts.add(new DingoPartDetail(partNm, operator, operand )); }
-          { partNm = null; operator = null; operand = null; }
-       )*
+        <VALUES>
+        {partDetails.add(new DingoPartDetail(null, null, readValues()));}
+        (
+           <COMMA>
+           {partDetails.add(new DingoPartDetail(null, null, readValues()));}
+        )*
+        { return partDetails; }
     ]
-    <RPAREN>
-    { return listParts; }
 }
 
-List<Object> getPartVals() : {
-   List<Object> partVals = new ArrayList<Object>();
-   Object operand = null;
+List<Object> readValues() : {
+   List<Object> values = new ArrayList<Object>();
 }{
      <LPAREN>
-     [
-        operand = anything()
-        { partVals.add(operand); operand = null; }
+        { values.add(anything());}
         (
           <COMMA>
-          operand = anything()
-          { partVals.add(operand); operand = null; }
+          { values.add(anything());}
         )*
-     ]
      <RPAREN>
-     { return partVals; }
+     { return values; }
 }
 
-DingoTablePart partColNm() : {
-	String partColNm = null;
-	List<String> partColNmList = new ArrayList<String>();
-	String funNm = null;
-	DingoTablePart tablePart = null;
-	SqlIdentifier tmp = null;
+List<String> readNames()  : {
+	List<String> names = new ArrayList<String>();
 } {
+      [
 	  <LPAREN>
-	  [
-	    tmp = CompoundIdentifier()
-	    { partColNm = tmp.names.get(0); partColNmList.add(partColNm); }
-	    [
-	      <LPAREN>
-	      { partColNmList.remove(partColNm); funNm = partColNm; partColNm = null; tmp = null;}
-	      tmp = CompoundIdentifier()
-          { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
-	      (
-	         <COMMA>
-	         tmp = CompoundIdentifier()
-             { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
-	      )*
-	      <RPAREN>
-	    ]
+        {names.add(getNextToken().image);}
 	    (
 	      <COMMA>
-          tmp = CompoundIdentifier()
-          { partColNm = tmp.names.get(0); partColNmList.add(partColNm); partColNm = null; tmp = null; }
+          {names.add(getNextToken().image);}
 	    )*
-	  ]
 	  <RPAREN>
-	{ tablePart = new DingoTablePart();
-	  tablePart.setFuncNm(funNm); tablePart.setCols(partColNmList); return tablePart; }
+      ]
+	{ return names; }
 }
-
 
 
 Map<String,Object> AttrMap() : {

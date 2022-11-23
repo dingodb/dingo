@@ -16,7 +16,14 @@
 
 package io.dingodb.meta;
 
+import java.util.ServiceLoader;
+
 public interface MetaServiceProvider {
 
-    MetaService get();
+    MetaService root();
+
+    static MetaService getRoot() {
+        return ServiceLoader.load(MetaServiceProvider.class).iterator().next().root();
+    }
+
 }

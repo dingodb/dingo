@@ -18,11 +18,12 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
+NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"
 
 nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-coordinator.xml \
-     -classpath ${JAR_PATH} \
+     -classpath ${JAR_PATH}:${NET_JAR_PATH} \
      io.dingodb.server.coordinator.Starter \
      --config ${ROOT}/conf/coordinator.yaml \
      > ${ROOT}/log/coordinator.out &

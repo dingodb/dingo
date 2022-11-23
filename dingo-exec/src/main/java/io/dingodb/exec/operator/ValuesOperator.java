@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.JsonConverter;
 import io.dingodb.exec.codec.RawJsonDeserializer;
+import io.dingodb.exec.converter.JsonConverter;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

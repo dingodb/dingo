@@ -24,7 +24,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -87,11 +86,6 @@ public class ArrayType extends NullableType {
             return b.toString();
         }
         return NullType.NULL.format(null);
-    }
-
-    @Override
-    protected Schema toAvroSchemaNotNull() {
-        return Schema.createArray(elementType.toAvroSchema());
     }
 
     @Override

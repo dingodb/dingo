@@ -16,10 +16,15 @@
 
 package io.dingodb.server.coordinator.config;
 
+import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -48,16 +53,12 @@ public class CoordinatorConfiguration {
     private String dbRocksOptionsFile;
     private String logRocksOptionsFile;
 
-    private RaftConfiguration raft;
+    private String servers;
     private ScheduleConfiguration schedule = new ScheduleConfiguration();
     private Integer monitorPort = 9088;
 
     public static String dataPath() {
         return INSTANCE.dataPath;
-    }
-
-    public static RaftConfiguration raft() {
-        return INSTANCE.raft;
     }
 
     public static ScheduleConfiguration schedule() {
@@ -66,5 +67,12 @@ public class CoordinatorConfiguration {
 
     public static Integer monitorPort() {
         return INSTANCE.monitorPort;
+    }
+
+    public static List<Location> servers() {
+        return Arrays.stream(INSTANCE.servers.split(","))
+            .map(s -> s.split(":"))
+            .map(__ -> new Location(__[0], Integer.parseInt(__[1])))
+            .collect(Collectors.toList());
     }
 }

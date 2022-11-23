@@ -46,9 +46,10 @@ public class RocksStorageTest {
         try {
             // TODO generate useful parameters
             byte type = 0;
-            CommonId id = CommonId.prefix(type);
-            CommonId coreId = CommonId.prefix(type);
-            CommonId mpuId = CommonId.prefix(type);
+            byte[] identifier = new byte[] {1, 1};
+            CommonId id = CommonId.prefix(type, identifier);
+            CommonId coreId = CommonId.prefix(type, identifier);
+            CommonId mpuId = CommonId.prefix(type, identifier);
             Location location = new Location("127.0.0.1", 8000);
             int priority = 0;
             CoreMeta coreMeta = new CoreMeta(id, coreId, mpuId, location, priority);

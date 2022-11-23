@@ -28,6 +28,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
+import static io.dingodb.net.Message.EMPTY_TAG;
+
 @Slf4j
 @Accessors(chain = true, fluent = true)
 public class Mirror implements MessageListener {
@@ -53,7 +55,7 @@ public class Mirror implements MessageListener {
                 try {
                     Instruction instruction = Instruction.decode(message.content());
                     core.storage.saveInstruction(instruction.clock, message.content());
-                    channel.send(new Message(null, new TagClock(Constant.T_SYNC, instruction.clock).encode()));
+                    channel.send(new Message(EMPTY_TAG, new TagClock(Constant.T_SYNC, instruction.clock).encode()));
                     core.executionUnit.execute(instruction);
                 } catch (Exception e) {
                     log.error("Sync instruction from {} error.", channel.remoteLocation(), e);

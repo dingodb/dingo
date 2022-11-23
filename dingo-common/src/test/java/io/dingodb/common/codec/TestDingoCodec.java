@@ -17,9 +17,7 @@
 package io.dingodb.common.codec;
 
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.table.TestTableDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,7 +34,7 @@ public class TestDingoCodec {
     @BeforeAll
     public static void setupAll() throws IOException {
         tableDefinition = TableDefinition.readJson(
-            TestTableDefinition.class.getResourceAsStream("/table-test.json")
+            TestDingoCodec.class.getResourceAsStream("/table-test.json")
         );
         codec =
             new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());

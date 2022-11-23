@@ -19,8 +19,6 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
-import org.apache.avro.Schema;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 @EqualsAndHashCode(of = {"nullable"}, callSuper = true)
 public abstract class NullableType extends AbstractDingoType {
@@ -30,18 +28,6 @@ public abstract class NullableType extends AbstractDingoType {
         super(typeCode);
         this.nullable = nullable;
     }
-
-    @Override
-    public @NonNull Schema toAvroSchema() {
-        Schema schema = toAvroSchemaNotNull();
-        if (nullable) {
-            // Allow avro to encode `null`.
-            return Schema.createUnion(schema, Schema.create(Schema.Type.NULL));
-        }
-        return schema;
-    }
-
-    protected abstract Schema toAvroSchemaNotNull();
 
     // Need this getter to enable jackson afterburner module access.
     @JsonProperty(value = "nullable", defaultValue = "false")

@@ -17,7 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.Location;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 
 import java.util.List;
 

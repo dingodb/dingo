@@ -49,7 +49,7 @@ public final class Services {
     public static final MetaService META = Objects.requireNonNull(
         ServiceProviders.META_PROVIDER.provider(),
         "No meta service provider was found."
-    ).get();
+    ).root();
     public static final NetService NET = Objects.requireNonNull(
         ServiceProviders.NET_PROVIDER.provider(),
         "No channel service provider was found."
@@ -72,12 +72,12 @@ public final class Services {
 
     public static void initMetaServices() {
         for (MetaServiceProvider provider : ServiceProviders.META_PROVIDER) {
-            MetaService metaService = provider.get();
-            String serviceName = metaService.getName();
+            MetaService metaService = provider.root();
+            String serviceName = metaService.name();
             if (metaServices.containsKey(serviceName)) {
                 throw new RuntimeException("Duplicate meta service name \"" + serviceName + "\" exists.");
             }
-            metaServices.put(metaService.getName(), metaService);
+            metaServices.put(metaService.name(), metaService);
         }
     }
 

@@ -23,7 +23,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -55,8 +54,4 @@ public class DecimalType extends AbstractScalarType {
         return converter.convertDecimalFrom(value);
     }
 
-    @Override
-    public Schema.Type getAvroSchemaType() {
-        return Schema.Type.BYTES;
-    }
 }

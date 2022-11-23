@@ -16,6 +16,9 @@
 
 package io.dingodb.mpu.instruction;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public final class InstructionSetRegistry {
 
     private InstructionSetRegistry() {
@@ -25,6 +28,7 @@ public final class InstructionSetRegistry {
 
     public static synchronized void register(int id, Instructions instructions) {
         if (instructionSets[id] == null) {
+            log.info("Register instructions, id: {}, {}.", id, instructions.getClass().getName());
             instructionSets[id] = instructions;
             return;
         }

@@ -32,6 +32,7 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
     public static UpsertKeyValueUsingListCodec INSTANCE = new UpsertKeyValueUsingListCodec();
 
     /**
+     * .
      * input byteBuffer(the method name has been reed, the position has been seek)
      * @param byteBuffer input byteBuffer
      * @return CommonId, array of KeyValue
@@ -42,7 +43,7 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
         byte[] commonIdInBytes = new byte[commonIdLen];
         byteBuffer.get(commonIdInBytes);
 
-        CommonId commonId = CommonId.fromBytes4Transfer(commonIdInBytes);
+        CommonId commonId = CommonId.decode(commonIdInBytes);
         objectArray.add(commonId);
 
         int keyValueCnt = byteBuffer.getInt();
@@ -66,18 +67,19 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
         return objectArray.toArray();
     }
 
+    /**
+     * .
+     * input args: CommonId, List[KeyValue]
+     * output format:
+     *  size|commonId in bytes|Count(list element)|len(key)|key|len(value)|value|....
+     */
     public byte[] write(Object[] objectArray) {
-        /**
-         * input args: CommonId, List<KeyValue>
-         * output format:
-         *  size|commonId in bytes|Count(list element)|len(key)|key|len(value)|value|....
-         */
         if (objectArray.length != 2) {
             return null;
         }
 
         CommonId commonId = (CommonId) objectArray[0];
-        byte[] commonIdInBytes = commonId.toBytes4Transfer();
+        byte[] commonIdInBytes = commonId.encode();
 
         List<KeyValue> keyValueList = (List<KeyValue>) objectArray[1];
         int keyValueCnt = keyValueList.size();

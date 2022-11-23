@@ -24,7 +24,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.driver.DriverProxyService;
+import io.dingodb.server.driver.DriverProxyServer;
 import lombok.extern.slf4j.Slf4j;
 import sqlline.DingoSqlline;
 import sqlline.SqlLine;
@@ -89,8 +89,8 @@ public class Tools {
                 Services.initControlMsgService();
                 netService.listenPort(port);
                 DingoConfiguration.instance().setPort(port);
-                DriverProxyService driverProxyService = new DriverProxyService();
-                driverProxyService.start();
+                DriverProxyServer driverProxyServer = new DriverProxyServer();
+                driverProxyServer.start();
                 break;
             case "LEVEL":
                 if (className == null || level == null || serverHost == null || serverPort <= 0) {

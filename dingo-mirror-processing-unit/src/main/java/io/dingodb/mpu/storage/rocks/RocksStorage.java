@@ -578,7 +578,7 @@ public class RocksStorage implements Storage {
             throw new RuntimeException();
         }
         try {
-            return Optional.mapOrGet(db.get(mcfHandler, CLOCK_K), PrimitiveCodec::readLong, () -> 0L);
+            return Optional.mapOrGet(db.get(mcfHandler, CLOCK_K), PrimitiveCodec::decodeLong, () -> 0L);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -590,7 +590,7 @@ public class RocksStorage implements Storage {
             throw new RuntimeException();
         }
         try {
-            return Optional.mapOrGet(instruction.get(icfHandler, CLOCK_K), PrimitiveCodec::readLong, () -> 0L);
+            return Optional.mapOrGet(instruction.get(icfHandler, CLOCK_K), PrimitiveCodec::decodeLong, () -> 0L);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }

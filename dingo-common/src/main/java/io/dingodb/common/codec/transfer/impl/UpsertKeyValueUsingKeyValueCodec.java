@@ -40,7 +40,7 @@ public class UpsertKeyValueUsingKeyValueCodec implements KeyValueTransferCodeC {
         byte[] commonIdInBytes = new byte[commonIdLen];
         byteBuffer.get(commonIdInBytes);
 
-        CommonId commonId = CommonId.fromBytes4Transfer(commonIdInBytes);
+        CommonId commonId = CommonId.decode(commonIdInBytes);
         objectArray.add(commonId);
 
         int keyLen = byteBuffer.getInt();
@@ -68,7 +68,7 @@ public class UpsertKeyValueUsingKeyValueCodec implements KeyValueTransferCodeC {
         }
 
         CommonId commonId = (CommonId) objectArray[0];
-        byte[] commonIdInBytes = commonId.toBytes4Transfer();
+        byte[] commonIdInBytes = commonId.encode();
 
         KeyValue keyValue = (KeyValue) objectArray[1];
         int keyLen = (keyValue.getKey() == null) ? 0 : (keyValue.getKey().length);

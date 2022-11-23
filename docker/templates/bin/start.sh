@@ -20,6 +20,7 @@ COORDINATOR_JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
 EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
 DRIVER_JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
 WEB_JAR_PATH=$(find $ROOT -name dingo-web*.jar)
+NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 ROLE=$DINGO_ROLE
 HOSTNAME=$DINGO_HOSTNAME
@@ -38,7 +39,7 @@ if [[ $ROLE == "coordinator" ]]
 then
     java ${JAVA_OPTS} \
          -Dlogback.configurationFile=file:${ROOT}/conf/logback-coordinator.xml \
-         -classpath ${COORDINATOR_JAR_PATH} \
+         -classpath ${COORDINATOR_JAR_PATH}:${NET_JAR_PATH} \
          io.dingodb.server.coordinator.Starter \
          --config ${ROOT}/conf/coordinator.yaml \
          > ${ROOT}/log/coordinator.out
@@ -64,7 +65,7 @@ elif [[ $ROLE == "web" ]]
 then
     java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
-     -jar ${WEB_JAR_PATH} \
+     -jar ${WEB_JAR_PATH}:${NET_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application.yaml \
      io.dingodb.web.DingoApplication \
      > ${ROOT}/log/web.out

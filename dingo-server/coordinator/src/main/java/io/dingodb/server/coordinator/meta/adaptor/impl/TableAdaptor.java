@@ -18,14 +18,15 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.NoBreakFunctions;
+import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.ClusterScheduler;
@@ -35,21 +36,19 @@ import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
@@ -58,18 +57,20 @@ import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 public class TableAdaptor extends BaseAdaptor<Table> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table);
+    public static final byte[] SEQ_KEY = META_ID.encode();
 
     private final ColumnAdaptor columnAdaptor;
     private final TablePartAdaptor tablePartAdaptor;
-    private final Map<String, CommonId> tableIdMap = new ConcurrentHashMap<>();
-    private final Map<String, CommonId> idMap = new ConcurrentHashMap<>();
+    private final Map<CommonId, Map<String, CommonId>> idNameMap = new ConcurrentHashMap<>();
 
     public TableAdaptor(MetaStore metaStore) {
         super(metaStore);
         this.columnAdaptor = new ColumnAdaptor(metaStore);
         this.tablePartAdaptor = new TablePartAdaptor(metaStore);
-        this.metaMap.forEach((id, table) -> tableIdMap.put(table.getName(), id));
-        this.metaMap.forEach((id, table) -> idMap.put(id.toString(), id));
+        this.metaMap.values().forEach(table -> idNameMap
+            .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
+            .put(table.getName(), table.getId())
+        );
         MetaAdaptorRegistry.register(Table.class, this);
     }
 
@@ -90,13 +91,11 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     @Override
     protected CommonId newId(Table table) {
         CommonId id = new CommonId(
-            META_ID.type(),
-            META_ID.identifier(),
-            table.getSchema().seqContent(),
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            META_ID.type(), META_ID.identifier(), table.getSchema().seq(), metaStore.generateSeq(SEQ_KEY), 1
         );
-        tableIdMap.put(table.getName(), id);
-        idMap.put(id.toString(), id);
+        idNameMap
+            .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
+            .put(table.getName(), id);
         return id;
     }
 
@@ -165,83 +164,49 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         metaStore.upsertKeyValue(keyValues);
     }
 
+    @SuppressWarnings("checkstyle:MultipleVariableDeclarations")
     private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) throws IOException {
         List<TablePart> tablePartList = new ArrayList<>();
         String partType = definition.getPartType();
+        int primaryKeyCount = definition.getPrimaryKeyCount();
         if ("range".equalsIgnoreCase(partType)) {
-            List<DingoPartDetail> partDetailList = definition.getDingoTablePart().getPartDetailList();
-            // get part key mapping
-            TupleMapping partKeyMapping = definition.getDingoTablePart().getPartMapping(definition);
-            KeyValueCodec partKeyCodec = new DingoKeyValueCodec(definition.getDingoType(), partKeyMapping);
+            List<DingoPartDetail> partDetailList = definition.getDingoTablePart().getPartDetails();
+            KeyValueCodec partKeyCodec = new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
+            Iterator<byte[]> keys = partDetailList.stream()
+                .map(DingoPartDetail::getOperand)
+                .map(operand -> operand.toArray(new Object[primaryKeyCount]))
+                .map(NoBreakFunctions.wrap(partKeyCodec::encodeKey))
+                .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
+                .iterator();
 
-            // 1. sort pre part key start
-            // 2. remove repeat part
-            List<byte[]> prePartKeyList = new ArrayList<>();
-            boolean isRepeat = false;
-            for (int i = 0; i < partDetailList.size(); i ++) {
-                DingoPartDetail dingoPartDetail = partDetailList.get(i);
-                byte[] endKey = partKeyCodec.encodeKey(dingoPartDetail.getOperand().toArray());
-                isRepeat = false;
-                for (byte[] prePartKey : prePartKeyList) {
-                    if (ByteArrayUtils.compare(endKey, prePartKey) == 0) {
-                        isRepeat = true;
-                        break;
-                    }
-                }
-                if (!isRepeat) {
-                    prePartKeyList.add(endKey);
-                }
-            }
-            Collections.sort(prePartKeyList, new Comparator<byte[]>() {
-                @Override
-                public int compare(byte[] o1, byte[] o2) {
-                    return ByteArrayUtils.compare(o1, o2);
-                }
-            });
-            // sort pre part key end
-
-            for (int i = 0; i < prePartKeyList.size(); i ++) {
-                byte[] endKey = prePartKeyList.get(i);
-                TablePart tablePart = null;
-                if (i == 0) {
+            byte [] start = EMPTY_BYTES, key;
+            TablePart tablePart;
+            while (keys.hasNext()) {
+                key = keys.next();
+                tablePartList.add(
                     tablePart = TablePart.builder()
-                        .version(0)
+                        .version(1)
                         .schema(table.getSchema())
                         .table(table.getId())
-                        .start(EMPTY_BYTES)
-                        .end(endKey)
+                        .start(start)
+                        .end(key)
                         .createTime(System.currentTimeMillis())
-                        .build();
-                } else {
-                    TablePart pre = tablePartList.get(tablePartList.size() - 1);
-                    tablePart = TablePart.builder()
-                        .version(0)
-                        .schema(table.getSchema())
-                        .table(table.getId())
-                        .start(pre.getEnd())
-                        .end(endKey)
-                        .createTime(System.currentTimeMillis())
-                        .build();
-                }
-                if (tablePart != null) {
-                    tablePart.setId(tablePartAdaptor.newId(tablePart));
-                    tablePartList.add(tablePart);
-                }
+                        .build()
+                );
+                tablePart.setId(tablePartAdaptor.newId(tablePart));
+                start = key;
             }
-            TablePart tablePart = TablePart.builder()
-                .version(0)
-                .schema(table.getSchema())
-                .table(table.getId())
-                .start(tablePartList.get(tablePartList.size() - 1).getEnd())
-                .end(null)
-                .createTime(System.currentTimeMillis())
-                .build();
+            tablePartList.add(
+                tablePart = TablePart.builder()
+                    .version(1)
+                    .schema(table.getSchema())
+                    .table(table.getId())
+                    .start(start)
+                    .end(null)
+                    .createTime(System.currentTimeMillis())
+                    .build()
+            );
             tablePart.setId(tablePartAdaptor.newId(tablePart));
-            tablePartList.add(tablePart);
-            log.info("pre part size:" + tablePartList.size());
-            for (TablePart tmp : tablePartList) {
-                log.info("pre part:" + tmp);
-            }
         }
         return tablePartList;
     }
@@ -276,13 +241,13 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     @Override
     protected void doDelete(Table table) {
         CommonId id = table.getId();
-        List<Column> columns = columnAdaptor.getByDomain(id.seqContent());
-        List<TablePart> tableParts = tablePartAdaptor.getByDomain(id.seqContent());
+        List<Column> columns = columnAdaptor.getByDomain(id.seq());
+        List<TablePart> tableParts = tablePartAdaptor.getByDomain(id.seq());
         ArrayList<byte[]> keys = new ArrayList<>(columns.size() + tableParts.size() + 1);
         columns.forEach(column -> keys.add(column.getId().encode()));
         tableParts.forEach(part -> keys.add(part.getId().encode()));
         ReplicaAdaptor replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
-        tableParts.stream().flatMap(part -> replicaAdaptor.getByDomain(part.getId().seqContent()).stream())
+        tableParts.stream().flatMap(part -> replicaAdaptor.getByDomain(part.getId().seq()).stream())
             .map(Replica::getId)
             .peek(replicaAdaptor::delete)
             .map(CommonId::encode)
@@ -293,27 +258,24 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         tableParts.stream()
             .map(TablePart::getId)
             .peek(tablePartAdaptor::delete)
-            .flatMap(partId -> replicaAdaptor.getByDomain(partId.seqContent()).stream())
+            .flatMap(partId -> replicaAdaptor.getByDomain(partId.seq()).stream())
             .map(Replica::getId)
             .forEach(replicaAdaptor::delete);
-        columnAdaptor.deleteByDomain(id.domainContent());
+        columnAdaptor.deleteByDomain(id.domain());
         ClusterScheduler.instance().getTableScheduler(id).deleteTable();
         ClusterScheduler.instance().deleteTableScheduler(id);
     }
 
-    public Boolean delete(String tableName) {
-        if (tableIdMap.containsKey(tableName)) {
-            CommonId id = tableIdMap.get(tableName);
-            idMap.remove(id.toString());
-            tableIdMap.remove(tableName);
-            delete(id);
-            return true;
-        }
-        return false;
+
+    public boolean delete(CommonId id, String tableName) {
+        return Optional.ofNullable(idNameMap.get(id))
+            .map(__ -> __.remove(tableName))
+            .ifPresent(this::delete)
+            .isPresent();
     }
 
-    public TableDefinition get(String tableName) {
-        return metaToDefinition(get(tableIdMap.get(tableName)));
+    public TableDefinition get(CommonId schemaId, String tableName) {
+        return getDefinition(getTableId(schemaId, tableName));
     }
 
     public TableDefinition getDefinition(CommonId id) {
@@ -323,27 +285,25 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         return metaToDefinition(get(id));
     }
 
-    public List<CommonId> getAllKey() {
-        return new ArrayList<>(tableIdMap.values());
+    public Map<String, TableDefinition> getAllDefinition(CommonId id) {
+        return Optional.ofNullable(idNameMap.get(id)).map(Map::values).map(__ -> __.stream()
+            .map(this::getDefinition)
+            .collect(Collectors.toMap(TableDefinition::getName, Function.identity())
+        )).orElseGet(HashMap::new);
     }
 
-    public Map<String, TableDefinition> getAllDefinition() {
-        return getAll().stream().map(this::metaToDefinition)
-            .collect(Collectors.toMap(TableDefinition::getName, Function.identity()));
-    }
-
-    public CommonId getTableId(String tableName) {
-        return tableIdMap.get(tableName);
+    public CommonId getTableId(CommonId id, String tableName) {
+        return Optional.mapOrNull(idNameMap.get(id), __ -> __.get(tableName));
     }
 
     private TableDefinition metaToDefinition(Table table) {
         TableDefinition tableDefinition = new TableDefinition(table.getName());
-        List<ColumnDefinition> columnDefinitions = columnAdaptor.getByDomain(encodeInt(table.getId().seq())).stream()
+        List<ColumnDefinition> columnDefinitions = columnAdaptor.getByDomain(table.getId().seq()).stream()
             .map(this::metaToDefinition)
             .collect(Collectors.toList());
         tableDefinition.setColumns(columnDefinitions);
         tableDefinition.setDingoTablePart(table.getDingoTablePart());
-        tableDefinition.setAttrMap(table.getAttrMap());
+        tableDefinition.setAttrMap(table.getProperties());
         tableDefinition.setPartType(table.getPartType());
         if (log.isInfoEnabled()) {
             log.info("Meta to table definition: {}", tableDefinition);
@@ -354,16 +314,15 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     private ColumnDefinition metaToDefinition(Column column) {
         return ColumnDefinition.builder()
             .name(column.getName())
-            .notNull(column.isNotNull())
+            .nullable(column.isNullable())
             .precision(column.getPrecision())
             .primary(column.isPrimary())
             .scale(column.getScale())
-            .type(SqlTypeName.get(column.getType()))
-            .elementType(SqlTypeName.get(column.getElementType()))
+            .type(column.getType())
+            .elementType(column.getElementType())
             .defaultValue(column.getDefaultValue())
             .build();
     }
-
 
     private Table definitionToMeta(CommonId schemaId, TableDefinition definition) {
         return Table.builder()
@@ -372,92 +331,25 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .partMaxCount(CoordinatorConfiguration.schedule().getDefaultAutoMaxCount())
             .partMaxSize(CoordinatorConfiguration.schedule().getDefaultAutoMaxSize())
             .autoSplit(CoordinatorConfiguration.schedule().isAutoSplit())
-            .attrMap(definition.getAttrMap())
+            .properties(definition.getAttrMap())
             .partType(definition.getPartType())
             .dingoTablePart(definition.getDingoTablePart())
             .build();
     }
 
     private Column definitionToMeta(Table table, ColumnDefinition definition) {
-        SqlTypeName elementTypeName = definition.getElementType();
         return Column.builder()
             .name(definition.getName())
             .precision(definition.getPrecision())
             .primary(definition.isPrimary())
             .scale(definition.getScale())
-            .type(definition.getType().getName())
-            .elementType(elementTypeName == null ? null : elementTypeName.getName())
-            .notNull(definition.isNotNull())
+            .type(definition.getTypeName())
+            .elementType(definition.getElementType())
+            .nullable(definition.isNullable())
             .table(table.getId())
             .schema(table.getSchema())
             .defaultValue(definition.getDefaultValue())
             .build();
-    }
-
-    public Integer getUdfVersion(CommonId id, String udfName) {
-        byte[] udfKey = udfNameCommonIdToBytes(id, udfName);
-        byte[] versionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
-        if (versionBytes == null) {
-            return 0;
-        }
-        return bytesToInt(versionBytes);
-    }
-
-    public Integer updateUdfVersion(CommonId id, String udfName) {
-        byte[] udfKey = udfNameCommonIdToBytes(id, udfName);
-        byte[] versionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
-        if (versionBytes == null) {
-            this.metaStore.upsertKeyValue(udfKey, intToBytes(1));
-            return 1;
-        }
-        Integer version = bytesToInt(versionBytes);
-        version++;
-        this.metaStore.upsertKeyValue(udfKey, intToBytes(version));
-        return version;
-    }
-
-    public boolean updateUdfFunction(CommonId id, String udfName, Integer version, String function) {
-        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
-        return this.metaStore.upsertKeyValue(udfKey, function.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public boolean deleteUdfFunction(CommonId id, String udfName, Integer version) {
-        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
-        return this.metaStore.delete(udfKey);
-    }
-
-    public String getUdfFunction(CommonId id, String udfName, Integer version) {
-        byte[] udfKey = udfNameCommonIdVersionToBytes(id, udfName, version);
-        byte[] functionBytes = this.metaStore.getValueByPrimaryKey(udfKey);
-        if (functionBytes == null) {
-            return null;
-        }
-        return new String(functionBytes, StandardCharsets.UTF_8);
-    }
-
-    private byte[] udfNameCommonIdToBytes(CommonId id, String udfName) {
-        byte[] udfNameBytes = udfName.getBytes(StandardCharsets.UTF_8);
-        byte[] idBytes = id.encode();
-        return ByteArrayUtils.concateByteArray(udfNameBytes, idBytes);
-    }
-
-    private byte[] udfNameCommonIdVersionToBytes(CommonId id, String udfName, Integer version) {
-        byte[] udfNameCommonIdBytes = udfNameCommonIdToBytes(id, udfName);
-        byte[] versionBytes = intToBytes(version);
-        return ByteArrayUtils.concateByteArray(udfNameCommonIdBytes, versionBytes);
-    }
-
-    private byte[] intToBytes(Integer num) {
-        return num.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    private Integer bytesToInt(byte[] numBytes) {
-        String numStr = new String(numBytes, StandardCharsets.UTF_8);
-        return Integer.parseInt(numStr);
-    }
-
-    public CommonId getTableIdByIdString(CommonId id) {
-        return idMap.get(id.toString());
     }
 
     @AutoService(BaseAdaptor.Creator.class)
@@ -470,7 +362,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
     public static int getTtl(Table table) {
         int ttl = -1;
-        Map<String, Object> attrMap = table.getAttrMap();
+        Map<String, Object> attrMap = table.getProperties();
         if (attrMap == null || attrMap.isEmpty()) {
             return ttl;
         }

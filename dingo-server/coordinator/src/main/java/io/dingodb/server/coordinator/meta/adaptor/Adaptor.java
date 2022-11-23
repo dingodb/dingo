@@ -31,7 +31,7 @@ public interface Adaptor<M> {
 
     void delete(CommonId id);
 
-    List<M> getByDomain(byte[] domain);
+    List<M> getByDomain(int domain);
 
     Collection<M> getAll();
 

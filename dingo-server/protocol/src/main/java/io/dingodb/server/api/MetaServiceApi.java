@@ -17,55 +17,52 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.Part;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.server.protocol.meta.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
 public interface MetaServiceApi {
 
     @ApiDeclaration
-    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
+    CommonId rootId();
 
     @ApiDeclaration
-    boolean dropTable(@NonNull String tableName);
+    void createSubMetaService(CommonId id, String name);
 
     @ApiDeclaration
-    byte[] getTableKey(@NonNull String tableName);
+    Map<String, Schema> getSubSchemas(CommonId id);
 
     @ApiDeclaration
-    CommonId getTableId(@NonNull String tableName);
+    Schema getSubSchema(CommonId id, String name);
 
     @ApiDeclaration
-    byte[] getIndexId(@NonNull String tableName);
+    boolean dropSchema(CommonId id, String name);
 
     @ApiDeclaration
-    Map<String, TableDefinition> getTableDefinitions();
+    void createTable(CommonId id, @NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
     @ApiDeclaration
-    NavigableMap<ComparableByteArray, Part> getParts(String name);
+    boolean dropTable(CommonId id, @NonNull String tableName);
 
     @ApiDeclaration
-    List<Location> getDistributes(String name);
+    CommonId getTableId(CommonId id, @NonNull String tableName);
 
     @ApiDeclaration
-    TableDefinition getTableDefinition(@NonNull CommonId commonId);
+    Map<String, TableDefinition> getTableDefinitions(CommonId id);
 
     @ApiDeclaration
-    int registerUDF(CommonId id, String udfName, String function);
+    TableDefinition getTableDefinition(CommonId id, @NonNull String name);
 
     @ApiDeclaration
-    boolean unregisterUDF(CommonId id, String udfName, int version);
+    TableDefinition getTableDefinition(CommonId id);
 
     @ApiDeclaration
-    String getUDF(CommonId id, String udfName);
+    NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String name);
 
-    @ApiDeclaration
-    String getUDF(CommonId id, String udfName, int version);
 }

@@ -23,7 +23,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("binary")
@@ -53,8 +52,4 @@ public class BinaryType extends AbstractScalarType {
         return converter.convertBinaryFrom(value);
     }
 
-    @Override
-    protected Schema.Type getAvroSchemaType() {
-        return Schema.Type.BYTES;
-    }
 }

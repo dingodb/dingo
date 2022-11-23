@@ -43,8 +43,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static io.dingodb.server.coordinator.schedule.processor.TableStoreProcessor.applyTablePart;
-
 @Getter
 @Setter
 @Accessors(fluent = true)
@@ -87,45 +85,8 @@ public class SplitPartProcessor {
     }
 
     public byte[] estimateSplitKey(TablePartStats stats) {
-        List<TablePartStats.ApproximateStats> approximateStats = stats.getApproximateStats();
-        Table table = tableAdaptor.get(tableId);
-        if (!table.isAutoSplit() || approximateStats == null || approximateStats.size() <= 1) {
-            return null;
-        }
-        long totalCount = 0;
-        long totalSize = 0;
-        byte[] halfCountKey = null;
-        byte[] halfSizeKey = null;
-        byte[] splitKey = null;
-        long halfSize = table.getPartMaxSize() / 2;
-        long halfCount = table.getPartMaxCount() / 2;
-        for (TablePartStats.ApproximateStats approximateStat : approximateStats) {
-            totalCount += approximateStat.getCount();
-            totalSize += approximateStat.getSize();
-            if (totalSize >= halfSize && halfSizeKey == null) {
-                if (totalSize - halfSize > halfSize - totalSize + approximateStat.getSize()) {
-                    halfSizeKey = approximateStat.getStartKey();
-                } else {
-                    halfSizeKey = approximateStat.getEndKey();
-                }
-            }
-            if (totalCount >= halfCount && halfCountKey == null) {
-                if (totalCount - halfCount > halfCount - totalCount + approximateStat.getCount()) {
-                    halfCountKey = approximateStat.getStartKey();
-                } else {
-                    halfCountKey = approximateStat.getEndKey();
-                }
-            }
-            if (totalSize >= table.getPartMaxSize()) {
-                splitKey = halfSizeKey;
-                break;
-            }
-            if (totalCount >= table.getPartMaxCount()) {
-                splitKey = halfCountKey;
-                break;
-            }
-        }
-        return splitKey;
+        // todo get median key from store
+        return null;
     }
 
     public void processSplitTask(SplitTask task) {
@@ -151,9 +112,10 @@ public class SplitPartProcessor {
     }
 
     private void reassignPart(TablePart oldPart, SplitTask task) {
-        List<Replica> replicas = replicaAdaptor.getByDomain(oldPart.getId().seqContent());
+        // todo split
+        List<Replica> replicas = replicaAdaptor.getByDomain(oldPart.getId().seq());
         List<Location> locations = replicas.stream().map(Replica::location).collect(Collectors.toList());
-        replicas.forEach(replica -> applyTablePart(oldPart, replica.getExecutor(), locations, true));
+        // replicas.forEach(replica -> applyTablePart(oldPart, replica.getExecutor(), locations, true));
         task.setStep(SplitTask.Step.FINISH);
         splitTaskAdaptor.save(task);
     }
@@ -179,7 +141,7 @@ public class SplitPartProcessor {
     }
 
     public SplitTask createTask(CommonId part, byte[] splitKey) {
-        SplitTask task = Optional.of(splitTaskAdaptor.getByDomain(part.seqContent()))
+        SplitTask task = Optional.of(splitTaskAdaptor.getByDomain(part.seq()))
             .filter(tasks -> !tasks.isEmpty())
             .map(tasks -> tasks.get(0))
             .ifAbsentSet(() -> splitTaskAdaptor.newTask(part))

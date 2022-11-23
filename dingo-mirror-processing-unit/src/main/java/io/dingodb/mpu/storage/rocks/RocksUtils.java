@@ -41,7 +41,7 @@ public class RocksUtils {
     }
 
     public static byte[] getValueWithTs(byte[] value, byte[] tsArray) {
-        return ByteArrayUtils.concateByteArray(value, tsArray);
+        return ByteArrayUtils.concatByteArray(value, tsArray);
     }
 
     public static byte[] getValueWithTs(byte[] value, int timestamp) {

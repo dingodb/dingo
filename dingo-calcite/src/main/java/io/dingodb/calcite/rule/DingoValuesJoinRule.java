@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.LogicalDingoValues;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.CalcValueUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -49,7 +50,7 @@ public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> imp
         LogicalDingoValues value1 = call.rel(2);
         List<Object[]> tuples = new LinkedList<>();
         if (join.getJoinType() == JoinRelType.INNER) {
-            DingoType type = DingoTypeFactory.fromRelDataType(join.getRowType());
+            DingoType type = DefinitionMapper.mapToDingoType(join.getRowType());
             EvalEnv env = CalcValueUtils.getEnv(call);
             try {
                 for (Object[] v0 : value0.getTuples()) {

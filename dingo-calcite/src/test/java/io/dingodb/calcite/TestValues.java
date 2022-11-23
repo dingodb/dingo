@@ -17,13 +17,13 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.converter.CsvConverter;
+import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -55,6 +55,7 @@ public class TestValues {
 
     @BeforeAll
     public static void setupAll() {
+        MockMetaServiceProvider.init();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
     }
 
@@ -127,9 +128,9 @@ public class TestValues {
         SqlNode sqlNode = parser.parse("select " + expr.replace('\"', '\''));
         assertSelectValues(sqlNode);
         DingoValues values = getDingoValues(sqlNode);
-        DingoType type = DingoTypeFactory.fromRelDataType(values.getRowType());
+        DingoType type = DefinitionMapper.mapToDingoType(values.getRowType());
         assertThat(values.getTuples()).containsExactly(
-            (Object[]) type.convertFrom(new Object[]{result}, CsvConverter.INSTANCE)
+            (Object[]) type.convertFrom(new Object[]{result}, StrParseConverter.INSTANCE)
         );
     }
 

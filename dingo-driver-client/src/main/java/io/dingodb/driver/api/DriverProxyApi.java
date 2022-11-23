@@ -16,7 +16,7 @@
 
 package io.dingodb.driver.api;
 
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 import org.apache.calcite.avatica.remote.Service;
 
 public interface DriverProxyApi {

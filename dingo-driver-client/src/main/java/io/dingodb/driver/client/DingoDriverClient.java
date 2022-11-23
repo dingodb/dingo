@@ -18,6 +18,8 @@ package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
 import io.dingodb.driver.DingoServiceImpl;
+import io.dingodb.driver.api.MetaApi;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
@@ -26,7 +28,6 @@ import org.apache.calcite.avatica.DriverVersion;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.DingoRemoteMeta;
 import org.apache.calcite.avatica.remote.Driver;
-import org.apache.calcite.avatica.remote.Service;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -194,8 +195,10 @@ public class DingoDriverClient extends Driver {
         Supplier<Location> locationSupplier = () -> location;
 
         NetConfiguration.resetAllTimeout(timeout);
-        final Service service = new DingoServiceImpl(locationSupplier, timeout);
+        final DingoServiceImpl service = new DingoServiceImpl(locationSupplier, timeout);
         connection.setService(service);
-        return new DingoRemoteMeta(connection, service);
+        return new DingoRemoteMeta(
+            connection, service, ApiRegistry.getDefault().proxy(MetaApi.class, locationSupplier, timeout)
+        );
     }
 }

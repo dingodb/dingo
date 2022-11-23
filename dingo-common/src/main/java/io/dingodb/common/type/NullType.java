@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -57,11 +56,6 @@ public class NullType extends AbstractDingoType {
     @Override
     public DingoType copy() {
         return this;
-    }
-
-    @Override
-    public @NonNull Schema toAvroSchema() {
-        return Schema.create(Schema.Type.NULL);
     }
 
     @Override

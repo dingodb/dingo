@@ -21,8 +21,10 @@ import io.dingodb.meta.MetaService;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DingoSchema extends MutableSchema {
     DingoSchema(MetaService metaService) {
@@ -31,7 +33,7 @@ public class DingoSchema extends MutableSchema {
 
     @Override
     protected Map<String, Table> getTableMap() {
-        Map<String, TableDefinition> tds = MetaCache.getTableDefinitionsMap();
+        Map<String, TableDefinition> tds = metaService.getTableDefinitions();
         if (tds == null) {
             return super.getTableMap(); // empty map
         }
@@ -42,6 +44,9 @@ public class DingoSchema extends MutableSchema {
 
     @Override
     protected Map<String, Schema> getSubSchemaMap() {
-        return super.getSubSchemaMap();
+        return Collections.emptyMap();
+        // todo wait meta cache support multi schema
+        //return metaService.getSubMetaServices().entrySet().stream()
+        //    .collect(Collectors.toMap(Map.Entry::getKey, e -> new DingoSchema(e.getValue())));
     }
 }

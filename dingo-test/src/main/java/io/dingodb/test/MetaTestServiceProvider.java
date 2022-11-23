@@ -20,10 +20,10 @@ import com.google.auto.service.AutoService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 
-@AutoService(MetaServiceProvider.class)
+//@AutoService(MetaServiceProvider.class)
 public class MetaTestServiceProvider implements MetaServiceProvider {
     @Override
-    public MetaService get() {
+    public MetaService root() {
         return MetaTestService.INSTANCE;
     }
 }

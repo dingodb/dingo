@@ -93,7 +93,7 @@ public class Connection  {
     protected Channel createChannel(long channelId) {
         return channels.computeIfAbsent(
             channelId,
-            id -> new Channel(channelId, this, new LinkedRunner(fmtName(remote.getUrl(), channelId)), channels::remove)
+            id -> new Channel(channelId, this, new LinkedRunner(fmtName(remote.url(), channelId)), channels::remove)
         );
     }
 
@@ -109,12 +109,12 @@ public class Connection  {
 
     public void handshake() {
         ApiRegistryImpl.instance().proxy(HandshakeApi.class, channel).handshake(null, Handshake.INSTANCE);
-        log.info("Connection open, remote: [{}]", remote.getUrl());
+        log.info("Connection open, remote: [{}]", remote.url());
     }
 
     public void handshake(ByteBuffer message) {
         if (message.getLong() != 0 || message.get() != API_T || !HANDSHAKE.equals(readString(message))) {
-            log.error("Illegal connection [{}].", remote.getUrl());
+            log.error("Illegal connection [{}].", remote.url());
             close();
             return;
         }
@@ -127,16 +127,16 @@ public class Connection  {
             AuthService<Object> authService = authServiceProvider.get();
             certificates.put(authService.tag(), authService.createCertificate());
         }
-        ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, certificates);
-        log.info("Connection auth success, remote: [{}]", remote.getUrl());
+        authContent = ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, certificates);
+        log.info("Connection auth success, remote: [{}]", remote.url());
         heartbeatFuture = Executors.scheduleWithFixedDelayAsync(
-            String.format("%s-heartbeat", remote.getUrl()), this::sendHeartbeat, 0, 1, SECONDS
+            String.format("%s-heartbeat", remote.url()), this::sendHeartbeat, 0, 1, SECONDS
         );
     }
 
     public void auth(ByteBuffer message) {
         if (message.getLong() != 0 || message.get() != API_T || !AUTH.equals(readString(message))) {
-            log.error("Illegal connection [{}].", remote.getUrl());
+            log.error("Illegal connection [{}].", remote.url());
             close();
             return;
         }

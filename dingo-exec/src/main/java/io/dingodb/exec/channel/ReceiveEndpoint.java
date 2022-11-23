@@ -64,6 +64,8 @@ public class ReceiveEndpoint {
                     return;
                 }
                 break;
+            default:
+                throw new IllegalStateException("Unexpected status: " + status);
         }
         byte[] content;
         try {
@@ -73,12 +75,7 @@ public class ReceiveEndpoint {
                 host, port, tag, status, e);
             throw new RuntimeException("Serialize control message failed.", e);
         }
-        channel.send(
-            Message.builder()
-                .tag(CTRL_TAG)
-                .content(content)
-                .build()
-        );
+        channel.send(new Message(CTRL_TAG, content));
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Sent control message \"{}\".", tag, status);
         }

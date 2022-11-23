@@ -46,6 +46,7 @@ dependencies {
     testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation project(':dingo-test')
+    testImplementation project(':dingo-test:dingo-meta-local')
 
     fmppTask "com.googlecode.fmpp-maven-plugin:fmpp-maven-plugin:1.0"
     fmppTask "org.freemarker:freemarker:2.3.31"

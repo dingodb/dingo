@@ -18,7 +18,6 @@ package io.dingodb.common.table;
 
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.NumberSerializers;
-import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class PrecisionSerializer extends NumberSerializers.IntegerSerializer {
@@ -30,6 +29,6 @@ public class PrecisionSerializer extends NumberSerializers.IntegerSerializer {
 
     @Override
     public boolean isEmpty(SerializerProvider provider, @NonNull Object value) {
-        return value.equals(RelDataType.PRECISION_NOT_SPECIFIED);
+        return value.equals(ColumnDefinition.DEFAULT_PRECISION);
     }
 }

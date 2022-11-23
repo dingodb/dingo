@@ -18,12 +18,12 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
-import io.dingodb.calcite.utils.RuleUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -70,12 +70,11 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         }
 
         Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getDingoType().toDingoSchema(0)), null, true);
-        byte[] prefixBytes = null;
+            td.getColumn(firstPrimaryColumnIndex).getType().toDingoSchema(0)), null, true);
+        byte[] prefixBytes;
         try {
             prefixBytes = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
-                prefix,
-                DingoTypeFactory.fromRelDataType(prefix.getType())
+                prefix, DefinitionMapper.mapToDingoType(prefix.getType())
             )});
         } catch (IOException e) {
             log.error("Some errors occurred in encodeKeyForRangeScan: ", e);
@@ -85,7 +84,7 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         if (prefix.getTypeName() == SqlTypeName.CHAR) {
             byte lastByte = prefixBytes[prefixBytes.length - 1];
             if (lastByte < 0) {
-                prefixBytes = RuleUtils.getBytesByInterceptingNBits(prefixBytes, (int) lastByte);
+                prefixBytes = ByteArrayUtils.slice(prefixBytes, 0, prefixBytes.length - Math.abs(lastByte));
             }
         }
 
@@ -110,9 +109,7 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
                     .predicate(r -> {
                             if (r.getFilter() != null && r.getFilter() instanceof RexCall) {
                                 RexCall filter = (RexCall) r.getFilter();
-                                if (filter.getKind() == SqlKind.LIKE || filter.op.getName().equals("LIKE_BINARY")) {
-                                    return true;
-                                }
+                                return filter.getKind() == SqlKind.LIKE || filter.op.getName().equals("LIKE_BINARY");
                             }
                             return false;
                         }

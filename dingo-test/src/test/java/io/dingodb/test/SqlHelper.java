@@ -22,11 +22,14 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.util.CsvUtils;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
+import io.dingodb.meta.Part;
+import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertResultSet;
+import io.dingodb.test.util.CsvUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -40,10 +43,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,10 +69,22 @@ public class SqlHelper {
                 Objects.requireNonNull(SqlHelper.class.getResource("/config.yaml")).getPath()
             );
         }
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         Services.NET.listenPort(FakeLocation.PORT);
         connection = getLocalConnection();
+        TreeMap<ByteArrayUtils.ComparableByteArray, Part> defaultPart = new TreeMap<>();
+        byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
+        byte[] endKey = ByteArrayUtils.MAX_BYTES;
+        defaultPart.put(new ByteArrayUtils.ComparableByteArray(startKey), new Part(
+            startKey,
+            new FakeLocation(1),
+            Collections.singletonList(new FakeLocation(1)),
+            startKey,
+            endKey
+        ));
+        MetaService metaService = MetaService.ROOT;
+        metaService.setParts(defaultPart);
+        MetaService.setLocation(new FakeLocation(0));
     }
 
     public SqlHelper(Connection connection) {
@@ -131,7 +148,8 @@ public class SqlHelper {
 
     public void cleanUp() throws SQLException {
         connection.close();
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).clear();
+        MetaService.clear();
+        MetaTestService.INSTANCE.clear();
     }
 
     public DatabaseMetaData metaData() throws SQLException {

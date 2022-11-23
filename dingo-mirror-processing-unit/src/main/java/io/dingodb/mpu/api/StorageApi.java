@@ -18,7 +18,7 @@ package io.dingodb.mpu.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.net.api.annotation.ApiDeclaration;
+import io.dingodb.common.annotation.ApiDeclaration;
 
 import static io.dingodb.mpu.Constant.API;
 

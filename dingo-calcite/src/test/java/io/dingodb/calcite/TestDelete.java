@@ -47,6 +47,7 @@ public class TestDelete {
 
     @BeforeAll
     public static void setupAll() {
+        MockMetaServiceProvider.init();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
     }
 

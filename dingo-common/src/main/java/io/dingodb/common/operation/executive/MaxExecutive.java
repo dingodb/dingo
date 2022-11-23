@@ -51,7 +51,7 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                     if (keyIndex.length > 0) {
                         Object[] objects = context.dingoKeyCodec().decodeKey(keyValue.getKey(), keyIndex);
                         for (int i = 0; i < objects.length; i++) {
-                            DingoType dingoType = definition.getColumn(keyIndex[i]).getDingoType();
+                            DingoType dingoType = definition.getColumn(keyIndex[i]).getType();
                             ComputeNumber number = convertType(objects[i], dingoType);
                             map.merge(definition.getColumn(keyIndex[i]).getName(), number, ComputeNumber::max);
                         }
@@ -61,7 +61,7 @@ public class MaxExecutive extends NumberExecutive<BasicContext, Iterator<KeyValu
                         int keyCount = definition.getPrimaryKeyCount();
                         for (int i = 0; i < objects.length; i++) {
                             ColumnDefinition columnDefinition = definition.getColumn(valueIndex[i] + keyCount);
-                            ComputeNumber number = convertType(objects[i], columnDefinition.getDingoType());
+                            ComputeNumber number = convertType(objects[i], columnDefinition.getType());
                             map.merge(columnDefinition.getName(), number, ComputeNumber::max);
                         }
                     }

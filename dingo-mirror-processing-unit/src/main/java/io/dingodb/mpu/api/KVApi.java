@@ -17,9 +17,9 @@
 package io.dingodb.mpu.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.mpu.core.MPURegister;
 import io.dingodb.mpu.instruction.KVInstructions;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 
 public interface KVApi {
 

@@ -20,11 +20,26 @@ plugins {
 }
 
 dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+
     api project(':dingo-net-api')
     implementation project(":dingo-common")
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
-    implementation group: 'commons-codec', name: 'commons-codec', version: 'commons-codec'.v()
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compile group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+}
 
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()}
+task fatJar(type: Jar) {
+    classifier 'all'
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}

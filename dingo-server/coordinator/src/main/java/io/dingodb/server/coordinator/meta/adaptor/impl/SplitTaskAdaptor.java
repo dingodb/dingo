@@ -22,7 +22,6 @@ import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.schedule.SplitTask;
 import io.dingodb.server.coordinator.store.MetaStore;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TASK_IDENTIFIER;
 
@@ -45,10 +44,8 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            encodeInt(1),
-            metaStore.generateSeq(
-                CommonId.prefix(META_ID.type(), META_ID.identifier()).encode()
-            )
+            1,
+            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
@@ -56,7 +53,7 @@ public class SplitTaskAdaptor extends BaseAdaptor<SplitTask> {
     protected void doSave(SplitTask task) {
         if (task.getStep() == SplitTask.Step.FINISH) {
             CommonId oldId = task.getId();
-            task.setId(new CommonId(oldId.type(), oldId.identifier(), encodeInt(0), oldId.seqContent()));
+            task.setId(new CommonId(oldId.type(), oldId.identifier(), 0, oldId.seq()));
             metaStore.upsertKeyValue(task.getId().encode(), encodeMeta(task));
             metaStore.delete(oldId.encode());
         } else {

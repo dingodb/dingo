@@ -18,12 +18,12 @@ package io.dingodb.mpu.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.core.MPURegister;
 import io.dingodb.mpu.protocol.SelectReturn;
 import io.dingodb.mpu.protocol.SyncChannel;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 
 import static io.dingodb.mpu.Constant.API;
 

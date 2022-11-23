@@ -16,7 +16,7 @@
 
 package io.dingodb.net;
 
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.codec.VarNumberCodec;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.error.FormattingError;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeZigZagInt;
+import static io.dingodb.common.codec.VarNumberCodec.encodeZigZagInt;
 
 /**
  * Net error. 31XXX Net service error. 32XXX rpc error. 39XXX Other error.
@@ -117,11 +117,11 @@ public enum NetError implements FormattingError {
     }
 
     public Message message() {
-        return Message.builder().content(encodeZigZagInt(getCode())).build();
+        return new Message(encodeZigZagInt(getCode()));
     }
 
     public static Message message(DingoException err) {
-        return Message.builder().content(encodeZigZagInt(err.getCode())).build();
+        return new Message(encodeZigZagInt(err.getCode()));
     }
 
     private static Map<Integer, NetError> valueOfCache;
@@ -144,10 +144,10 @@ public enum NetError implements FormattingError {
     }
 
     public static FormattingError valueOf(byte[] bytes) {
-        return valueOf(PrimitiveCodec.readZigZagInt(bytes));
+        return valueOf(VarNumberCodec.readZigZagInt(bytes));
     }
 
     public static FormattingError valueOf(ByteBuffer buffer) {
-        return valueOf(PrimitiveCodec.readZigZagInt(buffer));
+        return valueOf(VarNumberCodec.readZigZagInt(buffer));
     }
 }

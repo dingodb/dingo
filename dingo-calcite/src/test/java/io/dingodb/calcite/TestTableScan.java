@@ -57,6 +57,7 @@ public class TestTableScan {
 
     @BeforeAll
     public static void setupAll() {
+        MockMetaServiceProvider.init();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
         currentLocation = dingoSchema.getMetaService().currentLocation();
@@ -73,7 +74,7 @@ public class TestTableScan {
     @ValueSource(strings = {
         "select * from test",
         "select * from TeST",
-        "select * from mock.test",
+        "select * from dingo.test",
     })
     public void testScan(String sql) throws SqlParseException {
         // To logical plan.

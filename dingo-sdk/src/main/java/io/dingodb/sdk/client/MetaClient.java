@@ -16,36 +16,56 @@
 
 package io.dingodb.sdk.client;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.meta.MetaService;
+import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.api.CodeUDFApi;
 import io.dingodb.server.api.MetaServiceApi;
 import lombok.experimental.Delegate;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
 
 public class MetaClient extends ClientBase implements MetaService {
     @Delegate
     private MetaServiceApi metaServiceApi;
+    @Delegate
+    private CodeUDFApi codeUDFApi;
 
     public MetaClient(String coordinatorExchangeSvrList) {
         super(coordinatorExchangeSvrList);
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "DINGO";
     }
 
-    @Override
-    public void init(@Nullable Map<String, Object> props) throws Exception {
+    public void init() throws Exception {
         super.initConnection();
         metaServiceApi = super.getNetService()
             .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
+        codeUDFApi = ApiRegistry.getDefault().proxy(CodeUDFApi.class, super.getCoordinatorConnector());
     }
 
     @Override
-    public void clear() {
+    public CommonId id() {
+        return null;
+    }
+
+    @Override
+    public Map<String, MetaService> getSubMetaServices(CommonId id) {
+        return null;
+    }
+
+    @Override
+    public MetaService getSubMetaService(CommonId id, String name) {
+        return null;
+    }
+
+    @Override
+    public boolean dropSubMetaService(CommonId id, String name) {
+        return false;
     }
 
     @Override

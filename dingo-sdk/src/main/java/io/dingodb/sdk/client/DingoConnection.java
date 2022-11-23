@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  * Instantiate a connection to access a dingo database cluster.
  *
  * <p>The conneciton has two main members:
- * <br> 1.{@link io.dingodb.sdk.client.MetaClient} is used to get meta from coordinator
+ * <br> 1.{@link MetaClient} is used to get meta from coordinator
  * <br> 2.{@link io.dingodb.net.api.ApiRegistry} is used to do operation on executor
  *
  * <p><b>When the instance is constructed, the connection MUST open first.</b>
@@ -52,7 +52,7 @@ public class DingoConnection extends ClientBase {
     @Override
     public void initConnection() throws Exception {
         super.initConnection();
-        this.metaClient.init(null);
+        this.metaClient.init();
         this.apiRegistry = super.getNetService().apiRegistry();
     }
 

@@ -16,7 +16,6 @@
 
 package io.dingodb.server.protocol;
 
-import io.dingodb.common.codec.PrimitiveCodec;
 import lombok.experimental.FieldNameConstants;
 
 
@@ -29,8 +28,9 @@ public class CommonIdConstant {
     public static final IndexIdentifier INDEX_IDENTIFIER = new IndexIdentifier();
     public static final StatsIdentifier STATS_IDENTIFIER = new StatsIdentifier();
     public static final TaskIdentifier TASK_IDENTIFIER = new TaskIdentifier();
+    public static final FunctionIdentifier FUNCTION_IDENTIFIER = new FunctionIdentifier();
     public static final OtherIdentifier OTHER_IDENTIFIER = new OtherIdentifier();
-    public static final byte[] ZERO_DOMAIN = PrimitiveCodec.encodeInt(0);
+    public static final int ROOT_DOMAIN = 1;
 
     @FieldNameConstants(asEnum = true)
     public static final class IdType {
@@ -39,7 +39,8 @@ public class CommonIdConstant {
         public final byte stats = 'S';
         public final byte data = 'D';
         public final byte index = 'I';
-        public final byte task = '0';
+        public final byte task = 'J';
+        public final byte function = 'F';
         public final byte other = 'O';
 
         private IdType() {
@@ -100,6 +101,14 @@ public class CommonIdConstant {
         public final byte[] split = new byte[] {'K', 'S'};
 
         private TaskIdentifier() {
+        }
+    }
+
+    @FieldNameConstants
+    public static final class FunctionIdentifier {
+        public final byte[] codeUDF = new byte[] {'U', 'C'};
+
+        private FunctionIdentifier() {
         }
     }
 

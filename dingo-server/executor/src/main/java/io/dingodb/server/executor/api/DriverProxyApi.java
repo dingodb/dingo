@@ -17,11 +17,11 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.net.NetService;
-import io.dingodb.server.driver.DriverProxyService;
+import io.dingodb.server.driver.DriverProxyServer;
 
 public class DriverProxyApi implements io.dingodb.server.api.DriverProxyApi {
 
-    private final DriverProxyService service = new DriverProxyService();
+    private final DriverProxyServer service = new DriverProxyServer();
 
     public DriverProxyApi(NetService netService) {
         netService.apiRegistry().register(io.dingodb.server.api.DriverProxyApi.class, this);

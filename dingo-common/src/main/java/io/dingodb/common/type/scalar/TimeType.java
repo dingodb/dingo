@@ -25,7 +25,6 @@ import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -65,8 +64,4 @@ public class TimeType extends AbstractScalarType {
         return converter.convertTimeFrom(value);
     }
 
-    @Override
-    protected Schema.Type getAvroSchemaType() {
-        return Schema.Type.LONG;
-    }
 }

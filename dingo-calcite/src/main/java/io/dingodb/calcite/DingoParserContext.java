@@ -61,9 +61,11 @@ public final class DingoParserContext implements Context {
         rootSchema.add("map", mapType);
 
         // Register all the functions
-//        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
-//            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
-//        });
+        /*
+        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
+            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
+        });
+         */
     }
 
     @SuppressWarnings("MethodMayBeStatic")

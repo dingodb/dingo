@@ -21,7 +21,6 @@ import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -32,11 +31,6 @@ public abstract class AbstractScalarType extends NullableType {
         super(typeCode, nullable);
     }
 
-    @Override
-    protected Schema toAvroSchemaNotNull() {
-        Schema.Type t = getAvroSchemaType();
-        return Schema.create(t);
-    }
 
     @Override
     public List<DingoSchema> toDingoSchemas() {
@@ -69,5 +63,4 @@ public abstract class AbstractScalarType extends NullableType {
         return nullable ? name + "|" + NullType.NULL : name;
     }
 
-    protected abstract Schema.Type getAvroSchemaType();
 }

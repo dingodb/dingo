@@ -16,8 +16,8 @@
 
 package io.dingodb.common.type;
 
-import io.dingodb.common.type.converter.CsvConverter;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.expr.core.TypeCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -75,6 +75,6 @@ public abstract class AbstractDingoType implements DingoType {
 
     @Override
     public Object parse(@Nullable Object value) {
-        return convertFrom(value, CsvConverter.INSTANCE);
+        return convertFrom(value, StrParseConverter.INSTANCE);
     }
 }

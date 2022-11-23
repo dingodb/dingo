@@ -43,6 +43,10 @@ public class Parser implements Serializable {
     private static final long serialVersionUID = -4801322278537134701L;
     protected final ObjectMapper mapper;
 
+    static {
+
+    }
+
     protected Parser(@NonNull DataFormat format) {
         switch (format) {
             case APPLICATION_JSON:
@@ -97,6 +101,12 @@ public class Parser implements Serializable {
             default:
                 throw new IllegalArgumentException("Unsupported format \"" + format + "\".");
         }
+    }
+
+    public static void registerSubtypes(Class<?>... classes) {
+        JSON.mapper.registerSubtypes(classes);
+        YAML.mapper.registerSubtypes(classes);
+        CSV.mapper.registerSubtypes(classes);
     }
 
     public <T> T parse(String json, Class<T> clazz) throws JsonProcessingException {

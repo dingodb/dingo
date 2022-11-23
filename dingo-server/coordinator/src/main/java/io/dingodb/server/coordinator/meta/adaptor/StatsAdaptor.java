@@ -30,7 +30,7 @@ public interface StatsAdaptor<S extends Stats> {
 
     S getStats(CommonId id);
 
-    List<S> getByDomain(byte[] domain);
+    List<S> getByDomain(int domain);
 
     Collection<S> getAllStats();
 

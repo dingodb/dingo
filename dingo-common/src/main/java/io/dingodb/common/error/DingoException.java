@@ -79,9 +79,10 @@ public class DingoException extends RuntimeException implements IndirectError {
     public static Integer EXECUTOR_NODE_FAIL = 90024;
     public static HashMap<Pattern, Integer> CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
     public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
-    // TODO
-    //public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
-    //public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
+    /* TODO
+    public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
+    public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
+     */
 
     static {
         CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();

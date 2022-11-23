@@ -18,10 +18,7 @@ package io.dingodb.server.protocol;
 
 public class Tags {
 
-    public static final String RAFT_SERVICE = "RAFT_SERVICE";
-    public static final String LISTEN_RAFT_LEADER = "RAFT_SERVICE";
-    public static final String META_SERVICE = "META_SERVICE";
-    public static final String SERVICE_STATS = "SERVICE_STATS";
+    public static final String LISTEN_SERVICE_LEADER = "LISTEN_SERVICE";
 
     private Tags() {
     }

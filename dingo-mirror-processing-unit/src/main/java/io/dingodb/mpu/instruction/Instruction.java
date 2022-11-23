@@ -39,8 +39,6 @@ public class Instruction {
 
     public final transient CompletableFuture<Object> future;
 
-    public long time = System.currentTimeMillis();
-
     public Instruction(long clock, byte instructions, short opcode) {
         this(clock, instructions, opcode, new Object[0]);
     }
@@ -67,7 +65,7 @@ public class Instruction {
         byte namespace = buffer.get();
         short opcode = buffer.getShort();
         Object[] operand = ProtostuffCodec.read(buffer);
-        return new Instruction(sequence, namespace, opcode, operand, null, System.currentTimeMillis());
+        return new Instruction(sequence, namespace, opcode, operand, null);
     }
 
 

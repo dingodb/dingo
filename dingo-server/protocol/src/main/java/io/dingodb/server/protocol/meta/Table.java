@@ -63,7 +63,7 @@ public class Table implements Meta {
 
     private int version;
 
-    private Map<String,Object> attrMap;
+    private Map<String,Object> properties;
 
     private DingoTablePart dingoTablePart;
 

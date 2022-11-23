@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
-import static io.dingodb.server.protocol.CommonIdConstant.ZERO_DOMAIN;
 
 public class ExecutorAdaptor extends BaseAdaptor<Executor> {
 
@@ -64,8 +64,7 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
     public CommonId newId(Executor executor) {
         return new CommonId(
             META_ID.type(),
-            META_ID.identifier(),
-            ZERO_DOMAIN,
+            META_ID.identifier(), ROOT_DOMAIN,
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }

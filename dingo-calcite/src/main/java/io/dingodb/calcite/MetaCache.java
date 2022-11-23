@@ -49,7 +49,7 @@ public class MetaCache {
     static {
         for (MetaService ms : Services.metaServices.values()) {
             log.info("MetaCache, static, metaservice name: {}.",
-                ms.getName());
+                ms.name());
             metaService = ms;
         }
         Map<String, TableDefinition> definitions;

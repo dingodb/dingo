@@ -66,7 +66,7 @@ public class QueryPlanTest {
 
     @Test
     public void testExplainScan() throws SQLException {
-        String sql = "explain plan for select * from test.test";
+        String sql = "explain plan for select * from dingo.test";
         sqlHelper.explainTest(
             sql
         );

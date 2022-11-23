@@ -56,6 +56,10 @@ public final class ProtostuffCodec {
         schema = RuntimeSchema.getSchema(ProtostuffWrapper.class);
     }
 
+    public static <T> void registerSchema(Class<T> cls, Schema<T> schema) {
+        RuntimeSchema.register(cls, schema);
+    }
+
     public static <T> T read(byte[] bytes) {
         return INSTANCE.readMessage(ByteBuffer.wrap(bytes), null);
     }

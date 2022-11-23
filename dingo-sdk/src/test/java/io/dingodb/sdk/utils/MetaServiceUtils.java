@@ -18,6 +18,9 @@ package io.dingodb.sdk.utils;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoConnection;
@@ -42,7 +45,7 @@ public class MetaServiceUtils {
             null,
             null,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -52,7 +55,7 @@ public class MetaServiceUtils {
             null,
             200,
             0,
-            true,
+            false,
             true,
             null)
         );
@@ -62,7 +65,7 @@ public class MetaServiceUtils {
             null,
             null,
             3,
-            true,
+            false,
             true,
             null)
         );
@@ -79,7 +82,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -90,7 +93,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -101,7 +104,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -112,7 +115,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -123,7 +126,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );
@@ -134,7 +137,7 @@ public class MetaServiceUtils {
             null,
             200,
             null,
-            true,
+            false,
             true,
             null)
         );

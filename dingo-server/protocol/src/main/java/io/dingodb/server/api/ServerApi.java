@@ -17,8 +17,8 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.store.Part;
-import io.dingodb.net.api.annotation.ApiDeclaration;
 import io.dingodb.server.protocol.meta.Executor;
 
 import java.util.List;

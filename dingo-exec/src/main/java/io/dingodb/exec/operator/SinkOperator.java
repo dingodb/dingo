@@ -39,10 +39,11 @@ public abstract class SinkOperator extends AbstractOperator {
         fin(fin);
     }
 
+    protected abstract void fin(Fin fin);
+
     @Override
     public List<Output> getOutputs() {
         return ImmutableList.of();
     }
 
-    protected abstract void fin(Fin fin);
 }

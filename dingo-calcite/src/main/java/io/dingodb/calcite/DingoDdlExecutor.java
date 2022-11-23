@@ -22,7 +22,9 @@ import io.dingodb.common.partition.DingoPartDetail;
 import io.dingodb.common.partition.DingoTablePart;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.type.converter.StrParseConverter;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Parameters;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -49,8 +51,6 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.math.BigInteger;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -68,7 +68,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
         @NonNull SqlColumnDeclaration scd,
         SqlValidator validator,
-        List<String> primaryKeyList
+        List<String> pkSet
     ) {
         SqlDataTypeSpec typeSpec = scd.dataType;
         RelDataType dataType = typeSpec.deriveType(validator, true);
@@ -95,25 +95,24 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
-        String name = scd.name.getSimple();
-        boolean isPrimary = (primaryKeyList != null && primaryKeyList.contains(name));
+        String name = scd.name.getSimple().toUpperCase();
+        boolean isPrimary = (pkSet != null && pkSet.contains(name));
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()
-            .name(name.toUpperCase())
-            .type(typeName)
-            .elementType(elementTypeName)
+            .name(name)
+            .type(typeName.getName())
+            .elementType(Optional.mapOrNull(elementTypeName, SqlTypeName::getName))
             .precision(precision)
             .scale(scale)
-            .notNull(isPrimary || !dataType.isNullable())
+            .nullable(!isPrimary && dataType.isNullable())
             .primary(isPrimary)
             .defaultValue(defaultValue)
             .build();
     }
 
     private static @NonNull Pair<MutableSchema, String> getSchemaAndTableName(
-        @NonNull SqlIdentifier id,
-        CalcitePrepare.@NonNull Context context
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
     ) {
         CalciteSchema rootSchema = context.getMutableRootSchema();
         assert rootSchema != null : "No root schema.";
@@ -146,62 +145,58 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @SuppressWarnings({"unused"})
-    public void execute(SqlCreateTable create, CalcitePrepare.Context context) {
-
+    public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
+        DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         log.info("DDL execute: {}", create);
         final Pair<MutableSchema, String> schemaTableName
             = getSchemaAndTableName(create.name, context);
-        List<String> keyList = null;
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
                 RESOURCE.createTableRequiresColumnList());
         }
-        for (SqlNode sqlNode : create.columnList) {
-            if (sqlNode instanceof SqlKeyConstraint) {
-                SqlKeyConstraint constraint = (SqlKeyConstraint) sqlNode;
-                if (constraint.getOperator().getKind() == SqlKind.PRIMARY_KEY) {
-                    // The 0th element is the name of the constraint
-                    keyList = ((SqlNodeList) constraint.getOperandList().get(1)).getList().stream()
-                        .map(t -> ((SqlIdentifier) Objects.requireNonNull(t)).getSimple())
-                        .collect(Collectors.toList());
-                    break;
-                }
-            }
-        }
-        try {
-            validatorCreateTable(keyList, create);
-        } catch (SQLException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-        final String tableName = schemaTableName.right;
-        TableDefinition td = new TableDefinition(tableName);
-        DingoSqlCreateTable dingoSqlCreateTable = (DingoSqlCreateTable) create;
-        td.setAttrMap(dingoSqlCreateTable.getAttrMap());
-        td.setPartType(dingoSqlCreateTable.getPartType());
-        td.setDingoTablePart(dingoSqlCreateTable.getDingoTablePart());
+
+        // Get all primary key
+        List<String> pks = create.columnList.stream()
+            .filter(SqlKeyConstraint.class::isInstance)
+            .map(SqlKeyConstraint.class::cast)
+            .filter(constraint -> constraint.getOperator().getKind() == SqlKind.PRIMARY_KEY)
+            // The 0th element is the name of the constraint
+            .map(constraint -> (SqlNodeList) constraint.getOperandList().get(1))
+            .findAny().map(sqlNodes -> sqlNodes.getList().stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new))
+            ).filter(ks -> !ks.isEmpty())
+            .orElseThrow(() -> new RuntimeException("Primary keys are required in table definition."));
         SqlValidator validator = new ContextSqlValidator(context, true);
-        for (SqlNode sqlNode : create.columnList) {
-            if (sqlNode.getKind() == SqlKind.COLUMN_DECL) {
-                // Check the precision of time and timestamp
-                SqlColumnDeclaration scd = (SqlColumnDeclaration) sqlNode;
-                ColumnDefinition cd = fromSqlColumnDeclaration(scd, validator, keyList);
-                td.addColumn(cd);
-            }
-        }
-        if (td.getColumns().stream().noneMatch(ColumnDefinition::isPrimary)) {
-            throw new RuntimeException("Primary keys are required in table definition.");
+
+        // Mapping, column node -> column definition
+        List<ColumnDefinition> columns = create.columnList.stream()
+            .filter(col -> col.getKind() == SqlKind.COLUMN_DECL)
+            .map(col -> fromSqlColumnDeclaration((SqlColumnDeclaration) col, validator, pks))
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        // Validate partition strategy
+        if (create.getPartType() != null) {
+            validatePartitionBy(pks, columns, create.getPartType(), create.getDingoTablePart());
         }
 
-        long distinctColCnt = td.getColumns().stream().map(ColumnDefinition::getName).distinct().count();
-        long realColCnt = td.getColumns().size();
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+
+        // Distinct column
+        long distinctColCnt = columns.stream().map(ColumnDefinition::getName).distinct().count();
+        long realColCnt = columns.size();
         if (distinctColCnt != realColCnt) {
             throw new RuntimeException("Duplicate column names are not allowed in table definition. Total: "
                 + realColCnt + ", distinct: " + distinctColCnt);
         }
 
-        final MutableSchema schema = schemaTableName.left;
-        assert schema != null;
+        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+
+        // Check table exist
         if (schema.getTable(tableName) != null) {
             if (!create.ifNotExists) {
                 // They did not specify IF NOT EXISTS, so give error.
@@ -209,10 +204,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     create.name.getParserPosition(),
                     RESOURCE.tableExists(tableName)
                 );
+            } else {
+                return;
             }
         }
-        assert tableName != null;
-        schema.createTable(tableName, td);
+
+        schema.createTable(tableName, new TableDefinition(
+            tableName,
+            columns,
+            null,
+            1,
+            create.getPartType(),
+            create.getAttrMap(),
+            create.getDingoTablePart()
+        ));
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
@@ -238,20 +243,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
         final Pair<MutableSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
-        final MutableSchema schema = schemaTableName.left;
-        final String tableName = schemaTableName.right;
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
+        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName.toUpperCase());
         if (tableDefinition == null) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString()));
         }
 
-        final boolean existed;
-        assert schema != null;
-        assert tableName != null;
-        existed = schema.dropTable(tableName);
-        if (false) {
+        if (schema.dropTable(tableName)) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString())
@@ -261,51 +262,38 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     }
 
-    public void validatorCreateTable(List<String> keyList, SqlCreateTable create) throws SQLException {
-        DingoSqlCreateTable dingoSqlCreateTable = (DingoSqlCreateTable) create;
-        String partType = dingoSqlCreateTable.getPartType();
-        if (partType != null) {
-            if (partType.equalsIgnoreCase("range")) {
-                DingoTablePart dingoTablePart = dingoSqlCreateTable.getDingoTablePart();
-                List<String> cols = dingoTablePart.getCols();
-
-                int partColsSize = cols.size();
-
-                List<DingoPartDetail> rangePartList = dingoTablePart.getPartDetailList();
-                for (DingoPartDetail rangePart : rangePartList) {
-                    if (rangePart.getOperand().size() != partColsSize) {
-                        throw new SQLException("keep all partition types consistent!");
-                    }
-                    for (int i = 0; i < rangePart.getOperand().size(); i ++) {
-                        String colType = dingoTablePart.getColumnTypeByNm(cols.get(i), create);
-                        Object operand = rangePart.getOperand().get(i);
-                        // becase javacc compile BigInteger for int
-                        if (operand instanceof BigInteger) {
-                            operand = ((BigInteger) operand).intValue();
-                            rangePart.getOperand().set(i, operand);
-                        }
-
-                        if ("VARCHAR".equalsIgnoreCase(colType)) {
-                            rangePart.getOperand().set(i, new String(operand.toString()));
-                        } else if ("DOUBLE".equalsIgnoreCase(colType)) {
-                            rangePart.getOperand().set(i, new Double(operand.toString()));
-                        } else if ("DATE".equalsIgnoreCase(colType)) {
-                            rangePart.getOperand().set(i, DateTimeUtils.parseDate(operand.toString()));
-                        } else if ("TIME".equalsIgnoreCase(colType)) {
-                            rangePart.getOperand().set(i, DateTimeUtils.parseTime(operand.toString()));
-                        } else if ("TIMESTAMP".equalsIgnoreCase(colType)) {
-                            rangePart.getOperand().set(i, DateTimeUtils.parseTimestamp(operand.toString()));
-                        }
-                    }
+    public void validatePartitionBy(
+        @NonNull List<String> keyList,
+        @NonNull List<ColumnDefinition> cols,
+        @NonNull String strategy,
+        @NonNull DingoTablePart dingoTablePart
+    ) {
+        StrParseConverter converter = StrParseConverter.INSTANCE;
+        cols = cols.stream().filter(col -> keyList.contains(col.getName())).collect(Collectors.toList());
+        switch (strategy.toUpperCase()) {
+            case "RANGE":
+                if (dingoTablePart.getCols() == null || dingoTablePart.getCols().isEmpty()) {
+                    dingoTablePart.setCols(keyList);
+                } else {
+                    dingoTablePart.setCols(
+                        dingoTablePart.getCols().stream().map(String::toUpperCase).collect(Collectors.toList())
+                    );
+                }
+                if (!keyList.equals(dingoTablePart.getCols())) {
+                    throw new IllegalArgumentException(
+                        "Partition columns must be equals primary key columns, but " + dingoTablePart.getCols()
+                    );
                 }
 
-                for (String partCol : cols) {
-                    if (!keyList.contains(partCol)) {
-                        throw new SQLException("partition columns must be a subset of primary key columns.");
+                for (DingoPartDetail rangePart : dingoTablePart.getPartDetails()) {
+                    List<Object> operand = rangePart.getOperand();
+                    for (int i = 0; i < operand.size(); i++) {
+                        operand.set(i, cols.get(i).getType().convertFrom(operand.get(i).toString(), converter));
                     }
                 }
-
-            }
+                break;
+            default:
+                throw new IllegalStateException("Unsupported " + strategy);
         }
     }
 }

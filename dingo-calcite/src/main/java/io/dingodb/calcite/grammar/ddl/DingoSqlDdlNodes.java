@@ -28,14 +28,29 @@ import java.util.Map;
 public class DingoSqlDdlNodes {
 
     /** Creates a CREATE TABLE. */
-    public static SqlCreateTable createTable(SqlParserPos pos, boolean replace,
-                                             boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList,
-                                             SqlNode query,
-                                             Map<String,Object> attrMap,
-                                             String partType,
-                                             DingoTablePart dingoTablePart) {
-        return new DingoSqlCreateTable(pos, replace, ifNotExists, name, columnList,
-            query, attrMap, partType, dingoTablePart);
+    public static SqlCreateTable createTable(
+        SqlParserPos pos,
+        boolean replace,
+        boolean ifNotExists,
+        SqlIdentifier name,
+        SqlNodeList columnList,
+        SqlNode query,
+        Map<String,Object> attrMap,
+        String partType,
+        DingoTablePart dingoTablePart
+    ) {
+
+        return new DingoSqlCreateTable(
+            pos,
+            replace,
+            ifNotExists,
+            name,
+            columnList,
+            query,
+            attrMap,
+            partType,
+            dingoTablePart
+        );
     }
 
 }

@@ -27,12 +27,10 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.serial.schema.DingoSchema;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ColumnStrategy;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -45,10 +43,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @JsonPropertyOrder({"name", "columns"})
 @EqualsAndHashCode
+@AllArgsConstructor
 public class TableDefinition {
     private static final Parser PARSER = Parser.JSON;
 
@@ -69,10 +67,16 @@ public class TableDefinition {
     @Getter
     private int version;
 
+    @Getter
+    @Setter
     private String partType;
 
+    @Getter
+    @Setter
     private Map<String, Object> attrMap;
 
+    @Getter
+    @Setter
     private DingoTablePart dingoTablePart;
 
     @JsonCreator
@@ -90,30 +94,6 @@ public class TableDefinition {
 
     public String getName() {
         return name.toUpperCase();
-    }
-
-    public String getPartType() {
-        return partType;
-    }
-
-    public void setPartType(String partType) {
-        this.partType = partType;
-    }
-
-    public Map<String, Object> getAttrMap() {
-        return attrMap;
-    }
-
-    public void setAttrMap(Map<String, Object> attrMap) {
-        this.attrMap = attrMap;
-    }
-
-    public DingoTablePart getDingoTablePart() {
-        return dingoTablePart;
-    }
-
-    public void setDingoTablePart(DingoTablePart dingoTablePart) {
-        this.dingoTablePart = dingoTablePart;
     }
 
     public TableDefinition addColumn(ColumnDefinition column) {
@@ -176,14 +156,6 @@ public class TableDefinition {
         return columns.size();
     }
 
-    public RelDataType getRelDataType(@NonNull RelDataTypeFactory typeFactory) {
-        // make column name uppercase to adapt to calcite
-        return typeFactory.createStructType(
-            columns.stream().map(c -> c.getRelDataType(typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
-        );
-    }
-
     public TupleMapping getKeyMapping() {
         return getColumnMapping(true);
     }
@@ -234,7 +206,7 @@ public class TableDefinition {
         int index = 0;
         for (ColumnDefinition column : columns) {
             if (column.isPrimary()) {
-                keySchema.add(column.getDingoType().toDingoSchema(index++));
+                keySchema.add(column.getType().toDingoSchema(index++));
             }
         }
         return keySchema;
@@ -245,7 +217,7 @@ public class TableDefinition {
         int index = 0;
         for (ColumnDefinition column : columns) {
             if (!column.isPrimary()) {
-                valueSchema.add(column.getDingoType().toDingoSchema(index++));
+                valueSchema.add(column.getType().toDingoSchema(index++));
             }
         }
         return valueSchema;
@@ -254,7 +226,7 @@ public class TableDefinition {
     public List<DingoSchema> getDingoSchema() {
         List<DingoSchema> schema = new ArrayList<>();
         for (int i = 0; i < columns.size(); i++) {
-            schema.add(columns.get(i).getDingoType().toDingoSchema(i));
+            schema.add(columns.get(i).getType().toDingoSchema(i));
         }
         return schema;
     }
@@ -262,7 +234,7 @@ public class TableDefinition {
     public DingoType getDingoType() {
         return DingoTypeFactory.tuple(
             columns.stream()
-                .map(ColumnDefinition::getDingoType)
+                .map(ColumnDefinition::getType)
                 .toArray(DingoType[]::new)
         );
     }
@@ -271,13 +243,9 @@ public class TableDefinition {
         return DingoTypeFactory.tuple(
             getColumnMapping(keyOrValue).stream()
                 .mapToObj(columns::get)
-                .map(ColumnDefinition::getDingoType)
+                .map(ColumnDefinition::getType)
                 .toArray(DingoType[]::new)
         );
-    }
-
-    public ColumnStrategy getColumnStrategy(int index) {
-        return columns.get(index).getColumnStrategy();
     }
 
     public String toJson() throws JsonProcessingException {

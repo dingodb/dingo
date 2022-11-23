@@ -52,7 +52,7 @@ public interface Unsafe {
             if (Unsafe.class.isAssignableFrom(clazz)) {
                 return UnsafeAccessor.UNSAFE_ACCESSOR;
             }
-            throw new RuntimeException(clazz + " does not implement java.io.Serializable.");
+            throw new RuntimeException(clazz + " does not implement <Unsafe>.");
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

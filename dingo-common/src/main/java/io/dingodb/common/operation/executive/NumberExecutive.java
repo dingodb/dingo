@@ -60,7 +60,7 @@ public abstract class NumberExecutive<D extends OperationContext, T extends Iter
 
         return DingoTypeFactory.tuple(TupleMapping.of(mappings).stream()
             .mapToObj(context.definition.getColumns()::get)
-            .map(ColumnDefinition::getDingoType)
+            .map(ColumnDefinition::getType)
             .toArray(DingoType[]::new));
     }
 

@@ -64,10 +64,7 @@ public final class JobRunner {
             // it is just ignored. Just distribute all the tasks to avoid this.
             try {
                 Channel channel = Services.openNewSysChannel(location.getHost(), location.getPort());
-                Message msg = Message.builder()
-                    .tag(TASK_TAG)
-                    .content(task.serialize())
-                    .build();
+                Message msg = new Message(TASK_TAG, task.serialize());
                 channel.send(msg);
                 channel.close();
             } catch (Exception e) {

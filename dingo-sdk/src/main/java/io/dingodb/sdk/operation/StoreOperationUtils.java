@@ -17,12 +17,12 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
@@ -265,7 +265,7 @@ public class StoreOperationUtils {
         RouteTable routeTable = dingoRouteTables.get(tableName);
         if (routeTable == null) {
             MetaClient metaClient = connection.getMetaClient();
-            TableDefinition tableDefinition = metaClient.getTableDefinition(tableName);
+            TableDefinition tableDefinition = metaClient.getTableDefinition(tableName.toUpperCase());
             if (tableDefinition == null) {
                 log.error("Cannot find table:{} definition from meta", tableName);
                 return null;
@@ -302,7 +302,7 @@ public class StoreOperationUtils {
         TableDefinition tableDef = tableDefinitionInCache.get(tableName);
         if (tableDef == null) {
             MetaClient metaClient = connection.getMetaClient();
-            tableDef = metaClient.getTableDefinition(tableName);
+            tableDef = metaClient.getTableDefinition(tableName.toUpperCase());
             if (tableDef != null) {
                 tableDefinitionInCache.put(tableName, tableDef);
             }

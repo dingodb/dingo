@@ -19,258 +19,73 @@ package io.dingodb.common.codec;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class PrimitiveCodec {
+import static io.dingodb.common.codec.VarNumberCodec.encodeVarInt;
 
-    public static final int INT_MAX_LEN = 5;
-    public static final int LONG_MAX_LEN = 10;
+public final class PrimitiveCodec {
 
     private PrimitiveCodec() {
     }
 
-    /**
-     * Calculate the size of the {@code value} encoded with VarInt.
-     */
-    public static int computeVarIntSize(int value) {
-        int count = 0;
-        while (true) {
-            if ((value & ~0x7F) == 0) {
-                count++;
-                return count;
-            } else {
-                count++;
-                value >>>= 7;
-            }
-        }
+    public static byte[] encodeInt(int value) {
+        return encodeInt(value, new byte[4], 0);
     }
 
-    public static byte[] encodeInt(int value) {
-        byte[] result = new byte[4];
-        result[0] = (byte) (value >> 24);
-        result[1] = (byte) (value >> 16);
-        result[2] = (byte) (value >> 8);
-        result[3] = (byte) (value);
-        return result;
+    public static byte[] encodeInt(int value, byte[] target, int index) {
+        target[index] = (byte) (value >> 24);
+        target[index + 1] = (byte) (value >> 16);
+        target[index + 2] = (byte) (value >> 8);
+        target[index + 3] = (byte) (value);
+        return target;
     }
 
     public static byte[] encodeLong(long value) {
-        byte[] result = new byte[8];
-        result[0] = (byte) (value >> 56);
-        result[1] = (byte) (value >> 48);
-        result[2] = (byte) (value >> 40);
-        result[3] = (byte) (value >> 32);
-        result[4] = (byte) (value >> 24);
-        result[5] = (byte) (value >> 16);
-        result[6] = (byte) (value >> 8);
-        result[7] = (byte) (value);
-        return result;
+        return encodeLong(value, new byte[8], 0);
     }
 
-    /**
-     * Encode {@code value} using VarInt.
-     */
-    public static byte[] encodeVarInt(int value) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(5);
-        while ((value & ~0x7F) != 0) {
-            outputStream.write((byte) ((value & 0x7F) | 0x80));
-            value >>>= 7;
-        }
-        outputStream.write((byte) value);
-        return outputStream.toByteArray();
+    public static byte[] encodeLong(long value, byte[] target, int index) {
+        target[index] = (byte) (value >> 56);
+        target[index + 1] = (byte) (value >> 48);
+        target[index + 2] = (byte) (value >> 40);
+        target[index + 3] = (byte) (value >> 32);
+        target[index + 4] = (byte) (value >> 24);
+        target[index + 5] = (byte) (value >> 16);
+        target[index + 6] = (byte) (value >> 8);
+        target[index + 7] = (byte) (value);
+        return target;
     }
 
-    /**
-     * Encode {@code value} using VarInt.
-     */
-    public static byte[] encodeVarLong(long value) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(LONG_MAX_LEN);
-        while ((value & ~0x7F) != 0) {
-            outputStream.write((byte) ((value & 0x7F) | 0x80));
-            value >>>= 7;
-        }
-        outputStream.write((byte) value);
-        return outputStream.toByteArray();
+    public static Integer decodeInt(byte[] bytes) {
+        return decodeInt(bytes, 0);
     }
 
-    /**
-     * Encode {@code value} using ZigZagInt.
-     */
-    public static byte[] encodeZigZagInt(int value) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(5);
-        value = (value << 1) ^ (value >> 31);
-        if ((value & ~Byte.MAX_VALUE) != 0) {
-            outputStream.write((byte) ((value | 0x80) & 0xFF));
-            value >>>= 7;
-            if (value > Byte.MAX_VALUE) {
-                outputStream.write((byte) ((value | 0x80) & 0xFF));
-                value >>>= 7;
-                if (value > Byte.MAX_VALUE) {
-                    outputStream.write((byte) ((value | 0x80) & 0xFF));
-                    value >>>= 7;
-                    if (value > Byte.MAX_VALUE) {
-                        outputStream.write((byte) ((value | 0x80) & 0xFF));
-                        value >>>= 7;
-                    }
-                }
-            }
-        }
-        outputStream.write(((byte) value));
-        return outputStream.toByteArray();
-    }
-
-    public static Integer readInt(byte[] bytes) {
+    public static Integer decodeInt(byte[] bytes, int index) {
         if (bytes == null) {
             return null;
         }
-        return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8 | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+        return bytes[index + 3] & 0xFF | (bytes[index + 2] & 0xFF) << 8
+            | (bytes[index + 1] & 0xFF) << 16 | (bytes[index] & 0xFF) << 24;
     }
 
-    public static Long readLong(byte[] bytes) {
+    public static Long decodeLong(byte[] bytes) {
+        return decodeLong(bytes, 0);
+    }
+
+    public static Long decodeLong(byte[] bytes, int index) {
         if (bytes == null) {
             return null;
         }
-        return bytes[7] & 0xFFL | (bytes[6] & 0xFFL) << 8 | (bytes[5] & 0xFFL) << 16 | (bytes[4] & 0xFFL) << 24
-            | (bytes[3] & 0xFFL) << 32 | (bytes[2] & 0xFFL) << 40 | (bytes[1] & 0xFFL) << 48 | (bytes[0] & 0xFFL) << 56;
-    }
-
-    /**
-     * Read int from {@code bytes}, and use VarInt load.
-     */
-    public static Integer readVarInt(byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        int position = 0;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        int maxBytes = INT_MAX_LEN;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            result ^= ((b = (bytes[position++] & 0XFF)) & 0X7F) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read int from {@code bytes}, and use VarInt load.
-     */
-    public static Integer readVarInt(ByteBuffer buf) {
-        int readerIndex = buf.position();
-        int maxBytes = INT_MAX_LEN;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (!buf.hasRemaining()) {
-                buf.position(readerIndex);
-                return null;
-            }
-            result ^= ((b = (buf.get() & 0XFF)) & 0X7F) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read int from {@code bytes}, and use VarInt load.
-     */
-    public static Integer readVarInt(ByteArrayInputStream bais) {
-        bais.mark(0);
-        int maxBytes = INT_MAX_LEN;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (bais.available() < 1) {
-                bais.reset();
-                return null;
-            }
-            result ^= ((b = (bais.read() & 0XFF)) & 0X7F) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read long from {@code bytes}, and use VarLong load.
-     */
-    public static Long readVarLong(byte[] bytes) {
-        int position = 0;
-        int maxBytes = LONG_MAX_LEN;
-        long b = Byte.MAX_VALUE + 1;
-        long result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            result ^= ((b = (bytes[position++] & 0XFF)) & 0X7F) << ((LONG_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read long from {@code buffer}, and use VarLong load.
-     */
-    public static Long readVarLong(ByteBuffer buf) {
-        int readerIndex = buf.position();
-        int maxBytes = LONG_MAX_LEN;
-        long b = Byte.MAX_VALUE + 1;
-        long result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (!buf.hasRemaining()) {
-                buf.position(readerIndex);
-                return null;
-            }
-            result ^= ((b = (buf.get() & 0XFF)) & 0X7F) << ((LONG_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result;
-    }
-
-    /**
-     * Read int from {@code bytes}, and use ZigZagIng load.
-     */
-    public static int readZigZagInt(byte[] bytes) {
-        int position = 0;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        int maxBytes = INT_MAX_LEN;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            result ^= ((b = (bytes[position++] & 0XFF)) & 0X7F) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result >>> 1 ^ -(result & 1);
-    }
-
-    /**
-     * Read int from {@code buf}, and use ZigZagIng load.
-     */
-    public static Integer readZigZagInt(ByteBuffer buf) {
-        int readerIndex = buf.position();
-        int maxBytes = INT_MAX_LEN;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (!buf.hasRemaining()) {
-                buf.position(readerIndex);
-                return null;
-            }
-            result ^= ((b = (buf.get() & 0XFF)) & 0X7FL) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result >>> 1 ^ -(result & 1);
-    }
-
-    /**
-     * Read int from {@code buf}, and use ZigZagIng load.
-     */
-    public static Integer readZigZagInt(ByteArrayInputStream bais) {
-        bais.mark(0);
-        int maxBytes = INT_MAX_LEN;
-        int b = Byte.MAX_VALUE + 1;
-        int result = 0;
-        while ((maxBytes >= 0) && b > Byte.MAX_VALUE) {
-            if (bais.available() < 1) {
-                bais.reset();
-                return null;
-            }
-            result ^= ((b = (bais.read() & 0XFF)) & 0X7FL) << ((INT_MAX_LEN - maxBytes--) * (Byte.SIZE - 1));
-        }
-        return result >>> 1 ^ -(result & 1);
+        return bytes[index + 7] & 0xFFL
+            | (bytes[index + 6] & 0xFFL) << 8
+            | (bytes[index + 5] & 0xFFL) << 16
+            | (bytes[index + 4] & 0xFFL) << 24
+            | (bytes[index + 3] & 0xFFL) << 32
+            | (bytes[index + 2] & 0xFFL) << 40
+            | (bytes[index + 1] & 0xFFL) << 48
+            | (bytes[index] & 0xFFL) << 56;
     }
 
     public static byte[] encodeString(String str) {
@@ -279,22 +94,21 @@ public class PrimitiveCodec {
         }
         byte[] content = str.getBytes(StandardCharsets.UTF_8);
         byte[] len = encodeVarInt(content.length);
-        byte[] result = ByteArrayUtils.concateByteArray(len, content);
-        return result;
+        return ByteArrayUtils.concatByteArray(len, content);
     }
 
 
     public static String readString(byte[] bytes) {
-        Integer len = readVarInt(bytes);
+        Integer len = VarNumberCodec.readVarInt(bytes);
         if (len == null || len < 0) {
             return null;
         }
-        return new String(bytes, computeVarIntSize(len), len);
+        return new String(bytes, VarNumberCodec.computeVarIntSize(len), len);
     }
 
     public static String readString(ByteBuffer buf) {
         int readerIndex = buf.position();
-        Integer len = readVarInt(buf);
+        Integer len = VarNumberCodec.readVarInt(buf);
         if (len == null || len < 0 || buf.limit() - buf.position() < len) {
             buf.position(readerIndex);
             return null;
@@ -304,35 +118,21 @@ public class PrimitiveCodec {
         return new String(bytes);
     }
 
-    public static String readString(ByteArrayInputStream bais) {
-        bais.mark(0);
-        Integer len = readVarInt(bais);
-        if (len == null || len < 0 || bais.available() < len) {
-            bais.reset();
-            return null;
-        }
-        byte[] bytes = new byte[len];
-        for (int i = 0; i < len; i++) {
-            bytes[i] = (byte) bais.read();
-        }
-        return new String(bytes);
-    }
-
     public static byte[] encodeArray(final byte[] content) {
         if (content == null) {
             return new byte[] {0};
         }
         byte[] len = encodeVarInt(content.length);
-        return ByteArrayUtils.concateByteArray(len, content);
+        return ByteArrayUtils.concatByteArray(len, content);
     }
 
     public static Pair<byte[], Integer> decodeArray(final byte[] bytes, final int offset) {
         byte[] lenBytes = Arrays.copyOfRange(bytes, offset, offset + 4);
-        Integer len = readVarInt(lenBytes);
+        Integer len = VarNumberCodec.readVarInt(lenBytes);
         if (len == null || len < 0) {
             return null;
         }
-        int lenOffset = computeVarIntSize(len);
+        int lenOffset = VarNumberCodec.computeVarIntSize(len);
         int totalOffset = offset + lenOffset + len;
         return new Pair(Arrays.copyOfRange(bytes, offset + lenOffset, totalOffset), lenOffset + len);
     }

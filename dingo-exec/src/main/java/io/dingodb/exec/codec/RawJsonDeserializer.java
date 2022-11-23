@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.JsonConverter;
+import io.dingodb.exec.converter.JsonConverter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;

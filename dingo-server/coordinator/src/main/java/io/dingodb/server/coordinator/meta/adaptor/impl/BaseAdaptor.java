@@ -27,14 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
-import static io.dingodb.common.codec.PrimitiveCodec.readInt;
 
 @Slf4j
 public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
@@ -90,14 +86,11 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
     }
 
     @Override
-    public List<M> getByDomain(byte[] domain) {
-        if (domain == null) {
-            return Collections.emptyList();
-        }
-        CommonId from = metaId();
-        from = CommonId.prefix(from.type(), from.identifier(), domain);
-        CommonId to = CommonId.prefix(from.type(), from.identifier(), encodeInt(readInt(domain) + 1));
-        return new ArrayList<>(metaMap.subMap(from, true, to, false).values());
+    public List<M> getByDomain(int domain) {
+        return new ArrayList<>(metaMap.subMap(
+            CommonId.prefix(metaId().type(), metaId().identifier(), domain), true,
+            CommonId.prefix(metaId().type(), metaId().identifier(), domain + 1), false
+        ).values());
     }
 
     @Override

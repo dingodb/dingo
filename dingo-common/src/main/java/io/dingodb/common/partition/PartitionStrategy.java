@@ -37,6 +37,7 @@ import java.util.Map;
     @JsonSubTypes.Type(RangeStrategy.class),
 })
 public abstract class PartitionStrategy<I> {
+
     public abstract int getPartNum();
 
     // Should be `String` for json serialization.

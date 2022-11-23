@@ -23,7 +23,6 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.IntegerSchema;
-import org.apache.avro.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("int")
@@ -48,8 +47,4 @@ public class IntegerType extends AbstractScalarType {
         return converter.convertIntegerFrom(value);
     }
 
-    @Override
-    protected Schema.Type getAvroSchemaType() {
-        return Schema.Type.INT;
-    }
 }

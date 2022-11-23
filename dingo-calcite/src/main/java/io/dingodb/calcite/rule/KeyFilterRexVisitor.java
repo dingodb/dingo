@@ -70,6 +70,28 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return item0;
     }
 
+    private Set<Map<Integer, RexLiteral>> product(
+        final Set<Map<Integer, RexLiteral>> items0, final Set<Map<Integer, RexLiteral>> items1
+    ) {
+        if (items1 == null) {
+            return items0;
+        }
+        if (items1.size() == 0) {
+            items0.clear();
+            return items0;
+        } else if (items1.size() == 1) {
+            for (Map<Integer, RexLiteral> item : items1) {
+                return product(items0, item);
+            }
+        }
+        Set<Map<Integer, RexLiteral>> newItems = new HashSet<>();
+        for (Map<Integer, RexLiteral> item : items1) {
+            Set<Map<Integer, RexLiteral>> t = copyItems(items0);
+            newItems.addAll(product(t, item));
+        }
+        return newItems;
+    }
+
     private static @NonNull Set<Map<Integer, RexLiteral>> product(
         final @NonNull Set<Map<Integer, RexLiteral>> items,
         final Map<Integer, RexLiteral> item
@@ -103,28 +125,6 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return true;
     }
 
-    private Set<Map<Integer, RexLiteral>> product(
-        final Set<Map<Integer, RexLiteral>> items0,
-        final Set<Map<Integer, RexLiteral>> items1
-    ) {
-        if (items1 == null) {
-            return items0;
-        }
-        if (items1.size() == 0) {
-            items0.clear();
-            return items0;
-        } else if (items1.size() == 1) {
-            for (Map<Integer, RexLiteral> item : items1) {
-                return product(items0, item);
-            }
-        }
-        Set<Map<Integer, RexLiteral>> newItems = new HashSet<>();
-        for (Map<Integer, RexLiteral> item : items1) {
-            Set<Map<Integer, RexLiteral>> t = copyItems(items0);
-            newItems.addAll(product(t, item));
-        }
-        return newItems;
-    }
 
     private Set<Map<Integer, RexLiteral>> copyItems(final @NonNull Set<Map<Integer, RexLiteral>> items) {
         return items.stream().map(item -> {

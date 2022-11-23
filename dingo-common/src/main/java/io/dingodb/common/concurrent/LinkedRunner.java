@@ -17,6 +17,7 @@
 package io.dingodb.common.concurrent;
 
 import io.dingodb.common.util.Unsafe;
+import io.dingodb.common.util.Utils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
@@ -34,13 +35,11 @@ public final class LinkedRunner implements Unsafe {
 
     private static final long COMPLETE_OFFSET;
     private static final long NEXT_OFFSET;
-    private static final long AVAILABLE_OFFSET;
 
     static {
         try {
             COMPLETE_OFFSET = UNSAFE.objectFieldOffset(RunnerNode.class.getDeclaredField(RunnerNode.Fields.complete));
             NEXT_OFFSET = UNSAFE.objectFieldOffset(RunnerNode.class.getDeclaredField(RunnerNode.Fields.next));
-            AVAILABLE_OFFSET = UNSAFE.objectFieldOffset(LinkedRunner.class.getDeclaredField(Fields.available));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -60,7 +59,7 @@ public final class LinkedRunner implements Unsafe {
             this.runner = runner;
         }
 
-        protected boolean follow(RunnerNode next) {
+        private boolean follow(RunnerNode next) {
             if (UNSAFE.compareAndSwapObject(this, NEXT_OFFSET, null, next)) {
                 runner.last = next;
                 if (UNSAFE.compareAndSwapInt(this, COMPLETE_OFFSET, 1, 2)) {
@@ -82,14 +81,9 @@ public final class LinkedRunner implements Unsafe {
             UNSAFE.compareAndSwapInt(this, COMPLETE_OFFSET, 0, 1);
         }
 
-        private void complete() {
-            Executors.execute(runner.name, next);
-        }
-
     }
 
     public final String name;
-    private int available = 1;
     private RunnerNode current;
     private RunnerNode last;
 
@@ -116,30 +110,7 @@ public final class LinkedRunner implements Unsafe {
     }
 
     public void forceFollow(RunnerNode next) {
-        while (!last.follow(next)) {
-            if (!UNSAFE.compareAndSwapInt(this, AVAILABLE_OFFSET, 1, 1)) {
-                throw new RuntimeException("Not available.");
-            }
-        }
-    }
-
-    public void reset() {
-        this.current = null;
-        last = new RunnerNode(EMPTY, this);
-        last.run();
-        available = 1;
-    }
-
-    public void clear() {
-        available = 0;
-        removeNext(current);
-    }
-
-    private static void removeNext(RunnerNode node) {
-        if (node.next != null) {
-            removeNext(node);
-        }
-        node.next = null;
+        Utils.loop(() -> !last.follow(next));
     }
 
     private void submit(final RunnerNode node) {

@@ -69,7 +69,7 @@ public abstract class AbstractParser implements Parser {
         boolean isValid = true;
         for (int i = 0; i < columnValues.length; i++) {
             ColumnDefinition columnDefinition = tableDefinition.getColumns().get(i);
-            if (columnDefinition.isNotNull() && columnValues[i] == null) {
+            if (!columnDefinition.isNullable() && columnValues[i] == null) {
                 isValid = false;
                 log.error("Column:{} is not null, but current value is null", columnDefinition.getName());
                 break;

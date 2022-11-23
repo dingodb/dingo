@@ -103,7 +103,7 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
         CountDownLatch countDownLatch = new CountDownLatch(files.length);
         Arrays.stream(files).map(File::toPath).forEach(_p ->
             Executors.submit(
-                "transfer-to-" + location.getUrl(),
+                "transfer-to-" + location.url(),
                 () -> transfer(location, _p, target.resolve(_p.getFileName()))
             ).thenRun(countDownLatch::countDown)
         );

@@ -19,7 +19,8 @@ package io.dingodb.common.codec.transfer;
 import java.nio.ByteBuffer;
 
 public interface KeyValueTransferCodeC {
-    public Object[] read(ByteBuffer bytes);
-    public byte[] write(Object[] value);
+    Object[] read(ByteBuffer bytes);
+
+    byte[] write(Object[] value);
 
 }

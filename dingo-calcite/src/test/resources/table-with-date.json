@@ -5,18 +5,19 @@
       "name": "id",
       "type": "integer",
       "primary": true,
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "name",
       "type": "varchar",
       "precision": 64,
       "default": "Peso",
-      "notNull": true
+      "nullable": false
     },
     {
       "name": "birth",
-      "type": "date"
+      "type": "date",
+      "nullable": true
     }
   ]
 }

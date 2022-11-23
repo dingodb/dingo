@@ -17,6 +17,7 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -74,7 +75,7 @@ public class QueryOneTableTest {
     @Test
     public void testScan1() throws SQLException, JsonProcessingException {
         sqlHelper.queryTest(
-            "select * from " + MetaTestService.SCHEMA_NAME + ".test",
+            "select * from " + DingoRootSchema.DEFAULT_SCHEMA_NAME + ".test",
             new String[]{"id", "name", "amount"},
             DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"),
             TEST_ALL_DATA

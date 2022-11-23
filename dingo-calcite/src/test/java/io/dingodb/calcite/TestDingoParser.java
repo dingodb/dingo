@@ -37,6 +37,7 @@ public class TestDingoParser {
 
     @BeforeEach
     public void setupAll() {
+        MockMetaServiceProvider.init();
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
     }
@@ -69,7 +70,7 @@ public class TestDingoParser {
         parser.validate(sqlNode);
         List<List<String>> fieldOrigins = parser.getFieldOrigins(sqlNode);
         String tableName = "TEST";
-        String schemaName = "MOCK";
+        String schemaName = "DINGO";
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
             ImmutableList.of("DINGO_ROOT", schemaName, tableName, "ID"),
             ImmutableList.of("DINGO_ROOT", schemaName, tableName, "NAME"),

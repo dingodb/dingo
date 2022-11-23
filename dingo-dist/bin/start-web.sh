@@ -18,10 +18,11 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-web*.jar)
+NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
-     -jar ${JAR_PATH} \
+     -jar ${JAR_PATH}:${NET_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application.yaml \
      io.dingodb.web.DingoApplication \
      > ${ROOT}/log/web.out &

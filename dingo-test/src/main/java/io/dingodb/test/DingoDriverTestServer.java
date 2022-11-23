@@ -19,7 +19,7 @@ package io.dingodb.test;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.driver.DriverProxyService;
+import io.dingodb.server.driver.DriverProxyServer;
 
 import java.util.ServiceLoader;
 
@@ -33,10 +33,8 @@ public final class DingoDriverTestServer {
     }
 
     public static void main(String[] args) throws Exception {
-        Services.metaServices.get(MetaTestService.SCHEMA_NAME).init(null);
         Services.initNetService();
         netService.listenPort(port);
-        DriverProxyService driverProxyService = new DriverProxyService();
-        driverProxyService.start();
+        new DriverProxyServer().start();
     }
 }
