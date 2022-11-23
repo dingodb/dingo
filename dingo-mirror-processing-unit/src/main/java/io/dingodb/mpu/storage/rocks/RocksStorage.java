@@ -45,6 +45,7 @@ import org.rocksdb.FlushJobInfo;
 import org.rocksdb.FlushOptions;
 import org.rocksdb.LRUCache;
 import org.rocksdb.MemTableInfo;
+import org.rocksdb.Options;
 import org.rocksdb.OptionsUtil;
 import org.rocksdb.Range;
 import org.rocksdb.ReadOptions;
@@ -269,30 +270,58 @@ public class RocksStorage implements Storage {
     }
 
     public void closeDB() {
-        this.db.cancelAllBackgroundWork(true);
-        this.dcfHandler.close();
-        this.dcfHandler = null;
-        this.mcfHandler.close();
-        this.mcfHandler = null;
-        this.db.close();
-        this.db = null;
+        if (this.db != null) {
+            this.db.cancelAllBackgroundWork(true);
+        }
+        if (this.dcfHandler != null) {
+            this.dcfHandler.close();
+            this.dcfHandler = null;
+        }
+        if (this.mcfHandler != null) {
+            this.mcfHandler.close();
+            this.mcfHandler = null;
+        }
+        if (this.db != null) {
+            this.db.close();
+            this.db = null;
+        }
     }
 
     @Override
-    public void destroy() {
+    public void destroy() throws NullPointerException {
         destroy = true;
         this.writeOptions.close();
         closeDB();
-        this.icfHandler.close();
-        this.icfHandler = null;
-        this.instruction.close();
-        this.instruction = null;
-        this.checkPoint.close();
-        this.checkPoint = null;
-        /*
-         * to avoid the file handle leak when drop table
-         */
-        // FileUtils.deleteIfExists(path);
+        if (this.icfHandler != null) {
+            this.icfHandler.close();
+            this.icfHandler = null;
+        }
+        if (this.instruction != null) {
+            this.instruction.close();
+            this.instruction = null;
+        }
+        if (this.checkPoint != null) {
+            this.checkPoint.close();
+            this.checkPoint = null;
+        }
+
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("destroy data db path {}", this.dbPath.toAbsolutePath().toString());
+                log.debug("destroy instruction db path {}", this.instructionPath.toAbsolutePath().toString());
+            }
+            Options options = new Options();
+            options.setWalDir(this.dbPath.resolve("wal").toString());
+            RocksDB.destroyDB(this.dbPath.toAbsolutePath().toString(), options);
+            options.setWalDir(this.instructionPath.resolve("wal").toString());
+            RocksDB.destroyDB(this.instructionPath.toAbsolutePath().toString(), options);
+
+            if (this.path != null) {
+                FileUtils.delete(this.path.getParent().toFile());
+            }
+        } catch (RocksDBException e) {
+            log.error("destroy db failed {}", e);
+        }
     }
 
     @Override
