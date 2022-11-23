@@ -70,7 +70,6 @@ public class RocksStorageTest {
     public void cleanupRocksStorage() {
         try {
             storage.destroy();
-            FileUtils.deleteIfExists(storage.path);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -150,6 +149,7 @@ public class RocksStorageTest {
                 Assertions.assertEquals(new String(value), testKey);
             }
         );
+
         Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
     }
 

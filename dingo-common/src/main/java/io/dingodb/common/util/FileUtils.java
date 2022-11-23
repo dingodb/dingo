@@ -16,10 +16,15 @@
 
 package io.dingodb.common.util;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
+@Slf4j
 public final class FileUtils {
 
     private FileUtils() {
@@ -33,13 +38,27 @@ public final class FileUtils {
         }
     }
 
+    // Files.list will open file handle
     public static void deleteIfExists(Path path) {
         try {
             if (Files.isDirectory(path)) {
                 Files.list(path).forEach(FileUtils::deleteIfExists);
-                Files.deleteIfExists(path);
             }
             Files.deleteIfExists(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void delete(File file) {
+        try {
+            if (file == null || !file.exists()) {
+                return;
+            }
+            if (file.isDirectory() && file.listFiles() != null) {
+                Arrays.stream(file.listFiles()).forEach(FileUtils::delete);
+            }
+            file.delete();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
