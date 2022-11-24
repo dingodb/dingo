@@ -30,6 +30,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.immutables.value.Value;
@@ -61,11 +62,19 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             return;
         }
 
-        RexInputRef rexInputRef = (RexInputRef) filter.operands.get(0);
-        int index = rexInputRef.getIndex();
-        if (index != firstPrimaryColumnIndex) {
-            log.warn("The current field is not the primary key of the first column, "
-                + "first primary column is {}, current column is {}", firstPrimaryColumnIndex, index);
+        RexNode rexNode = filter.operands.get(0);
+        if (rexNode instanceof RexInputRef) {
+            RexInputRef rexInputRef = (RexInputRef) rexNode;
+            int index = rexInputRef.getIndex();
+            if (index != firstPrimaryColumnIndex) {
+                log.warn("The current field is not the primary key of the first column, "
+                    + "first primary column is {}, current column is {}", firstPrimaryColumnIndex, index);
+                return;
+            }
+        } else {
+            RexCall castNode = (RexCall) rexNode;
+            RexInputRef rexInputRef = (RexInputRef) castNode.operands.get(0);
+            log.warn("The current column [{}] type is not string", rexInputRef.getIndex());
             return;
         }
 
@@ -145,6 +154,10 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             }
             previousChar = prefixChar;
             stringBuilder.append(prefixChar);
+        }
+
+        if (stringBuilder.length() == 0) {
+            return null;
         }
 
         return RexLiteral.fromJdbcString(rexLiteral.getType(), rexLiteral.getTypeName(), stringBuilder.toString());
