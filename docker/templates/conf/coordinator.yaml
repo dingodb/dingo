@@ -5,6 +5,6 @@ exchange:
     port: 19181
 server:
     dataPath: /opt/dingo/coordinator
-    servers: coordinator3:9181,coordinator2:9181,coordinator1:9181
+    servers: coordinator3:19181,coordinator2:19181,coordinator1:19181
     schedule:
         autoSplit: true
