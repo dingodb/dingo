@@ -8,7 +8,4 @@ server:
     dataPath: /opt/dingo/executor/meta
 store:
     dbPath: /opt/dingo/executor/raftDb
-    raft:
-        port: 9191
-        raftPath: /opt/dingo/executor/raftLog
     collectStatsInterval: 5

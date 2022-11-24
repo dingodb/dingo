@@ -31,7 +31,4 @@ store:
       cfFixedLengthPrefixExtractor: 8
       cfMaxBytesForLevelBase: 134217728
       cfTargetFileSizeBase: 67108864
-    raft:
-        raftPath: /opt/dingo/data/executor/raft
-        port: 9191
     collectStatsInterval: 5
