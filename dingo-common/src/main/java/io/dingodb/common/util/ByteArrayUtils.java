@@ -26,6 +26,7 @@ import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -149,6 +150,16 @@ public class ByteArrayUtils {
         byte[] slice = new byte[len];
         System.arraycopy(source, pos, slice, 0, len);
         return slice;
+    }
+
+    public static byte[] unsliced(byte @NonNull[] slice, int pos) {
+        return unsliced(slice, Math.max(pos, 0), Math.abs(pos) + slice.length);
+    }
+
+    public static byte[] unsliced(byte @NonNull[] slice, int pos, int len) {
+        byte[] source = new byte[len];
+        System.arraycopy(slice, 0, source, pos, slice.length);
+        return source;
     }
 
 }

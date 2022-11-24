@@ -16,6 +16,7 @@
 
 package io.dingodb.store.mpu.instruction;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.operation.Operation;
 import io.dingodb.common.store.KeyValue;
@@ -23,7 +24,6 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.instruction.Instructions;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
-import io.dingodb.mpu.storage.rocks.RocksUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -101,7 +101,9 @@ public class OpInstructions implements Instructions {
                 if (timestamp > 0) {
                     while (iterator.hasNext()) {
                         KeyValue entry = iterator.next();
-                        byte[] valueWithTs = RocksUtils.getValueWithTs(entry.getValue(), timestamp);
+                        byte[] value = entry.getValue();
+                        byte[] valueWithTs = PrimitiveCodec.encodeInt(
+                            timestamp, ByteArrayUtils.unsliced(value, 0, value.length + 4), value.length, false);
                         writer.set(entry.getKey(), valueWithTs);
                     }
                 } else {
