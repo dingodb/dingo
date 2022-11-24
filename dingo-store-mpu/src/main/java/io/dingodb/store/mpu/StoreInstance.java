@@ -275,15 +275,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
                 Arrays.toString(startKey));
             return 0;
         }
-        CompletableFuture<Long> count = CompletableFuture.supplyAsync(
-            () -> parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC, null, null)
-        );
+
         if (doDeleting) {
-            parts.get(part.getId())
-                .exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, ByteArrayUtils.EMPTY_BYTES, null)
+            return parts.get(part.getId()).exec(
+                KVInstructions.id, KVInstructions.DEL_RANGE_WITH_COUNT_OC, ByteArrayUtils.EMPTY_BYTES, null)
                 .join();
         }
-        return count.join();
+        return parts.get(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC, null, null);
     }
 
     @Override
@@ -297,15 +295,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         byte[] adjustEndKey = (endKey == null) ? null : includeEnd ? ByteArrayUtils.increment(endKey) : endKey;
 
         Part part = getPartByPrimaryKey(startKey);
-        CompletableFuture<Long> count = CompletableFuture.supplyAsync(
-            () -> parts.get(part.getId()).view(
-                KVInstructions.id, KVInstructions.COUNT_OC, adjustStartKey, adjustEndKey)
-        );
-
-        parts.get(part.getId()).exec(
-            KVInstructions.id, KVInstructions.DEL_RANGE_OC, adjustStartKey, adjustEndKey).join();
-
-        return count.join();
+        return parts.get(part.getId()).exec(
+            KVInstructions.id, KVInstructions.DEL_RANGE_WITH_COUNT_OC, adjustStartKey, adjustEndKey).join();
     }
 
     @Override

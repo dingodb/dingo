@@ -35,6 +35,7 @@ public class KVInstructions implements Instructions {
     public static final int SET_BATCH_OC = 5;
     public static final int DEL_BATCH_OC = 7;
     public static final int DEL_RANGE_OC = 9;
+    public static final int DEL_RANGE_WITH_COUNT_OC = 11;
 
     public static final int COUNT_OC = 0;
     public static final int GET_OC = 2;
@@ -46,11 +47,10 @@ public class KVInstructions implements Instructions {
     public interface InProcessor extends Instructions.Processor {
         @Override
         default Object process(Reader reader, Writer writer, Object... operand) {
-            in(writer, operand);
-            return null;
+            return in(reader, writer, operand);
         }
 
-        void in(Writer writer, Object... operand);
+        Object in(Reader reader, Writer writer, Object... operand);
     }
 
     public interface OutProcessor extends Instructions.Processor {
@@ -108,27 +108,41 @@ public class KVInstructions implements Instructions {
 
         // in instruction:
         // set opcode 1
-        kv.processor(SET_OC, (InProcessor) (writer, operand) -> writer.set((byte[]) operand[0], (byte[]) operand[1]));
+        kv.processor(SET_OC, (InProcessor) (__, writer, operand) -> {
+            writer.set((byte[]) operand[0], (byte[]) operand[1]);
+            return null;
+        });
         // delete opcode 3
-        kv.processor(DEL_OC, (InProcessor) (writer, operand) -> writer.erase((byte[]) operand[0]));
+        kv.processor(DEL_OC, (InProcessor) (__, writer, operand) -> {
+            writer.erase((byte[]) operand[0]);
+            return null;
+        });
         // set batch opcode 5
-        kv.processor(SET_BATCH_OC, (InProcessor) (writer, operand) -> {
+        kv.processor(SET_BATCH_OC, (InProcessor) (__, writer, operand) -> {
             for (int i = 0; i < operand.length; i += 2) {
                 writer.set((byte[]) operand[i], (byte[]) operand[i + 1]);
             }
+            return null;
         });
         // delete batch opcode 7
-        kv.processor(DEL_BATCH_OC, (InProcessor) (writer, operand) -> {
+        kv.processor(DEL_BATCH_OC, (InProcessor) (__, writer, operand) -> {
             for (Object o : operand) {
                 writer.erase((byte[]) o);
             }
+            return null;
         });
         // delete range opcode 9
-        kv.processor(
-            DEL_RANGE_OC,
-            (InProcessor) (writer, operand) -> writer.erase(
-                (byte[]) operand[0], (byte[]) operand[1])
+        kv.processor(DEL_RANGE_OC, (InProcessor) (__, writer, operand) -> {
+                writer.erase((byte[]) operand[0], (byte[]) operand[1]);
+                return null;
+            }
         );
+        // count before delete opcode 11
+        kv.processor(DEL_RANGE_WITH_COUNT_OC, (InProcessor) (reader, writer, operand) -> {
+            long count = reader.count((byte[]) operand[0], (byte[]) operand[1]);
+            writer.erase((byte[]) operand[0], (byte[]) operand[1]);
+            return count;
+        });
 
         // out instruction:
         // count opcode 0
@@ -153,7 +167,6 @@ public class KVInstructions implements Instructions {
             }
         });
         kv.processor(GET_BATCH_OC, (OutProcessor) (reader, operand) -> reader.get((List<byte[]>) operand[0]));
-
     }
 
 }
