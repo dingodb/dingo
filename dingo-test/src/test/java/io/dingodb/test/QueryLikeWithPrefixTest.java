@@ -92,4 +92,14 @@ public class QueryLikeWithPrefixTest {
             "6, a6c\n"
         );
     }
+
+    @Test
+    public void testLike5() throws SQLException, IOException {
+        // a[^a-z]c
+        sqlHelper.queryTest("select * from t_like2 where id like '1%'",
+            new String[]{"id", "name"},
+            DingoTypeFactory.tuple("INTEGER", "STRING"),
+            "1, abcdec\n"
+        );
+    }
 }
