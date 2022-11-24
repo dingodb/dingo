@@ -21,6 +21,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.StorageApi;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.Instruction;
@@ -74,6 +75,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.API;
 import static io.dingodb.mpu.Constant.CF_DEFAULT;
@@ -107,6 +109,7 @@ public class RocksStorage implements Storage {
     public ColumnFamilyConfiguration mcfConf;
     public ColumnFamilyConfiguration icfConf;
     public final int ttl;
+    private final boolean withTtl;
 
     public final WriteOptions writeOptions;
     public final LinkedRunner runner;
@@ -133,13 +136,24 @@ public class RocksStorage implements Storage {
     public static final String REMOTE_CHECKPOINT_PREFIX = "remote-";
 
     public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
-                        final String logRocksOptionsFile, final int ttl)  throws Exception {
+        final String logRocksOptionsFile)  throws Exception {
+        this(coreMeta, path, dbRocksOptionsFile, logRocksOptionsFile, 0, false);
+    }
+
+    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
+        final String logRocksOptionsFile, int ttl)  throws Exception {
+        this(coreMeta, path, dbRocksOptionsFile, logRocksOptionsFile, ttl, false);
+    }
+
+    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
+                        final String logRocksOptionsFile, final int ttl, boolean withTtl)  throws Exception {
         this.coreMeta = coreMeta;
         this.runner = new LinkedRunner(coreMeta.label);
         this.path = Paths.get(path).toAbsolutePath();
         this.dbRocksOptionsFile = dbRocksOptionsFile;
         this.logRocksOptionsFile = logRocksOptionsFile;
         this.ttl = ttl;
+        this.withTtl = withTtl;
 
         this.checkpointPath = this.path.resolve("checkpoint");
 
@@ -237,7 +251,7 @@ public class RocksStorage implements Storage {
 
         RocksDB db;
         List<ColumnFamilyHandle> handles = new ArrayList<>(4);
-        if (RocksUtils.ttlValid(this.ttl)) {
+        if (withTtl) {
             List<Integer> ttlList = new ArrayList<>();
             ttlList.add(this.ttl);
             ttlList.add(0);
@@ -661,9 +675,13 @@ public class RocksStorage implements Storage {
         try {
             Instruction instruction = writer.instruction();
             WriteBatch batch = ((Writer) writer).writeBatch();
-            byte[] clockValue = PrimitiveCodec.encodeLong(instruction.clock);
-            if (RocksUtils.ttlValid(this.ttl)) {
-                clockValue = RocksUtils.getValueWithNowTs(clockValue);
+            byte[] clockValue;
+            if (withTtl) {
+                clockValue = new byte[Long.BYTES + Integer.BYTES];
+                encodeLong(instruction.clock, clockValue, 0);
+                encodeInt(Utils.currentSecond(), clockValue);
+            } else {
+                clockValue = PrimitiveCodec.encodeLong(instruction.clock);
             }
             batch.put(mcfHandler, CLOCK_K, clockValue);
             this.db.write(writeOptions, batch);

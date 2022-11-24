@@ -19,6 +19,8 @@ package io.dingodb.mpu.core;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
@@ -33,7 +35,9 @@ public class MirrorProcessingUnit {
     public final Path path;
     public final String dbRocksOptionsFile;
     public final String logRocksOptionsFile;
+
     public final int ttl;
+    public final boolean withTtl;
 
     private final Map<CommonId, Core> subCores = new ConcurrentHashMap<>();
 
@@ -48,6 +52,7 @@ public class MirrorProcessingUnit {
         this.dbRocksOptionsFile = dbRocksOptionsFile;
         this.logRocksOptionsFile = logRocksOptionsFile;
         this.ttl = ttl;
+        this.withTtl = ttl > 0;
         MPURegister.put(this);
     }
 
@@ -65,8 +70,14 @@ public class MirrorProcessingUnit {
             Core core;
             CoreMeta local = metas.remove(num);
             log.info("Create core {} for {}", local.coreId, id);
-            RocksStorage storage = new RocksStorage(local, path.resolve(local.coreId.toString()).toString(),
-                this.dbRocksOptionsFile, this.logRocksOptionsFile, this.ttl);
+            RocksStorage storage = new RocksStorage(
+                local,
+                path.resolve(local.coreId.toString()).toString(),
+                dbRocksOptionsFile,
+                logRocksOptionsFile,
+                ttl,
+                withTtl
+            );
             if (metas.size() == 0) {
                 core = new Core(this, local, null, null, storage);
             } else if (metas.size() == 2) {

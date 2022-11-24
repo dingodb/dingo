@@ -59,7 +59,7 @@ public class RocksStorageTest {
             //DingoConfiguration.parse(tmpDingoConfigPath);
 
             storage = new RocksStorage(coreMeta, testDbPath,
-                "", "", 0);
+                "", "", 0, false);
 
             Assertions.assertNotNull(storage);
         } catch (Exception e) {

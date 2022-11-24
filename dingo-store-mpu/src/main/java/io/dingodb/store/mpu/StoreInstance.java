@@ -28,12 +28,12 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.UdfUtils;
+import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.core.MirrorProcessingUnit;
 import io.dingodb.mpu.instruction.KVInstructions;
-import io.dingodb.mpu.storage.rocks.RocksUtils;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.CodeUDFApi;
 import io.dingodb.server.api.MetaServiceApi;
@@ -57,14 +57,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
+import static io.dingodb.common.util.ByteArrayUtils.unsliced;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
@@ -75,17 +78,17 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     private final CommonId id;
     public final MirrorProcessingUnit mpu;
     public final Path path;
-    private int ttl;
+    private final int ttl;
     private Map<String, Globals> globalsMap = new HashMap<>();
     private Map<String, TableDefinition> definitionMap = new HashMap<>();
     private Map<String, KeyValueCodec> codecMap = new HashMap<>();
 
+    private final Map<CommonId, Core> parts;
+    private final NavigableMap<byte[], Part> startKeyPartMap;
+
     public StoreInstance(CommonId id, Path path) {
         this(id, path, "", "", -1);
     }
-
-    private final Map<CommonId, Core> parts;
-    private final NavigableMap<byte[], Part> startKeyPartMap;
 
     public StoreInstance(CommonId id, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile,
                          final int ttl) {
@@ -209,9 +212,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
                 "The primary key " + Arrays.toString(primaryKey) + " not in current instance."
             );
         }
-        if (RocksUtils.ttlValid(this.ttl)) {
-            parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey,
-                RocksUtils.getValueWithNowTs(row)).join();
+        if (mpu.withTtl) {
+            parts.get(part.getId()).exec(
+                KVInstructions.id,
+                KVInstructions.SET_OC,
+                primaryKey,
+                encodeInt(Utils.currentSecond(), unsliced(row, 0, row.length + 4), row.length, false)
+            ).join();
         } else {
             parts.get(part.getId()).exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
         }
@@ -226,24 +233,25 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
-        List<KeyValue> kvList;
-        if (RocksUtils.ttlValid(this.ttl)) {
-            kvList = RocksUtils.getValueWithNowTsList(rows);
-        } else {
-            kvList = rows;
-        }
-
-        List<byte[]> rowKeyList = kvList.stream().map(KeyValue::getPrimaryKey).collect(Collectors.toList());
+        List<byte[]> rowKeyList = rows.stream().map(KeyValue::getPrimaryKey).collect(Collectors.toList());
         boolean isAllKeyOnSamePart = isKeysOnSamePart(rowKeyList);
         if (!isAllKeyOnSamePart) {
             log.warn("The input keys are not in a same instance.");
             throw new IllegalArgumentException("The key not in current instance.");
         }
 
-        Part part = getPartByPrimaryKey(kvList.get(0).getPrimaryKey());
+        if (mpu.withTtl) {
+            int time = Utils.currentSecond();
+            rows = rows.stream()
+                .filter(Objects::nonNull)
+                .map(kv -> new KeyValue(kv.getKey(), encodeInt(time, unsliced(kv.getValue(), -4), false)))
+                .collect(Collectors.toList());
+        }
+
+        Part part = getPartByPrimaryKey(rows.get(0).getPrimaryKey());
         parts.get(part.getId()).exec(
             KVInstructions.id, KVInstructions.SET_BATCH_OC,
-            kvList.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
+            rows.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
         ).join();
         return true;
     }
@@ -398,8 +406,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
         int timestamp = -1;
-        if (RocksUtils.ttlValid(this.ttl)) {
-            timestamp = RocksUtils.getCurrentTimestamp();
+        if (mpu.withTtl) {
+            timestamp = Utils.currentSecond();
         }
 
         if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {

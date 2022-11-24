@@ -86,5 +86,9 @@ public final class Utils {
         }
     }
 
+    public static int currentSecond() {
+        return (int) (System.currentTimeMillis() / 1000);
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }
