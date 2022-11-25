@@ -16,10 +16,10 @@
 
 package io.dingodb.sdk.common;
 
-import io.dingodb.common.operation.Value;
 import io.dingodb.sdk.client.IBaseDingoMapper;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.mappers.TypeMapper;
+import io.dingodb.sdk.operation.Value;
 import io.dingodb.sdk.utils.TypeUtils;
 
 import java.lang.annotation.Annotation;

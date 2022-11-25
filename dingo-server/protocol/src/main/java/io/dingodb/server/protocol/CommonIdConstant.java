@@ -31,6 +31,7 @@ public class CommonIdConstant {
     public static final FunctionIdentifier FUNCTION_IDENTIFIER = new FunctionIdentifier();
     public static final OtherIdentifier OTHER_IDENTIFIER = new OtherIdentifier();
     public static final int ROOT_DOMAIN = 1;
+    public static final OpIdentifier OP_IDENTIFIER = new OpIdentifier();
 
     @FieldNameConstants(asEnum = true)
     public static final class IdType {
@@ -42,6 +43,7 @@ public class CommonIdConstant {
         public final byte task = 'J';
         public final byte function = 'F';
         public final byte other = 'O';
+        public final byte op = 'P';
 
         private IdType() {
         }
@@ -117,6 +119,15 @@ public class CommonIdConstant {
         public final byte[] other = new byte[] {'O', '0'};
 
         private OtherIdentifier() {
+        }
+    }
+
+    @FieldNameConstants
+    public static final class OpIdentifier {
+        public final byte[] internal = new byte[] {'P', 'I'};
+        public final byte[] external = new byte[] {'P', 'E'};
+
+        private OpIdentifier() {
         }
     }
 }

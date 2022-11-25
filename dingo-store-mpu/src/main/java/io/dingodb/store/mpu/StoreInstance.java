@@ -403,23 +403,38 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     @Override
-    public boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
-        isValidRangeKey(startPrimaryKey, endPrimaryKey);
+    public Object compute(List<byte[]> startPrimaryKeys, List<byte[]> endPrimaryKeys, byte[] op) {
+        // isValidRangeKey(startPrimaryKey, endPrimaryKey);
         int timestamp = -1;
         if (mpu.withTtl) {
             timestamp = Utils.currentSecond();
         }
 
-        if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
-            throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+        Part part = null;
+        List<byte[]> endList = new ArrayList<>();
+        // if (startPrimaryKeys.size() == endPrimaryKeys.size()) {
+        for (int i = 0; i < startPrimaryKeys.size(); i++) {
+            part = getPartByPrimaryKey(startPrimaryKeys.get(i));
+            if (part == null) {
+                throw new IllegalArgumentException("The start and end not in current instance.");
+            }
+            byte[] endPrimaryKey = null;
+            if (endPrimaryKeys != null && endPrimaryKeys.size() == startPrimaryKeys.size()) {
+                endPrimaryKey = endPrimaryKeys.get(i);
+            }
+            if (endPrimaryKey == null) {
+                endPrimaryKey = part.getEnd();
+            } else if (getPartByPrimaryKey(endPrimaryKey) != part) {
+                throw new IllegalArgumentException("The start and end not in same part or not in current instance.");
+            }
+            endList.add(endPrimaryKey);
+            endPrimaryKeys = endList;
         }
+        // }
 
-        Part part = getPartByPrimaryKey(startPrimaryKey);
-        parts.get(part.getId())
-            .exec(OpInstructions.id, OpInstructions.COMPUTE_OC,
-                startPrimaryKey, endPrimaryKey, operations, timestamp).join();
-
-        return true;
+        return parts.get(part.getId())
+            .exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKeys, endPrimaryKeys, op, timestamp)
+            .join();
     }
 
     private static void isValidRangeKey(byte[] startPrimaryKey, byte[] endPrimaryKey) {

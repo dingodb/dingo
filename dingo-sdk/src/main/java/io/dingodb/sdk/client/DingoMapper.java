@@ -16,14 +16,13 @@
 
 package io.dingodb.sdk.client;
 
-import io.dingodb.common.operation.Operation;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Filter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Processor;
+import io.dingodb.sdk.operation.op.Op;
 
 import java.util.List;
-import java.util.function.Function;
 import javax.validation.constraints.NotNull;
 
 public interface DingoMapper extends IBaseDingoMapper {
@@ -97,7 +96,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * @return The returned mapped records.
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
-    <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys, Operation... operations);
+    <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys, Op... operations);
 
     /**
      * Delete a record by a user Key.

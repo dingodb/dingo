@@ -17,17 +17,10 @@
 package io.dingodb.example;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.DingoExecResult;
-import io.dingodb.common.operation.Operation;
-import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.compute.CollectionType;
-import io.dingodb.common.operation.context.BasicContext;
-import io.dingodb.common.operation.context.ListContext;
-import io.dingodb.common.operation.context.MapContext;
-import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.operation.filter.impl.DingoLogicalExpressFilter;
-import io.dingodb.common.operation.filter.impl.DingoValueEqualsFilter;
+import io.dingodb.sdk.operation.Value;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoLogicalExpressFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoValueEqualsFilter;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
@@ -95,10 +88,10 @@ public class DingoOperationExample {
             });
         }
 
-        boolean isOK = dingoClient.insert(tableName, recordList);
-        if (!isOK) {
+        /*boolean isOK = */dingoClient.insert(tableName, recordList);
+        /*if (!isOK) {
             System.exit(1);
-        }
+        }*/
 
         Key startKey = new Key(tableName, ImmutableList.of(Value.get(0)));
         Key endKey = new Key(tableName, ImmutableList.of(Value.get(100)));
@@ -111,7 +104,7 @@ public class DingoOperationExample {
         DingoValueEqualsFilter eqFilter = new DingoValueEqualsFilter(new int[]{2}, new Object[]{18});
         root.addAndFilter(eqFilter);
 
-        // count + filter
+        /*// count + filter
         List<DingoExecResult> countResult = dingoClient.count(startKey, endKey, root, new Column("name"));
         for (DingoExecResult cr : countResult) {
             System.out.println("count result ====> " + cr.getRecord());
@@ -143,24 +136,24 @@ public class DingoOperationExample {
         List<DingoExecResult> minResult = dingoClient.min(startKey, endKey, new Column("amount"));
         for (DingoExecResult mr : minResult) {
             System.out.println("min amount result ====> " + mr.get("amount"));
-        }
+        }*/
 
         // collection
-        Operation arrSizeOp = new Operation(
+        /*Op arrSizeOp = new Op(
             CollectionType.SIZE, new BasicContext(new Column("data1")));
-        Operation getIndexOp = new Operation(
+        Op getIndexOp = new Op(
             CollectionType.GET_BY_INDEX, new ListContext(2, new Column("data1")));
-        Operation getIndexRangeOp = new Operation(
+        Op getIndexRangeOp = new Op(
             CollectionType.GET_BY_INDEX_RANGE, new ListContext(1, 3, new Column("data1")));
-        Operation getAllOp = new Operation(CollectionType.GET_ALL, new BasicContext(new Column("data1")));
+        Op getAllOp = new Op(CollectionType.GET_ALL, new BasicContext(new Column("data1")));
 
-        Operation mapPut = new Operation(
+        Op mapPut = new Op(
             CollectionType.PUT, new MapContext(Value.get("aa"), Value.get(5), new Column("data2")));
 
-        Operation mapGetByKey = new Operation(
+        Op mapGetByKey = new Op(
             CollectionType.GET_BY_KEY, new MapContext(Value.get("aa"), new Column("data2")));
 
-        Operation mapRemoveByKey = new Operation(
+        Op mapRemoveByKey = new Op(
             CollectionType.REMOVE_BY_KEY, new MapContext(Value.get("aa"), new Column("data2")));
 
         List<DingoExecResult> operateResult = dingoClient.operate(
@@ -169,7 +162,7 @@ public class DingoOperationExample {
             ImmutableList.of(arrSizeOp, getIndexOp, getIndexRangeOp, getAllOp, mapPut, mapGetByKey));
         for (DingoExecResult or : operateResult) {
             System.out.println("batch operate result, op ====> " + or.op() + ", record ====> " + or.getRecord());
-        }
+        }*/
 
         dingoClient.dropTable(tableName);
 

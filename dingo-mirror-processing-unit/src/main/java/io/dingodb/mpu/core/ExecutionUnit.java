@@ -56,7 +56,9 @@ class ExecutionUnit {
             V result = instructions(instruction.instructions).process(reader, writer, instruction);
             core.storage.flush(writer);
             return result;
+        } catch (Exception e) {
+            instruction.future.completeExceptionally(e);
         }
-
+        return null;
     }
 }

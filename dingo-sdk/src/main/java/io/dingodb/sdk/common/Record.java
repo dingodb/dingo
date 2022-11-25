@@ -17,11 +17,11 @@
 package io.dingodb.sdk.common;
 
 import com.google.common.collect.Maps;
-import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoKey;
+import io.dingodb.sdk.operation.Column;
+import io.dingodb.sdk.operation.Value;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;

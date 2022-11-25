@@ -16,65 +16,42 @@
 
 package io.dingodb.sdk;
 
-import io.dingodb.common.operation.context.BasicContext;
-import io.dingodb.common.operation.context.OperationContext;
-import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.operation.filter.impl.DingoLogicalExpressFilter;
-import io.dingodb.common.operation.filter.impl.DingoValueEqualsFilter;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoLogicalExpressFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoValueEqualsFilter;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
 
 public class DingoFilterTest {
 
-    private static TableDefinition tableDefinition;
-
-    @BeforeAll
-    public static void setupAll() throws IOException {
-        tableDefinition = TableDefinition.readJson(
-            DingoFilterTest.class.getResourceAsStream("/table-test.json")
-        );
-    }
-
     @Test
-    public void testFilter() throws IOException {
-        OperationContext context = new BasicContext().definition(tableDefinition);
-
+    public void testFilter() {
         DingoFilter root = new DingoLogicalExpressFilter();
         DingoFilter equalsFilter = new DingoValueEqualsFilter(new int[]{3}, new Object[]{1});
         root.addAndFilter(equalsFilter);
 
         Object[] record = new Object[] {1, "a1", "a2", 1};
-        KeyValue keyValue = context.keyValueCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, keyValue), true);
+        Assertions.assertEquals(root.filter(record), true);
 
         record = new Object[] {1, "a1", "a2", 2};
-        keyValue = context.keyValueCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, keyValue), false);
+        Assertions.assertEquals(root.filter(record), false);
 
         DingoFilter equalsFilter2 = new DingoValueEqualsFilter(new int[]{1}, new Object[]{"a1"});
         root.addAndFilter(equalsFilter2);
 
         record = new Object[] {1, "a1", "a2", 1};
-        keyValue = context.keyValueCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, keyValue), true);
+        Assertions.assertEquals(root.filter(record), true);
 
         record = new Object[] {1, "a2", "a2", 1};
-        keyValue = context.keyValueCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, keyValue), false);
+        Assertions.assertEquals(root.filter(record), false);
 
         root = new DingoLogicalExpressFilter();
         root.addOrFilter(equalsFilter);
         root.addOrFilter(equalsFilter2);
 
-        Assertions.assertEquals(root.filter(context, keyValue), true);
+        Assertions.assertEquals(root.filter(record), true);
 
         record = new Object[] {1, "a2", "a2", 2};
-        keyValue = context.keyValueCodec().encode(record);
-        Assertions.assertEquals(root.filter(context, keyValue), false);
+        Assertions.assertEquals(root.filter(record), false);
     }
 }

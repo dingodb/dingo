@@ -16,6 +16,8 @@ dependencies {
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
     implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
     compile project(":dingo-common")
     compile project(":dingo-cluster-api")

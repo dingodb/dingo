@@ -16,12 +16,8 @@
 
 package io.dingodb.sdk.utils;
 
-import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.MapOrder;
-import io.dingodb.common.operation.Value;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.sdk.annotation.DingoColumn;
 import io.dingodb.sdk.annotation.DingoConstructor;
 import io.dingodb.sdk.annotation.DingoExclude;
@@ -42,6 +38,9 @@ import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.ColumnConfig;
 import io.dingodb.sdk.configuration.KeyConfig;
 import io.dingodb.sdk.mappers.TypeMapper;
+import io.dingodb.sdk.operation.Column;
+import io.dingodb.sdk.operation.MapOrder;
+import io.dingodb.sdk.operation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 

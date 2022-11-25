@@ -19,13 +19,6 @@ package io.dingodb.sdk.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.Operation;
-import io.dingodb.common.operation.ParticleType;
-import io.dingodb.common.operation.Value;
-import io.dingodb.common.operation.filter.DingoFilter;
-import io.dingodb.common.operation.filter.impl.DingoNumberRangeFilter;
-import io.dingodb.common.operation.filter.impl.DingoStringRangeFilter;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
@@ -35,6 +28,13 @@ import io.dingodb.sdk.common.Processor;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.configuration.ClassConfig;
 import io.dingodb.sdk.configuration.Configuration;
+import io.dingodb.sdk.operation.Column;
+import io.dingodb.sdk.operation.ParticleType;
+import io.dingodb.sdk.operation.Value;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoNumberRangeFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoStringRangeFilter;
+import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.sdk.utils.CheckUtils;
 import io.dingodb.sdk.utils.ClassCache;
 import io.dingodb.sdk.utils.ClassCacheEntry;
@@ -408,7 +408,7 @@ public class DingoOpCli implements DingoMapper {
     }
 
     @Override
-    public <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys, Operation... operations) {
+    public <T> T[] read(@NotNull Class<T> clazz, @NotNull Object[] userKeys, Op... operations) {
         return read(clazz, userKeys, operations);
     }
 

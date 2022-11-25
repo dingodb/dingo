@@ -17,10 +17,11 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
@@ -30,6 +31,7 @@ import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,62 +61,50 @@ public class StoreOperationUtils {
         clearTableDefinitionInCache();
     }
 
-    public List<DingoExecResult> doOperation(String tableName,
-                                             ContextForClient storeParameters) {
+    public DingoOpResult doOp(Op op) {
+        Op head = op.head();
+        String tableName = head.context().startPrimaryKeys.get(0).getTable();
         RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
         if (routeTable == null) {
             log.error("table {} not found when do operation", tableName);
             return null;
         }
+        DingoOpResult result = null;
+        try {
+            TableDefinition tableDefinition = getTableDefinition(tableName);
 
-        boolean isSuccess = false;
-        int retryTimes = this.retryTimes;
-        List<DingoExecResult> results = new ArrayList<>();
-        do {
-            try {
-                KeyValueCodec codec = routeTable.getCodec();
-                TableDefinition tableDefinition = getTableDefinition(tableName);
-                ContextForStore storeContext = Converter.getStoreContext(storeParameters, codec, tableDefinition);
-                Map<String, ContextForStore> keys2Executor =
-                    groupKeysByExecutor(routeTable, null, tableName, storeContext);
+            head.context().definition(tableDefinition);
 
-                List<Future<List<DingoExecResult>>> futureArrayList = new ArrayList<>();
-                for (Map.Entry<String, ContextForStore> entry : keys2Executor.entrySet()) {
-                    String leaderAddress = entry.getKey();
-                    ContextForStore forStore = entry.getValue();
-                    ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
-
-                    RouteTable finalRouteTable = routeTable;
-                    Future<List<DingoExecResult>> future =
-                        Executors.submit("compute-operation", () -> executorApi.operator(
-                            finalRouteTable.getTableId(),
-                            forStore.getStartKeyListInBytes(),
-                            forStore.getEndKeyListInBytes(),
-                            forStore.getOperationListInBytes()));
-                    futureArrayList.add(future);
-                }
-                for (Future<List<DingoExecResult>> listFuture : futureArrayList) {
-                    List<DingoExecResult> dingoExecResults = listFuture.get();
-                    for (DingoExecResult dingoExecResult : dingoExecResults) {
-                        isSuccess = dingoExecResult.isSuccess();
-                        results.add(dingoExecResult);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("operation fail.", e);
-            } finally {
-                if (!isSuccess && retryTimes > 0) {
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    routeTable = getAndRefreshRouteTable(tableName, true);
+            ContextForStore storeContext = ContextForStore.builder()
+                .startKeyListInBytes(head.context().startKey())
+                .endKeyListInBytes(head.context().endKey())
+                .operationListInBytes(ProtostuffCodec.write(head))
+                .build();
+            Map<String, ContextForStore> keys2Exec = groupKeysByExecutor(routeTable, null, tableName, storeContext);
+            List<Future<Object>> futures = new ArrayList<>();
+            for (Map.Entry<String, ContextForStore> entry : keys2Exec.entrySet()) {
+                String leaderAddress = entry.getKey();
+                ContextForStore forStore = entry.getValue();
+                ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+                Future<Object> future = executorApi.operator(
+                    routeTable.getTableId(),
+                    forStore.getStartKeyListInBytes(),
+                    forStore.getEndKeyListInBytes() == null ? null : forStore.getEndKeyListInBytes(),
+                    forStore.getOperationListInBytes());
+                futures.add(future);
+            }
+            for (Future<Object> future : futures) {
+                DingoOpResult r = (DingoOpResult) future.get();
+                if (result == null) {
+                    result = r;
+                } else {
+                    result = result.merge(r.getValue());
                 }
             }
+        } catch (Exception e) {
+            log.info("exec failed, e: ", e);
         }
-        while (!isSuccess && --retryTimes > 0);
-        return results;
+        return result;
     }
 
     public ResultForClient doOperation(StoreOperationType type,
@@ -245,7 +235,6 @@ public class StoreOperationUtils {
                 .operationListInBytes(wholeContext.getOperationListInBytes())
                 .udfContext(wholeContext.getUdfContext())
                 .skippedWhenExisted(wholeContext.isSkippedWhenExisted())
-                .context(wholeContext.getContext())
                 .build();
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }
