@@ -75,6 +75,10 @@ public class TestExpr {
             arguments("1.0 / 100", new BigDecimal("0.0")),
             arguments("double(1.0) / 100", 0.01),
             arguments("1 + (2 * 3-4)", 3),
+            arguments("mod(1, 2)", 1),
+            arguments("mod(-1, 2)", 1),
+            arguments("mod(5.0, 2.5)", BigDecimal.valueOf(0.0)),
+            arguments("mod(5.1, 2.5)", BigDecimal.valueOf(0.1)),
             // relational & logical op
             arguments("3 < 4", true),
             arguments("4.0 == 4", true),

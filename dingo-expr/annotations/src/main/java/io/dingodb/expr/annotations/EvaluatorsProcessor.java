@@ -267,7 +267,6 @@ public class EvaluatorsProcessor extends AbstractProcessor {
         if (!matcher.find()) {
             throw new IllegalArgumentException("Not a valid method name: \"" + methodName + "\".");
         }
-        String evaluatorName = StringUtils.capitalize(matcher.group(1));
         Map<String, EvaluatorInfo> evaluatorMap = info.getEvaluatorMap();
         String evaluatorKey = getEvaluatorKey(newParas);
         if (evaluatorMap.containsKey(evaluatorKey)) {
@@ -299,7 +298,7 @@ public class EvaluatorsProcessor extends AbstractProcessor {
                 .addStatement("return $L", CoreUtils.typeOf(returnType))
                 .build();
         }
-        String className = evaluatorName + evaluatorKey;
+        final String className = StringUtils.capitalize(matcher.group(1)) + evaluatorKey;
         TypeSpec.Builder builder = TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
             .addField(serialVersionUid())

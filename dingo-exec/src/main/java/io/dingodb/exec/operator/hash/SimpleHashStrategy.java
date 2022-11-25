@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.hash;
+package io.dingodb.exec.operator.hash;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.expr.runtime.utils.NumberUtils;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -30,8 +31,7 @@ public final class SimpleHashStrategy implements HashStrategy {
     @Override
     public int selectOutput(Object @NonNull [] tuple) {
         int hash = Objects.hash(tuple);
-        int index = hash % outputNum;
-        return index >= 0 ? index : index + outputNum;
+        return NumberUtils.mod(hash, outputNum);
     }
 
     @Override

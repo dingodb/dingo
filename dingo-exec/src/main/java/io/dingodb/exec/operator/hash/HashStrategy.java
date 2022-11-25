@@ -14,28 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.time;
+package io.dingodb.exec.operator.hash;
 
-import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-
-@Evaluators(
-    induceSequence = {
-        long.class,
-        double.class,
-        BigDecimal.class,
-        int.class,
-    }
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type"
 )
-final class FromUnixTimeEvaluators {
-    private FromUnixTimeEvaluators() {
-    }
-
-    static @NonNull Timestamp fromUnixTime(long value) {
-        return new Timestamp(DateTimeUtils.fromSecond(value));
-    }
+@JsonSubTypes({
+    @JsonSubTypes.Type(SimpleHashStrategy.class),
+})
+public interface HashStrategy {
+    int selectOutput(final Object @NonNull [] tuple);
 }

@@ -31,6 +31,8 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
+import static io.dingodb.expr.runtime.utils.DateTimeUtils.toSecond;
+
 @RequiredArgsConstructor
 public class Value<T> implements Expr {
     @Getter
@@ -136,14 +138,18 @@ public class Value<T> implements Expr {
             return wrapByCast(TypeCode.DOUBLE, Double.toString((Double) value));
         }
         if (value instanceof Date) {
-            return wrapByCast(TypeCode.DATE, Long.toString(((Date) value).getTime()));
+            return wrapByCast(TypeCode.DATE, timestampString(((Date) value).getTime()));
         }
         if (value instanceof Time) {
-            return wrapByCast(TypeCode.TIME, Long.toString(((Time) value).getTime()));
+            return wrapByCast(TypeCode.TIME, timestampString(((Time) value).getTime()));
         }
         if (value instanceof Timestamp) {
-            return wrapByCast(TypeCode.TIMESTAMP, Long.toString(((Timestamp) value).getTime()));
+            return wrapByCast(TypeCode.TIMESTAMP, timestampString(((Timestamp) value).getTime()));
         }
         return value.toString();
+    }
+
+    static @NonNull String timestampString(long timestamp) {
+        return toSecond(timestamp).toString();
     }
 }

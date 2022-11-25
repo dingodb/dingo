@@ -23,7 +23,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import io.dingodb.expr.runtime.op.RtOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class MapConstructorOp extends Op {
@@ -58,7 +58,7 @@ public final class MapConstructorOp extends Op {
         @Override
         public @NonNull Object eval(EvalContext etx) {
             int size = paras.length;
-            Map<Object, Object> result = new LinkedHashMap<>();
+            Map<Object, Object> result = new HashMap<>();
             for (int i = 0; i < size; i += 2) {
                 result.put(paras[i].eval(etx), paras[i + 1].eval(etx));
             }

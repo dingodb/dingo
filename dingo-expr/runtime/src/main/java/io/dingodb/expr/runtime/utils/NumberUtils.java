@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.hash;
+package io.dingodb.expr.runtime.utils;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.checkerframework.checker.nullness.qual.NonNull;
+public final class NumberUtils {
+    private NumberUtils() {
+    }
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type"
-)
-@JsonSubTypes({
-    @JsonSubTypes.Type(SimpleHashStrategy.class),
-})
-public interface HashStrategy {
-    int selectOutput(final Object @NonNull [] tuple);
+    public static int mod(int dividend, int divisor) {
+        int index = dividend % divisor;
+        return index >= 0 ? index : index + divisor;
+    }
+
+    public static long mod(long dividend, long divisor) {
+        long index = dividend % divisor;
+        return index >= 0 ? index : index + divisor;
+    }
 }

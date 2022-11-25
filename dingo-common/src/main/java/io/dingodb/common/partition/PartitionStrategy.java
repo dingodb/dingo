@@ -18,7 +18,6 @@ package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dingodb.common.hash.SimpleHashStrategy;
 import io.dingodb.common.type.TupleMapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -33,7 +32,6 @@ import java.util.Map;
     property = "type"
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(SimpleHashStrategy.class),
     @JsonSubTypes.Type(RangeStrategy.class),
 })
 public abstract class PartitionStrategy<I> {

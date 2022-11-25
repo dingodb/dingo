@@ -164,14 +164,4 @@ public final class DingoDateTimeUtils {
     public static Timestamp fromUnixTimestamp(long value) {
         return new Timestamp(value * 1000L);
     }
-
-    public static long toUnixTimestamp(@NonNull Timestamp value) {
-        long timestamp = value.getTime();
-        long result = Math.floorDiv(timestamp, 1000L);
-        // Do not use `Math.floorMod` which calls `Math.floorDiv`.
-        if (timestamp - result * 1000L >= 500) {
-            result++;
-        }
-        return result;
-    }
 }
