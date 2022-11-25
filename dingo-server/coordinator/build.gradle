@@ -29,6 +29,7 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
 
+    implementation project(":dingo-sdk")
     implementation project(":dingo-calcite")
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")

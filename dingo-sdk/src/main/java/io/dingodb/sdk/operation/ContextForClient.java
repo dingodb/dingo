@@ -16,10 +16,10 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.common.operation.Operation;
-import io.dingodb.common.operation.filter.DingoFilter;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.op.Op;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,7 +33,7 @@ public final class ContextForClient {
     private final List<Key> startKeyList;
     private final List<Key> endKeyList;
     private final List<Record> recordList;
-    private final List<Operation> operationList;
+    private final List<Op> operationList;
     private final UDFContext udfContext;
     private final DingoFilter filter;
     private final boolean skippedWhenExisted;

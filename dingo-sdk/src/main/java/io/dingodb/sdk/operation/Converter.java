@@ -17,10 +17,6 @@
 package io.dingodb.sdk.operation;
 
 import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.operation.Column;
-import io.dingodb.common.operation.context.BasicContext;
-import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -117,28 +113,13 @@ public final class Converter {
             }).collect(Collectors.toList());
         }
 
-        List<byte[]> operationListInBytes = null;
-        if (inputContext.getOperationList() != null) {
-            operationListInBytes = inputContext.getOperationList().stream()
-                .peek(op -> op.operationContext.definition(definition))
-                .map(ProtostuffCodec::write)
-                .collect(Collectors.toList());
-        }
-        OperationContext context = null;
-        if (inputContext.getFilter() != null) {
-            context = new BasicContext();
-            context.definition(definition);
-            context.filter(inputContext.getFilter());
-        }
-
         return ContextForStore.builder()
             .startKeyListInBytes(startKeyListInBytes)
             .endKeyListInBytes(endKeyListInBytes)
             .recordList(keyValueList)
-            .operationListInBytes(operationListInBytes)
+            .operationListInBytes(null)
             .udfContext(inputContext.getUdfContext())
             .skippedWhenExisted(inputContext.isSkippedWhenExisted())
-            .context(context)
             .build();
     }
 }

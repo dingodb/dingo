@@ -100,12 +100,7 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default boolean compute(byte[] primaryKey, List<byte[]> computes) {
-        byte[] stopArray = ByteArrayUtils.increment(primaryKey);
-        return compute(primaryKey, stopArray, computes);
-    }
-
-    default boolean compute(byte[] startPrimaryKey, byte[] endPrimaryKey, List<byte[]> operations) {
+    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op) {
         throw new UnsupportedOperationException();
     }
 

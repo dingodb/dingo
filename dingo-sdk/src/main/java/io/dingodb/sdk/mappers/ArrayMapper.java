@@ -17,7 +17,7 @@
 package io.dingodb.sdk.mappers;
 
 
-import io.dingodb.common.operation.Value;
+import io.dingodb.sdk.operation.Value;
 import io.dingodb.sdk.utils.TypeUtils;
 
 import java.lang.reflect.Array;
