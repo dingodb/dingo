@@ -134,7 +134,7 @@ public class DingoExampleUsingSDK {
                     records.add(record);
                     totalRealInsertCnt++;
                 }
-                boolean isOK = dingoClient.insert(tableName, records);
+                dingoClient.insert(tableName, records);
                 long totalTimeCost = System.currentTimeMillis() - startTime;
                 System.out.println("inserted record: " + totalRealInsertCnt
                     + ", TotalCost: " + totalTimeCost + "ms"

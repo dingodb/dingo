@@ -17,12 +17,14 @@
 package io.dingodb.server.executor;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Executive;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.Part;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.Ping;
+import io.dingodb.server.ExecutiveRegistry;
 import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ServerApi;
@@ -82,6 +84,7 @@ public class ExecutorServer {
         netService.listenPort(DingoConfiguration.port());
         initAllApi();
         initStore();
+        loadExecutive();
         log.info("Starting executor success.");
     }
 
@@ -140,6 +143,10 @@ public class ExecutorServer {
 
     private StoreService loadStoreService() {
         return ServiceLoader.load(StoreServiceProvider.class).iterator().next().get();
+    }
+
+    private void loadExecutive() {
+        ServiceLoader.load(Executive.class).iterator().forEachRemaining(ExecutiveRegistry::register);
     }
 
 }

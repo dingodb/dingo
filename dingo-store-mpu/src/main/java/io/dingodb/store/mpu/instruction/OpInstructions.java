@@ -16,20 +16,19 @@
 
 package io.dingodb.store.mpu.instruction;
 
-import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.DingoOpResult;
+import io.dingodb.common.Executive;
 import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.operation.Operation;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.mpu.instruction.Instructions;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
+import io.dingodb.sdk.operation.op.Op;
+import io.dingodb.server.ExecutiveRegistry;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class OpInstructions implements Instructions {
@@ -82,38 +81,30 @@ public class OpInstructions implements Instructions {
         op.processor(COMPUTE_OC, new Processor() {
             @Override
             public Object process(Reader reader, Writer writer, Object... operand) {
-                byte[] start = (byte[]) operand[0];
-                byte[] end = (byte[]) operand[1];
-                List<Operation> operations = ((List<byte[]>) operand[2]).stream()
-                    .map(ProtostuffCodec::<Operation>read)
-                    .collect(Collectors.toList());
-                Iterator<KeyValue> iterator = reader.scan(start, end, true, ByteArrayUtils.equal(start, end));
-                for (Operation operation : operations) {
-                    List<KeyValue> execute = (List<KeyValue>) operation.operationType.executive().execute(
-                        operation.operationContext.startKey(start).endKey(end), iterator);
-                    if (execute.size() == 0) {
-                        continue;
-                    }
-                    iterator = execute.iterator();
-                }
-
+                List<byte[]> startBytes = (List<byte[]>) operand[0];
+                List<byte[]> endBytes = (List<byte[]>) operand[1];
+                Op head = ProtostuffCodec.read((byte[]) operand[2]);
                 int timestamp = (int) operand[3];
-                if (timestamp > 0) {
-                    while (iterator.hasNext()) {
-                        KeyValue entry = iterator.next();
-                        byte[] value = entry.getValue();
-                        byte[] valueWithTs = PrimitiveCodec.encodeInt(
-                            timestamp, ByteArrayUtils.unsliced(value, 0, value.length + 4), value.length, false);
-                        writer.set(entry.getKey(), valueWithTs);
-                    }
-                } else {
-                    while (iterator.hasNext()) {
-                        KeyValue entry = iterator.next();
-                        writer.set(entry.getKey(), entry.getValue());
-                    }
-                }
-                return true;
+                /*ExecutiveApi executiveApi = ApiRegistry.getDefault()
+                    .proxy(ExecutiveApi.class, CoordinatorConnector.defaultConnector());*/
+                io.dingodb.store.mpu.Reader r = new io.dingodb.store.mpu.Reader(reader);
+                io.dingodb.store.mpu.Writer w = new io.dingodb.store.mpu.Writer(writer);
+                head.context().reader(r).writer(w).startKey(startBytes).endKey(endBytes).timestamp(timestamp);
+
+                Executive headExec = ExecutiveRegistry.getExecutive(head.execId());
+
+                return exec(head, headExec.execute(head.context(), null), head.context().definition);
             }
         });
+    }
+
+    private static DingoOpResult exec(Op op, DingoOpResult result, TableDefinition definition) {
+        Op next = op.next();
+        if (next == null) {
+            return result;
+        }
+        next.context().definition(definition);
+        Executive nextExec = ExecutiveRegistry.getExecutive(next.execId());
+        return exec(next, nextExec.execute(next.context(), result.getValue()), definition);
     }
 }

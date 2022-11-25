@@ -16,7 +16,6 @@
 
 package io.dingodb.sdk;
 
-import io.dingodb.common.operation.Column;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.annotation.DingoRecord;
 import io.dingodb.sdk.client.DingoClient;
@@ -27,6 +26,7 @@ import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.mock.MockApiRegistry;
 import io.dingodb.sdk.mock.MockMetaClient;
 import io.dingodb.sdk.model.ConstructedClass;
+import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.StoreOperationUtils;
 import io.dingodb.sdk.utils.MetaServiceUtils;
 import org.junit.jupiter.api.AfterEach;

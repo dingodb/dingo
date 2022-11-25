@@ -19,10 +19,10 @@ package io.dingodb.server.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
-import io.dingodb.common.operation.DingoExecResult;
 import io.dingodb.common.store.KeyValue;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 public interface ExecutorApi {
 
@@ -60,11 +60,7 @@ public interface ExecutorApi {
     List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
-    List<DingoExecResult> operator(
-        CommonId tableId,
-        List<byte[]> startPrimaryKeys,
-        List<byte[]> endPrimaryKey,
-        List<byte[]> operations);
+    Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op);
 
     @ApiDeclaration
     default KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName) {

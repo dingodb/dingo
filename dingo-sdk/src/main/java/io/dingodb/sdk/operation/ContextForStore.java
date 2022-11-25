@@ -16,7 +16,6 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.common.operation.context.OperationContext;
 import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,12 +31,11 @@ public final class ContextForStore {
     private final List<byte[]> startKeyListInBytes;
     private final List<byte[]> endKeyListInBytes;
     private final List<KeyValue> recordList;
-    private final List<byte[]> operationListInBytes;
+    private final byte[] operationListInBytes;
 
     private final UDFContext udfContext;
 
     private final boolean skippedWhenExisted;
-    private final OperationContext context;
 
     public KeyValue getRecordByKey(byte[] key) {
         if (recordList == null) {

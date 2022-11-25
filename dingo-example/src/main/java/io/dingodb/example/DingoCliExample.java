@@ -16,7 +16,7 @@
 
 package io.dingodb.example;
 
-import io.dingodb.common.operation.Value;
+import io.dingodb.sdk.operation.Value;
 import io.dingodb.example.model.Person;
 import io.dingodb.sdk.client.DingoClient;
 import io.dingodb.sdk.client.DingoOpCli;

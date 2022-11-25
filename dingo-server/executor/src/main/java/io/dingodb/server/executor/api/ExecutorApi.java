@@ -17,18 +17,15 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.operation.DingoExecResult;
-import io.dingodb.common.operation.Operation;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 @Slf4j
 public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
@@ -107,37 +104,13 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     @Override
-    public List<DingoExecResult> operator(CommonId tableId,
-                                          List<byte[]> startKeys,
-                                          List<byte[]> endKeys,
-                                          List<byte[]> operations) {
-        List<Operation> operationList = operations.stream()
-            .map(ProtostuffCodec::<Operation>read)
-            .collect(Collectors.toList());
-        List<DingoExecResult> results = new ArrayList<>();
-        List<byte[]> writeOperations = new ArrayList<>();
-        List<Operation> readOperations = new ArrayList<>();
-        for (int i = 0; i < operationList.size(); i++) {
-            if (operationList.get(i).operationType.isWriteable()) {
-                writeOperations.add(operations.get(i));
-            } else {
-                readOperations.add(operationList.get(i));
-            }
-        }
-        byte[] end = endKeys == null ? null : endKeys.get(0);
-        if (writeOperations.size() > 0) {
-            boolean isOK = storeService.getInstance(tableId).compute(startKeys.get(0), end, writeOperations);
-            results.add(new DingoExecResult(isOK, "OK"));
-        }
-
-        for (Operation operation : readOperations) {
-            Iterator<KeyValue> iterator = storeService.getInstance(tableId).keyValueScan(startKeys.get(0), end);
-            DingoExecResult value = (DingoExecResult)
-                operation.operationType.executive().execute(operation.operationContext, iterator);
-            results.add(value);
-
-        }
-        return results;
+    public Future<Object> operator(
+        CommonId tableId,
+        List<byte[]> startPrimaryKey,
+        List<byte[]> endPrimaryKey,
+        byte[] op) {
+        return CompletableFuture.completedFuture(storeService.getInstance(tableId)
+            .compute(startPrimaryKey, endPrimaryKey, op));
     }
 
     @Override

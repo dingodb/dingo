@@ -32,6 +32,8 @@ public class MetaClient extends ClientBase implements MetaService {
     @Delegate
     private CodeUDFApi codeUDFApi;
 
+    private CommonId id;
+
     public MetaClient(String coordinatorExchangeSvrList) {
         super(coordinatorExchangeSvrList);
     }
@@ -46,11 +48,12 @@ public class MetaClient extends ClientBase implements MetaService {
         metaServiceApi = super.getNetService()
             .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
         codeUDFApi = ApiRegistry.getDefault().proxy(CodeUDFApi.class, super.getCoordinatorConnector());
+        this.id = metaServiceApi.rootId();
     }
 
     @Override
     public CommonId id() {
-        return null;
+        return this.id;
     }
 
     @Override
