@@ -87,12 +87,14 @@ public class RocksStoreInstance implements StoreInstance {
                 RocksIterator rocksIterator = db.newIterator(readOptions);
                 while (rocksIterator.isValid()) {
                     count++;
-                    keyList.add(rocksIterator.key());
+                    if (doDeleting) {
+                        keyList.add(rocksIterator.key());
+                    }
                     rocksIterator.next();
                 }
             }
         }
-        if (!doDeleting) {
+        if (doDeleting) {
             keyList.stream().forEach(x -> {
                 try {
                     db.delete(x);
