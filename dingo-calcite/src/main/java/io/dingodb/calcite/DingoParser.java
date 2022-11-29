@@ -72,6 +72,7 @@ public class DingoParser {
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
         .withLex(Lex.MYSQL)
         .withCaseSensitive(false)
+        .withParserFactory(DingoDdlParserFactory.INSTANCE)
         .withConformance(new SqlDelegatingConformance(SqlConformanceEnum.MYSQL_5) {
             // Allows some system functions with no parameters to be used with Parentheses.
             // for example, `CURRENT_DATE`.

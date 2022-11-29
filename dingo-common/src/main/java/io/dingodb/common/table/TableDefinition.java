@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.partition.DingoTablePart;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -42,9 +42,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-@JsonPropertyOrder({"name", "columns"})
+@JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop"})
 @EqualsAndHashCode
 @AllArgsConstructor
 public class TableDefinition {
@@ -53,6 +54,7 @@ public class TableDefinition {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonProperty("name")
     private final String name;
+
     @JsonProperty("columns")
     @Getter
     @Setter
@@ -67,17 +69,20 @@ public class TableDefinition {
     @Getter
     private int version;
 
+    @JsonProperty("ttl")
     @Getter
     @Setter
-    private String partType;
+    private int ttl;
 
+    @JsonProperty("partition")
     @Getter
     @Setter
-    private Map<String, Object> attrMap;
+    private PartitionDefinition partDefinition;
 
+    @JsonProperty("prop")
     @Getter
     @Setter
-    private DingoTablePart dingoTablePart;
+    private Properties properties;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {

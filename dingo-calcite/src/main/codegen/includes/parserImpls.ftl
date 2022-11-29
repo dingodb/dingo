@@ -248,43 +248,45 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     SqlNodeList tableElementList = null;
     SqlNode query = null;
-    DingoTablePart dingoTablePart = null;
-    Map<String,Object> attrList = null;
-    List<DingoPartDetail> partList = null;
-    String partType = null;
+    int ttl = -1;
+    PartitionDefinition partitionDefinition = null;
+    Properties properties = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
-    [ <WITH> attrList = AttrMap() ]
+    [ <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
+        { ttl = positiveInteger(getNextToken().image, "ttl"); }
+    ]
     [
        <PARTITION> <BY>
-        {
-            dingoTablePart = new DingoTablePart();
-            dingoTablePart.setFuncName(partType = getNextToken().image);
-            dingoTablePart.setCols(readNames());
-            dingoTablePart.setPartDetails(readPartDetails());
-        }
+       {
+           partitionDefinition = new PartitionDefinition();
+           partitionDefinition.setFuncName(getNextToken().image);
+           partitionDefinition.setCols(readNames());
+           partitionDefinition.setDetails(readPartitionDetails());
+       }
     ]
+    [ <WITH> properties = readProperties() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
         return DingoSqlDdlNodes.createTable(
-            s.end(this), replace, ifNotExists, id, tableElementList, query, attrList, partType, dingoTablePart
+            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, properties
         );
     }
 }
 
-List<DingoPartDetail> readPartDetails() : {
-    List<DingoPartDetail> partDetails = new ArrayList<DingoPartDetail>();
+List<PartitionDetailDefinition> readPartitionDetails() : {
+    List<PartitionDetailDefinition> partitionDetailDefinitions = new ArrayList<PartitionDetailDefinition>();
 }{
     [
         <VALUES>
-        {partDetails.add(new DingoPartDetail(null, null, readValues()));}
+        { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues()));}
         (
            <COMMA>
-           {partDetails.add(new DingoPartDetail(null, null, readValues()));}
+           { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues()));}
         )*
-        { return partDetails; }
+        { return partitionDetailDefinitions; }
     ]
 }
 
@@ -316,48 +318,29 @@ List<String> readNames()  : {
 	{ return names; }
 }
 
-
-Map<String,Object> AttrMap() : {
-	final Map<String,Object> map = new HashMap<String,Object>();
+Properties readProperties() : {
+	final Properties properties = new Properties();
 	String key = null;
-	Object tmp = null;
-	Object value = null;
 }{
 	<LPAREN>
-	[
-		tmp = anything()
-		{ key=tmp.toString(); }
-		<EQ>
-		value = anything()
-		{ map.put(key, value); }
-		{ key = null; tmp = null; value = null; }
-		(
-			<COMMA>
-			tmp = anything()
-			{ key=tmp.toString(); }
-			<EQ>
-			value = anything()
-			{ map.put(key, value); }
-			{ key = null; tmp = null; value = null; }
-		)*
-	]
+    [<RPAREN> {return properties;}]
+    { key = getNextToken().image; }
+    <EQ>
+    { properties.setProperty(key, getNextToken().image); }
+    (
+        <COMMA>
+        { key = getNextToken().image; }
+        <EQ>
+        { properties.setProperty(key, getNextToken().image); }
+    )*
 	<RPAREN>
-	{ return map; }
+	{ return properties; }
 }
 
 String symbol() : {
 }{
 	<IDENTIFIER>
 	{ return token.image; }
-}
-
-String getPartCol() : {
-}{
-	<IDENTIFIER>
-	{
-        return unquotedIdentifier();
-
-    }
 }
 
 Object nullValue(): {}{
@@ -374,6 +357,7 @@ Object anything() : {
 	| <DATE_LITERAL>
 	| <TIME_LITERAL>
 	| <DATE_TIME>
+    | <QUOTED_STRING> {return SqlParserUtil.parseString(token.image);}
 	| x = number() { return x; }
 	| x = booleanValue()
 	| x = NonReservedKeyWord()

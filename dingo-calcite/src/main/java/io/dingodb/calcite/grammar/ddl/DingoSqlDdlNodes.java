@@ -16,7 +16,8 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import io.dingodb.common.partition.DingoTablePart;
+import io.dingodb.calcite.utils.ParseValueUtils;
+import io.dingodb.common.partition.PartitionDefinition;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -24,6 +25,8 @@ import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Map;
+import java.util.Properties;
+
 
 public class DingoSqlDdlNodes {
 
@@ -35,11 +38,10 @@ public class DingoSqlDdlNodes {
         SqlIdentifier name,
         SqlNodeList columnList,
         SqlNode query,
-        Map<String,Object> attrMap,
-        String partType,
-        DingoTablePart dingoTablePart
+        int ttl,
+        PartitionDefinition partitionDefinition,
+        Properties properties
     ) {
-
         return new DingoSqlCreateTable(
             pos,
             replace,
@@ -47,9 +49,9 @@ public class DingoSqlDdlNodes {
             name,
             columnList,
             query,
-            attrMap,
-            partType,
-            dingoTablePart
+            ttl,
+            partitionDefinition,
+            properties
         );
     }
 

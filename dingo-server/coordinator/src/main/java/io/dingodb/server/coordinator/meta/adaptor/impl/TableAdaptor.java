@@ -20,11 +20,12 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.partition.DingoPartDetail;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
@@ -37,12 +38,12 @@ import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -124,16 +125,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         columns.stream()
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
-        int ttl = TableAdaptor.getTtl(table);
-        List<TablePart> tablePartList;
-        if (definition.getDingoTablePart() != null) {
-            try {
-                table.setAutoSplit(false);
-                tablePartList = getPreDefineParts(table, definition);
-            } catch (IOException e) {
-                throw new RuntimeException("Table create partition failed.", e);
-            }
-        } else {
+        int ttl = table.getTtl();
+        List<TablePart> tablePartList = Optional.mapOrNull(definition.getPartDefinition(), __ -> getPreDefineParts(table, definition));
+        if (tablePartList == null) {
             TablePart tablePart = TablePart.builder()
                 .version(0)
                 .schema(table.getSchema())
@@ -147,7 +141,6 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         }
         metaStore.upsertKeyValue(keyValues);
         keyValues.clear();
-        metaMap.put(tableId, table);
         super.save(table);
         columns.forEach(columnAdaptor::save);
         for (TablePart tablePart : tablePartList) {
@@ -165,15 +158,15 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     @SuppressWarnings("checkstyle:MultipleVariableDeclarations")
-    private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) throws IOException {
+    private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) {
         List<TablePart> tablePartList = new ArrayList<>();
-        String partType = definition.getPartType();
+        String strategy = definition.getPartDefinition().getFuncName();
         int primaryKeyCount = definition.getPrimaryKeyCount();
-        if ("range".equalsIgnoreCase(partType)) {
-            List<DingoPartDetail> partDetailList = definition.getDingoTablePart().getPartDetails();
+        if ("range".equalsIgnoreCase(strategy)) {
+            List<PartitionDetailDefinition> partDetailList = definition.getPartDefinition().getDetails();
             KeyValueCodec partKeyCodec = new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
             Iterator<byte[]> keys = partDetailList.stream()
-                .map(DingoPartDetail::getOperand)
+                .map(PartitionDetailDefinition::getOperand)
                 .map(operand -> operand.toArray(new Object[primaryKeyCount]))
                 .map(NoBreakFunctions.wrap(partKeyCodec::encodeKey))
                 .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
@@ -213,7 +206,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
     public TablePart newPart(CommonId tableId, byte[] start, byte[] end) {
         Table table = get(tableId);
-        int ttl = TableAdaptor.getTtl(table);
+        int ttl = table.getTtl();
         log.info("TableAdaptor newPart, table id: {}, ttl: {}.", table.getId(), ttl);
         TablePart tablePart = TablePart.builder()
             .version(0)
@@ -279,15 +272,13 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     public TableDefinition getDefinition(CommonId id) {
-        if (get(id) == null) {
-            return null;
-        }
-        return metaToDefinition(get(id));
+        return Optional.mapOrNull(get(id), this::metaToDefinition);
     }
 
     public Map<String, TableDefinition> getAllDefinition(CommonId id) {
         return Optional.ofNullable(idNameMap.get(id)).map(Map::values).map(__ -> __.stream()
             .map(this::getDefinition)
+            .filter(Objects::nonNull)
             .collect(Collectors.toMap(TableDefinition::getName, Function.identity())
         )).orElseGet(HashMap::new);
     }
@@ -302,12 +293,10 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(this::metaToDefinition)
             .collect(Collectors.toList());
         tableDefinition.setColumns(columnDefinitions);
-        tableDefinition.setDingoTablePart(table.getDingoTablePart());
-        tableDefinition.setAttrMap(table.getProperties());
-        tableDefinition.setPartType(table.getPartType());
-        if (log.isInfoEnabled()) {
-            log.info("Meta to table definition: {}", tableDefinition);
-        }
+        tableDefinition.setPartDefinition(table.getPartDefinition());
+        tableDefinition.setProperties(table.getProperties());
+        tableDefinition.setTtl(table.getTtl());
+        DebugLog.debug(log, "Meta to table definition: {}", tableDefinition);
         return tableDefinition;
     }
 
@@ -331,9 +320,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .partMaxCount(CoordinatorConfiguration.schedule().getDefaultAutoMaxCount())
             .partMaxSize(CoordinatorConfiguration.schedule().getDefaultAutoMaxSize())
             .autoSplit(CoordinatorConfiguration.schedule().isAutoSplit())
-            .properties(definition.getAttrMap())
-            .partType(definition.getPartType())
-            .dingoTablePart(definition.getDingoTablePart())
+            .properties(definition.getProperties())
+            .partDefinition(definition.getPartDefinition())
+            .ttl(definition.getTtl())
             .build();
     }
 
@@ -360,21 +349,4 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         }
     }
 
-    public static int getTtl(Table table) {
-        int ttl = -1;
-        Map<String, Object> attrMap = table.getProperties();
-        if (attrMap == null || attrMap.isEmpty()) {
-            return ttl;
-        }
-        Object ttlObject = attrMap.get("TTL");
-        if (ttlObject == null) {
-            return ttl;
-        }
-        try {
-            ttl = Integer.parseInt(ttlObject.toString());
-        } catch (NumberFormatException numberFormatException) {
-            log.error("get ttl, exception.", numberFormatException);
-        }
-        return ttl;
-    }
 }

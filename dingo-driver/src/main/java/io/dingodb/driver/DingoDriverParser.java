@@ -64,7 +64,6 @@ public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(@Nonnull DingoConnection connection) {
         super(connection.getContext(), connection.config());
         this.connection = connection;
-        PARSER_CONFIG = PARSER_CONFIG.withParserFactory(DingoDdlParserFactory.INSTANCE);
     }
 
     private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @Nonnull RelDataType type) {

@@ -27,7 +27,7 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class DingoPartDetail implements Serializable {
+public class PartitionDetailDefinition implements Serializable {
 
     private static final long serialVersionUID = -2687766895780655226L;
 
@@ -40,10 +40,7 @@ public class DingoPartDetail implements Serializable {
     @JsonProperty("operand")
     List<Object> operand = null;
 
-    @JsonProperty("function")
-    String function = null;
-
-    public DingoPartDetail(Object partName, String operator, List<Object> operand) {
+    public PartitionDetailDefinition(Object partName, String operator, List<Object> operand) {
         if (partName != null) {
             this.partName = partName.toString();
         }

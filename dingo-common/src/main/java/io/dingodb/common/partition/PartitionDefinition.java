@@ -17,6 +17,7 @@
 package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -27,7 +28,8 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class DingoTablePart implements Serializable {
+@AllArgsConstructor
+public class PartitionDefinition implements Serializable {
 
     private static final long serialVersionUID = 2252446672472101114L;
 
@@ -37,18 +39,15 @@ public class DingoTablePart implements Serializable {
     @JsonProperty("cols")
     List<String> cols;
 
-    @JsonProperty("partSize")
-    Integer partSize;
+    @JsonProperty("details")
+    List<PartitionDetailDefinition> details;
 
-    @JsonProperty("partDetails")
-    List<DingoPartDetail> partDetails;
-
-    public DingoTablePart(String funcName, List<String> cols) {
+    public PartitionDefinition(String funcName, List<String> cols) {
         this.funcName = funcName;
         this.cols = cols;
     }
 
-    public DingoTablePart() {
+    public PartitionDefinition() {
     }
 
 }
