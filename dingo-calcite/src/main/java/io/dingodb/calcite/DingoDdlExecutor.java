@@ -18,8 +18,8 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
-import io.dingodb.common.partition.DingoPartDetail;
-import io.dingodb.common.partition.DingoTablePart;
+import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
@@ -180,9 +180,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .collect(Collectors.toCollection(ArrayList::new));
 
         // Validate partition strategy
-        if (create.getPartType() != null) {
-            validatePartitionBy(pks, columns, create.getPartType(), create.getDingoTablePart());
-        }
+        Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, columns, __));
 
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
 
@@ -214,9 +212,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             columns,
             null,
             1,
-            create.getPartType(),
-            create.getAttrMap(),
-            create.getDingoTablePart()
+            create.getTtl(),
+            create.getPartDefinition(),
+            create.getProperties()
         ));
     }
 
@@ -265,27 +263,27 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void validatePartitionBy(
         @NonNull List<String> keyList,
         @NonNull List<ColumnDefinition> cols,
-        @NonNull String strategy,
-        @NonNull DingoTablePart dingoTablePart
+        @NonNull PartitionDefinition partDefinition
     ) {
         StrParseConverter converter = StrParseConverter.INSTANCE;
         cols = cols.stream().filter(col -> keyList.contains(col.getName())).collect(Collectors.toList());
-        switch (strategy.toUpperCase()) {
+        String strategy = partDefinition.getFuncName().toUpperCase();
+        switch (strategy) {
             case "RANGE":
-                if (dingoTablePart.getCols() == null || dingoTablePart.getCols().isEmpty()) {
-                    dingoTablePart.setCols(keyList);
+                if (partDefinition.getCols() == null || partDefinition.getCols().isEmpty()) {
+                    partDefinition.setCols(keyList);
                 } else {
-                    dingoTablePart.setCols(
-                        dingoTablePart.getCols().stream().map(String::toUpperCase).collect(Collectors.toList())
+                    partDefinition.setCols(
+                        partDefinition.getCols().stream().map(String::toUpperCase).collect(Collectors.toList())
                     );
                 }
-                if (!keyList.equals(dingoTablePart.getCols())) {
+                if (!keyList.equals(partDefinition.getCols())) {
                     throw new IllegalArgumentException(
-                        "Partition columns must be equals primary key columns, but " + dingoTablePart.getCols()
+                        "Partition columns must be equals primary key columns, but " + partDefinition.getCols()
                     );
                 }
 
-                for (DingoPartDetail rangePart : dingoTablePart.getPartDetails()) {
+                for (PartitionDetailDefinition rangePart : partDefinition.getDetails()) {
                     List<Object> operand = rangePart.getOperand();
                     for (int i = 0; i < operand.size(); i++) {
                         operand.set(i, cols.get(i).getType().convertFrom(operand.get(i).toString(), converter));

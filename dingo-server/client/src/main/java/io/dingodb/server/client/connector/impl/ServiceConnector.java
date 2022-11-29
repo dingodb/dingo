@@ -77,12 +77,12 @@ public class ServiceConnector implements Connector, Supplier<Location> {
     @Override
     public Location get() {
         int times = 10;
-        int sleep = 200;
+        int sleep = 500;
         while (!verify() && times-- > 0) {
             try {
                 Thread.sleep(sleep);
                 refresh();
-                sleep *= (10 - times);
+                sleep += sleep;
             } catch (InterruptedException e) {
                 log.error("Wait coordinator connector ready, but interrupted.");
             }

@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import io.dingodb.common.partition.DingoTablePart;
+import io.dingodb.common.partition.PartitionDefinition;
 import lombok.Getter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -25,19 +25,16 @@ import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Map;
+import java.util.Properties;
 
 public class DingoSqlCreateTable extends SqlCreateTable {
 
-    @Getter
-    Map<String,Object> attrMap;
+    @Getter Properties properties;
+
+    @Getter PartitionDefinition partDefinition;
 
     @Getter
-    DingoTablePart dingoTablePart;
-
-
-    @Getter
-    String partType;
+    int ttl;
 
     /**
      * Creates a SqlCreateTable.
@@ -56,13 +53,13 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         SqlIdentifier name,
         @Nullable SqlNodeList columnList,
         @Nullable SqlNode query,
-        Map<String,Object> attrMap,
-        String partType,
-        DingoTablePart dingoTablePart
+        int ttl,
+        PartitionDefinition partDefinition,
+        Properties properties
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
-        this.attrMap = attrMap;
-        this.partType = partType;
-        this.dingoTablePart = dingoTablePart;
+        this.properties = properties;
+        this.partDefinition = partDefinition;
+        this.ttl = ttl;
     }
 }

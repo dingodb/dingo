@@ -50,7 +50,8 @@ task fatJar(type: Jar) {
 }
 
 fatJar.dependsOn([
-    ':dingo-server:dingo-server-client:jar'
+    ':dingo-server:dingo-server-client:jar',
+    ':dingo-sdk:jar'
 ])
 
 tasks.named("build") { x ->
