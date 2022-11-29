@@ -216,6 +216,7 @@ public class Core {
             Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
             return;
         }
+        log.info("Can not connect primary, maybe current node is primary, connect mirrors.");
         connectMirrors();
         if (controlUnit == null || mirror == null) {
             Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
@@ -271,7 +272,7 @@ public class Core {
             return;
         }
         log.info("Receive connect request from {}.", mirror.label);
-        execute("connect-mirror-" + mirror, () -> {
+        execute("connect-mirror-" + mirror.label, () -> {
             if (controlUnit == null) {
                 return;
             }

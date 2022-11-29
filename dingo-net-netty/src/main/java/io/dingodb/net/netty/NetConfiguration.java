@@ -63,7 +63,7 @@ public class NetConfiguration {
         return INSTANCE.host;
     }
 
-    public static Integer apiTimeout() {
+    public static int apiTimeout() {
         return INSTANCE.apiTimeout == null ? 30 : INSTANCE.apiTimeout;
     }
 

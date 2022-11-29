@@ -144,6 +144,7 @@ public class NetService implements io.dingodb.net.NetService {
             }
             connection.get().addCloseListener(__ -> executor.shutdownGracefully());
             connection.ifPresent(__ -> __.addCloseListener(___ -> connections.remove(location, __)));
+            connection.ifPresent(__ -> __.socket().closeFuture().addListener(ignore -> __.close()));
             return connection.get();
         });
     }
