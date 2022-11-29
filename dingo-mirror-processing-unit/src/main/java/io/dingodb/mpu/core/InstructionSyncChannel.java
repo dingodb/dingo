@@ -65,11 +65,14 @@ public class InstructionSyncChannel implements Channel, MessageListener {
 
     public SelectReturn connect() {
         try {
+            log.info("Sync channel {} -> {} connect.", core.meta.label, mirror.label);
             CompletableFuture<Void> future = new CompletableFuture<>();
             this.channel = NET.newChannel(mirror.location);
             channel.setCloseListener(ch -> future.completeExceptionally(new RuntimeException("Channel closed.")));
-            if (connectMirror(mirror.location, new SyncChannel(channel.channelId(), core.meta, clock)) != OK) {
+            SelectReturn ret = connectMirror(mirror.location, new SyncChannel(channel.channelId(), core.meta, clock));
+            if (ret != OK) {
                 this.channel.close();
+                log.info("Sync channel {} -> {} connect failed, return {}.", core.meta.label, mirror.label, ret);
                 return NO;
             }
             channel.setMessageListener((_1, _2) -> future.complete(null));
@@ -78,17 +81,20 @@ public class InstructionSyncChannel implements Channel, MessageListener {
             channel.setCloseListener(this::onClose);
             channel.setMessageListener(this);
             syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
+            log.info("Connected mirror {}, mirror sync clock [{}]", mirror.label, syncClock);
             return OK;
         } catch (Exception e) {
             if (channel != null && !channel.isClosed()) {
                 channel.close();
             }
+            log.error("Sync channel {} -> {} connect failed.", core.meta.label, mirror.label, e);
             return ERROR;
         }
     }
 
     public synchronized void assignControlUnit(ControlUnit controlUnit) {
         if (channel == null || channel.isClosed()) {
+            log.info("Assign control unit failed, channel is null or channel closed.");
             return;
         }
         if (this.controlUnit == null) {

@@ -38,7 +38,7 @@ public interface InternalApi {
     }
 
     static InternalApi instance(Location location) {
-        return API.proxy(InternalApi.class, location);
+        return API.proxy(InternalApi.class, location, 3);
     }
 
     @ApiDeclaration

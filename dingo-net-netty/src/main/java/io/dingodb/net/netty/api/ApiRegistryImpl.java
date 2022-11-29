@@ -154,7 +154,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
 
     @Override
     public <T> T proxy(Class<T> api, Supplier<Location> locationSupplier, T defined) {
-        return proxy(api, locationSupplier, defined, 0);
+        return proxy(api, locationSupplier, defined, NetConfiguration.apiTimeout());
     }
 
     @Override
