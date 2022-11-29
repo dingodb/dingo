@@ -34,6 +34,18 @@ final class CeilEvaluators {
     private CeilEvaluators() {
     }
 
+    static int ceil(int value) {
+        return value;
+    }
+
+    static long ceil(long value) {
+        return value;
+    }
+
+    static double ceil(double value) {
+        return ceil(BigDecimal.valueOf(value)).doubleValue();
+    }
+
     static @NonNull BigDecimal ceil(@NonNull BigDecimal value) {
         return value.setScale(0, RoundingMode.CEILING);
     }

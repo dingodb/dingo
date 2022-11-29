@@ -34,6 +34,18 @@ final class FloorEvaluators {
     private FloorEvaluators() {
     }
 
+    static int floor(int value) {
+        return value;
+    }
+
+    static long floor(long value) {
+        return value;
+    }
+
+    static double floor(double value) {
+        return floor(BigDecimal.valueOf(value)).doubleValue();
+    }
+
     static @NonNull BigDecimal floor(@NonNull BigDecimal value) {
         return value.setScale(0, RoundingMode.FLOOR);
     }

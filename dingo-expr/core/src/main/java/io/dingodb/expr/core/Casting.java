@@ -87,9 +87,9 @@ public final class Casting {
     }
 
     public static long decimalToLongRC(@NonNull BigDecimal value) {
-        BigDecimal n = value.setScale(0, RoundingMode.HALF_UP);
         long r = decimalToLong(value);
-        if (r != Long.MIN_VALUE && r != Long.MAX_VALUE) {
+        if (BigDecimal.valueOf(Long.MIN_VALUE).compareTo(value) <= 0
+            && value.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) <= 0) {
             return r;
         }
         throw longRangeException(value);

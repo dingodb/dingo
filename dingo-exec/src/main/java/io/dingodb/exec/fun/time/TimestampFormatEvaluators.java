@@ -45,10 +45,10 @@ final class TimestampFormatEvaluators {
     }
 
     static @NonNull String timestampFormat(long value, String format) {
-        return DingoDateTimeUtils.timestampFormat(DingoDateTimeUtils.fromUnixTimestamp(value), format);
+        return DingoDateTimeUtils.timestampFormat(new Timestamp(DateTimeUtils.fromSecond(value)), format);
     }
 
     static @NonNull String timestampFormat(long value) {
-        return DateTimeUtils.timestampFormat(DingoDateTimeUtils.fromUnixTimestamp(value));
+        return DateTimeUtils.timestampFormat(new Timestamp(DateTimeUtils.fromSecond(value)));
     }
 }

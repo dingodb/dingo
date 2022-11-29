@@ -21,7 +21,10 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+
+import static io.dingodb.expr.runtime.utils.DateTimeUtils.fromSecond;
 
 @Evaluators(
     induceSequence = {
@@ -34,7 +37,11 @@ final class TimestampCastEvaluators {
     }
 
     static @NonNull Timestamp timestampCast(long value) {
-        return new Timestamp(value);
+        return new Timestamp(fromSecond(value));
+    }
+
+    static @NonNull Timestamp timestampCast(@NonNull BigDecimal value) {
+        return new Timestamp(fromSecond(value));
     }
 
     static @Nullable Timestamp timestampCast(String value) {

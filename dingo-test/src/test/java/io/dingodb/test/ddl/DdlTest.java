@@ -252,6 +252,23 @@ public class DdlTest {
     }
 
     @Test
+    public void testCreateTableWithTimestampArray() throws SQLException {
+        String tableName = sqlHelper.prepareTable(
+            "create table {table} (id int, data timestamp array, primary key(id))",
+            "insert into {table} values(1, array[1, 2])"
+        );
+        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        assertThat(result).isInstanceOf(Array.class);
+        Array array = (Array) result;
+        assertThat(array.getBaseType()).isEqualTo(Types.TIMESTAMP);
+        assertThat((Object[]) array.getArray()).containsExactly(
+            new Timestamp(DateTimeUtils.fromSecond(1)),
+            new Timestamp(DateTimeUtils.fromSecond(2))
+        );
+        sqlHelper.dropTable(tableName);
+    }
+
+    @Test
     public void testCreateTableWithMultiset() throws SQLException {
         String tableName = sqlHelper.prepareTable(
             "create table {table} (id int, data int multiset, primary key(id))",
@@ -491,7 +508,7 @@ public class DdlTest {
         );
         sqlHelper.queryTest(
             "select * from " + tableName,
-            new String[] {"id", "name"},
+            new String[]{"id", "name"},
             DingoTypeFactory.tuple("INTEGER", "STRING"),
             "1, name1\n2, name2\n3, name3\n4, name4"
         );
@@ -515,7 +532,7 @@ public class DdlTest {
         );
         sqlHelper.queryTest(
             "select * from " + tableName + " where id like '1%'",
-            new String[] {"id", "name"},
+            new String[]{"id", "name"},
             DingoTypeFactory.tuple("STRING", "STRING"),
             "11, name1\n12, name2\n13, name3\n14, name4"
         );

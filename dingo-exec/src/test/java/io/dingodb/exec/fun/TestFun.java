@@ -29,8 +29,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -47,36 +45,8 @@ public class TestFun {
     private static @NonNull Stream<Arguments> getParameters() {
         return Stream.of(
             // number fun
-            arguments("abs(" + (Integer.MIN_VALUE + 1) + ")", Integer.MAX_VALUE),
-            arguments("abs(" + (Integer.MIN_VALUE - 1L) + ")", Integer.MAX_VALUE + 2L),
-            arguments("abs(" + (Long.MIN_VALUE + 1L) + ")", Long.MAX_VALUE),
-            arguments("ceil(101.2)", BigDecimal.valueOf(102)),
-            arguments("floor(101.2)", BigDecimal.valueOf(101)),
-            arguments("round(101, -2)", BigDecimal.valueOf(100)),
             // string fun
-            arguments("substring('DingoDatabase', 1, 5)", "Dingo"),
-            arguments("substring('DingoDatabase', 1, 100)", "DingoDatabase"),
-            arguments("substring('DingoDatabase', 2, int(2.5))", "ing"),
-            arguments("substring('DingoDatabase', 2, 2.5)", "ing"),
-            arguments("substring('DingoDatabase', 2, -3)", ""),
-            arguments("substring('DingoDatabase', -4, 4)", "base"),
-            arguments("substring('abcde', 1, 6)", "abcde"),
-            arguments("lower('HeLlO')", "hello"),
-            arguments("upper('HeLlO')", "HELLO"),
             arguments("trim(' HeLlO \\n\\t')", "HeLlO"),
-            arguments("replace('I love $name', '$name', 'Lucia')", "I love Lucia"),
-            // date&time
-            arguments("date_format(date('1980-2-3'), '%Y:%m:%d')", "1980:02:03"),
-            arguments("time_format(time('23:11:25'), '%H-%i-%s')", "23-11-25"),
-            arguments("timestamp_format(timestamp('1980-2-3 23:11:25'), '%Y%m%d %T')", "19800203 23:11:25"),
-            arguments(
-                "timestamp_format(timestamp('1980-2-3 23:11:25'), 'Date: %Y%m%d Time: %T')",
-                "Date: 19800203 Time: 23:11:25"
-            ),
-            arguments(
-                "unix_timestamp(timestamp('2022-04-14 00:00:00'))",
-                Timestamp.valueOf("2022-04-14 00:00:00").getTime() / 1000L
-            ),
             // collection types
             arguments("array(1, 2, 3)", new Object[]{1, 2, 3}),
             arguments("list(4, 5, 6)", ImmutableList.of(4, 5, 6)),

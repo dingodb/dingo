@@ -17,7 +17,6 @@
 package io.dingodb.calcite.fun;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.number.FormatFun;

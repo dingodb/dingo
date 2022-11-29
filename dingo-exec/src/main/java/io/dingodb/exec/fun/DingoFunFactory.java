@@ -22,7 +22,6 @@ import io.dingodb.exec.fun.number.AbsEvaluatorsFactory;
 import io.dingodb.exec.fun.number.CeilEvaluatorsFactory;
 import io.dingodb.exec.fun.number.FloorEvaluatorsFactory;
 import io.dingodb.exec.fun.number.FormatFun;
-import io.dingodb.exec.fun.number.ModFun;
 import io.dingodb.exec.fun.number.PowFun;
 import io.dingodb.exec.fun.number.RoundEvaluatorsFactory;
 import io.dingodb.exec.fun.special.ArrayConstructorOp;
@@ -53,13 +52,17 @@ import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.parser.DefaultFunFactory;
+import io.dingodb.expr.parser.op.Op;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoFunFactory extends DefaultFunFactory {
     // number functions
     public static final String ABS = "abs";
     public static final String CEIL = "ceil";
     public static final String FLOOR = "floor";
+    public static final String MOD = "mod";
     public static final String ROUND = "round";
     // date & time functions
     public static final String DATE_FORMAT = "date_format";
@@ -72,6 +75,13 @@ public class DingoFunFactory extends DefaultFunFactory {
 
     private DingoFunFactory() {
         super();
+    }
+
+    @Override
+    public @NonNull Op getCastFun(int typeCode) {
+        if (typeCode == TypeCode.TIMESTAMP) {
+        }
+        return super.getCastFun(typeCode);
     }
 
     public static synchronized DingoFunFactory getInstance() {
@@ -91,7 +101,6 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerEvaluator(CEIL, CeilEvaluatorsFactory.INSTANCE);
         registerEvaluator(FLOOR, FloorEvaluatorsFactory.INSTANCE);
         registerUdf(FormatFun.NAME, FormatFun::new);
-        registerUdf(ModFun.NAME, ModFun::new);
         registerUdf(PowFun.NAME, PowFun::new);
         registerEvaluator(ROUND, RoundEvaluatorsFactory.INSTANCE);
         // special

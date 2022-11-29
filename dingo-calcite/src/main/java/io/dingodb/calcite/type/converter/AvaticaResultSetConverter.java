@@ -16,12 +16,14 @@
 
 package io.dingodb.calcite.type.converter;
 
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.ConverterWithCalendar;
+import io.dingodb.common.type.scalar.TimestampType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +50,15 @@ public class AvaticaResultSetConverter extends ConverterWithCalendar {
     @Override
     public Object convert(@NonNull Object value) {
         return value;
+    }
+
+    @Override
+    public Object convert(@NonNull List<?> value, @NonNull DingoType elementType) {
+        if (elementType instanceof TimestampType) {
+            // Timestamps in array is not shifted by Calcite.
+            return value;
+        }
+        return super.convert(value, elementType);
     }
 
     @Override

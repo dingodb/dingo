@@ -24,42 +24,54 @@ import java.math.RoundingMode;
 
 @Evaluators(
     induceSequence = {
-        BigDecimal.class,
-        double.class,
         long.class,
         int.class,
+        double.class,
     }
 )
 final class RoundEvaluators {
     private RoundEvaluators() {
     }
 
-    static BigDecimal round(@NonNull BigDecimal value, long scale) {
+    static int round(int value, long scale) {
+        if (scale >= 0) {
+            return value;
+        }
+        return round(BigDecimal.valueOf(value), scale).intValue();
+    }
+
+    static long round(long value, long scale) {
+        if (scale >= 0) {
+            return value;
+        }
+        return round(BigDecimal.valueOf(value), scale).longValue();
+    }
+
+    static double round(double value, long scale) {
+        return round(BigDecimal.valueOf(value), scale).doubleValue();
+    }
+
+    static @NonNull BigDecimal round(@NonNull BigDecimal value, long scale) {
         if (scale > 10 || scale < -10) {
             throw new ArithmeticException("Parameter out of range.");
         }
-
-        // If value is integer and scale > 0, return the original value
-        if (scale > 0 && value.scale() == 0) {
-            return value;
+        BigDecimal result = value.setScale((int) scale, RoundingMode.HALF_UP);
+        if (scale < 0) {
+            result = result.setScale(0, RoundingMode.HALF_UP);
         }
-        if (scale >= 0) {
-            return value.setScale((int) scale, RoundingMode.HALF_UP);
-        }
+        return result;
+    }
 
-        long temp = 1;
-        for (int i = 1; i <= (-scale); i++) {
-            temp = temp * 10;
-        }
+    static int round(int value) {
+        return value;
+    }
 
-        BigDecimal t = BigDecimal.valueOf(temp);
-        BigDecimal divide = value.divide(t);
-        if (divide.abs().compareTo(new BigDecimal("0.1")) < 0) {
-            return BigDecimal.ZERO;
-        }
+    static long round(long value) {
+        return value;
+    }
 
-        divide = divide.setScale(0, RoundingMode.HALF_UP);
-        return divide.multiply(t);
+    static double round(double value) {
+        return round(value, 0);
     }
 
     static @NonNull BigDecimal round(@NonNull BigDecimal value) {

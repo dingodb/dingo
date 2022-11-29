@@ -14,41 +14,35 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.time;
+package io.dingodb.expr.runtime.evaluator.arithmetic;
 
-import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.annotations.Evaluators;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.runtime.utils.NumberUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.sql.Timestamp;
 
 @Evaluators(
     induceSequence = {
-        long.class,
-        double.class,
         BigDecimal.class,
-        int.class,
+        double.class,
+        long.class,
+        int.class
     }
 )
-final class UnixTimestampEvaluators {
-    private UnixTimestampEvaluators() {
+public final class ModEvaluators {
+    private ModEvaluators() {
     }
 
-    static long unixTimestamp(@NonNull Timestamp value) {
-        return DateTimeUtils.toSecond(value.getTime())
-            .setScale(0, RoundingMode.HALF_UP)
-            .longValue();
+    static int mod(int value0, int value1) {
+        return NumberUtils.mod(value0, value1);
     }
 
-    static long unixTimestamp() {
-        Timestamp value = DingoDateTimeUtils.currentTimestamp();
-        return unixTimestamp(value);
+    static long mod(long value0, long value1) {
+        return NumberUtils.mod(value0, value1);
     }
 
-    static long unixTimestamp(long value) {
-        return value;
+    static @NonNull BigDecimal mod(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
+        return value0.remainder(value1);
     }
 }

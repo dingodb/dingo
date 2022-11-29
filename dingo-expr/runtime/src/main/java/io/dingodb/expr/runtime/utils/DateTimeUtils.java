@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -231,6 +233,21 @@ public final class DateTimeUtils {
         final DateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         dtf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return dtf.format(new Timestamp(milliSeconds));
+    }
+
+    public static @NonNull BigDecimal toSecond(long milliSeconds) {
+        return BigDecimal.valueOf(milliSeconds)
+            .divide(BigDecimal.valueOf(1000L), 3, RoundingMode.HALF_UP);
+    }
+
+    public static long fromSecond(@NonNull BigDecimal second) {
+        return second.multiply(BigDecimal.valueOf(1000L))
+            .setScale(0, RoundingMode.HALF_UP)
+            .longValue();
+    }
+
+    public static long fromSecond(long second) {
+        return second * 1000L;
     }
 
     public static @NonNull String dateFormat(@NonNull Date value) {

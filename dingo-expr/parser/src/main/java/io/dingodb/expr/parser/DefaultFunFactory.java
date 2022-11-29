@@ -30,6 +30,7 @@ import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpWithEvaluator;
 import io.dingodb.expr.parser.op.OrOp;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.evaluator.arithmetic.ModEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.BinaryCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorsFactory;
@@ -65,7 +66,6 @@ import io.dingodb.expr.runtime.op.string.SubstrEvaluatorsFactory;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -85,6 +85,9 @@ public class DefaultFunFactory implements FunFactory {
         funSuppliers.put(IsNotTrueOp.FUN_NAME, IsNotTrueOp::fun);
         funSuppliers.put(IsFalseOp.FUN_NAME, IsFalseOp::fun);
         funSuppliers.put(IsNotFalseOp.FUN_NAME, IsNotFalseOp::fun);
+
+        // Arithmetical
+        registerEvaluator("mod", ModEvaluatorsFactory.INSTANCE);
 
         // Mathematical
         registerEvaluator("min", MinEvaluatorsFactory.INSTANCE);
