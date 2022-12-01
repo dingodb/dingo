@@ -22,6 +22,7 @@ import io.dingodb.exec.fun.number.AbsEvaluatorsFactory;
 import io.dingodb.exec.fun.number.CeilEvaluatorsFactory;
 import io.dingodb.exec.fun.number.FloorEvaluatorsFactory;
 import io.dingodb.exec.fun.number.FormatFun;
+import io.dingodb.exec.fun.number.ModEvaluatorsFactory;
 import io.dingodb.exec.fun.number.PowFun;
 import io.dingodb.exec.fun.number.RoundEvaluatorsFactory;
 import io.dingodb.exec.fun.special.ArrayConstructorOp;
@@ -52,10 +53,7 @@ import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
-import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.parser.DefaultFunFactory;
-import io.dingodb.expr.parser.op.Op;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DingoFunFactory extends DefaultFunFactory {
     // number functions
@@ -77,13 +75,6 @@ public class DingoFunFactory extends DefaultFunFactory {
         super();
     }
 
-    @Override
-    public @NonNull Op getCastFun(int typeCode) {
-        if (typeCode == TypeCode.TIMESTAMP) {
-        }
-        return super.getCastFun(typeCode);
-    }
-
     public static synchronized DingoFunFactory getInstance() {
         if (instance == null) {
             instance = new DingoFunFactory();
@@ -101,6 +92,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerEvaluator(CEIL, CeilEvaluatorsFactory.INSTANCE);
         registerEvaluator(FLOOR, FloorEvaluatorsFactory.INSTANCE);
         registerUdf(FormatFun.NAME, FormatFun::new);
+        registerEvaluator(MOD, ModEvaluatorsFactory.INSTANCE);
         registerUdf(PowFun.NAME, PowFun::new);
         registerEvaluator(ROUND, RoundEvaluatorsFactory.INSTANCE);
         // special

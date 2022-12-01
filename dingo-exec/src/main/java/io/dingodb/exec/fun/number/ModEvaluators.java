@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.evaluator.arithmetic;
+package io.dingodb.exec.fun.number;
 
 import io.dingodb.expr.annotations.Evaluators;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
 
@@ -33,15 +34,15 @@ public final class ModEvaluators {
     private ModEvaluators() {
     }
 
-    static int mod(int value0, int value1) {
-        return value0 % value1;
+    static @Nullable Integer mod(int value0, int value1) {
+        return value1 != 0 ? value0 % value1 : null;
     }
 
-    static long mod(long value0, long value1) {
-        return value0 % value1;
+    static @Nullable Long mod(long value0, long value1) {
+        return value1 != 0 ? value0 % value1 : null;
     }
 
-    static @NonNull BigDecimal mod(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
-        return value0.remainder(value1);
+    static @Nullable BigDecimal mod(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
+        return value1.compareTo(BigDecimal.ZERO) != 0 ? value0.remainder(value1) : null;
     }
 }
