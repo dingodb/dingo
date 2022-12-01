@@ -18,6 +18,7 @@ package io.dingodb.common.type.converter;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -41,6 +42,16 @@ public class DingoConverter implements DataConverter {
     @Override
     public Long convert(@NonNull Timestamp value) {
         return value.getTime();
+    }
+
+    @Override
+    public String convert(@NonNull BigDecimal value) {
+        return value.toString();
+    }
+
+    @Override
+    public BigDecimal convertDecimalFrom(@NonNull Object value) {
+        return new BigDecimal((String) value);
     }
 
     @Override

@@ -16,10 +16,12 @@
 
 package io.dingodb.test;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,6 +91,40 @@ public class FullLifetimeTableTest {
             new String[]{"res"},
             Collections.singletonList(
                 new Object[]{null}
+            )
+        );
+    }
+
+    @Test
+    public void testPowFun() throws SQLException {
+        sqlHelper.doTest(
+            "create table {table} (id int, name varchar(20), age int, amount double, primary key(id))",
+            "insert into {table} values"
+                + "(1, 'Alice', 10, 2.58),"
+                + "(2, 'Betty', 25, 109.11)",
+            2,
+            "select pow(age, id) pai from {table}",
+            new String[]{"pai"},
+            ImmutableList.of(
+                new Object[]{BigDecimal.valueOf(10)},
+                new Object[]{BigDecimal.valueOf(625)}
+            )
+        );
+    }
+
+    @Test
+    public void testModFun() throws SQLException {
+        sqlHelper.doTest(
+            "create table {table} (id int, name varchar(20), age int, amount double, primary key(id))",
+            "insert into {table} values"
+                + "(1, 'Alice', 10, 2.58),"
+                + "(2, 'Betty', 25, 109.11)",
+            2,
+            "select mod(amount, age) from {table}",
+            new String[]{"EXPR$0"},
+            ImmutableList.of(
+                new Object[]{BigDecimal.valueOf(2.58)},
+                new Object[]{BigDecimal.valueOf(9.11)}
             )
         );
     }

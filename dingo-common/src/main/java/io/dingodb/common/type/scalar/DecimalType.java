@@ -21,8 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
-import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
+import io.dingodb.serial.schema.StringSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -41,7 +41,7 @@ public class DecimalType extends AbstractScalarType {
 
     @Override
     public DingoSchema toDingoSchema(int index) {
-        return new BytesSchema(index);
+        return new StringSchema(index, 0);
     }
 
     @Override
