@@ -47,6 +47,9 @@ public class FilterExec extends AbstractExecutive<Context, Iterator<Object[]>> {
     @Override
     public DingoOpResult execute(Context context, Iterator<Object[]> records) {
         DingoFilter filter = context.filter();
+        if (filter == null) {
+            return new CollectionOpResult<>(records);
+        }
         List<Object[]> result = new ArrayList<>();
         while (records.hasNext()) {
             Object[] next = records.next();

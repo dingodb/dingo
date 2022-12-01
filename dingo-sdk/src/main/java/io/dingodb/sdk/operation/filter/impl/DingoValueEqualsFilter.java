@@ -24,6 +24,10 @@ public class DingoValueEqualsFilter extends AbstractDingoFilter {
     private int[] index;
     private Object[] value;
 
+    public DingoValueEqualsFilter(Object[] value) {
+        this.value = value;
+    }
+
     public DingoValueEqualsFilter(int[] index, Object[] value) {
         this.index = index;
         this.value = value;
@@ -33,6 +37,11 @@ public class DingoValueEqualsFilter extends AbstractDingoFilter {
     public boolean filter(Object[] records) {
         Object[] record0 = Arrays.stream(index).mapToObj(i -> records[i]).toArray();
         return equals(record0);
+    }
+
+    @Override
+    public boolean filter(Object record) {
+        return equals(new Object[]{record});
     }
 
     private boolean equals(Object[] record0) {

@@ -24,6 +24,11 @@ public class AbstractDingoFilter implements DingoFilter {
     }
 
     @Override
+    public boolean filter(Object record) {
+        return false;
+    }
+
+    @Override
     public void addOrFilter(DingoFilter filter) {
     }
 

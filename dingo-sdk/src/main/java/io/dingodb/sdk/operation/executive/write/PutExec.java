@@ -79,7 +79,8 @@ public class PutExec extends AbstractExecutive<Context, Void> {
 
             }
         } catch (RuntimeException e) {
-            throw new RuntimeException(e);
+            log.error("Put record failed. e", e);
+            return new VoidOpResult<>(false);
         }
         return new VoidOpResult<>(true);
     }

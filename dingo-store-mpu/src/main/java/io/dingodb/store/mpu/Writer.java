@@ -30,6 +30,11 @@ public class Writer implements io.dingodb.sdk.operation.Writer {
     }
 
     @Override
+    public void erase(byte[] key) {
+        writer.erase(key);
+    }
+
+    @Override
     public void erase(byte[] begin, byte[] end) {
         writer.erase(begin, end);
     }

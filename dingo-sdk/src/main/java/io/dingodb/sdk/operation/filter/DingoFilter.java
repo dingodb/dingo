@@ -20,6 +20,8 @@ public interface DingoFilter {
 
     boolean filter(Object[] record);
 
+    boolean filter(Object record);
+
     void addOrFilter(DingoFilter filter);
 
     void addAndFilter(DingoFilter filter);

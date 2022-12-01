@@ -45,12 +45,14 @@ public class ValueOpResult<V extends NumberUnit> implements DingoOpResult<V> {
 
     @Override
     public DingoOpResult merge(V that) {
-        if (value != null) {
-            value.merge(that);
-        } else {
-            value = that;
+        if (that == null) {
+            return this;
         }
-        value = value == null ? that : (V) value.merge(that);
+        if (value == null) {
+            value = that;
+            return this;
+        }
+        value = (V) value.merge(that);
         return this;
     }
 }

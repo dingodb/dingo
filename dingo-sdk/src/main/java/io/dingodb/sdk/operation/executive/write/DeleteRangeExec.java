@@ -30,13 +30,13 @@ import java.io.IOException;
 
 @Slf4j
 @AutoService(Executive.class)
-public class DeleteExec extends AbstractExecutive<Context, Void> {
+public class DeleteRangeExec extends AbstractExecutive<Context, Void> {
 
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
         0,
-        3);
+        4);
 
     @Override
     public CommonId getId() {
@@ -46,7 +46,7 @@ public class DeleteExec extends AbstractExecutive<Context, Void> {
     @Override
     public DingoOpResult<Boolean> execute(Context context, Void record) {
         try {
-            context.writer().erase(context.startKey().get(0));
+            context.writer().erase(context.startKey().get(0), context.endKey().get(0));
         } catch (IOException e) {
             log.error("Delete record failed. e", e);
             return new VoidOpResult<>(false);

@@ -422,7 +422,7 @@ public class DingoClient {
      * @return record list of table in Record mode, null if not found.
      */
     public final List<Record> query(Key start, Key end, DingoFilter filter) {
-        return doQuery(Arrays.asList(start), Arrays.asList(end), filter);
+        return doQuery(start, end, filter);
     }
 
     /**
@@ -471,8 +471,8 @@ public class DingoClient {
         return (boolean) result.getValue();
     }
 
-    private List<Record> doQuery(List<Key> startKeys, List<Key> endKeys, DingoFilter filter) {
-        CollectionOp op = Op.scan(startKeys.get(0), endKeys.get(0)).filter(filter);
+    private List<Record> doQuery(Key startKey, Key endKey, DingoFilter filter) {
+        CollectionOp op = Op.scan(startKey, endKey).filter(filter);
         DingoOpResult result = exec(op);
 
         return toRecord(result, op.head());
@@ -485,18 +485,18 @@ public class DingoClient {
         return (boolean) result.getValue();
     }
 
-    private List<Record> toRecord(DingoOpResult opResult, Op head) {
+    private static List<Record> toRecord(DingoOpResult opResult, Op head) {
         TableDefinition definition = head.context().definition;
-        List<Column> columnArray = new ArrayList<>();
         List<Record> records = new ArrayList<>();
         Iterator<Object[]> iterator = (Iterator<Object[]>) opResult.getValue();
         while (iterator.hasNext()) {
+            List<Column> columnArray = new ArrayList<>();
             Object[] obj = iterator.next();
             for (int i = 0; i < obj.length; i++) {
                 Column column = new Column(definition.getColumns().get(i).getName(), obj[i]);
                 columnArray.add(column);
             }
-            records.add(new Record(definition.getColumns(), columnArray.toArray(new Column[columnArray.size()])));
+            records.add(new Record(definition.getColumns(), columnArray.toArray(new Column[0])));
         }
         return records;
     }

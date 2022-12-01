@@ -18,6 +18,8 @@ package io.dingodb.sdk.operation.op.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.sdk.operation.context.Context;
+import io.dingodb.sdk.operation.executive.value.ValueFilterExec;
+import io.dingodb.sdk.operation.filter.DingoFilter;
 import io.dingodb.sdk.operation.op.Op;
 
 public class ValueOp extends AbstractOp {
@@ -37,5 +39,10 @@ public class ValueOp extends AbstractOp {
     public ValueOp add(Object value) {
         map(a -> value = );
     }*/
+
+    public ValueOp filter(DingoFilter filter) {
+        next = new ValueOp(ValueFilterExec.COMMON_ID, new Context(filter), head);
+        return (ValueOp) next;
+    }
 
 }
