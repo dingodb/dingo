@@ -19,19 +19,19 @@ package io.dingodb.sdk.unit;
 import com.google.common.collect.Lists;
 import io.dingodb.sdk.operation.number.ComputeInteger;
 import io.dingodb.sdk.operation.unit.numeric.DecreaseCountUnit;
-import io.dingodb.sdk.operation.unit.numeric.IncreaseCountUnit;
-import io.dingodb.sdk.operation.unit.numeric.MaxDecreaseCountUnit;
+import io.dingodb.sdk.operation.unit.numeric.MaxContinuousCountUnit;
 import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class DecreaseCountUnitTest {
+public class UnitTest {
 
     @Test
-    public void testLong01() {
+    public void testDecrease() {
         String col = "test";
         Map<String, NumberUnit> map = new HashMap<>();
         Iterator<Integer> records = Lists.newArrayList(77, 78, 77, 76, 75, 100, 80, 79, 78, 67).iterator();
@@ -41,7 +41,29 @@ public class DecreaseCountUnitTest {
             map.merge(col, unit, NumberUnit::merge);
         }
 
-        System.out.println(map.get(col).value());
+        Assertions.assertEquals(map.get(col).value(), 7L);
 
+    }
+
+    @Test
+    public void testMaxContinuousDecrease() {
+        String col = "test";
+        Map<String, NumberUnit> map = new HashMap<>();
+        Iterator<Integer> records = Lists.newArrayList(77, 78, 77, 76, 75, 100, 80, 79, 78, 67).iterator();
+        Integer center = 0;
+        while (records.hasNext()) {
+            Integer record = records.next();
+            if (map.get(col) == null) {
+                MaxContinuousCountUnit unit = new MaxContinuousCountUnit(false);
+                map.put(col, unit);
+                center = record;
+                continue;
+            }
+            MaxContinuousCountUnit unit = new MaxContinuousCountUnit(record < center);
+            center = record;
+            map.merge(col, unit, NumberUnit::merge);
+        }
+
+        Assertions.assertEquals(map.get(col).value(), 4L);
     }
 }

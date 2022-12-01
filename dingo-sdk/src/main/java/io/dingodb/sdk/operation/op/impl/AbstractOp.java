@@ -23,6 +23,7 @@ import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.collection.GetExec;
 import io.dingodb.sdk.operation.executive.collection.ScanExec;
 import io.dingodb.sdk.operation.executive.write.DeleteExec;
+import io.dingodb.sdk.operation.executive.write.DeleteRangeExec;
 import io.dingodb.sdk.operation.executive.write.PutExec;
 import io.dingodb.sdk.operation.op.Op;
 
@@ -91,6 +92,11 @@ public abstract class AbstractOp implements Op {
 
     public static WriteOp delete(List<Key> keyList) {
         head = new WriteOp(DeleteExec.COMMON_ID, new Context(keyList, null));
+        return (WriteOp) head;
+    }
+
+    public static WriteOp deleteRange(List<Key> starts, List<Key> ends) {
+        head = new WriteOp(DeleteRangeExec.COMMON_ID, new Context(starts, ends), null);
         return (WriteOp) head;
     }
 }

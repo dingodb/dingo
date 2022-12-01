@@ -20,5 +20,7 @@ public interface Writer {
 
     void set(byte[] key, byte[] value);
 
+    void erase(byte[] key);
+
     void erase(byte[] begin, byte[] end);
 }

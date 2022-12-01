@@ -23,6 +23,11 @@ public class DingoDateRangeFilter extends AbstractDingoFilter {
     private long startTime;
     private long endTime;
 
+    public DingoDateRangeFilter(long startTime, long endTime) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
     public DingoDateRangeFilter(int index, long startTime, long endTime) {
         this.index = index;
         this.startTime = startTime;
@@ -32,6 +37,11 @@ public class DingoDateRangeFilter extends AbstractDingoFilter {
     @Override
     public boolean filter(Object[] record) {
         return contain(record[index]);
+    }
+
+    @Override
+    public boolean filter(Object record) {
+        return contain(record);
     }
 
     private boolean contain(Object record0) {

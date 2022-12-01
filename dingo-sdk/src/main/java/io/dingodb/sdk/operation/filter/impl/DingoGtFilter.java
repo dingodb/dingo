@@ -20,40 +20,37 @@ import io.dingodb.sdk.operation.filter.AbstractDingoFilter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DingoStringRangeFilter extends AbstractDingoFilter {
+public class DingoGtFilter extends AbstractDingoFilter {
 
     private int index;
-    private String startValue;
-    private String endValue;
+    private String value;
 
-    public DingoStringRangeFilter(String startValue, String endValue) {
-        this.startValue = startValue;
-        this.endValue = endValue;
+    public DingoGtFilter(String value) {
+        this.value = value;
     }
 
-    public DingoStringRangeFilter(int index, String startKey, String endKey) {
+    public DingoGtFilter(int index, String value) {
         this.index = index;
-        this.startValue = startKey;
-        this.endValue = endKey;
+        this.value = value;
     }
 
     @Override
     public boolean filter(Object[] record) {
-        return isRange(record[index]);
+        return isGreaterThan(record[index]);
     }
 
     @Override
     public boolean filter(Object record) {
-        return isRange(record);
+        return isGreaterThan(record);
     }
 
-    private boolean isRange(Object obj) {
-        if (obj == null) {
-            log.warn("Current input index:{} is null", index);
+    private boolean isGreaterThan(Object record) {
+        if (record == null) {
+            log.warn("Current input value is null.");
             return false;
         }
 
-        String objStr = obj.toString();
-        return objStr.compareTo(startValue) >= 0 && objStr.compareTo(endValue) < 0;
+        String objStr = record.toString();
+        return objStr.compareTo(value) > 0;
     }
 }

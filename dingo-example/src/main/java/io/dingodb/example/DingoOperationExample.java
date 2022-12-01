@@ -17,20 +17,33 @@
 package io.dingodb.example;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.sdk.operation.Value;
-import io.dingodb.sdk.operation.filter.DingoFilter;
-import io.dingodb.sdk.operation.filter.impl.DingoLogicalExpressFilter;
-import io.dingodb.sdk.operation.filter.impl.DingoValueEqualsFilter;
+import io.dingodb.common.DingoOpResult;
+import io.dingodb.common.partition.RangeStrategy;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoClient;
+import io.dingodb.sdk.client.DingoConnection;
+import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.Column;
+import io.dingodb.sdk.operation.Value;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoGtFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoLogicalExpressFilter;
+import io.dingodb.sdk.operation.filter.impl.DingoValueEqualsFilter;
+import io.dingodb.sdk.operation.op.Op;
+import io.dingodb.sdk.operation.result.CollectionOpResult;
+import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.NavigableMap;
 
 public class DingoOperationExample {
 
@@ -39,20 +52,15 @@ public class DingoOperationExample {
         + "| ColumnName     | ColumnType          |\n"
         + "| -------------- | ------------------- |\n"
         + "| id             | id not null         |\n"
-        + "| name           | varchar(20)         |\n"
         + "| age            | int                 |\n"
-        + "| amount         | double              |\n"
-        + "| data1          | array               |\n"
-        + "| data2          | map                 |\n"
+        + "| amount         | int                 |\n"
         + "| -------------- | ------------------- |\n";
 
     private static final String CREATE_SQL = "CREATE TABLE test("
         + "id int, "
-        + "name varchar(20), "
         + "age int, "
-        + "amount double, "
-        + "data1 int ARRAY, "
-        + "data2 MAP, PRIMARY KEY(id)"
+        + "amount int, "
+        + "PRIMARY KEY(id)"
         + ");";
 
     public static void main(String[] args) throws Exception {
@@ -60,112 +68,103 @@ public class DingoOperationExample {
         dingoClient.open();
 
         String tableName = "TEST";
-        int totalCnt = 100;
         if (args.length > 0) {
             tableName = args[0].toUpperCase();
-            totalCnt = args.length > 1 ? Integer.parseInt(args[1]) : 100;
         }
+        dingoClient.dropTable(tableName);
         // ---------------------------- ----------------------------
 
         System.out.println(TABLE_SCHEMA);
 
-        Random random = new Random();
-        int bound = 20;
-        List<Object[]> recordList = new ArrayList<>();
-        for (int i = 0; i < totalCnt; i++) {
-            Map<String, Integer> map = new HashMap<>();
-            map.put("a", random.nextInt(bound));
-            map.put("b", random.nextInt(bound));
-            map.put("c", random.nextInt(bound));
-            recordList.add(new Object[] {
-                i,
-                "name" + i,
-                random.nextInt(bound),
-                i * 0.1,
-                Arrays.asList(random.nextInt(bound), random.nextInt(bound),
-                    random.nextInt(bound), random.nextInt(bound), random.nextInt(bound)),
-                map
-            });
-        }
+        TableDefinition definition = new TableDefinition(tableName);
+        ColumnDefinition id = ColumnDefinition.builder().name("id").type("integer").primary(true).build();
+        ColumnDefinition age = ColumnDefinition.builder().name("age").type("integer").build();
+        ColumnDefinition amount = ColumnDefinition.builder().name("amount").type("integer").build();
+        definition.setColumns(ImmutableList.of(id, age, amount));
+        dingoClient.createTable(definition);
+        dingoClient.insert(tableName,
+            ImmutableList.of(
+                new Object[]{1, 18, 77},
+                new Object[]{2, 20, 78},
+                new Object[]{3, 20, 77},
+                new Object[]{4, 19, 76},
+                new Object[]{5, 21, 75},
+                new Object[]{6, 20, 100},
+                new Object[]{7, 18, 80},
+                new Object[]{8, 21, 79},
+                new Object[]{9, 18, 78},
+                new Object[]{10, 20, 67}
+            ));
 
-        /*boolean isOK = */dingoClient.insert(tableName, recordList);
-        /*if (!isOK) {
-            System.exit(1);
-        }*/
+        Key start = new Key(tableName, new ArrayList<>(Collections.singleton(Value.get(1))));
+        Key end = new Key(tableName, new ArrayList<>(Collections.singleton(Value.get(11))));
 
-        Key startKey = new Key(tableName, ImmutableList.of(Value.get(0)));
-        Key endKey = new Key(tableName, ImmutableList.of(Value.get(100)));
-
-        List<Record> queryResult = dingoClient.query(startKey, endKey, null);
+        List<Record> queryResult = dingoClient.query(start, end, null);
         for (Record record : queryResult) {
             System.out.println("query record ====> " + record.toString());
         }
         DingoFilter root = new DingoLogicalExpressFilter();
-        DingoValueEqualsFilter eqFilter = new DingoValueEqualsFilter(new int[]{2}, new Object[]{18});
+        DingoValueEqualsFilter eqFilter = new DingoValueEqualsFilter(new int[]{1}, new Object[]{20});
         root.addAndFilter(eqFilter);
 
-        /*// count + filter
-        List<DingoExecResult> countResult = dingoClient.count(startKey, endKey, root, new Column("name"));
-        for (DingoExecResult cr : countResult) {
-            System.out.println("count result ====> " + cr.getRecord());
+        Op op = Op.scan(start, end).filter(root).sum(new Column("amount"));
+        DingoOpResult result = dingoClient.exec(op);
+        println(result, "filter + sum");
+
+        op = Op.scan(start, end).decreaseCount(new Column("amount"));
+
+        result = dingoClient.exec(op);
+        println(result, "decrease");
+
+        root = new DingoLogicalExpressFilter();
+        DingoGtFilter gtFilter = new DingoGtFilter("3");
+        root.addAndFilter(gtFilter);
+        op = Op.scan(start, end).maxContinuousDecreaseCount(new Column("amount")).filter(root);
+        result = dingoClient.exec(op);
+        println(result, "max continuous decrease + filter");
+
+        Key key = new Key(tableName, new ArrayList<>(Collections.singleton(Value.get(7))));
+
+        Record getRecord = dingoClient.get(key);
+        System.out.println("======= get record :" + getRecord + " ======");
+
+        boolean delete = dingoClient.delete(key);
+        System.out.println("======= delete isOk? " + delete + " =======");
+
+        List<Record> query = dingoClient.query(start, end, null);
+        for (Record record : query) {
+            System.out.println("====== query record =====> " + record.toString());
         }
 
-        // add
-        boolean addResult = dingoClient.add(startKey, endKey, new Column("amount", 10.0));
-        System.out.println("add result: " + addResult);
-
-        // sum
-        List<DingoExecResult> sumResult = dingoClient.sum(startKey, endKey, new Column("amount"));
-        for (DingoExecResult sr : sumResult) {
-            System.out.println("sum amount result ====> " + sr.get("amount"));
-        }
-
-        // sum + filter
-        List<DingoExecResult> sumFilterResult = dingoClient.sum(startKey, endKey, root, new Column("amount"));
-        for (DingoExecResult sfr : sumFilterResult) {
-            System.out.println("sum amount filter result ====> " + sfr.get("amount"));
-        }
-
-        // max
-        List<DingoExecResult> maxResult = dingoClient.max(startKey, endKey, new Column("amount"));
-        for (DingoExecResult mr : maxResult) {
-            System.out.println("max amount result ====> " + mr.get("amount"));
-        }
-
-        // max
-        List<DingoExecResult> minResult = dingoClient.min(startKey, endKey, new Column("amount"));
-        for (DingoExecResult mr : minResult) {
-            System.out.println("min amount result ====> " + mr.get("amount"));
-        }*/
-
-        // collection
-        /*Op arrSizeOp = new Op(
-            CollectionType.SIZE, new BasicContext(new Column("data1")));
-        Op getIndexOp = new Op(
-            CollectionType.GET_BY_INDEX, new ListContext(2, new Column("data1")));
-        Op getIndexRangeOp = new Op(
-            CollectionType.GET_BY_INDEX_RANGE, new ListContext(1, 3, new Column("data1")));
-        Op getAllOp = new Op(CollectionType.GET_ALL, new BasicContext(new Column("data1")));
-
-        Op mapPut = new Op(
-            CollectionType.PUT, new MapContext(Value.get("aa"), Value.get(5), new Column("data2")));
-
-        Op mapGetByKey = new Op(
-            CollectionType.GET_BY_KEY, new MapContext(Value.get("aa"), new Column("data2")));
-
-        Op mapRemoveByKey = new Op(
-            CollectionType.REMOVE_BY_KEY, new MapContext(Value.get("aa"), new Column("data2")));
-
-        List<DingoExecResult> operateResult = dingoClient.operate(
-            startKey,
-            endKey,
-            ImmutableList.of(arrSizeOp, getIndexOp, getIndexRangeOp, getAllOp, mapPut, mapGetByKey));
-        for (DingoExecResult or : operateResult) {
-            System.out.println("batch operate result, op ====> " + or.op() + ", record ====> " + or.getRecord());
-        }*/
+        // ---------------- get partitions -----------------
+        DingoConnection connection = new DingoConnection("127.0.0.1:19181");
+        connection.initConnection();
+        MetaClient metaClient = connection.getMetaClient();
+        TableDefinition tableDefinition = metaClient.getTableDefinition(tableName.toUpperCase());
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions =
+            metaClient.getParts(tableDefinition.getName());
+        RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
+        byte[] keyBytes = null;
+        ByteArrayUtils.ComparableByteArray byteArray = rangeStrategy.calcPartId(keyBytes);
+        Part part = partitions.get(byteArray);
+        // ---------------- ---------------
 
         dingoClient.dropTable(tableName);
 
         dingoClient.close();
+    }
+
+    private static void println(DingoOpResult result, String type) {
+        System.out.println("======== " + type + " start ========");
+        if (result instanceof CollectionOpResult) {
+            Iterator<Object[]> iterator = ((CollectionOpResult<Iterator<Object[]>>) result).getValue();
+            while (iterator.hasNext()) {
+                System.out.println("===== iterator =====> " + Arrays.toString(iterator.next()));
+            }
+        } else {
+            NumberUnit unit = (NumberUnit) result.getValue();
+            System.out.println("===== number value: ======> " + unit.value());
+        }
+        System.out.println("======== " + type + " end ========");
     }
 }

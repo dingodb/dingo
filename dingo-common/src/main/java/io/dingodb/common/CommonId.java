@@ -85,12 +85,21 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     private void initContent(byte type, byte id0, byte id1, int domain, int seq, int ver) {
-        this.content = new byte[LEN];
+        this.content = new byte[domain == 0 ? DOMAIN_IDX : seq == 0 ? SEQ_IDX : ver == 0 ? VER_IDX : LEN];
         content[0] = type;
         content[1] = id0;
         content[2] = id1;
+        if (domain == 0) {
+            return;
+        }
         encodeInt(domain, content, DOMAIN_IDX);
+        if (seq == 0) {
+            return;
+        }
         encodeInt(seq, content, SEQ_IDX);
+        if (ver == 0) {
+            return;
+        }
         encodeInt(ver, content, VER_IDX);
     }
 
@@ -127,9 +136,9 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         return new CommonId(
             content[0],
             content[1], content[2],
-            decodeInt(content, DOMAIN_IDX),
-            decodeInt(content, SEQ_IDX),
-            decodeInt(content, VER_IDX)
+            content.length >= SEQ_IDX ? decodeInt(content, DOMAIN_IDX) : 0,
+            content.length >= VER_IDX ? decodeInt(content, SEQ_IDX) : 0,
+            content.length == LEN ? decodeInt(content, VER_IDX) : 0
         );
     }
 

@@ -20,12 +20,23 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
+import io.dingodb.sdk.operation.number.ComputeNumber;
+import io.dingodb.sdk.operation.number.ComputeZero;
+import io.dingodb.sdk.operation.result.ValueOpResult;
+import io.dingodb.sdk.operation.unit.numeric.MaxContinuousCountUnit;
+import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
 import io.dingodb.server.protocol.CommonIdConstant;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import javax.activation.UnsupportedDataTypeException;
 
+@Slf4j
 @AutoService(Executive.class)
 public class MaxContinuousIncreaseCountExec extends AbstractExecutive<Context, Iterator<Object[]>> {
 
@@ -41,7 +52,29 @@ public class MaxContinuousIncreaseCountExec extends AbstractExecutive<Context, I
     }
 
     @Override
-    public DingoOpResult execute(Context context, Iterator<Object[]> record) {
-        return null;
+    public DingoOpResult execute(Context context, Iterator<Object[]> records) {
+        String col = context.column().name;
+        Map<String, NumberUnit> map = new HashMap<>();
+        try {
+            int keyIndex = context.definition.getColumnIndex(col);
+            ComputeNumber center = new ComputeZero();
+            while (records.hasNext()) {
+                Object[] record = records.next();
+                DingoType dingoType = context.definition.getColumn(keyIndex).getType();
+                if (map.get(col) == null) {
+                    MaxContinuousCountUnit unit = new MaxContinuousCountUnit(false);
+                    map.put(col, unit);
+                    center = convertType(record[keyIndex], dingoType);
+                    continue;
+                }
+                ComputeNumber that = convertType(record[keyIndex], dingoType);
+                MaxContinuousCountUnit unit = new MaxContinuousCountUnit(that.compareTo(center) > 0);
+                center = that;
+                map.merge(col, unit, NumberUnit::merge);
+            }
+        } catch (UnsupportedDataTypeException e) {
+            log.error("Unsupported type, e", e);
+        }
+        return new ValueOpResult(map.get(col));
     }
 }

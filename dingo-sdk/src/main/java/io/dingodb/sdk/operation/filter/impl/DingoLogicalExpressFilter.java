@@ -48,6 +48,27 @@ public class DingoLogicalExpressFilter extends AbstractDingoFilter {
     }
 
     @Override
+    public boolean filter(Object record) {
+        if (orFilter.size() > 0) {
+            for (DingoFilter filter : orFilter) {
+                if (filter.filter(record)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (andFilter.size() > 0) {
+            for (DingoFilter filter : andFilter) {
+                if (!filter.filter(record)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return true;
+    }
+
+    @Override
     public void addOrFilter(DingoFilter filter) {
         orFilter.add(filter);
     }

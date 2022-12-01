@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation.executive.write;
+package io.dingodb.sdk.operation.executive.value;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
@@ -22,21 +22,19 @@ import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
-import io.dingodb.sdk.operation.result.VoidOpResult;
+import io.dingodb.sdk.operation.filter.DingoFilter;
+import io.dingodb.sdk.operation.result.ValueOpResult;
+import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
 import io.dingodb.server.protocol.CommonIdConstant;
-import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-
-@Slf4j
 @AutoService(Executive.class)
-public class DeleteExec extends AbstractExecutive<Context, Void> {
+public class ValueFilterExec extends AbstractExecutive<Context, NumberUnit> {
 
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
         0,
-        3);
+        22);
 
     @Override
     public CommonId getId() {
@@ -44,13 +42,11 @@ public class DeleteExec extends AbstractExecutive<Context, Void> {
     }
 
     @Override
-    public DingoOpResult<Boolean> execute(Context context, Void record) {
-        try {
-            context.writer().erase(context.startKey().get(0));
-        } catch (IOException e) {
-            log.error("Delete record failed. e", e);
-            return new VoidOpResult<>(false);
+    public DingoOpResult execute(Context context, NumberUnit record) {
+        DingoFilter filter = context.filter();
+        if (filter.filter(record.getValue().value())) {
+            return new ValueOpResult<>(record);
         }
-        return new VoidOpResult<>(true);
+        return new ValueOpResult<>(null);
     }
 }
