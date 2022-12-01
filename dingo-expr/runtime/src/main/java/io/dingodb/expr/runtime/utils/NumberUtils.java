@@ -20,12 +20,18 @@ public final class NumberUtils {
     private NumberUtils() {
     }
 
-    public static int mod(int dividend, int divisor) {
+    public static int posMod(int dividend, int divisor) {
+        if (divisor < 0) {
+            divisor = -divisor;
+        }
         int index = dividend % divisor;
         return index >= 0 ? index : index + divisor;
     }
 
-    public static long mod(long dividend, long divisor) {
+    public static long posMod(long dividend, long divisor) {
+        if (divisor < 0) {
+            divisor = -divisor;
+        }
         long index = dividend % divisor;
         return index >= 0 ? index : index + divisor;
     }

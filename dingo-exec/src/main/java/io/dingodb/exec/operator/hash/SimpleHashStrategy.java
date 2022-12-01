@@ -31,7 +31,7 @@ public final class SimpleHashStrategy implements HashStrategy {
     @Override
     public int selectOutput(Object @NonNull [] tuple) {
         int hash = Objects.hash(tuple);
-        return NumberUtils.mod(hash, outputNum);
+        return NumberUtils.posMod(hash, outputNum);
     }
 
     @Override
