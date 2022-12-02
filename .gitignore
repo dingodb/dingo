@@ -21,6 +21,7 @@ dependency-reduced-pom.xml
 .idea/CodeReadingNote.xml
 .idea/checkstyle-idea.xml
 .idea/compiler.xml
+.idea/csv-editor.xml
 .idea/csv-plugin.xml
 .idea/dbnavigator.xml
 .idea/dictionaries/

@@ -18,6 +18,11 @@ package io.dingodb.common.type.converter;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
@@ -50,6 +55,21 @@ public class DingoConverter implements DataConverter {
     }
 
     @Override
+    public Object convert(@NonNull Object value) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(value);
+            byte[] result = bos.toByteArray();
+            oos.close();
+            bos.close();
+            return convert(result);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public BigDecimal convertDecimalFrom(@NonNull Object value) {
         return new BigDecimal((String) value);
     }
@@ -67,5 +87,19 @@ public class DingoConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@NonNull Object value) {
         return new Timestamp((long) value);
+    }
+
+    @Override
+    public Object convertObjectFrom(@NonNull Object value) {
+        try {
+            ByteArrayInputStream bis = new ByteArrayInputStream(convertBinaryFrom(value));
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            Object result = ois.readObject();
+            ois.close();
+            bis.close();
+            return result;
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

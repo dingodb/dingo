@@ -16,8 +16,15 @@
 
 package io.dingodb.test.asserts;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.test.util.CsvUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -25,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -96,6 +104,24 @@ public final class AssertResultSet {
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
+        return this;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public AssertResultSet asInCsv(InputStream csvStream) throws IOException, SQLException {
+        Iterator<String[]> it = CsvUtils.readCsv(csvStream);
+        final String[] columnNames = it.hasNext() ? it.next() : null;
+        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
+        if (columnNames == null || schema == null) {
+            throw new IllegalArgumentException(
+                "Result file must be csv and its first two rows are column names and schema definitions."
+            );
+        }
+        List<Object[]> tuples = ImmutableList.copyOf(
+            Iterators.transform(it, i -> (Object[]) schema.parse(i))
+        );
+        columnLabels(columnNames);
+        isRecords(tuples);
         return this;
     }
 
