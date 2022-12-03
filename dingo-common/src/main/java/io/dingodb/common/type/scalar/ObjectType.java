@@ -25,10 +25,6 @@ import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-
 @JsonTypeName("object")
 public class ObjectType extends AbstractScalarType {
     @JsonCreator
@@ -53,16 +49,6 @@ public class ObjectType extends AbstractScalarType {
 
     @Override
     protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
-        try {
-            ByteArrayInputStream bis = new ByteArrayInputStream(converter.convertBinaryFrom(value));
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            Object result = ois.readObject();
-            ois.close();
-            bis.close();
-            return result;
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        return converter.convertObjectFrom(value);
     }
-
 }

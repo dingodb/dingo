@@ -17,11 +17,8 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
@@ -33,6 +30,7 @@ import io.dingodb.test.util.CsvUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,14 +42,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +102,14 @@ public class SqlHelper {
         return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
     }
 
+    private static void execSQL(Statement statement, @NonNull String sql) throws SQLException {
+        for (String s : sql.split(";")) {
+            if (!s.trim().isEmpty()) {
+                statement.execute(s);
+            }
+        }
+    }
+
     public String prepareTable(
         @Nonnull String createSql
     ) throws SQLException {
@@ -123,27 +127,24 @@ public class SqlHelper {
         return tableName;
     }
 
-    public String prepareTable(
-        @Nonnull String createSql,
-        @Nonnull String insertSql,
-        int affectedRows
-    ) throws SQLException {
-        String tableName = prepareTable(createSql);
-        updateTest(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName), affectedRows);
-        return tableName;
-    }
-
-    public void doTest(
-        @Nonnull String createSql,
-        @Nonnull String insertSql,
-        int affectedRows,
-        @Nonnull String querySql,
-        String[] columnLabels,
-        List<Object[]> results
-    ) throws SQLException {
-        String tableName = prepareTable(createSql, insertSql, affectedRows);
-        queryTest(querySql.replace(TABLE_NAME_PLACEHOLDER, tableName), columnLabels, results);
-        dropTable(tableName);
+    public void doTestFiles(Class<?> testClass, @NonNull List<String> fileNames) throws SQLException, IOException {
+        String tableName = randomTableName();
+        try (Statement statement = connection.createStatement()) {
+            for (String fileName : fileNames) {
+                if (fileName.endsWith(".sql")) {
+                    String sql = IOUtils.toString(
+                        Objects.requireNonNull(testClass.getResourceAsStream(fileName)),
+                        StandardCharsets.UTF_8
+                    );
+                    execSQL(statement, sql.replace(TABLE_NAME_PLACEHOLDER, tableName));
+                } else if (fileName.endsWith(".csv")) {
+                    ResultSet resultSet = statement.getResultSet();
+                    Assert.resultSet(resultSet)
+                        .asInCsv(testClass.getResourceAsStream(fileName));
+                    resultSet.close();
+                }
+            }
+        }
     }
 
     public void cleanUp() throws SQLException {
@@ -201,16 +202,12 @@ public class SqlHelper {
     }
 
     public void queryTest(String sql, InputStream resultFile) throws IOException, SQLException {
-        Iterator<String[]> it = CsvUtils.readCsv(resultFile);
-        final String[] columnNames = it.hasNext() ? it.next() : null;
-        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
-        if (columnNames == null || schema == null) {
-            throw new IllegalArgumentException(
-                "Result file must be csv and its first two rows are column names and schema definitions."
-            );
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                Assert.resultSet(resultSet)
+                    .asInCsv(resultFile);
+            }
         }
-        List<Object[]> tuples = ImmutableList.copyOf(Iterators.transform(it, i -> (Object[]) schema.parse(i)));
-        queryTest(sql, columnNames, tuples);
     }
 
     public void queryTestInOrder(
@@ -251,15 +248,6 @@ public class SqlHelper {
         }
     }
 
-    public void queryTestInOrderWithApproxTime(
-        String sql,
-        String[] columns,
-        DingoType schema,
-        String data
-    ) throws SQLException, JsonProcessingException {
-        queryTestInOrderWithApproxTime(sql, columns, CsvUtils.readCsv(schema, data));
-    }
-
     public void explainTest(String sql) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
@@ -275,24 +263,15 @@ public class SqlHelper {
         }
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public int execFile(@Nullable InputStream stream) throws IOException, SQLException {
-        Objects.requireNonNull(stream);
-        int result = -1;
-        String[] sqlList = IOUtils.toString(stream, StandardCharsets.UTF_8).split(";");
+    public void execFile(@Nonnull InputStream stream) throws IOException, SQLException {
+        String sql = IOUtils.toString(stream, StandardCharsets.UTF_8);
         try (Statement statement = connection.createStatement()) {
-            for (String sql : sqlList) {
-                if (!sql.trim().isEmpty()) {
-                    result = statement.executeUpdate(sql);
-                }
-            }
+            execSQL(statement, sql);
         }
-        return result;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public int execFile(@Nonnull String sqlFile) throws IOException, SQLException {
-        return execFile(SqlHelper.class.getResourceAsStream(sqlFile));
+    public void execFile(@Nonnull String sqlFile) throws IOException, SQLException {
+        execFile(Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)));
     }
 
     @SuppressWarnings("UnusedReturnValue")
