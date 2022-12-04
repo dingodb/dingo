@@ -46,6 +46,8 @@ public class RocksConfiguration {
     private String dbPath;
     private String dbRocksOptionsFile;
     private String logRocksOptionsFile;
+    private String bypassSaveInstruction;
+    private String bypassWriteDb;
 
     private ColumnFamilyConfiguration dcfConfiguration;
     private ColumnFamilyConfiguration mcfConfiguration;
@@ -82,6 +84,22 @@ public class RocksConfiguration {
             return new ColumnFamilyConfiguration();
         }
         return icfConfiguration;
+    }
+
+    public boolean bypassSaveInstruction() {
+        if (bypassSaveInstruction == null) {
+            return false;
+        } else {
+            return bypassSaveInstruction.equalsIgnoreCase("ABSOLUTELY_YES");
+        }
+    }
+
+    public boolean bypassWriteDb() {
+        if (bypassWriteDb == null) {
+            return false;
+        } else {
+            return bypassWriteDb.equalsIgnoreCase("ABSOLUTELY_YES");
+        }
     }
 }
 

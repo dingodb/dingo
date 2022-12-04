@@ -24,6 +24,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.StorageApi;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.net.service.FileTransferService;
@@ -109,6 +110,10 @@ public class RocksStorage implements Storage {
     public ColumnFamilyConfiguration dcfConf;
     public ColumnFamilyConfiguration mcfConf;
     public ColumnFamilyConfiguration icfConf;
+    public boolean bypassSaveInstruction;
+    public boolean bypassWriteDb;
+    public long bypassClock;
+
     public final int ttl;
     private final boolean withTtl;
 
@@ -167,6 +172,10 @@ public class RocksStorage implements Storage {
         this.dcfConf = rocksConfiguration.dcfConfiguration();
         this.mcfConf = rocksConfiguration.mcfConfiguration();
         this.icfConf = rocksConfiguration.icfConfiguration();
+        this.bypassSaveInstruction = rocksConfiguration.bypassSaveInstruction();
+        this.bypassWriteDb = rocksConfiguration.bypassWriteDb();
+        log.info("bypassSaveInstruction {} ", this.bypassSaveInstruction);
+        log.info("bypassWriteDb {} ", this.bypassWriteDb);
 
         this.instructionPath = this.path.resolve("instruction");
         this.icfPath = this.instructionPath.resolve("data");
@@ -331,7 +340,7 @@ public class RocksStorage implements Storage {
             RocksDB.destroyDB(this.instructionPath.toAbsolutePath().toString(), options);
 
             if (this.path != null) {
-                FileUtils.delete(this.path.getParent().toFile());
+                FileUtils.delete(this.path.toFile());
             }
         } catch (RocksDBException e) {
             log.error("destroy db failed {}", e);
@@ -620,6 +629,9 @@ public class RocksStorage implements Storage {
         if (destroy) {
             throw new RuntimeException();
         }
+        if (bypassWriteDb) {
+            return bypassClock;
+        }
         try {
             return Optional.mapOrGet(db.get(mcfHandler, CLOCK_K), PrimitiveCodec::decodeLong, () -> 0L);
         } catch (RocksDBException e) {
@@ -656,6 +668,9 @@ public class RocksStorage implements Storage {
         if (destroy) {
             throw new RuntimeException();
         }
+        if (bypassSaveInstruction) {
+            return;
+        }
         try {
             this.instruction.put(icfHandler, PrimitiveCodec.encodeLong(clock), instruction);
         } catch (RocksDBException e) {
@@ -667,6 +682,10 @@ public class RocksStorage implements Storage {
     public byte[] reappearInstruction(long clock) {
         if (destroy) {
             throw new RuntimeException();
+        }
+        if (bypassSaveInstruction) {
+            Instruction emptyInstruction = new Instruction(clock, EmptyInstructions.id, EmptyInstructions.EMPTY);
+            return emptyInstruction.encode();
         }
         try {
             return instruction.get(icfHandler, PrimitiveCodec.encodeLong(clock));
@@ -700,6 +719,11 @@ public class RocksStorage implements Storage {
     public void flush(io.dingodb.mpu.storage.Writer writer) {
         if (destroy) {
             throw new RuntimeException();
+        }
+        if ( bypassWriteDb ) {
+            Instruction instruction = writer.instruction();
+            bypassClock = instruction.clock;
+            return;
         }
         try {
             Instruction instruction = writer.instruction();
