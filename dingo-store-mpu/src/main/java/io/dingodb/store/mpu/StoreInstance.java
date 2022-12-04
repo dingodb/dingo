@@ -26,6 +26,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.UdfUtils;
 import io.dingodb.common.util.Utils;
@@ -121,10 +122,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         startKeyPartMap.clear();
         parts.values().forEach(Core::destroy);
         parts.clear();
-        /**
-         * to avoid file handle leak, when drop table
-         */
-        // FileUtils.deleteIfExists(path);
+        // After all parts destroyed, remove the table directory.
+        FileUtils.deleteIfExists(path);
     }
 
     public ApproximateStats approximateStats(Core core) {
