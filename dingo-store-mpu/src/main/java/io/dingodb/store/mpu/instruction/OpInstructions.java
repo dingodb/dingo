@@ -23,6 +23,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.mpu.instruction.Instructions;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
+import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.server.ExecutiveRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -104,7 +105,12 @@ public class OpInstructions implements Instructions {
         if (next == null) {
             return result;
         }
-        next.context().definition(definition);
+        Context preContext = op.context();
+        next.context()
+            .definition(definition)
+            .reader(preContext.reader())
+            .writer(preContext.writer())
+            .timestamp(preContext.timestamp());
         Executive nextExec = ExecutiveRegistry.getExecutive(next.execId());
         return exec(next, nextExec.execute(next.context(), result.getValue()), definition);
     }

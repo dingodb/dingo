@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation.executive.write;
+package io.dingodb.sdk.operation.executive;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.context.Context;
-import io.dingodb.sdk.operation.executive.AbstractExecutive;
 import io.dingodb.sdk.operation.result.VoidOpResult;
 import io.dingodb.server.protocol.CommonIdConstant;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +31,13 @@ import java.io.IOException;
 
 @Slf4j
 @AutoService(Executive.class)
-public class DeleteExec extends AbstractExecutive<Context, Void> {
+public class UpdateExec extends AbstractExecutive<Context, Void> {
 
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
         CommonIdConstant.ROOT_DOMAIN,
-        3);
+        6);
 
     @Override
     public CommonId getId() {
@@ -44,11 +45,19 @@ public class DeleteExec extends AbstractExecutive<Context, Void> {
     }
 
     @Override
-    public DingoOpResult<Boolean> execute(Context context, Void record) {
+    public DingoOpResult execute(Context context, Void record) {
+        Column col = context.column();
+        int columnIndex = context.definition.getColumnIndex(col.name);
         try {
-            context.writer().erase(context.startKey().get(0));
+            byte[] bytes = context.reader().get(context.startKey().get(0));
+            Object[] oldValue = context.keyValueCodec()
+                .mapKeyAndDecodeValue(context.startPrimaryKeys.get(0).getUserKey().toArray(), bytes);
+            oldValue[columnIndex] = col.value.getObject();
+            KeyValue keyValue = context.keyValueCodec().encode(oldValue);
+
+            context.writer().set(keyValue.getKey(), keyValue.getValue());
         } catch (IOException e) {
-            log.error("Delete record failed. e", e);
+            log.error("Update record failed. e", e);
             return new VoidOpResult<>(false);
         }
         return new VoidOpResult<>(true);

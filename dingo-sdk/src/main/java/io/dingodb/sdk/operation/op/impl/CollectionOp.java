@@ -107,8 +107,8 @@ public class CollectionOp extends AbstractOp {
         return (ValueOp) next;
     }
 
-    public CollectionOp add(Column column) {
-        next = new CollectionOp(CollAddExec.COMMON_ID, new Context(column), head, 1);
+    public CollectionOp add(Column column, boolean useDefaultWhenNotExisted) {
+        next = new CollectionOp(CollAddExec.COMMON_ID, new Context(column, useDefaultWhenNotExisted), head, 1);
         return (CollectionOp) next;
     }
 

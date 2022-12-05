@@ -259,7 +259,7 @@ public class DingoClient {
             keyList.add(entry.getKey());
             recordList.add(entry.getValue());
         }
-        WriteOp op = AbstractOp.put(keyList, recordList, skippedWhenExisted);
+        WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
         DingoOpResult result = exec(op);
         return (boolean) result.getValue();
     }
