@@ -25,8 +25,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.meta.Part;
 import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.asserts.Assert;
-import io.dingodb.test.asserts.AssertResultSet;
-import io.dingodb.test.util.CsvUtils;
+import io.dingodb.test.utils.CsvUtils;
+import io.dingodb.test.utils.ResultSetUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -53,8 +53,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class SqlHelper {
-    private static final String TABLE_NAME_PLACEHOLDER = "{table}";
-
     @Getter
     private final Connection connection;
 
@@ -110,61 +108,32 @@ public class SqlHelper {
         }
     }
 
-    public String prepareTable(
-        @Nonnull String createSql
-    ) throws SQLException {
-        String tableName = randomTableName();
-        execSqlCmd(createSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
-        return tableName;
-    }
-
-    public String prepareTable(
-        @Nonnull String createSql,
-        @Nonnull String insertSql
-    ) throws SQLException {
-        String tableName = prepareTable(createSql);
-        execSqlCmd(insertSql.replace(TABLE_NAME_PLACEHOLDER, tableName));
-        return tableName;
-    }
-
-    public void doTestFiles(Class<?> testClass, @NonNull List<String> fileNames) throws SQLException, IOException {
-        String tableName = randomTableName();
-        try (Statement statement = connection.createStatement()) {
-            for (String fileName : fileNames) {
-                if (fileName.endsWith(".sql")) {
-                    String sql = IOUtils.toString(
-                        Objects.requireNonNull(testClass.getResourceAsStream(fileName)),
-                        StandardCharsets.UTF_8
-                    );
-                    execSQL(statement, sql.replace(TABLE_NAME_PLACEHOLDER, tableName));
-                } else if (fileName.endsWith(".csv")) {
-                    ResultSet resultSet = statement.getResultSet();
-                    Assert.resultSet(resultSet)
-                        .asInCsv(testClass.getResourceAsStream(fileName));
-                    resultSet.close();
-                }
-            }
-        }
-    }
-
     public void cleanUp() throws SQLException {
         connection.close();
         MetaService.clear();
         MetaTestService.INSTANCE.clear();
     }
 
+    public RandomTable randomTable() {
+        return new RandomTable();
+    }
+
+    public RandomTable randomTable(int index) {
+        return new RandomTable(index);
+    }
+
     public DatabaseMetaData metaData() throws SQLException {
         return connection.getMetaData();
     }
 
-    public Object[] querySingleRow(String sql) throws SQLException {
+    public ResultSetUtils.Row querySingleRow(String sql) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {
                 int count = 0;
-                Object[] row = null;
+                ResultSetUtils.Row row = null;
                 while (resultSet.next()) {
                     ++count;
-                    row = AssertResultSet.getRow(resultSet);
+                    row = ResultSetUtils.getRow(resultSet);
                 }
                 assertThat(count).isEqualTo(1);
                 return row;
@@ -173,9 +142,10 @@ public class SqlHelper {
     }
 
     public Object querySingleValue(String sql) throws SQLException {
-        Object[] row = querySingleRow(sql);
-        assertThat(row).hasSize(1);
-        return row[0];
+        ResultSetUtils.Row row = querySingleRow(sql);
+        Object[] tuple = row.getTuple();
+        assertThat(tuple).hasSize(1);
+        return tuple[0];
     }
 
     public void queryTest(
@@ -274,7 +244,6 @@ public class SqlHelper {
         execFile(Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public int execSqlCmd(@Nonnull String sqlCmd) throws SQLException {
         int result = -1;
         try (Statement statement = connection.createStatement()) {
@@ -311,5 +280,75 @@ public class SqlHelper {
 
     public void doQueryTest(Class<?> testClass, String fileName) throws SQLException, IOException {
         doQueryTest(testClass, fileName, fileName);
+    }
+
+    public class RandomTable {
+        private static final String TABLE_NAME_PLACEHOLDER = "table";
+        private final String name;
+        private final int index;
+
+        public RandomTable() {
+            this(0);
+        }
+
+        public RandomTable(int index) {
+            this.name = randomTableName();
+            this.index = index;
+        }
+
+        @Override
+        public String toString() {
+            return getName();
+        }
+
+        public @Nonnull String getName() {
+            return name + (index > 0 ? "_" + index : "");
+        }
+
+        private @Nonnull String getPlaceholder() {
+            return "{" + TABLE_NAME_PLACEHOLDER + (index > 0 ? "_" + index : "") + "}";
+        }
+
+        private @NonNull String transSQL(@NonNull String sql) {
+            return sql.replace(getPlaceholder(), getName());
+        }
+
+        public RandomTable prepare(
+            @Nonnull String... sqlStrings
+        ) throws SQLException {
+            try (Statement statement = connection.createStatement()) {
+                for (String sql : sqlStrings) {
+                    execSQL(statement, transSQL(sql));
+                }
+            }
+            return this;
+        }
+
+        public void drop() throws SQLException {
+            dropTable(getName());
+        }
+
+        public void doTestFiles(
+            Class<?> testClass,
+            @NonNull List<String> fileNames
+        ) throws SQLException, IOException {
+            try (Statement statement = connection.createStatement()) {
+                for (String fileName : fileNames) {
+                    if (fileName.endsWith(".sql")) {
+                        String sql = IOUtils.toString(
+                            Objects.requireNonNull(testClass.getResourceAsStream(fileName)),
+                            StandardCharsets.UTF_8
+                        );
+                        execSQL(statement, transSQL(sql));
+                    } else if (fileName.endsWith(".csv")) {
+                        ResultSet resultSet = statement.getResultSet();
+                        Assert.resultSet(resultSet)
+                            .asInCsv(testClass.getResourceAsStream(fileName));
+                        resultSet.close();
+                    }
+                }
+            }
+            dropTable(getName());
+        }
     }
 }

@@ -21,6 +21,7 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -38,7 +39,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -76,9 +76,9 @@ public class TestRex {
     private static Stream<Arguments> getParametersTemp() {
         return Stream.of(
             arguments(
-                "pow(2, 3)",
-                "pow(2, 3)",
-                BigDecimal.valueOf(8)
+                "array[1, 2, 3][2]",
+                "item(LIST(1, 2, 3), 2)",
+                2
             )
         );
     }
@@ -107,25 +107,25 @@ public class TestRex {
     /**
      * Contains temporary test cases for debugging.
      *
-     * @param rex     the sql expression
-     * @param exprStr the expected dingo expr string
-     * @param result  the expected evaluation result
+     * @param rex      the sql expression
+     * @param exprStr  the expected dingo expr string
+     * @param expected the expected evaluation result
      */
     @ParameterizedTest
     @MethodSource({"getParametersTemp"})
-    public void testTemp(String rex, String exprStr, Object result)
+    public void testTemp(String rex, String exprStr, Object expected)
         throws SqlParseException, ExprCompileException {
-        test(rex, exprStr, result);
+        test(rex, exprStr, expected);
     }
 
     @ParameterizedTest
     @MethodSource({"io.dingodb.test.cases.RexCasesJUnit5#cases"})
-    public void test(String rex, String exprStr, Object result)
+    public void test(String rex, String exprStr, Object expected)
         throws SqlParseException, ExprCompileException {
         RexNode rexNode = getRexNode(rex);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.toString()).isEqualTo(exprStr);
-        assertThat(expr.compileIn(null).eval(null)).isEqualTo(result);
+        Assert.of(expr.compileIn(null).eval(null)).isEqualTo(expected);
     }
 
     @ParameterizedTest

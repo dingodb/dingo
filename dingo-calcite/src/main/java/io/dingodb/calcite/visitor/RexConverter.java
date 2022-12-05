@@ -20,6 +20,8 @@ import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.special.CastListItemsOp;
+import io.dingodb.exec.fun.special.ListConstructorOp;
+import io.dingodb.exec.fun.special.MapConstructorOp;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.core.evaluator.EvaluatorFactory;
 import io.dingodb.expr.core.evaluator.EvaluatorKey;
@@ -187,10 +189,13 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                 break;
             case ARRAY_VALUE_CONSTRUCTOR:
             case MULTISET_VALUE_CONSTRUCTOR:
-                op = funFactory.getFun("LIST");
+                op = funFactory.getFun(ListConstructorOp.NAME);
+                break;
+            case ITEM:
+                op = funFactory.getFun(DingoFunFactory.ITEM);
                 break;
             case MAP_VALUE_CONSTRUCTOR:
-                op = funFactory.getFun("MAP");
+                op = funFactory.getFun(MapConstructorOp.NAME);
                 break;
             case LIKE:
             case OTHER:

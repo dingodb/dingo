@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.test.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.test.util.CsvUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

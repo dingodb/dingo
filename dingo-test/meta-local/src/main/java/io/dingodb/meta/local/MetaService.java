@@ -37,27 +37,16 @@ import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
-    @AutoService(MetaServiceProvider.class)
-    public static class Provider implements MetaServiceProvider {
-        @Override
-        public io.dingodb.meta.MetaService root() {
-            return ROOT;
-        }
-    }
-
     public static final CommonId ROOT_ID = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.schema, 1, 1);
     public static final String ROOT_NAME = "LOCAL_ROOT";
-    private static Location location;
-    private static NavigableMap<ComparableByteArray, Part> defaultPart;
-
+    public static final MetaService ROOT = new MetaService(ROOT_ID, ROOT_NAME);
     private static final NavigableMap<CommonId, MetaService> metaServices = new ConcurrentSkipListMap<>();
     private static final NavigableMap<CommonId, TableDefinition> tableDefinitions = new ConcurrentSkipListMap<>();
     private static final Map<CommonId, NavigableMap<ComparableByteArray, Part>> parts = new ConcurrentSkipListMap<>();
     private static final AtomicInteger metaServiceSeq = new AtomicInteger(1);
     private static final AtomicInteger tableSeq = new AtomicInteger(1);
-
-    public static final MetaService ROOT = new MetaService(ROOT_ID, ROOT_NAME);
-
+    private static Location location;
+    private static NavigableMap<ComparableByteArray, Part> defaultPart;
     private final CommonId id;
     private final String name;
 
@@ -70,6 +59,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
         metaServices.clear();
         tableDefinitions.clear();
         parts.clear();
+    }
+
+    public static void setLocation(Location location) {
+        MetaService.location = location;
     }
 
     @Override
@@ -152,6 +145,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return Parameters.cleanNull(parts.get(getTableId(id, tableName)), defaultPart);
     }
 
+    @Override
+    public Location currentLocation() {
+        return location;
+    }
+
     public void setParts(CommonId id, NavigableMap<ComparableByteArray, Part> part) {
         parts.put(id, part);
     }
@@ -160,13 +158,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         defaultPart = part;
     }
 
-    @Override
-    public Location currentLocation() {
-        return location;
-    }
-
-    public static void setLocation(Location location) {
-        MetaService.location = location;
+    @AutoService(MetaServiceProvider.class)
+    public static class Provider implements MetaServiceProvider {
+        @Override
+        public io.dingodb.meta.MetaService root() {
+            return ROOT;
+        }
     }
 
 }

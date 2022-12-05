@@ -16,7 +16,6 @@
 
 package io.dingodb.test;
 
-import com.google.auto.service.AutoService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 

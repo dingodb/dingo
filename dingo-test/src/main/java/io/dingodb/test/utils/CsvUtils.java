@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.util;
+package io.dingodb.test.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Iterators;

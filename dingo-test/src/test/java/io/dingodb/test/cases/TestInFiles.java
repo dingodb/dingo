@@ -78,12 +78,7 @@ public class TestInFiles {
                 "string_int_double/data_pow_all.csv",
                 "string_int_double/select_mod_all.sql",
                 "string_int_double/data_mod_all.csv"
-            ))
-        );
-    }
-
-    public static @NonNull Stream<Arguments> tempCases() {
-        return Stream.of(
+            )),
             arguments(ImmutableList.of(
                 "string_int_double_map/create.sql",
                 "string_int_double_map/data.sql",
@@ -94,15 +89,26 @@ public class TestInFiles {
         );
     }
 
+    public static @NonNull Stream<Arguments> tempCases() {
+        return Stream.of(
+            arguments(ImmutableList.of(
+                "array/create.sql",
+                "array/data.sql",
+                "array/select_array_item_all.sql",
+                "array/data_array_item_all.csv"
+            ))
+        );
+    }
+
     @ParameterizedTest
     @MethodSource({"tempCases"})
     public void testTemp(List<String> fileNames) throws SQLException, IOException {
-        sqlHelper.doTestFiles(this.getClass(), fileNames);
+        sqlHelper.randomTable().doTestFiles(this.getClass(), fileNames);
     }
 
     @ParameterizedTest
     @MethodSource({"cases"})
     public void test(List<String> fileNames) throws SQLException, IOException {
-        sqlHelper.doTestFiles(this.getClass(), fileNames);
+        sqlHelper.randomTable().doTestFiles(this.getClass(), fileNames);
     }
 }

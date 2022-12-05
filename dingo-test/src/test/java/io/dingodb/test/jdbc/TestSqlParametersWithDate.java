@@ -48,7 +48,7 @@ public class TestSqlParametersWithDate {
 
     @Test
     public void testInsert() throws SQLException {
-        String tableName = sqlHelper.prepareTable("create table {table} ("
+        SqlHelper.RandomTable table = sqlHelper.randomTable().prepare("create table {table} ("
             + "id int,"
             + "data date,"
             + "data1 time,"
@@ -56,7 +56,7 @@ public class TestSqlParametersWithDate {
             + "primary key(id)"
             + ")"
         );
-        String sql = "insert into " + tableName + " values(?, ?, ?, ?)";
+        String sql = "insert into " + table + " values(?, ?, ?, ?)";
         Connection connection = sqlHelper.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, 1);
@@ -73,13 +73,13 @@ public class TestSqlParametersWithDate {
             assertThat(count).isEqualTo(1);
         }
         sqlHelper.queryTest(
-            "select * from " + tableName,
+            "select * from " + table,
             new String[]{"id", "data", "data1", "data2"},
             ImmutableList.of(
                 new Object[]{1, new Date(0).toString(), new Time(0).toString(), new Timestamp(0)},
                 new Object[]{2, new Date(86400000).toString(), new Time(3600000).toString(), new Timestamp(1)}
             )
         );
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 }

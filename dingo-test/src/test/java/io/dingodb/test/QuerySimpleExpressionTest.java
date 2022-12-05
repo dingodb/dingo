@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.expr.test.ExprTestUtils;
+import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,6 +43,6 @@ public class QuerySimpleExpressionTest {
     @MethodSource({"io.dingodb.test.cases.RexCasesJUnit5#cases"})
     public void test(String sql, String ignored, Object value) throws SQLException {
         Object result = sqlHelper.querySingleValue("select " + sql);
-        ExprTestUtils.assertEquals(result, value);
+        Assert.of(result).isEqualTo(value);
     }
 }

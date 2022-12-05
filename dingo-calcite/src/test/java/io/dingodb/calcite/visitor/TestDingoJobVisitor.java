@@ -27,7 +27,6 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
@@ -67,6 +66,7 @@ public class TestDingoJobVisitor {
 
     @BeforeAll
     public static void setupAll() {
+        MockMetaServiceProvider.init();
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
         currentLocation = ((DingoSchema) context.getDefaultSchema().schema).getMetaService().currentLocation();

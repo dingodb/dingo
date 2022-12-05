@@ -3,6 +3,7 @@ codec
 curdate
 curtime
 datacanvas
+datediff
 dingodb
 expr
 exprs

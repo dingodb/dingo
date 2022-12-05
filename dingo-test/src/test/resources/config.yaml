@@ -1,5 +1,5 @@
 cluster:
-    name: dingo
+  name: dingo
 exchange:
-    host: localhost
-    port: 0
+  host: localhost
+  port: 0

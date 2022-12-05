@@ -99,6 +99,7 @@ public final class Services {
                     task.run();
                 });
             } catch (JsonProcessingException e) {
+                // TODO: sql execution will be hang up.
                 throw new RuntimeException("Cannot deserialize received task.", e);
             } finally {
                 final long cost = System.currentTimeMillis() - startTime;
