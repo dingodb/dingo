@@ -43,7 +43,7 @@ public class MaxContinuousIncreaseCountExec extends AbstractExecutive<Context, I
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
-        0,
+        CommonIdConstant.ROOT_DOMAIN,
         19);
 
     @Override

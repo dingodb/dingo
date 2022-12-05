@@ -19,7 +19,9 @@ package io.dingodb.sdk.operation.op.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.context.Context;
+import io.dingodb.sdk.operation.executive.UpdateExec;
 import io.dingodb.sdk.operation.executive.collection.GetExec;
 import io.dingodb.sdk.operation.executive.collection.ScanExec;
 import io.dingodb.sdk.operation.executive.write.DeleteExec;
@@ -87,6 +89,11 @@ public abstract class AbstractOp implements Op {
 
     public static WriteOp put(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
         head = new WriteOp(PutExec.COMMON_ID, new Context(keyList, recordList, skippedWhenExisted));
+        return (WriteOp) head;
+    }
+
+    public static WriteOp update(Key key, Column column) {
+        head = new WriteOp(UpdateExec.COMMON_ID, new Context(Collections.singletonList(key), null, column));
         return (WriteOp) head;
     }
 

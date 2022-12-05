@@ -32,7 +32,7 @@ public class ValueAddExec extends AbstractExecutive<Context, Iterator<Object[]>>
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
-        0,
+        CommonIdConstant.ROOT_DOMAIN,
         10);
 
     @Override

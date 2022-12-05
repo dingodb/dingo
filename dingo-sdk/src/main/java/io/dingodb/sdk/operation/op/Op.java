@@ -18,6 +18,8 @@ package io.dingodb.sdk.operation.op;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.sdk.common.Key;
+import io.dingodb.sdk.common.Record;
+import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.op.impl.AbstractOp;
 import io.dingodb.sdk.operation.op.impl.CollectionOp;
@@ -38,6 +40,14 @@ public interface Op {
 
     static CollectionOp get(List<Key> primaryKeys) {
         return AbstractOp.get(primaryKeys);
+    }
+
+    static WriteOp put(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
+        return AbstractOp.put(keyList, recordList, skippedWhenExisted);
+    }
+
+    static WriteOp update(Key key, Column column) {
+        return AbstractOp.update(key, column);
     }
 
     static WriteOp delete(List<Key> keyList) {

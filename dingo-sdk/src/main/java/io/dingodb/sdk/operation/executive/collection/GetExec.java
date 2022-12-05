@@ -35,7 +35,7 @@ public class GetExec extends AbstractExecutive<Context, Void> {
     public static final CommonId COMMON_ID = new CommonId(
         CommonIdConstant.ID_TYPE.op,
         CommonIdConstant.OP_IDENTIFIER.internal,
-        0,
+        CommonIdConstant.ROOT_DOMAIN,
         2);
 
     @Override

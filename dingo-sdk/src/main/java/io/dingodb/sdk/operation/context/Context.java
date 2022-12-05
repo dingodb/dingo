@@ -46,6 +46,7 @@ public class Context {
 
     private List<Record> recordList;
     private boolean skippedWhenExisted;
+    private boolean useDefaultWhenNotExisted = false;
     private boolean desc = true;
 
     public Map<String, Object> extArgs;
@@ -74,6 +75,11 @@ public class Context {
         this.startPrimaryKeys = start;
         this.endPrimaryKeys = end;
         this.column = column;
+    }
+
+    public Context(Column column, boolean useDefaultWhenNotExisted) {
+        this.column = column;
+        this.useDefaultWhenNotExisted = useDefaultWhenNotExisted;
     }
 
     public Context(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
@@ -185,6 +191,10 @@ public class Context {
 
     public boolean isSkippedWhenExisted() {
         return skippedWhenExisted;
+    }
+
+    public boolean isUseDefaultWhenNotExisted() {
+        return useDefaultWhenNotExisted;
     }
 
     public boolean desc() {
