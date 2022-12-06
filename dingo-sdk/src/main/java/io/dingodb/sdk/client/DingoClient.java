@@ -389,6 +389,9 @@ public class DingoClient {
         }
         Key dingoKey = new Key(tableName, userKeys);
         Record dingoRecord = get(dingoKey);
+        if (dingoRecord == null) {
+            return null;
+        }
         return dingoRecord.getDingoColumnValuesInOrder();
     }
 

@@ -23,6 +23,7 @@ import io.dingodb.common.Executive;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
+import io.dingodb.sdk.operation.result.ValueOpResult;
 import io.dingodb.sdk.operation.unit.numeric.CountUnit;
 import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
 import io.dingodb.server.protocol.CommonIdConstant;
@@ -63,6 +64,6 @@ public class CountExec extends AbstractExecutive<Context, Iterator<Object[]>> {
         } catch (UnsupportedDataTypeException e) {
             log.error("Unsupported type, e", e);
         }
-        return null;
+        return new ValueOpResult<>(map.get(col));
     }
 }
