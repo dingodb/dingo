@@ -35,7 +35,6 @@ import javax.activation.UnsupportedDataTypeException;
 
 @Slf4j
 @AutoService(Executive.class)
-// 加个注解区分计算类型
 public class SumExec extends AbstractExecutive<Context, Iterator<Object[]>> {
 
     public static final CommonId COMMON_ID = new CommonId(

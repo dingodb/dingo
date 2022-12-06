@@ -41,7 +41,7 @@ public class ValueOp extends AbstractOp {
     }*/
 
     public ValueOp filter(DingoFilter filter) {
-        next = new ValueOp(ValueFilterExec.COMMON_ID, new Context(filter), head);
+        next = new ValueOp(ValueFilterExec.COMMON_ID, Context.builder().filter(filter).build(), head);
         return (ValueOp) next;
     }
 

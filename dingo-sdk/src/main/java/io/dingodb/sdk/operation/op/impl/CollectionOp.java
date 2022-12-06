@@ -53,82 +53,85 @@ public class CollectionOp extends AbstractOp {
     }
 
     public MergeValueOp sum(Column column) {
-        next = new MergeValueOp(SumExec.COMMON_ID, new Context(column), head);
+        next = new MergeValueOp(SumExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MergeValueOp) next;
     }
 
     public ValueOp max(Column column) {
-        next = new MergeValueOp(MaxExec.COMMON_ID, new Context(column), head);
+        next = new MergeValueOp(MaxExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MergeValueOp) next;
     }
 
     public ValueOp min(Column column) {
-        next = new MergeValueOp(MinExec.COMMON_ID, new Context(column), head);
+        next = new MergeValueOp(MinExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MergeValueOp) next;
     }
 
     public ValueOp avg(Column column) {
-        next = new MergeValueOp(AvgExec.COMMON_ID, new Context(column), head);
+        next = new MergeValueOp(AvgExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MergeValueOp) next;
     }
 
-    public ValueOp count() {
-        next = new MergeValueOp(CountExec.COMMON_ID, new Context(), head);
+    public ValueOp count(Column column) {
+        next = new MergeValueOp(CountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MergeValueOp) next;
     }
 
     public ValueOp decreaseCount(Column column) {
-        next = new ValueOp(DecreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(DecreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public ValueOp increaseCount(Column column) {
-        next = new ValueOp(IncreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(IncreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public ValueOp maxDecreaseCount(Column column) {
-        next = new ValueOp(MaxDecreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(MaxDecreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public ValueOp maxIncreaseCount(Column column) {
-        next = new ValueOp(MaxIncreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(MaxIncreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public ValueOp maxContinuousDecreaseCount(Column column) {
-        next = new ValueOp(MaxContinuousDecreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(MaxContinuousDecreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public ValueOp maxContinuousIncreaseCount(Column column) {
-        next = new ValueOp(MaxContinuousIncreaseCountExec.COMMON_ID, new Context(column), head);
+        next = new ValueOp(MaxContinuousIncreaseCountExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (ValueOp) next;
     }
 
     public CollectionOp add(Column column, boolean useDefaultWhenNotExisted) {
-        next = new CollectionOp(CollAddExec.COMMON_ID, new Context(column, useDefaultWhenNotExisted), head, 1);
+        next = new CollectionOp(CollAddExec.COMMON_ID, Context.builder()
+            .column(column)
+            .useDefaultWhenNotExisted(useDefaultWhenNotExisted)
+            .build(), head, 1);
         return (CollectionOp) next;
     }
 
     public MultiValueOp sortList(Column column) {
-        next = new MultiValueOp(SortListExec.COMMON_ID, new Context(column), head);
+        next = new MultiValueOp(SortListExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MultiValueOp) next;
     }
 
     public MultiValueOp list(Column column) {
-        next = new MultiValueOp(ListExec.COMMON_ID, new Context(column), head);
+        next = new MultiValueOp(ListExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MultiValueOp) next;
     }
 
     public MultiValueOp distinctList(Column column) {
-        next = new MultiValueOp(DistinctListExec.COMMON_ID, new Context(column), head);
+        next = new MultiValueOp(DistinctListExec.COMMON_ID, Context.builder().column(column).build(), head);
         return (MultiValueOp) next;
     }
 
     public CollectionOp filter(DingoFilter filter) {
-        next = new CollectionOp(FilterExec.COMMON_ID, new Context(filter), head);
+        next = new CollectionOp(FilterExec.COMMON_ID, Context.builder().filter(filter).build(), head);
         return (CollectionOp) next;
     }
 }

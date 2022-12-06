@@ -28,6 +28,7 @@ import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.server.ExecutiveRegistry;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
 
@@ -95,12 +96,16 @@ public class OpInstructions implements Instructions {
 
                 Executive headExec = ExecutiveRegistry.getExecutive(head.execId());
 
-                return exec(head, headExec.execute(head.context(), null), head.context().definition);
+                try {
+                    return exec(head, headExec.execute(head.context(), null), head.context().definition);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
     }
 
-    private static DingoOpResult exec(Op op, DingoOpResult result, TableDefinition definition) {
+    private static DingoOpResult exec(Op op, DingoOpResult result, TableDefinition definition) throws IOException {
         Op next = op.next();
         if (next == null) {
             return result;
@@ -110,6 +115,8 @@ public class OpInstructions implements Instructions {
             .definition(definition)
             .reader(preContext.reader())
             .writer(preContext.writer())
+            .startKey(preContext.startKey())
+            .endKey(preContext.endKey())
             .timestamp(preContext.timestamp());
         Executive nextExec = ExecutiveRegistry.getExecutive(next.execId());
         return exec(next, nextExec.execute(next.context(), result.getValue()), definition);

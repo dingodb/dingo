@@ -46,8 +46,8 @@ public interface Op {
         return AbstractOp.put(keyList, recordList, skippedWhenExisted);
     }
 
-    static WriteOp update(Key key, Column column) {
-        return AbstractOp.update(key, column);
+    static WriteOp update(Key key, Column column, boolean useDefaultWhenNotExisted) {
+        return AbstractOp.update(key, column, useDefaultWhenNotExisted);
     }
 
     static WriteOp delete(List<Key> keyList) {

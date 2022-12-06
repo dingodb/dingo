@@ -78,32 +78,47 @@ public abstract class AbstractOp implements Op {
 
     public static CollectionOp scan(Key start, Key end) {
         head = new CollectionOp(
-            ScanExec.COMMON_ID, new Context(Collections.singletonList(start), Collections.singletonList(end)));
+            ScanExec.COMMON_ID, Context.builder()
+            .startPrimaryKeys(Collections.singletonList(start))
+            .endPrimaryKeys(Collections.singletonList(end))
+            .build());
         return (CollectionOp) head;
     }
 
-    public static CollectionOp get(List<Key> primaryKeys) {
-        head = new CollectionOp(GetExec.COMMON_ID, new Context(primaryKeys, null));
+    public static CollectionOp get(List<Key> keyList) {
+        head = new CollectionOp(GetExec.COMMON_ID, Context.builder().startPrimaryKeys(keyList).build());
         return (CollectionOp) head;
     }
 
     public static WriteOp put(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
-        head = new WriteOp(PutExec.COMMON_ID, new Context(keyList, recordList, skippedWhenExisted));
+        head = new WriteOp(PutExec.COMMON_ID, Context.builder()
+            .startPrimaryKeys(keyList)
+            .recordList(recordList)
+            .skippedWhenExisted(skippedWhenExisted)
+            .build());
+
         return (WriteOp) head;
     }
 
-    public static WriteOp update(Key key, Column column) {
-        head = new WriteOp(UpdateExec.COMMON_ID, new Context(Collections.singletonList(key), null, column));
+    public static WriteOp update(Key key, Column column, boolean useDefaultWhenNotExisted) {
+        head = new WriteOp(UpdateExec.COMMON_ID, Context.builder()
+            .startPrimaryKeys(Collections.singletonList(key))
+            .column(column)
+            .useDefaultWhenNotExisted(useDefaultWhenNotExisted)
+            .build());
         return (WriteOp) head;
     }
 
     public static WriteOp delete(List<Key> keyList) {
-        head = new WriteOp(DeleteExec.COMMON_ID, new Context(keyList, null));
+        head = new WriteOp(DeleteExec.COMMON_ID, Context.builder().startPrimaryKeys(keyList).build());
         return (WriteOp) head;
     }
 
-    public static WriteOp deleteRange(List<Key> starts, List<Key> ends) {
-        head = new WriteOp(DeleteRangeExec.COMMON_ID, new Context(starts, ends), null);
+    public static WriteOp deleteRange(List<Key> startKeyList, List<Key> endKeyList) {
+        head = new WriteOp(DeleteRangeExec.COMMON_ID, Context.builder()
+            .startPrimaryKeys(startKeyList)
+            .endPrimaryKeys(endKeyList)
+            .build());
         return (WriteOp) head;
     }
 }

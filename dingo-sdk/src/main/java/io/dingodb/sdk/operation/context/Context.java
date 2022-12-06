@@ -26,6 +26,9 @@ import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.Reader;
 import io.dingodb.sdk.operation.Writer;
 import io.dingodb.sdk.operation.filter.DingoFilter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -34,6 +37,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Context {
 
     public List<Key> startPrimaryKeys;
@@ -46,7 +52,9 @@ public class Context {
 
     private List<Record> recordList;
     private boolean skippedWhenExisted;
+    @Builder.Default
     private boolean useDefaultWhenNotExisted = false;
+    @Builder.Default
     private boolean desc = true;
 
     public Map<String, Object> extArgs;
@@ -54,39 +62,6 @@ public class Context {
     private Reader reader;
     private Writer writer;
     private int timestamp;
-
-    public Context() {
-
-    }
-
-    public Context(Column column) {
-        this(null, null, column);
-    }
-
-    public Context(DingoFilter filter) {
-        this.filter = filter;
-    }
-
-    public Context(List<Key> start, List<Key> end) {
-        this(start, end, null);
-    }
-
-    public Context(List<Key> start, List<Key> end, Column column) {
-        this.startPrimaryKeys = start;
-        this.endPrimaryKeys = end;
-        this.column = column;
-    }
-
-    public Context(Column column, boolean useDefaultWhenNotExisted) {
-        this.column = column;
-        this.useDefaultWhenNotExisted = useDefaultWhenNotExisted;
-    }
-
-    public Context(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
-        this.startPrimaryKeys = keyList;
-        this.recordList = recordList;
-        this.skippedWhenExisted = skippedWhenExisted;
-    }
 
     public Context definition(TableDefinition definition) {
         this.definition = definition;
