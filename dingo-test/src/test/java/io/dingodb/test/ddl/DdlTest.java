@@ -22,6 +22,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.SqlHelper.RandomTable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.AfterAll;
@@ -79,15 +80,15 @@ public class DdlTest {
         "double, 2.7",
     })
     public void testCreateTable(@Nonnull String type, String value) throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + value + ")"
         );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
         assertThat(result).isEqualTo(expected);
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @ParameterizedTest
@@ -99,15 +100,15 @@ public class DdlTest {
         "binary, abc",
     })
     public void testCreateTableStringLiteral(@Nonnull String type, String value) throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, '" + value + "')"
         );
         int typeCode = TypeCode.codeOf(type.toUpperCase());
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
         assertThat(result).isEqualTo(expected);
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @ParameterizedTest
@@ -116,13 +117,13 @@ public class DdlTest {
         "timestamp, 2022-11-01 11:01:01.000",
     })
     public void testCreateTableTimestampLiteral(@Nonnull String type, String value) throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + type + "'" + value + "')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(DateTimeUtils.toUtcString(((Timestamp) result).getTime())).isEqualTo(value);
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @ParameterizedTest
@@ -133,13 +134,13 @@ public class DdlTest {
         "time, 04:30:02",
     })
     public void testCreateTableDateTimeCastString(@Nonnull String type, String value) throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, '" + value + "')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result.toString()).isEqualTo(value);
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @ParameterizedTest
@@ -150,61 +151,61 @@ public class DdlTest {
         "time, 04:30:02",
     })
     public void testCreateTableDateTimeLiteral(@Nonnull String type, String value) throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + type + "'" + value + "')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result.toString()).isEqualTo(value);
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithIntArray() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data int array, primary key(id))",
             "insert into {table} values(1, array[1, 2, 3])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithDoubleArray() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data double array, primary key(id))",
             "insert into {table} values(1, array[1, 2.1, 3.2])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DOUBLE);
         assertThat(array.getArray()).isEqualTo(new double[]{1, 2.1, 3.2});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithStringArray() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data varchar array, primary key(id))",
             "insert into {table} values(1, array['1', '2', '3'])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.VARCHAR);
         assertThat(array.getArray()).isEqualTo(new String[]{"1", "2", "3"});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithStringArrayContainsNull() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.prepareTable(
+            sqlHelper.randomTable().prepare(
                 "create table {table} (id int, data varchar array, primary key(id))",
                 "insert into {table} values(1, array['1', null, '3'])"
             );
@@ -214,19 +215,19 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithStringArrayNull() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data varchar array, primary key(id))",
             "insert into {table} values(1, null)"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isNull();
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithStringArrayNull1() throws SQLException {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.prepareTable(
+            sqlHelper.randomTable().prepare(
                 "create table {table} (id int, data varchar array not null, primary key(id))",
                 "insert into {table} values(1, null)"
             );
@@ -236,11 +237,11 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithDateArray() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data date array, primary key(id))",
             "insert into {table} values(1, array['1970-01-01', '1980-2-2', '19900303'])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DATE);
@@ -248,16 +249,16 @@ public class DdlTest {
             .map(Object::toString)
             .collect(Collectors.toList());
         assertThat(dateStrings).containsExactly("1970-01-01", "1980-02-02", "1990-03-03");
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithTimestampArray() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data timestamp array, primary key(id))",
             "insert into {table} values(1, array[1, 2])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.TIMESTAMP);
@@ -265,40 +266,43 @@ public class DdlTest {
             new Timestamp(DateTimeUtils.fromSecond(1)),
             new Timestamp(DateTimeUtils.fromSecond(2))
         );
-        sqlHelper.dropTable(tableName);
+        table.drop();
+        for (Object v : (Object[]) array.getArray()) {
+            System.out.println(v + ", ");
+        }
     }
 
     @Test
     public void testCreateTableWithMultiset() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data int multiset, primary key(id))",
             "insert into {table} values(1, multiset[7, 7, 8, 8])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{7, 7, 8, 8});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMultiset1() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{7, 7, 8, 8});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMultisetDefault() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -307,17 +311,17 @@ public class DdlTest {
                 + ")",
             "insert into {table}(id, name) values(1, 'ABC')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMultisetDefault1() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -326,32 +330,32 @@ public class DdlTest {
                 + ")",
             "insert into {table}(id, name) values(1, 'ABC')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DATE);
         assertThat(array.getArray()).isEqualTo(new Date[]{new Date(0), new Date(86400000)});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithDoubleMultiset() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data double multiset, primary key(id))",
             "insert into {table} values(1, multiset[1, 2.1, 3.2])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DOUBLE);
         assertThat(array.getArray()).isEqualTo(new double[]{1, 2.1, 3.2});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithDateMultisetNull() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.prepareTable(
+            sqlHelper.randomTable().prepare(
                 "create table {table} (id int, data date multiset, primary key(id))",
                 "insert into {table} values(1, multiset[''])"
             );
@@ -362,11 +366,11 @@ public class DdlTest {
     @Test
     @Disabled
     public void testCreateTableWithDateMultiset1() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data date multiset, primary key(id))",
             "insert into {table} values(1, multiset['1970-01-01', '1980-2-2', '19900303'])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DATE);
@@ -374,44 +378,44 @@ public class DdlTest {
             .map(Object::toString)
             .collect(Collectors.toList());
         assertThat(dateStrings).containsExactly("1970-01-01", "1980-02-02", "1990-03-03");
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     @Disabled
     public void testCreateTableWithMultisetAndUpdate() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
         );
         sqlHelper.updateTest(
-            "update " + tableName + " set data = multiset[1, 2, 3] where id = 1",
+            "update " + table + " set data = multiset[1, 2, 3] where id = 1",
             1
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.INTEGER);
         assertThat(array.getArray()).isEqualTo(new int[]{1, 2, 3});
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMap() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, map['a', 1, 'b', 2])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMapNullValue() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.prepareTable(
+            sqlHelper.randomTable().prepare(
                 "create table {table} (id int, data map, primary key(id))",
                 "insert into {table} values(1, map['a', '1', 'b', null])"
             );
@@ -421,19 +425,19 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMapNull() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, null)"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isNull();
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMapNull1() {
         AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.prepareTable(
+            sqlHelper.randomTable().prepare(
                 "create table {table} (id int, data map not null, primary key(id))",
                 "insert into {table} values(1, null)"
             );
@@ -443,19 +447,19 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMapMixedType() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, map['a', 1, 'b', 2.5])"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", BigDecimal.valueOf(1), "b", BigDecimal.valueOf(2.5)));
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithMapDefault() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -464,15 +468,15 @@ public class DdlTest {
                 + ")",
             "insert into {table}(id, name) values(1, 'ABC')"
         );
-        Object result = sqlHelper.querySingleValue("select data from " + tableName);
+        Object result = sqlHelper.querySingleValue("select data from " + table);
         assertThat(result).isInstanceOf(Map.class)
             .isEqualTo(ImmutableMap.of("a", 1, "b", 2));
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableDateDoubleWithNull() throws SQLException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id int,"
                 + "name varchar(20),"
@@ -486,14 +490,14 @@ public class DdlTest {
                 + "(2, 'Lisi', 18, null, '1987-11-11'),"
                 + "(3, 'Kitty', 22, 1000.0, '1990-09-15')"
         );
-        Object result = sqlHelper.querySingleValue("select name from " + tableName + " where id = 3");
+        Object result = sqlHelper.querySingleValue("select name from " + table + " where id = 3");
         assertThat(result).isEqualTo("Kitty");
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithPartition() throws SQLException, JsonProcessingException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id int,"
                 + "name varchar(20),"
@@ -507,17 +511,17 @@ public class DdlTest {
                 + "(4, 'name4')"
         );
         sqlHelper.queryTest(
-            "select * from " + tableName,
+            "select * from " + table,
             new String[]{"id", "name"},
             DingoTypeFactory.tuple("INTEGER", "STRING"),
             "1, name1\n2, name2\n3, name3\n4, name4"
         );
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 
     @Test
     public void testCreateTableWithPartition1() throws SQLException, JsonProcessingException {
-        String tableName = sqlHelper.prepareTable(
+        RandomTable table = sqlHelper.randomTable().prepare(
             "create table {table} ("
                 + "id varchar(20),"
                 + "name varchar(20),"
@@ -531,11 +535,11 @@ public class DdlTest {
                 + "('14', 'name4')"
         );
         sqlHelper.queryTest(
-            "select * from " + tableName + " where id like '1%'",
+            "select * from " + table + " where id like '1%'",
             new String[]{"id", "name"},
             DingoTypeFactory.tuple("STRING", "STRING"),
             "11, name1\n12, name2\n13, name3\n14, name4"
         );
-        sqlHelper.dropTable(tableName);
+        table.drop();
     }
 }

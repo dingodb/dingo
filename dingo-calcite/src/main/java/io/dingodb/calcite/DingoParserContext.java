@@ -59,13 +59,6 @@ public final class DingoParserContext implements Context {
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);
-
-        // Register all the functions
-        /*
-        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
-            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
-        });
-         */
     }
 
     @SuppressWarnings("MethodMayBeStatic")

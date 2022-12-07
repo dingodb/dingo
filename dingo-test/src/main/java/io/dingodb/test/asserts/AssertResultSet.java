@@ -20,7 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.test.util.CsvUtils;
+import io.dingodb.test.utils.CsvUtils;
+import io.dingodb.test.utils.ResultSetUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -31,7 +32,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -44,24 +44,6 @@ public final class AssertResultSet {
 
     AssertResultSet(ResultSet obj) {
         instance = obj;
-    }
-
-    @Nonnull
-    public static Object[] getRow(@Nonnull ResultSet resultSet) throws SQLException {
-        ResultSetMetaData metaData = resultSet.getMetaData();
-        int size = metaData.getColumnCount();
-        Object[] row = new Object[size];
-        for (int i = 0; i < size; ++i) {
-            int type = metaData.getColumnType(i + 1);
-            if (type == Types.DATE || type == Types.TIME) {
-                // Compare Date & Time type by string.
-                // NOTE: Milliseconds are lost.
-                row[i] = resultSet.getString(i + 1);
-            } else {
-                row[i] = resultSet.getObject(i + 1);
-            }
-        }
-        return row;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -89,7 +71,8 @@ public final class AssertResultSet {
     public AssertResultSet isRecords(List<Object[]> target) throws SQLException {
         int count = 0;
         while (instance.next()) {
-            assertThat(getRow(instance)).isIn(target);
+            ResultSetUtils.Row row = ResultSetUtils.getRow(instance);
+            assertThat(row).isIn(target);
             ++count;
         }
         assertThat(count).isEqualTo(target.size());
@@ -100,7 +83,7 @@ public final class AssertResultSet {
     public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
         int count = 0;
         while (instance.next()) {
-            assertThat(getRow(instance)).isEqualTo(target.get(count));
+            assertThat(ResultSetUtils.getRow(instance)).isEqualTo(target.get(count));
             ++count;
         }
         assertThat(count).isEqualTo(target.size());

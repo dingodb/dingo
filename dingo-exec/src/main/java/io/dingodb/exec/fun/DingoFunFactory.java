@@ -28,6 +28,7 @@ import io.dingodb.exec.fun.number.RoundEvaluatorsFactory;
 import io.dingodb.exec.fun.special.ArrayConstructorOp;
 import io.dingodb.exec.fun.special.CaseOp;
 import io.dingodb.exec.fun.special.CastListItemsOp;
+import io.dingodb.exec.fun.special.ItemEvaluatorsFactory;
 import io.dingodb.exec.fun.special.ListConstructorOp;
 import io.dingodb.exec.fun.special.MapConstructorOp;
 import io.dingodb.exec.fun.special.RtSliceFun;
@@ -54,6 +55,7 @@ import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
 import io.dingodb.expr.parser.DefaultFunFactory;
+import io.dingodb.expr.runtime.evaluator.index.IndexEvaluatorsFactory;
 
 public class DingoFunFactory extends DefaultFunFactory {
     // number functions
@@ -62,6 +64,8 @@ public class DingoFunFactory extends DefaultFunFactory {
     public static final String FLOOR = "floor";
     public static final String MOD = "mod";
     public static final String ROUND = "round";
+    // special function
+    public static final String ITEM = "item";
     // date & time functions
     public static final String DATE_FORMAT = "date_format";
     public static final String TIME_FORMAT = "time_format";
@@ -102,6 +106,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         funSuppliers.put(CastListItemsOp.NAME, CastListItemsOp::fun);
         funSuppliers.put(CaseOp.NAME, CaseOp::fun);
         registerUdf(RtSliceFun.NAME, RtSliceFun::new);
+        registerEvaluator(ITEM, ItemEvaluatorsFactory.INSTANCE);
         // string
         registerUdf(CharLengthFun.NAME, CharLengthFun::new);
         registerUdf(ConcatFun.NAME, ConcatFun::new);

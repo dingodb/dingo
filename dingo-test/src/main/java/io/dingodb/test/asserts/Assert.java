@@ -19,12 +19,15 @@ package io.dingodb.test.asserts;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.expr.test.ExprTestUtils;
 import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.assertj.core.api.ObjectAssert;
 
+import java.sql.Date;
 import java.sql.ResultSet;
+import java.sql.Time;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,10 @@ public class Assert<T, A extends Assert<T, A>> {
 
     protected Assert(T obj) {
         instance = obj;
+    }
+
+    public static <O> @Nonnull AssertObj<O> of(O obj) {
+        return new AssertObj<>(obj);
     }
 
     @Nonnull
@@ -83,6 +90,15 @@ public class Assert<T, A extends Assert<T, A>> {
         return cast();
     }
 
+    public A isEqualTo(Object value) {
+        if (instance instanceof Date || instance instanceof Time) {
+            assertThat(instance.toString()).isEqualTo(value);
+        } else {
+            ExprTestUtils.assertEquals(instance, value);
+        }
+        return cast();
+    }
+
     public ObjectAssert<T> that() {
         return assertThat(instance);
     }
@@ -90,5 +106,11 @@ public class Assert<T, A extends Assert<T, A>> {
     @SuppressWarnings("unchecked")
     private A cast() {
         return (A) this;
+    }
+
+    public static final class AssertObj<T> extends Assert<T, AssertObj<T>> {
+        AssertObj(T obj) {
+            super(obj);
+        }
     }
 }

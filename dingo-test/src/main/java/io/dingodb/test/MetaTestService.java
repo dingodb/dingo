@@ -51,15 +51,24 @@ public class MetaTestService implements MetaService {
         return SCHEMA_NAME;
     }
 
-    public void clear() {
-        tableDefinitionMap.keySet().stream()
-            .map(name -> new CommonId(
-                (byte) 'T',
-                new byte[]{'D', 'T'},
-                0,
-                name.hashCode()
-            )).forEach(StoreTestServiceProvider.STORE_SERVICE::deleteInstance);
-        tableDefinitionMap.clear();
+    @Override
+    public void createSubMetaService(CommonId id, String name) {
+
+    }
+
+    @Override
+    public Map<String, MetaService> getSubMetaServices(CommonId id) {
+        return Collections.singletonMap(SCHEMA_NAME, new MetaTestService());
+    }
+
+    @Override
+    public MetaService getSubMetaService(CommonId id, String name) {
+        return null;
+    }
+
+    @Override
+    public boolean dropSubMetaService(CommonId id, String name) {
+        return false;
     }
 
     @Override
@@ -102,17 +111,17 @@ public class MetaTestService implements MetaService {
     }
 
     @Override
-    public TableDefinition getTableDefinition(CommonId id, @NonNull String name) {
-        return null;
-    }
-
-    @Override
     public Map<String, TableDefinition> getTableDefinitions() {
         return tableDefinitionMap;
     }
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions(CommonId id) {
+        return null;
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(CommonId id, @NonNull String name) {
         return null;
     }
 
@@ -146,23 +155,14 @@ public class MetaTestService implements MetaService {
         return new FakeLocation(0);
     }
 
-    @Override
-    public void createSubMetaService(CommonId id, String name) {
-
-    }
-
-    @Override
-    public Map<String, MetaService> getSubMetaServices(CommonId id) {
-        return Collections.singletonMap(SCHEMA_NAME, new MetaTestService());
-    }
-
-    @Override
-    public MetaService getSubMetaService(CommonId id, String name) {
-        return null;
-    }
-
-    @Override
-    public boolean dropSubMetaService(CommonId id, String name) {
-        return false;
+    public void clear() {
+        tableDefinitionMap.keySet().stream()
+            .map(name -> new CommonId(
+                (byte) 'T',
+                new byte[]{'D', 'T'},
+                0,
+                name.hashCode()
+            )).forEach(StoreTestServiceProvider.STORE_SERVICE::deleteInstance);
+        tableDefinitionMap.clear();
     }
 }

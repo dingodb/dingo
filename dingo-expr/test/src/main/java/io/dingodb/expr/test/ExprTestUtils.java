@@ -57,11 +57,11 @@ public final class ExprTestUtils {
         assertEquals(result, value);
     }
 
-    public static void assertEquals(Object result, Object value) {
-        if (result instanceof Double) {
-            assertThat((Double) result).isCloseTo((Double) value, offset(1e-6));
+    public static void assertEquals(Object value, Object expected) {
+        if (value instanceof Double) {
+            assertThat((Double) value).isCloseTo((Double) expected, offset(1e-6));
         } else {
-            assertThat(result).isEqualTo(value);
+            assertThat(value).isEqualTo(expected);
         }
     }
 }
