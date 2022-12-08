@@ -18,8 +18,8 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
-import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
@@ -179,9 +179,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(col -> fromSqlColumnDeclaration((SqlColumnDeclaration) col, validator, pks))
             .collect(Collectors.toCollection(ArrayList::new));
 
-        // Validate partition strategy
-        Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, columns, __));
-
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
 
         // Distinct column
@@ -207,15 +204,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
-        schema.createTable(tableName, new TableDefinition(
-            tableName,
-            columns,
-            null,
-            1,
-            create.getTtl(),
-            create.getPartDefinition(),
-            create.getProperties()
-        ));
+        TableDefinition tableDefinition = new TableDefinition(
+            tableName, columns, null, 1, create.getTtl(), create.getPartDefinition(), create.getProperties()
+        );
+
+        // Validate partition strategy
+        Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, tableDefinition, __));
+
+        schema.createTable(tableName, tableDefinition);
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
@@ -262,11 +258,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void validatePartitionBy(
         @NonNull List<String> keyList,
-        @NonNull List<ColumnDefinition> cols,
+        @NonNull TableDefinition tableDefinition,
         @NonNull PartitionDefinition partDefinition
     ) {
         StrParseConverter converter = StrParseConverter.INSTANCE;
-        cols = cols.stream().filter(col -> keyList.contains(col.getName())).collect(Collectors.toList());
+        List<ColumnDefinition> cols = keyList.stream().map(tableDefinition::getColumn).collect(Collectors.toList());
         String strategy = partDefinition.getFuncName().toUpperCase();
         switch (strategy) {
             case "RANGE":

@@ -26,6 +26,7 @@ import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
@@ -62,7 +63,7 @@ public class StoreOperationUtils {
     }
 
     public DingoOpResult doOp(Op op) {
-        Op head = op.head();
+        Op head = Parameters.cleanNull(op.head(), op);
         String tableName = head.context().startPrimaryKeys.get(0).getTable();
         RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
         if (routeTable == null) {

@@ -462,14 +462,14 @@ public class DingoClient {
     }
 
     private List<Record> doGet(List<Key> keyList) {
-        CollectionOp op = AbstractOp.get(keyList);
+        CollectionOp op = Op.get(keyList);
         DingoOpResult opResult = exec(op);
 
-        return toRecord(opResult, op.head());
+        return toRecord(opResult, keyList.get(0).getTable());
     }
 
     private boolean doPut(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
-        WriteOp op = AbstractOp.put(keyList, recordList, skippedWhenExisted);
+        WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
         DingoOpResult result = exec(op);
         return (boolean) result.getValue();
     }
@@ -478,7 +478,7 @@ public class DingoClient {
         CollectionOp op = Op.scan(startKey, endKey).filter(filter);
         DingoOpResult result = exec(op);
 
-        return toRecord(result, op.head());
+        return toRecord(result, startKey.getTable());
     }
 
     private boolean doDelete(List<Key> keyList) {
@@ -488,8 +488,8 @@ public class DingoClient {
         return (boolean) result.getValue();
     }
 
-    private static List<Record> toRecord(DingoOpResult opResult, Op head) {
-        TableDefinition definition = head.context().definition;
+    private List<Record> toRecord(DingoOpResult opResult, String tableName) {
+        TableDefinition definition = storeOpUtils.getTableDefinition(tableName);
         List<Record> records = new ArrayList<>();
         Iterator<Object[]> iterator = (Iterator<Object[]>) opResult.getValue();
         while (iterator.hasNext()) {
