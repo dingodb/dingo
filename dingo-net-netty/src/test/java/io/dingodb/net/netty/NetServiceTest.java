@@ -77,4 +77,31 @@ public class NetServiceTest {
         System.out.println("finish");
     }
 
+    @Test
+    @Disabled
+    public void testListenHostPort() throws Exception {
+        String hello = "hello";
+        String tag = "TEST";
+
+        NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
+        netService.listenPort("127.0.0.1", 19199);
+        netService.registerTagMessageListener(tag, (message, ch) -> {
+            System.out.println(new String(message.content()));
+            ch.send(new Message(Message.EMPTY_TAG, new byte[0]));
+        });
+        Channel channel = netService.newChannel(new Location("localhost", 19199));
+        channel.setMessageListener((message, ch) -> {
+            try {
+                ch.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        channel.send(new Message(tag, hello.getBytes(StandardCharsets.UTF_8)), true);
+        netService.apiRegistry().register(TestApi.class, new TestApi() {});
+        TestApi testApi = netService.apiRegistry().proxy(TestApi.class, () -> new Location("localhost", 19199));
+        testApi.print("aaaa");
+        System.out.println(testApi.test().join());
+        System.out.println("finish");
+    }
 }

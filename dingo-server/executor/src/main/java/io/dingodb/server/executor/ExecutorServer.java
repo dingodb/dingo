@@ -81,7 +81,8 @@ public class ExecutorServer {
         log.info("Starting executor......");
         initId();
         DingoConfiguration.instance().setServerId(this.id);
-        netService.listenPort(DingoConfiguration.port());
+        log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
+        netService.listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         initAllApi();
         initStore();
         loadExecutive();
