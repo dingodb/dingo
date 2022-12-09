@@ -24,6 +24,7 @@ import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.service.FileTransferService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -138,6 +139,7 @@ public class NetService implements io.dingodb.net.NetService {
                 bootstrap
                     .channel(NioSocketChannel.class)
                     .group(executor)
+                    .option(ChannelOption.TCP_NODELAY, true)
                     .remoteAddress(location.toSocketAddress())
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
