@@ -16,19 +16,28 @@
 
 package io.dingodb.calcite;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import lombok.Getter;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class DingoSchema extends MutableSchema {
-    DingoSchema(MetaService metaService) {
+    @Getter
+    private final DingoParserContext context;
+    @Getter
+    private final List<String> names;
+
+    DingoSchema(DingoParserContext context, List<String> names, MetaService metaService) {
         super(metaService);
+        this.context = context;
+        this.names = names;
     }
 
     @Override
@@ -38,7 +47,17 @@ public class DingoSchema extends MutableSchema {
             return super.getTableMap(); // empty map
         }
         Map<String, Table> tableMap = new LinkedHashMap<>();
-        tds.forEach((name, td) -> tableMap.put(name, new DingoTable(td)));
+        tds.forEach((name, td) -> tableMap.put(
+            name,
+            new DingoTable(
+                context,
+                ImmutableList.<String>builder()
+                    .addAll(names)
+                    .add(name)
+                    .build(),
+                td
+            )
+        ));
         return tableMap;
     }
 

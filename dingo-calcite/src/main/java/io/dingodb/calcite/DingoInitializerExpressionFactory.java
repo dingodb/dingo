@@ -31,6 +31,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -48,10 +49,13 @@ import java.util.stream.Collectors;
 @Slf4j
 class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory {
     static DingoInitializerExpressionFactory INSTANCE = new DingoInitializerExpressionFactory();
-    private final DingoParser parser;
+
+    private final SqlOperatorTable operatorTable;
 
     private DingoInitializerExpressionFactory() {
-        parser = new DingoParser(new DingoParserContext(DingoRootSchema.DEFAULT_SCHEMA_NAME));
+        operatorTable = new DingoParserContext(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getSqlValidator()
+            .getOperatorTable();
     }
 
     private SqlNode validateExprWithRowType(
@@ -83,16 +87,12 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
             rowType
         );
         SqlValidator validator = SqlValidatorUtil.newValidator(
-            parser.getSqlValidator().getOperatorTable(),
+            operatorTable,
             catalogReader,
             typeFactory,
             DingoSqlValidator.CONFIG
         );
         final SqlSelect select = (SqlSelect) validator.validate(select0);
-        SqlNode sqlNode = select.getSelectList().get(0);
-        // Assume it is a `SqlRexContext`, so we can get the real validator and set the node type.
-        // SqlRexContext sqlRexContext = (SqlRexContext) context;
-        // sqlRexContext.getValidator().setValidatedNodeType(sqlNode, validator.getValidatedNodeType(sqlNode));
         return select.getSelectList().get(0);
     }
 

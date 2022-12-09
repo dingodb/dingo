@@ -17,7 +17,6 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
@@ -26,9 +25,6 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
-import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -37,34 +33,26 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
-import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -85,41 +73,18 @@ public class DingoParser {
     @Getter
     private final DingoParserContext context;
     @Getter
-    private final CalciteConnectionConfig config;
-    @Getter
     private final RelOptCluster cluster;
     @Getter
     private final VolcanoPlanner planner;
-    @Getter
-    private final SqlValidator sqlValidator;
-    @Getter
-    private final CalciteCatalogReader catalogReader;
 
-    public DingoParser(@NonNull DingoParserContext context) {
-        this(context, null);
-    }
-
-    public DingoParser(
-        final @NonNull DingoParserContext context,
-        final @Nullable CalciteConnectionConfig config
-    ) {
+    public DingoParser(final @NonNull DingoParserContext context) {
         this.context = context;
-        CalciteConnectionConfigImpl newConfig;
-        if (config != null) {
-            newConfig = (CalciteConnectionConfigImpl) config;
-        } else {
-            newConfig = new CalciteConnectionConfigImpl(new Properties());
-        }
-        newConfig = newConfig
-            .set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(PARSER_CONFIG.caseSensitive()));
-        //.set(CalciteConnectionProperty.TOPDOWN_OPT, String.valueOf(true));
-        this.config = newConfig;
 
         // Create Planner.
         planner = new VolcanoPlanner(context);
         // Set to `true` to use `TopDownRuleDriver`, or `IterativeRuleDriver` is used.
         // It seems that `TopDownRuleDriver` is faster than `IterativeRuleDriver`.
-        planner.setTopDownOpt(this.config.topDownOpt());
+        planner.setTopDownOpt(context.getConfig().topDownOpt());
         // Very important, it defines the RelNode convention. Logical nodes have `Convention.NONE`.
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRelTraitDef(DingoRelStreamingDef.INSTANCE);
@@ -135,27 +100,6 @@ public class DingoParser {
                 Objects.requireNonNull(cluster.getMetadataProvider())
             )
         ));
-
-        // Create CatalogReader.
-        catalogReader = new CalciteCatalogReader(
-            context.getRootSchema(),
-            Collections.singletonList(context.getDefaultSchemaName()),
-            context.getTypeFactory(),
-            this.config
-        );
-
-        // Create SqlValidator.
-        // CatalogReader is also serving as SqlOperatorTable.
-        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
-        // Register operators
-        tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
-        tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
-        SqlLikeBinaryOperator.register();
-
-        sqlValidator = new DingoSqlValidator(
-            catalogReader,
-            context.getTypeFactory()
-        );
     }
 
     @SuppressWarnings("MethodMayBeStatic")
@@ -169,22 +113,6 @@ public class DingoParser {
         return sqlNode;
     }
 
-    public SqlNode validate(SqlNode sqlNode) {
-        return sqlValidator.validate(sqlNode);
-    }
-
-    public RelDataType getValidatedNodeType(SqlNode sqlNode) {
-        return sqlValidator.getValidatedNodeType(sqlNode);
-    }
-
-    public List<List<String>> getFieldOrigins(SqlNode sqlNode) {
-        return sqlValidator.getFieldOrigins(sqlNode);
-    }
-
-    public RelDataType getParameterRowType(SqlNode sqlNode) {
-        return sqlValidator.getParameterRowType(sqlNode);
-    }
-
     public RelRoot convert(@NonNull SqlNode sqlNode) {
         return convert(sqlNode, true);
     }
@@ -192,8 +120,8 @@ public class DingoParser {
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
-            sqlValidator,
-            catalogReader,
+            context.getSqlValidator(),
+            context.getCatalogReader(),
             cluster,
             sqlNode.getKind() == SqlKind.EXPLAIN
         );
@@ -215,7 +143,7 @@ public class DingoParser {
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
-        if (!config.topDownOpt()) {
+        if (!context.getConfig().topDownOpt()) {
             rules = ImmutableList.<RelOptRule>builder()
                 .addAll(rules)
                 // This is needed for `IterativeRuleDriver`.

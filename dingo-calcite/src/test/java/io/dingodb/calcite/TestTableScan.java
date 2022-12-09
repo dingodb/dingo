@@ -51,23 +51,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestTableScan {
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
     private static DingoParserContext context;
-    private static Location currentLocation;
-    private static int tableTestPartNum;
     private DingoParser parser;
+    private Location currentLocation;
+    private int tableTestPartNum;
 
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
-        DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
-        currentLocation = dingoSchema.getMetaService().currentLocation();
-        tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
     }
 
     @BeforeEach
     public void setup() {
         // Create each time to clean the statistic info.
         parser = new DingoParser(context);
+        DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
+        currentLocation = dingoSchema.getMetaService().currentLocation();
+        tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
     }
 
     @ParameterizedTest

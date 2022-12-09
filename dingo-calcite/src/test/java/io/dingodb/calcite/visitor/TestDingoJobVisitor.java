@@ -48,6 +48,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -57,20 +58,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestDingoJobVisitor {
     private static final String FULL_TABLE_NAME = MockMetaServiceProvider.TABLE_NAME;
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
+    private static DingoParserContext context;
 
     private static DingoParser parser;
     private static Location currentLocation;
-
     private static RelOptTable table;
     private static RelDataType rowType;
 
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+    }
+
+    @BeforeEach
+    public void setup() {
         parser = new DingoParser(context);
-        currentLocation = ((DingoSchema) context.getDefaultSchema().schema).getMetaService().currentLocation();
-        table = parser.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
+        DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
+        currentLocation = dingoSchema.getMetaService().currentLocation();
+        table = context.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
         RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
         rowType = typeFactory.createStructType(
             ImmutableList.of(
@@ -207,7 +213,7 @@ public class TestDingoJobVisitor {
             cluster,
             cluster.traitSetOf(DingoConvention.INSTANCE),
             table,
-            parser.getCatalogReader(),
+            context.getCatalogReader(),
             new DingoValues(
                 parser.getCluster(),
                 parser.getPlanner().emptyTraitSet()

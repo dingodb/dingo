@@ -31,6 +31,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -51,12 +52,15 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestRex {
     private static DingoParserContext context;
+    private static SqlValidator validator;
+
     private DingoParser parser;
 
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        validator = context.getSqlValidator();
     }
 
     @Nonnull
@@ -85,7 +89,7 @@ public class TestRex {
 
     private RexNode getRexNode(String rex) throws SqlParseException {
         SqlNode sqlNode = parser.parse("select " + rex);
-        sqlNode = parser.validate(sqlNode);
+        sqlNode = validator.validate(sqlNode);
         RelRoot relRoot = parser.convert(sqlNode, false);
         RelNode relNode = relRoot.rel.getInput(0);
         if (relNode instanceof LogicalProject) {
