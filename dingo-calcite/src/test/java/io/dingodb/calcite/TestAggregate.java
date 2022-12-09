@@ -28,7 +28,6 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;

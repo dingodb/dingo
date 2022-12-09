@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.mock;
 
-import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.calcite.DingoRootSchema;
@@ -32,7 +31,6 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.Mockito.when;
 
@@ -77,10 +75,12 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
             byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
             rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
             rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
-            ((io.dingodb.meta.local.MetaService)metaService).setParts(metaService.getTableId(test), rangeSegments);
-            ((io.dingodb.meta.local.MetaService)metaService).setParts(metaService.getTableId(test1), rangeSegments);
-            ((io.dingodb.meta.local.MetaService)metaService).setParts(metaService.getTableId(tableDate), rangeSegments);
-            ((io.dingodb.meta.local.MetaService)metaService).setParts(metaService.getTableId(tableArray), rangeSegments);
+            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test), rangeSegments);
+            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test1), rangeSegments);
+            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(tableDate),
+                rangeSegments);
+            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(tableArray),
+                rangeSegments);
             io.dingodb.meta.local.MetaService.setLocation(LOC_0);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -98,7 +98,7 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
                 "table-with-date", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-date.json")),
                 "table-with-array", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-array.json"))
             ));
-            when(metaService.getTableId(TABLE_NAME)).thenReturn(CommonId.prefix((byte) 0, new byte[] {0, 0}));
+            when(metaService.getTableId(TABLE_NAME)).thenReturn(CommonId.prefix((byte) 0, new byte[]{0, 0}));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -107,7 +107,7 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
         byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
         rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
         rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
-        CommonId schemaId = CommonId.prefix((byte) 1, new byte[] {0, 0});
+        CommonId schemaId = CommonId.prefix((byte) 1, new byte[]{0, 0});
         when(metaService.id()).thenReturn(schemaId);
         when(metaService.getSubMetaServices()).thenReturn(Collections.singletonMap(SCHEMA_NAME, metaService));
         when(metaService.getParts(schemaId, TABLE_NAME)).thenReturn(rangeSegments);

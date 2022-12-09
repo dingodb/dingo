@@ -17,7 +17,6 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoDdlParserFactory;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.MetaCache;
@@ -49,6 +48,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
@@ -62,7 +62,7 @@ public final class DingoDriverParser extends DingoParser {
     private final DingoConnection connection;
 
     public DingoDriverParser(@Nonnull DingoConnection connection) {
-        super(connection.getContext(), connection.config());
+        super(connection.getContext());
         this.connection = connection;
     }
 
@@ -197,7 +197,8 @@ public final class DingoDriverParser extends DingoParser {
             explain = (SqlExplain) sqlNode;
             sqlNode = explain.getExplicandum();
         }
-        sqlNode = validate(sqlNode);
+        SqlValidator validator = getContext().getSqlValidator();
+        sqlNode = validator.validate(sqlNode);
         Meta.StatementType statementType;
         RelDataType type;
         switch (sqlNode.getKind()) {
@@ -209,11 +210,11 @@ public final class DingoDriverParser extends DingoParser {
                 break;
             default:
                 statementType = Meta.StatementType.SELECT;
-                type = getValidatedNodeType(sqlNode);
+                type = validator.getValidatedNodeType(sqlNode);
                 break;
         }
         RelDataType jdbcType = makeStruct(typeFactory, type);
-        List<List<String>> originList = getFieldOrigins(sqlNode);
+        List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         final RelRoot relRoot = convert(sqlNode, false);
@@ -224,7 +225,7 @@ public final class DingoDriverParser extends DingoParser {
             throw new RuntimeException("No default schema is found.");
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
-        RelDataType parasType = getParameterRowType(sqlNode);
+        RelDataType parasType = validator.getParameterRowType(sqlNode);
         Job job = jobManager.createJob(jobId, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {

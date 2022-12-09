@@ -22,6 +22,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
@@ -42,9 +43,16 @@ import java.util.stream.Collectors;
 
 public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
+    private final DingoParserContext context;
+    @Getter
+    private final List<String> names;
+    @Getter
     private final TableDefinition tableDefinition;
 
-    protected DingoTable(TableDefinition tableDefinition) {
+    protected DingoTable(DingoParserContext context, List<String> names, TableDefinition tableDefinition) {
+        super();
+        this.context = context;
+        this.names = names;
         this.tableDefinition = tableDefinition;
     }
 
@@ -106,6 +114,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     public <C> @Nullable C unwrap(@NonNull Class<C> clazz) {
         if (clazz.isAssignableFrom(InitializerExpressionFactory.class)) {
             return clazz.cast(DingoInitializerExpressionFactory.INSTANCE);
+        } else if (clazz.isAssignableFrom(Prepare.PreparingTable.class)) {
+            return clazz.cast(new DingoRelOptTable(this));
         }
         return super.unwrap(clazz);
     }

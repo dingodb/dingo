@@ -25,6 +25,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,21 +33,23 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDingoParser {
+public class TestDingoSqlValidator {
     private DingoParser parser;
+    private SqlValidator validator;
 
     @BeforeEach
     public void setupAll() {
         MockMetaServiceProvider.init();
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
+        validator = context.getSqlValidator();
     }
 
     @Test
     public void testGetValidatedNodeType() throws SqlParseException {
         SqlNode sqlNode = parser.parse("select id, name, amount from test");
-        parser.validate(sqlNode);
-        RelDataType type = parser.getValidatedNodeType(sqlNode);
+        validator.validate(sqlNode);
+        RelDataType type = validator.getValidatedNodeType(sqlNode);
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         assertThat(type.toString()).isEqualTo(
             typeFactory.createStructType(
@@ -67,8 +70,8 @@ public class TestDingoParser {
     @Test
     public void testGetFieldOrigins() throws SqlParseException {
         SqlNode sqlNode = parser.parse("select id, name, amount from test");
-        parser.validate(sqlNode);
-        List<List<String>> fieldOrigins = parser.getFieldOrigins(sqlNode);
+        validator.validate(sqlNode);
+        List<List<String>> fieldOrigins = validator.getFieldOrigins(sqlNode);
         String tableName = "TEST";
         String schemaName = "DINGO";
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
