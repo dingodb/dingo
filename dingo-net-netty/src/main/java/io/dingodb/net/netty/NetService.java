@@ -41,7 +41,7 @@ import static io.dingodb.common.util.Optional.ifPresent;
 public class NetService implements io.dingodb.net.NetService {
 
     @Getter
-    private final Map<Integer, NettyServer> servers = new ConcurrentHashMap<>();
+    private final Map<String, NettyServer> servers = new ConcurrentHashMap<>();
     @Getter
     private final String hostname = NetConfiguration.host();
     @Delegate
@@ -60,13 +60,25 @@ public class NetService implements io.dingodb.net.NetService {
 
     @Override
     public void listenPort(int port) throws Exception {
-        if (servers.containsKey(port)) {
+        if (servers.containsKey("::" + port)) {
             return;
         }
         NettyServer server = NettyServer.builder().port(port).build();
         server.start();
-        servers.put(port, server);
-        log.info("Start listening {}.", port);
+        servers.put("::" + port, server);
+        log.info("Start listening {}.", "::"  + port);
+        FileTransferService.getDefault();
+    }
+
+    @Override
+    public void listenPort(String host, int port) throws Exception {
+        if (servers.containsKey(host + ":" + port)) {
+            return;
+        }
+        NettyServer server = NettyServer.builder().host(host).port(port).build();
+        server.start();
+        servers.put(host + ":" + port, server);
+        log.info("Start listening {}.", host + ":" + port);
         FileTransferService.getDefault();
     }
 
@@ -76,8 +88,13 @@ public class NetService implements io.dingodb.net.NetService {
     }
 
     @Override
-    public void cancelPort(int port) throws Exception {
-        ifPresent(servers.remove(port), NettyServer::close);
+    public void cancelPort(int port) {
+        ifPresent(servers.remove("::" + port), NettyServer::close);
+    }
+
+    @Override
+    public void cancelPort(String host, int port) {
+        ifPresent(servers.remove(host + ":" + port), NettyServer::close);
     }
 
     @Override

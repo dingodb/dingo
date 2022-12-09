@@ -67,14 +67,16 @@ public interface NetService extends AutoCloseable {
 
     /**
      * Register message listener for tag, it is global listener.
-     * @param tag message tag
+     *
+     * @param tag      message tag
      * @param listener message listener
      */
     void registerTagMessageListener(String tag, MessageListener listener);
 
     /**
      * Unregister message listener for tag.
-     * @param tag message tag
+     *
+     * @param tag      message tag
      * @param listener message listener
      */
     void unregisterTagMessageListener(String tag, MessageListener listener);
@@ -87,18 +89,36 @@ public interface NetService extends AutoCloseable {
     void listenPort(int port) throws Exception;
 
     /**
+     * Listen the host:port, When receive message, notify the registered listener.
+     *
+     * @param host listen host
+     * @param port listen port
+     */
+    void listenPort(String host, int port) throws Exception;
+
+    /**
      * Close all channel of specified location.
      */
     void disconnect(Location location);
 
     /**
      * Cancel listen the port.
+     *
      * @param port port listen port
      */
     void cancelPort(int port) throws Exception;
 
     /**
+     * Cancel listen the port.
+     *
+     * @param host host listen host
+     * @param port port listen port
+     */
+    void cancelPort(String host, int port) throws Exception;
+
+    /**
      * Returns api registry instance, {@link ApiRegistry}.
+     *
      * @return api registry instance
      */
     ApiRegistry apiRegistry();

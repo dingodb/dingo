@@ -94,7 +94,8 @@ public class Starter {
 
         Core core = mpu.createCore(locations.indexOf(DingoConfiguration.location()), metas);
         CoordinatorStateMachine.init(core);
-        NetService.getDefault().listenPort(DingoConfiguration.port());
+        log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
+        NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         ApiRegistry.getDefault().register(LogLevelApi.class, LogLevelApi.INSTANCE);
         ApiRegistry.getDefault().register(ClusterServiceApi.class, CoordinatorClusterService.instance());
         core.start();

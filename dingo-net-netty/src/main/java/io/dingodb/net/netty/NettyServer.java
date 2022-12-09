@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Builder
 public class NettyServer {
 
+    public final String host;
     public final int port;
     private final Set<Connection> connections = new CopyOnWriteArraySet<>();
 
@@ -44,10 +45,14 @@ public class NettyServer {
         server = new ServerBootstrap();
         eventLoopGroup = new NioEventLoopGroup(2, new ThreadPoolBuilder().name("Netty server " + port).build());
         server
-            .localAddress(port)
             .channel(NioServerSocketChannel.class)
             .group(eventLoopGroup)
             .childHandler(channelInitializer());
+        if(host != null) {
+            server.localAddress(host, port);
+        } else {
+            server.localAddress(port);
+        }
         server.bind().sync().await();
     }
 
