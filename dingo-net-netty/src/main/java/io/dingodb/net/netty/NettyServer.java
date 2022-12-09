@@ -20,6 +20,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -47,8 +48,9 @@ public class NettyServer {
         server
             .channel(NioServerSocketChannel.class)
             .group(eventLoopGroup)
+            .childOption(ChannelOption.TCP_NODELAY, true)
             .childHandler(channelInitializer());
-        if(host != null) {
+        if (host != null) {
             server.localAddress(host, port);
         } else {
             server.localAddress(port);
@@ -59,7 +61,7 @@ public class NettyServer {
     private ChannelInitializer<SocketChannel> channelInitializer() {
         return new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
+            protected void initChannel(SocketChannel ch) {
                 Connection connection = new Connection(
                     "server", new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch, true
                 );
