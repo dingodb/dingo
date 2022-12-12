@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
@@ -561,5 +562,11 @@ public class DingoClient {
             .build();
         ResultForClient result = storeOpUtils.doOperation(StoreOperationType.GET_UDF, tableName, context);
         return result.getRecords().get(0);
+    }
+
+    public boolean crateIndex(String tableName, String indexName, Index index) {
+        TableDefinition definition = storeOpUtils.getTableDefinition(tableName);
+        definition.getIndexes().put(indexName, index);
+        return storeOpUtils.updateTableDefinition(definition);
     }
 }

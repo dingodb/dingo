@@ -19,6 +19,8 @@ package io.dingodb.server.coordinator.meta.service;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
@@ -40,6 +42,7 @@ import io.dingodb.server.protocol.meta.TablePartStats;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -168,6 +171,39 @@ public class DingoMetaService implements MetaService, MetaServiceApi {
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id, @NonNull String name) {
         return ((TableAdaptor) getMetaAdaptor(Table.class)).getDefinition(getTableId(cleanNull(id, ROOT_ID), name));
+    }
+
+    @Override
+    public boolean updateTableDefinition(TableDefinition tableDefinition) {
+        CommonId oldTDId = getTableId(cleanNull(id, ROOT_ID), tableDefinition.getName());
+        System.out.println("oldId:" + oldTDId);
+        TableDefinition oldTableDefinition = ((TableAdaptor) getMetaAdaptor(Table.class)).getDefinition(getTableId(cleanNull(id, ROOT_ID), tableDefinition.getName()));
+        Map<String, Index> indexes = tableDefinition.getIndexes();
+        Map<String, Index> newIndexes = new HashMap<>();
+        for (Map.Entry<String, Index> entry : indexes.entrySet()) {
+            System.out.println("oldTableDefinition:" + oldTableDefinition);
+            if (oldTableDefinition.getIndex(entry.getKey()) == null) {
+                newIndexes.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (newIndexes.size() == 0) {
+            return false;
+        }
+
+        for (Map.Entry<String, Index> entry : newIndexes.entrySet()) {
+            TableDefinition newTableDefinition = new TableDefinition(tableDefinition.getName()+"_"+entry.getKey());
+            for (String columnName : entry.getValue().getColumns()) {
+                ColumnDefinition cd = oldTableDefinition.getColumn(columnName);
+                cd.setPrimary(true);
+                newTableDefinition.addColumn(cd);
+            }
+            createTable(null, newTableDefinition);
+        }
+
+        ((TableAdaptor) getMetaAdaptor(Table.class)).update(oldTDId, tableDefinition);
+
+        return true;
     }
 
     @Override

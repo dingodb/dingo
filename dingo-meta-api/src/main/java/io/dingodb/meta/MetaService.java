@@ -160,6 +160,10 @@ public interface MetaService {
 
     TableDefinition getTableDefinition(CommonId id, @NonNull String name);
 
+    default boolean updateTableDefinition(@NonNull TableDefinition tableDefinition) {
+        return updateTableDefinition(tableDefinition);
+    }
+
     /**
      * Get table parts meta by table name.
      * Notice: check the table name case, because by default, the table names are converted to uppercase

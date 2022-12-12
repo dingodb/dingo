@@ -26,6 +26,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -74,8 +75,9 @@ public class ColumnDefinition {
     @JsonProperty("primary")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
+    @Setter
     @Builder.Default
-    private final boolean primary = false;
+    private boolean primary = false;
 
     @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("default")

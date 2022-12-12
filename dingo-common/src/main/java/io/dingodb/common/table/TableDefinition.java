@@ -37,12 +37,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop"})
@@ -341,9 +336,6 @@ public class TableDefinition {
     }
 
     public Index getIndex(String indexName) {
-        if (!indexes.containsKey(indexName)) {
-            throw new IllegalArgumentException("Index " + indexName + " not found in table " + name);
-        }
         return indexes.get(indexName);
     }
 
@@ -420,5 +412,23 @@ public class TableDefinition {
             indexesMapping.put(entry.getKey(), getIndexMapping(entry.getKey()));
         }
         return indexesMapping;
+    }
+
+    public boolean setIndexesList(Map<String, List<String>> indexes) {
+        for (Map.Entry<String, List<String>> entry : indexes.entrySet()) {
+            Index index = new Index();
+            index.setName(entry.getKey());
+            index.setColumns(entry.getValue().toArray(new String[0]));
+            addIndex(index);
+        }
+        return true;
+    }
+
+    public Map<String, List<String>> getIndexesList() {
+        Map<String, List<String>> indexes = new HashMap<>();
+        for (Map.Entry<String, Index> entry : this.indexes.entrySet()) {
+            indexes.put(entry.getKey(), Arrays.asList(entry.getValue().getColumns()));
+        }
+        return indexes;
     }
 }

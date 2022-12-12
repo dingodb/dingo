@@ -21,6 +21,7 @@ import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
 import io.dingodb.common.store.KeyValue;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -77,4 +78,52 @@ public interface ExecutorApi {
 
     @ApiDeclaration
     boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
+
+    @ApiDeclaration
+    boolean updateTableDefinitionVersion(CommonId tableId, int version);
+
+    @ApiDeclaration
+    Iterator<KeyValue> getAllFinishedRecord(CommonId tableId);
+
+    @ApiDeclaration
+    Iterator<KeyValue> getAllUnfinishedRecord(CommonId tableId);
+
+    @ApiDeclaration
+    boolean insertUnfinishedRecord(CommonId tableId, KeyValue record);
+
+    @ApiDeclaration
+    boolean deleteUnfinishedRecord(CommonId tableId, byte[] key);
+
+    @ApiDeclaration
+    boolean insertFinishedRecord(CommonId tableId, byte[] key, int tableDefinitionVersion);
+
+    @ApiDeclaration
+    byte[] getUnfinishedKey(byte[] key);
+
+    @ApiDeclaration
+    byte[] getFinishedKey(byte[] key);
+
+    @ApiDeclaration
+    boolean insertIndex(CommonId tableId, KeyValue record);
+
+    @ApiDeclaration
+    KeyValue getRecord(CommonId tableId, byte[] key);
+
+    @ApiDeclaration
+    void deleteIndex(CommonId tableId, KeyValue keyValue);
+
+    @ApiDeclaration
+    void deleteFinishedRecord(CommonId tableId, byte[] key);
+
+    @ApiDeclaration
+    Iterator<KeyValue> getFinishedRecord(CommonId tableId, List<KeyValue> records);
+
+    @ApiDeclaration
+    void insertDeleteKey(CommonId tableId, KeyValue keyValue);
+
+    @ApiDeclaration
+    void deleteDeleteKey(CommonId tableId, byte[] key);
+
+    @ApiDeclaration
+    Iterator<KeyValue> getAllDeleteRecord(CommonId tableId);
 }

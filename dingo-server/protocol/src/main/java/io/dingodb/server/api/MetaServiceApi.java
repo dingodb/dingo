@@ -65,4 +65,6 @@ public interface MetaServiceApi {
     @ApiDeclaration
     NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String name);
 
+    @ApiDeclaration
+    boolean updateTableDefinition(TableDefinition tableDefinition);
 }

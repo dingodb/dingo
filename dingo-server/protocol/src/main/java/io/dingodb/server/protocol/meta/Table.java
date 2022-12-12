@@ -29,6 +29,7 @@ import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -70,4 +71,5 @@ public class Table implements Meta {
 
     private PartitionDefinition partDefinition;
 
+    private Map<String, List<String>> indices;
 }

@@ -36,6 +36,7 @@ import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
+import javafx.scene.control.Tab;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -98,6 +99,17 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
             .put(table.getName(), id);
         return id;
+    }
+
+    public void update(CommonId schemaId, TableDefinition definition) {
+        Table table = definitionToMeta(schemaId, definition);
+        table.setUpdateTime(System.currentTimeMillis());
+        ArrayList<KeyValue> keyValues = new ArrayList<>(definition.getColumnsCount() + 2);
+        table.setId(schemaId);
+        keyValues.add(new KeyValue(schemaId.encode(), encodeMeta(table)));
+        metaStore.upsertKeyValue(keyValues);
+        keyValues.clear();
+        super.save(table);
     }
 
     public void create(CommonId schemaId, TableDefinition definition) {
@@ -296,7 +308,9 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         tableDefinition.setPartDefinition(table.getPartDefinition());
         tableDefinition.setProperties(table.getProperties());
         tableDefinition.setTtl(table.getTtl());
+        tableDefinition.setIndexesList(table.getIndices());
         DebugLog.debug(log, "Meta to table definition: {}", tableDefinition);
+        System.out.println("meta:" + tableDefinition);
         return tableDefinition;
     }
 
@@ -323,6 +337,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .properties(definition.getProperties())
             .partDefinition(definition.getPartDefinition())
             .ttl(definition.getTtl())
+            .indices(definition.getIndexesList())
             .build();
     }
 
