@@ -30,11 +30,12 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.driver.type.converter.TypedValueConverter;
-import io.dingodb.exec.JobRunner;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.base.JobRunner;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.exec.impl.JobRunnerImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaClientRuntimeException;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -83,6 +84,7 @@ import static java.util.Objects.requireNonNull;
 @Slf4j
 public class DingoMeta extends MetaImpl {
     private static final JobManager jobManager = JobManagerImpl.INSTANCE;
+    private static final JobRunner jobRunner = JobRunnerImpl.INSTANCE;
 
     public DingoMeta(DingoConnection connection) {
         super(connection);
@@ -142,11 +144,12 @@ public class DingoMeta extends MetaImpl {
             iterator = ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
         } else {
             Job job = jobManager.getJob(jobIdFromSh(statement.handle));
+            Object[] paras = null;
             if (statement instanceof DingoPreparedStatement) {
                 DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
                 try {
                     Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
-                    job.setParas((Object[]) job.getParasType().convertFrom(
+                    paras = ((Object[]) job.getParasType().convertFrom(
                         parasValue,
                         new TypedValueConverter(dingoPreparedStatement.getCalendar())
                     ));
@@ -154,7 +157,7 @@ public class DingoMeta extends MetaImpl {
                     throw new IllegalStateException("Not all parameters are set.");
                 }
             }
-            iterator = new JobRunner(job).createIterator();
+            iterator = jobRunner.createIterator(job, paras);
         }
         return iterator;
     }
@@ -495,7 +498,11 @@ public class DingoMeta extends MetaImpl {
         if (statement != null) {
             try {
                 statement.close();
-                jobManager.removeJob(jobIdFromSh(sh));
+                Id jobId = jobIdFromSh(sh);
+                Job job = jobManager.removeJob(jobId);
+                if (job != null) {
+                    jobRunner.destroyRemoteTasks(job);
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

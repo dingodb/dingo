@@ -85,7 +85,7 @@ public class ReceiveEndpoint {
         return emittedStatus.get() == ControlStatus.STOP;
     }
 
-    public void close() throws Exception {
+    public void close() {
         channel.close();
     }
 }

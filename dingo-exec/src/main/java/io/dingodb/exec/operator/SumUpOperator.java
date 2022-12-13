@@ -31,7 +31,6 @@ public class SumUpOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        sum = 0;
     }
 
     @Override
@@ -44,5 +43,7 @@ public class SumUpOperator extends SoleOutOperator {
     public synchronized void fin(int pin, Fin fin) {
         output.push(new Object[]{sum});
         output.fin(fin);
+        // Reset
+        sum = 0;
     }
 }

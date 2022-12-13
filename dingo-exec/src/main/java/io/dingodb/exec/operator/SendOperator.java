@@ -63,24 +63,29 @@ public final class SendOperator extends SinkOperator {
         @JsonProperty("receiveId") Id receiveId,
         @JsonProperty("schema") DingoType schema
     ) {
-        super();
         this.host = host;
         this.port = port;
         this.receiveId = receiveId;
         this.schema = schema;
         this.sendBuffer = ByteBuffer.wrap(new byte[SEND_BUFFER_MAX_SIZE]);
-        this.tupleCount = 0;
     }
 
     @Override
     public void init() {
         super.init();
         codec = new DingoSerialTxRxCodec(schema);
-        try {
-            endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
-            endpoint.init();
-        } catch (Exception e) {
-            log.error("Send operator init error, host:{}, port:{}", host, port, e);
+        endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
+        endpoint.init();
+    }
+
+    @Override
+    public void destroy() {
+        safeCloseEndpoint();
+    }
+
+    private void safeCloseEndpoint() {
+        if (endpoint != null) {
+            endpoint.close();
         }
     }
 
@@ -129,9 +134,8 @@ public final class SendOperator extends SinkOperator {
                 log.debug("Send FIN with detail:\n{}", fin.detail());
             }
             endpoint.send(array, true);
-            endpoint.close();
-        } catch (Exception e) {
-            log.error("Send FIN to ({}, {}, {}) error", host, port, receiveId, e);
+        } catch (IOException e) {
+            log.error("Encode FIN failed. fin = {}", fin, e);
         }
     }
 

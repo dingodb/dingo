@@ -129,6 +129,8 @@ public class HashJoinOperator extends SoleOutOperator {
                 }
             }
             output.fin(fin);
+            // Reset
+            hashMap.clear();
         } else if (pin == 1) { //right
             rightFinFlag = true;
             notify();

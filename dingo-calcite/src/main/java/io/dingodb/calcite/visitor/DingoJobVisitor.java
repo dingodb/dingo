@@ -318,8 +318,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return receive.getSoleOutput();
     }
 
-    private @NonNull Collection<Output> bridge(@NonNull Collection<Output> inputs,
-                                               Supplier<Operator> operatorSupplier) {
+    private @NonNull Collection<Output> bridge(
+        @NonNull Collection<Output> inputs,
+        Supplier<Operator> operatorSupplier
+    ) {
         List<Output> outputs = new LinkedList<>();
         for (Output input : inputs) {
             Operator operator = operatorSupplier.get();
@@ -591,9 +593,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         Output input = sole(inputs);
         Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()));
         Task task = input.getTask();
-        operator.setId(idGenerator.get());
+        Id id = idGenerator.get();
+        operator.setId(id);
         task.putOperator(operator);
         input.setLink(operator.getInput(0));
+        task.markRoot(id);
+        job.markRoot(task.getId());
         return ImmutableList.of();
     }
 

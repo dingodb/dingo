@@ -75,5 +75,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
             output.push(new Object[]{count});
         }
         output.fin(fin);
+        // Reset
+        count = 0;
     }
 }
