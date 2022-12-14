@@ -16,12 +16,15 @@
 
 package io.dingodb.sdk.operation;
 
+import io.dingodb.sdk.operation.impl.GetOperation;
 import io.dingodb.sdk.operation.impl.UdfGetOperation;
 import io.dingodb.sdk.operation.impl.UdfUpdateOperation;
 
 public final class StoreOperationFactory {
     public static IStoreOperation getStoreOperation(StoreOperationType type) {
         switch (type) {
+            case GET:
+                return GetOperation.getInstance();
             case GET_UDF:
                 return UdfGetOperation.getInstance();
             case UPDATE_UDF:

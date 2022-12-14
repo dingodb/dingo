@@ -80,7 +80,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
     @Override
     public List<KeyValue> get(List<byte[]> keys) {
         try {
-            List<byte[]> values = db.multiGetAsList(readOptions, Collections.singletonList(handle), keys);
+            List<byte[]> values = db.multiGetAsList(readOptions, keys);
             List<KeyValue> entries = new ArrayList<>(keys.size());
             for (int i = 0; i < keys.size(); i++) {
                 entries.add(new KeyValue(keys.get(i), values.get(i)));

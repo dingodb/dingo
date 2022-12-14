@@ -18,14 +18,9 @@ package io.dingodb.example;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.DingoOpResult;
-import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Part;
 import io.dingodb.sdk.client.DingoClient;
-import io.dingodb.sdk.client.DingoConnection;
-import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.operation.Column;
@@ -43,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 
 public class DingoOperationExample {
 
@@ -135,19 +129,6 @@ public class DingoOperationExample {
         for (Record record : query) {
             System.out.println("====== query record =====> " + record.toString());
         }
-
-        // ---------------- get partitions -----------------
-        DingoConnection connection = new DingoConnection("127.0.0.1:19181");
-        connection.initConnection();
-        MetaClient metaClient = connection.getMetaClient();
-        TableDefinition tableDefinition = metaClient.getTableDefinition(tableName.toUpperCase());
-        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions =
-            metaClient.getParts(tableDefinition.getName());
-        RangeStrategy rangeStrategy = new RangeStrategy(tableDefinition, partitions.navigableKeySet());
-        byte[] keyBytes = null;
-        ByteArrayUtils.ComparableByteArray byteArray = rangeStrategy.calcPartId(keyBytes);
-        Part part = partitions.get(byteArray);
-        // ---------------- ---------------
 
         dingoClient.dropTable(tableName);
 

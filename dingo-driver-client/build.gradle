@@ -25,6 +25,8 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
     implementation project(':dingo-common')
     implementation project(':dingo-net-api')

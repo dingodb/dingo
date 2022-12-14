@@ -25,6 +25,8 @@ application {
 }
 
 dependencies {
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
 
     implementation project(":dingo-common")

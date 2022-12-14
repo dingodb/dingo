@@ -109,7 +109,7 @@ public class DriverProxyServer extends LocalService implements DriverProxyApi, M
     public void start() {
         ApiRegistry.getDefault().register(DriverProxyApi.class, this);
         ApiRegistry.getDefault().register(MetaApi.class, this);
-        ApiRegistry.getDefault().register(LogLevelApi.class, LogLevelApi.INSTANCE);
+        // ApiRegistry.getDefault().register(LogLevelApi.class, LogLevelApi.INSTANCE);
     }
 
     public void stop() {

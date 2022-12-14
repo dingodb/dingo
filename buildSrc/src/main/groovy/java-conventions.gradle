@@ -47,8 +47,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:' + 'junit5'.v()
     testImplementation group: 'org.assertj', name: 'assertj-core', version: 'assertj'.v()
     // logging
-    runtimeOnly 'ch.qos.logback:logback-core:' + 'logback'.v()
-    runtimeOnly 'ch.qos.logback:logback-classic:' + 'logback'.v()
     implementation 'org.slf4j:slf4j-api:' + 'slf4j'.v()
     // static check
     checkstyle 'com.puppycrawl.tools:checkstyle:' + 'checkstyle'.v()

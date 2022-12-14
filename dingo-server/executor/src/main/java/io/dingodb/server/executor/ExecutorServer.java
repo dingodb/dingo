@@ -133,7 +133,7 @@ public class ExecutorServer {
         tableStoreApi = new TableStoreApi(netService, storeService);
         driverProxyApi = new DriverProxyApi(netService);
         executorApi = new ExecutorApi(netService, storeService);
-        netService.apiRegistry().register(LogLevelApi.class, LogLevelApi.INSTANCE);
+        netService.apiRegistry().register(LogLevelApi.class, io.dingodb.server.executor.api.LogLevelApi.instance());
     }
 
     private NetService loadNetService() {

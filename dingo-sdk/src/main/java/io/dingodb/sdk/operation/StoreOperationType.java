@@ -17,6 +17,8 @@
 package io.dingodb.sdk.operation;
 
 public enum StoreOperationType {
+    GET,
+
     GET_UDF,
 
     UPDATE_UDF;
