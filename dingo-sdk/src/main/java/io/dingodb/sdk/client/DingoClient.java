@@ -33,13 +33,13 @@ import io.dingodb.sdk.operation.UDFContext;
 import io.dingodb.sdk.operation.Value;
 import io.dingodb.sdk.operation.filter.DingoFilter;
 import io.dingodb.sdk.operation.op.Op;
-import io.dingodb.sdk.operation.op.impl.AbstractOp;
 import io.dingodb.sdk.operation.op.impl.CollectionOp;
 import io.dingodb.sdk.operation.op.impl.WriteOp;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -462,10 +462,20 @@ public class DingoClient {
     }
 
     private List<Record> doGet(List<Key> keyList) {
-        CollectionOp op = Op.get(keyList);
-        DingoOpResult opResult = exec(op);
-
-        return toRecord(opResult, keyList.get(0).getTable());
+        ResultForClient result = storeOpUtils.doOperation(
+            StoreOperationType.GET,
+            keyList.get(0).getTable(),
+            ContextForClient.builder()
+                .startKeyList(keyList)
+                .endKeyList(Collections.emptyList())
+                .skippedWhenExisted(false)
+                .build());
+        if (!result.getStatus()) {
+            log.error("Execute get command failed:{}", result.getErrorMessage());
+            return null;
+        } else {
+            return result.getRecords();
+        }
     }
 
     private boolean doPut(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {

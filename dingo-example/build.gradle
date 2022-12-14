@@ -8,6 +8,8 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver-client')
     implementation project(':dingo-sdk')
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 }
 
 test {

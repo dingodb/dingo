@@ -96,7 +96,7 @@ public class Starter {
         CoordinatorStateMachine.init(core);
         log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
-        ApiRegistry.getDefault().register(LogLevelApi.class, LogLevelApi.INSTANCE);
+        ApiRegistry.getDefault().register(LogLevelApi.class, io.dingodb.server.coordinator.api.LogLevelApi.instance());
         ApiRegistry.getDefault().register(ClusterServiceApi.class, CoordinatorClusterService.instance());
         core.start();
     }

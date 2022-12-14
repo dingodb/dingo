@@ -16,21 +16,11 @@
 
 package io.dingodb.server.api;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import io.dingodb.common.annotation.ApiDeclaration;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.slf4j.LoggerFactory;
 
 public interface LogLevelApi {
 
-    LogLevelApi INSTANCE = new LogLevelApi() {
-    };
-
     @ApiDeclaration
-    default void setLevel(@NonNull String className, @NonNull String level) throws ClassNotFoundException {
-        Class<?> cls = Class.forName(className);
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.getLogger(cls).setLevel(Level.toLevel(level));
-    }
+    void setLevel(@NonNull String className, @NonNull String level);
 }

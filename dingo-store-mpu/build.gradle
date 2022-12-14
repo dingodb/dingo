@@ -23,6 +23,8 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
     implementation project(":dingo-sdk")
     implementation project(':dingo-store-api')

@@ -41,6 +41,8 @@ dependencies {
     implementation group: 'io.confluent', name: 'kafka-avro-serializer', version: 'confluent'.v()
     compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.8.8'
     implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+    compile group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
     implementation project(":dingo-sdk")
     implementation project(":dingo-common")

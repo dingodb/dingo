@@ -100,11 +100,7 @@ public class Tools {
                 }
                 LogLevelApi proxy = netService.apiRegistry()
                     .proxy(LogLevelApi.class, () -> new Location(serverHost, serverPort));
-                try {
-                    proxy.setLevel(className, level);
-                } catch (ClassNotFoundException e) {
-                    log.error("Class:{} not found, ", className, e);
-                }
+                proxy.setLevel(className, level);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + cmd);
