@@ -254,7 +254,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .flatMap(partId -> replicaAdaptor.getByDomain(partId.seq()).stream())
             .map(Replica::getId)
             .forEach(replicaAdaptor::delete);
-        columnAdaptor.deleteByDomain(id.domain());
+        columnAdaptor.deleteByDomain(id.seq());
         ClusterScheduler.instance().getTableScheduler(id).deleteTable();
         ClusterScheduler.instance().deleteTableScheduler(id);
     }
