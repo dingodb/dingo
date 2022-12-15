@@ -18,7 +18,6 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.operator.RootOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -32,7 +31,9 @@ public interface Task {
 
     Location getLocation();
 
-    RootOperator getRoot();
+    Operator getRoot();
+
+    void markRoot(Id operatorId);
 
     Map<Id, Operator> getOperators();
 
@@ -48,25 +49,23 @@ public interface Task {
      */
     void putOperator(@NonNull Operator operator);
 
-    void deleteOperator(@NonNull Operator operator);
-
     List<Id> getRunList();
 
     void init();
 
-    void run();
+    void run(Object @Nullable [] paras);
 
-    void reset();
+    default void destroy() {
+        getOperators().values().forEach(Operator::destroy);
+    }
 
     default @Nullable Operator getOperator(Id id) {
         return getOperators().get(id);
     }
 
-    byte[] serialize();
-
     DingoType getParasType();
 
     default void setParas(Object[] paras) {
-        getOperators().forEach((id, o) -> o.setParas(paras));
+        getOperators().values().forEach(o -> o.setParas(paras));
     }
 }

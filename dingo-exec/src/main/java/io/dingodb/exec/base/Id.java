@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @EqualsAndHashCode(of = {"value"})
@@ -39,6 +40,10 @@ public final class Id implements Comparable<Id> {
         return new Id(UUID.randomUUID().toString());
     }
 
+    public static @NonNull Id fromBytes(byte[] bytes) {
+        return new Id(new String(bytes, StandardCharsets.UTF_8));
+    }
+
     @Override
     public int compareTo(@NonNull Id obj) {
         return value.compareTo(obj.value);
@@ -47,5 +52,9 @@ public final class Id implements Comparable<Id> {
     @Override
     public String toString() {
         return value;
+    }
+
+    public byte @NonNull [] toBytes() {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 }

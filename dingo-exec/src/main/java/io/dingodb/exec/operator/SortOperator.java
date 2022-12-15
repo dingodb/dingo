@@ -92,5 +92,7 @@ public class SortOperator extends SoleOutOperator {
             ++c;
         }
         output.fin(fin);
+        // Reset
+        cache.clear();
     }
 }

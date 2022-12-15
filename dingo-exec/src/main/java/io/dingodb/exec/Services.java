@@ -16,16 +16,12 @@
 
 package io.dingodb.exec;
 
-import com.codahale.metrics.Timer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
 import io.dingodb.common.error.DingoException;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
-import io.dingodb.exec.base.Task;
 import io.dingodb.exec.channel.EndpointManager;
-import io.dingodb.exec.impl.TaskImpl;
+import io.dingodb.exec.impl.TaskMessenger;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
@@ -35,12 +31,9 @@ import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
 public final class Services {
@@ -59,9 +52,7 @@ public final class Services {
         "No cluster service provider was found."
     ).get();
     public static final Map<String, MetaService> metaServices = new HashMap<>();
-    public static final String TASK_TAG = "DINGO_TASK";
     public static final String CTRL_TAG = "DINGO_CTRL";
-    private static final ExecutorService executorService = Executors.newWorkStealingPool();
 
     static {
         initMetaServices();
@@ -83,32 +74,8 @@ public final class Services {
 
     public static void initNetService() {
         initControlMsgService();
-        NET.registerTagMessageListener(TASK_TAG, (message, channel) -> {
-            final long startTime = System.currentTimeMillis();
-            String taskStr = new String(message.content(), StandardCharsets.UTF_8);
-            if (log.isDebugEnabled()) {
-                log.debug("Received task: {}", taskStr);
-            }
-            try {
-                final Timer.Context timeCtx = DingoMetrics.getTimeContext("deserialize");
-                Task task = TaskImpl.fromString(taskStr);
-                timeCtx.stop();
-
-                executorService.execute(() -> {
-                    task.init();
-                    task.run();
-                });
-            } catch (JsonProcessingException e) {
-                // TODO: sql execution will be hang up.
-                throw new RuntimeException("Cannot deserialize received task.", e);
-            } finally {
-                final long cost = System.currentTimeMillis() - startTime;
-                if (log.isDebugEnabled()) {
-                    log.debug("Services initNetService TASK_TAG msg cost: {}ms.", cost);
-                }
-                DingoMetrics.latency("on_task_message", cost);
-            }
-        });
+        NET.registerTagMessageListener(TaskMessenger.TASK_TAG, (message, channel) ->
+            TaskMessenger.INSTANCE.processMessage(message));
     }
 
     public static void initControlMsgService() {

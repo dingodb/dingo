@@ -65,10 +65,6 @@ public abstract class AbstractOperator implements Operator {
     protected Task task;
 
     @Override
-    public void reset() {
-    }
-
-    @Override
     public void setParas(Object[] paras) {
     }
 }

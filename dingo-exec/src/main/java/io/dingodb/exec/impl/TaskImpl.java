@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
@@ -30,8 +29,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.codec.RawJsonDeserializer;
-import io.dingodb.exec.converter.JsonConverter;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
@@ -42,11 +39,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
@@ -71,14 +68,20 @@ public final class TaskImpl implements Task {
     private final List<Id> runList;
     @JsonProperty("parasType")
     @Getter
-    private final @Nullable DingoType parasType;
+    private final DingoType parasType;
 
-    private Object[] paras = null;
-
+    private Id rootOperatorId = null;
+    private CountDownLatch activeThreads = null;
     @Getter
     private TaskStatus taskInitStatus;
 
-    public TaskImpl(Id id, Id jobId, Location location, @Nullable DingoType parasType) {
+    @JsonCreator
+    public TaskImpl(
+        @JsonProperty("id") Id id,
+        @JsonProperty("jobId") Id jobId,
+        @JsonProperty("location") Location location,
+        @JsonProperty("parasType") DingoType parasType
+    ) {
         this.id = id;
         this.jobId = jobId;
         this.location = location;
@@ -87,34 +90,16 @@ public final class TaskImpl implements Task {
         this.runList = new LinkedList<>();
     }
 
-    @JsonCreator
-    public static @NonNull TaskImpl fromJson(
-        @JsonProperty("id") Id id,
-        @JsonProperty("jobId") Id jobId,
-        @JsonProperty("location") Location location,
-        @Nullable @JsonProperty("parasType") DingoType parasType,
-        @JsonDeserialize(using = RawJsonDeserializer.class)
-        @JsonProperty("paras") JsonNode paras
-    ) {
-        TaskImpl task = new TaskImpl(id, jobId, location, parasType);
-        if (paras != null) {
-            assert parasType != null;
-            task.paras = (Object[]) parasType.convertFrom(paras, JsonConverter.INSTANCE);
-        }
-        return task;
-    }
-
-    public static TaskImpl fromString(String str) throws JsonProcessingException {
-        return JobImpl.PARSER.parse(str, TaskImpl.class);
+    @Override
+    public Operator getRoot() {
+        return operators.get(rootOperatorId);
     }
 
     @Override
-    public RootOperator getRoot() {
-        return operators.values().stream()
-            .filter(o -> o instanceof RootOperator)
-            .map(o -> (RootOperator) o)
-            .findFirst()
-            .orElse(null);
+    public void markRoot(Id operatorId) {
+        assert operators.get(operatorId) instanceof RootOperator
+            : "The root operator must be a `RootOperator`.";
+        rootOperatorId = operatorId;
     }
 
     @Override
@@ -124,12 +109,6 @@ public final class TaskImpl implements Task {
         if (operator instanceof SourceOperator) {
             runList.add(operator.getId());
         }
-    }
-
-    @Override
-    public void deleteOperator(@NonNull Operator operator) {
-        operators.remove(operator.getId());
-        runList.remove(operator.getId());
     }
 
     @Override
@@ -155,11 +134,22 @@ public final class TaskImpl implements Task {
         taskInitStatus.setStatus(isStatusOK);
         taskInitStatus.setTaskId(this.id.toString());
         taskInitStatus.setErrorMsg(statusErrMsg);
-
-        reset();
+        activeThreads = new CountDownLatch(0);
     }
 
-    public void run() {
+    @Override
+    public synchronized void run(Object @Nullable [] paras) {
+        if (activeThreads != null) {
+            while (true) {
+                try {
+                    activeThreads.await();
+                    break;
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+        activeThreads = new CountDownLatch(runList.size());
+        setParas(paras);
         if (log.isDebugEnabled()) {
             log.debug("Task is starting at {}...", location);
         }
@@ -194,33 +184,9 @@ public final class TaskImpl implements Task {
                         log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     }
                 }
+                activeThreads.countDown();
             });
         }
-    }
-
-    @Override
-    public void reset() {
-        getOperators().forEach((id, o) -> o.reset());
-        setParas(paras);
-    }
-
-    @Override
-    public byte @NonNull [] serialize() {
-        return toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    @Override
-    public void setParas(Object[] paras) {
-        this.paras = paras;
-        Task.super.setParas(paras);
-    }
-
-    @JsonProperty("paras")
-    Object @Nullable [] getParasJson() {
-        if (parasType != null) {
-            return (Object[]) parasType.convertTo(paras, JsonConverter.INSTANCE);
-        }
-        return null;
     }
 
     @Override

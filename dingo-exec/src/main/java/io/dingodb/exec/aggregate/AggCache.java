@@ -88,10 +88,7 @@ public class AggCache implements Iterable<Object[]> {
         );
     }
 
-    public Iterator<Object[]> iteratorCache() {
-        return Iterators.transform(
-            cache.entrySet().iterator(),
-            e -> ArrayUtils.concat(e.getKey().getTuple(), e.getValue())
-        );
+    public void clear() {
+        cache.clear();
     }
 }

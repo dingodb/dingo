@@ -85,7 +85,7 @@ public class SendEndpoint {
         return status != ControlStatus.STOP;
     }
 
-    public void close() throws Exception {
+    public void close() {
         EndpointManager.INSTANCE.unregisterSendEndpoint(this);
         channel.close();
     }

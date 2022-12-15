@@ -81,12 +81,6 @@ public final class RootOperator extends SinkOperator {
         return QueueUtils.forceTake(tupleQueue);
     }
 
-    @Override
-    public void reset() {
-        super.reset();
-        tupleQueue.clear();
-    }
-
     public @NonNull TupleIterator getIterator() {
         return new TupleIterator();
     }

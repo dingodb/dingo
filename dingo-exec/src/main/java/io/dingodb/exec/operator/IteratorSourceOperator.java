@@ -29,9 +29,10 @@ public abstract class IteratorSourceOperator extends SourceOperator {
     @Override
     public boolean push() {
         long count = 0;
+        long startTime = System.currentTimeMillis();
         OperatorProfile profile = getProfile();
-        profile.setStartTimeStamp(System.currentTimeMillis());
-        final long startTime = System.currentTimeMillis();
+        profile.setStartTimeStamp(startTime);
+        iterator = createIterator();
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
             ++count;
@@ -49,10 +50,4 @@ public abstract class IteratorSourceOperator extends SourceOperator {
     }
 
     protected abstract @NonNull Iterator<Object[]> createIterator();
-
-    @Override
-    public void reset() {
-        super.reset();
-        iterator = createIterator();
-    }
 }

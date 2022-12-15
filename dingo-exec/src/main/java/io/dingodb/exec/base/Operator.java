@@ -52,7 +52,8 @@ public interface Operator {
 
     void fin(int pin, @Nullable Fin fin);
 
-    void reset();
+    default void destroy() {
+    }
 
     void setParas(Object[] paras);
 

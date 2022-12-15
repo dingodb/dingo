@@ -104,11 +104,17 @@ public final class ReceiveOperator extends SourceOperator {
         } else {
             super.fin(pin, fin);
         }
+    }
+
+    @Override
+    public void destroy() {
         Services.NET.unregisterTagMessageListener(tag, messageListener);
-        try {
+        safeCloseEndpoint();
+    }
+
+    private void safeCloseEndpoint() {
+        if (endpoint != null) {
             endpoint.close();
-        } catch (Exception e) {
-            log.error("Fin pin:{} catch exception:{}", pin, e, e);
         }
     }
 

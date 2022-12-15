@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public interface Job {
     Map<Id, Task> getTasks();
 
-    @NonNull Task create(Id id, Location location, DingoType parasType);
+    @NonNull Task create(Id id, Location location);
 
     DingoType getParasType();
 
@@ -35,17 +35,13 @@ public interface Job {
         return getTasks().get(id);
     }
 
-    default Task getRootTask() {
-        List<Task> tasks = getTasks().values().stream()
-            .filter(t -> t.getRoot() != null)
-            .collect(Collectors.toList());
-        assert tasks.size() == 1 : "There must be only one root task in the job.";
-        return tasks.get(0);
-    }
+    Task getRoot();
 
-    default void setParas(Object[] paras) {
-        getTasks().forEach((id, task) -> task.setParas(paras));
-    }
+    void markRoot(Id taskId);
+
+    boolean isDistributed();
+
+    void setDistributed(boolean distributed);
 
     default Task getByLocation(Location location) {
         List<Task> tasks = getTasks().values().stream()
@@ -58,7 +54,7 @@ public interface Job {
     default Task getOrCreate(Location location, IdGenerator idGenerator) {
         Task task = getByLocation(location);
         if (task == null) {
-            task = create(idGenerator.get(), location, getParasType());
+            task = create(idGenerator.get(), location);
         }
         return task;
     }

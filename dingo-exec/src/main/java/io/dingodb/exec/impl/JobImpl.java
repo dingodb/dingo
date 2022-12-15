@@ -30,6 +30,7 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -52,6 +53,11 @@ public final class JobImpl implements Job {
     // Need not serialize this, for it is serialized in tasks.
     private final DingoType parasType;
 
+    private Id rootTaskId = null;
+    @Getter
+    @Setter
+    private transient boolean distributed = false;
+
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") Id jobId) {
         this(jobId, null);
@@ -63,12 +69,8 @@ public final class JobImpl implements Job {
         this.parasType = parasType;
     }
 
-    public static JobImpl fromString(String str) throws JsonProcessingException {
-        return PARSER.parse(str, JobImpl.class);
-    }
-
     @Override
-    public @NonNull Task create(Id id, Location location, DingoType parasType) {
+    public @NonNull Task create(Id id, Location location) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
@@ -80,6 +82,18 @@ public final class JobImpl implements Job {
     @Nullable
     public DingoType getParasType() {
         return parasType;
+    }
+
+    @Override
+    public Task getRoot() {
+        return tasks.get(rootTaskId);
+    }
+
+    @Override
+    public void markRoot(Id taskId) {
+        assert tasks.get(taskId).getRoot() != null
+            : "The root task must has a root operator.";
+        rootTaskId = taskId;
     }
 
     @Override

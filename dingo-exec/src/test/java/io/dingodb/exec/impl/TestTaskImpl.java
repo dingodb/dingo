@@ -51,7 +51,7 @@ public class TestTaskImpl {
         task.putOperator(root);
         values.getOutputs().get(0).setLink(root.getInput(0));
         task.init();
-        task.run();
+        task.run(null);
         assertThat(root.popValue()).containsExactly(1, "Alice", 1.0);
         assertThat(root.popValue()).containsExactly(2, "Betty", 2.0);
     }
@@ -81,15 +81,12 @@ public class TestTaskImpl {
         values.getSoleOutput().setLink(project.getInput(0));
         project.getSoleOutput().setLink(root.getInput(0));
         task.init();
-        task.setParas(new Object[]{1, "Alice"});
-        task.run();
+        task.run(new Object[]{1, "Alice"});
         assertThat(root.popValue()).containsExactly(1, "Alice");
         while (root.popValue() != RootOperator.FIN) {
             root.popValue();
         }
-        task.setParas(new Object[]{2, "Betty"});
-        task.reset();
-        task.run();
+        task.run(new Object[]{2, "Betty"});
         assertThat(root.popValue()).containsExactly(2, "Betty");
         while (root.popValue() != RootOperator.FIN) {
             root.popValue();
