@@ -25,6 +25,9 @@ public class CommonIdConstant {
     public static final TableIdentifier TABLE_IDENTIFIER = new TableIdentifier();
     public static final ServiceIdentifier SERVICE_IDENTIFIER = new ServiceIdentifier();
     public static final DataIdentifier DATA_IDENTIFIER = new DataIdentifier();
+
+    public static final PrivilegeIdentifier PRIVILEGE_IDENTIFIER = new PrivilegeIdentifier();
+
     public static final IndexIdentifier INDEX_IDENTIFIER = new IndexIdentifier();
     public static final StatsIdentifier STATS_IDENTIFIER = new StatsIdentifier();
     public static final TaskIdentifier TASK_IDENTIFIER = new TaskIdentifier();
@@ -42,6 +45,7 @@ public class CommonIdConstant {
         public final byte index = 'I';
         public final byte task = 'J';
         public final byte function = 'F';
+        public final byte privilege = 'P';
         public final byte other = 'O';
         public final byte op = 'P';
 
@@ -78,6 +82,21 @@ public class CommonIdConstant {
         public final byte[] part = new byte[] {'S', 'P'};
 
         private StatsIdentifier() {
+        }
+    }
+
+    @FieldNameConstants
+    public static final class PrivilegeIdentifier {
+        public final byte[] user = new byte[] {'D', 'U'};
+        public final byte[] schemaPrivilege = new byte[] {'D', 'S'};
+        public final byte[] tablePrivilege = new byte[] {'D', 'T'};
+
+        public final byte[] privilege = new byte[] {'D', 'I'};
+        public final byte[] privilegeDict = new byte[] {'D', 'L'};
+
+        public final byte[] privilegeType = new byte[] {'D', 'F'};
+
+        private PrivilegeIdentifier() {
         }
     }
 

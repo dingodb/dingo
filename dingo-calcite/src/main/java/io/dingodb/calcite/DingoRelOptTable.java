@@ -16,6 +16,10 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.meta.SysInfoService;
+import io.dingodb.meta.SysInfoServiceProvider;
+import io.dingodb.verify.privilege.PrivilegeVerify;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -27,24 +31,35 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.SqlAccessEnum;
 import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.EnumSet;
 import java.util.List;
 
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     private final RelOptTableImpl relOptTable;
 
-    DingoRelOptTable(@NonNull DingoTable table) {
+    private static SysInfoService sysInfoService;
+
+    private String user;
+
+    private String host;
+
+    DingoRelOptTable(@NonNull DingoTable table, String user, String host) {
         super();
         DingoParserContext context = table.getContext();
         RelOptSchema relOptSchema = context.getCatalogReader().unwrap(RelOptSchema.class);
         final RelDataType rowType = table.getRowType(context.getTypeFactory());
         relOptTable = RelOptTableImpl.create(relOptSchema, rowType, table.getNames(), table, null);
+        this.user = user;
+        this.host = host;
     }
 
     @Override
@@ -115,7 +130,43 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
 
     @Override
     public SqlAccessType getAllowedAccess() {
-        return relOptTable.getAllowedAccess();
+        List<String> names = relOptTable.getQualifiedName();
+        if (StringUtils.isBlank(user)) {
+            return SqlAccessType.ALL;
+        } else {
+            String catalog = null;
+            String schema = null;
+            String table = null;
+            if (names.size() == 3) {
+                catalog = names.get(0);
+                schema = names.get(1);
+                table = names.get(2);
+            }
+            if (sysInfoService == null) {
+                sysInfoService = SysInfoServiceProvider.getRoot();
+            }
+            CommonId schemaId = sysInfoService.getSchemaIdByCache(schema);
+            CommonId tableId = sysInfoService.getTableIdByCache(schemaId, table);
+
+            EnumSet accessSet = EnumSet.noneOf(SqlAccessEnum.class);
+            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
+                "select")) {
+                accessSet.add(SqlAccessEnum.SELECT);
+            }
+            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
+                "insert")) {
+                accessSet.add(SqlAccessEnum.INSERT);
+            }
+            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
+                "update")) {
+                accessSet.add(SqlAccessEnum.UPDATE);
+            }
+            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
+                "delete")) {
+                accessSet.add(SqlAccessEnum.DELETE);
+            }
+            return new SqlAccessType(accessSet);
+        }
     }
 
     @Override

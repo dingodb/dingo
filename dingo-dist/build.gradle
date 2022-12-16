@@ -46,6 +46,16 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-cli:sqlline').layout.buildDirectory) {
+        include('libs/sqlline-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(project(':dingo-cli:driver-server').layout.buildDirectory) {
+        include('libs/driver-server-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
     from(project(':dingo-store-mpu').layout.buildDirectory) {
         include('libs/dingo-store-mpu-*-all.jar')
     }
@@ -88,7 +98,9 @@ copyDepends.dependsOn([
     ':dingo-example:fatJar',
     ':dingo-store-mpu:fatJar',
     ':dingo-web:build',
-    ':dingo-net-netty:fatJar'
+    ':dingo-net-netty:fatJar',
+    ':dingo-cli:driver-server:fatJar',
+    ':dingo-cli:sqlline:fatJar',
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

@@ -22,8 +22,11 @@ import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.MetaCache;
+import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.privilege.Grant;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
@@ -54,6 +57,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.runtime.CalciteContextException;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -277,6 +281,10 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+        MetaResultSet showMetaResultSet = getShowMetaResultSet(sql, parser);
+        if (showMetaResultSet != null) {
+            return new ExecuteResult(ImmutableList.of(showMetaResultSet));
+        }
         try {
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
             final Signature signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql);
@@ -297,6 +305,7 @@ public class DingoMeta extends MetaImpl {
                 null,
                 updateCount
             );
+
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (SQLException | SqlParseException | RuntimeException e) {
             Throwable throwable = e;
@@ -668,5 +677,24 @@ public class DingoMeta extends MetaImpl {
             "COLUMN_NAME",
             "KEY_SEQ"
         );
+    }
+
+    public MetaResultSet getShowMetaResultSet(String sql, DingoDriverParser parser) {
+        if (sql.startsWith("show") || sql.startsWith("SHOW")) {
+            List<SqlGrant> sqlGrants = parser.getGrantForUser(sql);
+            List<String> showGrants = sqlGrants.stream().map(sqlGrant -> sqlGrant.toString())
+                .collect(Collectors.toList());
+
+            return createResultSet(
+                Linq4j.asEnumerable(showGrants)
+                    .select(t -> new Grant(
+                        t
+                    )),
+                Grant.class,
+                "grants"
+            );
+        } else {
+            return null;
+        }
     }
 }

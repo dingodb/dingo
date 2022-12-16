@@ -42,6 +42,9 @@ public class DriverProxyServer extends LocalService implements DriverProxyApi, M
 
     public DriverProxyServer() {
         super(META, NoopMetricsSystem.getInstance());
+
+        ApiRegistry.getDefault().register(DriverProxyApi.class, this);
+        ApiRegistry.getDefault().register(MetaApi.class, this);
     }
 
     @Override

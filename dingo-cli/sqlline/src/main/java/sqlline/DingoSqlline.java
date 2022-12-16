@@ -17,6 +17,8 @@
 package sqlline;
 
 import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.domain.Domain;
 import lombok.experimental.Delegate;
 
 import java.sql.Connection;
@@ -53,6 +55,11 @@ public class DingoSqlline {
         properties.setProperty("defaultSchema", DingoRootSchema.DEFAULT_SCHEMA_NAME);
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
+        properties.setProperty("user", "root");
+        properties.setProperty("password", "123123");
+        Domain.role = DingoRole.SQLLINE;
+        Domain domain = Domain.INSTANCE;
+        domain.putAll(properties);
         Connection connection = DriverManager.getConnection("jdbc:dingo:", properties);
         setConnection(new SqllineDatabaseConnection(this.sqlLine, connection));
     }

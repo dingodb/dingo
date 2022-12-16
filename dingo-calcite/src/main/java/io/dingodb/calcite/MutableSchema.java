@@ -19,9 +19,11 @@ package io.dingodb.calcite;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+@Slf4j
 public abstract class MutableSchema extends AbstractSchema {
     @Getter
     protected final MetaService metaService;
@@ -31,6 +33,7 @@ public abstract class MutableSchema extends AbstractSchema {
     }
 
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+        log.info(" create metaservice: " + metaService);
         metaService.createTable(tableName, tableDefinition);
     }
 

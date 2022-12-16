@@ -126,7 +126,8 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
         int ttl = table.getTtl();
-        List<TablePart> tablePartList = Optional.mapOrNull(definition.getPartDefinition(), __ -> getPreDefineParts(table, definition));
+        List<TablePart> tablePartList = Optional.mapOrNull(definition.getPartDefinition(),
+            __ -> getPreDefineParts(table, definition));
         if (tablePartList == null) {
             TablePart tablePart = TablePart.builder()
                 .version(0)
@@ -171,7 +172,6 @@ public class TableAdaptor extends BaseAdaptor<Table> {
                 .map(NoBreakFunctions.wrap(partKeyCodec::encodeKey))
                 .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
                 .iterator();
-
             byte [] start = EMPTY_BYTES, key;
             TablePart tablePart;
             while (keys.hasNext()) {

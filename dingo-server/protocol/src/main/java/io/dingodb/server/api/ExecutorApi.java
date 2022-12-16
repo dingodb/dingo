@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.annotation.TransferArgsCodecAnnotation;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.net.Channel;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -29,35 +30,74 @@ public interface ExecutorApi {
     @ApiDeclaration
     boolean exist(CommonId tableId, byte[] primaryKey);
 
+    default boolean upsertKeyValue(CommonId tableId, KeyValue row) {
+        return upsertKeyValue(null, null, tableId, row);
+    }
+
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingKeyValue")
-    boolean upsertKeyValue(CommonId tableId, KeyValue row);
+    boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row);
+
+    default boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows) {
+        return upsertKeyValue(null, null, tableId, rows);
+    }
 
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingListKeyValue")
-    boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows);
+    boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows);
+
+    default boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row) {
+        return upsertKeyValue(null, null, tableId, primaryKey, row);
+    }
 
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingByteArray")
-    boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row);
+    boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row);
+
+    default byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey) {
+        return getValueByPrimaryKey(null, null, tableId, primaryKey);
+    }
 
     @ApiDeclaration
-    byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey);
+    byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey);
+
+    default List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys) {
+        return getKeyValueByPrimaryKeys(null, null, tableId, primaryKeys);
+    }
 
     @ApiDeclaration
-    List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys);
+    List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId,
+                                            List<byte[]> primaryKeys);
+
+    default boolean delete(CommonId tableId, byte[] primaryKey) {
+        return delete(null, null, tableId, primaryKey);
+    }
 
     @ApiDeclaration
-    boolean delete(CommonId tableId, byte[] primaryKey);
+    boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey);
+
+    default boolean delete(CommonId tableId, List<byte[]> primaryKeys) {
+        return delete(null, null, tableId, primaryKeys);
+    }
 
     @ApiDeclaration
-    boolean delete(CommonId tableId, List<byte[]> primaryKeys);
+    boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys);
+
+    default boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return deleteRange(null, null, tableId, startPrimaryKey, endPrimaryKey);
+    }
 
     @ApiDeclaration
-    boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+    boolean deleteRange(Channel channel, CommonId schema, CommonId tableId,
+                        byte[] startPrimaryKey, byte[] endPrimaryKey);
+
+    default List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return getKeyValueByRange(null, null, tableId, startPrimaryKey, endPrimaryKey);
+    }
 
     @ApiDeclaration
-    List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey);
+    List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
+                                      byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
     Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op);

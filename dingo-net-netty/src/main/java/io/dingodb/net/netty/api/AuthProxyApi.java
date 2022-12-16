@@ -26,35 +26,39 @@ import io.dingodb.net.service.AuthService;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 
 import static io.dingodb.net.Message.API_ERROR;
 
 public interface AuthProxyApi {
 
-    AuthProxyApi INSTANCE = new AuthProxyApi() {};
+    AuthProxyApi INSTANCE = new AuthProxyApi() {
+    };
 
     Iterable<AuthService.Provider> serviceProviders = ServiceLoader.load(AuthService.Provider.class);
 
     /**
      * Authentication, throw exception if failed.
+     *
      * @param certificate certificate
      */
     @ApiDeclaration(name = Constant.AUTH)
     default Map<String, Object[]> auth(Channel channel, Map<String, ?> certificate) {
+        AuthService service = null;
         try {
             Map<String, Object[]> result = new HashMap<>();
             for (AuthService.Provider authServiceProvider : serviceProviders) {
-                AuthService service = authServiceProvider.get();
-                result.put(service.tag(), new Object[] {certificate, service.auth(certificate.get(service.tag()))});
+                service = authServiceProvider.get();
+                Object cert = certificate.get(service.tag());
+                if (cert != null) {
+                    result.put(service.tag(), new Object[]{cert, service.auth(cert)});
+                }
             }
             return result;
         } catch (Exception e) {
             channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);
-            throw new ApiTerminateException(
-                "Auth failed from [%s], message: %s",
-                channel.remoteLocation().url(), e.getMessage()
-            );
+            throw new RuntimeException(e);
         }
     }
 

@@ -18,6 +18,7 @@ plugins {
     id 'java-conventions'
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
 repositories {
@@ -34,7 +35,6 @@ configurations {
 
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
-    implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'org.apache.commons', name: 'commons-csv', version: 'commons-csv'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-csv', version: 'jackson'.v()
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: 'kafka'.v()
@@ -46,14 +46,9 @@ dependencies {
 
     implementation project(":dingo-sdk")
     implementation project(":dingo-common")
-    implementation project(":dingo-calcite")
-    implementation project(":dingo-driver")
-    implementation project(":dingo-driver-client")
-    implementation project(':dingo-sdk')
     implementation project(":dingo-net-api")
-    implementation project(":dingo-server:dingo-server-client")
-    implementation project(":dingo-server:dingo-server-protocol")
-    implementation project(':dingo-server:dingo-server-driver-proxy')
+    implementation project(":dingo-net-netty")
+    implementation project(':dingo-verify')
 }
 
 task fatJar(type: Jar) {
@@ -75,4 +70,10 @@ fatJar.dependsOn([
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
+}
+
+group GROUP + '.expr'
+
+subprojects {
+    group GROUP + '.expr'
 }

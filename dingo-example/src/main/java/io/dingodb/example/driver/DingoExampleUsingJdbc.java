@@ -49,7 +49,12 @@ public class DingoExampleUsingJdbc {
         String inputConnect = args[0];
         String command = args[1];
         String tableName = args[2];
-
+        String root = "root";
+        String password = "123123";
+        if ("create".equalsIgnoreCase(command)) {
+            root = args[3];
+            password = args[4];
+        }
         Statement statement = null;
         final Long startTime = System.currentTimeMillis();
         // default ip:172.20.3.13
@@ -57,7 +62,8 @@ public class DingoExampleUsingJdbc {
 
         try {
             Class.forName("io.dingodb.driver.client.DingoDriverClient");
-            connection = DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + connectUrl);
+            connection = DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + connectUrl,
+                root, password);
             statement = connection.createStatement();
         } catch (ClassNotFoundException ex) {
             log.error("Init driver catch ClassNotFoundExeption:{}", ex.toString(), ex);
@@ -74,14 +80,16 @@ public class DingoExampleUsingJdbc {
         int batchCnt = 20;
         long startKey = 1L;
 
-        if (args.length > 3) {
-            recordCnt = Long.parseLong(args[3]);
-        }
-        if (args.length > 4) {
-            batchCnt = Integer.parseInt(args[4]);
-        }
-        if (args.length > 5) {
-            startKey = Long.parseLong(args[5]);
+        if ("insert".equalsIgnoreCase(command)) {
+            if (args.length > 3) {
+                recordCnt = Long.parseLong(args[3]);
+            }
+            if (args.length > 4) {
+                batchCnt = Integer.parseInt(args[4]);
+            }
+            if (args.length > 5) {
+                startKey = Long.parseLong(args[5]);
+            }
         }
         System.out.println("RecordCnt: " + recordCnt + ", batchCnt:" + batchCnt + ", startKey:" + startKey);
 

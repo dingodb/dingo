@@ -115,7 +115,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         if (clazz.isAssignableFrom(InitializerExpressionFactory.class)) {
             return clazz.cast(DingoInitializerExpressionFactory.INSTANCE);
         } else if (clazz.isAssignableFrom(Prepare.PreparingTable.class)) {
-            return clazz.cast(new DingoRelOptTable(this));
+            return clazz.cast(new DingoRelOptTable(this, context.getOption("user"),
+                context.getOption("host")));
         }
         return super.unwrap(clazz);
     }

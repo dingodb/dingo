@@ -27,10 +27,14 @@ apply plugin: 'signing'
 dependencies {
     runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
     implementation project(':dingo-common')
     implementation project(':dingo-net-api')
+    implementation project(':dingo-meta-api')
     implementation project(':dingo-net-netty')
+    implementation project(':dingo-verify')
 }
 
 task javadocJar(type: Jar) {
@@ -61,7 +65,8 @@ fatJar.dependsOn([
     ':dingo-net-netty:jar',
     ':dingo-serial:jar',
     ':dingo-expr:dingo-expr-runtime:jar',
-    ':dingo-expr:dingo-expr-json-runtime:jar'
+    ':dingo-expr:dingo-expr-json-runtime:jar',
+    ':dingo-verify:jar'
 ])
 
 tasks.named("build") { x ->

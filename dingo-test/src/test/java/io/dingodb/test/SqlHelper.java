@@ -17,7 +17,11 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
@@ -57,6 +61,9 @@ public class SqlHelper {
     private final Connection connection;
 
     public SqlHelper() throws Exception {
+        Domain.role = DingoRole.JDBC;
+        Domain.INSTANCE.setInfo("user", "root");
+        Domain.INSTANCE.setInfo("password", "123123");
         // Configure for local test.
         if (DingoConfiguration.instance() == null) {
             DingoConfiguration.parse(

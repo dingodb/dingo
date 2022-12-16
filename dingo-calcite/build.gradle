@@ -42,12 +42,13 @@ dependencies {
     compileOnly group: 'org.immutables', name: 'value', version: 'immutables'.v()
     implementation project(':dingo-expr:dingo-expr-parser')
     implementation project(':dingo-func-api')
+    implementation project(':dingo-verify')
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     testAnnotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation project(':dingo-test')
     testImplementation project(':dingo-test:dingo-meta-local')
-
     fmppTask "com.googlecode.fmpp-maven-plugin:fmpp-maven-plugin:1.0"
     fmppTask "org.freemarker:freemarker:2.3.31"
 }

@@ -21,4 +21,5 @@ plugins {
 
 dependencies {
     api project(':dingo-common')
+    api project(':dingo-net-api')
 }
