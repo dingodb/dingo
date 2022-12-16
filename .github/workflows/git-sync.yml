@@ -1,0 +1,27 @@
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+    on:
+      branches:
+        - develop
+        - main
+      pull_requests:
+        - merged
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    name: Git Repo Sync
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: wangchucheng/git-repo-sync@v0.1.0
+        with:
+          target-url: ${{ secrets.TARGET_URL }}
+          target-username: ${{ secrets.TARGET_USERNAME }}
+          target-token:  ${{ secrets.TARGET_TOKEN }}
