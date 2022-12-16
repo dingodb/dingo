@@ -66,6 +66,7 @@ public class DingoExampleUsingSDK {
         DingoConfiguration.parse(coordinatorCfg);
         String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
         dingoClient = new DingoClient(coordinatorServerList);
+        dingoClient.setIdentity("root", "123123");
         boolean isOK = dingoClient.open();
         if (!isOK) {
             System.out.println("Failed to open connection");

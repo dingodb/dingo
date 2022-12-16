@@ -45,6 +45,7 @@ dependencies {
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-meta-api")
+    implementation project(":dingo-verify")
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()

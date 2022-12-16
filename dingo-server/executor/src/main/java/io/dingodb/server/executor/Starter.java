@@ -18,7 +18,9 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.domain.Domain;
 import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.executor.config.ExecutorConfiguration;
 import io.prometheus.client.exporter.HTTPServer;
@@ -43,7 +45,7 @@ public class Starter {
             commander.usage();
             return;
         }
-
+        Domain.role = DingoRole.EXECUTOR;
         DingoConfiguration.parse(config);
         ClientConfiguration.instance()
             .setCoordinatorExchangeSvrList(ExecutorConfiguration.coordinatorExchangeSvrList());

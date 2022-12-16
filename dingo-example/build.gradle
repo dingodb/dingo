@@ -1,6 +1,8 @@
+
 plugins {
     id 'java-conventions'
     id 'java-library'
+    id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
 
@@ -15,7 +17,6 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-
 
 task fatJar(type: Jar) {
     classifier 'all'

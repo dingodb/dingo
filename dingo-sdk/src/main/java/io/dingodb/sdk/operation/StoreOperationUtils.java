@@ -32,10 +32,13 @@ import io.dingodb.sdk.client.DingoConnection;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.server.protocol.meta.Schema;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +46,10 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
+
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
+import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
 @Slf4j
 public class StoreOperationUtils {
@@ -106,6 +113,32 @@ public class StoreOperationUtils {
             log.info("exec failed, e: ", e);
         }
         return result;
+    }
+
+    public Object[] get(String tableName, Key key) {
+        RouteTable routeTable = getAndRefreshRouteTable(tableName, false);
+        if (routeTable == null) {
+            log.error("table {} not found when do get", tableName);
+            return null;
+        }
+
+        TableDefinition tableDefinition = getTableDefinition(tableName);
+        try {
+            byte[] encodeKey = routeTable.getCodec().encodeKey(key.getUserKey().toArray());
+            String leaderAddress = getLeaderAddressByStartKey(routeTable, encodeKey);
+            ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+            CommonId schema = new CommonId(
+                ID_TYPE.table, TABLE_IDENTIFIER.schema, ROOT_DOMAIN, ROOT_DOMAIN
+            );
+            byte[] value = executorApi.getValueByPrimaryKey(null,
+                schema, routeTable.getTableId(), encodeKey);
+            Object[] objects = routeTable.getCodec().decodeKey(value);
+            return objects;
+        } catch (IOException e) {
+            log.info("get failed, e: ", e);
+        }
+
+        return null;
     }
 
     public ResultForClient doOperation(StoreOperationType type,

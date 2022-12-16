@@ -20,8 +20,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.NetService;
-import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
@@ -32,7 +30,6 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,6 +50,13 @@ public class MetaServiceClient implements MetaService {
     }
 
     public MetaServiceClient(CoordinatorConnector connector) {
+        if (connector == null) {
+            this.api = null;
+            this.connector = null;
+            this.id = null;
+            this.name = null;
+            return;
+        }
         this.api = ApiRegistry.getDefault().proxy(MetaServiceApi.class, connector);
         this.connector = connector;
         this.id = api.rootId();

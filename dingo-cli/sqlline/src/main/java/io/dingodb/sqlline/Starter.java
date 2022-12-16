@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.cli;
+package io.dingodb.sqlline;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.driver.DriverProxyServer;
 import lombok.extern.slf4j.Slf4j;
 import sqlline.DingoSqlline;
 import sqlline.SqlLine;
@@ -33,13 +30,9 @@ import java.net.DatagramSocket;
 import java.util.ServiceLoader;
 
 @Slf4j
-public class Tools {
-
+public class Starter {
     @Parameter(names = "--help", help = true, order = 0)
     private boolean help;
-
-    @Parameter(description = "command", order = 1, required = true)
-    private String cmd;
 
     @Parameter(names = "--config", description = "Config file path.", order = 2)
     private String config;
@@ -60,10 +53,10 @@ public class Tools {
     private Integer serverPort;
 
     public static void main(String[] args) throws Exception {
-        Tools tools = new Tools();
-        JCommander commander = new JCommander(tools);
+        Starter starter = new Starter();
+        JCommander commander = new JCommander(starter);
         commander.parse(args);
-        tools.exec(commander);
+        starter.exec(commander);
     }
 
     public void exec(JCommander commander) throws Exception {
@@ -74,36 +67,13 @@ public class Tools {
         DingoConfiguration.parse(this.config);
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
-        switch (cmd.toUpperCase()) {
-            case "SQLLINE":
-                log.info("Listen exchange port {}.", listenRandomPort(netService));
-                DingoSqlline sqlline = new DingoSqlline();
-                sqlline.connect();
-                Services.initControlMsgService();
-                SqlLine.Status status = sqlline.begin(new String[0], null, true);
-                if (!Boolean.getBoolean("sqlline.system.exit")) {
-                    System.exit(status.ordinal());
-                }
-                break;
-            case "DRIVER":
-                Services.initControlMsgService();
-                netService.listenPort(port);
-                DingoConfiguration.instance().setPort(port);
-                DriverProxyServer driverProxyServer = new DriverProxyServer();
-                driverProxyServer.start();
-                break;
-            case "LEVEL":
-                if (className == null || level == null || serverHost == null || serverPort <= 0) {
-                    log.error("Class:{} || Level:{} || serverHost:{} || serverPort:{} Parameters cannot be null",
-                        className, level, serverHost, serverHost);
-                    break;
-                }
-                LogLevelApi proxy = netService.apiRegistry()
-                    .proxy(LogLevelApi.class, () -> new Location(serverHost, serverPort));
-                proxy.setLevel(className, level);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + cmd);
+        log.info("Listen exchange port {}.", listenRandomPort(netService));
+        DingoSqlline sqlline = new DingoSqlline();
+        sqlline.connect();
+        Services.initControlMsgService();
+        SqlLine.Status status = sqlline.begin(new String[0], null, true);
+        if (!Boolean.getBoolean("sqlline.system.exit")) {
+            System.exit(status.ordinal());
         }
     }
 
@@ -122,5 +92,4 @@ public class Tools {
         }
         throw new RuntimeException("Listen port failed.");
     }
-
 }

@@ -32,4 +32,5 @@ dependencies {
     compile group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
     compile group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
+    compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
 }

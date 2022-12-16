@@ -17,11 +17,15 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.net.Channel;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
+import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -43,64 +47,94 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     @Override
-    public boolean upsertKeyValue(CommonId tableId, KeyValue row) {
-        return storeService.getInstance(tableId).upsertKeyValue(row);
-    }
-
-    @Override
-    public boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows) {
-        return storeService.getInstance(tableId).upsertKeyValue(rows);
-    }
-
-    @Override
-    public boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row) {
-        return storeService.getInstance(tableId).upsertKeyValue(primaryKey, row);
-    }
-
-    @Override
-    public byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey) {
-        return storeService.getInstance(tableId).getValueByPrimaryKey(primaryKey);
-    }
-
-    @Override
-    public List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys) {
-        return storeService.getInstance(tableId).getKeyValueByPrimaryKeys(primaryKeys);
-    }
-
-    @Override
-    public boolean delete(CommonId tableId, byte[] key) {
-        return storeService.getInstance(tableId).delete(key);
-    }
-
-    @Override
-    public boolean delete(CommonId tableId, List<byte[]> primaryKeys) {
-        return storeService.getInstance(tableId).delete(primaryKeys);
-    }
-
-    @Override
-    public boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return storeService.getInstance(tableId).delete(startPrimaryKey, endPrimaryKey);
-    }
-
-    @Override
-    public List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (log.isDebugEnabled()) {
-            log.info("Get Key value by range: instance:{} tableId:{}, startPrimaryKey: {}, endPrimaryKey: {}",
-                storeService.getInstance(tableId).getClass().getSimpleName(),
-                tableId,
-                startPrimaryKey == null ? "null" : new String(startPrimaryKey),
-                endPrimaryKey == null ? "null" : new String(endPrimaryKey));
+    public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row) {
+        if (verify(channel, schema, tableId, "insert")) {
+            return storeService.getInstance(tableId).upsertKeyValue(row);
         }
+        return false;
+    }
 
-        Iterator<KeyValue> rows = storeService
-            .getInstance(tableId).keyValueScan(startPrimaryKey, endPrimaryKey);
-
-        List<KeyValue> keyValues = new java.util.ArrayList<>();
-        while (rows.hasNext()) {
-            KeyValue keyValue = rows.next();
-            keyValues.add(keyValue);
+    @Override
+    public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows) {
+        if (verify(channel, schema, tableId, "insert")) {
+            return storeService.getInstance(tableId).upsertKeyValue(rows);
         }
-        return keyValues;
+        return false;
+    }
+
+    @Override
+    public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row) {
+        if (verify(channel, schema, tableId, "insert")) {
+            storeService.getInstance(tableId).upsertKeyValue(primaryKey, row);
+        }
+        return false;
+    }
+
+    @Override
+    public byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey) {
+        if (verify(channel, schema, tableId, "select")) {
+            return storeService.getInstance(tableId).getValueByPrimaryKey(primaryKey);
+        }
+        return new byte[]{0};
+    }
+
+    @Override
+    public List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId,
+                                                   List<byte[]> primaryKeys) {
+        if (verify(channel, schema, tableId, "select")) {
+            storeService.getInstance(tableId).getKeyValueByPrimaryKeys(primaryKeys);
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] key) {
+        if (verify(channel, schema, tableId, "delete")) {
+            return storeService.getInstance(tableId).delete(key);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys) {
+        if (verify(channel, schema, tableId, "delete")) {
+            storeService.getInstance(tableId).delete(primaryKeys);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deleteRange(Channel channel, CommonId schema, CommonId tableId,
+                               byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (verify(channel, schema, tableId, "delete")) {
+            storeService.getInstance(tableId).delete(startPrimaryKey, endPrimaryKey);
+        }
+        return false;
+    }
+
+    @Override
+    public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
+                                             byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        if (verify(channel, schema, tableId, "select")) {
+            if (log.isDebugEnabled()) {
+                log.info("Get Key value by range: instance:{} tableId:{}, startPrimaryKey: {}, endPrimaryKey: {}",
+                    storeService.getInstance(tableId).getClass().getSimpleName(),
+                    tableId,
+                    startPrimaryKey == null ? "null" : new String(startPrimaryKey),
+                    endPrimaryKey == null ? "null" : new String(endPrimaryKey));
+            }
+
+            Iterator<KeyValue> rows = storeService
+                .getInstance(tableId).keyValueScan(startPrimaryKey, endPrimaryKey);
+
+            List<KeyValue> keyValues = new java.util.ArrayList<>();
+            while (rows.hasNext()) {
+                KeyValue keyValue = rows.next();
+                keyValues.add(keyValue);
+            }
+            return keyValues;
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -124,4 +158,14 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
                              String udfName, String functionName, int version) {
         return storeService.getInstance(tableId).udfUpdate(primaryKey, udfName, functionName, version);
     }
+
+    private boolean verify(Channel channel, CommonId schema, CommonId tableId, String accessType) {
+        Object[] objects = channel.auth().get("token");
+        Authentication authentication = (Authentication) objects[0];
+        boolean verify = PrivilegeVerify.verify(authentication.getUsername(), authentication.getHost(),
+            schema, tableId , accessType);
+        log.info("verify:" + verify);
+        return verify;
+    }
+
 }

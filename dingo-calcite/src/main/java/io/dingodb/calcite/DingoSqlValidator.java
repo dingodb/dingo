@@ -26,6 +26,7 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
+
     public static Config CONFIG = Config.DEFAULT
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
 

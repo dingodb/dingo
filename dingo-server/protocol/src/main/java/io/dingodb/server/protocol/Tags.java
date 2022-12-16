@@ -20,6 +20,11 @@ public class Tags {
 
     public static final String LISTEN_SERVICE_LEADER = "LISTEN_SERVICE";
 
+    public static final String LISTEN_REGISTRY_FLUSH = "LISTEN_REGISTRY_FLUSH";
+    public static final String LISTEN_RELOAD_PRIVILEGES = "LISTEN_RELOAD_PRIVILEGES";
+
+    public static final String LISTEN_RELOAD_PRIVILEGE_DICT = "LISTEN_RELOAD_PRIVILEGE_DICT";
+
     private Tags() {
     }
 }
