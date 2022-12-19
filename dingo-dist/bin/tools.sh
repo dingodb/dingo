@@ -21,7 +21,7 @@ NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback.xml \
-     -classpath ${JAR_PATH}${NET_JAR_PATH} \
+     -classpath ${JAR_PATH}:${NET_JAR_PATH} \
      io.dingodb.cli.Tools \
      --config ${ROOT}/conf/client.yaml \
      $@
