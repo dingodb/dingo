@@ -31,4 +31,12 @@ public class Authentication {
     private String host;
     private String password;
     private String token;
+
+    public String getNormalUser() {
+        return username + "#%";
+    }
+
+    public String getUser() {
+        return username + "#" + host;
+    }
 }

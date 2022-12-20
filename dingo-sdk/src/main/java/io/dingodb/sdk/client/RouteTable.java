@@ -24,6 +24,8 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.server.client.executor.service.ExecutorServiceClient;
+import io.dingodb.verify.service.ExecutorService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -39,15 +41,10 @@ public class RouteTable {
     private NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitionRange;
     private PartitionStrategy<ByteArrayUtils.ComparableByteArray> partitionStrategy;
 
-    public ExecutorApi getLeaderAddress(ApiRegistry apiRegistry,
-                                        String leaderAddress) {
-
-        String hostName = leaderAddress.split(":")[0];
-        String port = leaderAddress.split(":")[1];
-        ExecutorApi executor = apiRegistry.proxy(
-            ExecutorApi.class,
-            () -> new Location(hostName, Integer.valueOf(port)));
-        return executor;
+    public ExecutorService getLeaderAddress(ApiRegistry apiRegistry,
+                                            String leaderAddress) {
+        ExecutorServiceClient executorClient = new ExecutorServiceClient(apiRegistry, leaderAddress);
+        return executorClient;
     }
 
     public String getStartPartitionKey(ApiRegistry apiRegistry, byte[] keyInBytes) {

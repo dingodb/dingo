@@ -20,27 +20,19 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.Certificate;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.domain.Domain;
-import io.dingodb.common.privilege.PrivilegeDict;
-import io.dingodb.common.privilege.PrivilegeGather;
-import io.dingodb.net.Channel;
-import io.dingodb.net.Message;
-import io.dingodb.net.MessageListener;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.net.NetService;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-import io.dingodb.server.client.flush.FlushHandler;
-import io.dingodb.server.protocol.Tags;
 import io.dingodb.verify.auth.TokenAuth;
-import io.dingodb.verify.auth.TokenAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class TokenAuthImpl implements TokenAuth {
+
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     private static final TokenAuth INSTANCE = new TokenAuthImpl();
 
@@ -64,7 +56,7 @@ public class TokenAuthImpl implements TokenAuth {
     }
 
     public String getAuthToken() {
-        if (DingoRole.SDK_CLIENT == Domain.role && CoordinatorConnector.getDefault().verify()) {
+        if (DingoRole.SDK_CLIENT == env.getRole() && CoordinatorConnector.getDefault().verify()) {
             String token = getToken();
             log.info("sdk token auth:" + token);
             return token;
@@ -83,7 +75,7 @@ public class TokenAuthImpl implements TokenAuth {
                 if (certificate != null) {
                     String token = certificate.getToken();
                     if (StringUtils.isNotBlank(token)) {
-                        FlushHandler.flushHandler.registryFlushChannel();
+                        //ReloadHandler.handler.registryFlushChannel();
                         //loadPrivileges();
                     }
                     return token;

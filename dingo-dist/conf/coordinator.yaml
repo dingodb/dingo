@@ -7,3 +7,11 @@ server:
     dataPath: /opt/dingo/data/meta
     servers: node1:19181
     monitorPort: 9088
+security:
+    cipher:
+        key: /opt/dingo/conf/dingodb.jks
+        keypass: dingodb
+        storepass: dingodb
+        alias: dingodb
+        issuer: dingo
+    verify: true

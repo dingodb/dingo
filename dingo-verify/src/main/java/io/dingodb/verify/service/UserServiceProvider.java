@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.protocol;
+package io.dingodb.verify.service;
 
-public class Tags {
+import java.util.ServiceLoader;
 
-    public static final String LISTEN_SERVICE_LEADER = "LISTEN_SERVICE";
+public interface UserServiceProvider {
 
-    public static final String LISTEN_REGISTRY_RELOAD = "LISTEN_REGISTRY_RELOAD";
-    public static final String LISTEN_RELOAD_PRIVILEGES = "LISTEN_RELOAD_PRIVILEGES";
+    UserService root();
 
-    public static final String LISTEN_RELOAD_PRIVILEGE_DICT = "LISTEN_RELOAD_PRIVILEGE_DICT";
-
-    private Tags() {
+    static UserService getRoot() {
+        try {
+            return ServiceLoader.load(UserServiceProvider.class).iterator().next().root();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

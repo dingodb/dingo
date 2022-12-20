@@ -18,23 +18,24 @@ package io.dingodb.sdk.operation;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.verify.service.ExecutorService;
 
 import java.util.concurrent.Callable;
 
 public class CallableTask implements Callable<ResultForStore> {
 
-    private final ExecutorApi executorApi;
+    private final ExecutorService executorService;
     private final IStoreOperation storeOperation;
 
     private final CommonId tableId;
 
     private final ContextForStore context;
 
-    public CallableTask(ExecutorApi executorApi,
+    public CallableTask(ExecutorService executorService,
                         IStoreOperation storeOperation,
                         CommonId tableId,
                         ContextForStore context) {
-        this.executorApi = executorApi;
+        this.executorService = executorService;
         this.storeOperation = storeOperation;
         this.tableId = tableId;
         this.context = context;
@@ -42,7 +43,7 @@ public class CallableTask implements Callable<ResultForStore> {
 
     @Override
     public ResultForStore call() throws Exception {
-        ResultForStore subResult = storeOperation.doOperation(executorApi, tableId, context);
+        ResultForStore subResult = storeOperation.doOperation(executorService, tableId, context);
         return subResult;
     }
 }

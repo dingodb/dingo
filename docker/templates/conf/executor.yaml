@@ -9,3 +9,11 @@ server:
 store:
     dbPath: /opt/dingo/executor/raftDb
     collectStatsInterval: 5
+security:
+    cipher:
+        key: /opt/dingo/conf/dingodb.jks
+        keypass: dingodb
+        storepass: dingodb
+        alias: dingodb
+        issuer: dingo
+    verify: true

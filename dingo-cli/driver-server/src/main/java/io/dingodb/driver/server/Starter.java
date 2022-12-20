@@ -19,22 +19,13 @@ package io.dingodb.driver.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.domain.Domain;
-import io.dingodb.common.privilege.PrivilegeDict;
-import io.dingodb.common.privilege.PrivilegeGather;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.exec.Services;
-import io.dingodb.net.Channel;
-import io.dingodb.net.Message;
-import io.dingodb.net.MessageListener;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
-import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-import io.dingodb.server.client.flush.FlushHandler;
+import io.dingodb.server.client.reload.ReloadHandler;
 import io.dingodb.server.driver.DriverProxyServer;
-import io.dingodb.server.protocol.Tags;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -64,7 +55,8 @@ public class Starter {
             commander.usage();
             return;
         }
-        Domain.role = DingoRole.JDBC;
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        env.setRole(DingoRole.JDBC);
         DingoConfiguration.parse(this.config);
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
@@ -72,7 +64,7 @@ public class Starter {
         netService.listenPort(port);
         DingoConfiguration.instance().setPort(port);
         DriverProxyServer driverProxyServer = new DriverProxyServer();
-        FlushHandler.flushHandler.registryFlushChannel();
+        ReloadHandler.handler.registryReloadChannel();
         log.info("Starting driver server success.");
     }
 }

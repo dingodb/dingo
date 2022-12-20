@@ -64,6 +64,7 @@ public class DingoConfiguration {
     private Map<String, Object> store;
     private Map<String, Object> net;
     private Map<String, Object> client;
+    private Map<String, Object> security;
     @JsonIgnore
     private Object serverConfiguration;
     @JsonIgnore
@@ -72,6 +73,8 @@ public class DingoConfiguration {
     private Object netConfiguration;
     @JsonIgnore
     private Object clientConfiguration;
+    @JsonIgnore
+    private Object securityConfiguration;
 
     public static synchronized <T> T parse(InputStream is, Class<T> clazz) throws IOException {
         YAMLFactory yamlFactory = new YAMLFactory()
@@ -230,6 +233,17 @@ public class DingoConfiguration {
         clientConfiguration = mapToBean(client, cls);
         if (clientConfiguration == null) {
             clientConfiguration = newInstance(cls);
+        }
+    }
+
+    public <T> T getSecurity() {
+        return (T) securityConfiguration;
+    }
+
+    public void setSecurity(Class<?> cls) throws Exception {
+        securityConfiguration = mapToBean(security, cls);
+        if (securityConfiguration == null) {
+            securityConfiguration = newInstance(cls);
         }
     }
 }

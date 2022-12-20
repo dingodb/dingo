@@ -59,6 +59,7 @@ public class DingoOperationExample {
 
     public static void main(String[] args) throws Exception {
         DingoClient dingoClient = new DingoClient("127.0.0.1:19181");
+        dingoClient.setIdentity("root", "123123");
         dingoClient.open();
 
         String tableName = "TEST";

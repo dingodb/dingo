@@ -18,7 +18,7 @@ package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
 import io.dingodb.net.api.ApiRegistry;
@@ -74,13 +74,13 @@ public class DingoDriverClient extends Driver {
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
-        Domain.role = DingoRole.JDBC;
-        Domain domain = Domain.INSTANCE;
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        env.setRole(DingoRole.JDBC);
         if ((props = this.parseURL(url, info)) == null) {
             throw new IllegalArgumentException("Bad url: " + url);
         } else {
             log.info("info:" + props);
-            domain.putAll(props);
+            env.putAll(props);
             return super.connect(url, info);
         }
     }
@@ -167,14 +167,13 @@ public class DingoDriverClient extends Driver {
     protected static String[] parseHostPortPair(String hostPortPair) throws SQLException {
         String[] splitValues = new String[2];
         int portIndex = hostPortPair.indexOf(":");
-        String hostname = null;
         if (portIndex != -1) {
             if (portIndex + 1 >= hostPortPair.length()) {
                 throw new SQLException("Malformed database URL, failed to parse the main URL sections.", "01S00", null);
             }
 
             String portAsString = hostPortPair.substring(portIndex + 1);
-            hostname = hostPortPair.substring(0, portIndex);
+            String hostname = hostPortPair.substring(0, portIndex);
             splitValues[0] = hostname;
             splitValues[1] = portAsString;
         } else {
@@ -193,7 +192,6 @@ public class DingoDriverClient extends Driver {
     }
 
     @Override public Meta createMeta(AvaticaConnection connection) {
-        final ConnectionConfig config = connection.config();
 
         // Create a single Service and set it on the Connection instance
         String host = props.getProperty("host");

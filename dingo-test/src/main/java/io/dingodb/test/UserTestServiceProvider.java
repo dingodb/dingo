@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.protocol;
+package io.dingodb.test;
 
-public class Tags {
+import com.google.auto.service.AutoService;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
+import lombok.extern.slf4j.Slf4j;
 
-    public static final String LISTEN_SERVICE_LEADER = "LISTEN_SERVICE";
-
-    public static final String LISTEN_REGISTRY_RELOAD = "LISTEN_REGISTRY_RELOAD";
-    public static final String LISTEN_RELOAD_PRIVILEGES = "LISTEN_RELOAD_PRIVILEGES";
-
-    public static final String LISTEN_RELOAD_PRIVILEGE_DICT = "LISTEN_RELOAD_PRIVILEGE_DICT";
-
-    private Tags() {
+@Slf4j
+@AutoService(UserServiceProvider.class)
+public class UserTestServiceProvider implements UserServiceProvider {
+    @Override
+    public UserService root() {
+        return UserTestService.INSTANCE;
     }
 }

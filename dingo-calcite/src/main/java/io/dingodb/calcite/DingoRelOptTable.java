@@ -17,9 +17,10 @@
 package io.dingodb.calcite;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
+import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -35,6 +36,8 @@ import org.apache.calcite.sql.SqlAccessEnum;
 import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
+import org.apache.calcite.sql.validate.SqlValidatorTable;
+import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -43,10 +46,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     private final RelOptTableImpl relOptTable;
 
-    private static SysInfoService sysInfoService;
+    private static UserService userService;
 
     private String user;
 
@@ -142,27 +147,28 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
                 schema = names.get(1);
                 table = names.get(2);
             }
-            if (sysInfoService == null) {
-                sysInfoService = SysInfoServiceProvider.getRoot();
+            if (userService == null) {
+                userService = UserServiceProvider.getRoot();
             }
-            CommonId schemaId = sysInfoService.getSchemaIdByCache(schema);
-            CommonId tableId = sysInfoService.getTableIdByCache(schemaId, table);
+            CommonId schemaId = userService.getSchemaIdByCache(schema);
+            CommonId tableId = userService.getTableIdByCache(schemaId, table);
 
             EnumSet accessSet = EnumSet.noneOf(SqlAccessEnum.class);
+
             if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                "select")) {
+                DingoSqlAccessEnum.SELECT)) {
                 accessSet.add(SqlAccessEnum.SELECT);
             }
             if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                "insert")) {
+                DingoSqlAccessEnum.INSERT)) {
                 accessSet.add(SqlAccessEnum.INSERT);
             }
             if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                "update")) {
+                DingoSqlAccessEnum.UPDATE)) {
                 accessSet.add(SqlAccessEnum.UPDATE);
             }
             if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                "delete")) {
+                DingoSqlAccessEnum.DELETE)) {
                 accessSet.add(SqlAccessEnum.DELETE);
             }
             return new SqlAccessType(accessSet);
@@ -182,5 +188,15 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     @Override
     public <C> @Nullable C unwrap(Class<C> aClass) {
         return relOptTable.unwrap(aClass);
+    }
+
+    @Override
+    public <C> C unwrapOrThrow(Class<C> aClass) {
+        if (aClass != SqlValidatorTable.class) {
+            return requireNonNull(unwrap(aClass),
+                () -> "Can't unwrap " + aClass + " from " + this);
+        } else {
+            return aClass.cast(this);
+        }
     }
 }

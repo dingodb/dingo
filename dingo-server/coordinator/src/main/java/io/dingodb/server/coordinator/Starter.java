@@ -22,7 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
@@ -65,7 +65,8 @@ public class Starter {
             commander.usage();
             return;
         }
-        Domain.role = DingoRole.COORDINATOR;
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        env.setRole(DingoRole.COORDINATOR);
         DingoConfiguration.parse(this.config);
         CoordinatorConfiguration configuration = CoordinatorConfiguration.instance();
         log.info("Coordinator configuration: {}.", configuration);

@@ -27,6 +27,7 @@ dependencies {
     implementation project(":dingo-cluster-api")
     implementation project(":dingo-meta-api")
     implementation project(":dingo-net-api")
+    implementation project(":dingo-verify")
     implementation project(":dingo-server:dingo-server-protocol")
 }
 

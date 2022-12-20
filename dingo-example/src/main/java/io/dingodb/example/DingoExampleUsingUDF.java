@@ -41,6 +41,7 @@ public class DingoExampleUsingUDF {
 
     public static void main(String[] args) throws Exception {
         DingoClient client = new DingoClient("127.0.0.1:19181,127.0.0.1:19182,127.0.0.1:19183");
+        client.setIdentity("root", "123123");
         client.open();
 
         String luajFunction = "function test1(o) \r\n"

@@ -39,6 +39,7 @@ public class DingoCliOperationExample {
 
         String remoteHost = "172.20.31.10:19181,172.20.31.11:19181,172.20.31.12:19181";
         DingoClient dingoClient = new DingoClient(remoteHost);
+        dingoClient.setIdentity("root", "123123");
         dingoClient.open();
 
         DingoOpCli dingoOpCli = new DingoOpCli.Builder(dingoClient).build();

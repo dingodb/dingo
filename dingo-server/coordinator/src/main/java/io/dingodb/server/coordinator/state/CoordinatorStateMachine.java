@@ -25,7 +25,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.server.coordinator.api.CoordinatorServerApi;
 import io.dingodb.server.coordinator.api.ScheduleApi;
-import io.dingodb.server.coordinator.api.SysInfoServiceApi;
+import io.dingodb.server.coordinator.api.UserServiceApi;
 import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseStatsAdaptor;
@@ -34,6 +34,7 @@ import io.dingodb.server.coordinator.schedule.ClusterScheduler;
 import io.dingodb.server.coordinator.store.MetaStore;
 import io.dingodb.server.protocol.Tags;
 import io.prometheus.client.exporter.HTTPServer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.omg.CORBA.PRIVATE_MEMBER;
 
@@ -56,10 +57,11 @@ public class CoordinatorStateMachine implements CoreListener {
 
     private final MetaStore metaStore;
 
+    @Getter
     private CoordinatorServerApi serverApi;
     private ScheduleApi scheduleApi;
 
-    private SysInfoServiceApi sysInfoServiceApi;
+    private UserServiceApi userServiceApi;
     private final Set<Channel> leaderListener = new CopyOnWriteArraySet<>();
 
     private CoordinatorStateMachine(Core core, MetaStore metaStore) {
@@ -82,8 +84,8 @@ public class CoordinatorStateMachine implements CoreListener {
         if (scheduleApi == null) {
             scheduleApi = new ScheduleApi();
         }
-        if (sysInfoServiceApi == null) {
-            sysInfoServiceApi = new SysInfoServiceApi();
+        if (userServiceApi == null) {
+            userServiceApi = new UserServiceApi();
         }
 
         leaderListener.forEach(channel -> Executors.submit("primary-notify", () -> {
@@ -105,7 +107,7 @@ public class CoordinatorStateMachine implements CoreListener {
             }
 
             // Add permissions to the root user
-            sysInfoServiceApi.saveRootPrivilege("root", "%");
+            userServiceApi.saveRootPrivilege("root", "%");
         });
     }
 

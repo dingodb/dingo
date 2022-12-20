@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
 
+import java.security.PrivateKey;
 import java.util.List;
 
 public class ClusterTestService implements ClusterService {
@@ -27,6 +28,7 @@ public class ClusterTestService implements ClusterService {
 
     @Override
     public List<Location> getComputingLocations() {
+        PrivateKey privateKey;
         return ImmutableList.of(
             new FakeLocation(0),
             new FakeLocation(1),

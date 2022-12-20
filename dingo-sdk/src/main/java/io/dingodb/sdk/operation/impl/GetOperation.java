@@ -22,6 +22,7 @@ import io.dingodb.sdk.operation.ContextForStore;
 import io.dingodb.sdk.operation.IStoreOperation;
 import io.dingodb.sdk.operation.ResultForStore;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.verify.service.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class GetOperation implements IStoreOperation {
     }
 
     @Override
-    public ResultForStore doOperation(ExecutorApi executorApi,
+    public ResultForStore doOperation(ExecutorService executorService,
                                       CommonId tableId,
                                       ContextForStore parameters) {
         try {
@@ -49,7 +50,7 @@ public class GetOperation implements IStoreOperation {
                 return new ResultForStore(false, "Invalid parameters for get operation");
             }
             List<byte[]> keyList = parameters.getStartKeyListInBytes();
-            List<KeyValue> recordList = executorApi.getKeyValueByPrimaryKeys(tableId, keyList);
+            List<KeyValue> recordList = executorService.getKeyValueByPrimaryKeys(tableId, keyList);
             return new ResultForStore(true, "OK", recordList);
         } catch (Exception e) {
             log.error("doGet KeyValue error, tableId:{}, exception:{}", tableId, e.toString(), e);

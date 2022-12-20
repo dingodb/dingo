@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoClientException;
@@ -117,14 +117,14 @@ public class DingoClient {
      */
     public boolean open() {
         try {
-            Domain.role = DingoRole.SDK_CLIENT;
-            Domain domain = Domain.INSTANCE;
+            ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+            env.setRole(DingoRole.SDK_CLIENT);
             if (StringUtils.isBlank(user)) {
-                this.user = "root";
-                this.password = "123123";
+                this.user = "";
+                this.password = "";
             }
-            domain.setInfo("user", user);
-            domain.setInfo("password", password);
+            env.setInfo("user", user);
+            env.setInfo("password", password);
             if (isConnected()) {
                 return true;
             } else {

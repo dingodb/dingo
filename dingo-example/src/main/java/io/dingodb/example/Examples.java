@@ -122,9 +122,11 @@ public class Examples {
             case "SDK":
                 DingoConfiguration.parse(config);
                 String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
+                DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
+                dingoClient.setIdentity("root", "123123");
                 runOperation(new SDKRunner(
                     table.toUpperCase(),
-                    new DingoClient(coordinatorServerList, 10))
+                    dingoClient)
                 );
                 break;
             case "SCHEMA":
