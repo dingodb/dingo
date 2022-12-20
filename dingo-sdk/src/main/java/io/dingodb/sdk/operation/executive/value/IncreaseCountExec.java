@@ -51,7 +51,7 @@ public class IncreaseCountExec extends AbstractExecutive<Context, Iterator<Objec
 
     @Override
     public DingoOpResult execute(Context context, Iterator<Object[]> records) {
-        String col = context.column().name;
+        String col = context.column()[0].name;
         Map<String, NumberUnit> map = new HashMap<>();
         try {
             int keyIndex = context.definition.getColumnIndex(col);

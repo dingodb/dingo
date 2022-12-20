@@ -43,7 +43,7 @@ public class ListExec extends AbstractExecutive<Context, Iterator<Object[]>> {
 
     @Override
     public MultiValueOpResult execute(Context context, Iterator<Object[]> records) {
-        String col = context.column().name;
+        String col = context.column()[0].name;
         ListUnit unit = new ListUnit<>();
         try {
             int keyIndex = context.definition.getColumnIndex(col);

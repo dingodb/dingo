@@ -56,7 +56,7 @@ public class CollectionOp extends AbstractOp {
     public MergeValueOp sum(Column column) {
         next = new MergeValueOp(
             SumExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MergeValueOp) next;
     }
@@ -64,7 +64,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp max(Column column) {
         next = new MergeValueOp(
             MaxExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MergeValueOp) next;
     }
@@ -72,7 +72,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp min(Column column) {
         next = new MergeValueOp(
             MinExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MergeValueOp) next;
     }
@@ -80,7 +80,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp avg(Column column) {
         next = new MergeValueOp(
             AvgExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MergeValueOp) next;
     }
@@ -88,7 +88,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp count(Column column) {
         next = new MergeValueOp(
             CountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MergeValueOp) next;
     }
@@ -96,7 +96,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp decreaseCount(Column column) {
         next = new ValueOp(
             DecreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
@@ -104,7 +104,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp increaseCount(Column column) {
         next = new ValueOp(
             IncreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
@@ -112,7 +112,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp maxDecreaseCount(Column column) {
         next = new ValueOp(
             MaxDecreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
@@ -120,7 +120,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp maxIncreaseCount(Column column) {
         next = new ValueOp(
             MaxIncreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
@@ -128,7 +128,7 @@ public class CollectionOp extends AbstractOp {
     public ValueOp maxContinuousDecreaseCount(Column column) {
         next = new ValueOp(
             MaxContinuousDecreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
@@ -136,15 +136,15 @@ public class CollectionOp extends AbstractOp {
     public ValueOp maxContinuousIncreaseCount(Column column) {
         next = new ValueOp(
             MaxContinuousIncreaseCountExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (ValueOp) next;
     }
 
-    public CollectionOp add(Column column, boolean useDefaultWhenNotExisted) {
+    public CollectionOp add(Column[] columns, boolean useDefaultWhenNotExisted) {
         next = new CollectionOp(
             CollAddExec.COMMON_ID,
-            Context.builder().column(column).useDefaultWhenNotExisted(useDefaultWhenNotExisted).build(),
+            Context.builder().column(columns).useDefaultWhenNotExisted(useDefaultWhenNotExisted).build(),
             Parameters.cleanNull(head, this), 1);
         return (CollectionOp) next;
     }
@@ -152,7 +152,7 @@ public class CollectionOp extends AbstractOp {
     public MultiValueOp sortList(Column column) {
         next = new MultiValueOp(
             SortListExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MultiValueOp) next;
     }
@@ -160,7 +160,7 @@ public class CollectionOp extends AbstractOp {
     public MultiValueOp list(Column column) {
         next = new MultiValueOp(
             ListExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MultiValueOp) next;
     }
@@ -168,7 +168,7 @@ public class CollectionOp extends AbstractOp {
     public MultiValueOp distinctList(Column column) {
         next = new MultiValueOp(
             DistinctListExec.COMMON_ID,
-            Context.builder().column(column).build(),
+            Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
         return (MultiValueOp) next;
     }

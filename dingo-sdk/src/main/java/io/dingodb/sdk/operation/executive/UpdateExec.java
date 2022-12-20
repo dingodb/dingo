@@ -21,11 +21,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
 import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.converter.ClientConverter;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.sdk.operation.Column;
 import io.dingodb.sdk.operation.context.Context;
@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -54,17 +55,17 @@ public class UpdateExec extends AbstractExecutive<Context, Void> {
 
     @Override
     public DingoOpResult execute(Context context, Void record) {
-        Column col = context.column();
-        int columnIndex = context.definition.getColumnIndex(col.name);
-        int indexOfValue = context.definition.getColumnIndexOfValue(col.name);
+        Column[] cols = context.column();
+        TableDefinition definition = context.definition;
         try {
-            byte[] bytes = context.reader().get(context.startKey().get(0));
-            if (bytes == null && !context.isUseDefaultWhenNotExisted()) {
+            List<KeyValue> keyValueList = context.reader().get(context.startKey());
+
+            if (keyValueList.get(0).getValue() == null && !context.isUseDefaultWhenNotExisted()) {
                 log.warn("The record is empty and cannot be modified");
                 return new VoidOpResult<>(false);
             }
-            if (bytes == null && context.isUseDefaultWhenNotExisted()) {
-                List<ColumnDefinition> columnDefinitions = context.definition.getColumns()
+            if (keyValueList.get(0).getValue() == null && context.isUseDefaultWhenNotExisted()) {
+                List<ColumnDefinition> columnDefinitions = definition.getColumns()
                     .stream()
                     .filter(c -> !c.isPrimary())
                     .collect(Collectors.toList());
@@ -78,10 +79,13 @@ public class UpdateExec extends AbstractExecutive<Context, Void> {
                         return new VoidOpResult<>(false);
                     }
                 }
-                defValues[indexOfValue] = col.value.getObject();
+                for (Column col : cols) {
+                    int columnIndexOfValue = definition.getColumnIndexOfValue(col.name);
+                    defValues[columnIndexOfValue] = col.value.getObject();
+                }
 
-                DingoType schema = context.definition.getDingoType(false);
-                TupleMapping valueMapping = context.definition.getValueMapping();
+                DingoType schema = definition.getDingoType(false);
+                TupleMapping valueMapping = definition.getValueMapping();
                 DingoCodec valueCodec = new DingoCodec(schema.toDingoSchemas(), valueMapping);
 
                 Object[] objects = (Object[]) schema.parse(defValues);
@@ -90,17 +94,23 @@ public class UpdateExec extends AbstractExecutive<Context, Void> {
 
                 context.writer().set(context.startKey().get(0), valueBytes);
             } else {
-                DingoCodec valueCodec = new DingoCodec(context.definition.getDingoSchemaOfValue());
-                Object[] oldValue = valueCodec.decode(bytes, new int[]{indexOfValue});
-                oldValue[0] = col.value.getObject();
-                DingoType dingoType = DingoTypeFactory.tuple(TupleMapping.of(new int[]{columnIndex}).stream()
-                    .mapToObj(context.definition.getColumns()::get)
-                    .map(ColumnDefinition::getType)
-                    .toArray(DingoType[]::new));
-                Object[] converted = (Object[]) dingoType.convertFrom(oldValue, ClientConverter.INSTANCE);
-                bytes = valueCodec.encode(bytes, converted, new int[]{indexOfValue});
-
-                context.writer().set(context.startKey().get(0), bytes);
+                DingoCodec valueCodec = new DingoCodec(definition.getDingoSchemaOfValue());
+                int[] indexOfValue = new int[cols.length];
+                for (int i = 0; i < cols.length; i++) {
+                    indexOfValue[i] = definition.getColumnIndexOfValue(cols[i].name);
+                }
+                Object[] values = new Object[cols.length];
+                if (keyValueList.get(0).getValue() != null) {
+                    for (KeyValue keyValue : keyValueList) {
+                        for (int i = 0; i < cols.length; i++) {
+                            DingoType dingoType = Objects.requireNonNull(definition.getColumn(cols[i].name)).getType();
+                            values[i] = dingoType.parse(cols[i].value.getObject());
+                        }
+                        byte[] bytes = valueCodec.encode(keyValue.getValue(), values, indexOfValue);
+                        keyValue.setValue(bytes);
+                        context.writer().set(keyValue.getKey(), keyValue.getValue());
+                    }
+                }
             }
         } catch (IOException e) {
             log.error("Update record failed. e", e);

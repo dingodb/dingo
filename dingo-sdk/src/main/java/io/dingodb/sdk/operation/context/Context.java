@@ -46,7 +46,7 @@ public class Context {
     private List<Key> endPrimaryKeys;
     private List<byte[]> startKeyBytes;
     private List<byte[]> endKeyBytes;
-    private Column column;
+    private Column[] column;
     private DingoFilter filter;
     public TableDefinition definition;
 
@@ -156,7 +156,7 @@ public class Context {
         }).collect(Collectors.toList());
     }
 
-    public Column column() {
+    public Column[] column() {
         return column;
     }
 
