@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.common.config;
 
-import com.google.auto.service.AutoService;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Slf4j
-@AutoService(SysInfoServiceProvider.class)
-public class SysInfoTestServiceProvider implements SysInfoServiceProvider {
-    @Override
-    public SysInfoService root() {
-        return SysInfoTestService.INSTANCE;
-    }
+@Getter
+@Setter
+@ToString
+public class CipherConfiguration {
+    private String keyPath;
+    private String keyPass;
+    private String storePass;
+    private String alias;
+    private String issuer;
 }

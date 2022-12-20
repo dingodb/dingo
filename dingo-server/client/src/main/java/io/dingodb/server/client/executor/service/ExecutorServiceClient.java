@@ -14,12 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation;
+package io.dingodb.server.client.executor.service;
 
-import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
 import io.dingodb.verify.service.ExecutorService;
+import lombok.experimental.Delegate;
 
-public interface IStoreOperation {
-    ResultForStore doOperation(ExecutorService executorService, CommonId tableId, ContextForStore paramContext);
+public class ExecutorServiceClient implements ExecutorService {
+
+    @Delegate
+    public ExecutorApi executor;
+
+    public ExecutorServiceClient(ApiRegistry apiRegistry,
+                                 String leaderAddress) {
+        String hostName = leaderAddress.split(":")[0];
+        String port = leaderAddress.split(":")[1];
+        executor = apiRegistry.proxy(
+            ExecutorApi.class,
+            () -> new Location(hostName, Integer.valueOf(port)));
+    }
 }

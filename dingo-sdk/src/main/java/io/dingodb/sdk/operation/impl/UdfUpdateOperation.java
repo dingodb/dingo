@@ -23,6 +23,7 @@ import io.dingodb.sdk.operation.IStoreOperation;
 import io.dingodb.sdk.operation.ResultForStore;
 import io.dingodb.sdk.operation.UDFContext;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.verify.service.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class UdfUpdateOperation implements IStoreOperation {
     }
 
     @Override
-    public ResultForStore doOperation(ExecutorApi executorApi,
+    public ResultForStore doOperation(ExecutorService executorService,
                                       CommonId tableId,
                                       ContextForStore parameters) {
         try {
@@ -55,7 +56,7 @@ public class UdfUpdateOperation implements IStoreOperation {
             List<KeyValue> failedKeyList = new ArrayList<>();
             UDFContext udfContext = parameters.getUdfContext();
             for (byte[] primaryKey : keyList) {
-                if (!executorApi.udfUpdate(tableId, primaryKey, udfContext.getUdfName(),
+                if (!executorService.udfUpdate(tableId, primaryKey, udfContext.getUdfName(),
                     udfContext.getFunctionName(), udfContext.getUdfVersion())) {
                     failedKeyList.add(new KeyValue(primaryKey, null));
                 }

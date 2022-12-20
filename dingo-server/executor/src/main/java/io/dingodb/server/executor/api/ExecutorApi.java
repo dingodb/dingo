@@ -18,6 +18,7 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.Authentication;
+import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetService;
@@ -48,7 +49,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row) {
-        if (verify(channel, schema, tableId, "insert")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT)) {
             return storeService.getInstance(tableId).upsertKeyValue(row);
         }
         return false;
@@ -56,7 +57,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows) {
-        if (verify(channel, schema, tableId, "insert")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT)) {
             return storeService.getInstance(tableId).upsertKeyValue(rows);
         }
         return false;
@@ -64,7 +65,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row) {
-        if (verify(channel, schema, tableId, "insert")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT)) {
             storeService.getInstance(tableId).upsertKeyValue(primaryKey, row);
         }
         return false;
@@ -72,7 +73,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey) {
-        if (verify(channel, schema, tableId, "select")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT)) {
             return storeService.getInstance(tableId).getValueByPrimaryKey(primaryKey);
         }
         return new byte[]{0};
@@ -81,7 +82,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId,
                                                    List<byte[]> primaryKeys) {
-        if (verify(channel, schema, tableId, "select")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT)) {
             storeService.getInstance(tableId).getKeyValueByPrimaryKeys(primaryKeys);
         }
         return Collections.emptyList();
@@ -89,7 +90,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] key) {
-        if (verify(channel, schema, tableId, "delete")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE)) {
             return storeService.getInstance(tableId).delete(key);
         }
         return false;
@@ -97,7 +98,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys) {
-        if (verify(channel, schema, tableId, "delete")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE)) {
             storeService.getInstance(tableId).delete(primaryKeys);
         }
         return false;
@@ -106,7 +107,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     @Override
     public boolean deleteRange(Channel channel, CommonId schema, CommonId tableId,
                                byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (verify(channel, schema, tableId, "delete")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE)) {
             storeService.getInstance(tableId).delete(startPrimaryKey, endPrimaryKey);
         }
         return false;
@@ -115,7 +116,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     @Override
     public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
                                              byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (verify(channel, schema, tableId, "select")) {
+        if (verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT)) {
             if (log.isDebugEnabled()) {
                 log.info("Get Key value by range: instance:{} tableId:{}, startPrimaryKey: {}, endPrimaryKey: {}",
                     storeService.getInstance(tableId).getClass().getSimpleName(),
@@ -159,7 +160,7 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
         return storeService.getInstance(tableId).udfUpdate(primaryKey, udfName, functionName, version);
     }
 
-    private boolean verify(Channel channel, CommonId schema, CommonId tableId, String accessType) {
+    private boolean verify(Channel channel, CommonId schema, CommonId tableId, DingoSqlAccessEnum accessType) {
         Object[] objects = channel.auth().get("token");
         Authentication authentication = (Authentication) objects[0];
         boolean verify = PrivilegeVerify.verify(authentication.getUsername(), authentication.getHost(),

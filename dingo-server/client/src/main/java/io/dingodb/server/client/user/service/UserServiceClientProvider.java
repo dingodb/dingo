@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.client.meta.service;
+package io.dingodb.server.client.user.service;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@AutoService(SysInfoServiceProvider.class)
-public class SysInfoServiceClientProvider implements SysInfoServiceProvider {
+@AutoService(UserServiceProvider.class)
+public class UserServiceClientProvider implements UserServiceProvider {
 
-    private static final SysInfoServiceClient SYS_INFO_SERVICE_CLIENT = new SysInfoServiceClient();
+    private static final UserServiceClient USER_SERVICE_CLIENT = new UserServiceClient();
 
     @Override
-    public SysInfoService root() {
-        return SYS_INFO_SERVICE_CLIENT;
+    public UserService root() {
+        return USER_SERVICE_CLIENT;
     }
 
 

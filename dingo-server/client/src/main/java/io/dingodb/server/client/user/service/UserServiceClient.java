@@ -14,33 +14,32 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.client.meta.service;
+package io.dingodb.server.client.user.service;
 
-import io.dingodb.common.Location;
-import io.dingodb.meta.SysInfoService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.server.api.SysInfoServiceApi;
+import io.dingodb.server.api.UserServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.verify.service.UserService;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SysInfoServiceClient implements SysInfoService {
+public class UserServiceClient implements UserService {
 
     @Delegate
-    private SysInfoServiceApi sysInfoServiceApi;
+    private UserServiceApi userServiceApi;
 
     private final CoordinatorConnector connector;
 
-    public SysInfoServiceClient() {
+    public UserServiceClient() {
         this(CoordinatorConnector.getDefault());
     }
 
-    public SysInfoServiceClient(CoordinatorConnector connector) {
-        this.sysInfoServiceApi = ApiRegistry.getDefault().proxy(SysInfoServiceApi.class,
+    public UserServiceClient(CoordinatorConnector connector) {
+        this.userServiceApi = ApiRegistry.getDefault().proxy(UserServiceApi.class,
             NetService.getDefault().newChannel(connector.get()));
         this.connector = connector;
     }

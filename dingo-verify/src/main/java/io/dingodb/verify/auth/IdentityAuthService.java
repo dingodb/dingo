@@ -19,7 +19,7 @@ package io.dingodb.verify.auth;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.Certificate;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.service.AuthService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
@@ -34,6 +34,8 @@ import java.util.ServiceLoader;
 
 public class IdentityAuthService implements AuthService<Authentication> {
 
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
     public IdentityAuth identityAuth;
 
     Iterable<IdentityAuth.Provider> serviceProviders = ServiceLoader.load(IdentityAuth.Provider.class);
@@ -41,7 +43,7 @@ public class IdentityAuthService implements AuthService<Authentication> {
     public IdentityAuthService() {
         for (IdentityAuth.Provider identityAuthProvider : serviceProviders) {
             IdentityAuth identityAuth = identityAuthProvider.get();
-            if (identityAuth.getRole() == Domain.role) {
+            if (identityAuth.getRole() == env.getRole()) {
                 this.identityAuth = identityAuth;
             }
         }
@@ -70,10 +72,6 @@ public class IdentityAuthService implements AuthService<Authentication> {
         if (userDef == null) {
             return false;
         }
-        //todo
-        if ("root".equals(userDef.getUser())) {
-            return true;
-        }
         String plugin = userDef.getPlugin();
         String password = userDef.getPassword();
         String digestPwd = AlgorithmPlugin.digestAlgorithm(authentication.getPassword(), plugin);
@@ -96,15 +94,14 @@ public class IdentityAuthService implements AuthService<Authentication> {
 
     @Override
     public Authentication createAuthentication() {
-        Domain domain = Domain.INSTANCE;
-        String user = (String) domain.getInfo("user");
+        String user = env.getUser();
         String host = getHost();
-        String password = (String) domain.getInfo("password");
+        String password = env.getPassword();
         if (StringUtils.isNotBlank(user)) {
             return Authentication.builder()
                 .username(user)
                 .host(host)
-                .role(Domain.role)
+                .role(env.getRole())
                 .password(password).build();
         } else {
             return null;

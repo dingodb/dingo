@@ -49,6 +49,7 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
         metaMap.forEach((k, v) -> {
             tablePrivMap.put(v.getKey(), v);
         });
+        log.info("init tablePrivMap:" + tablePrivMap);
     }
 
     @Override

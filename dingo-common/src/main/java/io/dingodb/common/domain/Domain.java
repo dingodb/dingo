@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @Setter
 public class Domain {
+
     public static DingoRole role;
 
     public static Properties info = new Properties();

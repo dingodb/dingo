@@ -26,7 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -42,11 +42,10 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.ContextSqlValidator;
@@ -86,10 +85,12 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
 
-    public SysInfoService sysInfoService;
+    private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+    public UserService userService;
 
     private DingoDdlExecutor() {
-        this.sysInfoService = (SysInfoService) SysInfoServiceProvider.getRoot();
+        this.userService = UserServiceProvider.getRoot();
     }
 
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
@@ -258,7 +259,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.tableNotFound(drop.name.toString())
             );
         }
-        Domain.INSTANCE.tableIdMap.computeIfPresent(schema.metaService.id(), (k, v) -> {
+
+        env.getTableIdMap().computeIfPresent(schema.metaService.id(), (k, v) -> {
             v.remove(tableName);
             return v;
         });
@@ -300,9 +302,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
-        if (sysInfoService.existsUser(UserDefinition.builder().user(sqlGrant.user).host(sqlGrant.host).build())) {
+        if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user).host(sqlGrant.host).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant);
-            sysInfoService.grant(privilegeDefinition);
+            userService.grant(privilegeDefinition);
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");
         }
@@ -320,9 +322,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
-        if (sysInfoService.existsUser(UserDefinition.builder().user(sqlRevoke.user).host(sqlRevoke.host).build())) {
+        if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user).host(sqlRevoke.host).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlRevoke);
-            sysInfoService.revoke(privilegeDefinition);
+            userService.revoke(privilegeDefinition);
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");
         }
@@ -332,24 +334,24 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         log.info("DDL execute: {}", sqlCreateUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(sqlCreateUser.host).build();
-        if (sysInfoService.existsUser(userDefinition)) {
+        if (userService.existsUser(userDefinition)) {
             throw new RuntimeException("user is exists");
         } else {
             userDefinition.setPlugin("mysql_native_password");
             String digestPwd = AlgorithmPlugin.digestAlgorithm(sqlCreateUser.password, userDefinition.getPlugin());
             userDefinition.setPassword(digestPwd);
-            sysInfoService.createUser(userDefinition);
+            userService.createUser(userDefinition);
         }
     }
 
     public void execute(@NonNull SqlDropUser sqlDropUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlDropUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name).host(sqlDropUser.host).build();
-        sysInfoService.dropUser(userDefinition);
+        userService.dropUser(userDefinition);
     }
 
     public void execute(@NonNull SqlFlushPrivileges dingoFlushPrivileges, CalcitePrepare.Context context) {
-        sysInfoService.flushPrivileges();
+        userService.flushPrivileges();
     }
 
     public void execute(@NonNull SqlSetPassword sqlSetPassword, CalcitePrepare.Context context) {
@@ -357,16 +359,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .user(sqlSetPassword.user)
             .host(sqlSetPassword.host)
             .build();
-        if (sysInfoService.existsUser(userDefinition)) {
+        if (userService.existsUser(userDefinition)) {
             userDefinition.setPassword(sqlSetPassword.password);
-            sysInfoService.setPassword(userDefinition);
+            userService.setPassword(userDefinition);
         } else {
             throw new RuntimeException("user is not exist");
         }
     }
 
     public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
-        PrivilegeGather privilegeGather = sysInfoService.getPrivilegeDef(null, sqlShowGrants.user,
+        PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, sqlShowGrants.user,
             sqlShowGrants.host);
         List<SchemaPrivDefinition> schemaPrivDefinitions = privilegeGather
             .getSchemaPrivDefMap().values().stream().collect(Collectors.toList());
@@ -396,6 +398,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (count > 0) {
             boolean isAllPrivilege = false;
             List<String> privileges = null;
+
             if (count == PrivilegeList.privilegeMap.get(PrivilegeType.USER).size()) {
                 isAllPrivilege = true;
             } else {
@@ -539,14 +542,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             privilegeType = PrivilegeType.USER;
         } else if ("*".equals(table)) {
-            schemaId = sysInfoService.getSchemaIdByCache(schema);
+            schemaId = userService.getSchemaIdByCache(schema);
             privilegeDefinition = SchemaPrivDefinition.builder()
                 .schema(schemaId)
                 .build();
             privilegeType = PrivilegeType.SCHEMA;
         } else {
-            schemaId = sysInfoService.getSchemaIdByCache(schema);
-            CommonId tableId = sysInfoService.getTableIdByCache(schemaId, table);
+            schemaId = userService.getSchemaIdByCache(schema);
+            CommonId tableId = userService.getTableIdByCache(schemaId, table);
             log.info("tableId:" + tableId + ", schemaId:" + schemaId);
             privilegeDefinition = TablePrivDefinition.builder()
                 .schema(schemaId)

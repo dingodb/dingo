@@ -50,7 +50,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
         metaMap.forEach((k, v) -> {
             userMap.put(v.getKey(), v);
         });
-
+        log.info("init userMap:" + userMap);
         User user = User.builder().user("root")
             .host("%")
             .plugin("mysql_native_password")
@@ -75,6 +75,9 @@ public class UserAdaptor extends BaseAdaptor<User> {
     }
 
     private UserDefinition metaToDefinition(User user) {
+        if (user == null) {
+            return null;
+        }
         return UserDefinition.builder()
             .user(user.getUser())
             .host(user.getHost())
@@ -92,7 +95,6 @@ public class UserAdaptor extends BaseAdaptor<User> {
     }
 
     public CommonId create(UserDefinition userDefinition) {
-        log.info("user map:" + userMap.toString());
         String userKey = userDefinition.getKey();
         if (userMap.containsKey(userKey)) {
             return userMap.get(userKey).getId();
@@ -102,7 +104,6 @@ public class UserAdaptor extends BaseAdaptor<User> {
             doSave(user);
             return user.getId();
         }
-
     }
 
     @Override
@@ -112,7 +113,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
     }
 
     public boolean isExist(UserDefinition userDefinition) {
-        log.info("user key:" + userDefinition.getKey() + ", usermap:" + userMap);
+        log.info("user key:" + userDefinition.getKey() + ", userMap:" + userMap);
         if (userMap.containsKey(userDefinition.getKey())) {
             return true;
         }
@@ -140,15 +141,8 @@ public class UserAdaptor extends BaseAdaptor<User> {
         return Optional.ofNullable(userMap.get(user + "#%")).orElseGet(() -> userMap.get(user + "#" + host));
     }
 
-    public List<UserDefinition> getUserDefinition(String user) {
-        List<UserDefinition> userDefinitions = new ArrayList<>();
-        userMap.forEach((k, v) -> {
-            if (k.startsWith(user)) {
-                userDefinitions.add(metaToDefinition(v));
-            }
-        });
-        log.info("userMap:" + userMap);
-        return userDefinitions;
+    public UserDefinition getUserDefinition(String user, String host) {
+        return metaToDefinition(getUser(user, host));
     }
 
     private User definitionToMeta(UserDefinition definition) {
@@ -162,7 +156,6 @@ public class UserAdaptor extends BaseAdaptor<User> {
     public void setPassword(UserDefinition definition) {
         User user = userMap.get(definition.getKey());
         String digestPwd = AlgorithmPlugin.digestAlgorithm(definition.getPassword(), user.getPlugin());
-        log.info("origin pwd:" + definition.getPassword() + ", dig pwd:" + digestPwd);
         user.setPassword(digestPwd);
         doSave(user);
         log.info("usermap:" + userMap);

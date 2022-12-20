@@ -33,6 +33,7 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -188,22 +189,22 @@ public final class DingoDriverParser extends DingoParser {
     public void verify(SqlNode sqlNode) {
         String user = connection.getContext().getOption("user");
         String host = connection.getContext().getOption("host");
-        List<String> accessTypes = new ArrayList<>();
+        List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
         if (sqlNode instanceof DingoSqlCreateTable) {
-            accessTypes.add("create");
+            accessTypes.add(DingoSqlAccessEnum.CREATE);
         } else if (sqlNode instanceof SqlDropUser || sqlNode instanceof SqlDropTable) {
-            accessTypes.add("drop");
+            accessTypes.add(DingoSqlAccessEnum.DROP);
         } else if (sqlNode instanceof SqlCreateUser || sqlNode instanceof SqlRevoke || sqlNode instanceof SqlGrant) {
-            accessTypes.add("create_user");
+            accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlFlushPrivileges) {
-            accessTypes.add("reload");
+            accessTypes.add(DingoSqlAccessEnum.RELOAD);
         } else if (sqlNode instanceof SqlSetPassword) {
             if (!"root".equals(user)) {
                 throw new RuntimeException("Access denied");
             }
         } else if (sqlNode instanceof SqlTruncate) {
-            accessTypes.add("drop");
-            accessTypes.add("create");
+            accessTypes.add(DingoSqlAccessEnum.DROP);
+            accessTypes.add(DingoSqlAccessEnum.CREATE);
         }
         if (!PrivilegeVerify.verifyDuplicate(user, host, null, null,
             accessTypes)) {

@@ -47,9 +47,10 @@ import java.util.Map;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 
 @Slf4j
-public class SysInfoServiceApi implements io.dingodb.server.api.SysInfoServiceApi {
-    public SysInfoServiceApi() {
-        ApiRegistry.getDefault().register(io.dingodb.server.api.SysInfoServiceApi.class, this);
+public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
+
+    public UserServiceApi() {
+        ApiRegistry.getDefault().register(io.dingodb.server.api.UserServiceApi.class, this);
     }
 
     public boolean existsUser(UserDefinition userDefinition) {
@@ -128,8 +129,8 @@ public class SysInfoServiceApi implements io.dingodb.server.api.SysInfoServiceAp
     }
 
     @Override
-    public List<UserDefinition> getUserDefinition(String user) {
-        return ((UserAdaptor) getMetaAdaptor(User.class)).getUserDefinition(user);
+    public UserDefinition getUserDefinition(String user, String host) {
+        return ((UserAdaptor) getMetaAdaptor(User.class)).getUserDefinition(user, host);
     }
 
     @Override
@@ -143,15 +144,10 @@ public class SysInfoServiceApi implements io.dingodb.server.api.SysInfoServiceAp
         return tableAdaptor.getTableId(schemaId, table.toUpperCase());
     }
 
-    @Override
-    public boolean verifyFollower(Authentication authentication) {
-        return true;
-    }
-
     public void saveRootPrivilege(String userName, String host) {
         User user = ((UserAdaptor) getMetaAdaptor(User.class)).getUser(userName, host);
         if (user != null) {
-            PrivilegeAdaptor privilegeAdaptor = (PrivilegeAdaptor) getMetaAdaptor(Privilege.class);
+            PrivilegeAdaptor privilegeAdaptor = getMetaAdaptor(Privilege.class);
             if (privilegeAdaptor.getAll().isEmpty()) {
                 // Get dict
                 Map<String, CommonId> privilegeDict =
@@ -159,14 +155,13 @@ public class SysInfoServiceApi implements io.dingodb.server.api.SysInfoServiceAp
                 // Save to table privilege
                 for (Map.Entry<String, CommonId> entry : privilegeDict.entrySet()) {
                     Privilege privilege = Privilege.builder()
-                        .id(user.getId())
                         .privilegeType(PrivilegeType.USER)
                         .user(userName)
                         .subjectId(((PrivilegeDictAdaptor) getMetaAdaptor(PrivilegeDict.class)).privilegeDictId)
                         .host(user.getHost())
                         .privilegeIndex(entry.getValue().seq())
                         .build();
-                    privilegeAdaptor.save(privilege);
+                    privilegeAdaptor.create(privilege);
                 }
             }
         }

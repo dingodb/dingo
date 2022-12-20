@@ -70,8 +70,8 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         privilegeMap = new ConcurrentHashMap<>();
 
         metaMap.forEach((k, v) -> privilegeMap.computeIfAbsent(v.getSubjectId(), p -> new ArrayList<>()).add(v));
-
-        NetService.getDefault().registerTagMessageListener(Tags.LISTEN_REGISTRY_FLUSH, this::registryFlushChannel);
+        log.info("init privilegeMap:" + privilegeMap);
+        NetService.getDefault().registerTagMessageListener(Tags.LISTEN_REGISTRY_RELOAD, this::registryReloadChannel);
         NetService.getDefault().registerTagMessageListener(Tags.LISTEN_RELOAD_PRIVILEGES, this::flushPrivileges);
     }
 
@@ -87,7 +87,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
     protected CommonId newId(Privilege privilege) {
         return new CommonId(
             META_ID.type(),
-            privilege.identifier(), privilege.getSubjectId().seq(),
+            META_ID.identifier(), privilege.getSubjectId().seq(),
             metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
@@ -104,7 +104,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         privilegeMap.computeIfAbsent(privilege.getSubjectId(), k -> new ArrayList<>()).add(privilege);
     }
 
-    private void registryFlushChannel(Message message, Channel channel) {
+    private void registryReloadChannel(Message message, Channel channel) {
         if (!channels.contains(channel)) {
             channels.add(channel);
             List<String> privilege = getAllPrivilegeDict();
@@ -192,7 +192,14 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         if (!flushPrivileges.contains(definition.key())) {
             flushPrivileges.add(definition.key());
         }
-        log.info("privilege map:" + privilegeMap);
+        if (log.isDebugEnabled()) {
+            log.debug("privilege map:" + privilegeMap);
+        }
+    }
+
+    public void create(Privilege privilege) {
+        privilege.setId(newId(privilege));
+        this.doSave(privilege);
     }
 
     public List<UserDefinition> userDefinitions(List<User> users) {

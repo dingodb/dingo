@@ -19,24 +19,23 @@ package io.dingodb.server.executor.auth.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.PrivilegeGather;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
 import io.dingodb.verify.auth.TokenAuth;
-import io.dingodb.verify.auth.TokenAuthService;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import io.dingodb.verify.token.TokenManager;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 public class TokenAuthImpl implements TokenAuth {
 
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
     private static final TokenAuth INSTANCE = new TokenAuthImpl();
 
-    private SysInfoService sysInfoService;
+    private UserService userService;
 
     @AutoService(TokenAuth.Provider.class)
     public static class TokenAuthServiceProvider implements TokenAuth.Provider {
@@ -59,15 +58,21 @@ public class TokenAuthImpl implements TokenAuth {
 
     @Override
     public void cachePrivileges(Authentication authentication) {
-        if (sysInfoService == null) {
-            sysInfoService = SysInfoServiceProvider.getRoot();
+        if (userService == null) {
+            userService = UserServiceProvider.getRoot();
         }
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        PrivilegeGather privilegeGather = sysInfoService.getPrivilegeDef(null, user, host);
-        Domain.INSTANCE.privilegeGatherMap.put(privilegeGather.key(),
-            privilegeGather);
-        log.info("sdk to executor token auth success: user:" + user + ", host:" + host + ", privileges:"
-            + Domain.INSTANCE.privilegeGatherMap);
+        if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
+            if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
+                PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, user, host);
+                env.getPrivilegeGatherMap().put(privilegeGather.key(),
+                    privilegeGather);
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("sdk to executor token auth success: user:" + user + ", host:" + host + ", privileges:"
+                + env.getPrivilegeGatherMap());
+        }
     }
 }

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.client.flush;
+package io.dingodb.server.client.reload;
 
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.PrivilegeDict;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.net.Channel;
@@ -32,11 +32,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 @Slf4j
-public class FlushHandler {
+public class ReloadHandler {
 
-    public static final FlushHandler flushHandler = new FlushHandler();
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-    public void registryFlushChannel() {
+    public static final ReloadHandler handler = new ReloadHandler();
+
+    public void registryReloadChannel() {
         Executors.submit("coordinator-registry-flush", this::registryChannel);
     }
 
@@ -52,26 +54,23 @@ public class FlushHandler {
             }
         }
         Channel channel = NetService.getDefault().newChannel(CoordinatorConnector.getDefault().get());
-        channel.setMessageListener(flush());
-        channel.send(new Message(Tags.LISTEN_REGISTRY_FLUSH, "registry flush channel".getBytes()));
+        channel.setMessageListener(reload());
+        channel.send(new Message(Tags.LISTEN_REGISTRY_RELOAD, "registry reload channel".getBytes()));
     }
 
-    public MessageListener flush() {
+    public MessageListener reload() {
         return (message, ch) -> {
             if (message.tag().equals(Tags.LISTEN_RELOAD_PRIVILEGES)) {
                 PrivilegeGather privilegeGather = ProtostuffCodec.read(message.content());
                 if (privilegeGather.getHost().equals("%")) {
-                    Domain.INSTANCE.privilegeGatherMap.forEach((k, v) -> {
+                    env.getPrivilegeGatherMap().forEach((k, v) -> {
                         if (k.startsWith(privilegeGather.getUser() + "#")) {
-                            Domain.INSTANCE.privilegeGatherMap.put(k, privilegeGather);
+                            env.getPrivilegeGatherMap().put(k, privilegeGather);
                         }
                     });
                 }
-                Domain.INSTANCE.privilegeGatherMap.put(privilegeGather.key(), privilegeGather);
-                log.info("reload privileges:" + Domain.INSTANCE.privilegeGatherMap);
-            } else if (message.tag().equals(Tags.LISTEN_RELOAD_PRIVILEGE_DICT)) {
-                List<String> privilegeDicts = ProtostuffCodec.read(message.content());
-                PrivilegeDict.reload(privilegeDicts);
+                env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
+                log.info("reload privileges:" + env.getPrivilegeGatherMap());
             }
         };
     }

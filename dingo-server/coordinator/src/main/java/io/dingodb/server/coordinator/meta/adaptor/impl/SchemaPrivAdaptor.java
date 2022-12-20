@@ -48,6 +48,7 @@ public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
         metaMap.forEach((k, v) -> {
             schemaPrivMap.put(v.getKey(), v);
         } );
+        log.info("init schemaPrivMap:" + schemaPrivMap);
     }
 
     @Override

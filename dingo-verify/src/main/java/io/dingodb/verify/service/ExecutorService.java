@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.api;
+package io.dingodb.verify.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
@@ -25,12 +25,9 @@ import io.dingodb.net.Channel;
 import java.util.List;
 import java.util.concurrent.Future;
 
-public interface ExecutorApi {
-
+public interface ExecutorService {
     @ApiDeclaration
-    default boolean exist(CommonId tableId, byte[] primaryKey) {
-        throw new UnsupportedOperationException();
-    }
+    public boolean exist(CommonId tableId, byte[] primaryKey);
 
     default boolean upsertKeyValue(CommonId tableId, KeyValue row) {
         return upsertKeyValue(null, null, tableId, row);
@@ -40,34 +37,66 @@ public interface ExecutorApi {
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingKeyValue")
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row);
 
+    default boolean upsertKeyValue(CommonId tableId, List<KeyValue> rows) {
+        return upsertKeyValue(null, null, tableId, rows);
+    }
+
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingListKeyValue")
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows);
+
+    default boolean upsertKeyValue(CommonId tableId, byte[] primaryKey, byte[] row) {
+        return upsertKeyValue(null, null, tableId, primaryKey, row);
+    }
 
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingByteArray")
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row);
 
+    default byte[] getValueByPrimaryKey(CommonId tableId, byte[] primaryKey) {
+        return getValueByPrimaryKey(null, null, tableId, primaryKey);
+    }
+
     @ApiDeclaration
     public byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey);
 
+    default List<KeyValue> getKeyValueByPrimaryKeys(CommonId tableId, List<byte[]> primaryKeys) {
+        return getKeyValueByPrimaryKeys(null, null, tableId, primaryKeys);
+    }
+
     @ApiDeclaration
     public List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId,
-                                            List<byte[]> primaryKeys);
+                                                    List<byte[]> primaryKeys);
+
+    default boolean delete(CommonId tableId, byte[] primaryKey) {
+        return delete(null, null, tableId, primaryKey);
+    }
 
     @ApiDeclaration
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey);
 
+    default boolean delete(CommonId tableId, List<byte[]> primaryKeys) {
+        return delete(null, null, tableId, primaryKeys);
+    }
+
     @ApiDeclaration
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys);
 
+    default boolean deleteRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return deleteRange(null, null, tableId, startPrimaryKey, endPrimaryKey);
+    }
+
     @ApiDeclaration
     public boolean deleteRange(Channel channel, CommonId schema, CommonId tableId,
-                        byte[] startPrimaryKey, byte[] endPrimaryKey);
+                                byte[] startPrimaryKey, byte[] endPrimaryKey);
+
+    default List<KeyValue> getKeyValueByRange(CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+        return getKeyValueByRange(null, null, tableId, startPrimaryKey, endPrimaryKey);
+    }
 
     @ApiDeclaration
     public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
-                                      byte[] startPrimaryKey, byte[] endPrimaryKey);
+                                              byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
     public Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey,
@@ -79,9 +108,7 @@ public interface ExecutorApi {
     }
 
     @ApiDeclaration
-    default  KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version) {
-        throw new UnsupportedOperationException();
-    }
+    public KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
 
     @ApiDeclaration
     default boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName) {
@@ -89,7 +116,5 @@ public interface ExecutorApi {
     }
 
     @ApiDeclaration
-    default boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version) {
-        throw new UnsupportedOperationException();
-    }
+    public boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
 }

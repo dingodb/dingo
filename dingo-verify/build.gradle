@@ -18,6 +18,7 @@ dependencies {
     api group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
+    implementation 'com.auth0:java-jwt:4.2.1'
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

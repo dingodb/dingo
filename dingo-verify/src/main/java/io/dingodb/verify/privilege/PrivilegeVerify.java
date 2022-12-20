@@ -18,7 +18,9 @@ package io.dingodb.verify.privilege;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.config.SecurityConfiguration;
+import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
 import io.dingodb.common.privilege.PrivilegeGather;
@@ -26,15 +28,24 @@ import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlAccessEnum;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class PrivilegeVerify {
 
-    public static boolean isVerify = true;
+    static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+    static {
+        SecurityConfiguration configuration = SecurityConfiguration.instance();
+        isVerify = configuration.isVerify();
+    }
+
+    public static boolean isVerify;
 
     public static boolean matchHost(PrivilegeDefinition privilegeDefinition, String host) {
         if ("%".equals(privilegeDefinition.getHost()) || host.equals(privilegeDefinition.getHost())) {
@@ -64,27 +75,27 @@ public class PrivilegeVerify {
     }
 
     public static boolean verify(String user, String host, CommonId schema, CommonId table,
-                             String accessType) {
+                             DingoSqlAccessEnum accessType) {
         if (!isVerify) {
             return true;
         }
-        if (DingoRole.SQLLINE == Domain.role) {
+        if (DingoRole.SQLLINE == env.getRole()) {
             return true;
         }
         if (StringUtils.isBlank(user)) {
             return true;
         }
 
-        PrivilegeGather privilegeGather = Domain.INSTANCE.privilegeGatherMap.get(user + "#" + host);
+        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + host);
         if (privilegeGather == null) {
-            privilegeGather = Domain.INSTANCE.privilegeGatherMap.get(user + "#%");
+            privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
             if (privilegeGather == null) {
                 return false;
             }
         }
 
         log.info(" privilege for {} @ {} detail:" + privilegeGather, user, host);
-        Integer index = PrivilegeDict.privilegeIndexDict.get(accessType);
+        Integer index = PrivilegeDict.privilegeIndexDict.get(accessType.getAccessType());
         if (index == null) {
             return true;
         }
@@ -110,7 +121,7 @@ public class PrivilegeVerify {
     }
 
     public static boolean verifyDuplicate(String user, String host, CommonId schema, CommonId table,
-                                 List<String> accessTypes) {
+                                 List<DingoSqlAccessEnum> accessTypes) {
         if (accessTypes.stream().anyMatch(accessType -> {
             if (!verify(user, host, schema, table, accessType)) {
                 return true;

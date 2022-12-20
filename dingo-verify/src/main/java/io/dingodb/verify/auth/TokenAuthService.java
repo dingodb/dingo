@@ -19,19 +19,20 @@ package io.dingodb.verify.auth;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.Certificate;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.net.service.AuthService;
 import io.dingodb.verify.token.TokenManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 
 @Slf4j
 public class TokenAuthService implements AuthService<Authentication>  {
+
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     public TokenAuth tokenAuth;
 
@@ -41,8 +42,8 @@ public class TokenAuthService implements AuthService<Authentication>  {
         try {
             for (TokenAuth.Provider tokenAuthProvider : serviceProviders) {
                 TokenAuth tokenAuth = tokenAuthProvider.get();
-                log.info("tokenAuth:" + tokenAuth + "token toke:" + tokenAuth.getRole() + ", role:" + Domain.role);
-                if (tokenAuth.getRole() == Domain.role) {
+                log.info("tokenAuth:" + tokenAuth + "token toke:" + tokenAuth.getRole() + ", role:" + env.getRole());
+                if (tokenAuth.getRole() == env.getRole()) {
                     this.tokenAuth = tokenAuth;
                 }
             }
@@ -86,7 +87,7 @@ public class TokenAuthService implements AuthService<Authentication>  {
             token = tokenAuth.getAuthToken();
         }
         if (StringUtils.isNotBlank(token)) {
-            Authentication authentication = Authentication.builder().token(token).role(Domain.role).build();
+            Authentication authentication = Authentication.builder().token(token).role(env.getRole()).build();
             return authentication;
         } else {
             return null;
@@ -107,7 +108,6 @@ public class TokenAuthService implements AuthService<Authentication>  {
             authentication.setHost(host);
             tokenAuth.cachePrivileges(authentication);
         }
-        log.info("token auth is null:" + (tokenAuth == null) + ", authentication:" + authentication);
         return Certificate.builder().code(100).build();
     }
 }

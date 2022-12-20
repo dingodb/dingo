@@ -36,6 +36,7 @@ import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.operation.op.Op;
 import io.dingodb.server.api.ExecutorApi;
 import io.dingodb.server.protocol.meta.Schema;
+import io.dingodb.verify.service.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -93,8 +94,8 @@ public class StoreOperationUtils {
             for (Map.Entry<String, ContextForStore> entry : keys2Exec.entrySet()) {
                 String leaderAddress = entry.getKey();
                 ContextForStore forStore = entry.getValue();
-                ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
-                Future<Object> future = executorApi.operator(
+                ExecutorService executorService = getExecutor(routeTable, leaderAddress);
+                Future<Object> future = executorService.operator(
                     routeTable.getTableId(),
                     forStore.getStartKeyListInBytes(),
                     forStore.getEndKeyListInBytes() == null ? null : forStore.getEndKeyListInBytes(),
@@ -126,11 +127,11 @@ public class StoreOperationUtils {
         try {
             byte[] encodeKey = routeTable.getCodec().encodeKey(key.getUserKey().toArray());
             String leaderAddress = getLeaderAddressByStartKey(routeTable, encodeKey);
-            ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+            ExecutorService executorService = getExecutor(routeTable, leaderAddress);
             CommonId schema = new CommonId(
                 ID_TYPE.table, TABLE_IDENTIFIER.schema, ROOT_DOMAIN, ROOT_DOMAIN
             );
-            byte[] value = executorApi.getValueByPrimaryKey(null,
+            byte[] value = executorService.getValueByPrimaryKey(null,
                 schema, routeTable.getTableId(), encodeKey);
             Object[] objects = routeTable.getCodec().decodeKey(value);
             return objects;
@@ -169,11 +170,11 @@ public class StoreOperationUtils {
                 List<Future<ResultForStore>> futureArrayList = new ArrayList<>();
                 for (Map.Entry<String, ContextForStore> entry : keys2Executor.entrySet()) {
                     String leaderAddress = entry.getKey();
-                    ExecutorApi executorApi = getExecutor(routeTable, leaderAddress);
+                    ExecutorService executorService = getExecutor(routeTable, leaderAddress);
                     futureArrayList.add(
                         Executors.submit("do-operation",
                             new CallableTask(
-                                executorApi,
+                                executorService,
                                 storeOperation,
                                 routeTable.getTableId(),
                                 entry.getValue()
@@ -373,9 +374,8 @@ public class StoreOperationUtils {
         return;
     }
 
-    private synchronized ExecutorApi getExecutor(final RouteTable routeTable, String leaderAddress) {
-        ExecutorApi executorApi = routeTable.getLeaderAddress(connection.getApiRegistry(), leaderAddress);
-        return executorApi;
+    private synchronized ExecutorService getExecutor(final RouteTable routeTable, String leaderAddress) {
+         return routeTable.getLeaderAddress(connection.getApiRegistry(), leaderAddress);
     }
 
     private synchronized String getLeaderAddressByStartKey(final RouteTable routeTable, byte[] keyInBytes) {

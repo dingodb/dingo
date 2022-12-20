@@ -17,20 +17,15 @@
 package io.dingodb.test;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.meta.SysInfoService;
 import io.dingodb.net.Channel;
+import io.dingodb.verify.service.UserService;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+public class UserTestService implements UserService {
 
-public class SysInfoTestService implements SysInfoService {
-
-    public static final SysInfoTestService INSTANCE = new SysInfoTestService();
+    public static final UserTestService INSTANCE = new UserTestService();
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {
@@ -74,10 +69,9 @@ public class SysInfoTestService implements SysInfoService {
     }
 
     @Override
-    public List<UserDefinition> getUserDefinition(String user) {
-        UserDefinition userDefinition = UserDefinition.builder().user("root").host("%")
+    public UserDefinition getUserDefinition(String user, String host) {
+        return UserDefinition.builder().user("root").host("%")
             .password("cbcce4ebcf0e63f32a3d6904397792720f7e40ba").plugin("mysql_native_password").build();
-        return Arrays.asList(userDefinition);
     }
 
     @Override
@@ -90,8 +84,4 @@ public class SysInfoTestService implements SysInfoService {
         return null;
     }
 
-    @Override
-    public boolean verifyFollower(Authentication authentication) {
-        return false;
-    }
 }

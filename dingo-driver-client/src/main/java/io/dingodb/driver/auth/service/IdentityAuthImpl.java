@@ -19,22 +19,20 @@ package io.dingodb.driver.auth.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.domain.Domain;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.meta.SysInfoService;
-import io.dingodb.meta.SysInfoServiceProvider;
 import io.dingodb.verify.auth.IdentityAuth;
-import io.dingodb.verify.auth.IdentityAuthService;
-import io.dingodb.verify.privilege.PrivilegeVerify;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 public class IdentityAuthImpl implements IdentityAuth {
 
-    private SysInfoService sysInfoService;
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+    private UserService userService;
 
     private static final IdentityAuth INSTANCE = new IdentityAuthImpl();
 
@@ -54,13 +52,12 @@ public class IdentityAuthImpl implements IdentityAuth {
 
     @Override
     public UserDefinition getUserDefinition(Authentication authentication) {
-        if (sysInfoService == null) {
-            sysInfoService = SysInfoServiceProvider.getRoot();
+        if (userService == null) {
+            userService = UserServiceProvider.getRoot();
         }
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        List<UserDefinition> userDefinitionList = sysInfoService.getUserDefinition(user);
-        UserDefinition userDef = PrivilegeVerify.matchUser(host, userDefinitionList);
+        UserDefinition userDef = userService.getUserDefinition(user, host);
         return userDef;
     }
 
@@ -68,9 +65,13 @@ public class IdentityAuthImpl implements IdentityAuth {
     public void cachePrivileges(Authentication authentication) {
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        PrivilegeGather privilegeGather = sysInfoService.getPrivilegeDef(null, user, host);
-        Domain.INSTANCE.privilegeGatherMap.put(privilegeGather.key(),
-            privilegeGather);
-        log.info("cache privileges:" + Domain.INSTANCE.privilegeGatherMap);
+        if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
+            if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
+                PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, user, host);
+                env.getPrivilegeGatherMap().put(privilegeGather.key(),
+                    privilegeGather);
+            }
+        }
+        log.info("cache privileges:" + env.getPrivilegeGatherMap());
     }
 }
