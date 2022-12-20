@@ -377,6 +377,45 @@ public class DingoClient {
     }
 
     /**
+     * Update the values of multiple columns for a single row of records.
+     * By default, the default value is not used when the record does not exist
+     * @param key input key of the table
+     * @param columns Column names and values to update
+     * @return Return true if the record was updated successfully, false otherwise
+     */
+    public boolean update(Key key, Column[] columns) {
+        return update(key, columns, false);
+    }
+
+    /**
+     * Update the values of multiple columns for a single row of records.
+     *
+     * @param key input key of the table
+     * @param columns Column names and values to update
+     * @param useDefaultWhenNotExisted
+     *      Whether to use default values to add records and update column values when records do not exist
+     * @return Return true if the record was updated successfully, false otherwise
+     */
+    public boolean update(Key key, Column[] columns, boolean useDefaultWhenNotExisted) {
+        return update(Collections.singletonList(key), columns, useDefaultWhenNotExisted);
+    }
+
+    /**
+     * Update the values of multiple columns for a single row of records.
+     * By default, the default value is not used when the record does not exist
+     * @param keyList input key list
+     * @param columns Column names and values to update
+     * @param useDefaultWhenNotExisted
+     *      Whether to use default values to add records and update column values when records do not exist
+     * @return Return true if the record was updated successfully, false otherwise
+     */
+    public boolean update(List<Key> keyList, Column[] columns, boolean useDefaultWhenNotExisted) {
+        Op op = Op.update(keyList, columns, useDefaultWhenNotExisted);
+        DingoOpResult result = exec(op);
+        return (boolean) result.getValue();
+    }
+
+    /**
      * get table record by input key.
      * @param tableName input table name
      * @param key input key of the table

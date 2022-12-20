@@ -46,8 +46,12 @@ public interface Op {
         return AbstractOp.put(keyList, recordList, skippedWhenExisted);
     }
 
-    static WriteOp update(Key key, Column column, boolean useDefaultWhenNotExisted) {
-        return AbstractOp.update(key, column, useDefaultWhenNotExisted);
+    static WriteOp update(Key key, Column[] columns, boolean useDefaultWhenNotExisted) {
+        return update(Collections.singletonList(key), columns, useDefaultWhenNotExisted);
+    }
+
+    static WriteOp update(List<Key> keyList, Column[] columns, boolean useDefaultWhenNotExisted) {
+        return AbstractOp.update(keyList, columns, useDefaultWhenNotExisted);
     }
 
     static WriteOp delete(List<Key> keyList) {

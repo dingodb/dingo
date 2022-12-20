@@ -96,10 +96,10 @@ public abstract class AbstractOp implements Op {
             .build());
     }
 
-    public static WriteOp update(Key key, Column column, boolean useDefaultWhenNotExisted) {
+    public static WriteOp update(List<Key> keyList, Column[] columns, boolean useDefaultWhenNotExisted) {
         return new WriteOp(UpdateExec.COMMON_ID, Context.builder()
-            .startPrimaryKeys(Collections.singletonList(key))
-            .column(column)
+            .startPrimaryKeys(keyList)
+            .column(columns)
             .useDefaultWhenNotExisted(useDefaultWhenNotExisted)
             .build());
     }

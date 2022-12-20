@@ -23,6 +23,7 @@ import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.ClientConverter;
@@ -32,7 +33,6 @@ import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
 import io.dingodb.sdk.operation.number.ComputeNumber;
 import io.dingodb.sdk.operation.result.CollectionOpResult;
-import io.dingodb.sdk.operation.result.VoidOpResult;
 import io.dingodb.server.protocol.CommonIdConstant;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,13 +61,19 @@ public class CollAddExec extends AbstractExecutive<Context, Iterator<Object[]>> 
 
     @Override
     public CollectionOpResult execute(Context context, Iterator<Object[]> records) {
-        Column col = context.column();
+        Column[] cols = context.column();
+        TableDefinition definition = context.definition;
         List<Object[]> result = new ArrayList<>();
         try {
-            int keyIndex = context.definition.getColumnIndex(col.name);
+            int[] indexes = new int[cols.length];
+            int[] indexOfValue = new int[cols.length];
+            for (int i = 0; i < cols.length; i++) {
+                indexes[i] = definition.getColumnIndex(cols[i].name);
+                indexOfValue[i] = definition.getColumnIndexOfValue(cols[i].name);
+            }
             KeyValueCodec codec = context.keyValueCodec();
             if (!records.hasNext() && context.isUseDefaultWhenNotExisted()) {
-                List<ColumnDefinition> columnDefinitions = context.definition.getColumns()
+                List<ColumnDefinition> columnDefinitions = definition.getColumns()
                     .stream()
                     .filter(c -> !c.isPrimary())
                     .collect(Collectors.toList());
@@ -81,16 +87,17 @@ public class CollAddExec extends AbstractExecutive<Context, Iterator<Object[]>> 
                         return new CollectionOpResult<>(Collections.emptyIterator());
                     }
                 }
-                int indexOfValue = context.definition.getColumnIndexOfValue(col.name);
-                DingoType dingoType = Objects.requireNonNull(context.definition.getColumn(col.name)).getType();
-                Object v = col.value.getObject();
-                ComputeNumber oldNum = convertType(v == null ? 0 : v, dingoType);
-                Object defValue = defValues[indexOfValue];
-                ComputeNumber newValue = oldNum.add(convertType(defValue == null ? 0 : defValue, dingoType));
-                defValues[indexOfValue] = newValue.value();
+                for (int i = 0; i < indexOfValue.length; i++) {
+                    DingoType dingoType = Objects.requireNonNull(definition.getColumn(cols[i].name)).getType();
+                    Object v = cols[i].value.getObject();
+                    ComputeNumber number = convertType(v == null ? 0 : v, dingoType);
+                    Object defValue = defValues[indexOfValue[i]];
+                    ComputeNumber newNum = number.add(convertType(defValue == null ? 0 : defValue, dingoType));
+                    defValues[indexOfValue[i]] = newNum.value();
+                }
 
-                DingoType schema = context.definition.getDingoType(false);
-                TupleMapping valueMapping = context.definition.getValueMapping();
+                DingoType schema = definition.getDingoType(false);
+                TupleMapping valueMapping = definition.getValueMapping();
                 DingoCodec valueCodec = new DingoCodec(schema.toDingoSchemas(), valueMapping);
 
                 Object[] objects = (Object[]) schema.parse(defValues);
@@ -98,16 +105,22 @@ public class CollAddExec extends AbstractExecutive<Context, Iterator<Object[]>> 
                 byte[] valueBytes = valueCodec.encode(value);
 
                 context.writer().set(context.startKey().get(0), valueBytes);
-                result.add(defValues);
+
+                Object[] keys = context.keyValueCodec().decodeKey(context.startKey().get(0));
+                Object[] dest = new Object[keys.length + value.length];
+                System.arraycopy(keys, 0, dest, 0, keys.length);
+                System.arraycopy(value, 0, dest, keys.length, value.length);
+                result.add(dest);
             } else {
                 while (records.hasNext()) {
                     Object[] record = records.next();
-                    DingoType dingoType = context.definition.getColumn(keyIndex).getType();
-                    Object v = col.value.getObject();
-                    ComputeNumber oldNum1 = convertType(v == null ? 0 : v, dingoType);
-                    ComputeNumber oldNum2 = convertType(record[keyIndex], dingoType);
-                    ComputeNumber newNum = oldNum1.add(oldNum2);
-                    record[keyIndex] = dingoType.convertFrom(newNum.value(), ClientConverter.INSTANCE);
+                    for (int i = 0; i < indexes.length; i++) {
+                        DingoType dingoType = definition.getColumn(indexes[i]).getType();
+                        Object v = cols[i].value.getObject();
+                        ComputeNumber number = convertType(v == null ? 0 : v, dingoType);
+                        ComputeNumber newNum = number.add(convertType(record[indexes[i]], dingoType));
+                        record[indexes[i]] = dingoType.convertFrom(newNum.value(), ClientConverter.INSTANCE);
+                    }
                     KeyValue keyValue = codec.encode(record);
                     context.writer().set(keyValue.getKey(), keyValue.getValue());
                     result.add(record);

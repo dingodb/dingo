@@ -18,6 +18,10 @@ package io.dingodb.sdk.operation.filter.impl;
 
 import io.dingodb.sdk.operation.filter.AbstractDingoFilter;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+
 public class DingoDateRangeFilter extends AbstractDingoFilter {
     private int index;
     private long startTime;
@@ -36,22 +40,34 @@ public class DingoDateRangeFilter extends AbstractDingoFilter {
 
     @Override
     public boolean filter(Object[] record) {
-        return contain(record[index]);
+        return contain(convertLongFrom(record[index]));
     }
 
     @Override
     public boolean filter(Object record) {
-        return contain(record);
+        return contain(convertLongFrom(record));
     }
 
-    private boolean contain(Object record0) {
-        if (record0 == null) {
+    private boolean contain(long timestamp) {
+        if (timestamp == 0) {
             return false;
         }
-        if (record0 instanceof Long) {
-            long timestamp = (Long) record0;
-            return timestamp >= startTime && timestamp < endTime;
+        return timestamp >= startTime && timestamp < endTime;
+    }
+
+    private static long convertLongFrom(Object record) {
+        if (record instanceof Long) {
+            return (Long) record;
         }
-        return false;
+        if (record instanceof Date) {
+            return ((Date) record).getTime();
+        }
+        if (record instanceof Time) {
+            return ((Time) record).getTime();
+        }
+        if (record instanceof Timestamp) {
+            return ((Timestamp) record).getTime();
+        }
+        return 0;
     }
 }
