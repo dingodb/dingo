@@ -18,6 +18,7 @@ package io.dingodb.server.client.reload;
 
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.PrivilegeDict;
 import io.dingodb.common.privilege.PrivilegeGather;
@@ -30,6 +31,9 @@ import io.dingodb.server.protocol.Tags;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ReloadHandler {
@@ -38,24 +42,30 @@ public class ReloadHandler {
 
     public static final ReloadHandler handler = new ReloadHandler();
 
+    private volatile Channel channel;
+
+    private ScheduledFuture<?> reloadFuture;
+
     public void registryReloadChannel() {
         Executors.submit("coordinator-registry-flush", this::registryChannel);
+
+        reloadFuture = Executors.scheduleAtFixedRateAsync("reload", this::checkChannel,
+            5, 10, TimeUnit.SECONDS);
     }
 
-    public void registryChannel() {
-        int times = 10;
-        int sleep = 500;
-        while (!CoordinatorConnector.getDefault().verify() && times-- > 0) {
-            try {
-                Thread.sleep(sleep);
-                sleep += sleep;
-            } catch (InterruptedException e) {
-                log.error("Wait coordinator connector ready, but interrupted.");
-            }
+    public void checkChannel() {
+        if (channel != null && channel.isClosed()) {
+            registryChannel();
         }
-        Channel channel = NetService.getDefault().newChannel(CoordinatorConnector.getDefault().get());
-        channel.setMessageListener(reload());
-        channel.send(new Message(Tags.LISTEN_REGISTRY_RELOAD, "registry reload channel".getBytes()));
+    }
+
+    public synchronized void registryChannel() {
+        if ((channel != null && channel.isClosed()) || channel == null) {
+            channel = NetService.getDefault().newChannel(CoordinatorConnector.getDefault().get());
+            channel.setMessageListener(reload());
+            channel.send(new Message(Tags.LISTEN_REGISTRY_RELOAD, "registry reload channel".getBytes()));
+            log.info("registryChannel success:" + channel.remoteLocation().toString());
+        }
     }
 
     public MessageListener reload() {

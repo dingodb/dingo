@@ -40,7 +40,7 @@ public class UserServiceClient implements UserService {
 
     public UserServiceClient(CoordinatorConnector connector) {
         this.userServiceApi = ApiRegistry.getDefault().proxy(UserServiceApi.class,
-            NetService.getDefault().newChannel(connector.get()));
+            connector);
         this.connector = connector;
     }
 
