@@ -56,7 +56,8 @@ public class TokenAuthImpl implements TokenAuth {
     }
 
     public String getAuthToken() {
-        if (DingoRole.SDK_CLIENT == env.getRole() && CoordinatorConnector.getDefault().verify()) {
+        if (DingoRole.SDK_CLIENT == env.getRole() && CoordinatorConnector.getDefault() != null
+            && CoordinatorConnector.getDefault().verify()) {
             String token = getToken();
             log.info("sdk token auth:" + token);
             return token;

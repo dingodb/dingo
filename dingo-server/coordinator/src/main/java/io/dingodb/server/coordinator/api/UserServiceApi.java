@@ -117,12 +117,6 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
     public PrivilegeGather getPrivilegeDef(Channel channel, String user, String host) {
         log.info(" user: {}, host: {}", user, host);
         PrivilegeAdaptor privilegeAdaptor = getMetaAdaptor(Privilege.class);
-        if (channel != null) {
-            // driver or executor: verify identity req coordinator for flush privileges
-            if (!privilegeAdaptor.channels.contains(channel)) {
-                privilegeAdaptor.channels.add(channel);
-            }
-        }
         PrivilegeGather privilegeDefinition = privilegeAdaptor.getPrivilegeGather(
             user, host);
         return privilegeDefinition;

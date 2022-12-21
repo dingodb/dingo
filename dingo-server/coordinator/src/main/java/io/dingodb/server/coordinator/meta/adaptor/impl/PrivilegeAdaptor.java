@@ -124,6 +124,10 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
 
     private void flushPrivileges(Message message, Channel channel) {
         log.info("flush privileges, user:" + flushPrivileges.size() + ", channel size:" + channels.size());
+        if (flushPrivileges.size() == 0) {
+            UserAdaptor userAdaptor = ((UserAdaptor) getMetaAdaptor(User.class));
+            flushPrivileges.addAll(userAdaptor.userMap.keySet());
+        }
         flushPrivileges.forEach(flush -> {
             String[] userIdentity = flush.split("#");
             String user = userIdentity[0];
