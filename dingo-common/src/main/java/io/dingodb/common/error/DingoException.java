@@ -18,9 +18,6 @@ package io.dingodb.common.error;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashMap;
-import java.util.regex.Pattern;
-
 /**
  * DingoException is a RuntimeException implementing DingoError. It has stack trace populated by JVM, at the same time
  * it can be treated as a normal DingoError.
@@ -59,94 +56,6 @@ import java.util.regex.Pattern;
  */
 public class DingoException extends RuntimeException implements IndirectError {
     private static final long serialVersionUID = 5564571207617481306L;
-    /**
-     * The following exception patterns are used to convert to DingoException from Calcite.
-     */
-    public static Integer OBJECT_NOT_FOUND = 90002;
-    public static Integer INSERT_NULL_TO_NON_NULL_COLUMN = 90003;
-    public static Integer INSERT_NULL_POINTER = 90004;
-    public static Integer TYPE_CAST_ERROR = 90005;
-    public static Integer TABLE_ALREADY_EXISTS = 90007;
-    public static Integer DUPLICATED_COLUMN = 90009;
-    public static Integer PRIMARY_KEY_REQUIRED = 90010;
-    public static Integer ASSIGNED_MORE_THAN_ONCE = 90011;
-    public static Integer INSERT_COLUMN_NUMBER_NOT_EQUAL = 90013;
-    public static Integer JOIN_NAME_DUPLICATED = 90015;
-    public static Integer JOIN_NO_CONDITION = 90016;
-    public static Integer JOIN_SELECT_COLUMN_AMBIGUOUS = 90017;
-    public static Integer INTERPRET_ERROR = 90019;
-    public static Integer FUNCTION_NOT_SUPPORT = 90022;
-    public static Integer EXECUTOR_NODE_FAIL = 90024;
-    public static HashMap<Pattern, Integer> CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP;
-    public static HashMap<Pattern, Integer> RUNTIME_EXCEPTION_PATTERN_CODE_MAP;
-    /* TODO
-    public static HashMap<Pattern, Integer> SQL_EXCEPTION_PATTERN_CODE_MAP;
-    public static HashMap<Pattern, Integer> SQL_PARSE_EXCEPTION_PATTERN_CODE_MAP;
-     */
-
-    static {
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
-        // "Table Not Found" from CalciteContextException (90002)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Object .* not found"), OBJECT_NOT_FOUND);
-
-
-        // "Table Already exists" from CalciteContextException (90007)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"),
-            TABLE_ALREADY_EXISTS);
-        // "Column Not Found" from  CalciteContextException (90002)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Unknown target column.*"),
-            OBJECT_NOT_FOUND);
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* not found in any table"),
-            OBJECT_NOT_FOUND);
-
-        // "Insert Columns more than once" from CalciteContextException (90011)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Target column .* is"
-            + " assigned more than once"), ASSIGNED_MORE_THAN_ONCE);
-        // Insert Columns not equal" from CalciteContextException  (90013)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Number of INSERT target columns "
-            + "\\(.*\\) does not equal number"), INSERT_COLUMN_NUMBER_NOT_EQUAL);
-        // Function not found from CalciteContextException (90022)
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP
-            .put(Pattern.compile("No match found for function signature"), FUNCTION_NOT_SUPPORT);
-
-        // Join name duplicated
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(" Duplicate relation name"),
-            JOIN_NAME_DUPLICATED);
-        // Join need join condition
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("INNER, LEFT, RIGHT or FULL join"
-            + " requires a condition"), JOIN_NO_CONDITION);
-        CALCITE_CONTEXT_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* is ambiguous"),
-            JOIN_SELECT_COLUMN_AMBIGUOUS);
-
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP = new HashMap<>();
-        // "Table Already exists"  (90007)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table .* already exists"),
-            TABLE_ALREADY_EXISTS);
-        // "Insert Null into non-null column"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Column .* has no default "
-            + "value and does not allow NULLs"), INSERT_NULL_TO_NON_NULL_COLUMN);
-        // "Duplicated Columns" from RuntimeException (90009)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Duplicate column names"), DUPLICATED_COLUMN);
-        // "Create Without Primary Key" from RuntimeException (90010)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Primary keys are required"), PRIMARY_KEY_REQUIRED);
-        // "Insert Without Primary Key" from NullPointerException based on RuntimeException (90004)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("java\\.lang\\.NullPointerException: null"),
-            INSERT_NULL_POINTER);
-        // "Wrong Function Argument" from RunTimeException(90019)
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* does not match"), INTERPRET_ERROR);
-        // "Time Range Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile(".* to time/date/datetime"), INTERPRET_ERROR);
-        // "Type  Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Error while applying rule DingoValuesReduceRule"),
-            INTERPRET_ERROR);
-
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exception\\.FailGetEvaluator"), TYPE_CAST_ERROR);
-        // "Number Range Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("exceeds max .* or lower min value"), TYPE_CAST_ERROR);
-        // "Coordinator Failover Error"
-        RUNTIME_EXCEPTION_PATTERN_CODE_MAP.put(Pattern.compile("Table meta save success, but schedule failed"),
-            EXECUTOR_NODE_FAIL);
-    }
 
     private final DingoError category;
     private final DingoError reason;
@@ -203,7 +112,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      *
      * @param throwable a throwable object
      * @return this throwable if it is DingoException, otherwise a new DingoException with category {@link
-     *     DingoError#UNKNOWN} and message, stack trace from that throwable.
+     * DingoError#UNKNOWN} and message, stack trace from that throwable.
      */
     public static @NonNull DingoException from(Throwable throwable) {
         if (throwable instanceof DingoException) {
@@ -235,7 +144,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @param err    error object
      * @param reason a throwable reason
      * @return an DingoException with same category and message as given error, with given reason as it's reason and
-     *     exception cause.
+     * exception cause.
      */
     public static @NonNull DingoException wrap(DingoError err, Throwable reason) {
         DingoException ex = new DingoException(err, DingoError.from(reason));
@@ -250,7 +159,7 @@ public class DingoException extends RuntimeException implements IndirectError {
      * @param err    error object
      * @param reason exception object
      * @return an DingoException with same category and message as given error, with given exception as its reason and
-     *     exception cause.
+     * exception cause.
      */
     public static @NonNull DingoException wrap(DingoError err, DingoException reason) {
         return wrap(err, (Throwable) reason);
@@ -271,9 +180,9 @@ public class DingoException extends RuntimeException implements IndirectError {
      *
      * @return stack trace for DingoException, zero length array if no stack traces.
      * @see Throwable#getStackTrace()
-     *     Some virtual machines may, under some circumstances, omit one or more
-     *     stack frames from the stack trace. In the extreme case, a virtual machine that has no stack trace information
-     *     concerning this throwable is permitted to return a zero-length array from this method.
+     * Some virtual machines may, under some circumstances, omit one or more
+     * stack frames from the stack trace. In the extreme case, a virtual machine that has no stack trace information
+     * concerning this throwable is permitted to return a zero-length array from this method.
      */
     @Override
     public StackTraceElement[] getStackTrace() {

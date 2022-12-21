@@ -43,7 +43,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testInsertDateAndFormatOutput() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "name varchar(32) not null,"
@@ -79,7 +79,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testInsertTime() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "name varchar(20),"
@@ -104,7 +104,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testInsertTimeAndFormatOutput() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "name varchar(20),"
@@ -130,7 +130,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testInsertDate() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "name varchar(20),"
@@ -155,7 +155,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testInsertTimestamp() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "create_time time,"
@@ -180,7 +180,7 @@ public class InsertAndQueryDateTimeTest {
     @Test
     public void testSelectTimeStamp() throws SQLException {
         String tableName = SqlHelper.randomTableName();
-        sqlHelper.execSqlCmd(
+        sqlHelper.execSql(
             "create table " + tableName + "("
                 + "id int,"
                 + "name varchar(32) not null,"

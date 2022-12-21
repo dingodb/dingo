@@ -19,7 +19,9 @@ package io.dingodb.test.cases;
 import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -29,22 +31,56 @@ import javax.annotation.Nonnull;
 
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@SuppressWarnings("unused")
-public final class RexCasesJUnit5 {
-    private RexCasesJUnit5() {
+/**
+ * Rex test case for junit5.
+ * <p>
+ * 1st arg: the SQL expression
+ * 2nd arg: the Dingo expression
+ * 3rd arg: the result
+ */
+public final class RexCasesJUnit5 implements ArgumentsProvider {
+    private static @NonNull Arguments unixTimestampCase(@Nonnull String timestampStr) {
+        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        assert timestamp != null;
+        return arguments(
+            "unix_timestamp('" + timestampStr + "')",
+            "unix_timestamp(TIMESTAMP('" + timestampStr.replace("/", "\\/") + "'))",
+            timestamp.getTime() / 1000L
+        );
     }
 
-    /**
-     * Rex test case for junit5.
-     *
-     * @return The stream of arguments.
-     *     <p>
-     *     1st arg: the SQL expression
-     *     2nd arg: the Dingo expression
-     *     3rd arg: the result
-     */
-    @Nonnull
-    public static Stream<Arguments> cases() {
+    private static @NonNull Arguments unixTimestampLiteralCase(@Nonnull String timestampStr) {
+        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        assert timestamp != null;
+        long millis = timestamp.getTime();
+        millis = millis + TimeZone.getDefault().getOffset(millis);
+        return arguments(
+            "unix_timestamp(TIMESTAMP '" + timestampStr + "')",
+            "unix_timestamp(TIMESTAMP(" + DateTimeUtils.toSecond(millis) + "))",
+            DateTimeUtils.toSecond(millis).longValue()
+        );
+    }
+
+    private static @NonNull Arguments fromUnixTimeCase(@Nonnull String timestampStr) {
+        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        assert timestamp != null;
+        return arguments(
+            "from_unixtime(" + timestamp.getTime() / 1000L + ")",
+            "from_unixtime(" + timestamp.getTime() / 1000L + ")",
+            timestamp
+        );
+    }
+
+    private static @NonNull Arguments timestampFormatNumericCase(long timestamp, String format) {
+        return arguments(
+            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
+            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
+            DingoDateTimeUtils.timestampFormat(new Timestamp(DateTimeUtils.fromSecond(timestamp)), format)
+        );
+    }
+
+    @Override
+    public @NonNull Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
             // Arithmetical
             arguments("'hello'", "'hello'", "hello"),
@@ -370,46 +406,6 @@ public final class RexCasesJUnit5 {
             arguments("datediff('', '')", "datediff(DATE(''), DATE(''))", null),
             // Array functions
             arguments("array[1, 2, 3][2]", "item(LIST(1, 2, 3), 2)", 2)
-        );
-    }
-
-    private static @NonNull Arguments unixTimestampCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp != null;
-        return arguments(
-            "unix_timestamp('" + timestampStr + "')",
-            "unix_timestamp(TIMESTAMP('" + timestampStr.replace("/", "\\/") + "'))",
-            timestamp.getTime() / 1000L
-        );
-    }
-
-    private static @NonNull Arguments unixTimestampLiteralCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp != null;
-        long millis = timestamp.getTime();
-        millis = millis + TimeZone.getDefault().getOffset(millis);
-        return arguments(
-            "unix_timestamp(TIMESTAMP '" + timestampStr + "')",
-            "unix_timestamp(TIMESTAMP(" + DateTimeUtils.toSecond(millis) + "))",
-            DateTimeUtils.toSecond(millis).longValue()
-        );
-    }
-
-    private static @NonNull Arguments fromUnixTimeCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp != null;
-        return arguments(
-            "from_unixtime(" + timestamp.getTime() / 1000L + ")",
-            "from_unixtime(" + timestamp.getTime() / 1000L + ")",
-            timestamp
-        );
-    }
-
-    private static @NonNull Arguments timestampFormatNumericCase(long timestamp, String format) {
-        return arguments(
-            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
-            "timestamp_format(" + timestamp + ", " + "'" + format + "')",
-            DingoDateTimeUtils.timestampFormat(new Timestamp(DateTimeUtils.fromSecond(timestamp)), format)
         );
     }
 }

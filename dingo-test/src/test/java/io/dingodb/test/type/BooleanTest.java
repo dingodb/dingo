@@ -18,31 +18,27 @@ package io.dingodb.test.type;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.meta.local.MetaService;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 public class BooleanTest {
-    private static Connection connection;
     private static SqlHelper sqlHelper;
 
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        connection = (sqlHelper = new SqlHelper()).getConnection();
+        sqlHelper = new SqlHelper();
         sqlHelper.execFile("/table-test4-support-boolean-creation.sql");
         sqlHelper.execFile("/table-test4-support-boolean-insert.sql");
     }
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
-        connection.close();
-        MetaService.clear();
+        sqlHelper.cleanUp();
     }
 
     @Test

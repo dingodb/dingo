@@ -49,8 +49,8 @@ dependencies {
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")
-    implementation project(":dingo-driver")
-    implementation project(":dingo-driver-client")
+    implementation project(":dingo-driver:dingo-driver-host")
+    implementation project(":dingo-driver:dingo-driver-client")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(':dingo-server:dingo-server-driver-proxy')
@@ -70,7 +70,7 @@ task fatJar(type: Jar) {
 }
 
 fatJar.dependsOn([
-    ':dingo-driver-client:fatJar',
+    ':dingo-driver:dingo-driver-client:fatJar',
     ':dingo-server:dingo-server-driver-proxy:jar'
 ])
 

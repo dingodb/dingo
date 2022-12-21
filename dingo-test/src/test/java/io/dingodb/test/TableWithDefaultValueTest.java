@@ -56,7 +56,7 @@ public class TableWithDefaultValueTest {
             + "    amount double default 1.0,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
         sqlHelper.dropTable(tableName);
@@ -71,7 +71,7 @@ public class TableWithDefaultValueTest {
             + "    amount double,\n"
             + "    primary key(id)\n"
             + ")";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -99,7 +99,7 @@ public class TableWithDefaultValueTest {
             + "    amount double default 1.1,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -126,7 +126,7 @@ public class TableWithDefaultValueTest {
             + "    score int default 100,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
         sql = "update " + tableName + " set score = score - 10";
@@ -157,7 +157,7 @@ public class TableWithDefaultValueTest {
             + "    address varchar(32),\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -177,10 +177,10 @@ public class TableWithDefaultValueTest {
             + "    name varchar(32) not null,\n"
             + "    age int null default 20,\n"
             + " primary key(id))\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
 
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
-        sqlHelper.execSqlCmd(sql);
+        sqlHelper.execSql(sql);
 
         sql = "select * from " + tableName;
         sqlHelper.queryTest(sql,
@@ -205,7 +205,7 @@ public class TableWithDefaultValueTest {
             + "    birth date default " + fun + " ,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sql);
+        sqlHelper.execSql(sql);
         sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
         sql = "select * from " + tableName;
@@ -232,7 +232,7 @@ public class TableWithDefaultValueTest {
             + "    birth time default " + fun + " ,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sql);
+        sqlHelper.execSql(sql);
         sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
         sql = "select * from " + tableName;
@@ -258,7 +258,7 @@ public class TableWithDefaultValueTest {
             + "    birth timestamp default " + fun + " ,\n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sql);
+        sqlHelper.execSql(sql);
         sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
         sql = "select * from " + tableName;
@@ -279,7 +279,7 @@ public class TableWithDefaultValueTest {
             + "    address varchar(32) default lcase('ABC'), \n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -301,7 +301,7 @@ public class TableWithDefaultValueTest {
             + "    address varchar(32) default concat('AAA','BBB'), \n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -324,7 +324,7 @@ public class TableWithDefaultValueTest {
             + "    address varchar(32) default null, \n"
             + "    primary key(id)\n"
             + ")\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -347,7 +347,7 @@ public class TableWithDefaultValueTest {
             + "    address varchar(32) default null, \n"
             + "    birthday timestamp not null default '2020-01-01 00:00:00', \n"
             + "    primary key(id))\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
 
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
@@ -374,7 +374,7 @@ public class TableWithDefaultValueTest {
             + "    birth2 time not null default '10:30:30', \n"
             + "    birth3 timestamp not null default '2020-01-01 10:30:30', \n"
             + "    primary key(id))\n";
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
 
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
@@ -402,7 +402,7 @@ public class TableWithDefaultValueTest {
             + "    birth3 timestamp, \n"
             + "    primary key(id))\n";
 
-        sqlHelper.execSqlCmd(sqlCmd);
+        sqlHelper.execSql(sqlCmd);
         String sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 
@@ -461,7 +461,7 @@ public class TableWithDefaultValueTest {
             + "    primary key(id)\n"
             + ")\n";
 
-        sqlHelper.execSqlCmd(sql);
+        sqlHelper.execSql(sql);
         sql = "insert into " + tableName + " (id, name) values (100, 'lala')";
         sqlHelper.updateTest(sql, 1);
 

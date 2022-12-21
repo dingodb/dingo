@@ -83,7 +83,8 @@ public class DingoDriverClientIT {
     @Order(3)
     @Test
     public void testQuery() throws SQLException {
-        String sql = "select * from test where id < 8 and amount > 5.0";
+        //String sql = "select * from test where id < 8 and amount > 5.0";
+        String sql = "select ";
         Connection connection = sqlHelper.getConnection();
         try (Statement statement = connection.createStatement()) {
             try (ResultSet resultSet = statement.executeQuery(sql)) {

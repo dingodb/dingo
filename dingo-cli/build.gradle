@@ -64,16 +64,10 @@ task fatJar(type: Jar) {
 }
 
 fatJar.dependsOn([
-    ':dingo-driver-client:fatJar',
+    ':dingo-driver:dingo-driver-client:fatJar',
     ':dingo-server:dingo-server-driver-proxy:jar'
 ])
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
-}
-
-group GROUP + '.expr'
-
-subprojects {
-    group GROUP + '.expr'
 }

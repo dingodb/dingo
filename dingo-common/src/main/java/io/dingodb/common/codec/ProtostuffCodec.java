@@ -17,15 +17,13 @@
 package io.dingodb.common.codec;
 
 import io.dingodb.common.codec.protostuff.DateSchema;
+import io.dingodb.common.codec.protostuff.DingoSqlExceptionSchema;
 import io.dingodb.common.codec.protostuff.TimeSchema;
 import io.dingodb.common.codec.protostuff.TimestampSchema;
 import io.dingodb.common.error.CommonError;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.util.StackTraces;
-import io.protostuff.ByteBufferInput;
-import io.protostuff.Input;
-import io.protostuff.LinkedBuffer;
-import io.protostuff.ProtostuffOutput;
-import io.protostuff.Schema;
+import io.protostuff.*;
 import io.protostuff.runtime.RuntimeSchema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 
 public final class ProtostuffCodec {
     private static final ProtostuffCodec INSTANCE = new ProtostuffCodec();
@@ -53,6 +52,7 @@ public final class ProtostuffCodec {
         RuntimeSchema.register(Date.class, DateSchema.INSTANCE);
         RuntimeSchema.register(Time.class, TimeSchema.INSTANCE);
         RuntimeSchema.register(Timestamp.class, TimestampSchema.INSTANCE);
+        RuntimeSchema.register(DingoSqlException.class, DingoSqlExceptionSchema.INSTANCE);
         schema = RuntimeSchema.getSchema(ProtostuffWrapper.class);
     }
 
@@ -87,7 +87,8 @@ public final class ProtostuffCodec {
         try {
             schema.mergeFrom(input, wrapper);
         } catch (final IOException e) {
-            CommonError.EXEC.throwFormatError("protostuff read", Thread.currentThread(), e.getMessage());
+            // CommonError.EXEC.throwFormatError("protostuff read", Thread.currentThread(), e.getMessage());
+            throw new RuntimeException("buffer = " + buffer + ", bytes = " + Arrays.toString(buffer.array()));
         }
         return (T) wrapper.value;
     }

@@ -104,7 +104,7 @@ public abstract class Op implements Expr {
      */
     protected void checkNoNulls(RtExpr[] rtExprArray) {
         if (Arrays.stream(rtExprArray).anyMatch(e -> e instanceof RtNull)) {
-            throw new IllegalArgumentException("NULLs are not allowed in \"" + name + "\".");
+            throw new IllegalArgumentException("Null values are not allowed in \"" + name + "\".");
         }
     }
 

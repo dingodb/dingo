@@ -106,11 +106,17 @@ public class SqlHelper {
         return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
     }
 
-    private static void execSQL(Statement statement, @NonNull String sql) throws SQLException {
+    private static void execSql(Statement statement, @NonNull String sql) throws SQLException {
         for (String s : sql.split(";")) {
             if (!s.trim().isEmpty()) {
                 statement.execute(s);
             }
+        }
+    }
+
+    public void execSql(@Nonnull String sql) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            execSql(statement, sql);
         }
     }
 
@@ -241,7 +247,7 @@ public class SqlHelper {
     public void execFile(@Nonnull InputStream stream) throws IOException, SQLException {
         String sql = IOUtils.toString(stream, StandardCharsets.UTF_8);
         try (Statement statement = connection.createStatement()) {
-            execSQL(statement, sql);
+            execSql(statement, sql);
         }
     }
 
@@ -249,7 +255,7 @@ public class SqlHelper {
         execFile(Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)));
     }
 
-    public int execSqlCmd(@Nonnull String sqlCmd) throws SQLException {
+    public int execUpdate(@Nonnull String sqlCmd) throws SQLException {
         int result = -1;
         try (Statement statement = connection.createStatement()) {
             if (!sqlCmd.trim().isEmpty()) {
@@ -314,16 +320,16 @@ public class SqlHelper {
             return "{" + TABLE_NAME_PLACEHOLDER + (index > 0 ? "_" + index : "") + "}";
         }
 
-        private @NonNull String transSQL(@NonNull String sql) {
+        private @NonNull String transSql(@NonNull String sql) {
             return sql.replace(getPlaceholder(), getName());
         }
 
-        public RandomTable prepare(
+        public RandomTable execSqls(
             @Nonnull String... sqlStrings
         ) throws SQLException {
             try (Statement statement = connection.createStatement()) {
                 for (String sql : sqlStrings) {
-                    execSQL(statement, transSQL(sql));
+                    execSql(statement, transSql(sql));
                 }
             }
             return this;
@@ -344,7 +350,7 @@ public class SqlHelper {
                             Objects.requireNonNull(testClass.getResourceAsStream(fileName)),
                             StandardCharsets.UTF_8
                         );
-                        execSQL(statement, transSQL(sql));
+                        execSql(statement, transSql(sql));
                     } else if (fileName.endsWith(".csv")) {
                         ResultSet resultSet = statement.getResultSet();
                         Assert.resultSet(resultSet)
