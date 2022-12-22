@@ -162,6 +162,9 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     private boolean verify(Channel channel, CommonId schema, CommonId tableId, DingoSqlAccessEnum accessType) {
         Object[] objects = channel.auth().get("token");
+        if (objects == null) {
+            return true;
+        }
         Authentication authentication = (Authentication) objects[0];
         boolean verify = PrivilegeVerify.verify(authentication.getUsername(), authentication.getHost(),
             schema, tableId , accessType);

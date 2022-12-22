@@ -9,9 +9,9 @@ server:
     monitorPort: 9088
 security:
     cipher:
-        key: /opt/dingo/conf/dingodb.jks
-        keypass: dingodb
-        storepass: dingodb
+        keyPath: /opt/dingo/conf/dingodb.jks
+        keyPass: dingodb
+        storePass: dingodb
         alias: dingodb
         issuer: dingo
     verify: true
