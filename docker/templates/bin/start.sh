@@ -65,9 +65,8 @@ elif [[ $ROLE == "web" ]]
 then
     java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
-     -jar ${WEB_JAR_PATH}:${NET_JAR_PATH} \
+     -jar ${WEB_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application.yaml \
-     io.dingodb.web.DingoApplication \
      > ${ROOT}/log/web.out
 else
     echo -e "Invalid DingoDB cluster roles"

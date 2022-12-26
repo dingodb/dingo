@@ -41,6 +41,7 @@ dependencies {
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 
     implementation project(":dingo-net-api")
+    implementation project(":dingo-net-netty")
     implementation project(":dingo-common")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
