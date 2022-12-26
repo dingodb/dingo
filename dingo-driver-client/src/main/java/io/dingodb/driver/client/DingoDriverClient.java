@@ -150,7 +150,7 @@ public class DingoDriverClient extends Driver {
                     throw new IllegalArgumentException("Bad url: " + url);
                 }
                 if (hostPortPair[0] != null && hostPortPair[0].trim().length() > 0) {
-                    urlProps.setProperty("host", hostPortPair[0]);
+                    urlProps.setProperty("remoteHost", hostPortPair[0]);
                 }
                 if (hostPortPair[1] != null) {
                     urlProps.setProperty("port", hostPortPair[1]);
@@ -194,7 +194,7 @@ public class DingoDriverClient extends Driver {
     @Override public Meta createMeta(AvaticaConnection connection) {
 
         // Create a single Service and set it on the Connection instance
-        String host = props.getProperty("host");
+        String host = props.getProperty("remoteHost");
         int port = Integer.parseInt(props.getProperty("port"));
         int timeout = 30;
         if (props.containsKey("timeout")) {
