@@ -34,6 +34,7 @@ import org.rocksdb.RocksDB;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class RocksStorageTest {
     static {
@@ -52,14 +53,13 @@ public class RocksStorageTest {
             CommonId mpuId = CommonId.prefix(type, identifier);
             Location location = new Location("127.0.0.1", 8000);
             int priority = 0;
-            CoreMeta coreMeta = new CoreMeta(id, coreId, mpuId, location, priority);
+            CoreMeta coreMeta = new CoreMeta(id, coreId, location, priority);
             String testDbPath = String.format("/tmp/testRocksStorage-%d", System.nanoTime());
 
             //String tmpDingoConfigPath = genTmpConfigFile();
             //DingoConfiguration.parse(tmpDingoConfigPath);
 
-            storage = new RocksStorage(coreMeta, testDbPath,
-                "", "", 0, false);
+            storage = new RocksStorage(coreMeta.label, Paths.get(testDbPath), "", "", 0, false);
 
             Assertions.assertNotNull(storage);
         } catch (Exception e) {

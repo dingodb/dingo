@@ -18,7 +18,6 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.Optional;
-import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
 import lombok.experimental.Accessors;
@@ -30,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Accessors(chain = true, fluent = true)
 class ControlUnit {
 
-    public final Core core;
+    public final VCore core;
     public final boolean local;
     public final long startClock;
 
@@ -52,7 +51,7 @@ class ControlUnit {
 
     protected long clock;
 
-    ControlUnit(Core core, long clock, CoreMeta first, CoreMeta second) {
+    ControlUnit(VCore core, long clock, CoreMeta first, CoreMeta second) {
         this.core = core;
         this.first = first;
         this.second = second;

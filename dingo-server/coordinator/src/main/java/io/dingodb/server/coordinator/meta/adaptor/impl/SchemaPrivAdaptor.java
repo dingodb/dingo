@@ -20,7 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.SchemaPriv;
 import lombok.extern.slf4j.Slf4j;
 

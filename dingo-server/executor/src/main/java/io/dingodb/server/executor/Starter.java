@@ -22,7 +22,7 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.server.client.config.ClientConfiguration;
-import io.dingodb.server.executor.config.ExecutorConfiguration;
+import io.dingodb.server.executor.config.Configuration;
 import io.prometheus.client.exporter.HTTPServer;
 
 public class Starter {
@@ -49,9 +49,9 @@ public class Starter {
         env.setRole(DingoRole.EXECUTOR);
         DingoConfiguration.parse(config);
         ClientConfiguration.instance()
-            .setCoordinatorExchangeSvrList(ExecutorConfiguration.coordinatorExchangeSvrList());
+            .setCoordinatorExchangeSvrList(Configuration.coordinatorExchangeSvrList());
 
-        HTTPServer httpServer = new HTTPServer(ExecutorConfiguration.monitorPort());
+        HTTPServer httpServer = new HTTPServer(Configuration.monitorPort());
         ExecutorServer server = new ExecutorServer();
         server.start();
     }

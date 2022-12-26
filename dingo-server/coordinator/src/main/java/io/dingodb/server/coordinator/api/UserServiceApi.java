@@ -17,7 +17,6 @@
 package io.dingodb.server.coordinator.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.PrivilegeType;
@@ -32,7 +31,6 @@ import io.dingodb.server.coordinator.meta.adaptor.impl.SchemaPrivAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TablePrivAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.UserAdaptor;
-import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.protocol.meta.Privilege;
 import io.dingodb.server.protocol.meta.PrivilegeDict;
 import io.dingodb.server.protocol.meta.SchemaPriv;
@@ -41,9 +39,9 @@ import io.dingodb.server.protocol.meta.TablePriv;
 import io.dingodb.server.protocol.meta.User;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.server.coordinator.api.MetaServiceApi.ROOT_ID;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 
 @Slf4j
@@ -129,7 +127,7 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
 
     @Override
     public CommonId getSchemaId(String schema) {
-        return DingoMetaService.ROOT_ID;
+        return ROOT_ID;
     }
 
     @Override

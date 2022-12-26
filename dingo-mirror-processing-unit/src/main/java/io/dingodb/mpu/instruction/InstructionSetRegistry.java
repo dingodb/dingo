@@ -46,6 +46,7 @@ public final class InstructionSetRegistry {
     static {
         register(EmptyInstructions.id, EmptyInstructions.INSTRUCTIONS);
         register(KVInstructions.id, KVInstructions.INSTRUCTIONS);
+        register(SeqInstructions.id, SeqInstructions.INSTRUCTIONS);
     }
 
 }

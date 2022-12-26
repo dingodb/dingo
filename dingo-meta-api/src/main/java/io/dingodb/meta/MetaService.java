@@ -55,22 +55,15 @@ public interface MetaService {
      *
      * @param name sub meta service name
      */
-    default void createSubMetaService(String name) {
-        createSubMetaService(id(), name);
-    }
+    void createSubMetaService(String name);
 
-    void createSubMetaService(CommonId id, String name);
 
     /**
      * Get all sub meta services.
      *
      * @return all sub meta services
      */
-    default Map<String, MetaService> getSubMetaServices() {
-        return getSubMetaServices(id());
-    }
-
-    Map<String, MetaService> getSubMetaServices(CommonId id);
+    Map<String, MetaService> getSubMetaServices();
 
     /**
      * Get sub meta service by name.
@@ -79,11 +72,7 @@ public interface MetaService {
      * @param name meta service name
      * @return sub meta service
      */
-    default MetaService getSubMetaService(String name) {
-        return getSubMetaServices().get(name);
-    }
-
-    MetaService getSubMetaService(CommonId id, String name);
+    MetaService getSubMetaService(String name);
 
     /**
      * Drop sub meta service by name.
@@ -91,11 +80,7 @@ public interface MetaService {
      * @param name meta service name
      * @return true if success
      */
-    default boolean dropSubMetaService(String name) {
-        return dropSubMetaService(id(), name);
-    }
-
-    boolean dropSubMetaService(CommonId id, String name);
+    boolean dropSubMetaService(String name);
 
     /**
      * Create and save table meta, initialize table storage.
@@ -104,11 +89,7 @@ public interface MetaService {
      * @param tableName table name
      * @param tableDefinition table definition
      */
-    default void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
-        createTable(id(), tableName, tableDefinition);
-    }
-
-    void createTable(CommonId id, @NonNull String tableName, @NonNull TableDefinition tableDefinition);
+    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
     /**
      * Drop table meta and table storage.
@@ -117,11 +98,7 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    default boolean dropTable(@NonNull String tableName) {
-        return dropTable(id(), tableName);
-    }
-
-    boolean dropTable(CommonId id, @NonNull String tableName);
+    boolean dropTable(@NonNull String tableName);
 
     /**
      * Get table id by table name.
@@ -130,22 +107,14 @@ public interface MetaService {
      * @param tableName table name
      * @return table id or null if not found
      */
-    default CommonId getTableId(@NonNull String tableName) {
-        return getTableId(id(), tableName);
-    }
-
-    CommonId getTableId(CommonId id, @NonNull String tableName);
+    CommonId getTableId(@NonNull String tableName);
 
     /**
      * Returns all table definition.
      *
      * @return all table definition
      */
-    default Map<String, TableDefinition> getTableDefinitions() {
-        return getTableDefinitions(id());
-    }
-
-    Map<String, TableDefinition> getTableDefinitions(CommonId id);
+    Map<String, TableDefinition> getTableDefinitions();
 
     /**
      * Get table definition by table name.
@@ -154,11 +123,7 @@ public interface MetaService {
      * @param name table name
      * @return table definition or null if not found.
      */
-    default TableDefinition getTableDefinition(@NonNull String name) {
-        return getTableDefinitions().get(name);
-    }
-
-    TableDefinition getTableDefinition(CommonId id, @NonNull String name);
+    TableDefinition getTableDefinition(@NonNull String name);
 
     /**
      * Get table parts meta by table name.
@@ -167,11 +132,7 @@ public interface MetaService {
      * @param tableName table name
      * @return table parts meta
      */
-    default NavigableMap<ComparableByteArray, Part> getParts(String tableName) {
-        return getParts(id(), tableName);
-    }
-
-    NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String name);
+    NavigableMap<ComparableByteArray, Part> getParts(String tableName);
 
     /**
      * Get table storage locations by name.
@@ -181,7 +142,7 @@ public interface MetaService {
      * @return storage locations
      */
     default List<Location> getDistributes(String tableName) {
-        return getParts(id(), tableName).values().stream()
+        return getParts(tableName).values().stream()
             .map(Part::getLeader)
             .distinct()
             .collect(Collectors.toList());

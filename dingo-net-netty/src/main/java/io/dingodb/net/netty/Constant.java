@@ -16,14 +16,24 @@
 
 package io.dingodb.net.netty;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.net.Message;
-
-import static io.dingodb.net.Message.API_OK;
 
 
 public class Constant {
     public static final byte[] EMPTY_BYTES = new byte[0];
     public static final Object[] API_EMPTY_ARGS = new Object[0];
+
+    public static final String API_OK = "API_OK";
+    public static final String API_ERROR = "API_ERROR";
+    public static final String API_CANCEL = "API_CANCEL";
+    public static final String FILE_TRANSFER = "FILE_TRANSFER";
+    public static final String LISTENER = "LISTENER";
+
+    public static final byte[] API_OK_B = PrimitiveCodec.encodeString(API_OK);
+    public static final byte[] API_ERROR_B = PrimitiveCodec.encodeString(API_ERROR);
+    public static final byte[] API_CANCEL_B = PrimitiveCodec.encodeString(API_CANCEL);
+    public static final byte[] FILE_TRANSFER_B = PrimitiveCodec.encodeString(FILE_TRANSFER);
 
     public static final Message API_VOID = new Message(API_OK, EMPTY_BYTES);
 

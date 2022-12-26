@@ -29,6 +29,8 @@ dependencies {
     implementation project(":dingo-net-api")
     implementation project(":dingo-verify")
     implementation project(":dingo-server:dingo-server-protocol")
+
+    implementation project(":dingo-net-netty")
 }
 
 jar.dependsOn([

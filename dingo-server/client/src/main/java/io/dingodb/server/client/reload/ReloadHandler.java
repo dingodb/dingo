@@ -27,13 +27,16 @@ import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.NetService;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-import io.dingodb.server.protocol.Tags;
+import io.dingodb.server.protocol.ListenerTags;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static io.dingodb.server.protocol.ListenerTags.LISTEN_REGISTRY_RELOAD;
+import static io.dingodb.server.protocol.ListenerTags.LISTEN_RELOAD_PRIVILEGES;
 
 @Slf4j
 public class ReloadHandler {
@@ -63,14 +66,14 @@ public class ReloadHandler {
         if ((channel != null && channel.isClosed()) || channel == null) {
             channel = NetService.getDefault().newChannel(CoordinatorConnector.getDefault().get());
             channel.setMessageListener(reload());
-            channel.send(new Message(Tags.LISTEN_REGISTRY_RELOAD, "registry reload channel".getBytes()));
+            channel.send(new Message(LISTEN_REGISTRY_RELOAD, "registry reload channel".getBytes()));
             log.info("registryChannel success:" + channel.remoteLocation().toString());
         }
     }
 
     public MessageListener reload() {
         return (message, ch) -> {
-            if (message.tag().equals(Tags.LISTEN_RELOAD_PRIVILEGES)) {
+            if (message.tag().equals(LISTEN_RELOAD_PRIVILEGES)) {
                 PrivilegeGather privilegeGather = ProtostuffCodec.read(message.content());
                 if (privilegeGather.getHost().equals("%")) {
                     env.getPrivilegeGatherMap().forEach((k, v) -> {

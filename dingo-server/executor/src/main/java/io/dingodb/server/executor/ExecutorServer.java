@@ -19,21 +19,28 @@ package io.dingodb.server.executor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Executive;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.store.Part;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.exec.Services;
+import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.api.Ping;
 import io.dingodb.server.ExecutiveRegistry;
 import io.dingodb.server.api.LogLevelApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.api.ServerApi;
+import io.dingodb.server.api.ServiceConnectApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.client.reload.ReloadHandler;
 import io.dingodb.server.executor.api.DriverProxyApi;
 import io.dingodb.server.executor.api.ExecutorApi;
-import io.dingodb.server.executor.api.TableStoreApi;
-import io.dingodb.server.executor.config.ExecutorConfiguration;
+import io.dingodb.server.executor.api.TableApi;
+import io.dingodb.server.executor.config.Configuration;
+import io.dingodb.server.executor.sidebar.TableInstructions;
+import io.dingodb.server.executor.sidebar.TableSidebar;
+import io.dingodb.server.executor.store.LocalMetaStore;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
@@ -45,13 +52,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
-import static io.dingodb.net.Message.API_CANCEL;
 
 @Slf4j
 public class ExecutorServer {
@@ -66,11 +70,13 @@ public class ExecutorServer {
 
     private MetaServiceApi metaServiceApi;
 
-    private TableStoreApi tableStoreApi;
+    private TableApi tableApi;
     private DriverProxyApi driverProxyApi;
 
     private ExecutorApi executorApi;
     private ServerApi serverApi;
+
+    private LocalMetaStore store;
 
     public ExecutorServer() {
         this.netService = loadNetService();
@@ -87,15 +93,36 @@ public class ExecutorServer {
         DingoConfiguration.instance().setServerId(this.id);
         log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
         netService.listenPort(DingoConfiguration.host(), DingoConfiguration.port());
-        initAllApi();
         initStore();
+        initAllApi();
         loadExecutive();
+        InstructionSetRegistry.register(TableInstructions.id, TableInstructions.INSTANCE);
+        Map<CommonId, TableDefinition> tables = store.getTables();
+        tables.entrySet().forEach(NoBreakFunctions.wrap(
+            e -> {
+                TableSidebar tableSidebar = TableSidebar.create(
+                    e.getKey(), store.getTableMirrors(e.getKey()), e.getValue()
+                );
+                tableSidebar.start();
+                tableApi.register(tableSidebar);
+            }
+        ));
         ReloadHandler.handler.registryReloadChannel();
         log.info("Starting executor success.");
+        //TableDefinition definition = Table.DEFINITION;
+        //definition.addIndex(new Index("name", new String[] {"name"}, false));
+        //CommonId tableId = new CommonId((byte) 'T', new byte[] {'T', 'B'}, 1, 1);
+        //tableApi.createTable(tableId, definition, Collections.emptyMap());
+        //System.out.println(ServiceConnectApi.INSTANCE.leader(tableId));
+        //System.out.println(tableApi.partitions(tableId));
+        //System.out.println(ServiceConnectApi.INSTANCE.leader(tableApi.partitions(tableId).get(0).getId()));
+        //System.out.println(storeService.getInstance(tableId).exist("key".getBytes()));
+        //storeService.getInstance(tableId).upsertKeyValue("key".getBytes(), "value".getBytes());
+        //System.out.println(new String(storeService.getInstance(tableId).getValueByPrimaryKey("key".getBytes())));
     }
 
     private void initId() throws IOException {
-        String dataPath = ExecutorConfiguration.dataPath();
+        String dataPath = Configuration.dataPath();
         Path path = Paths.get(dataPath);
         Path idPath = Paths.get(dataPath, "id");
         log.info("Get server id, path: {}", idPath);
@@ -123,22 +150,21 @@ public class ExecutorServer {
         }
     }
 
-    private void initStore() {
+    private void initStore() throws Exception {
         Map<String, Object> storeServiceConfig = new HashMap<>();
         storeServiceConfig.put("MetaServiceApi", metaServiceApi);
         storeService.addConfiguration(storeServiceConfig);
-        this.storeInstance = storeService.getOrCreateInstance(this.id, -1);
+        store = LocalMetaStore.INSTANCE;
 
-        List<Part> parts = serverApi.storeMap(this.id);
-        log.info("Init store, parts: {}", parts);
-        parts.forEach(tableStoreApi::assignTablePart);
     }
 
     private void initAllApi() {
-        tableStoreApi = new TableStoreApi(netService, storeService);
+        tableApi = TableApi.INSTANCE;
         driverProxyApi = new DriverProxyApi(netService);
         executorApi = new ExecutorApi(netService, storeService);
-        netService.apiRegistry().register(LogLevelApi.class, io.dingodb.server.executor.api.LogLevelApi.instance());
+        ApiRegistry.getDefault().register(LogLevelApi.class, io.dingodb.server.executor.api.LogLevelApi.instance());
+        ApiRegistry.getDefault().register(ServiceConnectApi.class, ServiceConnectApi.INSTANCE);
+        ApiRegistry.getDefault().register(io.dingodb.server.api.TableApi.class, tableApi);
     }
 
     private NetService loadNetService() {
@@ -148,6 +174,7 @@ public class ExecutorServer {
     }
 
     private StoreService loadStoreService() {
+
         return ServiceLoader.load(StoreServiceProvider.class).iterator().next().get();
     }
 

@@ -18,6 +18,7 @@ package io.dingodb.meta;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -26,6 +27,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -36,13 +38,13 @@ public class Part implements Serializable {
     private static final long serialVersionUID = -2767354268752865267L;
 
     @JsonProperty("id")
-    private byte[] id;
+    private CommonId id;
 
     @JsonProperty("leader")
     private Location leader;
 
     @JsonProperty("locations")
-    private List<Location> replicates;
+    private Set<Location> replicates;
 
     @JsonProperty("startKey")
     private byte[] startKey;
@@ -54,9 +56,9 @@ public class Part implements Serializable {
 
     @JsonCreator
     public Part(
-        @JsonProperty("leader") byte[] id,
+        @JsonProperty("leader") CommonId id,
         @JsonProperty("leader") Location leader,
-        @JsonProperty("locations") List<Location> replicates
+        @JsonProperty("locations") Set<Location> replicates
     ) {
         this.id = id;
         this.leader = leader;
@@ -65,9 +67,9 @@ public class Part implements Serializable {
 
     @JsonCreator
     public Part(
-        @JsonProperty("leader") byte[] id,
+        @JsonProperty("leader") CommonId id,
         @JsonProperty("leader") Location leader,
-        @JsonProperty("locations") List<Location> replicates,
+        @JsonProperty("locations") Set<Location> replicates,
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey
     ) {

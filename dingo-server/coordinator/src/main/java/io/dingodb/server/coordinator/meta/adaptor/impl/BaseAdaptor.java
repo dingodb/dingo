@@ -20,7 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Meta;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,7 +66,7 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
 
     @Override
     public CommonId save(M meta) {
-        if (meta.getId() ==  null) {
+        if (meta.getId() == null) {
             meta.setCreateTime(System.currentTimeMillis());
             meta.setId(newId(meta));
         }

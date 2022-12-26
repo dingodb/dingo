@@ -17,28 +17,22 @@
 package io.dingodb.server.coordinator.state;
 
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.meta.MetaService;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.server.coordinator.api.CoordinatorServerApi;
+import io.dingodb.server.coordinator.api.MetaServiceApi;
 import io.dingodb.server.coordinator.api.ScheduleApi;
 import io.dingodb.server.coordinator.api.UserServiceApi;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.BaseStatsAdaptor;
-import io.dingodb.server.coordinator.metric.PartMetricCollector;
-import io.dingodb.server.coordinator.schedule.ClusterScheduler;
-import io.dingodb.server.coordinator.store.MetaStore;
-import io.dingodb.server.protocol.Tags;
-import io.prometheus.client.exporter.HTTPServer;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.protocol.ListenerTags;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.omg.CORBA.PRIVATE_MEMBER;
 
-import java.io.IOException;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -67,7 +61,7 @@ public class CoordinatorStateMachine implements CoreListener {
     private CoordinatorStateMachine(Core core, MetaStore metaStore) {
         this.core = core;
         this.metaStore = metaStore;
-        NetService.getDefault().registerTagMessageListener(Tags.LISTEN_SERVICE_LEADER, this::onMessage);
+        NetService.getDefault().registerTagMessageListener(ListenerTags.LISTEN_SERVICE_LEADER, this::onMessage);
         core.registerListener(this);
     }
 
@@ -92,19 +86,12 @@ public class CoordinatorStateMachine implements CoreListener {
             log.info("Send primary message to [{}].", channel.remoteLocation().url());
             channel.send(Message.EMPTY);
         }));
+        MetaServiceApi instance = MetaServiceApi.INSTANCE;
         Executors.submit("on-primary", () -> {
             ServiceLoader.load(BaseAdaptor.Creator.class).iterator()
                 .forEachRemaining(creator -> creator.create(metaStore));
             ServiceLoader.load(BaseStatsAdaptor.Creator.class).iterator()
                 .forEachRemaining(creator -> creator.create(metaStore));
-            ClusterScheduler.instance().init();
-            MetaService.root();
-            try {
-                HTTPServer httpServer = new HTTPServer(CoordinatorConfiguration.monitorPort());
-                new PartMetricCollector().register();
-            } catch (IOException e) {
-                log.error("http server error", e);
-            }
 
             // Add permissions to the root user
             userServiceApi.saveRootPrivilege("root", "%");

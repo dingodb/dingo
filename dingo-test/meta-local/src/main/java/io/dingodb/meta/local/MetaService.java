@@ -76,13 +76,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createSubMetaService(CommonId id, String name) {
+    public void createSubMetaService(String name) {
         CommonId newId = new CommonId(id.type(), id.identifier(), id.seq(), metaServiceSeq.incrementAndGet());
         metaServices.put(newId, new MetaService(newId, name));
     }
 
     @Override
-    public Map<String, io.dingodb.meta.MetaService> getSubMetaServices(CommonId id) {
+    public Map<String, io.dingodb.meta.MetaService> getSubMetaServices() {
         return metaServices.subMap(
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq()), true,
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq() + 1), false
@@ -91,31 +91,31 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public io.dingodb.meta.MetaService getSubMetaService(CommonId id, String name) {
-        return getSubMetaServices(id).get(name);
+    public io.dingodb.meta.MetaService getSubMetaService(String name) {
+        return getSubMetaServices().get(name);
     }
 
     @Override
-    public boolean dropSubMetaService(CommonId id, String name) {
-        metaServices.remove(getSubMetaService(id, name).id());
+    public boolean dropSubMetaService(String name) {
+        metaServices.remove(getSubMetaService(name).id());
         return true;
     }
 
     @Override
-    public void createTable(CommonId id, @NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         CommonId tableId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq(), tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
     }
 
     @Override
-    public boolean dropTable(CommonId id, @NonNull String tableName) {
+    public boolean dropTable(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
-        tableDefinitions.remove(getTableId(id, tableName));
+        tableDefinitions.remove(getTableId(tableName));
         return true;
     }
 
     @Override
-    public CommonId getTableId(CommonId id, @NonNull String tableName) {
+    public CommonId getTableId(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
         return tableDefinitions.subMap(
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq()), true,
@@ -125,7 +125,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public Map<String, TableDefinition> getTableDefinitions(@NonNull CommonId id) {
+    public Map<String, TableDefinition> getTableDefinitions() {
         return tableDefinitions.subMap(
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq()), true,
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq() + 1), false
@@ -134,15 +134,15 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public TableDefinition getTableDefinition(CommonId id, @NonNull String tableName) {
+    public TableDefinition getTableDefinition(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
-        return getTableDefinitions(id).get(tableName);
+        return getTableDefinitions().get(tableName);
     }
 
     @Override
-    public NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String tableName) {
+    public NavigableMap<ComparableByteArray, Part> getParts(String tableName) {
         tableName = tableName.toUpperCase();
-        return Parameters.cleanNull(parts.get(getTableId(id, tableName)), defaultPart);
+        return Parameters.cleanNull(parts.get(getTableId(tableName)), defaultPart);
     }
 
     @Override

@@ -31,7 +31,6 @@ import org.rocksdb.Snapshot;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
-import static io.dingodb.common.util.ByteArrayUtils.greatThan;
 import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;

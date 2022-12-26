@@ -32,14 +32,13 @@ public interface CoreListener {
         };
     }
 
-
     default void back(long clock) {
     }
 
     static CoreListener back(Consumer<Long> back) {
         return new CoreListener() {
             @Override
-            public void primary(long clock) {
+            public void back(long clock) {
                 back.accept(clock);
             }
         };
@@ -51,12 +50,23 @@ public interface CoreListener {
     static CoreListener mirror(Consumer<Long> mirror) {
         return new CoreListener() {
             @Override
-            public void primary(long clock) {
+            public void mirror(long clock) {
                 mirror.accept(clock);
             }
         };
     }
 
+    default void mirrorConnect(long clock) {
+    }
+
+    static CoreListener mirrorConnect(Consumer<Long> mirrorConnect) {
+        return new CoreListener() {
+            @Override
+            public void mirrorConnect(long clock) {
+                mirrorConnect.accept(clock);
+            }
+        };
+    }
 
     default void losePrimary(long clock) {
     }
@@ -64,7 +74,7 @@ public interface CoreListener {
     static CoreListener losePrimary(Consumer<Long> losePrimary) {
         return new CoreListener() {
             @Override
-            public void primary(long clock) {
+            public void losePrimary(long clock) {
                 losePrimary.accept(clock);
             }
         };

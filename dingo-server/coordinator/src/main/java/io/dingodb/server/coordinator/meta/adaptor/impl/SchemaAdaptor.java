@@ -19,7 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Schema;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
@@ -50,7 +50,7 @@ public class SchemaAdaptor extends BaseAdaptor<Schema> {
             META_ID.type(),
             META_ID.identifier(),
             parent,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore.generateSeq(META_ID.encode())
         );
     }
 

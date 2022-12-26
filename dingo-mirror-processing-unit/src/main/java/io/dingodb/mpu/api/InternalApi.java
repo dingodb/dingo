@@ -19,9 +19,9 @@ package io.dingodb.mpu.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
-import io.dingodb.mpu.core.MPURegister;
 import io.dingodb.mpu.protocol.SelectReturn;
 import io.dingodb.mpu.protocol.SyncChannel;
 
@@ -33,8 +33,8 @@ public interface InternalApi {
         API.register(InternalApi.class, new InternalApi() {});
     }
 
-    static Core core(CommonId mpu, CommonId core) {
-        return MPURegister.mpu(mpu).core(core);
+    static Core core(CommonId coreId) {
+        return MPURegister.get(coreId);
     }
 
     static InternalApi instance(Location location) {
@@ -51,7 +51,7 @@ public interface InternalApi {
 
     @ApiDeclaration
     default SelectReturn connectMirror(SyncChannel syncChannel) {
-        return core(syncChannel.primary.mpuId, syncChannel.primary.coreId).connectFromPrimary(syncChannel);
+        return core(syncChannel.primary.coreId).connectFromPrimary(syncChannel);
     }
 
     static SelectReturn connectMirror(Location location, SyncChannel syncChannel) {
@@ -60,7 +60,7 @@ public interface InternalApi {
 
     @ApiDeclaration
     default SelectReturn askPrimary(CoreMeta meta, long clock) {
-        return core(meta.mpuId, meta.coreId).askPrimary(meta, clock);
+        return core(meta.coreId).askPrimary(meta, clock);
     }
 
     static SelectReturn askPrimary(Location location, CoreMeta meta, long clock) {
@@ -72,13 +72,13 @@ public interface InternalApi {
     }
 
     @ApiDeclaration
-    default boolean isPrimary(CommonId mpuId, CommonId coreId) {
-        return core(mpuId, coreId).isPrimary();
+    default boolean isPrimary(CommonId coreId) {
+        return core(coreId).isPrimary();
     }
 
-    static boolean isPrimary(Location location, CommonId mpuId, CommonId coreId) {
+    static boolean isPrimary(Location location, CommonId coreId) {
         try {
-            return instance(location).isPrimary(mpuId, coreId);
+            return instance(location).isPrimary(coreId);
         } catch (Exception e) {
             return false;
         }
@@ -86,7 +86,7 @@ public interface InternalApi {
 
     @ApiDeclaration
     default void requestConnect(CoreMeta mirror) {
-        core(mirror.mpuId, mirror.coreId).requestConnect(mirror);
+        core(mirror.coreId).requestConnect(mirror);
     }
 
     static void requestConnect(Location location, CoreMeta mirror) {
@@ -94,12 +94,12 @@ public interface InternalApi {
     }
 
     @ApiDeclaration
-    default long askClock(CommonId mpuId, CommonId coreId) {
-        return core(mpuId, coreId).clock();
+    default long askClock(CommonId coreId) {
+        return core(coreId).clock();
     }
 
-    static long askClock(Location location, CommonId mpuId, CommonId coreId) {
-        return instance(location).askClock(mpuId, coreId);
+    static long askClock(Location location, CommonId coreId) {
+        return instance(location).askClock(coreId);
     }
 
 }

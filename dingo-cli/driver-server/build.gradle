@@ -42,6 +42,9 @@ dependencies {
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
     implementation project(":dingo-net-api")

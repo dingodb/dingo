@@ -52,6 +52,22 @@ public class Optional<T> {
         }
     }
 
+    public static <T> void or(T value, Consumer<T> present, Runnable absent) {
+        if (value == null) {
+            absent.run();
+        } else {
+            present.accept(value);
+        }
+    }
+
+    public static void or(Object value, Runnable present, Runnable absent) {
+        if (value == null) {
+            absent.run();
+        } else {
+            present.run();
+        }
+    }
+
     public static <T> Optional<T> empty() {
         return of(java.util.Optional.empty());
     }
@@ -99,6 +115,12 @@ public class Optional<T> {
             runnable.run();
         }
         return this;
+    }
+
+    public void ifAbsentThrow(Supplier<RuntimeException> supplier) {
+        if (!optional.isPresent()) {
+            throw supplier.get();
+        }
     }
 
     public Optional<T> ifAbsentSet(T other) {
@@ -164,12 +186,31 @@ public class Optional<T> {
         return value == null ? other.get() : mapper.apply(value);
     }
 
+    public static <T, U> U mapOrThrow(T value, Function<? super T, ? extends U> mapper, String message) {
+        return mapOrThrow(value, mapper, () -> new RuntimeException(message));
+    }
+
+    public static <T, U, X extends Throwable> U mapOrThrow(
+        T value, Function<? super T, ? extends U> mapper, Supplier<? extends X> exceptionSupplier
+    ) throws X {
+
+        U result;
+        if (value == null || (result = mapper.apply(value)) == null) {
+            throw exceptionSupplier.get();
+        }
+        return result;
+    }
+
     public T orNull() {
         return optional.orElse(null);
     }
 
     public T orElseGet(Supplier<? extends T> other) {
         return optional.orElseGet(other);
+    }
+
+    public T orElseThrow(String message) {
+        return optional.orElseThrow(() -> new RuntimeException(message));
     }
 
     public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {

@@ -17,6 +17,7 @@
 package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.AllArgsConstructor;
@@ -53,6 +54,8 @@ public class Table implements Meta {
     private long updateTime;
     private byte state;
 
+    private TableDefinition definition;
+
     private String name;
     private CommonId schema;
     private int type;
@@ -61,6 +64,8 @@ public class Table implements Meta {
     private long partMaxSize;
     private long partMaxCount;
     private boolean autoSplit;
+
+    private Map<CommonId, Location> locations;
 
     private int ttl;
 

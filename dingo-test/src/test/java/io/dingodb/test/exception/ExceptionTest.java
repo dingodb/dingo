@@ -17,7 +17,6 @@
 package io.dingodb.test.exception;
 
 import io.dingodb.meta.local.MetaService;
-import io.dingodb.test.MetaTestService;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -50,7 +49,6 @@ public class ExceptionTest {
     public static void cleanUpAll() throws Exception {
         connection.close();
         MetaService.clear();
-        MetaTestService.INSTANCE.clear();
     }
 
     // Table not found (90002)

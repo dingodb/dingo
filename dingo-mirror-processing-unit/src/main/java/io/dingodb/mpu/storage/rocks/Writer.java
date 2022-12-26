@@ -16,7 +16,6 @@
 
 package io.dingodb.mpu.storage.rocks;
 
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.instruction.Instruction;
 import lombok.Getter;

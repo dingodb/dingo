@@ -17,25 +17,18 @@
 package io.dingodb.calcite.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoRootSchema;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.Part;
-import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.TreeMap;
 
-import static org.mockito.Mockito.when;
-
-//@AutoService(MetaServiceProvider.class)
-public class MockMetaServiceProvider implements MetaServiceProvider {
+public class MockMetaServiceProvider {
 
     public static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
     public static final String TABLE_NAME = "TEST";
@@ -73,8 +66,8 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
             TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
             byte[] key0 = {};
             byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
-            rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
-            rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
+            rangeSegments.put(new ComparableByteArray(key0), new Part(null, LOC_0, ImmutableSet.of(LOC_0)));
+            rangeSegments.put(new ComparableByteArray(keyA), new Part(null, LOC_1, ImmutableSet.of(LOC_1)));
             ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test), rangeSegments);
             ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test1), rangeSegments);
             ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(tableDate),
@@ -87,32 +80,4 @@ public class MockMetaServiceProvider implements MetaServiceProvider {
         }
     }
 
-    @Override
-    public MetaService root() {
-        MetaService metaService = Mockito.spy(MetaService.class);
-        try {
-            when(metaService.name()).thenReturn(SCHEMA_NAME);
-            when(metaService.getTableDefinitions()).thenReturn(ImmutableMap.of(
-                TABLE_NAME, TableDefinition.readJson(getClass().getResourceAsStream("/table-test.json")),
-                "test1", TableDefinition.readJson(getClass().getResourceAsStream("/table-test1.json")),
-                "table-with-date", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-date.json")),
-                "table-with-array", TableDefinition.readJson(getClass().getResourceAsStream("/table-with-array.json"))
-            ));
-            when(metaService.getTableId(TABLE_NAME)).thenReturn(CommonId.prefix((byte) 0, new byte[]{0, 0}));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
-        byte[] key0 = {};
-        byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
-        rangeSegments.put(new ComparableByteArray(key0), new Part(key0, LOC_0, ImmutableList.of(LOC_0)));
-        rangeSegments.put(new ComparableByteArray(keyA), new Part(keyA, LOC_1, ImmutableList.of(LOC_1)));
-        CommonId schemaId = CommonId.prefix((byte) 1, new byte[]{0, 0});
-        when(metaService.id()).thenReturn(schemaId);
-        when(metaService.getSubMetaServices()).thenReturn(Collections.singletonMap(SCHEMA_NAME, metaService));
-        when(metaService.getParts(schemaId, TABLE_NAME)).thenReturn(rangeSegments);
-        when(metaService.getDistributes(TABLE_NAME)).thenReturn(ImmutableList.of(LOC_0, LOC_1));
-        when(metaService.currentLocation()).thenReturn(LOC_0);
-        return metaService;
-    }
 }

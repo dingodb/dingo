@@ -18,19 +18,19 @@ package io.dingodb.mpu.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
-import io.dingodb.mpu.core.MPURegister;
+import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.instruction.KVInstructions;
 
 public interface KVApi {
 
     @ApiDeclaration
-    default void set(CommonId mpu, CommonId core, byte[] key, byte[] value) {
-        MPURegister.mpu(mpu).core(core).exec(KVInstructions.id, KVInstructions.SET_OC, key, value).join();
+    default void set(CommonId core, byte[] key, byte[] value) {
+        MPURegister.get(core).exec(KVInstructions.id, KVInstructions.SET_OC, key, value).join();
     }
 
     @ApiDeclaration
-    default Object get(CommonId mpu, CommonId core, byte[] key) {
-        return MPURegister.mpu(mpu).core(core).view(KVInstructions.id, KVInstructions.GET_OC, key);
+    default Object get(CommonId core, byte[] key) {
+        return MPURegister.get(core).view(KVInstructions.id, KVInstructions.GET_OC, key);
     }
 
 }

@@ -22,6 +22,7 @@ import io.dingodb.server.client.config.ClientConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ public class CoordinatorConnector extends ServiceConnector {
     }
 
     public CoordinatorConnector(List<Location> addresses) {
-        super(null, addresses);
+        super(null, new HashSet<>(addresses));
     }
 
 }

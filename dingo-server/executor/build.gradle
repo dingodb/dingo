@@ -25,6 +25,10 @@ application {
 }
 
 dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+
+    implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
@@ -42,6 +46,9 @@ dependencies {
     implementation project(":dingo-server:dingo-server-driver-proxy")
     implementation project(":dingo-verify")
 
+    implementation project(":dingo-sdk")
+    implementation project(":dingo-mirror-processing-unit")
+    implementation group: 'io.dingodb', name: 'rocksdbjni', version: 'rocksdb'.v()
 }
 
 task fatJar(type: Jar) {

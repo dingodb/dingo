@@ -17,7 +17,7 @@
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.CodeUDF;
 
 import static io.dingodb.server.protocol.CommonIdConstant.FUNCTION_IDENTIFIER;

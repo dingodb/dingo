@@ -29,17 +29,17 @@ public interface StorageApi {
     }
 
     @ApiDeclaration
-    default String transferBackup(CommonId mpuId, CommonId coreId) {
-        return InternalApi.core(mpuId, coreId).storage.receiveBackup();
+    default String transferBackup(CommonId coreId) {
+        return InternalApi.core(coreId).getVCore().storage.receiveBackup();
     }
 
-    static String transferBackup(Location location, CommonId mpuId, CommonId coreId) {
-        return API.proxy(StorageApi.class, location).transferBackup(mpuId, coreId);
+    static String transferBackup(Location location, CommonId coreId) {
+        return API.proxy(StorageApi.class, location).transferBackup(coreId);
     }
 
     @ApiDeclaration
-    default void applyBackup(CommonId mpuId, CommonId coreId) {
-        InternalApi.core(mpuId, coreId).storage.applyBackup();
+    default void applyBackup(CommonId coreId) {
+        InternalApi.core(coreId).getVCore().storage.applyBackup();
     }
 
 }

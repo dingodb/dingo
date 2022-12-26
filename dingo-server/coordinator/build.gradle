@@ -31,7 +31,6 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
-    implementation project(":dingo-calcite")
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
     implementation project(":dingo-meta-api")
@@ -40,6 +39,7 @@ dependencies {
     implementation project(':dingo-serial')
     implementation project(':dingo-mirror-processing-unit')
     implementation project(":dingo-verify")
+
 }
 
 task fatJar(type: Jar) {

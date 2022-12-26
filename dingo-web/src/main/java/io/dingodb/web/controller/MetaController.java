@@ -169,9 +169,9 @@ public class MetaController {
             .map(params::get)
             .toArray(Object[]::new)
         ));
-        return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(CommonId.decode(parts.floorEntry(
+        return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(parts.floorEntry(
             new ComparableByteArray(new DingoCodec(def.getDingoSchemaOfKey(), null, true).encodeKey(keys))
-        ).getValue().getId()))));
+        ).getValue().getId())));
     }
 
     @ApiOperation("Encode primary key.")
