@@ -32,7 +32,7 @@ import java.util.concurrent.locks.LockSupport;
 @Getter
 @Accessors(fluent = true, chain = true)
 @FieldNameConstants
-public class InstructionChain implements Unsafe {
+class InstructionChain implements Unsafe {
 
     private static final String NAME = "instruction-chain";
     private static final UnsafeAccessor UNSAFE = Unsafe.getAccessor();

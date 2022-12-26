@@ -33,7 +33,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static io.dingodb.net.Message.API_OK;
+import static io.dingodb.net.netty.Constant.API_OK;
 import static io.dingodb.net.netty.Constant.API_T;
 
 public interface ApiProxy<T> extends InvocationHandler {

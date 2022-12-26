@@ -18,21 +18,19 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.DingoKeyValueCodec;
-import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.common.Location;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.DebugLog;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
+import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.api.TableApi;
+import io.dingodb.server.coordinator.config.Configuration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.schedule.ClusterScheduler;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Column;
+import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePart;
@@ -40,17 +38,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
@@ -61,13 +58,11 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     public static final byte[] SEQ_KEY = META_ID.encode();
 
     private final ColumnAdaptor columnAdaptor;
-    private final TablePartAdaptor tablePartAdaptor;
     private final Map<CommonId, Map<String, CommonId>> idNameMap = new ConcurrentHashMap<>();
 
     public TableAdaptor(MetaStore metaStore) {
         super(metaStore);
         this.columnAdaptor = new ColumnAdaptor(metaStore);
-        this.tablePartAdaptor = new TablePartAdaptor(metaStore);
         this.metaMap.values().forEach(table -> idNameMap
             .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
             .put(table.getName(), table.getId())
@@ -100,12 +95,21 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         return id;
     }
 
-    public void create(CommonId schemaId, TableDefinition definition) {
+    public CommonId create(CommonId schemaId, TableDefinition definition) {
         Table table = definitionToMeta(schemaId, definition);
         table.setCreateTime(System.currentTimeMillis());
         ArrayList<KeyValue> keyValues = new ArrayList<>(definition.getColumnsCount() + 2);
         CommonId tableId = newId(table);
         table.setId(tableId);
+
+        Map<CommonId, Location> mirrors = new HashMap<>();
+        List<TableApi> apis = getMetaAdaptor(Executor.class).getAll().stream()
+            .unordered().limit(3)
+            .peek(__ -> mirrors.put(__.getId(), __.location()))
+            .map(Executor::location)
+            .map(__ -> ApiRegistry.getDefault().proxy(TableApi.class, __))
+            .collect(Collectors.toList());
+        table.setLocations(mirrors);
 
         keyValues.add(new KeyValue(tableId.encode(), encodeMeta(table)));
 
@@ -125,138 +129,39 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         columns.stream()
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
-        int ttl = table.getTtl();
-        List<TablePart> tablePartList = Optional.mapOrNull(definition.getPartDefinition(),
-            __ -> getPreDefineParts(table, definition));
-        if (tablePartList == null) {
-            TablePart tablePart = TablePart.builder()
-                .version(0)
-                .schema(table.getSchema())
-                .table(tableId)
-                .start(EMPTY_BYTES)
-                .createTime(System.currentTimeMillis())
-                .build();
-            tablePart.setId(tablePartAdaptor.newId(tablePart));
-            tablePartList = new ArrayList<>();
-            tablePartList.add(tablePart);
-        }
+
         metaStore.upsertKeyValue(keyValues);
-        keyValues.clear();
         super.save(table);
         columns.forEach(columnAdaptor::save);
-        for (TablePart tablePart : tablePartList) {
-            tablePart.setTtl(ttl);
-            keyValues.add(new KeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart)));
-
-            tablePartAdaptor.save(tablePart);
-            try {
-                ClusterScheduler.instance().getTableScheduler(tableId).assignPart(tablePart).get(30, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                throw new RuntimeException("Table meta save success, but schedule failed.", e);
-            }
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        apis.forEach(NoBreakFunctions.wrap(__ -> {
+            __.createTable(tableId, definition, mirrors).thenAccept(r -> {
+                if (r) {
+                    future.complete(null);
+                }
+            });
+        }));
+        try {
+            future.get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Table meta save success, but schedule failed.", e);
         }
-        metaStore.upsertKeyValue(keyValues);
-    }
-
-    @SuppressWarnings("checkstyle:MultipleVariableDeclarations")
-    private List<TablePart> getPreDefineParts(Table table, TableDefinition definition) {
-        List<TablePart> tablePartList = new ArrayList<>();
-        String strategy = definition.getPartDefinition().getFuncName();
-        int primaryKeyCount = definition.getPrimaryKeyCount();
-        if ("range".equalsIgnoreCase(strategy)) {
-            List<PartitionDetailDefinition> partDetailList = definition.getPartDefinition().getDetails();
-            KeyValueCodec partKeyCodec = new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
-            Iterator<byte[]> keys = partDetailList.stream()
-                .map(PartitionDetailDefinition::getOperand)
-                .map(operand -> operand.toArray(new Object[primaryKeyCount]))
-                .map(NoBreakFunctions.wrap(partKeyCodec::encodeKey))
-                .collect(Collectors.toCollection(() -> new TreeSet<>(ByteArrayUtils::compare)))
-                .iterator();
-            byte [] start = EMPTY_BYTES, key;
-            TablePart tablePart;
-            while (keys.hasNext()) {
-                key = keys.next();
-                tablePartList.add(
-                    tablePart = TablePart.builder()
-                        .version(1)
-                        .schema(table.getSchema())
-                        .table(table.getId())
-                        .start(start)
-                        .end(key)
-                        .createTime(System.currentTimeMillis())
-                        .build()
-                );
-                tablePart.setId(tablePartAdaptor.newId(tablePart));
-                start = key;
-            }
-            tablePartList.add(
-                tablePart = TablePart.builder()
-                    .version(1)
-                    .schema(table.getSchema())
-                    .table(table.getId())
-                    .start(start)
-                    .end(null)
-                    .createTime(System.currentTimeMillis())
-                    .build()
-            );
-            tablePart.setId(tablePartAdaptor.newId(tablePart));
-        }
-        return tablePartList;
-    }
-
-    public TablePart newPart(CommonId tableId, byte[] start, byte[] end) {
-        Table table = get(tableId);
-        int ttl = table.getTtl();
-        log.info("TableAdaptor newPart, table id: {}, ttl: {}.", table.getId(), ttl);
-        TablePart tablePart = TablePart.builder()
-            .version(0)
-            .schema(table.getSchema())
-            .table(table.getId())
-            .start(start)
-            .end(end)
-            .ttl(ttl)
-            .build();
-        tablePart.setId(tablePartAdaptor.newId(tablePart));
-        metaStore.upsertKeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart));
-        tablePartAdaptor.save(tablePart);
-        return tablePart;
-    }
-
-    public TablePart updatePart(CommonId tablePartId, byte[] start, byte[] end) {
-        TablePart tablePart = tablePartAdaptor.get(tablePartId);
-        tablePart.setStart(start);
-        tablePart.setEnd(end);
-        metaStore.upsertKeyValue(tablePart.getId().encode(), tablePartAdaptor.encodeMeta(tablePart));
-        tablePartAdaptor.save(tablePart);
-        return tablePart;
+        return tableId;
     }
 
     @Override
     protected void doDelete(Table table) {
         CommonId id = table.getId();
         List<Column> columns = columnAdaptor.getByDomain(id.seq());
-        List<TablePart> tableParts = tablePartAdaptor.getByDomain(id.seq());
-        ArrayList<byte[]> keys = new ArrayList<>(columns.size() + tableParts.size() + 1);
+        ArrayList<byte[]> keys = new ArrayList<>(columns.size() + 1);
         columns.forEach(column -> keys.add(column.getId().encode()));
-        tableParts.forEach(part -> keys.add(part.getId().encode()));
-        ReplicaAdaptor replicaAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Replica.class);
-        tableParts.stream().flatMap(part -> replicaAdaptor.getByDomain(part.getId().seq()).stream())
-            .map(Replica::getId)
-            .peek(replicaAdaptor::delete)
-            .map(CommonId::encode)
-            .forEach(keys::add);
         keys.add(id.encode());
         metaStore.delete(keys);
         metaMap.remove(id);
-        tableParts.stream()
-            .map(TablePart::getId)
-            .peek(tablePartAdaptor::delete)
-            .flatMap(partId -> replicaAdaptor.getByDomain(partId.seq()).stream())
-            .map(Replica::getId)
-            .forEach(replicaAdaptor::delete);
         columnAdaptor.deleteByDomain(id.seq());
-        ClusterScheduler.instance().getTableScheduler(id).deleteTable();
-        ClusterScheduler.instance().deleteTableScheduler(id);
+        table.getLocations().values().forEach(location -> {
+            ApiRegistry.getDefault().proxy(TableApi.class, location).deleteTable(table.getId());
+        });
     }
 
 
@@ -288,16 +193,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     private TableDefinition metaToDefinition(Table table) {
-        TableDefinition tableDefinition = new TableDefinition(table.getName());
-        List<ColumnDefinition> columnDefinitions = columnAdaptor.getByDomain(table.getId().seq()).stream()
-            .map(this::metaToDefinition)
-            .collect(Collectors.toList());
-        tableDefinition.setColumns(columnDefinitions);
-        tableDefinition.setPartDefinition(table.getPartDefinition());
-        tableDefinition.setProperties(table.getProperties());
-        tableDefinition.setTtl(table.getTtl());
-        DebugLog.debug(log, "Meta to table definition: {}", tableDefinition);
-        return tableDefinition;
+        return table.getDefinition();
     }
 
     private ColumnDefinition metaToDefinition(Column column) {
@@ -317,12 +213,13 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         return Table.builder()
             .name(definition.getName())
             .schema(schemaId)
-            .partMaxCount(CoordinatorConfiguration.schedule().getDefaultAutoMaxCount())
-            .partMaxSize(CoordinatorConfiguration.schedule().getDefaultAutoMaxSize())
-            .autoSplit(CoordinatorConfiguration.schedule().isAutoSplit())
+            .partMaxCount(Configuration.schedule().getDefaultAutoMaxCount())
+            .partMaxSize(Configuration.schedule().getDefaultAutoMaxSize())
+            .autoSplit(Configuration.schedule().isAutoSplit())
             .properties(definition.getProperties())
             .partDefinition(definition.getPartDefinition())
             .ttl(definition.getTtl())
+            .definition(definition)
             .build();
     }
 

@@ -19,26 +19,39 @@ package io.dingodb.server.client.meta.service;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaServiceApi;
+import io.dingodb.server.api.TableApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
-import io.dingodb.server.protocol.meta.Schema;
+import io.dingodb.server.client.connector.impl.ServiceConnector;
+import io.dingodb.server.protocol.meta.TablePart;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 @Slf4j
 @Accessors(fluent = true)
 public class MetaServiceClient implements MetaService {
 
-    @Delegate
+    private final Map<String, MetaServiceClient> subMetaServiceCache = new ConcurrentSkipListMap<>();
+    private final Map<String, CommonId> tableIdCache = new HashMap<>();
+    private final Map<String, TableDefinition> tableDefinitionCache = new ConcurrentSkipListMap<>();
+    private final Map<CommonId, ServiceConnector> serviceCache = new ConcurrentSkipListMap<>();
+
     private final MetaServiceApi api;
-    private final CoordinatorConnector connector;
+    private final ServiceConnector connector;
 
     @Getter
     private final CommonId id;
@@ -49,45 +62,105 @@ public class MetaServiceClient implements MetaService {
         this(CoordinatorConnector.getDefault());
     }
 
-    public MetaServiceClient(CoordinatorConnector connector) {
-        if (connector == null) {
-            this.api = null;
-            this.connector = null;
-            this.id = null;
-            this.name = null;
-            return;
-        }
+    public MetaServiceClient(ServiceConnector connector) {
+        Parameters.nonNull(connector, "connector");
         this.api = ApiRegistry.getDefault().proxy(MetaServiceApi.class, connector);
         this.connector = connector;
         this.id = api.rootId();
         this.name = MetaService.ROOT_NAME;
     }
 
-    private MetaServiceClient(CommonId id, String name, CoordinatorConnector connector, MetaServiceApi api) {
+    private MetaServiceClient(CommonId id, String name, ServiceConnector connector, MetaServiceApi api) {
         this.connector = connector;
         this.api = api;
         this.id = id;
         this.name = name;
     }
 
+    private void load() {
+        this.tableDefinitionCache.putAll(api.getTableDefinitions(id));
+        api.getSubSchemas(id).forEach((key, value) ->
+            this.subMetaServiceCache.put(key, new MetaServiceClient(value.getId(), value.getName(), connector, api))
+        );
+        // todo add listener
+    }
+
+    private ServiceConnector getTableConnector(CommonId id) {
+        return serviceCache.computeIfAbsent(id, __ -> new ServiceConnector(id, api.getTableDistribute(id)));
+    }
+
+    private ServiceConnector getPartConnector(CommonId tableId, CommonId partId) {
+        return serviceCache
+            .computeIfAbsent(partId, __ -> new ServiceConnector(partId, getTableConnector(tableId).getAddresses()));
+    }
+
     @Override
-    public Map<String, MetaService> getSubMetaServices(CommonId id) {
-        return getSubSchemas(id).entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> new MetaServiceClient(e.getValue().getId(), e.getValue().getName(), connector, api))
+    public void createSubMetaService(String name) {
+        api.createSubMetaService(id, name);
+        subMetaServiceCache.put(name, new MetaServiceClient(id, name, connector, api));
+    }
+
+    @Override
+    public Map<String, MetaService> getSubMetaServices() {
+        return new HashMap<>(subMetaServiceCache);
+    }
+
+    @Override
+    public MetaService getSubMetaService(String name) {
+        return subMetaServiceCache.get(name);
+    }
+
+    @Override
+    public boolean dropSubMetaService(String name) {
+        api.dropSchema(id);
+        subMetaServiceCache.remove(name);
+        return true;
+    }
+
+    @Override
+    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+        tableIdCache.put(tableName, api.createTable(id, tableName, tableDefinition));
+    }
+
+    @Override
+    public boolean dropTable(@NonNull String tableName) {
+        return api.dropTable(id, tableName);
+    }
+
+    @Override
+    public CommonId getTableId(@NonNull String tableName) {
+        return tableIdCache.computeIfAbsent(tableName, __ -> api.getTableId(id, tableName));
+    }
+
+    @Override
+    public Map<String, TableDefinition> getTableDefinitions() {
+        return api.getTableDefinitions(id);
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(@NonNull String name) {
+        CommonId tableId = getTableId(name);
+        return ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(tableId)).getDefinition(tableId);
+    }
+
+    @Override
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(String tableName) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> result = new TreeMap<>();
+        CommonId tableId = getTableId(tableName);
+        ServiceConnector tableConnector = getTableConnector(tableId);
+        ServiceConnector connector;
+        for (TablePart tablePart : ApiRegistry.getDefault().proxy(TableApi.class, tableConnector).partitions(tableId)) {
+            connector = getPartConnector(tableId, tablePart.getId());
+            Part part = new Part(
+                tablePart.getId(),
+                connector.get(),
+                connector.getAddresses(),
+                tablePart.getStart(),
+                tablePart.getEnd()
             );
-    }
-
-    @Override
-    public MetaService getSubMetaService(CommonId id, String name) {
-        Schema subSchema = getSubSchema(id, name);
-        return new MetaServiceClient(subSchema.getId(), subSchema.getName(), connector, api);
-    }
-
-    @Override
-    public boolean dropSubMetaService(CommonId id, String name) {
-        return api.dropSchema(id, name);
+            result.put(new ByteArrayUtils.ComparableByteArray(part.getStartKey()), part);
+        }
+        return result;
     }
 
     @Override

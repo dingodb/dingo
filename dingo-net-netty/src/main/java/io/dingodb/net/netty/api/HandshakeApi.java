@@ -24,8 +24,8 @@ import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.Versions;
 import lombok.AllArgsConstructor;
 
-import static io.dingodb.net.Message.API_ERROR;
 import static io.dingodb.net.netty.Constant.ACK_C;
+import static io.dingodb.net.netty.Constant.API_ERROR;
 import static io.dingodb.net.netty.Constant.HANDSHAKE;
 import static io.dingodb.net.netty.Versions.currentVersion;
 

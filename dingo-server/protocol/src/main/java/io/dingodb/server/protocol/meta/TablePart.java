@@ -46,11 +46,13 @@ public class TablePart implements Meta {
 
     private CommonId id;
     private String comment;
-    private long createTime;
-    private long updateTime;
+    @Builder.Default
+    private long createTime = System.currentTimeMillis();
+    @Builder.Default
+    private long updateTime = System.currentTimeMillis();
     private byte state;
 
-    private CommonId schema;
+    //private CommonId schema;
     private CommonId table;
     private byte[] start;
     private byte[] end;

@@ -20,9 +20,51 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface ServiceConnectApi {
+
+    interface Service {
+        CommonId id();
+
+        Location leader();
+
+        List<Location> getAll();
+    }
+
+    ServiceConnectApi INSTANCE = new ServiceConnectApi() {
+        private final Map<CommonId, Service> services = new HashMap<>();
+
+        @Override
+        public void register(Service service) {
+            services.put(service.id(), service);
+        }
+
+        @Override
+        public void unregister(CommonId id) {
+            services.remove(id);
+        }
+
+        @Override
+        public Location leader(CommonId id) {
+            return services.get(id).leader();
+        }
+
+        @Override
+        public List<Location> getAll(CommonId id) {
+            return services.get(id).getAll();
+        }
+    };
+
+    default void register(Service service) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void unregister(CommonId id) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
     Location leader(CommonId id);

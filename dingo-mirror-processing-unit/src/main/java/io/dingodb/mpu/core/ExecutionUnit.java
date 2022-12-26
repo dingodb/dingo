@@ -29,10 +29,10 @@ import static io.dingodb.mpu.instruction.InstructionSetRegistry.instructions;
 @Slf4j
 class ExecutionUnit {
 
-    public final Core core;
+    public final VCore core;
     public final LinkedRunner executeRunner;
 
-    ExecutionUnit(Core core) {
+    ExecutionUnit(VCore core) {
         this.core = core;
         this.executeRunner = new LinkedRunner("execute-" + core.meta.label);
     }

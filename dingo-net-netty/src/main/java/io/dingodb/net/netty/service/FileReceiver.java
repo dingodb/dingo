@@ -33,7 +33,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
-import static io.dingodb.net.Message.FILE_TRANSFER;
+import static io.dingodb.net.netty.Constant.FILE_TRANSFER;
 
 @Slf4j
 public class FileReceiver implements Consumer<ByteBuffer> {

@@ -76,9 +76,9 @@ public class SqlHelper {
         byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
         byte[] endKey = ByteArrayUtils.MAX_BYTES;
         defaultPart.put(new ByteArrayUtils.ComparableByteArray(startKey), new Part(
-            startKey,
+            null,
             new FakeLocation(1),
-            Collections.singletonList(new FakeLocation(1)),
+            Collections.singleton(new FakeLocation(1)),
             startKey,
             endKey
         ));
@@ -117,7 +117,6 @@ public class SqlHelper {
     public void cleanUp() throws SQLException {
         connection.close();
         MetaService.clear();
-        MetaTestService.INSTANCE.clear();
     }
 
     public RandomTable randomTable() {

@@ -47,10 +47,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static io.dingodb.common.util.Parameters.cleanNull;
-import static io.dingodb.net.Message.API_CANCEL;
-import static io.dingodb.net.Message.API_ERROR;
-import static io.dingodb.net.Message.API_OK;
+import static io.dingodb.net.netty.Constant.API_CANCEL;
 import static io.dingodb.net.netty.Constant.API_EMPTY_ARGS;
+import static io.dingodb.net.netty.Constant.API_ERROR;
+import static io.dingodb.net.netty.Constant.API_OK;
 import static java.lang.reflect.Proxy.newProxyInstance;
 
 @Slf4j
@@ -62,6 +62,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         register(HandshakeApi.class, HandshakeApi.INSTANCE);
         register(AuthProxyApi.class, AuthProxyApi.INSTANCE);
         register(Ping.class, Ping.INSTANCE);
+        register(ListenerApi.class, ListenerApi.INSTANCE);
     }
 
     public static ApiRegistryImpl instance() {

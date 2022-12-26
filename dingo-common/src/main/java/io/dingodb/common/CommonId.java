@@ -54,20 +54,21 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     @EqualsAndHashCode.Include
     private byte[] content;
 
-    @Getter private byte type;
-    @Getter private byte id0;
-    @Getter private byte id1;
-    @Getter private int domain;
-    @Getter private int seq;
-    @Getter private int ver;
+    @Getter public final byte type;
+    @Getter public final byte id0;
+    @Getter public final byte id1;
+    @Getter public final int domain;
+    @Getter public final int seq;
+    @Getter public final int ver;
 
     private transient volatile String str;
 
-    private CommonId() {
-    }
-
     public CommonId(byte type, byte[] identifier, int domain, int seq) {
         this(type, identifier, domain, seq, 1);
+    }
+
+    public CommonId(byte type, byte id0, byte id1, int domain, int seq) {
+        this(type, id0, id1, domain, seq, 1);
     }
 
     public CommonId(byte type, byte[] identifier, int domain, int seq, int ver) {
@@ -127,18 +128,25 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     public byte[] encode() {
-        byte[] encode = new byte[content.length];
-        System.arraycopy(content, 0, encode, 0, encode.length);
-        return encode;
+        return encode(new byte[content.length], 0);
+    }
+
+    public byte[] encode(byte[] target, int index) {
+        System.arraycopy(content, 0, target, index, target.length);
+        return target;
     }
 
     public static CommonId decode(byte[] content) {
+        return decode(content, 0);
+    }
+
+    public static CommonId decode(byte[] content, int index) {
         return new CommonId(
-            content[0],
-            content[1], content[2],
-            content.length >= SEQ_IDX ? decodeInt(content, DOMAIN_IDX) : 0,
-            content.length >= VER_IDX ? decodeInt(content, SEQ_IDX) : 0,
-            content.length == LEN ? decodeInt(content, VER_IDX) : 0
+            content[index],
+            content[index + 1], content[index + 2],
+            content.length >= SEQ_IDX ? decodeInt(content, index + DOMAIN_IDX) : 0,
+            content.length >= VER_IDX ? decodeInt(content, index + SEQ_IDX) : 0,
+            content.length == LEN ? decodeInt(content, index + VER_IDX) : 0
         );
     }
 

@@ -28,8 +28,8 @@ import java.lang.reflect.Method;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
-import static io.dingodb.net.Message.API_CANCEL;
 import static io.dingodb.net.Message.EMPTY;
+import static io.dingodb.net.netty.Constant.API_CANCEL;
 
 @Slf4j
 @Accessors(fluent = true)

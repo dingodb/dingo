@@ -17,6 +17,7 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -24,8 +25,10 @@ import io.dingodb.meta.Part;
 import io.dingodb.server.protocol.meta.Schema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 
 public interface MetaServiceApi {
 
@@ -33,36 +36,39 @@ public interface MetaServiceApi {
     CommonId rootId();
 
     @ApiDeclaration
-    void createSubMetaService(CommonId id, String name);
+    CommonId createSubMetaService(CommonId schemaId, String name);
 
     @ApiDeclaration
-    Map<String, Schema> getSubSchemas(CommonId id);
+    Map<String, Schema> getSubSchemas(CommonId schemaId);
 
     @ApiDeclaration
-    Schema getSubSchema(CommonId id, String name);
+    Schema getSubSchema(CommonId schemaId, String name);
 
     @ApiDeclaration
-    boolean dropSchema(CommonId id, String name);
+    boolean dropSchema(CommonId schemaId);
 
     @ApiDeclaration
-    void createTable(CommonId id, @NonNull String tableName, @NonNull TableDefinition tableDefinition);
+    CommonId createTable(CommonId schemaId, @NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
     @ApiDeclaration
-    boolean dropTable(CommonId id, @NonNull String tableName);
+    boolean dropTable(CommonId schemaId, @NonNull String tableName);
 
     @ApiDeclaration
-    CommonId getTableId(CommonId id, @NonNull String tableName);
+    CommonId getTableId(CommonId schemaId, @NonNull String tableName);
 
     @ApiDeclaration
-    Map<String, TableDefinition> getTableDefinitions(CommonId id);
+    Map<String, TableDefinition> getTableDefinitions(CommonId schemaId);
 
     @ApiDeclaration
-    TableDefinition getTableDefinition(CommonId id, @NonNull String name);
+    TableDefinition getTableDefinition(CommonId schemaId, @NonNull String name);
 
     @ApiDeclaration
-    TableDefinition getTableDefinition(CommonId id);
+    TableDefinition getTableDefinition(CommonId tableId);
 
     @ApiDeclaration
-    NavigableMap<ComparableByteArray, Part> getParts(CommonId id, String name);
+    Set<Location> getTableDistribute(CommonId tableId);
+
+    @ApiDeclaration
+    NavigableMap<ComparableByteArray, Part> getParts(CommonId schemaId, String name);
 
 }

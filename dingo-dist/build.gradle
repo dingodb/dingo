@@ -56,11 +56,6 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-store-mpu').layout.buildDirectory) {
-        include('libs/dingo-store-mpu-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
     from(project(':dingo-web').layout.buildDirectory) {
         include("libs/dingo-web-*.jar")
         exclude("libs/dingo-web-*-plain.jar")
@@ -96,7 +91,6 @@ copyDepends.dependsOn([
     ':dingo-cli:fatJar',
     ':dingo-driver-client:fatJar',
     ':dingo-example:fatJar',
-    ':dingo-store-mpu:fatJar',
     ':dingo-web:build',
     ':dingo-net-netty:fatJar',
     ':dingo-cli:driver-server:fatJar',

@@ -26,10 +26,9 @@ import io.dingodb.net.service.AuthService;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 
-import static io.dingodb.net.Message.API_ERROR;
+import static io.dingodb.net.netty.Constant.API_ERROR;
 
 public interface AuthProxyApi {
 
@@ -58,7 +57,10 @@ public interface AuthProxyApi {
             return result;
         } catch (Exception e) {
             channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);
-            throw new RuntimeException(e);
+            throw new ApiTerminateException(
+                "Auth failed from [%s], message: %s",
+                channel.remoteLocation().url(), e.getMessage()
+            );
         }
     }
 

@@ -21,16 +21,13 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.store.MetaStore;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.User;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;

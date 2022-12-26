@@ -54,13 +54,13 @@ dependencies {
     implementation project(':dingo-net-netty')
     implementation project(':dingo-verify')
     implementation project(':dingo-server:dingo-server-driver-proxy')
-    implementation project(':dingo-store-memory')
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
     testImplementation project(':dingo-calcite')
     testRuntimeOnly project(':dingo-driver')
     testImplementation project(':dingo-test:dingo-meta-local')
+    implementation project(':dingo-test:dingo-store-memory')
 }
 
 task intTest(type: Test) {

@@ -21,7 +21,6 @@ plugins {
 
 dependencies {
     api project(':dingo-cluster-api')
-    api project(':dingo-func-api')
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
     api project(':dingo-store-api')

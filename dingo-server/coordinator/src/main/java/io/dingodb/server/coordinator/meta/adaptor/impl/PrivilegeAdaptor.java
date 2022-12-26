@@ -30,11 +30,9 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.store.MetaStore;
-import io.dingodb.server.protocol.Tags;
+import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Privilege;
 import io.dingodb.server.protocol.meta.PrivilegeDict;
-import io.dingodb.server.protocol.meta.Schema;
 import io.dingodb.server.protocol.meta.SchemaPriv;
 import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePriv;
@@ -52,6 +50,9 @@ import java.util.stream.Collectors;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;
+import static io.dingodb.server.protocol.ListenerTags.LISTEN_REGISTRY_RELOAD;
+import static io.dingodb.server.protocol.ListenerTags.LISTEN_RELOAD_PRIVILEGES;
+import static io.dingodb.server.protocol.ListenerTags.LISTEN_RELOAD_PRIVILEGE_DICT;
 
 @Slf4j
 public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
@@ -71,8 +72,8 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
 
         metaMap.forEach((k, v) -> privilegeMap.computeIfAbsent(v.getSubjectId(), p -> new ArrayList<>()).add(v));
         log.info("init privilegeMap:" + privilegeMap);
-        NetService.getDefault().registerTagMessageListener(Tags.LISTEN_REGISTRY_RELOAD, this::registryReloadChannel);
-        NetService.getDefault().registerTagMessageListener(Tags.LISTEN_RELOAD_PRIVILEGES, this::flushPrivileges);
+        NetService.getDefault().registerTagMessageListener(LISTEN_REGISTRY_RELOAD, this::registryReloadChannel);
+        NetService.getDefault().registerTagMessageListener(LISTEN_RELOAD_PRIVILEGES, this::flushPrivileges);
     }
 
     @AutoService(BaseAdaptor.Creator.class)
@@ -108,7 +109,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         if (!channels.contains(channel)) {
             channels.add(channel);
             List<String> privilege = getAllPrivilegeDict();
-            channel.send(new Message(Tags.LISTEN_RELOAD_PRIVILEGE_DICT, ProtostuffCodec.write(privilege)));
+            channel.send(new Message(LISTEN_RELOAD_PRIVILEGE_DICT, ProtostuffCodec.write(privilege)));
         }
     }
 
@@ -137,7 +138,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
                 log.info("user:" + user + ",privilegeGather:" + privilegeGather
                     + ", channel:" + channel1.remoteLocation() + ", is active:" + channel1.isActive());
                 if (channel1.isActive()) {
-                    channel1.send(new Message(Tags.LISTEN_RELOAD_PRIVILEGES, ProtostuffCodec.write(privilegeGather)));
+                    channel1.send(new Message(LISTEN_RELOAD_PRIVILEGES, ProtostuffCodec.write(privilegeGather)));
                 }
             });
         });

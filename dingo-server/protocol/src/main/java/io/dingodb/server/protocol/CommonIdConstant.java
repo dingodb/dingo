@@ -60,6 +60,7 @@ public class CommonIdConstant {
         public final byte[] column = new byte[] {'T', 'C'};
         public final byte[] part = new byte[] {'D', 'P'};
         public final byte[] replica = new byte[] {'D', 'R'};
+        public final byte[] index = new byte[] {'T', 'I'};
 
         private TableIdentifier() {
         }

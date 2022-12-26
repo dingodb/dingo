@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
-import static io.dingodb.net.Message.FILE_TRANSFER;
+import static io.dingodb.net.netty.Constant.FILE_TRANSFER;
 import static io.dingodb.net.netty.Constant.USER_DEFINE_T;
 
 @Slf4j

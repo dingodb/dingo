@@ -18,16 +18,18 @@ package io.dingodb.server.coordinator.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.store.Part;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaApi;
+import io.dingodb.server.api.ServerApi;
 import io.dingodb.server.api.ServiceConnectApi;
+import io.dingodb.server.coordinator.config.Configuration;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
-import io.dingodb.server.coordinator.meta.service.DingoMetaService;
 import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.ExecutorStats;
@@ -39,14 +41,12 @@ import io.dingodb.server.protocol.meta.TablePartStats;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import static io.dingodb.server.coordinator.api.MetaServiceApi.ROOT_ID;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
-public class CoordinatorServerApi implements ServiceConnectApi, MetaApi {
+public class CoordinatorServerApi implements ServiceConnectApi, MetaApi, ServerApi {
 
     private final Core core;
 
@@ -54,6 +54,7 @@ public class CoordinatorServerApi implements ServiceConnectApi, MetaApi {
         this.core = core;
         ApiRegistry.getDefault().register(io.dingodb.server.api.ServiceConnectApi.class, this);
         ApiRegistry.getDefault().register(io.dingodb.server.api.MetaApi.class, this);
+        ApiRegistry.getDefault().register(io.dingodb.server.api.ServerApi.class, this);
     }
 
     @Override
@@ -63,16 +64,23 @@ public class CoordinatorServerApi implements ServiceConnectApi, MetaApi {
 
     @Override
     public List<Location> getAll(CommonId ignore) {
-        return Stream.of(core.meta, core.firstMirror, core.secondMirror)
-            .filter(Objects::nonNull)
-            .map(__ -> __.location)
-            .collect(Collectors.toList());
+        return Configuration.servers();
+    }
+
+    @Override
+    public CommonId registerExecutor(Executor executor) {
+        return MetaAdaptorRegistry.getMetaAdaptor(Executor.class).save(executor);
+    }
+
+    @Override
+    public List<Part> storeMap(CommonId id) {
+        return null;
     }
 
     @Override
     public CommonId tableId(String name) {
         return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class))
-            .getTableId(DingoMetaService.ROOT_ID, name);
+            .getTableId(ROOT_ID, name);
     }
 
     @Override

@@ -16,8 +16,7 @@
 
 package io.dingodb.mpu.instruction;
 
-import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.mpu.core.Core;
+import io.dingodb.mpu.core.VCore;
 
 import java.util.function.Function;
 
@@ -52,7 +51,7 @@ public class InternalInstructions implements Instructions {
         return decoders[opcode];
     }
 
-    public static void process(Core core, int opcode, Object... operand) {
+    public static void process(VCore core, int opcode, Object... operand) {
         switch (opcode) {
             case DESTROY_OC: {
                 core.close();

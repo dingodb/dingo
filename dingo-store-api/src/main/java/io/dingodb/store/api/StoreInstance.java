@@ -85,7 +85,7 @@ public interface StoreInstance {
     }
 
     default boolean upsertKeyValue(KeyValue row) {
-        throw new UnsupportedOperationException();
+        return upsertKeyValue(row.getKey(), row.getValue());
     }
 
     default boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
@@ -93,7 +93,8 @@ public interface StoreInstance {
     }
 
     default boolean upsertKeyValue(List<KeyValue> rows) {
-        throw new UnsupportedOperationException();
+        rows.forEach(this::upsertKeyValue);
+        return true;
     }
 
     default boolean update(Row row) {

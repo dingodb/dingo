@@ -18,61 +18,36 @@ package io.dingodb.sdk.client;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.CodeUDFApi;
 import io.dingodb.server.api.MetaServiceApi;
+import io.dingodb.server.client.meta.service.MetaServiceClient;
 import lombok.experimental.Delegate;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.NavigableMap;
 
 public class MetaClient extends ClientBase implements MetaService {
     @Delegate
-    private MetaServiceApi metaServiceApi;
+    private MetaServiceClient metaServiceClient;
     @Delegate
     private CodeUDFApi codeUDFApi;
 
-    private CommonId id;
 
     public MetaClient(String coordinatorExchangeSvrList) {
         super(coordinatorExchangeSvrList);
     }
 
-    @Override
-    public String name() {
-        return "DINGO";
-    }
-
     public void init() throws Exception {
         super.initConnection();
-        metaServiceApi = super.getNetService()
-            .apiRegistry().proxy(MetaServiceApi.class, super.getCoordinatorConnector());
+        metaServiceClient = new MetaServiceClient(getCoordinatorConnector());
         codeUDFApi = ApiRegistry.getDefault().proxy(CodeUDFApi.class, super.getCoordinatorConnector());
-        this.id = metaServiceApi.rootId();
     }
 
-    @Override
-    public CommonId id() {
-        return this.id;
-    }
-
-    @Override
-    public Map<String, MetaService> getSubMetaServices(CommonId id) {
-        return null;
-    }
-
-    @Override
-    public MetaService getSubMetaService(CommonId id, String name) {
-        return null;
-    }
-
-    @Override
-    public boolean dropSubMetaService(CommonId id, String name) {
-        return false;
-    }
-
-    @Override
-    public Location currentLocation() {
-        return null;
-    }
 }

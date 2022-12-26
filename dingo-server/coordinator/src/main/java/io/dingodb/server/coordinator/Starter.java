@@ -26,13 +26,14 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
-import io.dingodb.mpu.core.MirrorProcessingUnit;
+import io.dingodb.mpu.storage.Storage;
+import io.dingodb.mpu.storage.mem.MemStorage;
+import io.dingodb.mpu.storage.rocks.RocksStorage;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.server.api.ClusterServiceApi;
 import io.dingodb.server.api.LogLevelApi;
-import io.dingodb.server.coordinator.cluster.service.CoordinatorClusterService;
-import io.dingodb.server.coordinator.config.CoordinatorConfiguration;
+import io.dingodb.server.coordinator.api.ClusterServiceApi;
+import io.dingodb.server.coordinator.config.Configuration;
 import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,39 +69,33 @@ public class Starter {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.COORDINATOR);
         DingoConfiguration.parse(this.config);
-        CoordinatorConfiguration configuration = CoordinatorConfiguration.instance();
+        Configuration configuration = Configuration.instance();
         log.info("Coordinator configuration: {}.", configuration);
         log.info("Dingo configuration: {}.", DingoConfiguration.instance());
 
         Path path = Paths.get(configuration.getDataPath());
         FileUtils.createDirectories(path);
 
-        MirrorProcessingUnit mpu = new MirrorProcessingUnit(
-            CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator),
-            Paths.get(configuration.getDataPath(), "db"),
-            configuration.getDbRocksOptionsFile(),
-            configuration.getLogRocksOptionsFile(),
-            0
-        );
-
         List<CoreMeta> metas = new ArrayList<>();
-        List<Location> locations = CoordinatorConfiguration.servers();
+        List<Location> locations = Configuration.servers();
         for (int i = 0; i < locations.size(); i++) {
             Location location = locations.get(i);
             metas.add(new CoreMeta(
                 CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator, 1, i),
-                CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator, 0, 1),
-                mpu.id, location,
-                0
+                CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator, 1, 1),
+                location
             ));
         }
 
-        Core core = mpu.createCore(locations.indexOf(DingoConfiguration.location()), metas);
+        CoreMeta meta = metas.remove(locations.indexOf(DingoConfiguration.location()));
+        Storage storage = new RocksStorage(meta.label, Paths.get(configuration.getDataPath(), "db"));
+        //Storage storage = new MemStorage();
+        Core core = new Core(meta, metas, storage, null);
         CoordinatorStateMachine.init(core);
         log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         ApiRegistry.getDefault().register(LogLevelApi.class, io.dingodb.server.coordinator.api.LogLevelApi.instance());
-        ApiRegistry.getDefault().register(ClusterServiceApi.class, CoordinatorClusterService.instance());
+        ApiRegistry.getDefault().register(ClusterServiceApi.class, ClusterServiceApi.instance());
         core.start();
     }
 }

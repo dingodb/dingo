@@ -40,11 +40,11 @@ import static io.dingodb.mpu.protocol.SelectReturn.NO;
 import static io.dingodb.mpu.protocol.SelectReturn.OK;
 
 @Slf4j
-public class InstructionSyncChannel implements Channel, MessageListener {
+class InstructionSyncChannel implements Channel, MessageListener {
 
     @Delegate
     private Channel channel;
-    private Core core;
+    private VCore core;
     private ControlUnit controlUnit;
     private CoreMeta mirror;
     private LinkedRunner sendRunner;
@@ -53,7 +53,7 @@ public class InstructionSyncChannel implements Channel, MessageListener {
     private long clock;
     private long syncClock;
 
-    public InstructionSyncChannel(Core core, CoreMeta mirror, long clock) {
+    public InstructionSyncChannel(VCore core, CoreMeta mirror, long clock) {
         this.core = core;
         this.mirror = mirror;
         this.sendRunner = new LinkedRunner(mirror.label + "-send-runner");
@@ -80,7 +80,7 @@ public class InstructionSyncChannel implements Channel, MessageListener {
             future.join();
             channel.setCloseListener(this::onClose);
             channel.setMessageListener(this);
-            syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
+            syncClock = InternalApi.askClock(mirror.location, mirror.coreId);
             log.info("Connected mirror {}, mirror sync clock [{}]", mirror.label, syncClock);
             return OK;
         } catch (Exception e) {
@@ -139,7 +139,7 @@ public class InstructionSyncChannel implements Channel, MessageListener {
                         byte[] reappearInstruction = core.storage.reappearInstruction(syncClock);
                         if (reappearInstruction == null) {
                             core.storage.transferTo(mirror).join();
-                            syncClock = InternalApi.askClock(mirror.location, mirror.mpuId, mirror.coreId);
+                            syncClock = InternalApi.askClock(mirror.location, mirror.coreId);
                         } else {
                             reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
                             channel.send(new Message(Message.EMPTY_TAG, reappearInstruction));

@@ -21,6 +21,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.StorageApi;
 import io.dingodb.mpu.core.CoreMeta;
@@ -95,7 +96,7 @@ public class RocksStorage implements Storage {
         RocksDB.loadLibrary();
     }
 
-    public final CoreMeta coreMeta;
+    public final String label;
 
     public final Path path;
     public final Path instructionPath;
@@ -141,21 +142,30 @@ public class RocksStorage implements Storage {
     public static final String LOCAL_CHECKPOINT_PREFIX = "local-";
     public static final String REMOTE_CHECKPOINT_PREFIX = "remote-";
 
-    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
-        final String logRocksOptionsFile)  throws Exception {
-        this(coreMeta, path, dbRocksOptionsFile, logRocksOptionsFile, 0, false);
+    public RocksStorage(String label, Path path) throws Exception {
+        this(label, path, null, null);
     }
 
-    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
+    public RocksStorage(String label, Path path, final int ttl, boolean withTtl) throws Exception {
+        this(label, path, null, null, ttl, withTtl);
+    }
+
+    public RocksStorage(
+        String label, Path path, final String dbRocksOptionsFile, final String logRocksOptionsFile
+    ) throws Exception {
+        this(label, path, dbRocksOptionsFile, logRocksOptionsFile, 0, false);
+    }
+
+    public RocksStorage(String label, Path path, final String dbRocksOptionsFile,
         final String logRocksOptionsFile, int ttl)  throws Exception {
-        this(coreMeta, path, dbRocksOptionsFile, logRocksOptionsFile, ttl, false);
+        this(label, path, dbRocksOptionsFile, logRocksOptionsFile, ttl, false);
     }
 
-    public RocksStorage(CoreMeta coreMeta, String path, final String dbRocksOptionsFile,
+    public RocksStorage(String label, Path path, final String dbRocksOptionsFile,
                         final String logRocksOptionsFile, final int ttl, boolean withTtl)  throws Exception {
-        this.coreMeta = coreMeta;
-        this.runner = new LinkedRunner(coreMeta.label);
-        this.path = Paths.get(path).toAbsolutePath();
+        this.label = label;
+        this.runner = new LinkedRunner(label);
+        this.path = path.toAbsolutePath();
         this.dbRocksOptionsFile = dbRocksOptionsFile;
         this.logRocksOptionsFile = logRocksOptionsFile;
         this.ttl = ttl;
@@ -168,6 +178,8 @@ public class RocksStorage implements Storage {
         this.mcfPath = this.dbPath.resolve("meta");
 
         RocksConfiguration rocksConfiguration = RocksConfiguration.refreshRocksConfiguration();
+        Parameters.cleanNull(this.dbRocksOptionsFile, rocksConfiguration.dbRocksOptionsFile());
+        Parameters.cleanNull(this.logRocksOptionsFile, rocksConfiguration.logRocksOptionsFile());
         log.info("Loading User Defined RocksConfiguration");
         this.dcfConf = rocksConfiguration.dcfConfiguration();
         this.mcfConf = rocksConfiguration.mcfConfiguration();
@@ -183,12 +195,12 @@ public class RocksStorage implements Storage {
         FileUtils.createDirectories(this.checkpointPath);
         FileUtils.createDirectories(this.dbPath);
         this.instruction = createInstruction();
-        log.info("Create {} instruction db.", coreMeta.label);
+        log.info("Create {} instruction db.", label);
         this.db = createDB();
         this.writeOptions = new WriteOptions();
-        log.info("Create {} db,  ttl: {}.", coreMeta.label, this.ttl);
+        log.info("Create {} db,  ttl: {}.", label, this.ttl);
         checkPoint = Checkpoint.create(db);
-        log.info("Create rocks storage for {} success.", coreMeta.label);
+        log.info("Create rocks storage for {} success.", label);
     }
 
     private RocksDB createInstruction() throws RocksDBException {
@@ -330,8 +342,8 @@ public class RocksStorage implements Storage {
 
         try {
             if (log.isDebugEnabled()) {
-                log.debug("destroy data db path {}", this.dbPath.toAbsolutePath().toString());
-                log.debug("destroy instruction db path {}", this.instructionPath.toAbsolutePath().toString());
+                log.debug("destroy data db path {}", this.dbPath.toAbsolutePath());
+                log.debug("destroy instruction db path {}", this.instructionPath.toAbsolutePath());
             }
             Options options = new Options();
             options.setWalDir(this.dbPath.resolve("wal").toString());
@@ -343,7 +355,7 @@ public class RocksStorage implements Storage {
                 FileUtils.delete(this.path.toFile());
             }
         } catch (RocksDBException e) {
-            log.error("destroy db failed {}", e);
+            log.error("destroy db failed", e);
         }
     }
 
@@ -355,7 +367,7 @@ public class RocksStorage implements Storage {
             mcfDesc.getOptions().close();
             icfDesc.getOptions().close();
         } catch (Exception e) {
-            log.error("Close {} cf options error.", coreMeta.label, e);
+            log.error("Close {} cf options error.", label, e);
         }
     }
 
@@ -368,7 +380,7 @@ public class RocksStorage implements Storage {
 
             //get remote dir to file transfer
             StorageApi storageApi = API.proxy(StorageApi.class, meta.location);
-            String target = storageApi.transferBackup(meta.mpuId, meta.coreId);
+            String target = storageApi.transferBackup(meta.coreId);
 
             //disable checkpoint purge while transferring checkpoint
             this.disableCheckpointPurge = true;
@@ -377,7 +389,7 @@ public class RocksStorage implements Storage {
             this.disableCheckpointPurge = false;
 
             //call remote node to apply checkpoint into db
-            storageApi.applyBackup(meta.mpuId, meta.coreId);
+            storageApi.applyBackup(meta.coreId);
             return null;
         });
     }
@@ -758,10 +770,10 @@ public class RocksStorage implements Storage {
                 log.info("RocksStorage compact db is null.");
             }
         } catch (final Exception e) {
-            log.error("RocksStorage compact exception, label: {}.", this.coreMeta.label, e);
+            log.error("RocksStorage compact exception, label: {}.", this.label, e);
             throw new RuntimeException(e);
         }
-        log.info("RocksStorage compact, label: {}, cost {}s.", this.coreMeta.label,
+        log.info("RocksStorage compact, label: {}, cost {}s.", this.label,
             (System.currentTimeMillis() - now) / 1000 );
     }
 
@@ -827,97 +839,97 @@ public class RocksStorage implements Storage {
 
         @Override
         public void onFlushCompleted(RocksDB db, FlushJobInfo flushJobInfo) {
-            log.info("{} on flush completed, info: {}", coreMeta.label, flushJobInfo);
+            log.info("{} on flush completed, info: {}", label, flushJobInfo);
         }
 
         @Override
         public void onFlushBegin(RocksDB db, FlushJobInfo flushJobInfo) {
-            log.info("{} on flush begin, info: {}", coreMeta.label, flushJobInfo);
+            log.info("{} on flush begin, info: {}", label, flushJobInfo);
         }
 
         @Override
         public void onTableFileDeleted(TableFileDeletionInfo tableFileDeletionInfo) {
-            log.info("{} on table file deleted, info: {}", coreMeta.label, tableFileDeletionInfo);
+            log.info("{} on table file deleted, info: {}", label, tableFileDeletionInfo);
         }
 
         @Override
         public void onCompactionBegin(RocksDB db, CompactionJobInfo compactionJobInfo) {
-            log.info("{} on compaction begin, info: {}", coreMeta.label, compactionJobInfo);
+            log.info("{} on compaction begin, info: {}", label, compactionJobInfo);
         }
 
         @Override
         public void onCompactionCompleted(RocksDB db, CompactionJobInfo compactionJobInfo) {
-            log.info("{} on compaction completed, info: {}", coreMeta.label, compactionJobInfo);
+            log.info("{} on compaction completed, info: {}", label, compactionJobInfo);
         }
 
         @Override
         public void onTableFileCreated(TableFileCreationInfo tableFileCreationInfo) {
-            log.info("{} on table file created, info: {}", coreMeta.label, tableFileCreationInfo);
+            log.info("{} on table file created, info: {}", label, tableFileCreationInfo);
         }
 
         @Override
         public void onTableFileCreationStarted(TableFileCreationBriefInfo tableFileCreationBriefInfo) {
-            log.info("{} on table file creation started, info: {}", coreMeta.label, tableFileCreationBriefInfo);
+            log.info("{} on table file creation started, info: {}", label, tableFileCreationBriefInfo);
         }
 
         @Override
         public void onMemTableSealed(MemTableInfo memTableInfo) {
-            log.info("{} on mem table sealed, info: {}", coreMeta.label, memTableInfo);
+            log.info("{} on mem table sealed, info: {}", label, memTableInfo);
         }
 
         @Override
         public void onBackgroundError(BackgroundErrorReason reason, Status status) {
             log.error(
                 "{} on background error, reason: {}, code: {}, state: {}",
-                coreMeta.label, reason, status.getCodeString(), status.getState()
+                label, reason, status.getCodeString(), status.getState()
             );
         }
 
         @Override
         public void onStallConditionsChanged(WriteStallInfo writeStallInfo) {
-            log.info("{} on stall conditions changed, info: {}", coreMeta.label, writeStallInfo);
+            log.info("{} on stall conditions changed, info: {}", label, writeStallInfo);
         }
 
         @Override
         public void onFileReadFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file read finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file read finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileWriteFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file write finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file write finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileFlushFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file flush finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file flush finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileSyncFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file sync finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file sync finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileRangeSyncFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file range sync finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file range sync finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileTruncateFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file truncate finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file truncate finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public void onFileCloseFinish(FileOperationInfo fileOperationInfo) {
-            log.info("{} on file close finish, info: {}", coreMeta.label, fileOperationInfo);
+            log.info("{} on file close finish, info: {}", label, fileOperationInfo);
         }
 
         @Override
         public boolean onErrorRecoveryBegin(BackgroundErrorReason reason, Status status) {
             log.info(
                 "{} on error recovery begin, reason: {}, code: {}, state: {}",
-                coreMeta.label, reason, status.getCodeString(), status.getState()
+                label, reason, status.getCodeString(), status.getState()
             );
             return super.onErrorRecoveryBegin(reason, status);
         }
@@ -926,7 +938,7 @@ public class RocksStorage implements Storage {
         public void onErrorRecoveryCompleted(Status status) {
             log.info(
                 "{} on error recovery completed, code: {}, state: {}",
-                coreMeta.label, status.getCodeString(), status.getState()
+                label, status.getCodeString(), status.getState()
             );
         }
 
