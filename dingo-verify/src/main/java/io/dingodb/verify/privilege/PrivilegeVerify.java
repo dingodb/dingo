@@ -17,6 +17,7 @@
 package io.dingodb.verify.privilege;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
@@ -27,11 +28,10 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.net.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlAccessEnum;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,6 +72,21 @@ public class PrivilegeVerify {
             userDef = userDefs.get(0);
         }
         return userDef;
+    }
+
+    public static boolean verify(Channel channel, CommonId schema, CommonId table, DingoSqlAccessEnum accessType) {
+        if (!isVerify) {
+            return true;
+        }
+
+        Object[] objects = channel.auth().get("token");
+        if (objects == null) {
+            throw new IllegalArgumentException("Access denied, invalid parameter.");
+        }
+        Authentication authentication = (Authentication) objects[0];
+        String user = authentication.getUsername();
+        String host = authentication.getHost();
+        return verify(user, host, schema, table, accessType);
     }
 
     public static boolean verify(String user, String host, CommonId schema, CommonId table,

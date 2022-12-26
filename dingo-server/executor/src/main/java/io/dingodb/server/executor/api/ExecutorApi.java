@@ -17,12 +17,10 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetService;
-import io.dingodb.net.error.ApiTerminateException;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
@@ -144,15 +142,9 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     private void verify(Channel channel, CommonId schema, CommonId tableId, DingoSqlAccessEnum accessType) {
-        Object[] objects = channel.auth().get("token");
-        if (objects == null) {
-            throw new IllegalArgumentException("Access denied, invalid parameter");
-        }
-        Authentication authentication = (Authentication) objects[0];
-        boolean verify = PrivilegeVerify.verify(authentication.getUsername(), authentication.getHost(),
-            schema, tableId, accessType);
+        boolean verify = PrivilegeVerify.verify(channel, schema, tableId, accessType);
         if (log.isDebugEnabled()) {
-            log.debug("verify:{}, user:{}", verify, authentication.getUsername() + "@" + authentication.getHost());
+            log.debug("Verify:{}, access type: {}", verify, accessType.name());
         }
         if (!verify) {
             throw new RuntimeException("Access denied for user");
