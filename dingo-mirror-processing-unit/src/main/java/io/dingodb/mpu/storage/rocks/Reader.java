@@ -60,6 +60,8 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         this.snapshot = db.getSnapshot();
         this.handle = handle;
         this.readOptions = new ReadOptions().setSnapshot(snapshot);
+        this.readOptions.setAutoPrefixMode(true);
+        this.readOptions.setPrefixSameAsStart(false);
     }
 
     public Iterator iterator() {
@@ -114,7 +116,6 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
         }
 
         if (maybePrefixScan(startKey, endKey)) {
-            readOptions.setAutoPrefixMode(true);
             readOptions.setIterateUpperBound(new Slice(withEnd ? ByteArrayUtils.increment(endKey) : endKey));
         }
 

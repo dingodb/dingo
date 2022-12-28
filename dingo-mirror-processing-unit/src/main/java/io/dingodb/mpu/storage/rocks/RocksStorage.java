@@ -137,7 +137,7 @@ public class RocksStorage implements Storage {
     private boolean disableCheckpointPurge = false;
 
     private static final int MAX_BLOOM_HASH_NUM = 10;
-    private static final int MAX_PREFIX_LENGTH = 4;
+    private static final int MAX_PREFIX_LENGTH = 8;
 
     public static final String LOCAL_CHECKPOINT_PREFIX = "local-";
     public static final String REMOTE_CHECKPOINT_PREFIX = "remote-";
@@ -166,8 +166,6 @@ public class RocksStorage implements Storage {
         this.label = label;
         this.runner = new LinkedRunner(label);
         this.path = path.toAbsolutePath();
-        this.dbRocksOptionsFile = dbRocksOptionsFile;
-        this.logRocksOptionsFile = logRocksOptionsFile;
         this.ttl = ttl;
         this.withTtl = withTtl;
 
@@ -178,8 +176,8 @@ public class RocksStorage implements Storage {
         this.mcfPath = this.dbPath.resolve("meta");
 
         RocksConfiguration rocksConfiguration = RocksConfiguration.refreshRocksConfiguration();
-        Parameters.cleanNull(this.dbRocksOptionsFile, rocksConfiguration.dbRocksOptionsFile());
-        Parameters.cleanNull(this.logRocksOptionsFile, rocksConfiguration.logRocksOptionsFile());
+        this.dbRocksOptionsFile = Parameters.cleanNull(dbRocksOptionsFile, rocksConfiguration.dbRocksOptionsFile());
+        this.logRocksOptionsFile = Parameters.cleanNull(logRocksOptionsFile, rocksConfiguration.logRocksOptionsFile());
         log.info("Loading User Defined RocksConfiguration");
         this.dcfConf = rocksConfiguration.dcfConfiguration();
         this.mcfConf = rocksConfiguration.mcfConfiguration();

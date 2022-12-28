@@ -21,11 +21,7 @@ import io.dingodb.mpu.instruction.Instruction;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
-import org.rocksdb.WriteBatch;
+import org.rocksdb.*;
 
 import java.util.Arrays;
 
@@ -70,6 +66,14 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     public void set(byte[] key, byte[] value) {
         try {
             writeBatch.put(handler, key, value);
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void flush() {
+        try {
+            this.db.write(new WriteOptions(), this.writeBatch);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
