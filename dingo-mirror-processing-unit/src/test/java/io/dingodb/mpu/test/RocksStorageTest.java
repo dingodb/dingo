@@ -19,12 +19,16 @@ package io.dingodb.mpu.test;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.storage.rocks.ColumnFamilyConfiguration;
+import io.dingodb.mpu.storage.rocks.Reader;
 import io.dingodb.mpu.storage.rocks.RocksConfiguration;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
+import io.dingodb.mpu.storage.rocks.Writer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.CompressionType;
@@ -35,6 +39,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class RocksStorageTest {
     static {
@@ -42,6 +49,17 @@ public class RocksStorageTest {
     }
 
     public RocksStorage storage;
+
+    private List<String> readIterator(Iterator<KeyValue> it) {
+        List<String> result = new ArrayList<String>();
+        while (it.hasNext()) {
+            KeyValue kv = it.next();
+            result.add(new String(kv.getValue()));
+            System.out.printf("%s %s%n", new String(kv.getKey()), new String(kv.getValue()));
+        }
+
+        return result;
+    }
 
     public void createRocksStorage() {
         try {
@@ -59,7 +77,7 @@ public class RocksStorageTest {
             //String tmpDingoConfigPath = genTmpConfigFile();
             //DingoConfiguration.parse(tmpDingoConfigPath);
 
-            storage = new RocksStorage(coreMeta.label, Paths.get(testDbPath), "", "", 0, false);
+            storage = new RocksStorage(coreMeta.label, Paths.get(testDbPath));
 
             Assertions.assertNotNull(storage);
         } catch (Exception e) {
@@ -206,6 +224,73 @@ public class RocksStorageTest {
             ColumnFamilyConfiguration dcfConfig = new ColumnFamilyConfiguration();
             Assertions.assertEquals(true, dcfConfig.getCfMaxCompactionBytes() == null);
         });
+    }
+
+    @Disabled
+    @Test
+    public void testGet() {
+        Assertions.assertDoesNotThrow(() -> createRocksStorage());
+        Assertions.assertNotNull(storage);
+
+        Writer writer = storage.writer(null);
+        writer.set("bbbb1000".getBytes(), "value01".getBytes());
+        writer.set("cbbb10001".getBytes(), "value02".getBytes());
+        writer.set("bbbb20002".getBytes(), "value03".getBytes());
+        writer.set("cccb100043".getBytes(), "value04".getBytes());
+        writer.flush();
+
+        Reader reader = storage.reader();
+        String actual = new String(reader.get("bbbb1000".getBytes()));
+        Assertions.assertEquals("value01", actual);
+
+        Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
+    }
+
+    @Disabled
+    @Test
+    public void testScan() {
+        Assertions.assertDoesNotThrow(() -> createRocksStorage());
+        Assertions.assertNotNull(storage);
+
+        Writer writer = storage.writer(null);
+        writer.set("bbbb1000".getBytes(), "value01".getBytes());
+        writer.set("cbbb10001".getBytes(), "value02".getBytes());
+        writer.set("bbbb20002".getBytes(), "value03".getBytes());
+        writer.set("cccb100043".getBytes(), "value04".getBytes());
+        writer.flush();
+
+        Reader reader = storage.reader();
+        Iterator<KeyValue> it = reader.scan("aaaaa".getBytes(), null, true, false);
+        List<String> result = readIterator(it);
+        System.out.printf("result size: %d%n", result.size());
+
+        String[] actual = result.toArray(new String[result.size()]);
+        String[] expected = {"value01", "value03", "value02", "value04"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
+    }
+
+    @Disabled
+    @Test
+    public void testScan2() {
+        Assertions.assertDoesNotThrow(() -> createRocksStorage());
+        Assertions.assertNotNull(storage);
+
+        Writer writer = storage.writer(null);
+        writer.set(new byte[] {84,84,66,0,0,0,1,0,0,0,1,0,0,0,1}, "value01".getBytes());
+        writer.flush();
+
+        Reader reader = storage.reader();
+        Iterator<KeyValue> it = reader.scan(new byte[]{84,84,66}, new byte[]{84,84,66}, true, true);
+        List<String> result = readIterator(it);
+        System.out.printf("result size: %d%n", result.size());
+
+        String[] actual = result.toArray(new String[result.size()]);
+        String[] expected = {"value01"};
+        Assertions.assertArrayEquals(expected, actual);
+
+        Assertions.assertDoesNotThrow(() -> cleanupRocksStorage());
     }
 }
 
