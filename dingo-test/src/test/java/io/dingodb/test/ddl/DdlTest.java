@@ -80,7 +80,7 @@ public class DdlTest {
         "double, 2.7",
     })
     public void testCreateTable(@Nonnull String type, String value) throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + value + ")"
         );
@@ -100,7 +100,7 @@ public class DdlTest {
         "binary, abc",
     })
     public void testCreateTableStringLiteral(@Nonnull String type, String value) throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, '" + value + "')"
         );
@@ -117,7 +117,7 @@ public class DdlTest {
         "timestamp, 2022-11-01 11:01:01.000",
     })
     public void testCreateTableTimestampLiteral(@Nonnull String type, String value) throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + type + "'" + value + "')"
         );
@@ -134,7 +134,7 @@ public class DdlTest {
         "time, 04:30:02",
     })
     public void testCreateTableDateTimeCastString(@Nonnull String type, String value) throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, '" + value + "')"
         );
@@ -151,7 +151,7 @@ public class DdlTest {
         "time, 04:30:02",
     })
     public void testCreateTableDateTimeLiteral(@Nonnull String type, String value) throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data " + type + ", primary key(id))",
             "insert into {table} values(1, " + type + "'" + value + "')"
         );
@@ -162,7 +162,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithIntArray() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data int array, primary key(id))",
             "insert into {table} values(1, array[1, 2, 3])"
         );
@@ -176,7 +176,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithDoubleArray() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data double array, primary key(id))",
             "insert into {table} values(1, array[1, 2.1, 3.2])"
         );
@@ -190,7 +190,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithStringArray() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data varchar array, primary key(id))",
             "insert into {table} values(1, array['1', '2', '3'])"
         );
@@ -204,18 +204,18 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithStringArrayContainsNull() {
-        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.randomTable().prepare(
+        SQLException exception = assertThrows(SQLException.class, () -> {
+            sqlHelper.randomTable().execSqls(
                 "create table {table} (id int, data varchar array, primary key(id))",
                 "insert into {table} values(1, array['1', null, '3'])"
             );
         });
-        assertThat(exception.getMessage()).contains("NULLs are not allowed");
+        assertThat(exception.getMessage()).startsWith("Null values are not allowed");
     }
 
     @Test
     public void testCreateTableWithStringArrayNull() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data varchar array, primary key(id))",
             "insert into {table} values(1, null)"
         );
@@ -225,19 +225,8 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithStringArrayNull1() throws SQLException {
-        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.randomTable().prepare(
-                "create table {table} (id int, data varchar array not null, primary key(id))",
-                "insert into {table} values(1, null)"
-            );
-        });
-        assertThat(exception.getMessage()).contains("does not allow NULLs");
-    }
-
-    @Test
     public void testCreateTableWithDateArray() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data date array, primary key(id))",
             "insert into {table} values(1, array['1970-01-01', '1980-2-2', '19900303'])"
         );
@@ -254,7 +243,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithTimestampArray() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data timestamp array, primary key(id))",
             "insert into {table} values(1, array[1, 2])"
         );
@@ -274,7 +263,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMultiset() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data int multiset, primary key(id))",
             "insert into {table} values(1, multiset[7, 7, 8, 8])"
         );
@@ -288,7 +277,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMultiset1() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
         );
@@ -302,7 +291,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMultisetDefault() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -321,7 +310,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMultisetDefault1() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -340,7 +329,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithDoubleMultiset() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data double multiset, primary key(id))",
             "insert into {table} values(1, multiset[1, 2.1, 3.2])"
         );
@@ -354,19 +343,19 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithDateMultisetNull() {
-        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.randomTable().prepare(
+        SQLException exception = assertThrows(SQLException.class, () -> {
+            sqlHelper.randomTable().execSqls(
                 "create table {table} (id int, data date multiset, primary key(id))",
                 "insert into {table} values(1, multiset[''])"
             );
         });
-        assertThat(exception.getMessage()).contains("Null values are not allowed");
+        assertThat(exception.getMessage()).startsWith("Null values are not allowed");
     }
 
     @Test
     @Disabled
     public void testCreateTableWithDateMultiset1() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data date multiset, primary key(id))",
             "insert into {table} values(1, multiset['1970-01-01', '1980-2-2', '19900303'])"
         );
@@ -384,7 +373,7 @@ public class DdlTest {
     @Test
     @Disabled
     public void testCreateTableWithMultisetAndUpdate() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, name char(8), data int multiset, primary key(id))",
             "insert into {table} values(1, 'ABC', multiset[7, 7, 8, 8])"
         );
@@ -402,7 +391,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMap() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, map['a', 1, 'b', 2])"
         );
@@ -414,18 +403,18 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMapNullValue() {
-        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.randomTable().prepare(
+        SQLException exception = assertThrows(SQLException.class, () -> {
+            sqlHelper.randomTable().execSqls(
                 "create table {table} (id int, data map, primary key(id))",
                 "insert into {table} values(1, map['a', '1', 'b', null])"
             );
         });
-        assertThat(exception.getMessage()).contains("NULLs are not allowed");
+        assertThat(exception.getMessage()).startsWith("Null values are not allowed");
     }
 
     @Test
     public void testCreateTableWithMapNull() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, null)"
         );
@@ -435,19 +424,8 @@ public class DdlTest {
     }
 
     @Test
-    public void testCreateTableWithMapNull1() {
-        AvaticaSqlException exception = assertThrows(AvaticaSqlException.class, () -> {
-            sqlHelper.randomTable().prepare(
-                "create table {table} (id int, data map not null, primary key(id))",
-                "insert into {table} values(1, null)"
-            );
-        });
-        assertThat(exception.getMessage()).contains("does not allow NULLs");
-    }
-
-    @Test
     public void testCreateTableWithMapMixedType() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} (id int, data map, primary key(id))",
             "insert into {table} values(1, map['a', 1, 'b', 2.5])"
         );
@@ -459,7 +437,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithMapDefault() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id int,"
                 + "name char(8),"
@@ -476,7 +454,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableDateDoubleWithNull() throws SQLException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id int,"
                 + "name varchar(20),"
@@ -497,7 +475,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithPartition() throws SQLException, JsonProcessingException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id int,"
                 + "name varchar(20),"
@@ -521,7 +499,7 @@ public class DdlTest {
 
     @Test
     public void testCreateTableWithPartition1() throws SQLException, JsonProcessingException {
-        RandomTable table = sqlHelper.randomTable().prepare(
+        RandomTable table = sqlHelper.randomTable().execSqls(
             "create table {table} ("
                 + "id varchar(20),"
                 + "name varchar(20),"

@@ -54,7 +54,7 @@ public class UpdateTest {
         sqlHelper.execFile("/table-update-test5-insert.sql");
         System.out.println("Hello world");
         String sql = "update strdemo set address=replace(address,'beijing','shanghai')";
-        int count = sqlHelper.execSqlCmd(sql);
+        int count = sqlHelper.execUpdate(sql);
         System.out.println("count: " + count);
         sql = "select id, name, age, amount, address from strdemo where address = 'shanghai'";
         sqlHelper.queryTest(

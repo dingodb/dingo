@@ -72,7 +72,7 @@ public class QueryBooleanTest {
     public void testInsertStringAsBoolean() throws SQLException {
         String sql = "insert into bldemo values(1, 'c1', 28, 109.325, 'beijing', 'true')";
         assertThrows(SQLException.class, () -> {
-            sqlHelper.execSqlCmd(sql);
+            sqlHelper.execSql(sql);
         });
     }
 }

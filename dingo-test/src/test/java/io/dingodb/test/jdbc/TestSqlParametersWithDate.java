@@ -48,7 +48,7 @@ public class TestSqlParametersWithDate {
 
     @Test
     public void testInsert() throws SQLException {
-        SqlHelper.RandomTable table = sqlHelper.randomTable().prepare("create table {table} ("
+        SqlHelper.RandomTable table = sqlHelper.randomTable().execSqls("create table {table} ("
             + "id int,"
             + "data date,"
             + "data1 time,"

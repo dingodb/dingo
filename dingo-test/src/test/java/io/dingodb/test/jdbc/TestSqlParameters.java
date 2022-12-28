@@ -33,7 +33,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestSqlParameters {
@@ -60,22 +59,6 @@ public class TestSqlParameters {
     @AfterEach
     public void cleanUp() throws Exception {
         sqlHelper.clearTable("test");
-    }
-
-    @Test
-    public void testIllegalUse() throws SQLException {
-        String sql = "select ?";
-        SQLException e = assertThrows(SQLException.class, () -> {
-            try (PreparedStatement statement = sqlHelper.getConnection().prepareStatement(sql)) {
-                statement.setInt(1, 1);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    Assert.resultSet(resultSet).isRecords(ImmutableList.of(
-                        new Object[]{1}
-                    ));
-                }
-            }
-        });
-        assertThat(e.getCause().getMessage()).contains("Illegal use of dynamic parameter");
     }
 
     @Test

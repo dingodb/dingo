@@ -40,7 +40,7 @@ dependencies {
     implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
     implementation project(":dingo-net-netty")
-    implementation project(":dingo-driver-client")
+    implementation project(":dingo-driver:dingo-driver-client")
     implementation project(":dingo-server:dingo-server-client")
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-server:dingo-server-driver-proxy")

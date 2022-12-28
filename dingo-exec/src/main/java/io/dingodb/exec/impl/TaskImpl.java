@@ -179,10 +179,9 @@ public final class TaskImpl implements Task {
                     taskStatus.setTaskId(operator.getTask().getId().toString());
                     taskStatus.setErrorMsg(e.toString());
                     operator.fin(0, FinWithException.of(taskStatus));
-                } finally {
-                    if (log.isDebugEnabled()) {
-                        log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
-                    }
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                 }
                 activeThreads.countDown();
             });

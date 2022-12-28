@@ -22,7 +22,7 @@ plugins {
 dependencies {
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation project(':dingo-net-api')
-    implementation project(':dingo-driver')
-    implementation project(':dingo-driver-client')
+    implementation project(':dingo-driver:dingo-driver-host')
+    implementation project(':dingo-driver:dingo-driver-client')
     implementation project(":dingo-server:dingo-server-protocol")
 }

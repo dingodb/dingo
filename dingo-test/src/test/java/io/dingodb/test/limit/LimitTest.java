@@ -75,7 +75,7 @@ public class LimitTest {
             }
             sql.append("(").append(id).append(", 'ABC', ").append(random.nextDouble()).append(")");
         }
-        sqlHelper.execSqlCmd(sql.toString());
-        sqlHelper.execSqlCmd("select * from test limit 3");
+        sqlHelper.execSql(sql.toString());
+        sqlHelper.execSql("select * from test limit 3");
     }
 }

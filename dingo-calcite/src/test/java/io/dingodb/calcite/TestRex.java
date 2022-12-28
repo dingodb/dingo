@@ -22,6 +22,7 @@ import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.cases.RexCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -123,7 +125,7 @@ public class TestRex {
     }
 
     @ParameterizedTest
-    @MethodSource({"io.dingodb.test.cases.RexCasesJUnit5#cases"})
+    @ArgumentsSource(RexCasesJUnit5.class)
     public void test(String rex, String exprStr, Object expected)
         throws SqlParseException, ExprCompileException {
         RexNode rexNode = getRexNode(rex);

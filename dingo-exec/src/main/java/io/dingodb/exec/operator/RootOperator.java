@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.utils.QueueUtils;
@@ -99,8 +100,7 @@ public final class RootOperator extends SinkOperator {
             }
             if (errorFin != null) {
                 String errorMsg = errorFin.detail();
-                log.warn("Job [id = {}] has failed, ErrorMsg: {}", getTask().getJobId(), errorMsg);
-                throw new IllegalStateException(errorMsg);
+                throw new TaskFinException(errorMsg, getTask().getJobId());
             }
             return false;
         }

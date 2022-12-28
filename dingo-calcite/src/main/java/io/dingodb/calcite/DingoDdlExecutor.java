@@ -16,27 +16,12 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
-import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
-import io.dingodb.calcite.grammar.ddl.SqlDropUser;
-import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
-import io.dingodb.calcite.grammar.ddl.SqlGrant;
-import io.dingodb.calcite.grammar.ddl.SqlRevoke;
-import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
-import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
-import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.grammar.ddl.*;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
-import io.dingodb.common.privilege.PrivilegeDefinition;
-import io.dingodb.common.privilege.PrivilegeDict;
-import io.dingodb.common.privilege.PrivilegeGather;
-import io.dingodb.common.privilege.PrivilegeList;
-import io.dingodb.common.privilege.PrivilegeType;
-import io.dingodb.common.privilege.SchemaPrivDefinition;
-import io.dingodb.common.privilege.TablePrivDefinition;
-import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.privilege.*;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
@@ -53,12 +38,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
-import org.apache.calcite.sql.SqlDataTypeSpec;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -79,6 +59,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 @Slf4j
@@ -183,6 +164,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
                 RESOURCE.createTableRequiresColumnList());
         }
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
 
         // Get all primary key
         List<String> pks = create.columnList.stream()
@@ -198,7 +180,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new))
             ).filter(ks -> !ks.isEmpty())
-            .orElseThrow(() -> new RuntimeException("Primary keys are required in table definition."));
+            .orElseThrow(() -> DINGO_RESOURCE.primaryKeyRequired(tableName).ex());
         SqlValidator validator = new ContextSqlValidator(context, true);
 
         // Mapping, column node -> column definition
@@ -207,7 +189,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(col -> fromSqlColumnDeclaration((SqlColumnDeclaration) col, validator, pks))
             .collect(Collectors.toCollection(ArrayList::new));
 
-        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
 
         // Distinct column
         long distinctColCnt = columns.stream().map(ColumnDefinition::getName).distinct().count();
@@ -402,7 +383,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             if (count == PrivilegeList.privilegeMap.get(PrivilegeType.USER).size()) {
                 isAllPrivilege = true;
             } else {
-                List<Integer> indexs =  new ArrayList<>();
+                List<Integer> indexs = new ArrayList<>();
                 Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
                     if (userPrivileges.get(i)) {
                         indexs.add(i);
