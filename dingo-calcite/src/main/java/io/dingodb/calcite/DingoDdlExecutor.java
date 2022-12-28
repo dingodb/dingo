@@ -16,12 +16,27 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.grammar.ddl.*;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropUser;
+import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
+import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlRevoke;
+import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
+import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
+import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
-import io.dingodb.common.privilege.*;
+import io.dingodb.common.privilege.PrivilegeDefinition;
+import io.dingodb.common.privilege.PrivilegeDict;
+import io.dingodb.common.privilege.PrivilegeGather;
+import io.dingodb.common.privilege.PrivilegeList;
+import io.dingodb.common.privilege.PrivilegeType;
+import io.dingodb.common.privilege.SchemaPrivDefinition;
+import io.dingodb.common.privilege.TablePrivDefinition;
+import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
@@ -38,7 +53,12 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -328,6 +348,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(@NonNull SqlDropUser sqlDropUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlDropUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name).host(sqlDropUser.host).build();
+        if (!userService.existsUser(userDefinition)) {
+            throw new RuntimeException("user is not exists");
+        }
         userService.dropUser(userDefinition);
     }
 
@@ -349,6 +372,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
+        UserDefinition userDef = UserDefinition.builder()
+            .user(sqlShowGrants.user)
+            .host(sqlShowGrants.host)
+            .build();
+        if (!userService.existsUser(userDef)) {
+            throw new RuntimeException("user is not exist");
+        }
         PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, sqlShowGrants.user,
             sqlShowGrants.host);
         List<SchemaPrivDefinition> schemaPrivDefinitions = privilegeGather
@@ -382,6 +412,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
             if (count == PrivilegeList.privilegeMap.get(PrivilegeType.USER).size()) {
                 isAllPrivilege = true;
+                privileges = new ArrayList<>();
+                privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.USER));
             } else {
                 List<Integer> indexs = new ArrayList<>();
                 Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
@@ -416,6 +448,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 List<String> privileges = null;
                 if (count == PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA).size()) {
                     isAllPrivilege = true;
+                    privileges = new ArrayList<>();
+                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA));
                 } else {
                     List<Integer> indexs = new ArrayList<>();
                     Stream.iterate(0, i -> i + 1).limit(schemaPrivileges.size()).forEach(i -> {
@@ -454,6 +488,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 List<String> privileges = null;
                 if (count == PrivilegeList.privilegeMap.get(PrivilegeType.TABLE).size()) {
                     isAllPrivilege = true;
+                    privileges = new ArrayList<>();
+                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.TABLE));
                 } else {
                     List<Integer> indexs = new ArrayList<>();
                     Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {

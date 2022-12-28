@@ -38,8 +38,8 @@ public class SqlShowGrants extends SqlShow {
      */
     public SqlShowGrants(SqlParserPos pos, String user, String host) {
         super(OPERATOR, pos);
-        this.user = user;
-        this.host = host;
+        this.user = user.startsWith("'") ? user.replace("'", "") : user;
+        this.host = host.startsWith("'") ? host.replace("'", "") : host;
     }
 
     @Override

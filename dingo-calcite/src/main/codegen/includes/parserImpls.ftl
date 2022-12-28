@@ -413,7 +413,16 @@ Number number(): {
             }
         }
       ) | (
-        <MINUS>
+          t = <DECIMAL_NUMERIC_LITERAL>
+          {
+              if(nativeNumbers) {
+                  return new Double(t.image);
+              } else {
+                  return new BigInteger(substringBefore(t.image, '.'));
+              }
+          }
+       ) | (
+         <MINUS>
          n = number() {
             return ((BigInteger) n).multiply(new BigInteger("-1"));
           }
@@ -777,7 +786,7 @@ String privilege() : {
   | <RELOAD>
   )
   {
-     return token.image;
+     return token.image.toLowerCase();
   }
   |
     <CREATE>

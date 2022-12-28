@@ -44,8 +44,8 @@ public class SqlSetPassword extends SqlSetOption {
      */
     public SqlSetPassword(SqlParserPos pos, String user, String host, String password) {
         super(pos, "user", name, name);
-        this.user = user;
-        this.host = host;
+        this.user = user.startsWith("'") ? user.replace("'", "") : user;
+        this.host = host.startsWith("'") ? host.replace("'", "") : host;
         this.password = password.startsWith("'") ? password.replace("'", "") : password;
     }
 
