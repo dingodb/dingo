@@ -19,19 +19,21 @@ package io.dingodb.sdk.operation.filter.impl;
 import io.dingodb.sdk.operation.filter.AbstractDingoFilter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+
 @Slf4j
 public class DingoGtFilter extends AbstractDingoFilter {
 
     private int index;
-    private String value;
+    private BigDecimal value;
 
-    public DingoGtFilter(String value) {
-        this.value = value;
+    public DingoGtFilter(Number value) {
+        this.value = new BigDecimal(value.toString());
     }
 
-    public DingoGtFilter(int index, String value) {
+    public DingoGtFilter(int index, Number value) {
         this.index = index;
-        this.value = value;
+        this.value = new BigDecimal(value.toString());
     }
 
     @Override
@@ -49,8 +51,8 @@ public class DingoGtFilter extends AbstractDingoFilter {
             log.warn("Current input value is null.");
             return false;
         }
+        BigDecimal currentValue = new BigDecimal(record.toString());
 
-        String objStr = record.toString();
-        return objStr.compareTo(value) > 0;
+        return currentValue.compareTo(value) > 0;
     }
 }

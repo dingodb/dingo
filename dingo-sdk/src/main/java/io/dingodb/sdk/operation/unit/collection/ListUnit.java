@@ -16,17 +16,17 @@
 
 package io.dingodb.sdk.operation.unit.collection;
 
+import io.dingodb.sdk.operation.Row;
 import io.dingodb.sdk.operation.unit.CollectionUnit;
 import io.dingodb.sdk.operation.unit.UnlimitedMergedUnit;
-import io.dingodb.sdk.operation.unit.Value;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ListUnit<T> implements UnlimitedMergedUnit<ListUnit<T>>,
-    CollectionUnit<T, ListUnit<T>>, Value<List<T>>, Serializable, Iterable<T> {
+public class ListUnit<T> implements UnlimitedMergedUnit<ListUnit<T>>, CollectionUnit<T, ListUnit<T>>, Serializable {
 
     private List<T> values = new ArrayList<>();
 
@@ -63,10 +63,6 @@ public class ListUnit<T> implements UnlimitedMergedUnit<ListUnit<T>>,
         return this;
     }
 
-    public List<T> asList() {
-        return this.values;
-    }
-
     @Override
     public ListUnit<T> merge(ListUnit<T> that) {
         return merge(that, false);
@@ -101,13 +97,13 @@ public class ListUnit<T> implements UnlimitedMergedUnit<ListUnit<T>>,
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return this.values.iterator();
+    public Iterator<Object[]> iterator() {
+        return this.values.stream().map(r -> ((Row) r).getRecords()).iterator();
     }
 
     @Override
-    public List<T> value() {
-        return this.values;
+    public List<Object[]> value() {
+        return this.values.stream().map(r -> ((Row) r).getRecords()).collect(Collectors.toList());
     }
 
     @Override

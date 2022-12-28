@@ -19,6 +19,7 @@ package io.dingodb.sdk.operation.executive.collection;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Executive;
+import io.dingodb.sdk.operation.Row;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
 import io.dingodb.sdk.operation.result.MultiValueOpResult;
@@ -51,12 +52,13 @@ public class SortListExec extends AbstractExecutive<Context, Iterator<Object[]>>
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
                 Object[] record = records.next();
-                // todo Record converted to a data structure that implements Comparable
-                // unit.add(record[keyIndex]);
+                Row row = new Row(record, (Comparable) record[keyIndex]);
+                unit.add(row);
             }
+
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
-        return new MultiValueOpResult(unit.asList());
+        return new MultiValueOpResult<>(unit);
     }
 }

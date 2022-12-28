@@ -108,10 +108,10 @@ public abstract class AbstractOp implements Op {
         return new WriteOp(DeleteExec.COMMON_ID, Context.builder().startPrimaryKeys(keyList).build());
     }
 
-    public static WriteOp deleteRange(List<Key> startKeyList, List<Key> endKeyList) {
+    public static WriteOp deleteRange(Key start, Key end) {
         return new WriteOp(DeleteRangeExec.COMMON_ID, Context.builder()
-            .startPrimaryKeys(startKeyList)
-            .endPrimaryKeys(endKeyList)
+            .startPrimaryKeys(Collections.singletonList(start))
+            .endPrimaryKeys(Collections.singletonList(end))
             .build());
     }
 }

@@ -112,7 +112,7 @@ public class DingoOperationExample {
         println(result, "decrease");
 
         root = new DingoLogicalExpressFilter();
-        DingoGtFilter gtFilter = new DingoGtFilter("3");
+        DingoGtFilter gtFilter = new DingoGtFilter(3);
         root.addAndFilter(gtFilter);
         op = Op.scan(start, end).maxContinuousDecreaseCount(new Column("amount")).filter(root);
         result = dingoClient.exec(op);

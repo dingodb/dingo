@@ -16,18 +16,19 @@
 
 package io.dingodb.sdk.operation.unit.collection;
 
+import io.dingodb.sdk.operation.Row;
 import io.dingodb.sdk.operation.unit.CollectionUnit;
 import io.dingodb.sdk.operation.unit.UnlimitedMergedUnit;
-import io.dingodb.sdk.operation.unit.Value;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DistinctListUnit<T extends Object> implements CollectionUnit<T, DistinctListUnit<T>>,
-    UnlimitedMergedUnit<DistinctListUnit<T>>, Value<Collection<T>>, Serializable, Iterable<T> {
+    UnlimitedMergedUnit<DistinctListUnit<T>>, Serializable {
 
     private Set<T> original = new HashSet<>();
 
@@ -114,12 +115,8 @@ public class DistinctListUnit<T extends Object> implements CollectionUnit<T, Dis
     }
 
     @Override
-    public Collection<T> value() {
-        return this.original;
-    }
-
-    public Collection<T> asCollection() {
-        return this.original;
+    public Collection<Object[]> value() {
+        return this.original.stream().map(r -> ((Row) r).getRecords()).collect(Collectors.toSet());
     }
 
     /**
@@ -147,8 +144,8 @@ public class DistinctListUnit<T extends Object> implements CollectionUnit<T, Dis
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return this.original.iterator();
+    public Iterator<Object[]> iterator() {
+        return this.original.stream().map(r -> ((Row) r).getRecords()).iterator();
     }
 
     @Override

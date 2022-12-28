@@ -375,7 +375,7 @@ public class StoreOperationUtils {
     }
 
     private synchronized ExecutorService getExecutor(final RouteTable routeTable, String leaderAddress) {
-         return routeTable.getLeaderAddress(connection.getApiRegistry(), leaderAddress);
+        return routeTable.getLeaderAddress(connection.getApiRegistry(), leaderAddress);
     }
 
     private synchronized String getLeaderAddressByStartKey(final RouteTable routeTable, byte[] keyInBytes) {

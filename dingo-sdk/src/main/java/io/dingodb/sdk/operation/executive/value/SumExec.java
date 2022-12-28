@@ -56,6 +56,9 @@ public class SumExec extends AbstractExecutive<Context, Iterator<Object[]>> {
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
                 Object[] record = records.next();
+                if (record[keyIndex] == null) {
+                    continue;
+                }
                 DingoType dingoType = context.definition.getColumn(keyIndex).getType();
                 NumberUnit unit = new SumUnit<>(convertType(record[keyIndex], dingoType), 1);
                 map.merge(col, unit, NumberUnit::merge);

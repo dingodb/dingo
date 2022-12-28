@@ -46,7 +46,9 @@ public class DeleteExec extends AbstractExecutive<Context, Void> {
     @Override
     public DingoOpResult<Boolean> execute(Context context, Void record) {
         try {
-            context.writer().erase(context.startKey().get(0));
+            for (byte[] key : context.startKey()) {
+                context.writer().erase(key);
+            }
         } catch (IOException e) {
             log.error("Delete record failed. e", e);
             return new VoidOpResult<>(false);

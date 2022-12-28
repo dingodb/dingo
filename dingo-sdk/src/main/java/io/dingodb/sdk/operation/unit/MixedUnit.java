@@ -14,27 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.sdk.operation.result;
+package io.dingodb.sdk.operation.unit;
 
-import io.dingodb.common.DingoOpResult;
-import io.dingodb.sdk.operation.unit.CollectionUnit;
+import java.util.Collection;
 
-public class MultiValueOpResult<V extends CollectionUnit> implements DingoOpResult<V> {
+public interface MixedUnit<U extends MixedUnit<U>> extends MergedUnit<U> {
 
-    private V value;
+    U mixMerge(U mixUnit);
 
-    public MultiValueOpResult(V value) {
-        this.value = value;
-    }
+    U mixMerge(MergedUnit unit);
 
-    @Override
-    public V getValue() {
-        return value;
-    }
-
-    @Override
-    public DingoOpResult merge(CollectionUnit that) {
-        value.merge(that);
-        return this;
-    }
+    Collection<Class<? extends MergedUnit>> supportUnit();
 }

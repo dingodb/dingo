@@ -57,6 +57,9 @@ public class IncreaseCountExec extends AbstractExecutive<Context, Iterator<Objec
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
                 Object[] record = records.next();
+                if (record[keyIndex] == null) {
+                    continue;
+                }
                 DingoType dingoType = context.definition.getColumn(keyIndex).getType();
                 NumberUnit unit = new IncreaseCountUnit<>(convertType(record[keyIndex], dingoType));
                 map.merge(col, unit, NumberUnit::merge);
