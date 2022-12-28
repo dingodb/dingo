@@ -49,7 +49,7 @@ public class IdentityAuthService implements AuthService<Authentication> {
         }
     }
 
-    private static final AuthService INSTANCE = new IdentityAuthService();
+    public static final AuthService INSTANCE = new IdentityAuthService();
 
     @AutoService(AuthService.Provider.class)
     public static class IdentityAuthServiceProvider implements AuthService.Provider {

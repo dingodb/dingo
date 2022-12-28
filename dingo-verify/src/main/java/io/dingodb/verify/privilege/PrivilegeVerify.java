@@ -32,6 +32,7 @@ import io.dingodb.net.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,8 +136,74 @@ public class PrivilegeVerify {
         return false;
     }
 
+    public static boolean verify(String user, String host, CommonId schema, CommonId table) {
+        if (!isVerify) {
+            return true;
+        }
+        if (DingoRole.SQLLINE == env.getRole()) {
+            return true;
+        }
+        if (StringUtils.isBlank(user)) {
+            return true;
+        }
+
+        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + host);
+        if (privilegeGather == null) {
+            privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
+            if (privilegeGather == null) {
+                return false;
+            }
+        }
+
+        UserDefinition userDef = privilegeGather.getUserDef();
+        if (userDef != null) {
+            for (boolean privilege: userDef.getPrivileges()) {
+                if (privilege) {
+                    return true;
+                }
+            }
+        }
+        if (schema == null) {
+            return false;
+        }
+        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
+        if (schemaDef != null) {
+            for (boolean privilege: schemaDef.getPrivileges()) {
+                if (privilege) {
+                    return true;
+                }
+            }
+        }
+
+        if (table == null) {
+            Collection<TablePrivDefinition> definitionCollection = privilegeGather.getTablePrivDefMap().values();
+            return definitionCollection.stream().anyMatch(tableDef -> {
+                if (schema.equals(tableDef.getSchema())) {
+                    log.info("schema verify:" + schema);
+                    for (boolean privilege : tableDef.getPrivileges()) {
+                        if (privilege) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+        } else {
+            TablePrivDefinition tableDef = privilegeGather.getTablePrivDefMap().get(table);
+            if (tableDef != null) {
+                for (boolean privilege : tableDef.getPrivileges()) {
+                    if (privilege) {
+                        log.info("table verify result:" + true);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean verifyDuplicate(String user, String host, CommonId schema, CommonId table,
-                                 List<DingoSqlAccessEnum> accessTypes) {
+                                          List<DingoSqlAccessEnum> accessTypes) {
         if (accessTypes.stream().anyMatch(accessType -> {
             if (!verify(user, host, schema, table, accessType)) {
                 return true;

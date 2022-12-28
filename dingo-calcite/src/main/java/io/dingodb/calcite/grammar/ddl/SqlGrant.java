@@ -78,13 +78,9 @@ public class SqlGrant extends SqlDdl {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("GRANT");
-        if (isAllPrivilege) {
-            writer.keyword(" ALL PRIVILEGES ");
-        } else {
-            privileges.forEach(k -> {
-                writer.keyword(k);
-            });
-        }
+        privileges.forEach(k -> {
+            writer.keyword(k);
+        });
         writer.keyword("ON");
         writer.keyword(schema);
         writer.keyword(".");

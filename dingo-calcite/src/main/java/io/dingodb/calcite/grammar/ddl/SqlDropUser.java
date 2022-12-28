@@ -44,7 +44,7 @@ public class SqlDropUser extends SqlDrop {
         if (StringUtils.isBlank(host)) {
             host = "%";
         }
-        this.host = host;
+        this.host = host.startsWith("'") ? host.replace("'", "") : host;;
     }
 
     @Override

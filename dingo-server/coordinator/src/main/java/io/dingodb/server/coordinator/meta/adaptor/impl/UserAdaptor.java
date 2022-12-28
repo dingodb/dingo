@@ -135,7 +135,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
     }
 
     public User getUser(String user, String host) {
-        return Optional.ofNullable(userMap.get(user + "#%")).orElseGet(() -> userMap.get(user + "#" + host));
+        return Optional.ofNullable(userMap.get(user + "#" + host)).orElseGet(() -> userMap.get(user + "#%"));
     }
 
     public UserDefinition getUserDefinition(String user, String host) {
