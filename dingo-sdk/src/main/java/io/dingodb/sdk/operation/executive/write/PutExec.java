@@ -55,7 +55,7 @@ public class PutExec extends AbstractExecutive<Context, Void> {
             List<KeyValue> keyValues = context.recordList();
             if (context.isSkippedWhenExisted()) {
                 keyValues = context.recordList().stream()
-                    .filter(r -> context.reader().get(r.getKey()) != null)
+                    .filter(r -> context.reader().get(r.getKey()) == null)
                     .collect(Collectors.toList());
             }
             if (!keyValues.isEmpty()) {

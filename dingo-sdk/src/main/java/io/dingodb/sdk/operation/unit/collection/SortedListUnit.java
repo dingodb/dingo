@@ -17,6 +17,7 @@
 package io.dingodb.sdk.operation.unit.collection;
 
 import io.dingodb.sdk.operation.Cloneable;
+import io.dingodb.sdk.operation.Row;
 import io.dingodb.sdk.operation.unit.CollectionUnit;
 import io.dingodb.sdk.operation.unit.Value;
 
@@ -24,9 +25,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SortedListUnit<T extends Comparable<T> & Cloneable<T>>
-        implements CollectionUnit<T, SortedListUnit<T>>, Value<List<T>>, Serializable, Iterable<T> {
+        implements CollectionUnit<T, SortedListUnit<T>>, Serializable {
 
     public boolean desc = true;
 
@@ -185,8 +187,8 @@ public class SortedListUnit<T extends Comparable<T> & Cloneable<T>>
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return this.original.iterator();
+    public Iterator<Object[]> iterator() {
+        return this.original.stream().map(row -> ((Row) row).getRecords()).iterator();
     }
 
     /**
@@ -201,12 +203,8 @@ public class SortedListUnit<T extends Comparable<T> & Cloneable<T>>
     }
 
     @Override
-    public List<T> value() {
-        return original;
-    }
-
-    public List<T> asList() {
-        return original;
+    public List<Object[]> value() {
+        return this.original.stream().map(row -> ((Row) row).getRecords()).collect(Collectors.toList());
     }
 
     /**

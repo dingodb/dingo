@@ -50,6 +50,9 @@ public class DingoNumberRangeFilter extends AbstractDingoFilter {
     }
 
     private boolean isRange(Object record) {
+        if (record == null) {
+            return false;
+        }
         boolean isOK = false;
         BigDecimal currentValue = new BigDecimal(record.toString());
         boolean isBetween = false;

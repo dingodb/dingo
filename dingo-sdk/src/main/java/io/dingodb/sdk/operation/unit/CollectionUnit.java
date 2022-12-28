@@ -16,7 +16,17 @@
 
 package io.dingodb.sdk.operation.unit;
 
-public interface CollectionUnit<T, U extends CollectionUnit<T, U>> extends MergedUnit<U> {
+import java.util.Collection;
+import java.util.Iterator;
+
+public interface CollectionUnit<T, U extends CollectionUnit<T, U>> extends MergedUnit<U>,
+    Value<Collection<Object[]>>, Iterable<Object[]> {
 
     U add(T value);
+
+    @Override
+    Collection<Object[]> value();
+
+    @Override
+    Iterator<Object[]> iterator();
 }

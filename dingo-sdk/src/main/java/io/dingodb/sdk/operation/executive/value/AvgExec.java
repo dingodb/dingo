@@ -23,9 +23,9 @@ import io.dingodb.common.Executive;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
+import io.dingodb.sdk.operation.number.ComputeLong;
 import io.dingodb.sdk.operation.result.ValueOpResult;
-import io.dingodb.sdk.operation.unit.numeric.AvgUnit;
-import io.dingodb.sdk.operation.unit.numeric.NumberUnit;
+import io.dingodb.sdk.operation.unit.numeric.AvgMixedUnit;
 import io.dingodb.server.protocol.CommonIdConstant;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,14 +52,17 @@ public class AvgExec extends AbstractExecutive<Context, Iterator<Object[]>> {
     @Override
     public DingoOpResult execute(Context context, Iterator<Object[]> records) {
         String col = context.column()[0].name;
-        Map<String, NumberUnit> map = new HashMap<>();
+        Map<String, AvgMixedUnit> map = new HashMap<>();
         try {
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
                 Object[] record = records.next();
+                if (record[keyIndex] == null) {
+                    continue;
+                }
                 DingoType dingoType = context.definition.getColumn(keyIndex).getType();
-                NumberUnit unit = new AvgUnit<>(convertType(record[keyIndex], dingoType), 1);
-                map.merge(col, unit, NumberUnit::merge);
+                AvgMixedUnit unit = new AvgMixedUnit(ComputeLong.of(1), convertType(record[keyIndex], dingoType));
+                map.merge(col, unit, AvgMixedUnit::merge);
             }
         } catch (UnsupportedDataTypeException e) {
             throw new RuntimeException(e);

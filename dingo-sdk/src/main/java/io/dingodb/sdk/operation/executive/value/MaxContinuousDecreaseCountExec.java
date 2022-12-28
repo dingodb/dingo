@@ -60,6 +60,9 @@ public class MaxContinuousDecreaseCountExec extends AbstractExecutive<Context, I
             ComputeNumber center = new ComputeZero();
             while (records.hasNext()) {
                 Object[] record = records.next();
+                if (record[keyIndex] == null) {
+                    continue;
+                }
                 DingoType dingoType = context.definition.getColumn(keyIndex).getType();
                 if (map.get(col) == null) {
                     MaxContinuousCountUnit unit = new MaxContinuousCountUnit(false);

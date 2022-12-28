@@ -58,8 +58,8 @@ public interface Op {
         return AbstractOp.delete(keyList);
     }
 
-    static WriteOp deleteRange(List<Key> starts, List<Key> ends) {
-        return AbstractOp.deleteRange(starts, ends);
+    static WriteOp deleteRange(Key start, Key end) {
+        return AbstractOp.deleteRange(start, end);
     }
 
     Op next();

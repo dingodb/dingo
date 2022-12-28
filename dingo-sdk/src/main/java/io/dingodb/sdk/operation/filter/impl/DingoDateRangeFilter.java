@@ -56,6 +56,9 @@ public class DingoDateRangeFilter extends AbstractDingoFilter {
     }
 
     private static long convertLongFrom(Object record) {
+        if (record == null) {
+            return 0;
+        }
         if (record instanceof Long) {
             return (Long) record;
         }

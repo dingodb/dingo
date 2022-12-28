@@ -52,6 +52,9 @@ public class DingoValueEqualsFilter extends AbstractDingoFilter {
             return false;
         }
         for (int i = 0; i < record0.length; i++) {
+            if (record0[i] == null) {
+                return false;
+            }
             if (!record0[i].equals(value[i])) {
                 return false;
             }

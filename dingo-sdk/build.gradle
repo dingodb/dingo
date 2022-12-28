@@ -9,8 +9,6 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     implementation group: 'javax.validation', name: 'validation-api', version: 'validation'.v()
