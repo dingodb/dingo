@@ -48,6 +48,7 @@ dependencies {
 
     implementation project(":dingo-sdk")
     implementation project(":dingo-mirror-processing-unit")
+    implementation project(":dingo-index")
     implementation group: 'io.dingodb', name: 'rocksdbjni', version: 'rocksdb'.v()
 }
 

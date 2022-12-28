@@ -120,6 +120,47 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     }
 
     @Override
+    public List<KeyValue> getKeyValueByKeyPrefix(Channel channel, CommonId schema, CommonId tableId, byte[] keyPrefix) {
+        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
+        if (log.isDebugEnabled()) {
+            log.info("Get Key value by scan: instance:{} tableId:{}, keyPrefix: {}",
+                storeService.getInstance(tableId).getClass().getSimpleName(),
+                tableId,
+                keyPrefix == null ? "null" : new String(keyPrefix));
+        }
+
+        Iterator<KeyValue> rows = storeService
+            .getInstance(tableId).keyValueScan(keyPrefix);
+
+        List<KeyValue> keyValues = new java.util.ArrayList<>();
+        while (rows.hasNext()) {
+            KeyValue keyValue = rows.next();
+            keyValues.add(keyValue);
+        }
+        return keyValues;
+    }
+
+    @Override
+    public List<KeyValue> getAllKeyValue(Channel channel, CommonId schema, CommonId tableId) {
+        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
+        if (log.isDebugEnabled()) {
+            log.info("Get All Key value by scan: instance:{} tableId:{}",
+                storeService.getInstance(tableId).getClass().getSimpleName(),
+                tableId);
+        }
+
+        Iterator<KeyValue> rows = storeService
+            .getInstance(tableId).keyValueScan();
+
+        List<KeyValue> keyValues = new java.util.ArrayList<>();
+        while (rows.hasNext()) {
+            KeyValue keyValue = rows.next();
+            keyValues.add(keyValue);
+        }
+        return keyValues;
+    }
+
+    @Override
     public Future<Object> operator(
         CommonId tableId,
         List<byte[]> startPrimaryKey,

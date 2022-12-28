@@ -85,7 +85,7 @@ public class MetaServiceClient implements MetaService {
         // todo add listener
     }
 
-    private ServiceConnector getTableConnector(CommonId id) {
+    public ServiceConnector getTableConnector(CommonId id) {
         return serviceCache.computeIfAbsent(id, __ -> new ServiceConnector(id, api.getTableDistribute(id)));
     }
 

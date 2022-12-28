@@ -78,6 +78,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     private final List<TablePart> parts = new ArrayList<>();
     private final NavigableMap<byte[], TablePart> ranges = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
+
+    @Getter
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
 
     @Getter
@@ -181,7 +183,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         }
     }
 
-    private void saveNewIndex(Index index) {
+    public void saveNewIndex(Index index) {
         CommonId newId = new CommonId(INDEX_PREFIX.type(), INDEX_PREFIX.identifier(), tableId.seq(),
             core.exec(SeqInstructions.id, 0, INDEX_PREFIX.encode()).join()
         );
@@ -210,7 +212,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         );
     }
 
-    private void startIndexes() {
+    public void startIndexes() {
         core.<Iterator<KeyValue>>view(
             KVInstructions.id, KVInstructions.SCAN_OC, INDEX_PREFIX.encode(), INDEX_PREFIX.encode(), true
         ).forEachRemaining(

@@ -426,4 +426,8 @@ public class TableDefinition {
         }
         return indexesMapping;
     }
+
+    public void removeIndex(String name) {
+        indexes.remove(name);
+    }
 }

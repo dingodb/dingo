@@ -36,6 +36,10 @@ public interface ExecutorApi {
         return upsertKeyValue(null, null, tableId, row);
     }
 
+    default boolean delete(CommonId tableId, byte[] primaryKey) {
+        return delete(null, null, tableId, primaryKey);
+    }
+
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingKeyValue")
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row);
@@ -68,6 +72,13 @@ public interface ExecutorApi {
     @ApiDeclaration
     public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
                                       byte[] startPrimaryKey, byte[] endPrimaryKey);
+
+    @ApiDeclaration
+    public List<KeyValue> getKeyValueByKeyPrefix(Channel channel, CommonId schema, CommonId tableId,
+                                        byte[] keyPrefix);
+
+    @ApiDeclaration
+    public List<KeyValue> getAllKeyValue(Channel channel, CommonId schema, CommonId tableId);
 
     @ApiDeclaration
     public Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey,

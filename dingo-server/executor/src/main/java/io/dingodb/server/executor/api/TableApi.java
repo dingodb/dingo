@@ -18,6 +18,8 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
@@ -56,6 +58,43 @@ public class TableApi implements io.dingodb.server.api.TableApi {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public CommonId createIndex(CommonId id, Index index) {
+        TableDefinition tableDefinition = getDefinition(id);
+        tableDefinition.addIndex(index);
+        tableDefinition.increaseVersion();
+        TableSidebar tableSidebar = tables.get(id);
+        tableSidebar.updateDefinition(tableDefinition);
+        io.dingodb.server.protocol.meta.Index metaIndex = indexToMetaIndex(id, index);
+        tableSidebar.saveNewIndex(metaIndex);
+        tableSidebar.startIndexes();
+
+        return metaIndex.getId();
+    }
+
+    @Override
+    public boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition) {
+        TableSidebar tableSidebar = tables.get(id);
+        tableSidebar.updateDefinition(tableDefinition);
+        return true;
+    }
+
+    @Override
+    public CommonId getIndexId(CommonId tableId, String indexName) {
+        TableSidebar tableSidebar = tables.get(tableId);
+        return tableSidebar.getIndexes().get(indexName).getId();
+    }
+
+    private io.dingodb.server.protocol.meta.Index  indexToMetaIndex(CommonId id, Index index) {
+        return io.dingodb.server.protocol.meta.Index.builder()
+            .table(id)
+            .name(index.getName())
+            .columns(index.getColumns())
+            .unique(index.isUnique())
+            .status(index.getStatus())
+            .build();
     }
 
     @Override
