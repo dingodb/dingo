@@ -19,5 +19,7 @@ package io.dingodb.exec.base;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface IdGenerator {
+    @NonNull Id get(String idPrefix);
+
     @NonNull Id get();
 }

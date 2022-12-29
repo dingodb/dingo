@@ -16,10 +16,18 @@
 
 package io.dingodb.exec.base;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public interface TaskManager {
     void addTask(Task task);
 
     Task getTask(Id jobId, Id taskId);
 
-    Task removeTask(Id jobId, Id taskId);
+    void removeTask(Id jobId, Id taskId);
+
+    default void removeTask(@NonNull Task task) {
+        removeTask(task.getJobId(), task.getId());
+    }
+
+    void close();
 }

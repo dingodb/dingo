@@ -16,9 +16,12 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.exec.base.Id;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -26,13 +29,17 @@ import java.util.Map;
 // This class is needed by driver, both in server and client side.
 // because protostuff wants to recover/serialize the class from net messages.
 public final class DingoSignature extends Meta.Signature {
+    @Getter
+    private final Id jobId;
+
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
         Meta.CursorFactory cursorFactory,
-        Meta.StatementType statementType
+        Meta.StatementType statementType,
+        @Nullable Id jobId
     ) {
-        this(columns, sql, null, null, cursorFactory, statementType);
+        this(columns, sql, null, null, cursorFactory, statementType, jobId);
     }
 
     public DingoSignature(
@@ -41,8 +48,10 @@ public final class DingoSignature extends Meta.Signature {
         List<AvaticaParameter> parameters,
         Map<String, Object> internalParameters,
         Meta.CursorFactory cursorFactory,
-        Meta.StatementType statementType
+        Meta.StatementType statementType,
+        @Nullable Id jobId
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
+        this.jobId = jobId;
     }
 }

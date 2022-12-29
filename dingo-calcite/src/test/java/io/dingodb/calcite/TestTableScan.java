@@ -26,7 +26,6 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
-import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
@@ -94,7 +93,7 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task("0001").location(currentLocation).operatorNum(4);
@@ -121,7 +120,7 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task("0001").location(currentLocation).operatorNum(4);
@@ -147,7 +146,7 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task("0001").location(currentLocation).operatorNum(4);
@@ -174,7 +173,7 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task("0001").location(currentLocation).operatorNum(4);
@@ -201,7 +200,7 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNull();
         // To job.
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task("0001").location(currentLocation).operatorNum(4);

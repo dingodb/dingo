@@ -28,7 +28,6 @@ import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.common.Location;
-import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
@@ -104,7 +103,7 @@ public class TestDingoJobVisitor {
             null,
             null
         );
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         assertJob.task("0001").operatorNum(1).location(MockMetaServiceProvider.LOC_0)
@@ -133,7 +132,7 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
@@ -165,7 +164,7 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(2);
         AssertTask assertTask =
@@ -192,7 +191,7 @@ public class TestDingoJobVisitor {
                 new Object[]{2, "Betty", 2.0}
             )
         );
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, values, currentLocation);
         ValuesOperator operator = (ValuesOperator) Assert.job(job)
             .soleTask().location(MockMetaServiceProvider.LOC_0).operatorNum(1)
@@ -230,7 +229,7 @@ public class TestDingoJobVisitor {
             null,
             true
         );
-        Job job = jobManager.createJob(Id.random());
+        Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
             .task("0001").location(MockMetaServiceProvider.LOC_1).operatorNum(2)

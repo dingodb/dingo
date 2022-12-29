@@ -61,8 +61,9 @@ public final class EndpointManager {
     }
 
     public void unregisterSendEndpoint(@NonNull SendEndpoint endpoint) {
-        sendEndpointMap.remove(endpoint.getTag());
-        signals.remove(endpoint.getTag());
+        String tag = endpoint.getTag();
+        sendEndpointMap.remove(tag);
+        signals.remove(tag);
     }
 
     public ControlStatus getStatus(@NonNull String tag) {

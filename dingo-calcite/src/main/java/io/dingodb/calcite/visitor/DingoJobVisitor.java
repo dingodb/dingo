@@ -61,6 +61,7 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.FilterOperator;
@@ -142,7 +143,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot) {
         MetaCache.initTableDefinitions();
-        IdGenerator idGenerator = new DingoIdGenerator();
+        IdGenerator idGenerator = new IdGeneratorImpl();
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {

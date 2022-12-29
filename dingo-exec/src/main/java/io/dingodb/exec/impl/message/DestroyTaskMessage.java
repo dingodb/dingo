@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.Task;
 import lombok.Getter;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("destroy")
 public class DestroyTaskMessage extends TaskMessage {
@@ -38,5 +40,9 @@ public class DestroyTaskMessage extends TaskMessage {
     ) {
         this.jobId = jobId;
         this.taskId = taskId;
+    }
+
+    public DestroyTaskMessage(@NonNull Task task) {
+        this(task.getJobId(), task.getId());
     }
 }

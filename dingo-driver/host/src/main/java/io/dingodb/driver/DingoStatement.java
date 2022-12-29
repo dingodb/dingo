@@ -16,11 +16,16 @@
 
 package io.dingodb.driver;
 
+import com.google.common.collect.ImmutableList;
+import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
-import javax.annotation.Nullable;
+import java.util.Iterator;
 
 public class DingoStatement extends AvaticaStatement {
     DingoStatement(
@@ -50,24 +55,16 @@ public class DingoStatement extends AvaticaStatement {
         try {
             // In JDBC, maxRowCount = 0 means no limit; in prepare it means LIMIT 0
             final long maxRowCount1 = maxRowCount <= 0 ? -1 : maxRowCount;
-            getConnection().prepareAndExecuteInternal(this, sql, maxRowCount1);
+            ((DingoConnection) connection).prepareAndExecuteInternal(this, sql, maxRowCount1);
         } catch (Throwable e) {
             throw ExceptionUtils.toSql(e);
         }
     }
 
-    public DingoConnection getConnection() {
-        return (DingoConnection) connection;
-    }
-
-    public void clear() {
+    public void createResultSet(Meta.@Nullable Frame firstFrame) throws SQLException {
         if (openResultSet != null) {
             openResultSet.close();
-            openResultSet = null;
         }
-    }
-
-    public void createResultSet(@Nullable Meta.Frame firstFrame) throws SQLException {
         Meta.Signature signature = getSignature();
         openResultSet = ((DingoConnection) connection).newResultSet(
             this,
@@ -75,5 +72,18 @@ public class DingoStatement extends AvaticaStatement {
             firstFrame,
             signature.sql
         );
+    }
+
+    @NonNull
+    public Iterator<Object[]> createIterator(@NonNull JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+        if (signature instanceof DingoExplainSignature) {
+            DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
+            return ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
+        } else if (signature instanceof DingoSignature) {
+            Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
+            return jobManager.createIterator(job, null);
+        }
+        throw ExceptionUtils.wrongSignatureType(this, signature);
     }
 }

@@ -17,15 +17,23 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.type.DingoType;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Iterator;
 
 public interface JobManager {
-    Job createJob(Id jobId, DingoType parasType);
+    Job createJob(String idPrefix, DingoType parasType);
 
-    default Job createJob(Id jobId) {
-        return createJob(jobId, null);
+    default Job createJob(String idPrefix) {
+        return createJob(idPrefix, null);
     }
 
     Job getJob(Id jobId);
 
-    Job removeJob(Id jobId);
+    void removeJob(Id jobId);
+
+    @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras);
+
+    void close();
 }

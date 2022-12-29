@@ -22,10 +22,10 @@ import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 // Only one meta instance exists in avatica server.
 // On each request, create a local meta (which is light-weighted) to do the work.
@@ -45,8 +44,7 @@ public class ServerMeta implements Meta {
     public ServerMeta() {
     }
 
-    @Nonnull
-    private static MetaResultSet mapMetaResultSet(String connectionId, @Nonnull MetaResultSet resultSet) {
+    private static @NonNull MetaResultSet mapMetaResultSet(String connectionId, @NonNull MetaResultSet resultSet) {
         if (resultSet.signature != null) {
             // It is a query result set.
             return MetaResultSet.create(
@@ -62,20 +60,19 @@ public class ServerMeta implements Meta {
         return MetaResultSet.count(connectionId, resultSet.statementId, resultSet.updateCount);
     }
 
-    @Nonnull
-    private Meta getConnectionMeta(@Nonnull ConnectionHandle ch) {
+    private @NonNull Meta getConnectionMeta(@NonNull ConnectionHandle ch) {
         DingoConnection connection = connectionMap.get(ch.id);
         return connection.getMeta();
     }
 
     @Override
-    public Map<DatabaseProperty, Object> getDatabaseProperties(@Nonnull ConnectionHandle ch) {
+    public Map<DatabaseProperty, Object> getDatabaseProperties(@NonNull ConnectionHandle ch) {
         return getConnectionMeta(ch).getDatabaseProperties(ch);
     }
 
     @Override
     public MetaResultSet getTables(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat tableNamePattern,
@@ -89,7 +86,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getColumns(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat tableNamePattern,
@@ -102,7 +99,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public MetaResultSet getSchemas(@Nonnull ConnectionHandle ch, String catalog, Pat schemaPattern) {
+    public MetaResultSet getSchemas(@NonNull ConnectionHandle ch, String catalog, Pat schemaPattern) {
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getSchemas(ch, catalog, schemaPattern)
@@ -110,7 +107,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public MetaResultSet getCatalogs(@Nonnull ConnectionHandle ch) {
+    public MetaResultSet getCatalogs(@NonNull ConnectionHandle ch) {
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getCatalogs(ch)
@@ -118,7 +115,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public MetaResultSet getTableTypes(@Nonnull ConnectionHandle ch) {
+    public MetaResultSet getTableTypes(@NonNull ConnectionHandle ch) {
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getTableTypes(ch)
@@ -127,7 +124,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getProcedures(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat procedureNamePattern
@@ -140,7 +137,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getProcedureColumns(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat procedureNamePattern,
@@ -160,7 +157,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getColumnPrivileges(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table,
@@ -174,7 +171,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getTablePrivileges(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat tableNamePattern
@@ -187,7 +184,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getBestRowIdentifier(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table,
@@ -206,7 +203,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getVersionColumns(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table
@@ -219,7 +216,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getPrimaryKeys(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table
@@ -235,7 +232,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getImportedKeys(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table
@@ -248,7 +245,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getExportedKeys(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table
@@ -261,7 +258,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getCrossReference(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String parentCatalog,
         String parentSchema,
         String parentTable,
@@ -284,7 +281,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public MetaResultSet getTypeInfo(@Nonnull ConnectionHandle ch) {
+    public MetaResultSet getTypeInfo(@NonNull ConnectionHandle ch) {
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getTypeInfo(ch)
@@ -293,7 +290,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getIndexInfo(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         String schema,
         String table,
@@ -308,7 +305,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getUDTs(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat typeNamePattern,
@@ -322,7 +319,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getSuperTypes(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat typeNamePattern
@@ -335,7 +332,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getSuperTables(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat tableNamePattern
@@ -348,7 +345,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getAttributes(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat typeNamePattern,
@@ -367,7 +364,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public MetaResultSet getClientInfoProperties(@Nonnull ConnectionHandle ch) {
+    public MetaResultSet getClientInfoProperties(@NonNull ConnectionHandle ch) {
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getClientInfoProperties(ch)
@@ -376,7 +373,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getFunctions(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat functionNamePattern
@@ -389,7 +386,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getFunctionColumns(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat functionNamePattern,
@@ -409,7 +406,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public MetaResultSet getPseudoColumns(
-        @Nonnull ConnectionHandle ch,
+        @NonNull ConnectionHandle ch,
         String catalog,
         Pat schemaPattern,
         Pat tableNamePattern,
@@ -430,7 +427,7 @@ public class ServerMeta implements Meta {
     // This is never called at server side.
     @Override
     public Iterable<Object> createIterable(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         QueryState state,
         Signature signature,
         List<TypedValue> parameters,
@@ -440,7 +437,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public StatementHandle prepare(@Nonnull ConnectionHandle ch, String sql, long maxRowCount) {
+    public StatementHandle prepare(@NonNull ConnectionHandle ch, String sql, long maxRowCount) {
         if (log.isDebugEnabled()) {
             log.debug("connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
         }
@@ -458,7 +455,7 @@ public class ServerMeta implements Meta {
     @Deprecated
     @Override
     public ExecuteResult prepareAndExecute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         String sql,
         long maxRowCount,
         PrepareCallback callback
@@ -468,7 +465,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public ExecuteResult prepareAndExecute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         String sql,
         long maxRowCount,
         int maxRowsInFirstFrame,
@@ -494,8 +491,7 @@ public class ServerMeta implements Meta {
                 }
 
                 @Override
-                public void clear() throws SQLException {
-                    statement.clear();
+                public void clear() {
                 }
 
                 @Override
@@ -520,7 +516,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         List<String> sqlCommands
     ) throws NoSuchStatementException {
         DingoConnection connection = connectionMap.get(sh.connectionId);
@@ -530,7 +526,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public ExecuteBatchResult executeBatch(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         List<List<TypedValue>> parameterValues
     ) throws NoSuchStatementException {
         DingoConnection connection = connectionMap.get(sh.connectionId);
@@ -540,10 +536,10 @@ public class ServerMeta implements Meta {
 
     @Override
     public Frame fetch(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         long offset,
         int fetchMaxRowCount
-    ) throws NoSuchStatementException, MissingResultsException {
+    ) throws NoSuchStatementException {
         if (log.isDebugEnabled()) {
             log.debug("statement handle = {}, offset = {}, fetchMaxRowCount = {}.", sh, offset, fetchMaxRowCount);
         }
@@ -555,7 +551,7 @@ public class ServerMeta implements Meta {
     @Deprecated
     @Override
     public ExecuteResult execute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         List<TypedValue> parameterValues,
         long maxRowCount
     ) {
@@ -564,7 +560,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public ExecuteResult execute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
@@ -585,7 +581,6 @@ public class ServerMeta implements Meta {
             DingoPreparedStatement statement = (DingoPreparedStatement) connection.getStatement(newSh);
             MetaResultSet resultSet;
             synchronized (connection.getStatement(newSh)) {
-                statement.clear();
                 statement.setParameterValues(parameterValues);
                 ExecuteResult executeResult = connection.getMeta().execute(
                     newSh,
@@ -605,7 +600,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public StatementHandle createStatement(@Nonnull ConnectionHandle ch) {
+    public StatementHandle createStatement(@NonNull ConnectionHandle ch) {
         if (log.isDebugEnabled()) {
             log.debug("connection handle = {}.", ch);
         }
@@ -623,7 +618,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public void closeStatement(@Nonnull StatementHandle sh) {
+    public void closeStatement(@NonNull StatementHandle sh) {
         if (log.isDebugEnabled()) {
             log.debug("statement handle = {}.", sh);
         }
@@ -641,7 +636,7 @@ public class ServerMeta implements Meta {
 
     // Here the local meta is created.
     @Override
-    public void openConnection(@Nonnull ConnectionHandle ch, Map<String, String> info) {
+    public void openConnection(@NonNull ConnectionHandle ch, Map<String, String> info) {
         if (log.isDebugEnabled()) {
             log.debug("connection handle = {}, info = {}.", ch, info);
         }
@@ -662,7 +657,7 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public void closeConnection(@Nonnull ConnectionHandle ch) {
+    public void closeConnection(@NonNull ConnectionHandle ch) {
         if (log.isDebugEnabled()) {
             log.debug("connection handle = {}.", ch);
         }
@@ -680,7 +675,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public boolean syncResults(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         QueryState state,
         long offset
     ) throws NoSuchStatementException {
@@ -690,17 +685,17 @@ public class ServerMeta implements Meta {
     }
 
     @Override
-    public void commit(@Nonnull ConnectionHandle ch) {
+    public void commit(@NonNull ConnectionHandle ch) {
         getConnectionMeta(ch).commit(ch);
     }
 
     @Override
-    public void rollback(@Nonnull ConnectionHandle ch) {
+    public void rollback(@NonNull ConnectionHandle ch) {
         getConnectionMeta(ch).rollback(ch);
     }
 
     @Override
-    public ConnectionProperties connectionSync(@Nonnull ConnectionHandle ch, ConnectionProperties connProps) {
+    public ConnectionProperties connectionSync(@NonNull ConnectionHandle ch, ConnectionProperties connProps) {
         return getConnectionMeta(ch).connectionSync(ch, connProps);
     }
 }

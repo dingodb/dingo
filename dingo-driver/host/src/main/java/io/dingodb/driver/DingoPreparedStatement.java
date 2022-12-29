@@ -16,15 +16,19 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.driver.type.converter.TypedValueConverter;
+import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
-import java.util.Calendar;
+import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
     protected DingoPreparedStatement(
@@ -45,18 +49,7 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         );
     }
 
-    @Override
-    protected List<TypedValue> getParameterValues() {
-        return super.getParameterValues();
-    }
-
-    @Override
-    public Calendar getCalendar() {
-        return super.getCalendar();
-    }
-
-    // This is only used by `ServerMeta`, for local driver, the value is set when JDBC APIs are called.
-    void setParameterValues(@Nonnull List<TypedValue> parameterValues) {
+    void setParameterValues(@NonNull List<TypedValue> parameterValues) {
         for (int i = 0; i < parameterValues.size(); ++i) {
             slots[i] = parameterValues.get(i);
         }
@@ -67,14 +60,10 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         super.setSignature(signature);
     }
 
-    void clear() throws SQLException {
+    void createResultSet(Meta.@Nullable Frame firstFrame) throws SQLException {
         if (openResultSet != null) {
             openResultSet.close();
-            openResultSet = null;
         }
-    }
-
-    void createResultSet(@Nullable Meta.Frame firstFrame) throws SQLException {
         Meta.Signature signature = getSignature();
         openResultSet = ((DingoConnection) connection).newResultSet(
             this,
@@ -82,5 +71,25 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
             firstFrame,
             signature.sql
         );
+    }
+
+    @NonNull
+    public Iterator<Object[]> createIterator(@NonNull JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+        if (signature instanceof DingoSignature) {
+            try {
+                Object[] parasValue = TypedValue.values(getParameterValues()).toArray();
+                Id jobId = ((DingoSignature) signature).getJobId();
+                Job job = jobManager.getJob(jobId);
+                Object[] paras = ((Object[]) job.getParasType().convertFrom(
+                    parasValue,
+                    new TypedValueConverter(getCalendar())
+                ));
+                return jobManager.createIterator(job, paras);
+            } catch (NullPointerException e) {
+                throw new IllegalStateException("Not all parameters are set.");
+            }
+        }
+        throw ExceptionUtils.wrongSignatureType(this, signature);
     }
 }

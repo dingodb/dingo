@@ -16,99 +16,87 @@
 
 package io.dingodb.test.cases;
 
-import com.google.common.collect.ImmutableList;
-import io.dingodb.test.SqlHelper;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-public class TestInFiles {
-    private static SqlHelper sqlHelper;
-
-    @BeforeAll
-    public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
+public class CasesInFileJUnit5 implements ArgumentsProvider {
+    private static @NonNull Arguments fileCase(String name, String... fileNames) {
+        return arguments(name, Arrays.stream(fileNames)
+            .map(InputTestFile::fromFileName)
+            .collect(Collectors.toList())
+        );
     }
 
-    @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
-    public static @NonNull Stream<Arguments> cases() {
+    @Override
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
-            arguments(ImmutableList.of(
+            fileCase(
+                "Insert and select",
+                "string_double/create.sql",
+                "string_double/data.sql",
+                "select_all.sql",
+                "string_double/data.csv"
+            ),
+            fileCase(
+                "With null",
                 "double/create.sql",
                 "double/data_with_null.sql",
                 "select_all.sql",
                 "double/data_with_null_all.csv"
-            )),
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Cast int to boolean",
                 "boolean/create.sql",
                 "boolean/data_of_int.sql",
                 "boolean/select_true.sql",
                 "boolean/data_of_true.csv"
-            )),
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Date as primary key",
                 "date_key/create.sql",
                 "date_key/data.sql",
                 "select_all.sql",
                 "date_key/data_all.csv"
-            )),
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Concat null",
                 "strings/create.sql",
                 "strings/data_with_null.sql",
                 "strings/select_concat_all.sql",
                 "strings/data_with_null_concat_all.csv"
-            )),
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Function 'pow'",
                 "string_int_double/create.sql",
                 "string_int_double/data.sql",
                 "string_int_double/select_pow_all.sql",
                 "string_int_double/data_pow_all.csv",
                 "string_int_double/select_mod_all.sql",
                 "string_int_double/data_mod_all.csv"
-            )),
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Map",
                 "string_int_double_map/create.sql",
                 "string_int_double_map/data.sql",
                 "string_int_double_map/update.sql",
                 "string_int_double_map/select_scalar.sql",
                 "string_int_double_map/data_scalar.csv"
-            ))
-        );
-    }
-
-    public static @NonNull Stream<Arguments> tempCases() {
-        return Stream.of(
-            arguments(ImmutableList.of(
+            ),
+            fileCase(
+                "Array",
                 "array/create.sql",
                 "array/data.sql",
                 "array/select_array_item_all.sql",
                 "array/data_array_item_all.csv"
-            ))
+            )
         );
-    }
-
-    @ParameterizedTest
-    @MethodSource({"tempCases"})
-    public void testTemp(List<String> fileNames) throws SQLException, IOException {
-        sqlHelper.randomTable().doTestFiles(this.getClass(), fileNames);
-    }
-
-    @ParameterizedTest
-    @MethodSource({"cases"})
-    public void test(List<String> fileNames) throws SQLException, IOException {
-        sqlHelper.randomTable().doTestFiles(this.getClass(), fileNames);
     }
 }

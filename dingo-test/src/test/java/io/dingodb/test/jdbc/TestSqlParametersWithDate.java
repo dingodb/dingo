@@ -17,6 +17,7 @@
 package io.dingodb.test.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.test.RandomTable;
 import io.dingodb.test.SqlHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,7 +49,8 @@ public class TestSqlParametersWithDate {
 
     @Test
     public void testInsert() throws SQLException {
-        SqlHelper.RandomTable table = sqlHelper.randomTable().execSqls("create table {table} ("
+        RandomTable table = sqlHelper.randomTable();
+        table.execSqls("create table {table} ("
             + "id int,"
             + "data date,"
             + "data1 time,"

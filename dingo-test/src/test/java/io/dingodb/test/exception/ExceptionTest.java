@@ -17,6 +17,7 @@
 package io.dingodb.test.exception;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.test.RandomTable;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -69,6 +70,9 @@ public class ExceptionTest {
             arguments("Create without primary key", ImmutableList.of(
                 "create table {table} (id int)"
             ), 52003, "52003", false),
+            arguments("Missing column list", ImmutableList.of(
+                "create table {table}"
+            ), 52004, "52004", false),
             // validation error
             arguments("Table not found", ImmutableList.of(
                 "select * from {table}"
@@ -102,13 +106,14 @@ public class ExceptionTest {
     public static Stream<Arguments> getParametersTemp() {
         return Stream.of(
             arguments("Missing column list", ImmutableList.of(
-                "create table {table}"
-            ), 52004, "52004", false)
+                "create table {table} (id int, data int, primary key(id))",
+                "insert into {table} values(1, 'abc')"
+            ), 53004, "53004", false)
         );
     }
 
     private static @NonNull SQLException getException(List<String> sqlList, boolean needDropping) {
-        SqlHelper.RandomTable randomTable = sqlHelper.randomTable();
+        RandomTable randomTable = sqlHelper.randomTable();
         SQLException exception = assertThrows(SQLException.class, () -> {
             randomTable.execSqls(sqlList.toArray(new String[0]));
         });

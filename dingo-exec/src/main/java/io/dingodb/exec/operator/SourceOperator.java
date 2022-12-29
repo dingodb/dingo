@@ -30,14 +30,11 @@ import java.util.List;
  */
 @Slf4j
 public abstract class SourceOperator extends SoleOutOperator {
-    protected final List<OperatorProfile> profiles = new LinkedList<>();
+    protected List<OperatorProfile> profiles = new LinkedList<>();
 
     @Override
     public void init() {
         super.init();
-        OperatorProfile profile = new OperatorProfile();
-        profile.setOperatorId(id);
-        profiles.add(profile);
     }
 
     @Override
@@ -54,9 +51,13 @@ public abstract class SourceOperator extends SoleOutOperator {
         } else {
             output.fin(new FinWithProfiles(profiles));
         }
+        profiles.clear();
     }
 
     public OperatorProfile getProfile() {
-        return profiles.get(0);
+        OperatorProfile profile = new OperatorProfile();
+        profile.setOperatorId(id);
+        profiles.add(profile);
+        return profile;
     }
 }

@@ -37,8 +37,12 @@ public final class TaskManagerImpl implements TaskManager {
     }
 
     @Override
-    public void addTask(Task task) {
-        taskMap.put(taskFullId(task.getJobId(), task.getId()), task);
+    public void addTask(@NonNull Task task) {
+        Id jobId = task.getJobId();
+        Id id = task.getId();
+        removeTask(jobId, id);
+        taskMap.put(taskFullId(jobId, id), task);
+        task.init();
     }
 
     @Override
@@ -52,7 +56,15 @@ public final class TaskManagerImpl implements TaskManager {
     }
 
     @Override
-    public Task removeTask(Id jobId, Id taskId) {
-        return taskMap.remove(taskFullId(jobId, taskId));
+    public void removeTask(Id jobId, Id taskId) {
+        Task task = taskMap.remove(taskFullId(jobId, taskId));
+        if (task != null) {
+            task.destroy();
+        }
+    }
+
+    @Override
+    public void close() {
+        taskMap.values().forEach(Task::destroy);
     }
 }
