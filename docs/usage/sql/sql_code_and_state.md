@@ -24,6 +24,7 @@ SQLCODE and SQLSTATE of DingoDB
 | 53001   | 53001    | Table not found                  |
 | 53002   | 53002    | Column not found                 |
 | 53003   | 53003    | Value of column can not be NULL  |
+| 53004   | 53004    | Number format error              |
 | 54001   | 54001    | Illegal use of dynamic parameter |
 | 60000   | 60000    | Task execution failed            |
 | 90000   | 90000    | Unknown error                    |

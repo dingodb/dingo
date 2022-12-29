@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.impl;
 
+import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.IdGenerator;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Iterator;
+public final class IdGeneratorImpl implements IdGenerator {
+    private long currentValue = 0;
 
-public interface JobRunner {
-    @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras);
+    public @NonNull Id get(String idPrefix) {
+        return new Id(idPrefix + "-" + String.format("%04X", currentValue++));
+    }
 
-    void destroyRemoteTasks(@NonNull Job job);
-
-    void close();
+    @Override
+    public @NonNull Id get() {
+        return new Id(String.format("%04X", currentValue++));
+    }
 }

@@ -106,7 +106,7 @@ public class SqlHelper {
         return "tbl_" + UUID.randomUUID().toString().replace('-', '_');
     }
 
-    private static void execSql(Statement statement, @NonNull String sql) throws SQLException {
+    public static void execSql(Statement statement, @NonNull String sql) throws SQLException {
         for (String s : sql.split(";")) {
             if (!s.trim().isEmpty()) {
                 statement.execute(s);
@@ -126,11 +126,11 @@ public class SqlHelper {
     }
 
     public RandomTable randomTable() {
-        return new RandomTable();
+        return new RandomTable(this);
     }
 
     public RandomTable randomTable(int index) {
-        return new RandomTable(index);
+        return new RandomTable(this, index);
     }
 
     public DatabaseMetaData metaData() throws SQLException {
@@ -293,73 +293,4 @@ public class SqlHelper {
         doQueryTest(testClass, fileName, fileName);
     }
 
-    public class RandomTable {
-        private static final String TABLE_NAME_PLACEHOLDER = "table";
-        private final String name;
-        private final int index;
-
-        public RandomTable() {
-            this(0);
-        }
-
-        public RandomTable(int index) {
-            this.name = randomTableName();
-            this.index = index;
-        }
-
-        @Override
-        public String toString() {
-            return getName();
-        }
-
-        public @Nonnull String getName() {
-            return name + (index > 0 ? "_" + index : "");
-        }
-
-        private @Nonnull String getPlaceholder() {
-            return "{" + TABLE_NAME_PLACEHOLDER + (index > 0 ? "_" + index : "") + "}";
-        }
-
-        private @NonNull String transSql(@NonNull String sql) {
-            return sql.replace(getPlaceholder(), getName());
-        }
-
-        public RandomTable execSqls(
-            @Nonnull String... sqlStrings
-        ) throws SQLException {
-            try (Statement statement = connection.createStatement()) {
-                for (String sql : sqlStrings) {
-                    execSql(statement, transSql(sql));
-                }
-            }
-            return this;
-        }
-
-        public void drop() throws SQLException {
-            dropTable(getName());
-        }
-
-        public void doTestFiles(
-            Class<?> testClass,
-            @NonNull List<String> fileNames
-        ) throws SQLException, IOException {
-            try (Statement statement = connection.createStatement()) {
-                for (String fileName : fileNames) {
-                    if (fileName.endsWith(".sql")) {
-                        String sql = IOUtils.toString(
-                            Objects.requireNonNull(testClass.getResourceAsStream(fileName)),
-                            StandardCharsets.UTF_8
-                        );
-                        execSql(statement, transSql(sql));
-                    } else if (fileName.endsWith(".csv")) {
-                        ResultSet resultSet = statement.getResultSet();
-                        Assert.resultSet(resultSet)
-                            .asInCsv(testClass.getResourceAsStream(fileName));
-                        resultSet.close();
-                    }
-                }
-            }
-            dropTable(getName());
-        }
-    }
 }

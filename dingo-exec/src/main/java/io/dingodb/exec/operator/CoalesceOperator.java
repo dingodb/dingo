@@ -65,6 +65,7 @@ public final class CoalesceOperator extends SoleOutOperator {
         setFin(pin, fin);
         if (isAllFin()) {
             output.fin(new FinWithProfiles(profiles));
+            profiles.clear();
         }
     }
 

@@ -32,16 +32,12 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
-import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.exec.base.Id;
-import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.base.JobRunner;
-import io.dingodb.exec.impl.JobManagerImpl;
-import io.dingodb.exec.impl.JobRunnerImpl;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -61,7 +57,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,22 +67,22 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class DingoMeta extends MetaImpl {
-    private static final JobManager jobManager = JobManagerImpl.INSTANCE;
-    private static final JobRunner jobRunner = JobRunnerImpl.INSTANCE;
+    @Getter
+    private final JobManager jobManager;
 
-    public DingoMeta(DingoConnection connection) {
+    public DingoMeta(DingoConnection connection, JobManager jobManager) {
         super(connection);
+        this.jobManager = jobManager;
     }
 
-    @Nonnull
-    private static Predicate<String> patToFilter(@Nonnull Pat pat) {
+    @NonNull
+    private static Predicate<String> patToFilter(@NonNull Pat pat) {
         if (pat.s == null) {
             return str -> true;
         }
@@ -126,47 +121,7 @@ public class DingoMeta extends MetaImpl {
         return str -> regex.matcher(str).matches();
     }
 
-    @Nonnull
-    private static Id jobIdFromSh(@Nonnull StatementHandle sh) {
-        return new Id(sh.toString());
-    }
-
-    @Nonnull
-    private static Iterator<Object[]> createIterator(@Nonnull AvaticaStatement statement) {
-        Signature signature = statement.handle.signature;
-        Iterator<Object[]> iterator;
-        if (signature instanceof DingoExplainSignature) {
-            DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
-            iterator = ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
-        } else {
-            Job job = jobManager.getJob(jobIdFromSh(statement.handle));
-            Object[] paras = null;
-            if (statement instanceof DingoPreparedStatement) {
-                DingoPreparedStatement dingoPreparedStatement = (DingoPreparedStatement) statement;
-                try {
-                    Object[] parasValue = TypedValue.values(dingoPreparedStatement.getParameterValues()).toArray();
-                    paras = ((Object[]) job.getParasType().convertFrom(
-                        parasValue,
-                        new TypedValueConverter(dingoPreparedStatement.getCalendar())
-                    ));
-                } catch (NullPointerException e) {
-                    throw new IllegalStateException("Not all parameters are set.");
-                }
-            }
-            iterator = jobRunner.createIterator(job, paras);
-        }
-        return iterator;
-    }
-
-    @Nonnull
-    static ExecuteResult createExecuteResult(@Nonnull StatementHandle sh) {
-        MetaResultSet metaResultSet;
-        final Frame frame = new Frame(0, false, Collections.emptyList());
-        metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, sh.signature, frame);
-        return new ExecuteResult(ImmutableList.of(metaResultSet));
-    }
-
-    static int getUpdateCount(@Nonnull StatementType statementType) {
+    static int getUpdateCount(@NonNull StatementType statementType) {
         final int updateCount;
         switch (statementType) {
             case CREATE:
@@ -183,8 +138,8 @@ public class DingoMeta extends MetaImpl {
     }
 
     private Collection<CalciteSchema> getMatchedSubSchema(
-        @Nonnull CalciteSchema rootSchema,
-        @Nonnull Pat pat
+        @NonNull CalciteSchema rootSchema,
+        @NonNull Pat pat
     ) {
         final Predicate<String> filter = patToFilter(pat);
         return rootSchema.getSubSchemaMap().entrySet().stream()
@@ -213,8 +168,8 @@ public class DingoMeta extends MetaImpl {
     }
 
     private Collection<CalciteSchema.TableEntry> getMatchedTables(
-        @Nonnull Collection<CalciteSchema> schemas,
-        @Nonnull Pat pat
+        @NonNull Collection<CalciteSchema> schemas,
+        @NonNull Pat pat
     ) {
         final Predicate<String> filter = patToFilter(pat);
         return schemas.stream()
@@ -223,6 +178,19 @@ public class DingoMeta extends MetaImpl {
                 .filter(e -> filterSchema(s.name, e))
                 .map(n -> s.getTable(n, false)))
             .collect(Collectors.toList());
+    }
+
+    @NonNull
+    private Iterator<Object[]> createIterator(@NonNull AvaticaStatement statement) {
+        if (statement instanceof DingoStatement) {
+            return ((DingoStatement) statement).createIterator(jobManager);
+        } else if (statement instanceof DingoPreparedStatement) {
+            return ((DingoPreparedStatement) statement).createIterator(jobManager);
+        }
+        throw new IllegalStateException(
+            "Statement \"" + statement.handle + "\" has wrong type: \""
+                + statement.getClass().getName() + "\"."
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -263,7 +231,7 @@ public class DingoMeta extends MetaImpl {
         final StatementHandle sh = createStatement(ch);
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-        sh.signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql);
+        sh.signature = parser.parseQuery(jobManager, sh.toString(), sql);
         return sh;
     }
 
@@ -280,11 +248,11 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public ExecuteResult prepareAndExecute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         String sql,
         long maxRowCount,
         int maxRowsInFirstFrame,
-        @Nonnull PrepareCallback callback
+        @NonNull PrepareCallback callback
     ) {
         final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
@@ -294,8 +262,10 @@ public class DingoMeta extends MetaImpl {
             return new ExecuteResult(ImmutableList.of(showMetaResultSet));
         }
         try {
+            Signature signature = sh.signature;
+            removeJobIn(signature);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            final Signature signature = parser.parseQuery(jobManager, jobIdFromSh(sh), sql);
+            signature = parser.parseQuery(jobManager, sh.toString(), sql);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);
@@ -323,12 +293,21 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
+    private void removeJobIn(Signature signature) {
+        if (signature instanceof DingoSignature) {
+            Id jobId = ((DingoSignature) signature).getJobId();
+            if (jobId != null) {
+                jobManager.removeJob(jobId);
+            }
+        }
+    }
+
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch(
         StatementHandle sh,
         @NonNull List<String> sqlCommands
     ) throws NoSuchStatementException {
-        AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
+        DingoStatement statement = (DingoStatement) ((DingoConnection) connection).getStatement(sh);
         final List<Long> updateCounts = new ArrayList<>();
         final PrepareCallback callback = new PrepareCallback() {
             long updateCount;
@@ -349,6 +328,7 @@ public class DingoMeta extends MetaImpl {
                 @Nullable Frame firstFrame,
                 long updateCount
             ) {
+                statement.setSignature(signature);
                 this.signature = signature;
                 this.updateCount = updateCount;
             }
@@ -437,7 +417,7 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public ExecuteResult execute(
-        @Nonnull StatementHandle sh,
+        @NonNull StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
@@ -454,25 +434,17 @@ public class DingoMeta extends MetaImpl {
             );
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         }
-        return createExecuteResult(sh);
+        MetaResultSet metaResultSet;
+        final Frame frame = new Frame(0, false, Collections.emptyList());
+        metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, sh.signature, frame);
+        return new ExecuteResult(ImmutableList.of(metaResultSet));
     }
 
     @Override
-    public void closeStatement(@Nonnull StatementHandle sh) {
+    public void closeStatement(@NonNull StatementHandle sh) {
         // Called in `AvaticaStatement.close` to do extra things.
         AvaticaStatement statement = connection.statementMap.get(sh.id);
-        if (statement != null) {
-            try {
-                statement.close();
-                Id jobId = jobIdFromSh(sh);
-                Job job = jobManager.removeJob(jobId);
-                if (job != null) {
-                    jobRunner.destroyRemoteTasks(job);
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        removeJobIn(sh.signature);
     }
 
     @Override
@@ -496,7 +468,7 @@ public class DingoMeta extends MetaImpl {
     public MetaResultSet getTables(
         ConnectionHandle ch,
         String catalog,
-        @Nonnull Pat schemaPattern,
+        @NonNull Pat schemaPattern,
         Pat tableNamePattern,
         List<String> typeList
     ) {
@@ -526,9 +498,9 @@ public class DingoMeta extends MetaImpl {
     public MetaResultSet getColumns(
         ConnectionHandle ch,
         String catalog,
-        @Nonnull Pat schemaPattern,
+        @NonNull Pat schemaPattern,
         Pat tableNamePattern,
-        @Nonnull Pat columnNamePattern
+        @NonNull Pat columnNamePattern
     ) {
         MetaCache.initTableDefinitions();
         final DingoConnection dingoConnection = (DingoConnection) connection;

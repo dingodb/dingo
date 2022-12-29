@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
+import io.dingodb.exec.base.Task;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.converter.JsonConverter;
 import lombok.Getter;
@@ -55,6 +56,14 @@ public class RunTaskMessage extends TaskMessage {
         this.taskId = taskId;
         this.parasType = parasType;
         this.paras = paras;
+    }
+
+    public RunTaskMessage(
+        @NonNull Task task,
+        @NonNull DingoType parasType,
+        Object @Nullable [] paras
+    ) {
+        this(task.getJobId(), task.getId(), parasType, paras);
     }
 
     @JsonCreator

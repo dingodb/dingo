@@ -19,14 +19,16 @@ package io.dingodb.test;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.cases.CasesInFileJUnit5;
+import io.dingodb.test.cases.InputTestFile;
+import io.dingodb.test.cases.StressTestCases;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -34,14 +36,13 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.List;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 // Before run this, you must set up your cluster.
 @Slf4j
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DingoDriverClientIT {
     private static SqlHelper sqlHelper;
@@ -68,41 +69,21 @@ public class DingoDriverClientIT {
         sqlHelper.cleanUp();
     }
 
-    @Order(1)
-    @Test
-    public void testCreateTable() throws SQLException, IOException {
-        sqlHelper.execFile("/table-test-create.sql");
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(CasesInFileJUnit5.class)
+    public void test(String ignored, List<InputTestFile> files) throws SQLException, IOException {
+        sqlHelper.randomTable().doTestFiles(files);
     }
 
-    @Order(2)
     @Test
-    public void testInsertData() throws SQLException, IOException {
-        sqlHelper.execFile("/table-test-data.sql");
-    }
-
-    @Order(3)
-    @Test
-    public void testQuery() throws SQLException {
-        //String sql = "select * from test where id < 8 and amount > 5.0";
-        String sql = "select ";
-        Connection connection = sqlHelper.getConnection();
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
-                    new Object[]{5, "Emily", 5.5},
-                    new Object[]{6, "Alice", 6.0},
-                    new Object[]{7, "Betty", 6.5}
-                ));
-            }
-        }
-    }
-
-    @Order(4)
-    @Test
-    public void testParameterQuery() throws SQLException {
-        String sql = "select * from test where id < ? and amount > ?";
-        Connection connection = sqlHelper.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+    public void testParameterQuery() throws SQLException, IOException {
+        RandomTable randomTable = sqlHelper.randomTable();
+        randomTable.execFiles(
+            "string_double/create.sql",
+            "string_double/data.sql"
+        );
+        String sql = "select * from {table} where id < ? and amount > ?";
+        try (PreparedStatement statement = randomTable.prepare(sql)) {
             statement.setInt(1, 8);
             statement.setDouble(2, 5.0);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -119,14 +100,18 @@ public class DingoDriverClientIT {
                 ));
             }
         }
+        randomTable.drop();
     }
 
-    @Order(5)
     @Test
-    public void testInsert() throws SQLException {
-        String sql = "insert into test values(?, ?, ?)";
-        Connection connection = sqlHelper.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+    public void testInsertWithParameters() throws SQLException, IOException {
+        RandomTable randomTable = sqlHelper.randomTable();
+        randomTable.execFiles(
+            "string_double/create.sql",
+            "string_double/data.sql"
+        );
+        String sql = "insert into {table} values(?, ?, ?)";
+        try (PreparedStatement statement = randomTable.prepare(sql)) {
             statement.setInt(1, 10);
             statement.setString(2, "Alice");
             statement.setDouble(3, 10.0);
@@ -138,19 +123,29 @@ public class DingoDriverClientIT {
             count = statement.executeUpdate();
             assertThat(count).isEqualTo(1);
         }
-        sqlHelper.queryTest(
-            "select * from test where id >= 10",
+        randomTable.queryTest(
+            "select * from {table} where id >= 10",
             new String[]{"id", "name", "amount"},
             ImmutableList.of(
                 new Object[]{10, "Alice", 10.0},
                 new Object[]{11, "Betty", 11.0}
             )
         );
+        randomTable.drop();
     }
 
-    @Order(6)
     @Test
-    public void testDropTable() throws SQLException {
-        sqlHelper.dropTable("test");
+    public void testStressInsert() throws SQLException, IOException {
+        StressTestCases.testInsert(sqlHelper);
+    }
+
+    @Test
+    public void testStressInsertWithParameters() throws SQLException, IOException {
+        StressTestCases.testInsertWithParameters(sqlHelper);
+    }
+
+    @Test
+    public void testStressInsertWithParametersBatch() throws SQLException, IOException {
+        StressTestCases.testInsertWithParametersBatch(sqlHelper);
     }
 }

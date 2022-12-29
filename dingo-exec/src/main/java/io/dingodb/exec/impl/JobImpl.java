@@ -43,6 +43,7 @@ public final class JobImpl implements Job {
     public static final Parser PARSER = Parser.JSON;
 
     @JsonProperty("jobId")
+    @Getter
     private final Id jobId;
     @JsonProperty("tasks")
     @JsonSerialize(contentAs = TaskImpl.class)

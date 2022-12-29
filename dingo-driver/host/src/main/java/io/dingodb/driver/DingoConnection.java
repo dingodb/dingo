@@ -37,6 +37,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.RelRunner;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.PreparedStatement;
@@ -44,7 +45,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context {
@@ -68,12 +68,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         context = new DingoParserContext(defaultSchema, info);
     }
 
-    public Meta getMeta() {
-        return meta;
+    public DingoMeta getMeta() {
+        return (DingoMeta) meta;
     }
 
-    @Nonnull
-    public AvaticaStatement getStatement(@Nonnull Meta.StatementHandle sh) throws NoSuchStatementException {
+    @NonNull
+    public AvaticaStatement getStatement(Meta.@NonNull StatementHandle sh) throws NoSuchStatementException {
         AvaticaStatement statement = statementMap.get(sh.id);
         if (statement != null) {
             return statement;

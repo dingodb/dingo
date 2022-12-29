@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public interface Job {
+    Id getJobId();
+
     Map<Id, Task> getTasks();
 
     @NonNull Task create(Id id, Location location);

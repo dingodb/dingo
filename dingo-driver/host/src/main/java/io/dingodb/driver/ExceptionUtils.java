@@ -18,9 +18,12 @@ package io.dingodb.driver;
 
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.exec.exception.TaskFinException;
+import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
 import java.util.regex.Pattern;
@@ -29,6 +32,8 @@ public final class ExceptionUtils {
     private static final Pattern pattern = Pattern.compile("Error (\\d+)\\s*\\((\\w+)\\):\\s*(.*)");
     private static final int PARSE_ERROR_CODE = 51001;
     private static final String PARSE_ERROR_STATE = "51001";
+    private static final int NUMBER_FORMAT_ERROR_CODE = 53004;
+    private static final String NUMBER_FORMAT_ERROR_STATE = "53004";
     private static final int DINGO_EXECUTION_FAIL_ERROR_CODE = 60000;
     private static final String DINGO_EXECUTION_FAIL_ERROR_STATE = "60000";
 
@@ -79,6 +84,14 @@ public final class ExceptionUtils {
         );
     }
 
+    public static @NonNull DingoSqlException toRuntime(@NonNull NumberFormatException exception) {
+        return new DingoSqlException(
+            exception.getMessage(),
+            NUMBER_FORMAT_ERROR_CODE,
+            NUMBER_FORMAT_ERROR_STATE
+        );
+    }
+
     public static @NonNull DingoSqlException toRuntime(@NonNull RuntimeException exception) {
         // Failed in optimizing, need to know why it is failed.
         if (exception.getMessage().startsWith("Error while applying rule ")) {
@@ -95,6 +108,8 @@ public final class ExceptionUtils {
             return (DingoSqlException) throwable;
         } else if (throwable instanceof SQLException) {
             return toRuntime((SQLException) throwable);
+        } else if (throwable instanceof NumberFormatException) {
+            return toRuntime((NumberFormatException) throwable);
         } else if (throwable instanceof TaskFinException) {
             return toRuntime((TaskFinException) throwable);
         } else if (throwable instanceof RuntimeException) {
@@ -129,6 +144,16 @@ public final class ExceptionUtils {
             throwable.getMessage(),
             DingoSqlException.UNKNOWN_ERROR_STATE,
             DingoSqlException.UNKNOWN_ERROR_CODE
+        );
+    }
+
+    public static @NonNull RuntimeException wrongSignatureType(
+        @NonNull AvaticaStatement statement,
+        Meta.@Nullable Signature signature
+    ) {
+        return new IllegalStateException(
+            "Statement \"" + statement.handle + "\" has wrong type of signature: \""
+                + (signature != null ? signature.getClass().getName() : "null") + "\"."
         );
     }
 }

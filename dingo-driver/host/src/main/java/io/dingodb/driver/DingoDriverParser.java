@@ -34,7 +34,6 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
-import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -63,34 +62,34 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
     private final DingoConnection connection;
 
-    public DingoDriverParser(@Nonnull DingoConnection connection) {
+    public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
         this.connection = connection;
     }
 
-    private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @Nonnull RelDataType type) {
+    private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @NonNull RelDataType type) {
         if (type.isStruct()) {
             return type;
         }
         return typeFactory.builder().add("$0", type).build();
     }
 
-    @Nonnull
+    @NonNull
     private static List<ColumnMetaData> getColumnMetaDataList(
         JavaTypeFactory typeFactory,
-        @Nonnull RelDataType jdbcType,
+        @NonNull RelDataType jdbcType,
         List<? extends @Nullable List<String>> originList
     ) {
         List<RelDataTypeField> fieldList = jdbcType.getFieldList();
@@ -109,8 +108,8 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     public static ColumnMetaData.AvaticaType avaticaType(
-        @Nonnull JavaTypeFactory typeFactory,
-        @Nonnull RelDataType type
+        @NonNull JavaTypeFactory typeFactory,
+        @NonNull RelDataType type
     ) {
         SqlTypeName typeName = type.getSqlTypeName();
         switch (typeName) {
@@ -130,12 +129,12 @@ public final class DingoDriverParser extends DingoParser {
         }
     }
 
-    @Nonnull
+    @NonNull
     private static ColumnMetaData metaData(
-        @Nonnull JavaTypeFactory typeFactory,
+        @NonNull JavaTypeFactory typeFactory,
         int ordinal,
         String fieldName,
-        @Nonnull RelDataType type,
+        @NonNull RelDataType type,
         @Nullable List<String> origins
     ) {
         ColumnMetaData.AvaticaType avaticaType = avaticaType(typeFactory, type);
@@ -168,8 +167,8 @@ public final class DingoDriverParser extends DingoParser {
             ? null : origins.get(origins.size() - 1 - offsetFromEnd);
     }
 
-    @Nonnull
-    private static List<AvaticaParameter> createParameterList(@Nonnull RelDataType parasType) {
+    @NonNull
+    private static List<AvaticaParameter> createParameterList(@NonNull RelDataType parasType) {
         List<RelDataTypeField> fieldList = parasType.getFieldList();
         final List<AvaticaParameter> parameters = new ArrayList<>(fieldList.size());
         for (RelDataTypeField field : fieldList) {
@@ -213,10 +212,9 @@ public final class DingoDriverParser extends DingoParser {
         }
     }
 
-    @Nonnull
-    public Meta.Signature parseQuery(
+    public Meta.@NonNull Signature parseQuery(
         JobManager jobManager,
-        Id jobId,
+        String jobIdPrefix,
         String sql
     ) {
         MetaCache.initTableDefinitions();
@@ -234,7 +232,8 @@ public final class DingoDriverParser extends DingoParser {
                 ImmutableList.of(),
                 sql,
                 Meta.CursorFactory.OBJECT,
-                Meta.StatementType.OTHER_DDL
+                Meta.StatementType.OTHER_DDL,
+                null
             );
         }
         JavaTypeFactory typeFactory = connection.getTypeFactory();
@@ -276,7 +275,7 @@ public final class DingoDriverParser extends DingoParser {
         }
         Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
-        Job job = jobManager.createJob(jobId, DefinitionMapper.mapToDingoType(parasType));
+        Job job = jobManager.createJob(jobIdPrefix, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -301,7 +300,8 @@ public final class DingoDriverParser extends DingoParser {
             createParameterList(parasType),
             null,
             cursorFactory,
-            statementType
+            statementType,
+            job.getJobId()
         );
     }
 

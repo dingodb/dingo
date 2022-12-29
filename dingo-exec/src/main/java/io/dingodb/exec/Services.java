@@ -21,7 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.channel.EndpointManager;
-import io.dingodb.exec.impl.TaskMessenger;
+import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
@@ -74,8 +74,8 @@ public final class Services {
 
     public static void initNetService() {
         initControlMsgService();
-        NET.registerTagMessageListener(TaskMessenger.TASK_TAG, (message, channel) ->
-            TaskMessenger.INSTANCE.processMessage(message));
+        NET.registerTagMessageListener(JobManagerImpl.TASK_TAG, (message, channel) ->
+            JobManagerImpl.INSTANCE.processMessage(message));
     }
 
     public static void initControlMsgService() {
