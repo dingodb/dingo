@@ -312,7 +312,7 @@ public final class DingoDriverParser extends DingoParser {
             return ddlExecutor.execute(sqlNode);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
-        return new ArrayList<>();
     }
 }

@@ -318,4 +318,21 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             .build();
     }
 
+    public void deletePrivileges(String user, String host) {
+        log.info("Delete user related privileges. User = {}, host = {}", user, host);
+        // Delete schema privileges
+        Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions = schemaPrivDefinitions(
+            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilege(user, host));
+        log.info("Schema map = {}", schemaPrivDefinitions.toString());
+        schemaPrivDefinitions.values().stream().map(
+            x -> ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).delete(x)).count();
+
+        // Delete table privileges
+        Map<CommonId, TablePrivDefinition> tablePrivDefinitions = tablePrivDefinitions(
+            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilege(user, host));
+        log.info("Table map = {}", tablePrivDefinitions.toString());
+        tablePrivDefinitions.values().stream().map(
+            x -> ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).delete(x)).count();
+    }
+
 }

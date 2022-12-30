@@ -63,6 +63,9 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
     @Override
     public void dropUser(UserDefinition userDefinition) {
         ((UserAdaptor) getMetaAdaptor(User.class)).delete(userDefinition);
+        // Delete the privileges related to this user
+        ((PrivilegeAdaptor) getMetaAdaptor(Privilege.class)).deletePrivileges(
+            userDefinition.getUser(), userDefinition.getHost());
     }
 
     @Override

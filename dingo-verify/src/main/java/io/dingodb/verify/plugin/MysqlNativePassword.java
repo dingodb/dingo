@@ -17,6 +17,7 @@
 package io.dingodb.verify.plugin;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -27,10 +28,12 @@ public class MysqlNativePassword extends AlgorithmPlugin {
     @Override
     public String getEncodedPassword(String password) {
         try {
+            if (StringUtils.isEmpty(password)) {
+                return "";
+            }
             return sha1(sha1(password));
         } catch (UnsupportedEncodingException e) {
-            //log.error(e.getMessage(), e);
-            e.printStackTrace();
+            log.error("Encoded password error : {}", e.getMessage(), e);
         }
         return null;
     }

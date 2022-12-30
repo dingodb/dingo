@@ -126,10 +126,10 @@ public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
         SchemaPriv schemaPriv = schemaPrivMap.remove(definition.getKey());
         if (schemaPriv != null) {
             doDelete(schemaPriv);
-            log.info("schemaPrivMap:" + schemaPrivMap);
+            log.info("Delete schema privilege, schema privilege map = {}", schemaPrivMap);
             return schemaPriv.getId();
         } else {
-            log.error("schema privilege is null");
+            log.error("Delete schema privilege is null.");
         }
         return null;
     }
