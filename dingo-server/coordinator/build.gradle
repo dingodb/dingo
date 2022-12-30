@@ -39,7 +39,6 @@ dependencies {
     implementation project(':dingo-serial')
     implementation project(':dingo-mirror-processing-unit')
     implementation project(":dingo-verify")
-
 }
 
 task fatJar(type: Jar) {

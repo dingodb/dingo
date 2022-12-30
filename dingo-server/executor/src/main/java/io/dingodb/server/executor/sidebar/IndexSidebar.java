@@ -21,7 +21,9 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.server.executor.store.StorageFactory;
+import io.dingodb.server.executor.store.StoreService;
 import io.dingodb.server.protocol.meta.Index;
+import io.dingodb.store.api.StoreInstance;
 
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -78,8 +80,15 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
     }
 
     @Override
+    public boolean delete(byte[] primaryKey) {
+        core.exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKey).join();
+        return true;
+    }
+
+    @Override
     public void primary(long clock) {
         super.primary(clock);
+        StoreService.INSTANCE.registerStoreInstance(index.getId(), this);
     }
 
     @Override

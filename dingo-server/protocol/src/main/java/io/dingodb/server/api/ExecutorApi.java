@@ -36,6 +36,10 @@ public interface ExecutorApi {
         return upsertKeyValue(null, null, tableId, row);
     }
 
+    default boolean delete(CommonId tableId, byte[] primaryKey) {
+        return delete(null, null, tableId, primaryKey);
+    }
+
     @ApiDeclaration
     @TransferArgsCodecAnnotation(name = "UpsertKeyValueCodeCUsingKeyValue")
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row);
@@ -70,6 +74,13 @@ public interface ExecutorApi {
                                       byte[] startPrimaryKey, byte[] endPrimaryKey);
 
     @ApiDeclaration
+    public List<KeyValue> getKeyValueByKeyPrefix(Channel channel, CommonId schema, CommonId tableId,
+                                        byte[] keyPrefix);
+
+    @ApiDeclaration
+    public List<KeyValue> getAllKeyValue(Channel channel, CommonId schema, CommonId tableId);
+
+    @ApiDeclaration
     public Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey,
                                     byte[] op, boolean readOnly);
 
@@ -90,6 +101,26 @@ public interface ExecutorApi {
 
     @ApiDeclaration
     default boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default boolean insert(CommonId tableId, Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default boolean update(CommonId tableId, Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default boolean delete(CommonId tableId, Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default List<Object[]> select(CommonId tableId, Object[] row, boolean[] hasData) {
         throw new UnsupportedOperationException();
     }
 }

@@ -139,10 +139,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return getTableDefinitions().get(tableName);
     }
 
+    public TableDefinition getTableDefinition(@NonNull CommonId id) {
+        return null;
+    }
+
     @Override
     public NavigableMap<ComparableByteArray, Part> getParts(String tableName) {
         tableName = tableName.toUpperCase();
-        return Parameters.cleanNull(parts.get(getTableId(tableName)), defaultPart);
+        CommonId id = getTableId(tableName);
+        return getParts(id);
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, Part> getParts(CommonId id) {
+        return Parameters.cleanNull(parts.get(id), defaultPart);
     }
 
     @Override

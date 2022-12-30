@@ -18,9 +18,13 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.executor.index.DingoIndexDataExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
 import io.dingodb.server.executor.store.LocalMetaStore;
 import io.dingodb.server.protocol.meta.TablePart;
@@ -56,6 +60,77 @@ public class TableApi implements io.dingodb.server.api.TableApi {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public CommonId createIndex(CommonId id, Index index) {
+        try {
+            TableDefinition tableDefinition = getDefinition(id);
+            index.setStatus(IndexStatus.BUSY);
+            tableDefinition.addIndex(index);
+            tableDefinition.increaseVersion();
+            TableSidebar tableSidebar = tables.get(id);
+            tableSidebar.updateDefinition(tableDefinition);
+            io.dingodb.server.protocol.meta.Index metaIndex = indexToMetaIndex(id, index);
+            tableSidebar.saveNewIndex(metaIndex);
+            tableSidebar.startIndexes();
+
+            CoordinatorConnector coordinatorConnector = CoordinatorConnector.getDefault();
+            DingoIndexDataExecutor executor = new DingoIndexDataExecutor(coordinatorConnector, id);
+            List<Object[]> allFinishedRecord = executor.getFinishedRecord();
+            for (Object[] record : allFinishedRecord) {
+                int retry = 0;
+                boolean isRetry = true;
+                while (isRetry) {
+                    try {
+                        executor.executeInsertIndex(record, index.getName());
+                        isRetry = false;
+                    } catch (Exception e) {
+                        retry++;
+                        if (retry > 3) {
+                            throw e;
+                        }
+                    }
+                }
+            }
+            index.setStatus(IndexStatus.NORMAL);
+            tableDefinition.removeIndex(index.getName());
+            tableDefinition.addIndex(index);
+            tableSidebar.updateDefinition(tableDefinition);
+            return metaIndex.getId();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition) {
+        TableSidebar tableSidebar = tables.get(id);
+        tableSidebar.updateDefinition(tableDefinition);
+        return true;
+    }
+
+    @Override
+    public CommonId getIndexId(CommonId tableId, String indexName) {
+        TableSidebar tableSidebar = tables.get(tableId);
+        if (tableSidebar == null) {
+            return null;
+        }
+        io.dingodb.server.protocol.meta.Index index = tableSidebar.getIndexes().get(indexName);
+        if (index == null) {
+            return null;
+        }
+        return index.getId();
+    }
+
+    private io.dingodb.server.protocol.meta.Index  indexToMetaIndex(CommonId id, Index index) {
+        return io.dingodb.server.protocol.meta.Index.builder()
+            .table(id)
+            .name(index.getName())
+            .columns(index.getColumns())
+            .unique(index.isUnique())
+            .status(index.getStatus())
+            .build();
     }
 
     @Override

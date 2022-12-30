@@ -32,6 +32,7 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.CodeUDFApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.executor.index.DingoIndexDataExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
 import io.dingodb.server.executor.store.instruction.OpInstructions;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
@@ -622,5 +623,46 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean insert(Object[] row) {
+        CoordinatorConnector connector = CoordinatorConnector.getDefault();
+        DingoIndexDataExecutor executor = new DingoIndexDataExecutor(connector, tableSidebar.tableId);
+        try {
+            executor.executeInsert(row);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean update(Object[] row) {
+        CoordinatorConnector connector = CoordinatorConnector.getDefault();
+        DingoIndexDataExecutor executor = new DingoIndexDataExecutor(connector, tableSidebar.tableId);
+        try {
+            executor.executeUpdate(row);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean delete(Object[] row) {
+        CoordinatorConnector connector = CoordinatorConnector.getDefault();
+        DingoIndexDataExecutor executor = new DingoIndexDataExecutor(connector, tableSidebar.tableId);
+        try {
+            executor.executeDelete(row);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<Object[]> select(Object[] row, boolean[] hasData) {
+        return Collections.EMPTY_LIST;
     }
 }

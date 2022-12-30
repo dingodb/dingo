@@ -48,4 +48,13 @@ public class CoordinatorConnector extends ServiceConnector {
         super(null, new HashSet<>(addresses));
     }
 
+    public static CoordinatorConnector getCoordinatorConnector(String addresses) {
+       return Optional.ofNullable(addresses.split(","))
+           .map(Arrays::asList)
+           .map(ss -> ss.stream()
+               .map(s -> s.split(":"))
+               .map(__ -> new Location(__[0], Integer.parseInt(__[1])))
+               .collect(Collectors.toList()))
+           .map(CoordinatorConnector::new).orNull();
+    }
 }
