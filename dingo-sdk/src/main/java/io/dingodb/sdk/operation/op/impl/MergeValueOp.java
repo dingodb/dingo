@@ -30,7 +30,4 @@ public class MergeValueOp extends ValueOp {
         super(execId, context, head);
     }
 
-    public void merge() {
-
-    }
 }

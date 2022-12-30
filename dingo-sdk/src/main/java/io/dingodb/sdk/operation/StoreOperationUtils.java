@@ -34,8 +34,6 @@ import io.dingodb.sdk.client.RouteTable;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.operation.op.Op;
-import io.dingodb.server.api.ExecutorApi;
-import io.dingodb.server.protocol.meta.Schema;
 import io.dingodb.verify.service.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -99,7 +97,8 @@ public class StoreOperationUtils {
                     routeTable.getTableId(),
                     forStore.getStartKeyListInBytes(),
                     forStore.getEndKeyListInBytes() == null ? null : forStore.getEndKeyListInBytes(),
-                    forStore.getOperationListInBytes());
+                    forStore.getOperationListInBytes(),
+                    head.readOnly());
                 futures.add(future);
             }
             for (Future<Object> future : futures) {

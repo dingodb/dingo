@@ -17,6 +17,7 @@
 package io.dingodb.sdk.operation.op.impl;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
 import io.dingodb.sdk.operation.Column;
@@ -36,24 +37,28 @@ public abstract class AbstractOp implements Op {
 
     public transient Op head;
     public Op next;
-    public int ident = 0; // 0: read 1: write
+    public boolean readOnly;
 
     private final CommonId execId;
     private final Context context;
 
     public AbstractOp(CommonId execId, Context context) {
-        this(execId, context, null, 0);
+        this(execId, context, null, true);
+    }
+
+    public AbstractOp(CommonId execId, Context context, boolean readOnly) {
+        this(execId, context, null, readOnly);
     }
 
     public AbstractOp(CommonId execId, Context context, Op head) {
-        this(execId, context, head, 0);
+        this(execId, context, head, true);
     }
 
-    public AbstractOp(CommonId execId, Context context, Op head, int ident) {
+    public AbstractOp(CommonId execId, Context context, Op head, boolean readOnly) {
         this.execId = execId;
         this.context = context;
         this.head = head;
-        this.ident = ident;
+        this.readOnly = readOnly;
     }
 
     @Override
@@ -67,6 +72,16 @@ public abstract class AbstractOp implements Op {
     }
 
     @Override
+    public boolean readOnly() {
+        return readOnly;
+    }
+
+    @Override
+    public void readOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    @Override
     public CommonId execId() {
         return execId;
     }
@@ -74,6 +89,13 @@ public abstract class AbstractOp implements Op {
     @Override
     public Context context() {
         return context;
+    }
+
+    protected Op assignIdent(boolean thatIdent) {
+        Op head = Parameters.cleanNull(this.head, this);
+        boolean readOnly = head.readOnly() ? thatIdent : head.readOnly();
+        head.readOnly(readOnly);
+        return head;
     }
 
     public static CollectionOp scan(Key start, Key end) {
@@ -93,7 +115,7 @@ public abstract class AbstractOp implements Op {
             .startPrimaryKeys(keyList)
             .recordList(recordList)
             .skippedWhenExisted(skippedWhenExisted)
-            .build());
+            .build(), false);
     }
 
     public static WriteOp update(List<Key> keyList, Column[] columns, boolean useDefaultWhenNotExisted) {
@@ -101,17 +123,17 @@ public abstract class AbstractOp implements Op {
             .startPrimaryKeys(keyList)
             .column(columns)
             .useDefaultWhenNotExisted(useDefaultWhenNotExisted)
-            .build());
+            .build(), false);
     }
 
     public static WriteOp delete(List<Key> keyList) {
-        return new WriteOp(DeleteExec.COMMON_ID, Context.builder().startPrimaryKeys(keyList).build());
+        return new WriteOp(DeleteExec.COMMON_ID, Context.builder().startPrimaryKeys(keyList).build(), false);
     }
 
     public static WriteOp deleteRange(Key start, Key end) {
         return new WriteOp(DeleteRangeExec.COMMON_ID, Context.builder()
             .startPrimaryKeys(Collections.singletonList(start))
             .endPrimaryKeys(Collections.singletonList(end))
-            .build());
+            .build(), false);
     }
 }

@@ -66,6 +66,10 @@ public interface Op {
 
     Op head();
 
+    boolean readOnly();
+
+    void readOnly(boolean readOnly);
+
     Context context();
 
     CommonId execId();

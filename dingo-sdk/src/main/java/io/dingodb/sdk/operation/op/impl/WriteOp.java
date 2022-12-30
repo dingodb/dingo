@@ -30,4 +30,8 @@ public class WriteOp extends VoidOp {
         super(execId, context, head);
     }
 
+
+    public WriteOp(CommonId execId, Context context, boolean readOnly) {
+        super(execId, context, readOnly);
+    }
 }

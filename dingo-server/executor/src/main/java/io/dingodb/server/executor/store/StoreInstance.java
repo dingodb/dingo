@@ -315,8 +315,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     @Override
-    public Object compute(List<byte[]> startPrimaryKeys, List<byte[]> endPrimaryKeys, byte[] op) {
-        // isValidRangeKey(startPrimaryKey, endPrimaryKey);
+    public Object compute(List<byte[]> startPrimaryKeys, List<byte[]> endPrimaryKeys, byte[] op, boolean readOnly) {
         int timestamp = -1;
         if (tableSidebar.ttl()) {
             timestamp = Utils.currentSecond();
@@ -324,7 +323,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
         Part part = null;
         List<byte[]> endList = new ArrayList<>();
-        // if (startPrimaryKeys.size() == endPrimaryKeys.size()) {
         for (int i = 0; i < startPrimaryKeys.size(); i++) {
             part = getPartByPrimaryKey(startPrimaryKeys.get(i));
             if (part == null) {
@@ -342,7 +340,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             endList.add(endPrimaryKey);
             endPrimaryKeys = endList;
         }
-        // }
+        if (readOnly) {
+            return tableSidebar.getPartition(part.getId()).view(
+                OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKeys, endPrimaryKeys, op, timestamp);
+        }
 
         return tableSidebar.getPartition(part.getId())
             .exec(OpInstructions.id, OpInstructions.COMPUTE_OC, startPrimaryKeys, endPrimaryKeys, op, timestamp)

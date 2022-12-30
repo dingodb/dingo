@@ -124,9 +124,9 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
         CommonId tableId,
         List<byte[]> startPrimaryKey,
         List<byte[]> endPrimaryKey,
-        byte[] op) {
+        byte[] op, boolean readOnly) {
         return CompletableFuture.completedFuture(storeService.getInstance(tableId)
-            .compute(startPrimaryKey, endPrimaryKey, op));
+            .compute(startPrimaryKey, endPrimaryKey, op, readOnly));
     }
 
     @Override
