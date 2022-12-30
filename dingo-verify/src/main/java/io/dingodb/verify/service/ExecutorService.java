@@ -100,7 +100,7 @@ public interface ExecutorService {
 
     @ApiDeclaration
     public Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey,
-                                    byte[] op);
+                                    byte[] op, boolean readOnly);
 
     @ApiDeclaration
     default KeyValue udfGet(CommonId tableId, byte[] primaryKey, String udfName, String functionName) {

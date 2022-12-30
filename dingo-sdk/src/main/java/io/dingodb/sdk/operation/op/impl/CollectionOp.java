@@ -49,10 +49,6 @@ public class CollectionOp extends AbstractOp {
         super(execId, context, head);
     }
 
-    public CollectionOp(CommonId execId, Context context, Op head, int ident) {
-        super(execId, context, head, ident);
-    }
-
     public MergeValueOp sum(Column column) {
         next = new MergeValueOp(
             SumExec.COMMON_ID,
@@ -145,7 +141,7 @@ public class CollectionOp extends AbstractOp {
         next = new CollectionOp(
             CollAddExec.COMMON_ID,
             Context.builder().column(columns).useDefaultWhenNotExisted(useDefaultWhenNotExisted).build(),
-            Parameters.cleanNull(head, this), 1);
+            assignIdent(false));
         return (CollectionOp) next;
     }
 

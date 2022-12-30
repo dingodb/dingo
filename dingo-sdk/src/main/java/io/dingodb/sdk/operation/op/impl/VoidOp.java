@@ -30,4 +30,8 @@ public class VoidOp extends AbstractOp {
         super(execId, context, head);
     }
 
+    public VoidOp(CommonId execId, Context context, boolean readOnly) {
+        super(execId, context, readOnly);
+    }
+
 }

@@ -101,7 +101,7 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op) {
+    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op, boolean readOnly) {
         throw new UnsupportedOperationException();
     }
 
