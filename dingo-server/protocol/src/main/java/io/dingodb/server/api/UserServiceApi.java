@@ -18,13 +18,10 @@ package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
-import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.Channel;
-
-import java.util.List;
 
 public interface UserServiceApi {
 

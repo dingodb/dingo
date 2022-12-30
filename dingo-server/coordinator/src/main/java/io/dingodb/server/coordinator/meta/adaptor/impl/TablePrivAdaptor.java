@@ -128,10 +128,10 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
         TablePriv tablePriv = tablePrivMap.remove(definition.getKey());
         if (tablePriv != null) {
             doDelete(tablePriv);
-            log.info("tablePriv:" + tablePriv);
+            log.info("Delete table privilege, table privilege map = {}", tablePrivMap);
             return tablePriv.getId();
         } else {
-            log.error("table privilege is null");
+            log.error("Delete table privilege is null.");
         }
         return null;
     }
