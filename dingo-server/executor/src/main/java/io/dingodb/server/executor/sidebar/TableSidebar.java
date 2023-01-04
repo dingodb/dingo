@@ -78,6 +78,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     private final List<TablePart> parts = new ArrayList<>();
     private final NavigableMap<byte[], TablePart> ranges = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
+
+    @Getter
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
 
     @Getter
@@ -85,6 +87,9 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Delegate
     public final StoreInstance storeInstance;
+
+    @Getter
+    private volatile TableStatus status = TableStatus.STOPPED;
 
     private TableSidebar(CoreMeta meta, List<CoreMeta> mirrors, TableDefinition definition, Storage storage) {
         super(meta, mirrors, storage);
@@ -181,7 +186,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         }
     }
 
-    private void saveNewIndex(Index index) {
+    public void saveNewIndex(Index index) {
         CommonId newId = new CommonId(INDEX_PREFIX.type(), INDEX_PREFIX.identifier(), tableId.seq(),
             core.exec(SeqInstructions.id, 0, INDEX_PREFIX.encode()).join()
         );
@@ -210,7 +215,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         );
     }
 
-    private void startIndexes() {
+    public void startIndexes() {
         core.<Iterator<KeyValue>>view(
             KVInstructions.id, KVInstructions.SCAN_OC, INDEX_PREFIX.encode(), INDEX_PREFIX.encode(), true
         ).forEachRemaining(
@@ -320,6 +325,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         startParts();
         startIndexes();
         started.complete(null);
+        setRunning();
     }
 
     @Override
@@ -336,4 +342,23 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     public void losePrimary(long clock) {
     }
 
+    public void setStarting() {
+        this.status = TableStatus.STARTING;
+    }
+
+    public void setBusy() {
+        this.status = TableStatus.BUSY;
+    }
+
+    public void setRunning() {
+        this.status = TableStatus.RUNNING;
+    }
+
+    public void setStopping() {
+        this.status = TableStatus.STOPPING;
+    }
+
+    public void setStopped() {
+        this.status = TableStatus.STOPPED;
+    }
 }

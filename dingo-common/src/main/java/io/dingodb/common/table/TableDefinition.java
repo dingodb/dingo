@@ -352,36 +352,19 @@ public class TableDefinition {
         return indexes.get(indexName);
     }
 
-    public List<Index> getIndexesByColumnName(String columnName) {
-        List<Index> result = new ArrayList<>();
-        for (Map.Entry<String, Index> entry : indexes.entrySet()) {
-            for (String column : entry.getValue().getColumns()) {
-                if (column.equalsIgnoreCase(columnName)) {
-                    result.add(entry.getValue());
-                    break;
-                }
-            }
+    public List<Index> getIndexes(List<String> indexNames) {
+        List<Index> indexes = new ArrayList<>();
+        for (String indexName : indexNames) {
+            indexes.add(getIndex(indexName));
         }
-        return result;
+        return indexes;
     }
 
-    public List<Index> getIndexesByColumnNames(List<String> columnNames) {
-        List<Index> result = new ArrayList<>();
-        for (Map.Entry<String, Index> entry : indexes.entrySet()) {
-            NextIndex:
-            for (String column : entry.getValue().getColumns()) {
-                for (String columnName : columnNames) {
-                    if (column.equalsIgnoreCase(columnName)) {
-                        result.add(entry.getValue());
-                        break NextIndex;
-                    }
-                }
-            }
-        }
-        return result;
+    public List<Index> getIndexesByContainsColumnName(String columnName) {
+        return getIndexes(getIndexNamesByContainsColumnName(columnName));
     }
 
-    public List<String> getIndexNamesByColumnName(String columnName) {
+    public List<String> getIndexNamesByContainsColumnName(String columnName) {
         List<String> result = new ArrayList<>();
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
             for (String column : entry.getValue().getColumns()) {
@@ -394,18 +377,26 @@ public class TableDefinition {
         return result;
     }
 
-    public List<String> getIndexNamesByColumnNames(List<String> columnNames) {
+    public List<Index> getIndexesByEqualsColumnNames(List<String> columnNames) {
+        return getIndexes(getIndexNamesByEqualsColumnNames(columnNames));
+    }
+
+
+
+    public List<String> getIndexNamesByEqualsColumnNames(List<String> columnNames) {
         List<String> result = new ArrayList<>();
+        NEXTINDEX:
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
-            NextIndex:
-            for (String column : entry.getValue().getColumns()) {
-                for (String columnName : columnNames) {
-                    if (column.equalsIgnoreCase(columnName)) {
-                        result.add(entry.getValue().getName());
-                        break NextIndex;
-                    }
+            String[] indexColumnNames = entry.getValue().getColumns();
+            if (indexColumnNames.length != columnNames.size()) {
+                continue;
+            }
+            for (String indexColumnName : indexColumnNames) {
+                if (!columnNames.contains(indexColumnName)) {
+                    continue NEXTINDEX;
                 }
             }
+            result.add(entry.getValue().getName());
         }
         return result;
     }
@@ -425,5 +416,9 @@ public class TableDefinition {
             indexesMapping.put(entry.getKey(), getIndexMapping(entry.getKey()));
         }
         return indexesMapping;
+    }
+
+    public void removeIndex(String name) {
+        indexes.remove(name);
     }
 }

@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 
 import java.util.Iterator;
@@ -97,11 +98,11 @@ public interface StoreInstance {
         return true;
     }
 
-    default boolean update(Row row) {
+    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op, boolean readOnly) {
         throw new UnsupportedOperationException();
     }
 
-    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op, boolean readOnly) {
+    default boolean update(Row row) {
         throw new UnsupportedOperationException();
     }
 
@@ -196,6 +197,22 @@ public interface StoreInstance {
     }
 
     default boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean insert(Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean update(Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean delete(Object[] row) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<Object[]> select(Object[] row, boolean[] hasData) {
         throw new UnsupportedOperationException();
     }
 }

@@ -16,6 +16,7 @@
 
 package io.dingodb.sdk.mock;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.client.MetaClient;
 import io.dingodb.sdk.utils.MetaServiceUtils;
@@ -43,5 +44,10 @@ public class MockMetaClient extends MetaClient {
     @Override
     public TableDefinition getTableDefinition(@NonNull String name) {
         return MetaServiceUtils.getSimpleTableDefinition(name);
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(@NonNull CommonId id) {
+        return super.getTableDefinition(id);
     }
 }

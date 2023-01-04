@@ -16,11 +16,13 @@
 
 package io.dingodb.server.executor.store;
 
-
+import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -30,9 +32,12 @@ import io.dingodb.mpu.core.VCore;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.CodeUDFApi;
+import io.dingodb.server.api.ExecutorApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.executor.index.IndexExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
+import io.dingodb.server.executor.sidebar.TableStatus;
 import io.dingodb.server.executor.store.instruction.OpInstructions;
 import io.dingodb.server.protocol.meta.TablePartStats.ApproximateStats;
 import lombok.extern.slf4j.Slf4j;
@@ -45,12 +50,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,19 +68,31 @@ import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
 import static io.dingodb.common.util.ByteArrayUtils.unsliced;
 
-
 @Slf4j
 public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
+    private final CommonId id;
+
     private final TableSidebar tableSidebar;
+
     private final NavigableMap<byte[], Part> startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
 
     private Map<String, Globals> globalsMap = new HashMap<>();
+
     private Map<String, TableDefinition> definitionMap = new HashMap<>();
+
     private Map<String, KeyValueCodec> codecMap = new HashMap<>();
+
+    private IndexExecutor indexExecutor;
+
+    Lock lock = new ReentrantLock();
+
+    private Set<KeyValue> rowLock = new HashSet<>();
 
     public StoreInstance(TableSidebar tableSidebar) {
         this.tableSidebar = tableSidebar;
+        this.id = tableSidebar.tableId;
+        this.indexExecutor = new IndexExecutor(this.id);
     }
 
     public ApproximateStats approximateStats(VCore core) {
@@ -306,6 +327,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     /**
      * f prefix is 0xFFFF... will throw exception. user must handle the exception.
+     *
      * @param prefix key prefix
      * @return iterator
      */
@@ -622,5 +644,202 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean insert(Object[] row) {
+        if (!tableSidebar.getStatus().equals(TableStatus.RUNNING)) {
+            throw new RuntimeException("Table is not in running status");
+        }
+
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+        int tableDefinitionVersion = tableDefinition.getVersion();
+
+        KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
+        lock.lock();
+        if (rowLock.contains(oriKV)) {
+            lock.unlock();
+            return false;
+        }
+        rowLock.add(oriKV);
+        lock.unlock();
+
+        try {
+            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+
+            ExecutorApi unfinishExecutorcApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+
+            if (!unfinishExecutorcApi.upsertKeyValue(null, null, id, unfinishKV)) {
+                return false;
+            }
+
+            Set<String> indexNames = tableDefinition.getIndexes().keySet();
+            for (String indexName : indexNames) {
+                if (!indexExecutor.insertIndex(row, tableDefinition, indexName)) {
+                    return false;
+                }
+            }
+
+            TableDefinition currentTd = tableSidebar.getDefinition();
+            if (currentTd.getVersion() != tableDefinitionVersion) {
+                throw new RuntimeException("table definition changed");
+            }
+            if (!finishedExecutorcApi.upsertKeyValue(null, null, id, finishedKV)) {
+                return false;
+            }
+            if (!unfinishExecutorcApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+                return false;
+            }
+            return true;
+        } finally {
+            rowLock.remove(oriKV);
+        }
+    }
+
+    @Override
+    public boolean update(Object[] row) {
+        if (!tableSidebar.getStatus().equals(TableStatus.RUNNING)) {
+            throw new RuntimeException("Table is not in running status");
+        }
+
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+        int tableDefinitionVersion = tableDefinition.getVersion();
+
+        KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
+        KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+        ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+        byte[] oldValue = finishedExecutorcApi.getValueByPrimaryKey(null, null, id, finishedKV.getPrimaryKey());
+        KeyValue oldKV = new KeyValue(oriKV.getKey(), oldValue);
+
+        lock.lock();
+        if (rowLock.contains(oriKV) || rowLock.contains(oldKV)) {
+            lock.unlock();
+            return false;
+        }
+        rowLock.add(oriKV);
+        rowLock.add(oldKV);
+        lock.unlock();
+
+        try {
+            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
+            KeyValue oldDeleteKV = indexExecutor.getDeleteKV(oldKV);
+
+            ExecutorApi unfinishExecutorcApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi oldDeleteExecutorcApi = indexExecutor.getExecutor(oldDeleteKV.getKey(), tableDefinition);
+
+            Object[] oldRow = indexExecutor.getRow(oldKV, tableDefinition);
+
+            if (!unfinishExecutorcApi.upsertKeyValue(null, null, id, unfinishKV)) {
+                return false;
+            }
+
+            if (!oldDeleteExecutorcApi.upsertKeyValue(null, null, id, oldDeleteKV)) {
+                return false;
+            }
+
+            Set<String> indexNames = tableDefinition.getIndexes().keySet();
+            for (String indexName : indexNames) {
+                indexExecutor.deleteFromIndex(oldRow, tableDefinition, indexName);
+                indexExecutor.insertIndex(row, tableDefinition, indexName);
+            }
+
+            TableDefinition currentTd = tableSidebar.getDefinition();
+            if (currentTd.getVersion() != tableDefinitionVersion) {
+                throw new RuntimeException("table definition changed");
+            }
+            if (!finishedExecutorcApi.delete(null, null, id, finishedKV.getPrimaryKey())) {
+                return false;
+            }
+            if (!oldDeleteExecutorcApi.delete(null, null, id, oldDeleteKV.getPrimaryKey())) {
+                return false;
+            }
+            if (!finishedExecutorcApi.upsertKeyValue(null, null, id, finishedKV)) {
+                return false;
+            }
+            if (!unfinishExecutorcApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+                return false;
+            }
+            return true;
+        } finally {
+            rowLock.remove(oriKV);
+            rowLock.remove(oldKV);
+        }
+    }
+
+    @Override
+    public boolean delete(Object[] row) {
+        if (!tableSidebar.getStatus().equals(TableStatus.RUNNING)) {
+            throw new RuntimeException("Table is not in running status");
+        }
+
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+        int tableDefinitionVersion = tableDefinition.getVersion();
+
+        KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
+        lock.lock();
+        if (rowLock.contains(oriKV)) {
+            lock.unlock();
+            return false;
+        }
+        rowLock.add(oriKV);
+        lock.unlock();
+
+        try {
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+            KeyValue deleteKV = indexExecutor.getDeleteKV(oriKV);
+
+            ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+            ExecutorApi deleteExecutorcApi = indexExecutor.getExecutor(deleteKV.getKey(), tableDefinition);
+
+            if (!deleteExecutorcApi.upsertKeyValue(null, null, id, deleteKV)) {
+                return false;
+            }
+
+            Set<String> indexNames = tableDefinition.getIndexes().keySet();
+            for (String indexName : indexNames) {
+                if (!indexExecutor.deleteFromIndex(row, tableDefinition, indexName)) {
+                    return false;
+                }
+            }
+
+            TableDefinition currentTd = tableSidebar.getDefinition();
+
+            if (currentTd.getVersion() != tableDefinitionVersion) {
+                throw new RuntimeException("table definition changed");
+            }
+
+            if (!finishedExecutorcApi.delete(null, null, id, finishedKV.getPrimaryKey())) {
+                return false;
+            }
+            if (!deleteExecutorcApi.delete(null, null, id, deleteKV.getPrimaryKey())) {
+                return false;
+            }
+
+            return true;
+        } finally {
+            rowLock.remove(oriKV);
+        }
+    }
+
+    @Override
+    public List<Object[]> select(Object[] row, boolean[] hasData) {
+        if (!tableSidebar.getStatus().equals(TableStatus.RUNNING)) {
+            throw new RuntimeException("Table is not in running status");
+        }
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
+        List<String> columnNames = new ArrayList<>();
+        for (int i = 0; i < hasData.length; i++) {
+            if (hasData[i]) {
+                columnNames.add(tableColumns.get(i).getName());
+            }
+        }
+        List<Index> indices = tableDefinition.getIndexesByEqualsColumnNames(columnNames);
+        if (indices.size() == 0) {
+            throw new RuntimeException("no index found");
+        }
+        return indexExecutor.getRowByIndex(row, tableDefinition, indices.get(0).getName());
     }
 }
