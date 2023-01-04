@@ -49,44 +49,44 @@ public class CollectionOp extends AbstractOp {
         super(execId, context, head);
     }
 
-    public MergeValueOp sum(Column column) {
-        next = new MergeValueOp(
+    public ValueOp sum(Column column) {
+        next = new ValueOp(
             SumExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
-        return (MergeValueOp) next;
+        return (ValueOp) next;
     }
 
     public ValueOp max(Column column) {
-        next = new MergeValueOp(
+        next = new ValueOp(
             MaxExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
-        return (MergeValueOp) next;
+        return (ValueOp) next;
     }
 
     public ValueOp min(Column column) {
-        next = new MergeValueOp(
+        next = new ValueOp(
             MinExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
-        return (MergeValueOp) next;
+        return (ValueOp) next;
     }
 
     public ValueOp avg(Column column) {
-        next = new MergeValueOp(
+        next = new ValueOp(
             AvgExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
-        return (MergeValueOp) next;
+        return (ValueOp) next;
     }
 
     public ValueOp count(Column column) {
-        next = new MergeValueOp(
+        next = new ValueOp(
             CountExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
             Parameters.cleanNull(head, this));
-        return (MergeValueOp) next;
+        return (ValueOp) next;
     }
 
     public ValueOp decreaseCount(Column column) {
@@ -145,15 +145,19 @@ public class CollectionOp extends AbstractOp {
         return (CollectionOp) next;
     }
 
-    public MultiValueOp sortList(Column column) {
+    public CollectionOp sortList(Column column) {
+        return sortList(column, true);
+    }
+
+    public CollectionOp sortList(Column column, boolean desc) {
         next = new MultiValueOp(
             SortListExec.COMMON_ID,
-            Context.builder().column(new Column[]{column}).build(),
+            Context.builder().column(new Column[]{column}).desc(desc).build(),
             Parameters.cleanNull(head, this));
         return (MultiValueOp) next;
     }
 
-    public MultiValueOp list(Column column) {
+    public CollectionOp list(Column column) {
         next = new MultiValueOp(
             ListExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),
@@ -161,7 +165,7 @@ public class CollectionOp extends AbstractOp {
         return (MultiValueOp) next;
     }
 
-    public MultiValueOp distinctList(Column column) {
+    public CollectionOp distinctList(Column column) {
         next = new MultiValueOp(
             DistinctListExec.COMMON_ID,
             Context.builder().column(new Column[]{column}).build(),

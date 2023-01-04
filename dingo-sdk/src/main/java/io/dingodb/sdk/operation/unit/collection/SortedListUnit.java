@@ -56,6 +56,10 @@ public class SortedListUnit<T extends Comparable<T> & Cloneable<T>>
     public SortedListUnit() {
     }
 
+    public SortedListUnit(boolean desc) {
+        this.desc = desc;
+    }
+
     public SortedListUnit(T value, boolean desc) {
         this(value, 0, desc);
     }

@@ -20,7 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.op.Op;
 
-public class MultiValueOp extends ValueOp {
+public class MultiValueOp extends CollectionOp {
 
     public MultiValueOp(CommonId execId, Context context) {
         super(execId, context);

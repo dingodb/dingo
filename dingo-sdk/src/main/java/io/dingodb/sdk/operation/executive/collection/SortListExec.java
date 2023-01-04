@@ -47,7 +47,7 @@ public class SortListExec extends AbstractExecutive<Context, Iterator<Object[]>>
     @Override
     public MultiValueOpResult execute(Context context, Iterator<Object[]> records) {
         String col = context.column()[0].name;
-        SortedListUnit unit = new SortedListUnit<>();
+        SortedListUnit unit = new SortedListUnit<>(context.desc());
         try {
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
