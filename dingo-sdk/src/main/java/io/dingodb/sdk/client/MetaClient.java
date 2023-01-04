@@ -16,22 +16,11 @@
 
 package io.dingodb.sdk.client;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.CodeUDFApi;
-import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.client.meta.service.MetaServiceClient;
 import lombok.experimental.Delegate;
-import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.NavigableMap;
 
 public class MetaClient extends ClientBase implements MetaService {
     @Delegate

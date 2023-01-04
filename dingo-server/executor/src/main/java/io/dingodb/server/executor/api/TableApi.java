@@ -18,14 +18,25 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
+import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.client.connector.impl.ServiceConnector;
+import io.dingodb.server.client.meta.service.MetaServiceClient;
+import io.dingodb.server.executor.index.IndexExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
+import io.dingodb.server.executor.sidebar.TableStatus;
 import io.dingodb.server.executor.store.LocalMetaStore;
 import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -56,6 +67,77 @@ public class TableApi implements io.dingodb.server.api.TableApi {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public CommonId createIndex(CommonId id, Index index) {
+        try {
+            TableDefinition tableDefinition = getDefinition(id);
+            index.setStatus(IndexStatus.BUSY);
+            tableDefinition.addIndex(index);
+            tableDefinition.increaseVersion();
+            TableSidebar tableSidebar = tables.get(id);
+            tableSidebar.updateDefinition(tableDefinition);
+            io.dingodb.server.protocol.meta.Index metaIndex = indexToMetaIndex(id, index);
+            tableSidebar.saveNewIndex(metaIndex);
+            tableSidebar.startIndexes();
+
+            while (!tableSidebar.getStatus().equals(TableStatus.RUNNING)) {
+                Thread.sleep(1000);
+            }
+
+            tableSidebar.setBusy();
+            IndexExecutor indexExecutor = new IndexExecutor(id);
+            CoordinatorConnector coordinatorConnector = CoordinatorConnector.getDefault();
+            MetaServiceClient metaServiceClient = new MetaServiceClient(coordinatorConnector);
+            NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaServiceClient.getParts(id);
+            for(ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
+                ServiceConnector partConnector = new ServiceConnector(id, partitions.get(partId).getReplicates());
+                ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
+                List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, id, new byte[]{1});
+                for(KeyValue keyValue : keyValues) {
+                    indexExecutor.insertIndex(indexExecutor.getOriRow(keyValue, tableDefinition), tableDefinition, index.getName());
+                }
+            }
+            index.setStatus(IndexStatus.NORMAL);
+            tableDefinition.removeIndex(index.getName());
+            tableDefinition.addIndex(index);
+            tableSidebar.updateDefinition(tableDefinition);
+            tableSidebar.setRunning();
+            return metaIndex.getId();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition) {
+        TableSidebar tableSidebar = tables.get(id);
+        tableSidebar.updateDefinition(tableDefinition);
+        return true;
+    }
+
+    @Override
+    public CommonId getIndexId(CommonId tableId, String indexName) {
+        TableSidebar tableSidebar = tables.get(tableId);
+        if (tableSidebar == null) {
+            return null;
+        }
+        io.dingodb.server.protocol.meta.Index index = tableSidebar.getIndexes().get(indexName);
+        if (index == null) {
+            return null;
+        }
+        return index.getId();
+    }
+
+    private io.dingodb.server.protocol.meta.Index  indexToMetaIndex(CommonId id, Index index) {
+        return io.dingodb.server.protocol.meta.Index.builder()
+            .table(id)
+            .name(index.getName())
+            .columns(index.getColumns())
+            .unique(index.isUnique())
+            .status(index.getStatus())
+            .build();
     }
 
     @Override

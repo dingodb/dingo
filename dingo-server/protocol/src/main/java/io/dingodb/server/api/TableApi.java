@@ -19,6 +19,7 @@ package io.dingodb.server.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.Part;
@@ -37,6 +38,9 @@ public interface TableApi {
     );
 
     @ApiDeclaration
+    CommonId getIndexId(CommonId tableId, String indexName);
+
+    @ApiDeclaration
     CompletableFuture<Void> deleteTable(CommonId id);
 
     @ApiDeclaration
@@ -47,5 +51,11 @@ public interface TableApi {
 
     @ApiDeclaration
     NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts();
+
+    @ApiDeclaration
+    CommonId createIndex(CommonId id, Index index);
+
+    @ApiDeclaration
+    boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition);
 
 }
