@@ -20,6 +20,9 @@ import io.dingodb.test.RandomTable;
 import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -27,15 +30,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("MethodMayBeStatic")
 @Slf4j
-public final class StressTestCases {
-    private StressTestCases() {
-    }
-
-    public static void testInsert(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
+public final class StressCasesJUnit5 implements ArgumentsProvider {
+    public void insert(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
         RandomTable randomTable = sqlHelper.randomTable();
         randomTable.execFiles("string_double/create.sql");
         Random random = new Random();
@@ -52,7 +54,7 @@ public final class StressTestCases {
         }
     }
 
-    public static void testInsertWithParameters(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
+    public void insertWithParameters(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
         RandomTable randomTable = sqlHelper.randomTable();
         randomTable.execFiles("string_double/create.sql");
         Random random = new Random();
@@ -71,7 +73,7 @@ public final class StressTestCases {
         }
     }
 
-    public static void testInsertWithParametersBatch(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
+    public void insertWithParametersBatch(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
         RandomTable randomTable = sqlHelper.randomTable();
         randomTable.execFiles("string_double/create.sql");
         Random random = new Random();
@@ -92,5 +94,14 @@ public final class StressTestCases {
         } finally {
             randomTable.drop();
         }
+    }
+
+    @Override
+    public @NonNull Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+        return Stream.of(
+            ClassTestMethod.argumentsOf(this::insert, "Insert"),
+            ClassTestMethod.argumentsOf(this::insertWithParameters, "Insert with parameters"),
+            ClassTestMethod.argumentsOf(this::insertWithParametersBatch, "Insert with parameters batch")
+        );
     }
 }

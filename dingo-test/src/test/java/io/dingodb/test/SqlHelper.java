@@ -52,6 +52,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 public class SqlHelper {
@@ -61,8 +62,6 @@ public class SqlHelper {
     public SqlHelper() throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.JDBC);
-        env.setInfo("user", "root");
-        env.setInfo("password", "123123");
         // Configure for local test.
         if (DingoConfiguration.instance() == null) {
             DingoConfiguration.parse(
@@ -112,6 +111,27 @@ public class SqlHelper {
                 statement.execute(s);
             }
         }
+    }
+
+    public void exceptionTest(
+        List<String> sqlList,
+        boolean needDropping,
+        int sqlCode,
+        String sqlState
+    ) {
+        RandomTable randomTable = randomTable();
+        SQLException exception = assertThrows(SQLException.class, () -> {
+            randomTable.execSqls(sqlList.toArray(new String[0]));
+        });
+        if (needDropping) {
+            try {
+                randomTable.drop();
+            } catch (SQLException ignored) {
+            }
+        }
+        log.info("Exception = {}", exception.getMessage());
+        assertThat(exception.getErrorCode()).isEqualTo(sqlCode);
+        assertThat(exception.getSQLState()).isEqualTo(sqlState);
     }
 
     public void execSql(@Nonnull String sql) throws SQLException {
@@ -292,5 +312,4 @@ public class SqlHelper {
     public void doQueryTest(Class<?> testClass, String fileName) throws SQLException, IOException {
         doQueryTest(testClass, fileName, fileName);
     }
-
 }

@@ -32,6 +32,7 @@ import io.dingodb.exec.fun.special.ItemEvaluatorsFactory;
 import io.dingodb.exec.fun.special.ListConstructorOp;
 import io.dingodb.exec.fun.special.MapConstructorOp;
 import io.dingodb.exec.fun.special.RtSliceFun;
+import io.dingodb.exec.fun.special.ThrowOp;
 import io.dingodb.exec.fun.string.CharLengthFun;
 import io.dingodb.exec.fun.string.ConcatFun;
 import io.dingodb.exec.fun.string.LTrimFun;
@@ -72,6 +73,8 @@ public class DingoFunFactory extends DefaultFunFactory {
     public static final String TIMESTAMP_FORMAT = "timestamp_format";
     public static final String FROM_UNIXTIME = "from_unixtime";
     public static final String UNIX_TIMESTAMP = "unix_timestamp";
+    // special
+    public  static final String THROW = "throw";
 
     private static DingoFunFactory instance;
 
@@ -105,6 +108,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         funSuppliers.put(MapConstructorOp.NAME, MapConstructorOp::fun);
         funSuppliers.put(CastListItemsOp.NAME, CastListItemsOp::fun);
         funSuppliers.put(CaseOp.NAME, CaseOp::fun);
+        funSuppliers.put(THROW, () -> new ThrowOp(THROW));
         registerUdf(RtSliceFun.NAME, RtSliceFun::new);
         registerEvaluator(ITEM, ItemEvaluatorsFactory.INSTANCE);
         // string

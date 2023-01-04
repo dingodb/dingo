@@ -14,43 +14,30 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.exception;
+package io.dingodb.test.cases;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.test.RandomTable;
-import io.dingodb.test.SqlHelper;
-import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.sql.SQLException;
-import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@Slf4j
-public class ExceptionTest {
-    private static SqlHelper sqlHelper;
-
-    @BeforeAll
-    public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
+public class ExceptionCasesJUnit5 implements ArgumentsProvider {
+    private static @NonNull Arguments fileCase(String name, String... fileNames) {
+        return arguments(name, Arrays.stream(fileNames)
+            .map(InputTestFile::fromFileName)
+            .collect(Collectors.toList())
+        );
     }
 
-    @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
-    @NonNull
-    public static Stream<Arguments> getParameters() {
+    @Override
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
             // Parsing error
             arguments("SQL Parse error", ImmutableList.of(
@@ -93,63 +80,20 @@ public class ExceptionTest {
                 "create table {table} (id int, data map not null, primary key(id))",
                 "insert into {table} values(1, null)"
             ), 53003, "53003", true),
+            arguments("Number format error", ImmutableList.of(
+                "create table {table} (id int, data int, primary key(id))",
+                "insert into {table} values(1, 'abc')"
+            ), 53004, "53004", false),
             // execution error
             arguments("Task failed", ImmutableList.of(
                 "create table {table} (id int, data double, primary key(id))",
                 "insert into {table} values (1, 3.5)",
                 "update {table} set data = 'abc'"
-            ), 60000, "60000", true)
+            ), 60000, "60000", true),
+            // intentionally
+            arguments("By `thrown` function", ImmutableList.of(
+                "select throw(null)"
+            ), 90002, "90002", false)
         );
-    }
-
-    @NonNull
-    public static Stream<Arguments> getParametersTemp() {
-        return Stream.of(
-            arguments("Missing column list", ImmutableList.of(
-                "create table {table} (id int, data int, primary key(id))",
-                "insert into {table} values(1, 'abc')"
-            ), 53004, "53004", false)
-        );
-    }
-
-    private static @NonNull SQLException getException(List<String> sqlList, boolean needDropping) {
-        RandomTable randomTable = sqlHelper.randomTable();
-        SQLException exception = assertThrows(SQLException.class, () -> {
-            randomTable.execSqls(sqlList.toArray(new String[0]));
-        });
-        if (needDropping) {
-            try {
-                randomTable.drop();
-            } catch (SQLException ignored) {
-            }
-        }
-        log.info("Exception = {}", exception.getMessage());
-        return exception;
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("getParameters")
-    public void testException(
-        String ignored,
-        @NonNull List<String> sqlList,
-        int sqlCode,
-        String sqlState,
-        boolean needDropping
-    ) {
-        SQLException exception = getException(sqlList, needDropping);
-        assertThat(exception.getErrorCode()).isEqualTo(sqlCode);
-        assertThat(exception.getSQLState()).isEqualTo(sqlState);
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("getParametersTemp")
-    public void testExceptionTemp(
-        String testName,
-        @NonNull List<String> sqlList,
-        int sqlCode,
-        String sqlState,
-        boolean needDropping
-    ) {
-        testException(testName, sqlList, sqlCode, sqlState, needDropping);
     }
 }

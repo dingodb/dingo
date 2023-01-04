@@ -23,8 +23,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DingoSqlException extends RuntimeException {
-    public static final int UNKNOWN_ERROR_CODE = 90000;
-    public static final String UNKNOWN_ERROR_STATE = "90000";
+    public static final String NULL_MESSAGE = "No messages";
+    public static final int UNKNOWN_ERROR_CODE = 90001;
+    public static final String UNKNOWN_ERROR_STATE = "90001";
+    public static final int TEST_ERROR_CODE = 90002;
+    public static final String TEST_ERROR_STATE = "90002";
 
     private static final long serialVersionUID = -952945364943472362L;
     private static final Pattern pattern = Pattern.compile("Error (\\d+)\\s*\\((\\w+)\\):\\s*(.*)");
@@ -60,16 +63,18 @@ public class DingoSqlException extends RuntimeException {
                 this.message = sb.toString();
                 return;
             }
+            this.message = message;
+        } else {
+            this.message = NULL_MESSAGE;
         }
-        this.message = message;
         this.sqlCode = UNKNOWN_ERROR_CODE;
         this.sqlState = UNKNOWN_ERROR_STATE;
     }
 
     public DingoSqlException(String message, int sqlCode, String sqlState) {
         super(message, null);
-        this.message = message;
+        this.message = (message != null ? message : NULL_MESSAGE);
         this.sqlCode = sqlCode;
-        this.sqlState = sqlState;
+        this.sqlState = (sqlState != null ? sqlState : Integer.toString(sqlCode));
     }
 }

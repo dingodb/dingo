@@ -20,9 +20,14 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.CasesInFileJUnit5;
+import io.dingodb.test.cases.ClassTestMethod;
+import io.dingodb.test.cases.ExceptionCasesJUnit5;
 import io.dingodb.test.cases.InputTestFile;
-import io.dingodb.test.cases.StressTestCases;
+import io.dingodb.test.cases.ParametersCasesJUnit5;
+import io.dingodb.test.cases.RexCasesJUnit5;
+import io.dingodb.test.cases.StressCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -69,83 +74,49 @@ public class DingoDriverClientIT {
         sqlHelper.cleanUp();
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(RexCasesJUnit5.class)
+    public void testSqlExpression(String sqlExpression, String ignored, Object value) throws SQLException {
+        Object result = sqlHelper.querySingleValue("select " + sqlExpression);
+        Assert.of(result).isEqualTo(value);
+    }
+
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(CasesInFileJUnit5.class)
-    public void test(String ignored, List<InputTestFile> files) throws SQLException, IOException {
+    public void testInFiles(String ignored, List<InputTestFile> files) throws SQLException, IOException {
         sqlHelper.randomTable().doTestFiles(files);
     }
 
-    @Test
-    public void testParameterQuery() throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles(
-            "string_double/create.sql",
-            "string_double/data.sql"
-        );
-        String sql = "select * from {table} where id < ? and amount > ?";
-        try (PreparedStatement statement = randomTable.prepare(sql)) {
-            statement.setInt(1, 8);
-            statement.setDouble(2, 5.0);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
-                    new Object[]{5, "Emily", 5.5},
-                    new Object[]{6, "Alice", 6.0},
-                    new Object[]{7, "Betty", 6.5}
-                ));
-            }
-            statement.setDouble(2, 6.0);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Assert.resultSet(resultSet).isRecords(ImmutableList.of(
-                    new Object[]{7, "Betty", 6.5}
-                ));
-            }
-        }
-        randomTable.drop();
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(ExceptionCasesJUnit5.class)
+    public void testException(
+        String ignored,
+        @NonNull List<String> sqlList,
+        int sqlCode,
+        String sqlState,
+        boolean needDropping
+    ) {
+        sqlHelper.exceptionTest(sqlList, needDropping, sqlCode, sqlState);
     }
 
-    @Test
-    public void testInsertWithParameters() throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles(
-            "string_double/create.sql",
-            "string_double/data.sql"
-        );
-        String sql = "insert into {table} values(?, ?, ?)";
-        try (PreparedStatement statement = randomTable.prepare(sql)) {
-            statement.setInt(1, 10);
-            statement.setString(2, "Alice");
-            statement.setDouble(3, 10.0);
-            int count = statement.executeUpdate();
-            assertThat(count).isEqualTo(1);
-            statement.setInt(1, 11);
-            statement.setString(2, "Betty");
-            statement.setDouble(3, 11.0);
-            count = statement.executeUpdate();
-            assertThat(count).isEqualTo(1);
-        }
-        randomTable.queryTest(
-            "select * from {table} where id >= 10",
-            new String[]{"id", "name", "amount"},
-            ImmutableList.of(
-                new Object[]{10, "Alice", 10.0},
-                new Object[]{11, "Betty", 11.0}
-            )
-        );
-        randomTable.drop();
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(ParametersCasesJUnit5.class)
+    public void testParameters(String ignored, @NonNull ClassTestMethod method) throws Exception {
+        method.getMethod().run(sqlHelper);
     }
 
     @Test
     public void testStressInsert() throws SQLException, IOException {
-        StressTestCases.testInsert(sqlHelper);
+        new StressCasesJUnit5().insert(sqlHelper);
     }
 
     @Test
     public void testStressInsertWithParameters() throws SQLException, IOException {
-        StressTestCases.testInsertWithParameters(sqlHelper);
+        new StressCasesJUnit5().insertWithParameters(sqlHelper);
     }
 
     @Test
     public void testStressInsertWithParametersBatch() throws SQLException, IOException {
-        StressTestCases.testInsertWithParametersBatch(sqlHelper);
+        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper);
     }
 }

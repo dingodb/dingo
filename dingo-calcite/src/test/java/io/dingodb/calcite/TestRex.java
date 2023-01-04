@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.exec.utils.DingoDateTimeUtils;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
@@ -74,7 +75,8 @@ public class TestRex {
             arguments("substring('abc', 0, 1)", StringIndexOutOfBoundsException.class),
             arguments("mid('ABC', 4, 1)", StringIndexOutOfBoundsException.class),
             arguments("mid('ABC', 10, 3)", StringIndexOutOfBoundsException.class),
-            arguments("concat('a', 'b', 'c')", CalciteContextException.class)
+            arguments("concat('a', 'b', 'c')", CalciteContextException.class),
+            arguments("throw(null)", DingoSqlException.class)
         );
     }
 

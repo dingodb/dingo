@@ -14,24 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.jdbc;
+package io.dingodb.test.cases;
 
-import io.dingodb.test.DingoDriverClientIT;
 import io.dingodb.test.SqlHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.sql.Connection;
+import java.io.IOException;
 import java.sql.SQLException;
 
+@Slf4j
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SqlParametersWithDateIT extends TestSqlParametersWithDate {
+public class StressTest {
+    private static SqlHelper sqlHelper;
+
     @BeforeAll
     public static void setupAll() throws Exception {
-        Connection connection = DingoDriverClientIT.getConnection();
-        sqlHelper = new SqlHelper(connection);
+        sqlHelper = new SqlHelper();
     }
 
     @AfterAll
@@ -40,7 +44,17 @@ public class SqlParametersWithDateIT extends TestSqlParametersWithDate {
     }
 
     @Test
-    public void testInsert() throws SQLException {
-        super.testInsert();
+    public void testInsert() throws SQLException, IOException {
+        new StressCasesJUnit5().insert(sqlHelper);
+    }
+
+    @Test
+    public void testInsertParameters() throws SQLException, IOException {
+        new StressCasesJUnit5().insertWithParameters(sqlHelper);
+    }
+
+    @Test
+    public void testInsertParametersBatch() throws SQLException, IOException {
+        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper);
     }
 }
