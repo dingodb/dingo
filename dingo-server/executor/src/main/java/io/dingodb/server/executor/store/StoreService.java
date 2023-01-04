@@ -18,9 +18,9 @@ package io.dingodb.server.executor.store;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.FileUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.server.executor.store.instruction.OpInstructions;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

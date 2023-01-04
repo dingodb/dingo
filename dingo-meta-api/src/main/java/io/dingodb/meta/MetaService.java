@@ -126,6 +126,14 @@ public interface MetaService {
     TableDefinition getTableDefinition(@NonNull String name);
 
     /**
+     * Get table definition by table id.
+     *
+     * @param id table id
+     * @return table definition or null if not found.
+     */
+    TableDefinition getTableDefinition(@NonNull CommonId id);
+
+    /**
      * Get table parts meta by table name.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
      *
@@ -133,6 +141,14 @@ public interface MetaService {
      * @return table parts meta
      */
     NavigableMap<ComparableByteArray, Part> getParts(String tableName);
+
+    /**
+     * Get table parts meta by table id.
+     *
+     * @param id table id
+     * @return table parts meta
+     */
+    NavigableMap<ComparableByteArray, Part> getParts(CommonId id);
 
     /**
      * Get table storage locations by name.

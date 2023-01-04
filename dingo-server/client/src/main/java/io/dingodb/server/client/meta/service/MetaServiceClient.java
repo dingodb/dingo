@@ -85,7 +85,7 @@ public class MetaServiceClient implements MetaService {
         // todo add listener
     }
 
-    private ServiceConnector getTableConnector(CommonId id) {
+    public ServiceConnector getTableConnector(CommonId id) {
         return serviceCache.computeIfAbsent(id, __ -> new ServiceConnector(id, api.getTableDistribute(id)));
     }
 
@@ -140,17 +140,28 @@ public class MetaServiceClient implements MetaService {
     @Override
     public TableDefinition getTableDefinition(@NonNull String name) {
         CommonId tableId = getTableId(name);
-        return ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(tableId)).getDefinition(tableId);
+        return getTableDefinition(tableId);
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(@NonNull CommonId id) {
+        return ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(id)).getDefinition(id);
     }
 
     @Override
     public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(String tableName) {
-        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> result = new TreeMap<>();
         CommonId tableId = getTableId(tableName);
-        ServiceConnector tableConnector = getTableConnector(tableId);
+        return getParts(tableId);
+
+    }
+
+    @Override
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(CommonId id) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> result = new TreeMap<>();
+        ServiceConnector tableConnector = getTableConnector(id);
         ServiceConnector connector;
-        for (TablePart tablePart : ApiRegistry.getDefault().proxy(TableApi.class, tableConnector).partitions(tableId)) {
-            connector = getPartConnector(tableId, tablePart.getId());
+        for (TablePart tablePart : ApiRegistry.getDefault().proxy(TableApi.class, tableConnector).partitions(id)) {
+            connector = getPartConnector(id, tablePart.getId());
             Part part = new Part(
                 tablePart.getId(),
                 connector.get(),
