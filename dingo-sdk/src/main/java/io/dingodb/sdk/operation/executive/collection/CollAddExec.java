@@ -115,6 +115,9 @@ public class CollAddExec extends AbstractExecutive<Context, Iterator<Object[]>> 
                 while (records.hasNext()) {
                     Object[] record = records.next();
                     for (int i = 0; i < indexes.length; i++) {
+                        if (record[indexes[i]] == null) {
+                            continue;
+                        }
                         DingoType dingoType = definition.getColumn(indexes[i]).getType();
                         Object v = cols[i].value.getObject();
                         ComputeNumber number = convertType(v == null ? 0 : v, dingoType);

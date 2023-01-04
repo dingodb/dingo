@@ -25,6 +25,8 @@ import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.op.Op;
+import io.dingodb.sdk.operation.result.MultiValueOpResult;
+import io.dingodb.sdk.operation.unit.CollectionUnit;
 import io.dingodb.server.ExecutiveRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -118,7 +120,11 @@ public class OpInstructions implements Instructions {
             .startKey(preContext.startKey())
             .endKey(preContext.endKey())
             .timestamp(preContext.timestamp());
+        Object record = result.getValue();
+        if (result instanceof MultiValueOpResult) {
+            record = ((CollectionUnit<?, ?>) record).iterator();
+        }
         Executive nextExec = ExecutiveRegistry.getExecutive(next.execId());
-        return exec(next, nextExec.execute(next.context(), result.getValue()), definition);
+        return exec(next, nextExec.execute(next.context(), record), definition);
     }
 }

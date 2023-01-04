@@ -20,7 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.op.Op;
 
-public class WriteOp extends VoidOp {
+public class WriteOp extends AbstractOp {
 
     public WriteOp(CommonId execId, Context context) {
         super(execId, context);
