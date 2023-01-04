@@ -17,6 +17,7 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import io.dingodb.common.type.DingoTypeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -25,7 +26,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class UpdateTableTest {
@@ -158,6 +163,26 @@ public class UpdateTableTest {
             TEST_ALL_DATA
                 + "10, Alice, 8.0\n"
                 + "11, Cindy, 8.5\n"
+        );
+    }
+
+    @Test
+    public void testInsertBatch() throws SQLException {
+        Connection connection = sqlHelper.getConnection();
+        try (Statement statement = connection.createStatement()) {
+            statement.addBatch("insert into test values(14, 'Alice', 14.0)");
+            statement.addBatch("insert into test values(15, 'Betty', 15.0),(16, 'Cindy', 16.0)");
+            int[] count = statement.executeBatch();
+            assertThat(count).isEqualTo(new int[]{1, 2});
+        }
+        sqlHelper.queryTest(
+            "select * from test where id >= 10",
+            new String[]{"id", "name", "amount"},
+            ImmutableList.of(
+                new Object[]{14, "Alice", 14.0},
+                new Object[]{15, "Betty", 15.0},
+                new Object[]{16, "Cindy", 16.0}
+            )
         );
     }
 }

@@ -224,6 +224,15 @@ public class DingoOperatorTable implements SqlOperatorTable {
             OperandTypes.family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
             SqlFunctionCategory.NUMERIC
         );
+
+        // special
+        registerFunction(
+            DingoFunFactory.THROW,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.STRING
+        );
     }
 
     public void registerFunction(

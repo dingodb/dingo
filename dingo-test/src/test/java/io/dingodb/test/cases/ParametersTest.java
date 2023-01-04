@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.test.cases;
 
-import io.dingodb.test.cases.StressTestCases;
+import io.dingodb.test.SqlHelper;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-
-import java.io.IOException;
-import java.sql.SQLException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 @Slf4j
-@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class StressTest {
+public class ParametersTest {
+    @Getter
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -43,13 +42,9 @@ public class StressTest {
         sqlHelper.cleanUp();
     }
 
-    @Test
-    public void testInsert() throws SQLException, IOException {
-        StressTestCases.testInsert(sqlHelper);
-    }
-
-    @Test
-    public void testInsertParameter() throws SQLException, IOException {
-        StressTestCases.testInsertWithParameters(sqlHelper);
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(ParametersCasesJUnit5.class)
+    public void test(String ignored, @NonNull ClassTestMethod method) throws Exception {
+        method.getMethod().run(sqlHelper);
     }
 }
