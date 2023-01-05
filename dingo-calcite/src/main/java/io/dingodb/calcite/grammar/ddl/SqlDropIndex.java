@@ -16,7 +16,8 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import org.apache.calcite.sql.SqlCreate;
+import org.apache.calcite.sql.SqlDrop;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
@@ -26,20 +27,19 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlCreateUser extends SqlCreate {
-    public final String password;
-    public final String user;
-    public String host;
+public class SqlDropIndex extends SqlDrop {
+
+    public String index;
+
+    public SqlIdentifier table;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
+        new SqlSpecialOperator("DROP INDEX", SqlKind.OTHER_DDL);
 
-    public SqlCreateUser(String user, String password, String host,
-                              SqlParserPos pos, boolean replace, boolean ifNotExists) {
-        super(OPERATOR, pos, replace, ifNotExists);
-        this.password = password.contains("'") ? password.replace("'", "") : password;
-        this.user = user.contains("'") ? user.replace("'", "") : user;
-        this.host = host == null ? "%" : host.contains("'") ? host.replace("'", "") : host;
+    public SqlDropIndex(SqlParserPos pos, boolean ifExists, String index, SqlIdentifier table) {
+        super(OPERATOR, pos, ifExists);
+        this.index = index;
+        this.table = table;
     }
 
     @Override
@@ -49,12 +49,7 @@ public class SqlCreateUser extends SqlCreate {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("CREATE");
-        writer.keyword("USER");
-        writer.keyword(user);
-        writer.keyword("@");
-        writer.keyword(host);
-        writer.keyword(" identified by ");
-        writer.keyword(password);
+        writer.keyword(" DROP INDEX");
+        writer.keyword(index);
     }
 }

@@ -33,13 +33,17 @@ data: {
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
       "io.dingodb.calcite.grammar.ddl.DingoSqlDdlNodes"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlDropUser"
+      "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
       "io.dingodb.calcite.grammar.ddl.SqlTruncate"
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlShow"
       "io.dingodb.calcite.grammar.ddl.SqlSetPassword"
       "io.dingodb.calcite.grammar.ddl.SqlShowGrants"
-      "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
-      "io.dingodb.calcite.grammar.ddl.SqlDropUser"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlRevoke"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
@@ -85,6 +89,7 @@ data: {
       "SqlCreateType"
       "SqlCreateView"
       "SqlCreateFunction"
+      "SqlCreateIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -98,6 +103,7 @@ data: {
       "SqlDropView"
       "SqlDropFunction"
       "SqlDropUser"
+      "SqlDropIndex"
     ]
 
     # List of files in @includes directory that have parser method

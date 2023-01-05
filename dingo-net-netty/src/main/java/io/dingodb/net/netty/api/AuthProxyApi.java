@@ -54,6 +54,9 @@ public interface AuthProxyApi {
                     result.put(service.tag(), new Object[]{cert, service.auth(cert)});
                 }
             }
+            if (result.size() == 0) {
+                throw new Exception("identity and token: both authentication failed. ");
+            }
             return result;
         } catch (Exception e) {
             channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);

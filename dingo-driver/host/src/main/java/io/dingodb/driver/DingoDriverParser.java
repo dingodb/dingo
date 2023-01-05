@@ -32,11 +32,14 @@ import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.verify.privilege.PrivilegeVerify;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -69,6 +72,7 @@ import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
@@ -190,10 +194,25 @@ public final class DingoDriverParser extends DingoParser {
         String user = connection.getContext().getOption("user");
         String host = connection.getContext().getOption("host");
         List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
+        CommonId schemaId = null;
         if (sqlNode instanceof DingoSqlCreateTable) {
             accessTypes.add(DingoSqlAccessEnum.CREATE);
-        } else if (sqlNode instanceof SqlDropUser || sqlNode instanceof SqlDropTable) {
+            DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
+            String schema = null;
+            if (sqlCreateTable.name.names.size() > 1) {
+                schema = sqlCreateTable.name.names.get(0);
+            }
+            schemaId = getSchemaId(schema);
+        } else if (sqlNode instanceof SqlDropUser) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
+        } else if (sqlNode instanceof SqlDropTable) {
+            accessTypes.add(DingoSqlAccessEnum.DROP);
+            SqlDropTable sqlDropTable = (SqlDropTable) sqlNode;
+            String schema = null;
+            if (sqlDropTable.name.names.size() > 1) {
+                schema = sqlDropTable.name.names.get(0);
+            }
+            schemaId = getSchemaId(schema);
         } else if (sqlNode instanceof SqlCreateUser || sqlNode instanceof SqlRevoke || sqlNode instanceof SqlGrant) {
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlFlushPrivileges) {
@@ -206,13 +225,23 @@ public final class DingoDriverParser extends DingoParser {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             accessTypes.add(DingoSqlAccessEnum.CREATE);
         }
-        if (!PrivilegeVerify.verifyDuplicate(user, host, null, null,
+        if (!PrivilegeVerify.verifyDuplicate(user, host, schemaId, null,
             accessTypes)) {
             throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
         }
     }
 
-    public Meta.@NonNull Signature parseQuery(
+    public CommonId getSchemaId(String schema) {
+        if (schema == null) {
+            // todo if schema is null and use default schema (use schema)
+            schema = "DINGO";
+        }
+        UserService userService = UserServiceProvider.getRoot();
+        return userService.getSchemaIdByCache(schema);
+    }
+
+    @Nonnull
+    public Meta.Signature parseQuery(
         JobManager jobManager,
         String jobIdPrefix,
         String sql

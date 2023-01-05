@@ -42,10 +42,7 @@ public class TokenAuthService implements AuthService<Authentication>  {
         try {
             for (TokenAuth.Provider tokenAuthProvider : serviceProviders) {
                 TokenAuth tokenAuth = tokenAuthProvider.get();
-                log.info("tokenAuth:" + tokenAuth + "token toke:" + tokenAuth.getRole() + ", role:" + env.getRole());
-                if (tokenAuth.getRole() == env.getRole()) {
-                    this.tokenAuth = tokenAuth;
-                }
+                this.tokenAuth = tokenAuth;
             }
         } catch (NoSuchElementException e) {
             this.tokenAuth = null;
