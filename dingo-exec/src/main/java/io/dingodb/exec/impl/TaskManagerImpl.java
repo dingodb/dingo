@@ -19,11 +19,13 @@ package io.dingodb.exec.impl;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.base.TaskManager;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public final class TaskManagerImpl implements TaskManager {
     public static final TaskManagerImpl INSTANCE = new TaskManagerImpl();
 
@@ -32,7 +34,7 @@ public final class TaskManagerImpl implements TaskManager {
     private TaskManagerImpl() {
     }
 
-    private static @NonNull Id taskFullId(Id jobId, Id taskId) {
+    public static @NonNull Id taskFullId(Id jobId, Id taskId) {
         return new Id(jobId + ":" + taskId);
     }
 
@@ -40,8 +42,11 @@ public final class TaskManagerImpl implements TaskManager {
     public void addTask(@NonNull Task task) {
         Id jobId = task.getJobId();
         Id id = task.getId();
-        removeTask(jobId, id);
-        taskMap.put(taskFullId(jobId, id), task);
+        Id taskFullId = taskFullId(jobId, id);
+        taskMap.put(taskFullId, task);
+        if (log.isDebugEnabled()) {
+            log.debug("Added task \"{}\". # of tasks: {}.", taskFullId, taskMap.size());
+        }
         task.init();
     }
 
@@ -57,7 +62,11 @@ public final class TaskManagerImpl implements TaskManager {
 
     @Override
     public void removeTask(Id jobId, Id taskId) {
-        Task task = taskMap.remove(taskFullId(jobId, taskId));
+        Id taskFullId = taskFullId(jobId, taskId);
+        Task task = taskMap.remove(taskFullId);
+        if (log.isDebugEnabled()) {
+            log.debug("Removed task \"{}\". # of tasks: {}.", taskFullId, taskMap.size());
+        }
         if (task != null) {
             task.destroy();
         }
