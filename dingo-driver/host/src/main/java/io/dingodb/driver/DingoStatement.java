@@ -86,4 +86,9 @@ public class DingoStatement extends AvaticaStatement {
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }
+
+    public void removeJob(JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+        DingoStatementUtils.removeJobInSignature(jobManager, signature);
+    }
 }

@@ -44,6 +44,9 @@ public class ReceiveEndpoint {
 
     public void init() {
         channel = Services.openNewSysChannel(host, port);
+        if (log.isDebugEnabled()) {
+            log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
+        }
         emittedStatus = new AtomicReference<>(ControlStatus.HALT);
     }
 
@@ -87,5 +90,8 @@ public class ReceiveEndpoint {
 
     public void close() {
         channel.close();
+        if (log.isDebugEnabled()) {
+            log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
+        }
     }
 }

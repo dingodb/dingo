@@ -16,7 +16,6 @@
 
 package io.dingodb.test;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.CasesInFileJUnit5;
@@ -38,13 +37,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 // Before run this, you must set up your cluster.
 @Slf4j

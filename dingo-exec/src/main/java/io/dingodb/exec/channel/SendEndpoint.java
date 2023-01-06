@@ -88,5 +88,8 @@ public class SendEndpoint {
     public void close() {
         EndpointManager.INSTANCE.unregisterSendEndpoint(this);
         channel.close();
+        if (log.isDebugEnabled()) {
+            log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
+        }
     }
 }

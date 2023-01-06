@@ -63,7 +63,11 @@ public final class JobManagerImpl implements JobManager {
     @Override
     public @NonNull Job createJob(String idPrefix, DingoType parasType) {
         Job job = new JobImpl(idGenerator.get(idPrefix), parasType);
-        jobMap.put(job.getJobId(), job);
+        Id jobId = job.getJobId();
+        jobMap.put(jobId, job);
+        if (log.isDebugEnabled()) {
+            log.debug("Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());
+        }
         return job;
     }
 
@@ -75,6 +79,9 @@ public final class JobManagerImpl implements JobManager {
     @Override
     public void removeJob(Id jobId) {
         Job job = jobMap.remove(jobId);
+        if (log.isDebugEnabled()) {
+            log.debug("Removed job \"{}\". # of jobs: {}.", jobId, jobMap.size());
+        }
         if (job != null) {
             for (Task task : job.getTasks().values()) {
                 if (task.getRoot() != null) {

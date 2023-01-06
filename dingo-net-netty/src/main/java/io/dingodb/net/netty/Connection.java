@@ -54,7 +54,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 @Accessors(fluent = true)
-public class Connection  {
+public class Connection {
 
     private final Map<Long, Channel> channels = new ConcurrentHashMap<>();
     private final AtomicLong channelIdSeq = new AtomicLong(0);
@@ -90,10 +90,20 @@ public class Connection  {
         return channel;
     }
 
+    private void removeChannel(long channelId) {
+        channels.remove(channelId);
+        if (log.isDebugEnabled()) {
+            log.debug("Removed channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
+        }
+    }
+
     protected Channel createChannel(long channelId) {
+        if (log.isDebugEnabled()) {
+            log.debug("Create channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
+        }
         return channels.computeIfAbsent(
             channelId,
-            id -> new Channel(channelId, this, new LinkedRunner(fmtName(remote.url(), channelId)), channels::remove)
+            id -> new Channel(channelId, this, new LinkedRunner(fmtName(remote.url(), channelId)), this::removeChannel)
         );
     }
 

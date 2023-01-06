@@ -32,7 +32,6 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
-import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import io.dingodb.verify.service.UserService;
@@ -42,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -262,10 +262,10 @@ public class DingoMeta extends MetaImpl {
             return new ExecuteResult(ImmutableList.of(showMetaResultSet));
         }
         try {
-            Signature signature = sh.signature;
-            removeJobIn(signature);
+            DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
+            statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            signature = parser.parseQuery(jobManager, sh.toString(), sql);
+            Meta.Signature signature = parser.parseQuery(jobManager, sh.toString(), sql);
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);
@@ -289,15 +289,6 @@ public class DingoMeta extends MetaImpl {
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta prepareAndExecute total cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
-        }
-    }
-
-    private void removeJobIn(Signature signature) {
-        if (signature instanceof DingoSignature) {
-            Id jobId = ((DingoSignature) signature).getJobId();
-            if (jobId != null) {
-                jobManager.removeJob(jobId);
             }
         }
     }
@@ -444,7 +435,11 @@ public class DingoMeta extends MetaImpl {
     public void closeStatement(@NonNull StatementHandle sh) {
         // Called in `AvaticaStatement.close` to do extra things.
         AvaticaStatement statement = connection.statementMap.get(sh.id);
-        removeJobIn(sh.signature);
+        if (statement instanceof DingoStatement) {
+            ((DingoStatement) statement).removeJob(jobManager);
+        } else if (statement instanceof DingoPreparedStatement) {
+            ((DingoPreparedStatement) statement).removeJob(jobManager);
+        }
     }
 
     @Override
