@@ -126,6 +126,7 @@ void TableElement(List<SqlNode> list) :
     final SqlNodeList columnList;
     final Span s = Span.of();
     final ColumnStrategy strategy;
+    final String index;
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
@@ -173,7 +174,7 @@ void TableElement(List<SqlNode> list) :
             list.add(SqlDdlNodes.check(s.end(this), name, e));
         }
     |
-        <UNIQUE> { s.add(this); }
+        <UNIQUE> { s.add(this); } name = SimpleIdentifier()
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
         }
@@ -181,6 +182,13 @@ void TableElement(List<SqlNode> list) :
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+        }
+    |
+        <INDEX> { s.add(this); }
+        ( <QUOTED_STRING> | <IDENTIFIER> )
+        { index = token.image; }
+        columnList = ParenthesizedSimpleIdentifierList() {
+            list.add(new SqlIndexDeclaration(s.end(this), index, columnList));
         }
     )
 }
@@ -508,6 +516,33 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
     }
 }
 
+SqlCreate SqlCreateIndex(Span s, boolean replace) :
+{
+    boolean isUnique = false;
+    final String index;
+    SqlIdentifier table;
+    SqlIdentifier column;
+    List<SqlIdentifier> columns;
+    SqlNode create = null;
+    Boolean ifNotExists = false;
+}
+{
+    [ <UNIQUE> { isUnique = true;}]
+    <INDEX> ifNotExists = IfNotExistsOpt()
+    ( <QUOTED_STRING> | <IDENTIFIER> )
+     { index = token.image; }
+    <ON> table = CompoundIdentifier()
+    <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
+    (
+       <COMMA>
+       column = SimpleIdentifier() { columns.add(column); }
+    )*
+    <RPAREN>
+    {
+       return new SqlCreateIndex(s.end(this), replace, ifNotExists, index, table, columns, isUnique);
+    }
+}
+
 SqlDrop SqlDropSchema(Span s, boolean replace) :
 {
     final boolean ifExists;
@@ -595,6 +630,23 @@ SqlDrop SqlDropFunction(Span s, boolean replace) :
     <FUNCTION> ifExists = IfExistsOpt()
     id = CompoundIdentifier() {
         return SqlDdlNodes.dropFunction(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropIndex(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+    final String index;
+}
+{
+    <INDEX> ifExists = IfExistsOpt()
+    ( <QUOTED_STRING> | <IDENTIFIER> )
+    { index = token.image; }
+    <ON>
+    id = CompoundIdentifier()
+    {
+      return new SqlDropIndex(s.end(this), ifExists, index, id);
     }
 }
 

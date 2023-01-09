@@ -16,12 +16,16 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 public abstract class MutableSchema extends AbstractSchema {
@@ -33,8 +37,19 @@ public abstract class MutableSchema extends AbstractSchema {
     }
 
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
-        log.info(" create metaservice: " + metaService);
         metaService.createTable(tableName, tableDefinition);
+    }
+
+    public void createIndex(@NonNull String tableName, @NonNull List<Index> indexList) {
+        metaService.createIndex(tableName, indexList);
+    }
+
+    public void dropIndex(@NonNull String tableName, @NonNull String index) {
+        metaService.dropIndex(tableName, index);
+    }
+
+    public Collection<Index> getIndex(@NonNull String tableName) {
+        return metaService.getIndex(tableName);
     }
 
     public boolean dropTable(@NonNull String tableName) {

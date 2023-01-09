@@ -19,6 +19,7 @@ package io.dingodb.meta.local;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
@@ -26,6 +27,8 @@ import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.Part;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -157,6 +160,21 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public Location currentLocation() {
         return location;
+    }
+
+    @Override
+    public void createIndex(String tableName, List<Index> indexList) {
+
+    }
+
+    @Override
+    public void dropIndex(String tableName, String indexName) {
+
+    }
+
+    @Override
+    public Collection<Index> getIndex(String tableName) {
+        return null;
     }
 
     public void setParts(CommonId id, NavigableMap<ComparableByteArray, Part> part) {

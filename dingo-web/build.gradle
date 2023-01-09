@@ -34,6 +34,9 @@ repositories {
 }
 
 dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 

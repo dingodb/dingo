@@ -9,3 +9,11 @@ server:
   host: 127.0.0.1
   port: 13000
   coordinatorExchangeSvrList: node1:19181,node2:19182,node3:19181
+security:
+    cipher:
+        keyPath: /opt/dingo/conf/dingodb.jks
+        keyPass: dingodb
+        storePass: dingodb
+        alias: dingodb
+        issuer: dingo
+    verify: true

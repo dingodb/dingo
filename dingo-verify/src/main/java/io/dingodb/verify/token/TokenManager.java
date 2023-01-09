@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
@@ -62,6 +63,20 @@ public class TokenManager {
         this.privateKey = privateKey;
         this.publicKey = publicKey;
         this.issuer = issuer;
+    }
+
+    public static TokenManager getInstance(String keyPath, String keyPass, String storePass,
+                                           String alias, String issuer) {
+        KeyStore keyStore = null;
+        try {
+            keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(new FileInputStream(keyPath), keyPass.toCharArray());
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyStore.getKey(alias, storePass.toCharArray());
+            RSAPublicKey publicKey = (RSAPublicKey) keyStore.getCertificate(alias).getPublicKey();
+            return new TokenManager(privateKey, publicKey, issuer);
+        } catch (Exception e) {
+            return new TokenManager(null, null, null);
+        }
     }
 
     public String createInnerToken() {

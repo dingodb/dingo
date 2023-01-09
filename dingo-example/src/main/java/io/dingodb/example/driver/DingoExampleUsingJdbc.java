@@ -40,9 +40,9 @@ public class DingoExampleUsingJdbc {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
-                + "\t\t 172.20.3.14 create exampletest\r\n"
+                + "\t\t 172.20.3.14 create exampletest dingo 123123 \r\n"
                 + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
-                + "\t\t 172.20.3.14 query  exampletest");
+                + "\t\t 172.20.3.14 query  exampletest dingo 123123");
             return;
         }
 
@@ -51,7 +51,8 @@ public class DingoExampleUsingJdbc {
         String tableName = args[2];
         String user = "root";
         String password = "123123";
-        if ("create".equalsIgnoreCase(command) || "query".equalsIgnoreCase(command)) {
+        if ("create".equalsIgnoreCase(command) || "query".equalsIgnoreCase(command)
+            || "drop".equalsIgnoreCase(command)) {
             if (args.length > 4) {
                 user = args[3];
                 password = args[4];
@@ -106,6 +107,10 @@ public class DingoExampleUsingJdbc {
                     createTable(statement, tableName);
                     break;
                 }
+                case "DROP": {
+                    dropTable(statement, tableName);
+                    break;
+                }
                 case "INSERT": {
                     insertData(statement, tableName, recordCnt, batchCnt, startKey);
                     break;
@@ -148,6 +153,11 @@ public class DingoExampleUsingJdbc {
             + "amount double,"
             + "primary key(id)"
             + ")";
+        statement.execute(sql);
+    }
+
+    private static void dropTable(final Statement statement, final String tableName) throws SQLException {
+        String sql = "drop table " + tableName;
         statement.execute(sql);
     }
 

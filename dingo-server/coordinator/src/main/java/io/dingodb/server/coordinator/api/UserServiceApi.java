@@ -130,6 +130,7 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
 
     @Override
     public CommonId getSchemaId(String schema) {
+        // todo
         return ROOT_ID;
     }
 

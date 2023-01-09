@@ -18,6 +18,8 @@ package io.dingodb.common.table;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
+
 public class Index {
 
     @JsonProperty("name")
@@ -84,6 +86,16 @@ public class Index {
 
     public void setDeleted() {
         this.status = IndexStatus.DELETED;
+    }
+
+    public boolean equals(Index index) {
+        if (this.columns.length != index.columns.length) {
+            return false;
+        }
+        if (Arrays.equals(columns, index.columns) && unique == index.unique) {
+            return true;
+        }
+        return false;
     }
 
 }
