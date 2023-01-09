@@ -17,10 +17,14 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
@@ -38,10 +42,12 @@ import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -72,6 +78,8 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -93,6 +101,46 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     private DingoDdlExecutor() {
         this.userService = UserServiceProvider.getRoot();
+    }
+
+    private static List<Index> getIndex(DingoSqlCreateTable create) {
+        List<Index> indexList = create.columnList.stream()
+            .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
+            .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col))
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        indexList.addAll(create.columnList.stream()
+            .filter(SqlKeyConstraint.class::isInstance)
+            .map(SqlKeyConstraint.class::cast)
+            .filter(constraint -> constraint.getOperator().getKind() == SqlKind.UNIQUE)
+            .map(constraint -> fromSqlKeyConstraint(constraint)).collect(Collectors.toList()));
+        return indexList;
+    }
+
+    private static Index fromSqlKeyConstraint(SqlKeyConstraint sqlKeyConstraint) {
+        SqlNodeList columnList = (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
+        String[] columns = columnList.getList().stream()
+            .filter(Objects::nonNull)
+            .map(SqlIdentifier.class::cast)
+            .map(SqlIdentifier::getSimple)
+            .map(String::toUpperCase)
+            .toArray(String[]::new);
+        SqlIdentifier name = (SqlIdentifier) sqlKeyConstraint.getOperandList().get(0);
+        Index index = new Index(name.names.get(0), columns, true);
+        return index;
+    }
+
+    private static @Nullable Index fromSqlIndexDeclaration(
+        @NonNull SqlIndexDeclaration indexDeclaration
+    ) {
+        String[] columns = indexDeclaration.columnList.getList().stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .toArray(String[]::new);
+        Index index = new Index(indexDeclaration.index, columns, false);
+        return index;
     }
 
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
@@ -237,11 +285,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition tableDefinition = new TableDefinition(
             tableName, columns, null, 1, create.getTtl(), create.getPartDefinition(), create.getProperties()
         );
+        List<Index> indexList = getIndex(create);
 
         // Validate partition strategy
         Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, tableDefinition, __));
 
         schema.createTable(tableName, tableDefinition);
+        if (indexList.size() > 0) {
+            schema.createIndex(tableName, indexList);
+        }
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
@@ -281,7 +333,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.tableNotFound(name.toString()));
         }
 
-        if (schema.dropTable(tableName)) {
+        if (!schema.dropTable(tableName)) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString())
@@ -336,6 +388,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlCreateUser);
+        if ("localhost".equalsIgnoreCase(sqlCreateUser.host) || "127.0.0.1".equalsIgnoreCase(sqlCreateUser.host)) {
+            try {
+                InetAddress localHost = InetAddress.getLocalHost();
+                sqlCreateUser.host = localHost.getHostAddress();
+            } catch (UnknownHostException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
@@ -403,6 +463,32 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         sqlGrants.addAll(getSchemaGrant(sqlShowGrants, schemaPrivDefinitions));
         sqlGrants.addAll(getTableGrant(sqlShowGrants, tablePrivDefinitions));
         return sqlGrants;
+    }
+
+    public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterAddIndex.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
+        schema.createIndex(tableName, Arrays.asList(index));
+    }
+
+    public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlCreateIndex.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Index index = new Index(sqlCreateIndex.index, sqlCreateIndex.getColumnNames(), sqlCreateIndex.isUnique);
+        schema.createIndex(tableName, Arrays.asList(index));
+    }
+
+    public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlDropIndex.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        schema.dropIndex(tableName, sqlDropIndex.index);
     }
 
     public SqlGrant getUserGrant(@NonNull SqlShowGrants dingoSqlShowGrants, UserDefinition userDefinition) {

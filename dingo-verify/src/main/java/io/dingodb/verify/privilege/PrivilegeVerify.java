@@ -35,7 +35,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class PrivilegeVerify {
@@ -48,33 +47,6 @@ public class PrivilegeVerify {
     }
 
     public static boolean isVerify;
-
-    public static boolean matchHost(PrivilegeDefinition privilegeDefinition, String host) {
-        if ("%".equals(privilegeDefinition.getHost()) || host.equals(privilegeDefinition.getHost())) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public PrivilegeVerify() {
-        this(true);
-    }
-
-    public PrivilegeVerify(boolean isVerify) {
-        this.isVerify = isVerify;
-    }
-
-    public static UserDefinition matchUser(String host, List<UserDefinition> userDefList) {
-        List<UserDefinition> userDefs = userDefList.stream()
-            .filter(userDefinition -> matchHost(userDefinition, host)).collect(Collectors.toList());
-
-        UserDefinition userDef = null;
-        if (userDefs.size() > 0) {
-            userDef = userDefs.get(0);
-        }
-        return userDef;
-    }
 
     public static boolean verify(Channel channel, CommonId schema, CommonId table, DingoSqlAccessEnum accessType) {
         if (!isVerify) {
@@ -107,12 +79,19 @@ public class PrivilegeVerify {
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
-            if (privilegeGather == null) {
-                return false;
-            }
+            return verify(user, host, schema, table, accessType, privilegeGather);
         }
+        return true;
+    }
 
-        log.info(" privilege for {} @ {} detail:" + privilegeGather, user, host);
+    public static boolean verify(String user, String host, CommonId schema, CommonId table,
+                                 DingoSqlAccessEnum accessType, PrivilegeGather privilegeGather) {
+        if (privilegeGather == null) {
+            return false;
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(" privilege for {} @ {} detail:" + privilegeGather, user, host);
+        }
         Integer index = PrivilegeDict.privilegeIndexDict.get(accessType.getAccessType());
         if (index == null) {
             return true;
@@ -148,14 +127,20 @@ public class PrivilegeVerify {
         if (StringUtils.isBlank(user)) {
             return true;
         }
-
+        
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
-            if (privilegeGather == null) {
-                return false;
-            }
+            return verify(schema, table, privilegeGather);
+        }
+        return true;
+    }
+
+    public static boolean verify(CommonId schema, CommonId table,
+                                 PrivilegeGather privilegeGather) {
+        if (privilegeGather == null) {
+            return false;
         }
 
         UserDefinition userDef = privilegeGather.getUserDef();

@@ -18,10 +18,12 @@ package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -171,5 +173,9 @@ public interface MetaService {
      */
     Location currentLocation();
 
+    void createIndex(String tableName, List<Index> indexList);
 
+    void dropIndex(String tableName, String indexName);
+
+    Collection<Index> getIndex(String tableName);
 }

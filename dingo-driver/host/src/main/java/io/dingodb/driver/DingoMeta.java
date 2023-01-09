@@ -22,12 +22,15 @@ import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.MetaCache;
+import io.dingodb.calcite.MutableSchema;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.privilege.Grant;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -58,6 +61,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -620,5 +624,53 @@ public class DingoMeta extends MetaImpl {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public MetaResultSet getIndexInfo(ConnectionHandle ch, String catalog, String schemaName,
+                                      String tableName, boolean unique, boolean approximate) {
+        final DingoConnection dingoConnection = (DingoConnection) connection;
+        final DingoParserContext context = dingoConnection.getContext();
+        final CalciteSchema rootSchema = context.getRootSchema();
+
+        final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
+        MutableSchema schema  = (MutableSchema) calciteSchema.schema;
+        List indexScanList = null;
+        if (schema != null) {
+            Collection<Index> indices = schema.getIndex(tableName);
+
+            indexScanList =  indices.stream().flatMap(index -> {
+                String[] columns = index.getColumns();
+                IndexScan[] indexScans = new IndexScan[columns.length];
+                for (int i = 0; i < columns.length; i ++) {
+                    String columnName = columns[0];
+                    short p = (short) i;
+                    IndexScan indexScan = new IndexScan(null, schemaName, tableName, index.isUnique(),
+                        null, index.getName(), p, p, columnName, "asc", null, 1, null);
+                    indexScans[i] = indexScan;
+                }
+                return Arrays.stream(indexScans);
+            }).collect(Collectors.toList());
+        } else {
+            indexScanList = new ArrayList();
+        }
+
+        return createResultSet(
+            Linq4j.asEnumerable(indexScanList),
+            IndexScan.class,
+            "TABLE_CAT",
+            "TABLE_SCHEMA",
+            "TABLE_NAME",
+            "NON_UNIQUE",
+            "INDEX_QUALIFIER",
+            "INDEX_NAME",
+            "TYPE",
+            "ORDINAL_POSITION",
+            "COLUMN_NAME",
+            "ASC_OR_DESC",
+            "CARDINALITY",
+            "PAGES",
+            "FILTER_CONDITION"
+        );
     }
 }

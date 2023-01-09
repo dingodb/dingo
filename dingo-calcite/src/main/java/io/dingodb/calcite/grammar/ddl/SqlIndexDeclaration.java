@@ -16,9 +16,11 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import org.apache.calcite.sql.SqlCreate;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
@@ -26,20 +28,25 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlCreateUser extends SqlCreate {
-    public final String password;
-    public final String user;
-    public String host;
+public class SqlIndexDeclaration extends SqlCall {
 
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
+    public String index;
 
-    public SqlCreateUser(String user, String password, String host,
-                              SqlParserPos pos, boolean replace, boolean ifNotExists) {
-        super(OPERATOR, pos, replace, ifNotExists);
-        this.password = password.contains("'") ? password.replace("'", "") : password;
-        this.user = user.contains("'") ? user.replace("'", "") : user;
-        this.host = host == null ? "%" : host.contains("'") ? host.replace("'", "") : host;
+    public SqlNodeList columnList;
+
+    private static final SqlSpecialOperator OPERATOR =
+        new SqlSpecialOperator("INDEX_DECL", SqlKind.CREATE_INDEX);
+
+    public SqlIndexDeclaration(SqlParserPos pos, String index,
+                               SqlNodeList columnList) {
+        super(pos);
+        this.index = index;
+        this.columnList = columnList;
+    }
+
+    @Override
+    public SqlOperator getOperator() {
+        return OPERATOR;
     }
 
     @Override
@@ -49,12 +56,8 @@ public class SqlCreateUser extends SqlCreate {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("CREATE");
-        writer.keyword("USER");
-        writer.keyword(user);
-        writer.keyword("@");
-        writer.keyword(host);
-        writer.keyword(" identified by ");
-        writer.keyword(password);
+        writer.keyword("index");
+        writer.keyword(index);
+        columnList.unparse(writer, 1, 1);
     }
 }

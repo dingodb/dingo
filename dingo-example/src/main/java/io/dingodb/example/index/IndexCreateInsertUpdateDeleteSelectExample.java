@@ -17,6 +17,7 @@
 package io.dingodb.example.index;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
@@ -39,7 +40,9 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
 
 
     public static void main(String[] args) throws Exception {
-
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        env.setInfo("user", "root");
+        env.setInfo("password", "123123");
         // 1.1 Init TableApi
         MetaServiceClient metaServiceClient = new MetaServiceClient(CoordinatorConnector.getCoordinatorConnector(coordinatorAddress));
 

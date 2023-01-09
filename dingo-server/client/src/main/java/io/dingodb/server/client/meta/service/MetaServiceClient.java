@@ -19,6 +19,7 @@ package io.dingodb.server.client.meta.service;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Parameters;
@@ -35,7 +36,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -178,4 +181,31 @@ public class MetaServiceClient implements MetaService {
     public Location currentLocation() {
         return DingoConfiguration.location();
     }
+
+    @Override
+    public void createIndex(String tableName, List<Index> indexList) {
+        try {
+            CommonId commonId = getTableId(tableName);
+            TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(commonId));
+            indexList.forEach(index -> {
+                tableApi.createIndex(commonId, index);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void dropIndex(String tableName, String indexName) {
+
+    }
+
+    @Override
+    public Collection<Index> getIndex(String tableName) {
+        CommonId commonId = getTableId(tableName);
+        TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(commonId));
+        TableDefinition tableDefinition = tableApi.getDefinition(commonId);
+        return tableDefinition.getIndexes().values();
+    }
+
 }

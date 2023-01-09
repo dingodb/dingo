@@ -276,12 +276,25 @@ public class TableDefinition {
     }
 
     public void addIndex(Index newIndex) {
+        if (indexes == null) {
+            indexes = new ConcurrentHashMap<>();
+        }
         for (String columnName : newIndex.getColumns()) {
             if (getColumn(columnName) == null) {
                 throw new IllegalArgumentException("Column " + columnName + " not found in table " + name);
             }
         }
+        validation(newIndex);
         indexes.put(newIndex.getName(), newIndex);
+    }
+
+    public void validation(Index newIndex) {
+        if (indexes.containsKey(newIndex.getName())) {
+            throw new IllegalArgumentException("index " + newIndex.getName() + " is exists ");
+        }
+        if (indexes.entrySet().stream().anyMatch(entry -> entry.getValue().equals(newIndex))) {
+            throw new IllegalArgumentException("index column is exists ");
+        }
     }
 
     public void setIndexNormal(String indexName) {

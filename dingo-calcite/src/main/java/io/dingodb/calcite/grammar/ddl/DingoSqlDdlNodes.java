@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import io.dingodb.calcite.utils.ParseValueUtils;
 import io.dingodb.common.partition.PartitionDefinition;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -24,7 +23,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-import java.util.Map;
 import java.util.Properties;
 
 
