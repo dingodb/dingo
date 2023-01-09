@@ -80,6 +80,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 @Slf4j
@@ -303,7 +304,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
-        if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user).host(sqlGrant.host).build())) {
+        if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user)
+            .host(getRealAddress(sqlGrant.host)).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant);
             userService.grant(privilegeDefinition);
         } else {
@@ -323,7 +325,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
-        if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user).host(sqlRevoke.host).build())) {
+        if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user)
+            .host(getRealAddress(sqlRevoke.host)).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlRevoke);
             userService.revoke(privilegeDefinition);
         } else {
@@ -334,7 +337,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlCreateUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
-            .host(sqlCreateUser.host).build();
+            .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
             throw new RuntimeException("user is exists");
         } else {
@@ -347,7 +350,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlDropUser sqlDropUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlDropUser);
-        UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name).host(sqlDropUser.host).build();
+        UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
+            .host(getRealAddress(sqlDropUser.host)).build();
         if (!userService.existsUser(userDefinition)) {
             throw new RuntimeException("user is not exists");
         }
@@ -361,7 +365,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(@NonNull SqlSetPassword sqlSetPassword, CalcitePrepare.Context context) {
         UserDefinition userDefinition = UserDefinition.builder()
             .user(sqlSetPassword.user)
-            .host(sqlSetPassword.host)
+            .host(getRealAddress(sqlSetPassword.host))
             .build();
         if (userService.existsUser(userDefinition)) {
             userDefinition.setPassword(sqlSetPassword.password);
@@ -374,13 +378,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
         UserDefinition userDef = UserDefinition.builder()
             .user(sqlShowGrants.user)
-            .host(sqlShowGrants.host)
+            .host(getRealAddress(sqlShowGrants.host))
             .build();
         if (!userService.existsUser(userDef)) {
             throw new RuntimeException("user is not exist");
         }
         PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, sqlShowGrants.user,
-            sqlShowGrants.host);
+            getRealAddress(sqlShowGrants.host));
         List<SchemaPrivDefinition> schemaPrivDefinitions = privilegeGather
             .getSchemaPrivDefMap().values().stream().collect(Collectors.toList());
         List<TablePrivDefinition> tablePrivDefinitions = privilegeGather
@@ -579,4 +583,5 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         privilegeDefinition.setHost(sqlGrant.host);
         return privilegeDefinition;
     }
+
 }

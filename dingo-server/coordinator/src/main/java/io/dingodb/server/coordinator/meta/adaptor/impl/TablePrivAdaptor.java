@@ -84,14 +84,15 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
     }
 
     /**
-     * getTablePrivilege.
-     * @param user username
-     * @return list
+     * getTablePrivilegesWithCurrentHost.
+     * @param user userName
+     * @param host host
+     * @return table privilege map.
      */
-    public Map<CommonId, TablePriv> getTablePrivilege(String user, String host) {
+    public Map<CommonId, TablePriv> getTablePrivilegesWithCurrentHost(String user, String host) {
         return tablePrivMap.entrySet().stream()
             .filter(k ->
-                 k.getKey().startsWith(user + "#%#") || k.getKey().startsWith(user + "#" + host + "#")
+                k.getKey().startsWith(user + "#" + host + "#")
             )
             .map(Map.Entry :: getValue)
             .collect(Collectors.toMap(TablePriv::getTable, Function.identity()));

@@ -28,6 +28,7 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.util.PrivilegeUtils;
 import io.dingodb.net.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -102,7 +103,8 @@ public class PrivilegeVerify {
             return true;
         }
 
-        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + host);
+        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
+            + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
             if (privilegeGather == null) {
@@ -147,7 +149,8 @@ public class PrivilegeVerify {
             return true;
         }
 
-        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + host);
+        PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
+            + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
             if (privilegeGather == null) {

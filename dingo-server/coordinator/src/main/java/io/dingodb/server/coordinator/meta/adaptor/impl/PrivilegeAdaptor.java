@@ -208,7 +208,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
     }
 
     public List<UserDefinition> userDefinitions(List<User> users) {
-        return users.stream().map(this :: metaToDefinition).collect(Collectors.toList());
+        return users.stream().map(this::metaToDefinition).collect(Collectors.toList());
     }
 
     public Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions(Map<CommonId, SchemaPriv> schemaPrivs) {
@@ -240,7 +240,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         Boolean[] privilegeIndexs = new Boolean[35];
 
         if (!"root".equalsIgnoreCase(user.getUser())) {
-            for (int i = 0; i < privilegeIndexs.length; i ++) {
+            for (int i = 0; i < privilegeIndexs.length; i++) {
                 privilegeIndexs[i] = false;
             }
             Optional.ofNullable(privilegeMap.get(user.getId())).ifPresent(privileges -> {
@@ -249,7 +249,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             userDefinition.setPrivileges(privilegeIndexs);
             return userDefinition;
         } else {
-            for (int i = 0; i < privilegeIndexs.length; i ++) {
+            for (int i = 0; i < privilegeIndexs.length; i++) {
                 privilegeIndexs[i] = true;
             }
             userDefinition.setPrivileges(privilegeIndexs);
@@ -266,7 +266,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             .schemaName("DINGO")
             .build();
         Boolean[] privilegeIndexs = new Boolean[35];
-        for (int i = 0; i < privilegeIndexs.length; i ++) {
+        for (int i = 0; i < privilegeIndexs.length; i++) {
             privilegeIndexs[i] = false;
         }
         Optional.ofNullable(privilegeMap.get(schemaPriv.getId())).ifPresent(privileges -> {
@@ -289,7 +289,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             .table(tablePriv.getTable())
             .build();
         Boolean[] privilegeIndexs = new Boolean[35];
-        for (int i = 0; i < privilegeIndexs.length; i ++) {
+        for (int i = 0; i < privilegeIndexs.length; i++) {
             privilegeIndexs[i] = false;
         }
         Optional.ofNullable(privilegeMap.get(tablePriv.getId())).ifPresent(privileges -> {
@@ -304,10 +304,9 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             ((UserAdaptor) getMetaAdaptor(User.class)).getUser(user, host));
 
         Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions = schemaPrivDefinitions(
-            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilege(user, host));
-
+            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilegesWithCurrentHost(user, host));
         Map<CommonId, TablePrivDefinition> tablePrivDefinitions = tablePrivDefinitions(
-            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilege(user, host));
+            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilegesWithCurrentHost(user, host));
 
         return PrivilegeGather.builder()
             .userDef(userDefinition)
@@ -322,14 +321,14 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         log.info("Delete user related privileges. User = {}, host = {}", user, host);
         // Delete schema privileges
         Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions = schemaPrivDefinitions(
-            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilege(user, host));
+            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilegesWithCurrentHost(user, host));
         log.info("Schema map = {}", schemaPrivDefinitions.toString());
         schemaPrivDefinitions.values().stream().map(
             x -> ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).delete(x)).count();
 
         // Delete table privileges
         Map<CommonId, TablePrivDefinition> tablePrivDefinitions = tablePrivDefinitions(
-            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilege(user, host));
+            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilegesWithCurrentHost(user, host));
         log.info("Table map = {}", tablePrivDefinitions.toString());
         tablePrivDefinitions.values().stream().map(
             x -> ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).delete(x)).count();

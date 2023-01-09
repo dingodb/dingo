@@ -50,6 +50,9 @@ public class DistinctListExec extends AbstractExecutive<Context, Iterator<Object
             int keyIndex = context.definition.getColumnIndex(col);
             while (records.hasNext()) {
                 Object[] record = records.next();
+                if (record[keyIndex] == null) {
+                    continue;
+                }
                 Row row = new Row<>(record, (Comparable) record[keyIndex]);
                 unit.add(row);
             }

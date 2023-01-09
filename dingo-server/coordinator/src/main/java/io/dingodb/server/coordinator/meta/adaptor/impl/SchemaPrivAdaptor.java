@@ -82,11 +82,17 @@ public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
         }
     }
 
-    public Map<CommonId, SchemaPriv> getSchemaPrivilege(String user, String host) {
+    /**
+     * getSchemaPrivilegesWithCurrentHost.
+     * @param user userName
+     * @param host host
+     * @return schema privilege map.
+     */
+    public Map<CommonId, SchemaPriv> getSchemaPrivilegesWithCurrentHost(String user, String host) {
         return schemaPrivMap.entrySet().stream()
-            .filter(k -> {
-                return k.getKey().startsWith(user + "#%#") || k.getKey().startsWith(user + "#" + host + "#");
-            })
+            .filter(k ->
+                k.getKey().startsWith(user + "#" + host + "#")
+            )
             .map(Map.Entry :: getValue)
             .collect(Collectors.toMap(SchemaPriv::getSchema, Function.identity()));
     }
