@@ -27,7 +27,6 @@ import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.storage.Storage;
-import io.dingodb.mpu.storage.mem.MemStorage;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
@@ -95,7 +94,7 @@ public class Starter {
         log.info("Start listenPort {}:{}", DingoConfiguration.host(), DingoConfiguration.port());
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         ApiRegistry.getDefault().register(LogLevelApi.class, io.dingodb.server.coordinator.api.LogLevelApi.instance());
-        ApiRegistry.getDefault().register(ClusterServiceApi.class, ClusterServiceApi.instance());
+        ApiRegistry.getDefault().register(io.dingodb.server.api.ClusterServiceApi.class, ClusterServiceApi.instance());
         core.start();
     }
 }
