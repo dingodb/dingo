@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.common.config.DingoConfiguration.location;
 import static io.dingodb.common.config.DingoConfiguration.serverId;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.server.executor.sidebar.TableInstructions.UPDATE_DEFINITION;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
@@ -122,6 +123,15 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     public void updateDefinition(TableDefinition definition) {
         core.exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
+        updateDefinition(definition, true);
+    }
+
+    public void updateDefinition(TableDefinition definition, boolean sync) {
+        if (sync) {
+            core.exec(
+                TableInstructions.id, UPDATE_DEFINITION, tableId, definition
+            ).join();
+        }
         this.definition = definition;
     }
 
@@ -297,6 +307,23 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         }
     }
 
+    public void dropIndex(String name) {
+        if (status == TableStatus.RUNNING) {
+            dropIndex(indexes.get(name), true);
+        } else {
+            throw new RuntimeException("Table status not running.");
+        }
+    }
+
+    public void dropIndex(Index index, boolean sync) {
+        if (sync) {
+            core.exec(TableInstructions.id, TableInstructions.DROP_INDEX, index).join();
+        } else {
+            indexes.remove(index.getName());
+            getVCore(index.getId()).destroy();
+        }
+    }
+
     public Core getPartition(byte[] start) {
         return Optional.mapOrNull(ranges.get(start), __ -> getVCore(__.getId()));
     }
@@ -317,13 +344,14 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         return parts;
     }
 
-    @Override
     public void primary(long clock) {
         if (core.view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()) == null) {
             initTable();
         }
+        setStarting();
         startParts();
         startIndexes();
+        storeInstance.reboot();
         started.complete(null);
         setRunning();
     }

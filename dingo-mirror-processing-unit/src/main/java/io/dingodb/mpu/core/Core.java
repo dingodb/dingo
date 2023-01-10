@@ -54,6 +54,7 @@ public class Core {
     }
 
     public void destroy() {
+        vCore.destroy();
         vCores.values().forEach(__ -> __.vCore.destroy());
     }
 

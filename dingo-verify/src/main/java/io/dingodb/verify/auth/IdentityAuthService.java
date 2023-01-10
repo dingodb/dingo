@@ -93,7 +93,7 @@ public class IdentityAuthService implements AuthService<Authentication> {
     }
 
     @Override
-    public Authentication createAuthentication() {
+    public Authentication createCertificate() {
         String user = env.getUser();
         String host = getHost();
         String password = env.getPassword();
@@ -109,17 +109,17 @@ public class IdentityAuthService implements AuthService<Authentication> {
     }
 
     @Override
-    public Object auth(Authentication authentication) throws Exception {
+    public Object validate(Authentication certificate) throws Exception {
         if (identityAuth == null) {
             return null;
         }
-        UserDefinition userDef = identityAuth.getUserDefinition(authentication);
-        if (identification(userDef, authentication)) {
-            identityAuth.cachePrivileges(authentication);
-            return getCertificate(authentication.getUsername(), authentication.getHost());
+        UserDefinition userDef = identityAuth.getUserDefinition(certificate);
+        if (identification(userDef, certificate)) {
+            identityAuth.cachePrivileges(certificate);
+            return getCertificate(certificate.getUsername(), certificate.getHost());
         } else {
-            throw new Exception(String.format("Access denied for user '%s'@'%s'", authentication.getUsername(),
-                authentication.getHost()));
+            throw new Exception(String.format("Access denied for user '%s'@'%s'", certificate.getUsername(),
+                certificate.getHost()));
         }
     }
 }

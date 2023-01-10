@@ -17,6 +17,7 @@
 package io.dingodb.common.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -26,28 +27,29 @@ import lombok.ToString;
 @ToString
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class SecurityConfiguration {
-    private static final SecurityConfiguration INSTANCE;
-    static {
-        try {
-            DingoConfiguration configuration = DingoConfiguration.instance();
-            if (configuration != null) {
-                DingoConfiguration.instance().setSecurity(SecurityConfiguration.class);
-                INSTANCE = DingoConfiguration.instance().getSecurity();
-            } else {
-                INSTANCE = new SecurityConfiguration();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static SecurityConfiguration instance() {
-        return INSTANCE;
-    }
-
-    private SecurityConfiguration() {
-    }
-
     private CipherConfiguration cipher;
     private boolean verify = true;
+    private boolean auth = true;
+
+    public static boolean isAuth() {
+        return Optional.ofNullable(DingoConfiguration.instance())
+            .map(DingoConfiguration::getSecurity)
+            .map(s -> s.auth)
+            .orElse(true);
+    }
+
+    public static boolean isVerify() {
+        return Optional.ofNullable(DingoConfiguration.instance())
+            .map(DingoConfiguration::getSecurity)
+            .map(s -> s.verify)
+            .orElse(true);
+    }
+
+    public static CipherConfiguration cipher() {
+        return Optional.ofNullable(DingoConfiguration.instance())
+            .map(DingoConfiguration::getSecurity)
+            .map(s -> s.cipher)
+            .orNull();
+    }
+
 }

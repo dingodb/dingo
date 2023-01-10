@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.auth.Authentication;
+import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
@@ -645,14 +646,17 @@ public class ServerMeta implements Meta {
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
         connectionMap.put(ch.id, connection);
 
-        Authentication authentication = Authentication.builder()
-            .username(info.get("user"))
-            .host(info.get("host"))
-            .password(info.get("password")).build();
-        try {
-            IdentityAuthService.INSTANCE.auth(authentication);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (SecurityConfiguration.isAuth()) {
+            Authentication authentication = Authentication.builder()
+                .username(info.get("user"))
+                .host(info.get("host"))
+                .password(info.get("password"))
+                .build();
+            try {
+                IdentityAuthService.INSTANCE.validate(authentication);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

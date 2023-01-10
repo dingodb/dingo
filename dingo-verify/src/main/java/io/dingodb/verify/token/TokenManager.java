@@ -38,7 +38,7 @@ public class TokenManager {
 
     static {
         try {
-            CipherConfiguration configuration = SecurityConfiguration.instance().getCipher();
+            CipherConfiguration configuration = SecurityConfiguration.cipher();
             String jksPath = configuration.getKeyPath();
             String jksPassword = configuration.getKeyPass();
             String certAlias = configuration.getAlias();
