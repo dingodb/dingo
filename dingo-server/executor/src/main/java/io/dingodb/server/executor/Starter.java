@@ -23,7 +23,6 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.server.client.config.ClientConfiguration;
 import io.dingodb.server.executor.config.Configuration;
-import io.prometheus.client.exporter.HTTPServer;
 
 public class Starter {
 
@@ -51,7 +50,6 @@ public class Starter {
         ClientConfiguration.instance()
             .setCoordinatorExchangeSvrList(Configuration.coordinatorExchangeSvrList());
 
-        HTTPServer httpServer = new HTTPServer(Configuration.monitorPort());
         ExecutorServer server = new ExecutorServer();
         server.start();
     }

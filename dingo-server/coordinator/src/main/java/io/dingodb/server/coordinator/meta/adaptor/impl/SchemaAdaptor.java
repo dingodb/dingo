@@ -18,21 +18,21 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.Constant;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.Schema;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
-import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
+@AutoService(Adaptor.class)
 public class SchemaAdaptor extends BaseAdaptor<Schema> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema);
 
-    public SchemaAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(Schema.class, this);
+    @Override
+    public Class<Schema> adaptFor() {
+        return Schema.class;
     }
 
     @Override
@@ -42,23 +42,12 @@ public class SchemaAdaptor extends BaseAdaptor<Schema> {
 
     @Override
     protected CommonId newId(Schema schema) {
-        int parent = ROOT_DOMAIN;
-        if (schema.getParent() != null) {
-            parent = schema.getParent().seq();
-        }
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(),
-            parent,
-            metaStore.generateSeq(META_ID.encode())
+            schema.getParent().seq,
+            metaStore().generateSeq(META_ID.encode(), Constant.SCHEMA_SEQ_START)
         );
     }
 
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<Schema, SchemaAdaptor> {
-        @Override
-        public SchemaAdaptor create(MetaStore metaStore) {
-            return new SchemaAdaptor(metaStore);
-        }
-    }
 }

@@ -27,13 +27,11 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.TableApi;
 import io.dingodb.server.coordinator.config.Configuration;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Column;
 import io.dingodb.server.protocol.meta.Executor;
-import io.dingodb.server.protocol.meta.Replica;
 import io.dingodb.server.protocol.meta.Table;
-import io.dingodb.server.protocol.meta.TablePart;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -52,22 +50,29 @@ import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class TableAdaptor extends BaseAdaptor<Table> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table);
     public static final byte[] SEQ_KEY = META_ID.encode();
 
-    private final ColumnAdaptor columnAdaptor;
+    private ColumnAdaptor columnAdaptor;
     private final Map<CommonId, Map<String, CommonId>> idNameMap = new ConcurrentHashMap<>();
 
-    public TableAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        this.columnAdaptor = new ColumnAdaptor(metaStore);
+    @Override
+    public Class<Table> adaptFor() {
+        return Table.class;
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+        columnAdaptor = MetaAdaptorRegistry.getMetaAdaptor(Column.class);
+        idNameMap.clear();
         this.metaMap.values().forEach(table -> idNameMap
             .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
             .put(table.getName(), table.getId())
         );
-        MetaAdaptorRegistry.register(Table.class, this);
     }
 
     @Override
@@ -81,17 +86,23 @@ public class TableAdaptor extends BaseAdaptor<Table> {
 
     public void pureSave(Table table) {
         super.save(table);
-        metaStore.upsertKeyValue(table.getId().encode(), encodeMeta(table));
+        metaStore().upsertKeyValue(table.getId().encode(), encodeMeta(table));
     }
 
     @Override
     protected CommonId newId(Table table) {
         CommonId id = new CommonId(
-            META_ID.type(), META_ID.identifier(), table.getSchema().seq(), metaStore.generateSeq(SEQ_KEY), 1
+            META_ID.type(), META_ID.identifier(), table.getSchema().seq(), metaStore().generateSeq(SEQ_KEY), 1
         );
         idNameMap
             .computeIfAbsent(table.getSchema(), k -> new ConcurrentHashMap<>())
-            .put(table.getName(), id);
+            .compute(table.getName(), (name, __) -> {
+                if (__ == null) {
+                    return id;
+                } else {
+                    throw new RuntimeException(name + " exist.");
+                }
+            });
         return id;
     }
 
@@ -130,7 +141,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .map(column -> new KeyValue(column.getId().encode(), columnAdaptor.encodeMeta(column)))
             .forEach(keyValues::add);
 
-        metaStore.upsertKeyValue(keyValues);
+        metaStore().upsertKeyValue(keyValues);
         super.save(table);
         columns.forEach(columnAdaptor::save);
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -156,7 +167,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
         ArrayList<byte[]> keys = new ArrayList<>(columns.size() + 1);
         columns.forEach(column -> keys.add(column.getId().encode()));
         keys.add(id.encode());
-        metaStore.delete(keys);
+        metaStore().delete(keys);
         metaMap.remove(id);
         columnAdaptor.deleteByDomain(id.seq());
         table.getLocations().values().forEach(location -> {
@@ -172,12 +183,24 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .isPresent();
     }
 
-    public TableDefinition get(CommonId schemaId, String tableName) {
+    public Table get(CommonId schemaId, String tableName) {
+        return get(getTableId(schemaId, tableName));
+    }
+
+    public TableDefinition getDefinition(CommonId schemaId, String tableName) {
         return getDefinition(getTableId(schemaId, tableName));
     }
 
     public TableDefinition getDefinition(CommonId id) {
         return Optional.mapOrNull(get(id), this::metaToDefinition);
+    }
+
+    public List<Table> getAll(CommonId schemaId) {
+        return Optional.mapOrGet(
+            idNameMap.get(schemaId),
+            __ -> __.values().stream().map(this::get).collect(Collectors.toList()),
+            ArrayList::new
+        );
     }
 
     public Map<String, TableDefinition> getAllDefinition(CommonId id) {
@@ -236,14 +259,6 @@ public class TableAdaptor extends BaseAdaptor<Table> {
             .schema(table.getSchema())
             .defaultValue(definition.getDefaultValue())
             .build();
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<Table, TableAdaptor> {
-        @Override
-        public TableAdaptor create(MetaStore metaStore) {
-            return new TableAdaptor(metaStore);
-        }
     }
 
 }

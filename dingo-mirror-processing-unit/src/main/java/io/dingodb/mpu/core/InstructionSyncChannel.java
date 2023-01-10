@@ -48,7 +48,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
     private ControlUnit controlUnit;
     private CoreMeta mirror;
     private LinkedRunner sendRunner;
-    private InstructionChain executeChain;
+    private InstructionChain chain;
     private LinkedRunner chainRunner;
     private long clock;
     private long syncClock;
@@ -57,13 +57,13 @@ class InstructionSyncChannel implements Channel, MessageListener {
         this.core = core;
         this.mirror = mirror;
         this.sendRunner = new LinkedRunner(mirror.label + "-send-runner");
-        this.executeChain = new InstructionChain(clock, mirror.label + "-instruction-chain");
+        this.chain = new InstructionChain(clock, mirror.label + "-instruction-chain");
         this.chainRunner = new LinkedRunner(mirror.label + "-synced-runner");
         this.clock = clock;
         this.syncClock = clock;
     }
 
-    public SelectReturn connect() {
+    protected SelectReturn connect() {
         try {
             log.info("Sync channel {} -> {} connect.", core.meta.label, mirror.label);
             CompletableFuture<Void> future = new CompletableFuture<>();
@@ -92,7 +92,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
         }
     }
 
-    public synchronized void assignControlUnit(ControlUnit controlUnit) {
+    protected synchronized void assignControlUnit(ControlUnit controlUnit) {
         if (channel == null || channel.isClosed()) {
             log.info("Assign control unit failed, channel is null or channel closed.");
             return;
@@ -104,7 +104,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
     }
 
     private void onClose(Channel channel) {
-        chainRunner.forceFollow(() -> executeChain.clear(false));
+        chainRunner.forceFollow(() -> chain.close());
         Optional.ifPresent(controlUnit, __ -> __.onMirrorClose(mirror));
     }
 
@@ -114,7 +114,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
         TagClock tagClock = TagClock.decode(content);
         switch (tagClock.tag) {
             case Constant.T_SYNC: {
-                executeChain.tick();
+                chain.tick();
                 return;
             }
             default: {
@@ -124,7 +124,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
         }
     }
 
-    public void sync(Instruction instruction) {
+    protected void sync(Instruction instruction) {
         if (isClosed()) {
             return;
         }
@@ -140,13 +140,13 @@ class InstructionSyncChannel implements Channel, MessageListener {
                         if (reappearInstruction == null) {
                             core.storage.transferTo(mirror).join();
                             syncClock = InternalApi.askClock(mirror.location, mirror.coreId);
+                            chain.reset(syncClock);
                         } else {
-                            reappearInstruction[0] = Constant.T_EXECUTE_INSTRUCTION;
+                            chain.follow(instruction, () -> controlUnit.onSynced(mirror, instruction));
                             channel.send(new Message(Message.EMPTY_TAG, reappearInstruction));
                         }
-                        chainRunner.forceFollow(() -> executeChain.reset(syncClock, false));
                     }
-                    executeChain.forceFollow(instruction, () -> controlUnit.onSynced(mirror, instruction));
+                    chain.follow(instruction, () -> controlUnit.onSynced(mirror, instruction));
                     channel.send(new Message(Message.EMPTY_TAG, instruction.encode()), true);
                     syncClock = instruction.clock;
                 } catch (Exception e) {
@@ -157,11 +157,11 @@ class InstructionSyncChannel implements Channel, MessageListener {
         });
     }
 
-    public void executed(long clock) {
+    protected void executed(long clock) {
         if (isClosed()) {
             return;
         }
-        channel.send(new Message(Message.EMPTY_TAG, new TagClock(Constant.T_EXECUTE_CLOCK, clock).encode()));
+        channel.send(new Message(Message.EMPTY_TAG, new TagClock(Constant.T_EXECUTED_CLOCK, clock).encode()));
     }
 
 }

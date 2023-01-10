@@ -19,6 +19,7 @@ package io.dingodb.mpu.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
@@ -33,8 +34,8 @@ public interface InternalApi {
         API.register(InternalApi.class, new InternalApi() {});
     }
 
-    static Core core(CommonId coreId) {
-        return MPURegister.get(coreId);
+    static Optional<Core> core(CommonId coreId) {
+        return Optional.ofNullable(MPURegister.get(coreId));
     }
 
     static InternalApi instance(Location location) {
@@ -51,7 +52,9 @@ public interface InternalApi {
 
     @ApiDeclaration
     default SelectReturn connectMirror(SyncChannel syncChannel) {
-        return core(syncChannel.primary.coreId).connectFromPrimary(syncChannel);
+        return core(syncChannel.primary.coreId)
+            .map(core -> core.getVCore().connectFromPrimary(syncChannel))
+            .orElse(SelectReturn.ERROR);
     }
 
     static SelectReturn connectMirror(Location location, SyncChannel syncChannel) {
@@ -60,7 +63,9 @@ public interface InternalApi {
 
     @ApiDeclaration
     default SelectReturn askPrimary(CoreMeta meta, long clock) {
-        return core(meta.coreId).askPrimary(meta, clock);
+        return core(meta.coreId)
+            .map(core -> core.getVCore().askPrimary(meta, clock))
+            .orElse(SelectReturn.ERROR);
     }
 
     static SelectReturn askPrimary(Location location, CoreMeta meta, long clock) {
@@ -73,7 +78,9 @@ public interface InternalApi {
 
     @ApiDeclaration
     default boolean isPrimary(CommonId coreId) {
-        return core(coreId).isPrimary();
+        return core(coreId)
+            .map(core -> core.getVCore().isPrimary())
+            .orElse(false);
     }
 
     static boolean isPrimary(Location location, CommonId coreId) {
@@ -86,7 +93,8 @@ public interface InternalApi {
 
     @ApiDeclaration
     default void requestConnect(CoreMeta mirror) {
-        core(mirror.coreId).requestConnect(mirror);
+        core(mirror.coreId)
+            .ifPresent(core -> core.getVCore().requestConnect(mirror));
     }
 
     static void requestConnect(Location location, CoreMeta mirror) {
@@ -95,7 +103,7 @@ public interface InternalApi {
 
     @ApiDeclaration
     default long askClock(CommonId coreId) {
-        return core(coreId).clock();
+        return core(coreId).get().getVCore().clock();
     }
 
     static long askClock(Location location, CommonId coreId) {

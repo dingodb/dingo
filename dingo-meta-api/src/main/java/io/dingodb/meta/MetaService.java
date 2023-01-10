@@ -32,10 +32,12 @@ import java.util.stream.Collectors;
 public interface MetaService {
 
     static MetaService root() {
-        return MetaServiceProvider.getRoot();
+        return MetaServiceProvider.getDefault().root();
     }
 
-    String ROOT_NAME = "DINGO";
+    String ROOT_NAME = "DINGO_ROOT";
+    String DINGO_NAME = "DINGO";
+    String META_NAME = "META";
 
     /**
      * Returns this meta service id.

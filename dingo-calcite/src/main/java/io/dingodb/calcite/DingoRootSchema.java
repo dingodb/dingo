@@ -17,19 +17,20 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import lombok.Getter;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DingoRootSchema extends AbstractSchema {
-    public static final String ROOT_SCHEMA_NAME = "DINGO_ROOT";
+    public static final String ROOT_SCHEMA_NAME = MetaService.ROOT_NAME;
     //public static final String DEFAULT_SCHEMA_NAME = ROOT_SCHEMA_NAME;
-    public static final String DEFAULT_SCHEMA_NAME = "DINGO";
+    public static final String DEFAULT_SCHEMA_NAME = MetaService.DINGO_NAME;
 
     private static final MetaService ROOT_META_SERVICE = MetaService.root();
 
@@ -46,19 +47,20 @@ public class DingoRootSchema extends AbstractSchema {
 
     @Override
     protected Map<String, Schema> getSubSchemaMap() {
-        return Collections.singletonMap(
-            DEFAULT_SCHEMA_NAME,
-            new DingoSchema(
-                context,
-                ImmutableList.<String>builder()
-                    .addAll(names)
-                    .add(DEFAULT_SCHEMA_NAME)
-                    .build(),
-                MetaService.root()
-            )
-        );
-        // todo meta cache support multi schema
-        //return ROOT_META_SERVICE.getSubMetaServices().entrySet().stream()
-        //    .collect(Collectors.toMap(Map.Entry::getKey, e -> new DingoSchema(e.getValue())));
+        return ROOT_META_SERVICE.getSubMetaServices().entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> new DingoSchema(context, names, ROOT_META_SERVICE.getSubMetaService(e.getKey())))
+            );
     }
+
+    public Schema getSubSchema(List<String> names) {
+        // ignore 0 root schema
+        Schema schema = this;
+        for (int i = 1; i < names.size() - 1; i++) {
+            schema = Parameters.nonNull(schema.getSubSchema(names.get(i)), "not found " + names);
+        }
+        return schema;
+    }
+
 }

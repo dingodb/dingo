@@ -18,13 +18,18 @@ package io.dingodb.net.netty.api;
 
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.net.Message;
 import io.dingodb.net.error.ApiTerminateException;
 import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.Constant;
 import io.dingodb.net.service.AuthService;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -32,10 +37,47 @@ import static io.dingodb.net.netty.Constant.API_ERROR;
 
 public interface AuthProxyApi {
 
-    AuthProxyApi INSTANCE = new AuthProxyApi() {
-    };
+    class AuthProxyApiImpl implements AuthProxyApi {
 
-    Iterable<AuthService.Provider> serviceProviders = ServiceLoader.load(AuthService.Provider.class);
+        public final List<AuthService> services;
+
+        private AuthProxyApiImpl() {
+            ArrayList<AuthService> services = new ArrayList<>();
+            Iterator<AuthService.Provider> providerIterator = ServiceLoader.load(AuthService.Provider.class).iterator();
+            while (providerIterator.hasNext()) {
+                services.add(providerIterator.next().get());
+            }
+            this.services = Collections.unmodifiableList(services);
+        }
+
+        @Override
+        public Map<String, Object[]> auth(Channel channel, Map<String, ?> certificate) {
+            Map<String, Object[]> result = new HashMap<>();
+            if (DingoConfiguration.instance().getSecurity() != null && !DingoConfiguration.instance().isAuth()) {
+                return result;
+            }
+            try {
+                for (AuthService service : services) {
+                    Object cert = certificate.get(service.tag());
+                    if (cert != null) {
+                        result.put(service.tag(), new Object[]{cert, service.auth(cert)});
+                    }
+                }
+                if (result.size() == 0) {
+                    throw new Exception("identity and token: both authentication failed. ");
+                }
+                return result;
+            } catch (Exception e) {
+                channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);
+                throw new ApiTerminateException(e,
+                    "Auth failed from [%s], message: %s",
+                    channel.remoteLocation().url(), e.getMessage()
+                );
+            }
+        }
+    }
+
+    AuthProxyApiImpl INSTANCE = new AuthProxyApiImpl();
 
     /**
      * Authentication, throw exception if failed.
@@ -43,28 +85,14 @@ public interface AuthProxyApi {
      * @param certificate certificate
      */
     @ApiDeclaration(name = Constant.AUTH)
-    default Map<String, Object[]> auth(Channel channel, Map<String, ?> certificate) {
-        AuthService service = null;
-        try {
-            Map<String, Object[]> result = new HashMap<>();
-            for (AuthService.Provider authServiceProvider : serviceProviders) {
-                service = authServiceProvider.get();
-                Object cert = certificate.get(service.tag());
-                if (cert != null) {
-                    result.put(service.tag(), new Object[]{cert, service.auth(cert)});
-                }
-            }
-            if (result.size() == 0) {
-                throw new Exception("identity and token: both authentication failed. ");
-            }
-            return result;
-        } catch (Exception e) {
-            channel.send(new Message(API_ERROR, ProtostuffCodec.write(e)), true);
-            throw new ApiTerminateException(
-                "Auth failed from [%s], message: %s",
-                channel.remoteLocation().url(), e.getMessage()
-            );
+    Map<String, Object[]> auth(Channel channel, Map<String, ?> certificate);
+
+    static Map<String, Object[]> auth(Channel channel) {
+        Map<String, Object> certificates = new HashMap<>();
+        if (DingoConfiguration.instance().getSecurity() == null || DingoConfiguration.instance().isAuth()) {
+            INSTANCE.services.forEach(service -> certificates.put(service.tag(), service.createCertificate()));
         }
+        return ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, certificates);
     }
 
 }

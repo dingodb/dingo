@@ -18,20 +18,20 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.Executive;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.OP_IDENTIFIER;
 
+@AutoService(Adaptor.class)
 public class ExecutiveAdaptor extends BaseAdaptor<Executive> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.op, OP_IDENTIFIER.external);
 
-    public ExecutiveAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(Executive.class, this);
+    @Override
+    public Class<Executive> adaptFor() {
+        return Executive.class;
     }
 
     @Override
@@ -45,16 +45,8 @@ public class ExecutiveAdaptor extends BaseAdaptor<Executive> {
             META_ID.type(),
             META_ID.identifier(),
             0,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator
-        implements BaseAdaptor.Creator<Executive, ExecutiveAdaptor> {
-        @Override
-        public ExecutiveAdaptor create(MetaStore metaStore) {
-            return new ExecutiveAdaptor(metaStore);
-        }
-    }
 }

@@ -19,10 +19,10 @@ package io.dingodb.verify.privilege;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
-import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
@@ -42,8 +42,8 @@ public class PrivilegeVerify {
     static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     static {
-        SecurityConfiguration configuration = SecurityConfiguration.instance();
-        isVerify = configuration.isVerify();
+        SecurityConfiguration configuration = DingoConfiguration.instance().getSecurity();
+        isVerify = configuration == null || configuration.isVerify();
     }
 
     public static boolean isVerify;
@@ -127,7 +127,7 @@ public class PrivilegeVerify {
         if (StringUtils.isBlank(user)) {
             return true;
         }
-        
+
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {

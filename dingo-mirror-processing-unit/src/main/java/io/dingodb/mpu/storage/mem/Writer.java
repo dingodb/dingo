@@ -62,7 +62,7 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
 
     }
 }

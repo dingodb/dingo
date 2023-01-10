@@ -18,26 +18,25 @@ package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.scalar.StringType;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MetaTableDefinitionBuilder {
+public class MetaDefinitionBuilder {
 
     private String name;
     private List<String> cols = new ArrayList<>();
 
-    public MetaTableDefinitionBuilder(String name) {
+    public MetaDefinitionBuilder(String name) {
         this.name = name;
     }
 
-    public MetaTableDefinitionBuilder addColumn(String name) {
+    public MetaDefinitionBuilder addColumn(String name) {
         cols.add(name);
         return this;
     }
 
-    public MetaTableDefinitionBuilder addColumns(List<String> names) {
+    public MetaDefinitionBuilder addColumns(List<String> names) {
         cols.addAll(names);
         return this;
     }

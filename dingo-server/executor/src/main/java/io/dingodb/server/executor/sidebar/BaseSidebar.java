@@ -16,43 +16,20 @@
 
 package io.dingodb.server.executor.sidebar;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.core.Sidebar;
 import io.dingodb.mpu.storage.Storage;
-import io.dingodb.server.api.ServiceConnectApi;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public abstract class BaseSidebar extends io.dingodb.mpu.core.Sidebar implements ServiceConnectApi.Service {
+public abstract class BaseSidebar extends Sidebar {
+
     public BaseSidebar(CoreMeta meta, List<CoreMeta> mirrors, Storage storage) {
         super(meta, mirrors, storage);
-        ServiceConnectApi.INSTANCE.register(this);
     }
 
     public void destroy() {
-        ServiceConnectApi.INSTANCE.unregister(id());
-    }
-
-    @Override
-    public CommonId id() {
-        return core.meta.coreId;
-    }
-
-    @Override
-    public Location leader() {
-        return core.getPrimary().location;
-    }
-
-    @Override
-    public List<Location> getAll() {
-        List<Location> locations = new ArrayList<>();
-        locations.add(DingoConfiguration.location());
-        locations.addAll(core.mirrors().stream().map(CoreMeta::location).collect(Collectors.toList()));
-        return locations;
+        super.destroy();
     }
 
 }

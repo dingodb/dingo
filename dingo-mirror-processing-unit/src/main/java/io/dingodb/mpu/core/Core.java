@@ -21,7 +21,6 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.storage.Storage;
 import lombok.Getter;
-import lombok.experimental.Delegate;
 
 import java.util.List;
 import java.util.Map;
@@ -32,12 +31,14 @@ public class Core {
     public final CoreMeta meta;
 
     protected final List<CoreMeta> mirrors;
+
     protected final Sidebar sidebar;
 
     @Getter
-    @Delegate
+    @SuppressWarnings("checkstyle:MemberName")
     protected final VCore vCore;
 
+    @SuppressWarnings("checkstyle:MemberName")
     protected Map<CommonId, Core> vCores = new ConcurrentHashMap<>();
 
     public Core(CoreMeta meta, List<CoreMeta> mirrors, Storage storage, Sidebar sidebar) {
@@ -46,15 +47,19 @@ public class Core {
         this.sidebar = sidebar;
         this.vCore = Optional.ofNullable(mirrors)
             .filter(__ -> !__.isEmpty())
-            .map(__ -> new VCore(meta, __.get(0), __.get(1), storage))
-            .ifAbsentSet(() -> new VCore(meta, storage))
-            .ifPresent(__ -> Optional.ifPresent(this.sidebar, () -> __.registerListener(this.sidebar)))
+            .map(__ -> new VCore(this, meta, __.get(0), __.get(1), storage))
+            .ifAbsentSet(() -> new VCore(this, meta, storage))
             .get();
         MPURegister.register(this);
     }
 
+    public Storage getStorage() {
+        return vCore.storage;
+    }
+
     public void destroy() {
-        vCores.values().forEach(__ -> __.vCore.destroy());
+        vCores.values().forEach(__ -> Optional.or(__.sidebar, __.sidebar::destroy, __::destroy));
+        vCore.destroy();
     }
 
 }

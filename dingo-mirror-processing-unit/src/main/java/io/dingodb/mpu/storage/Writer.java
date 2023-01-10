@@ -60,4 +60,7 @@ public interface Writer extends AutoCloseable {
      */
     void erase(byte[] begin, byte[] end);
 
+    @Override
+    void close();
+
 }

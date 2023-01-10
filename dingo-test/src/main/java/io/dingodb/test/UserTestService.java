@@ -16,10 +16,12 @@
 
 package io.dingodb.test;
 
+import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.verify.service.UserService;
 
@@ -76,7 +78,7 @@ public class UserTestService implements UserService {
 
     @Override
     public CommonId getSchemaId(String schema) {
-        return null;
+        return MetaService.root().getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME).id();
     }
 
     @Override

@@ -54,6 +54,7 @@ public class Configuration {
     private String dataPath;
     private String store;
     private Integer monitorPort = 9099;
+    private boolean mem;
 
     public static String coordinatorExchangeSvrList() {
         return INSTANCE.coordinatorExchangeSvrList;
@@ -73,5 +74,9 @@ public class Configuration {
 
     public static Integer monitorPort() {
         return INSTANCE.monitorPort;
+    }
+
+    public static boolean isMem() {
+        return INSTANCE.mem;
     }
 }

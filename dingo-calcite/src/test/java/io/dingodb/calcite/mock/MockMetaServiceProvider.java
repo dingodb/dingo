@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.mock;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.Location;
@@ -43,8 +42,8 @@ public class MockMetaServiceProvider {
         inited = true;
         try {
             MetaService metaService = MetaService.root();
-            //metaService.createSubMetaService(SCHEMA_NAME);
-            //metaService = metaService.getSubMetaService(SCHEMA_NAME);
+            metaService.createSubMetaService(SCHEMA_NAME);
+            metaService = metaService.getSubMetaService(SCHEMA_NAME);
             String test = "test";
             String test1 = "test1";
             String tableDate = "table-with-date";

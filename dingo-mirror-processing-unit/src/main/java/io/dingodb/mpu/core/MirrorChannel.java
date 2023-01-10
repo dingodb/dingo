@@ -40,7 +40,7 @@ class MirrorChannel implements MessageListener {
     @Delegate
     private final Channel channel;
 
-    public MirrorChannel(CoreMeta primary, VCore core, long clock, Channel channel) {
+    protected MirrorChannel(CoreMeta primary, VCore core, long clock, Channel channel) {
         this.primary = primary;
         this.core = core;
         this.channel = channel;
@@ -75,7 +75,7 @@ class MirrorChannel implements MessageListener {
                 }
                 return;
             }
-            case Constant.T_EXECUTE_CLOCK: {
+            case Constant.T_EXECUTED_CLOCK: {
                 Executors
                     .execute("clear-clock", () -> core.storage.clearClock(TagClock.decode(message.content()).clock));
                 return;

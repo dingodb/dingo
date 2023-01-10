@@ -16,6 +16,7 @@
 
 package io.dingodb.server.client.connector.impl;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.util.Optional;
 import io.dingodb.server.client.config.ClientConfiguration;
@@ -26,14 +27,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
+
 @Slf4j
 public class CoordinatorConnector extends ServiceConnector {
 
     private static final CoordinatorConnector DEFAULT = Optional.ofNullable(ClientConfiguration.instance())
         .map(ClientConfiguration::getCoordinatorExchangeSvrList)
         .map(s -> s.split(","))
-        .map(Arrays::asList)
-        .map(ss -> ss.stream()
+        .map(Arrays::stream)
+        .map(ss -> ss
             .map(s -> s.split(":"))
             .map(__ -> new Location(__[0], Integer.parseInt(__[1])))
             .collect(Collectors.toList()))
@@ -45,16 +49,16 @@ public class CoordinatorConnector extends ServiceConnector {
     }
 
     public CoordinatorConnector(List<Location> addresses) {
-        super(null, new HashSet<>(addresses));
+        super(CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.coordinator, 1, 1), new HashSet<>(addresses));
     }
 
     public static CoordinatorConnector getCoordinatorConnector(String addresses) {
-       return Optional.ofNullable(addresses.split(","))
-           .map(Arrays::asList)
-           .map(ss -> ss.stream()
+        return Optional.ofNullable(addresses.split(","))
+            .map(Arrays::stream)
+            .map(ss -> ss
                .map(s -> s.split(":"))
                .map(__ -> new Location(__[0], Integer.parseInt(__[1])))
                .collect(Collectors.toList()))
-           .map(CoordinatorConnector::new).orNull();
+            .map(CoordinatorConnector::new).orNull();
     }
 }

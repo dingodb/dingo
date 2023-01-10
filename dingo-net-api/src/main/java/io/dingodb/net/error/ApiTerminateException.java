@@ -24,4 +24,8 @@ public class ApiTerminateException extends RuntimeException {
     public ApiTerminateException(String message, Object...args) {
         super(String.format(message, args));
     }
+
+    public ApiTerminateException(Throwable throwable, String message, Object...args) {
+        super(String.format(message, args), throwable);
+    }
 }

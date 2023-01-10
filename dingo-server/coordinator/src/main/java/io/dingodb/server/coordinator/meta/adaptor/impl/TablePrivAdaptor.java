@@ -19,8 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.TablePrivDefinition;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.TablePriv;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,17 +34,22 @@ import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.data, PRIVILEGE_IDENTIFIER.tablePrivilege);
 
-    protected final Map<String, TablePriv> tablePrivMap;
+    protected final Map<String, TablePriv> tablePrivMap = new ConcurrentHashMap<>();
 
-    public TablePrivAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(TablePriv.class, this);
-        tablePrivMap = new ConcurrentHashMap<>();
+    @Override
+    public Class<TablePriv> adaptFor() {
+        return TablePriv.class;
+    }
 
+    @Override
+    public void reload() {
+        super.reload();
+        tablePrivMap.clear();
         metaMap.forEach((k, v) -> {
             tablePrivMap.put(v.getKey(), v);
         });
@@ -57,7 +61,7 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(), ROOT_DOMAIN,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
@@ -73,14 +77,6 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
 
     private TablePrivDefinition metaToDefinition(TablePriv user) {
         return new TablePrivDefinition();
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<TablePriv, TablePrivAdaptor> {
-        @Override
-        public TablePrivAdaptor create(MetaStore metaStore) {
-            return new TablePrivAdaptor(metaStore);
-        }
     }
 
     /**

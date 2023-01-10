@@ -48,6 +48,7 @@ dependencies {
     testImplementation group: 'org.assertj', name: 'assertj-core', version: 'assertj'.v()
     // logging
     implementation 'org.slf4j:slf4j-api:' + 'slf4j'.v()
+    // testImplementation 'org.slf4j:slf4j-simple:' + 'slf4j'.v()
     // static check
     checkstyle 'com.puppycrawl.tools:checkstyle:' + 'checkstyle'.v()
     //compileOnly 'com.google.code.findbugs:jsr305:' + 'jsr305'.v()

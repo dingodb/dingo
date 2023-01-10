@@ -20,8 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.util.Optional;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.User;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -34,16 +33,22 @@ import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class UserAdaptor extends BaseAdaptor<User> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.data, PRIVILEGE_IDENTIFIER.user);
 
-    protected final Map<String, User> userMap;
+    protected final Map<String, User> userMap = new ConcurrentHashMap<>();
 
-    public UserAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(User.class, this);
-        userMap = new ConcurrentHashMap<>();
+    @Override
+    public Class<User> adaptFor() {
+        return User.class;
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+        userMap.clear();
         metaMap.forEach((k, v) -> {
             userMap.put(v.getKey(), v);
         });
@@ -62,7 +67,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(), ROOT_DOMAIN,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
@@ -81,14 +86,6 @@ public class UserAdaptor extends BaseAdaptor<User> {
             .password(user.getPassword())
             .plugin(user.getPlugin())
             .build();
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<User, UserAdaptor> {
-        @Override
-        public UserAdaptor create(MetaStore metaStore) {
-            return new UserAdaptor(metaStore);
-        }
     }
 
     public CommonId create(UserDefinition userDefinition) {

@@ -17,6 +17,7 @@
 package io.dingodb.test;
 
 import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -65,9 +66,8 @@ public class QueryMetaDataTest {
                 .columnLabels(
                     new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
                 )
-                .isRecords(Arrays.asList(
-                    new Object[]{"metadata", null},
-                    new Object[]{DingoRootSchema.DEFAULT_SCHEMA_NAME, null}
+                .isRecords(Collections.singletonList(
+                    new Object[]{MetaService.DINGO_NAME, null}
                 ));
         }
     }
@@ -125,9 +125,7 @@ public class QueryMetaDataTest {
                 )
                 .isRecords(Arrays.asList(
                     new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"},
-                    new Object[]{null, "metadata", "COLUMNS", "SYSTEM TABLE"},
-                    new Object[]{null, "metadata", "TABLES", "SYSTEM TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
                 ));
         }
     }

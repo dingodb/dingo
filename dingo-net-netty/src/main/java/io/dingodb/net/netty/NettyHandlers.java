@@ -17,6 +17,9 @@
 package io.dingodb.net.netty;
 
 import io.dingodb.common.util.Optional;
+import io.dingodb.net.netty.api.ApiRegistryImpl;
+import io.dingodb.net.netty.api.AuthProxyApi;
+import io.dingodb.net.netty.api.HandshakeApi;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -94,6 +97,11 @@ public final class NettyHandlers {
     @Slf4j
     @AllArgsConstructor
     public static class AuthHandler extends SimpleChannelInboundHandler<ByteBuffer> {
+
+        static {
+            ApiRegistryImpl.INSTANCE.register(AuthProxyApi.class, AuthProxyApi.INSTANCE);
+        }
+
         private final Connection connection;
 
         @Override
@@ -111,6 +119,10 @@ public final class NettyHandlers {
     @Slf4j
     @AllArgsConstructor
     public static class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuffer> {
+
+        static {
+            ApiRegistryImpl.INSTANCE.register(HandshakeApi.class, HandshakeApi.INSTANCE);
+        }
 
         private final Connection connection;
 

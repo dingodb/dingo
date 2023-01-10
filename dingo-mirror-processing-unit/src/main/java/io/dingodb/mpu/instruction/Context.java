@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.mpu.api;
+package io.dingodb.mpu.instruction;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.annotation.ApiDeclaration;
-import io.dingodb.mpu.MPURegister;
-import io.dingodb.mpu.instruction.KVInstructions;
+import io.dingodb.mpu.storage.Reader;
+import io.dingodb.mpu.storage.Writer;
 
-public interface KVApi {
+public interface Context extends AutoCloseable {
 
-    @ApiDeclaration
-    default void set(CommonId core, byte[] key, byte[] value) {
-        MPURegister.get(core).exec(KVInstructions.id, KVInstructions.SET_OC, key, value).join();
+    Reader reader();
+
+    default Writer writer() {
+        throw new UnsupportedOperationException();
     }
 
-    @ApiDeclaration
-    default Object get(CommonId core, byte[] key) {
-        return MPURegister.get(core).view(KVInstructions.id, KVInstructions.GET_OC, key);
-    }
+    Object[] operand();
 
+    <O> O operand(int index);
+
+    @Override
+    default void close() {
+    }
 }
+

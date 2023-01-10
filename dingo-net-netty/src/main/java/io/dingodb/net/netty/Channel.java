@@ -109,7 +109,6 @@ public class Channel implements io.dingodb.net.Channel {
         this.status = Status.CLOSE;
         runner.forceFollow(() -> onClose.accept(channelId));
         runner.forceFollow(() -> closeListener.accept(this));
-        this.runner = null;
     }
 
     @Override

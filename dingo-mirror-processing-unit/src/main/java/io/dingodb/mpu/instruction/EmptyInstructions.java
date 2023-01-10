@@ -16,11 +16,6 @@
 
 package io.dingodb.mpu.instruction;
 
-import io.dingodb.mpu.storage.Reader;
-import io.dingodb.mpu.storage.Writer;
-
-import java.util.function.Function;
-
 public class EmptyInstructions implements Instructions {
 
     public static final byte id = 0;
@@ -29,35 +24,13 @@ public class EmptyInstructions implements Instructions {
     public static final short EMPTY = 0;
     public static final EmptyInstructions INSTRUCTIONS = new EmptyInstructions();
 
-    public static final Processor empty = new Processor() {
-        @Override
-        public <V> V process(Reader reader, Writer writer, Object... operand) {
-            return null;
-        }
-    };
-
-    public static final Function<byte[], Object[]> decoder = bs -> new Object[0];
+    public static final VoidProcessor empty = __ -> { };
 
     private EmptyInstructions() {
     }
 
     @Override
-    public void processor(int opcode, Processor processor) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Processor processor(int opcode) {
+    public <V, C extends Context> Processor<V, C> processor(int opcode) {
         return empty;
-    }
-
-    @Override
-    public void decoder(int opcode, Function<byte[], Object[]> decoder) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Function<byte[], Object[]> decoder(int opcode) {
-        return decoder;
     }
 }

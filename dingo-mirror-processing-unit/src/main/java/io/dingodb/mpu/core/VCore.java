@@ -17,9 +17,9 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.api.InternalApi;
+import io.dingodb.mpu.instruction.Context;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.instruction.InternalInstructions;
 import io.dingodb.mpu.protocol.SelectReturn;
@@ -31,28 +31,28 @@ import io.dingodb.net.Message;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.dingodb.common.concurrent.Executors.execute;
 import static io.dingodb.mpu.Constant.NET;
 import static io.dingodb.mpu.protocol.SelectReturn.NO;
 import static io.dingodb.mpu.protocol.SelectReturn.OK;
-import static io.dingodb.mpu.protocol.SelectReturn.PRIMARY;
 
 @Slf4j
 public class VCore {
 
+    public final Core core;
     public final CoreMeta meta;
     public final Storage storage;
     public final CoreMeta firstMirror;
     public final CoreMeta secondMirror;
 
     final ExecutionUnit executionUnit;
-    final LinkedRunner runner;
+    final CoreListener.Notifier notifier;
 
     @Getter
     private CoreMeta primary;
@@ -61,17 +61,18 @@ public class VCore {
 
     private boolean close;
 
-    private List<CoreListener> listeners = new CopyOnWriteArrayList<>();
+    protected List<CoreListener> listeners = new ArrayList<>();
 
-    public VCore(CoreMeta meta, Storage storage) {
-        this(meta, null, null, storage);
+    protected VCore(Core core, CoreMeta meta, Storage storage) {
+        this(core, meta, null, null, storage);
     }
 
-    public VCore(CoreMeta meta, CoreMeta firstMirror, CoreMeta secondMirror, Storage storage) {
+    protected VCore(Core core, CoreMeta meta, CoreMeta firstMirror, CoreMeta secondMirror, Storage storage) {
         if (firstMirror != secondMirror && (firstMirror == null || secondMirror == null)) {
             throw new IllegalArgumentException("Mirror1 and mirror2 can't have just one that's not null.");
         }
-        this.runner = new LinkedRunner(meta.label);
+        this.core = core;
+        this.notifier = new CoreListener.Notifier(meta.label);
         this.meta = meta;
         this.firstMirror = firstMirror;
         this.secondMirror = secondMirror;
@@ -80,14 +81,24 @@ public class VCore {
     }
 
     public void start() {
-        log.info("Start core {}", meta.label);
+        log.info("Start core {} on {}.", meta.label, clock());
         if (firstMirror == null && secondMirror == null) {
             log.info("Core {} start without mirror.", meta.label);
             controlUnit = new ControlUnit(this, storage.clocked(), null, null);
             primary = meta;
-            listeners.forEach(__ -> execute(meta.label + "-primary", () -> __.primary(clock())));
+            notifier.notify(listeners, CoreListener.Event.PRIMARY, __ -> __.primary(clock()));
         }
         Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
+    }
+
+    public void restart() {
+        if (controlUnit != null) {
+            controlUnit.close();
+        }
+        if (mirrorChannel != null) {
+            mirrorChannel.close();
+        }
+        start();
     }
 
     protected void destroy() {
@@ -115,21 +126,26 @@ public class VCore {
     }
 
     public void registerListener(CoreListener listener) {
-        listeners.add(listener);
+        notifier.notify(CoreListener.Event.REGISTER, () -> {
+            listeners.add(listener);
+            if (isPrimary()) {
+                notifier.notify(CoreListener.Event.PRIMARY, () -> listener.primary(clock()), true);
+            }
+        }, false);
     }
 
     public void unregisterListener(CoreListener listener) {
-        listeners.remove(listener);
+        notifier.notify(CoreListener.Event.UNREGISTER, () -> listeners.remove(listener), false);
     }
 
     public void onControlUnitClose() {
         if (close) {
-            listeners.forEach(__ -> execute(meta.label + "-back", () -> __.back(controlUnit.clock)));
+            notifier.notify(listeners, CoreListener.Event.BACK, __ -> __.back(controlUnit.clock));
             return;
         }
         this.controlUnit = null;
         long clock = clock();
-        listeners.forEach(__ -> execute(meta.label + "-back", () -> __.back(clock)));
+        notifier.notify(listeners, CoreListener.Event.BACK, __ -> __.back(controlUnit.clock));
         selectPrimary();
     }
 
@@ -154,7 +170,7 @@ public class VCore {
             return NO;
         }
         if (controlUnit != null) {
-            return PRIMARY;
+            return SelectReturn.PRIMARY;
         }
         if (this.mirrorChannel != null) {
             return NO;
@@ -206,7 +222,7 @@ public class VCore {
                 firstChannel.assignControlUnit(controlUnit);
                 secondChannel.assignControlUnit(controlUnit);
                 this.controlUnit = controlUnit;
-                listeners.forEach(__ -> execute(meta.label + "-primary", () -> __.primary(clock)));
+                notifier.notify(listeners, CoreListener.Event.PRIMARY, __ -> __.primary(clock));
             } else {
                 if (firstReturn == OK) {
                     firstChannel.close();
@@ -246,7 +262,10 @@ public class VCore {
         if (close) {
             return NO;
         }
-        log.info("Receive primary sync channel from {}.", syncChannel.primary.label);
+        log.info(
+            "Receive primary sync channel from {}, remote clock: {}, local clock:{}.",
+            syncChannel.primary.label, syncChannel.clock, clock()
+        );
         SelectReturn selectReturn = askPrimary(syncChannel.primary, syncChannel.clock);
         if (selectReturn == OK) {
             log.info("Ask ok for {}.", syncChannel.primary.label);
@@ -269,14 +288,14 @@ public class VCore {
         channel.setCloseListener(ch -> {
             log.info("Mirror connection from {} closed.", syncChannel.primary.label);
             this.mirrorChannel = null;
-            listeners.forEach(__ -> execute(meta.label + "-lose-primary", () -> __.losePrimary(close ? -1 : clock())));
+            notifier.notify(listeners, CoreListener.Event.LOSE_PRIMARY, __ -> __.losePrimary(close ? -1 : clock()));
             execute(meta.label + "-select-primary", this::selectPrimary);
         });
         MirrorChannel mirrorChannel = new MirrorChannel(syncChannel.primary, this, clock(), channel);
         execute(primary.label + "-connected-primary", () -> {
             long clock = clock();
             channel.send(Message.EMPTY);
-            listeners.forEach(__ -> execute(meta.label + "-on-mirror", () -> __.mirror(clock)));
+            notifier.notify(listeners, CoreListener.Event.MIRROR, __ -> __.mirror(clock));
             log.info("Connected primary {} success on {}.", syncChannel.primary.label, clock);
             if (close) {
                 mirrorChannel.close();
@@ -318,17 +337,33 @@ public class VCore {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        PhaseAck ack = new PhaseAck();
-        runner.forceFollow(() -> controlUnit.process(ack, (byte) instructions, (short) opcode, operand));
-        return ack;
+        return controlUnit.process((byte) instructions, (short) opcode, operand);
     }
 
     public <V> V view(int instructions, int opcode, Object... operand) {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        try (Reader reader = storage.reader()) {
-            return InstructionSetRegistry.instructions(instructions).process(reader, null, opcode, operand);
+        try (
+            Reader reader = storage.reader();
+            Context context = new Context() {
+                @Override
+                public Reader reader() {
+                    return reader;
+                }
+
+                @Override
+                public Object[] operand() {
+                    return operand;
+                }
+
+                @Override
+                public <O> O operand(int index) {
+                    return (O) operand[index];
+                }
+            }
+        ) {
+            return InstructionSetRegistry.instructions(instructions).process(opcode, context);
         }
     }
 

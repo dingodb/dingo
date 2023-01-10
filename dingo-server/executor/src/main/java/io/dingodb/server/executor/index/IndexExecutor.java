@@ -28,9 +28,9 @@ import io.dingodb.meta.Part;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
 import io.dingodb.server.api.TableApi;
-import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.client.connector.impl.ServiceConnector;
 import io.dingodb.server.client.meta.service.MetaServiceClient;
+import io.dingodb.server.client.meta.service.MetaServiceClientProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,13 +42,13 @@ import java.util.NavigableMap;
 
 public class IndexExecutor {
 
-    private CommonId tableId;
+    private static final MetaServiceClient metaService = MetaServiceClientProvider.META_SERVICE_CLIENT;
 
-    private MetaServiceClient metaServiceClient;
+    private CommonId tableId;
 
     private final byte deleteKey = -1;
 
-    private final byte unfinishKey = 0;
+    private final byte unfinishedKey = 0;
 
     private final byte finishedKey = 1;
 
@@ -72,12 +72,6 @@ public class IndexExecutor {
 
     public IndexExecutor(CommonId tableId) {
         this.tableId = tableId;
-        this.metaServiceClient = new MetaServiceClient(CoordinatorConnector.getDefault());
-    }
-
-    public IndexExecutor(CommonId tableId, MetaServiceClient metaServiceClient) {
-        this.tableId = tableId;
-        this.metaServiceClient = metaServiceClient;
     }
 
     public boolean insertIndex(Object[] row, TableDefinition tableDefinition, String indexName) {
@@ -86,6 +80,10 @@ public class IndexExecutor {
 
     public boolean deleteFromIndex(Object[] row, TableDefinition tableDefinition, String indexName) {
         return opIndexData(row, tableDefinition, indexName, -1);
+    }
+
+    public List<Object[]> getDeleteRecords() {
+        return getRecordsByPrefix(new byte[] {deleteKey});
     }
 
     private boolean opIndexData(Object[] row, TableDefinition tableDefinition, String indexName, int op) {
@@ -112,7 +110,7 @@ public class IndexExecutor {
         }
         if (tableApi == null) {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
             }
             tableApi = ApiRegistry.getDefault().proxy(TableApi.class, serviceConnector);
         }
@@ -131,7 +129,7 @@ public class IndexExecutor {
             executorApi = indexExecutorApiMap.get(indexName);
         } else {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
                 if (serviceConnector == null) {
                     throw new RuntimeException("table " + tableId + "not exist");
                 }
@@ -193,7 +191,7 @@ public class IndexExecutor {
     }
 
     public KeyValue getUnfinishKV(KeyValue oriKV) {
-        return getNewKV(oriKV, unfinishKey);
+        return getNewKV(oriKV, unfinishedKey);
     }
 
     public KeyValue getFinishedKV(KeyValue oriKV) {
@@ -215,7 +213,7 @@ public class IndexExecutor {
         int version = tableDefinition.getVersion();
         RangeStrategy rangeStrategy;
         if (partitions == null) {
-            partitions = metaServiceClient.getParts(tableId);
+            partitions = metaService.getParts(tableId);
         }
         if (rangeStrategyMap.containsKey(version)) {
             rangeStrategy = rangeStrategyMap.get(version);
@@ -268,7 +266,7 @@ public class IndexExecutor {
         }
         if (tableApi == null) {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
             }
             tableApi = ApiRegistry.getDefault().proxy(TableApi.class, serviceConnector);
         }
@@ -287,7 +285,7 @@ public class IndexExecutor {
             executorApi = indexExecutorApiMap.get(indexName);
         } else {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
                 if (serviceConnector == null) {
                     throw new RuntimeException("table " + tableId + " not exist");
                 }
@@ -299,14 +297,14 @@ public class IndexExecutor {
 
         List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, indexId, indexKey);
         List<Object[]> records = new ArrayList<>();
-        for(KeyValue keyValue : keyValues) {
+        for (KeyValue keyValue : keyValues) {
             byte[] key;
             try {
                 key = indexCodec.decodeKeyBytes(keyValue);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            byte[] finishedKey = new byte[key.length+1];
+            byte[] finishedKey = new byte[key.length + 1];
             finishedKey[0] = this.finishedKey;
             System.arraycopy(key, 0, finishedKey, 1, key.length);
             ExecutorApi tableExecutorApi = getExecutor(finishedKey, tableDefinition);
@@ -326,11 +324,11 @@ public class IndexExecutor {
     }
 
     public List<Object[]> getUnfinishRecords() {
-        return getRecordsByPrefix(new byte[] {unfinishKey});
+        return getRecordsByPrefix(new byte[] {unfinishedKey});
     }
 
     private List<Object[]> getRecordsByPrefix(byte[] prefix) {
-        TableDefinition tableDefinition = metaServiceClient.getTableDefinition(tableId);
+        TableDefinition tableDefinition = metaService.getTableDefinition(tableId);
         int version = tableDefinition.getVersion();
         KeyValueCodec codec;
         if (codecMap.containsKey(version)) {
@@ -339,13 +337,13 @@ public class IndexExecutor {
             codec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
             codecMap.put(version, codec);
         }
-        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaServiceClient.getParts(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaService.getParts(tableId);
         List<Object[]> records = new ArrayList<>();
-        for(ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
+        for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
             ServiceConnector partConnector = new ServiceConnector(tableId, partitions.get(partId).getReplicates());
             ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
             List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, tableId, prefix);
-            for(KeyValue keyValue : keyValues) {
+            for (KeyValue keyValue : keyValues) {
                 byte[] key = keyValue.getKey();
                 byte[] oriKey = new byte[key.length - prefix.length];
                 System.arraycopy(key, prefix.length, oriKey, 0, oriKey.length);
@@ -363,7 +361,7 @@ public class IndexExecutor {
     public List<KeyValue> getIndexKeyValue(String indexName) {
         if (tableApi == null) {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
                 if (serviceConnector == null) {
                     throw new RuntimeException("table " + tableId + " not exist");
                 }
@@ -385,7 +383,7 @@ public class IndexExecutor {
             executorApi = indexExecutorApiMap.get(indexName);
         } else {
             if (serviceConnector == null) {
-                serviceConnector = metaServiceClient.getTableConnector(tableId);
+                serviceConnector = metaService.getTableConnector(tableId);
                 if (serviceConnector == null) {
                     throw new RuntimeException("table " + tableId + " not exist");
                 }

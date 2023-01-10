@@ -26,28 +26,7 @@ import lombok.ToString;
 @ToString
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class SecurityConfiguration {
-    private static final SecurityConfiguration INSTANCE;
-    static {
-        try {
-            DingoConfiguration configuration = DingoConfiguration.instance();
-            if (configuration != null) {
-                DingoConfiguration.instance().setSecurity(SecurityConfiguration.class);
-                INSTANCE = DingoConfiguration.instance().getSecurity();
-            } else {
-                INSTANCE = new SecurityConfiguration();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static SecurityConfiguration instance() {
-        return INSTANCE;
-    }
-
-    private SecurityConfiguration() {
-    }
-
     private CipherConfiguration cipher;
     private boolean verify = true;
+    private boolean auth = true;
 }

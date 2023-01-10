@@ -30,7 +30,7 @@ public interface StorageApi {
 
     @ApiDeclaration
     default String transferBackup(CommonId coreId) {
-        return InternalApi.core(coreId).getVCore().storage.receiveBackup();
+        return InternalApi.core(coreId).get().getStorage().receiveBackup();
     }
 
     static String transferBackup(Location location, CommonId coreId) {
@@ -39,7 +39,7 @@ public interface StorageApi {
 
     @ApiDeclaration
     default void applyBackup(CommonId coreId) {
-        InternalApi.core(coreId).getVCore().storage.applyBackup();
+        InternalApi.core(coreId).get().getStorage().applyBackup();
     }
 
 }

@@ -22,7 +22,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import io.dingodb.common.config.CipherConfiguration;
-import io.dingodb.common.config.SecurityConfiguration;
+import io.dingodb.common.config.DingoConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
@@ -38,7 +38,7 @@ public class TokenManager {
 
     static {
         try {
-            CipherConfiguration configuration = SecurityConfiguration.instance().getCipher();
+            CipherConfiguration configuration = DingoConfiguration.instance().getCipher();
             String jksPath = configuration.getKeyPath();
             String jksPassword = configuration.getKeyPass();
             String certAlias = configuration.getAlias();

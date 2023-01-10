@@ -24,7 +24,6 @@ import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.api.AuthProxyApi;
 import io.dingodb.net.netty.api.HandshakeApi;
 import io.dingodb.net.netty.api.HandshakeApi.Handshake;
-import io.dingodb.net.service.AuthService;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.channel.socket.SocketChannel;
@@ -36,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static io.dingodb.common.codec.PrimitiveCodec.readString;
+import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.net.netty.Constant.API_T;
 import static io.dingodb.net.netty.Constant.AUTH;
 import static io.dingodb.net.netty.Constant.COMMAND_T;
@@ -92,15 +91,12 @@ public class Connection {
 
     private void removeChannel(long channelId) {
         channels.remove(channelId);
-        if (log.isDebugEnabled()) {
-            log.debug("Removed channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
-        }
+        debug(log, "Removed channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
     }
 
     protected Channel createChannel(long channelId) {
-        if (log.isDebugEnabled()) {
-            log.debug("Create channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
-        }
+        debug(log, "Create channel {} to remote \"{}\". # of channels: {}", channelId, remote.url(), channels.size());
+
         return channels.computeIfAbsent(
             channelId,
             id -> new Channel(channelId, this, new LinkedRunner(fmtName(remote.url(), channelId)), this::removeChannel)
@@ -119,7 +115,7 @@ public class Connection {
 
     public void handshake() {
         ApiRegistryImpl.instance().proxy(HandshakeApi.class, channel).handshake(null, Handshake.INSTANCE);
-        log.info("Connection open, remote: [{}]", remote.url());
+        log.info("Connection handshake success, remote: [{}]", remote.url());
     }
 
     public void handshake(ByteBuffer message) {
@@ -132,12 +128,7 @@ public class Connection {
     }
 
     public void auth() {
-        Map<String, Object> authentications = new HashMap<>();
-        for (AuthService.Provider authServiceProvider : AuthProxyApi.serviceProviders) {
-            AuthService<Object> authService = authServiceProvider.get();
-            authentications.put(authService.tag(), authService.createAuthentication());
-        }
-        authContent = ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, authentications);
+        authContent = AuthProxyApi.auth(channel);
         log.info("Connection auth success, remote: [{}]", remote.url());
         heartbeatFuture = Executors.scheduleWithFixedDelayAsync(
             String.format("%s-heartbeat", remote.url()), this::sendHeartbeat, 0, 1, SECONDS
@@ -183,6 +174,7 @@ public class Connection {
     }
 
     public void close() {
+        debug(log, "Close connection to [{}].", remote);
         if (heartbeatFuture != null) {
             heartbeatFuture.cancel(true);
         }
@@ -198,6 +190,7 @@ public class Connection {
         closeListeners.forEach(NoBreakFunctions.wrap(listener -> {
             listener.accept(this);
         }));
+        debug(log, "Closed connection to [{}].", remote);
     }
 
 }

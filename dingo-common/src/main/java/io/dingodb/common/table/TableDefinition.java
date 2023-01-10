@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.AllArgsConstructor;
@@ -46,7 +47,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-@JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop"})
+@JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop", "engine"})
 @EqualsAndHashCode
 @AllArgsConstructor
 public class TableDefinition {
@@ -79,6 +80,11 @@ public class TableDefinition {
     @Getter
     @Setter
     private PartitionDefinition partDefinition;
+
+    @JsonProperty("engine")
+    @Getter
+    @Setter
+    private String engine;
 
     @JsonProperty("prop")
     @Getter

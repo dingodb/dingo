@@ -18,47 +18,40 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.mpu.instruction.Instruction;
-import io.dingodb.mpu.storage.Reader;
-import io.dingodb.mpu.storage.Writer;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.CompletableFuture;
 
 import static io.dingodb.mpu.instruction.InstructionSetRegistry.instructions;
 
 @Slf4j
 class ExecutionUnit {
 
-    public final VCore core;
-    public final LinkedRunner executeRunner;
+    protected final VCore core;
+    protected final LinkedRunner executeRunner;
 
     ExecutionUnit(VCore core) {
         this.core = core;
         this.executeRunner = new LinkedRunner("execute-" + core.meta.label);
     }
 
-    public void execute(Instruction instruction) {
-        executeRunner.forceFollow(() -> execute0(instruction));
+    protected void execute(Instruction instruction) {
+        execute0(instruction);
     }
 
-    public <V> void execute(Instruction instruction, CompletableFuture<V> future) {
-        executeRunner.forceFollow(() -> future.complete(execute0(instruction)));
+    protected void execute(Instruction instruction, PhaseAck ack) {
+        try {
+            ack.completeResult(execute0(instruction));
+        } catch (Exception e) {
+            ack.completeExceptionally(e);
+            core.restart();
+        }
     }
 
     private <V> V execute0(Instruction instruction) {
-        // todo
-        //if (instruction.instructions == InternalInstructions.id) {
-        //    InternalInstructions.process(core, instruction.opcode, instruction.operand);
-        //    return null;
-        //}
-        try (Reader reader = core.storage.reader();) {
-            Writer writer = core.storage.writer(instruction);
-            V result = instructions(instruction.instructions).process(reader, writer, instruction);
-            core.storage.flush(writer);
+        // todo exec internal instructions
+        try (Context context = new Context(core.core, instruction)) {
+            V result = instructions(instruction.instructions).process(instruction, context);
+            core.storage.flush(context.writer());
             return result;
-        } catch (Exception e) {
-            instruction.future.completeExceptionally(e);
         }
-        return null;
     }
 }

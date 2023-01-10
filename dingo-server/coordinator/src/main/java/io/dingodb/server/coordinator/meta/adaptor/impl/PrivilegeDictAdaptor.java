@@ -18,8 +18,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.PrivilegeDict;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +30,7 @@ import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class PrivilegeDictAdaptor extends BaseAdaptor<PrivilegeDict> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.data, PRIVILEGE_IDENTIFIER.privilegeDict);
@@ -148,9 +148,9 @@ public class PrivilegeDictAdaptor extends BaseAdaptor<PrivilegeDict> {
         ));
     }
 
-    public PrivilegeDictAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(PrivilegeDict.class, this);
+    @Override
+    public synchronized void reload() {
+        super.reload();
         if (this.metaMap.isEmpty()) {
             for (Map.Entry<String, CommonId> entry : PRIVILEGE_DICT.entrySet()) {
                 PrivilegeDict privilegeDict = PrivilegeDict.builder()
@@ -164,9 +164,14 @@ public class PrivilegeDictAdaptor extends BaseAdaptor<PrivilegeDict> {
     }
 
     @Override
+    public Class<PrivilegeDict> adaptFor() {
+        return PrivilegeDict.class;
+    }
+
+    @Override
     protected CommonId newId(PrivilegeDict meta) {
         CommonId id = new CommonId(
-            META_ID.type(), META_ID.identifier(), ROOT_DOMAIN, metaStore.generateSeq(SEQ_KEY), 1
+            META_ID.type(), META_ID.identifier(), ROOT_DOMAIN, metaStore().generateSeq(SEQ_KEY), 1
         );
         return id;
     }
@@ -174,14 +179,6 @@ public class PrivilegeDictAdaptor extends BaseAdaptor<PrivilegeDict> {
     @Override
     public CommonId metaId() {
         return META_ID;
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<PrivilegeDict, PrivilegeDictAdaptor> {
-        @Override
-        public PrivilegeDictAdaptor create(MetaStore metaStore) {
-            return new PrivilegeDictAdaptor(metaStore);
-        }
     }
 
     public Map<String, CommonId> getPrivilegeDict() {

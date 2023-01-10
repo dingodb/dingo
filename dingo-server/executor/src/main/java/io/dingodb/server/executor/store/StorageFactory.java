@@ -19,6 +19,7 @@ package io.dingodb.server.executor.store;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.mpu.storage.mem.MemStorage;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
+import io.dingodb.server.executor.config.Configuration;
 
 import java.nio.file.Path;
 
@@ -28,7 +29,9 @@ public final class StorageFactory {
     }
 
     public static Storage create(String label, Path path) throws Exception {
-        //return new MemStorage();
+        if (Configuration.isMem()) {
+            return new MemStorage();
+        }
         return new RocksStorage(label, path);
     }
 

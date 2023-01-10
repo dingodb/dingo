@@ -93,7 +93,7 @@ public class IdentityAuthService implements AuthService<Authentication> {
     }
 
     @Override
-    public Authentication createAuthentication() {
+    public Authentication createCertificate() {
         String user = env.getUser();
         String host = getHost();
         String password = env.getPassword();

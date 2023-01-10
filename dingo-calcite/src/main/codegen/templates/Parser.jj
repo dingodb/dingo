@@ -7362,6 +7362,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ASYMMETRIC: "ASYMMETRIC" >
 |   < AT: "AT" >
 |   < ATOMIC: "ATOMIC" >
+|   < ATSPLIT: "@" >
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >
 |   < AUTHORIZATION: "AUTHORIZATION" >
@@ -7514,6 +7515,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < END_EXEC: "END-EXEC" >
 |   < END_FRAME: "END_FRAME" >
 |   < END_PARTITION: "END_PARTITION" >
+|   < ENGINE: "ENGINE" >
 |   < EPOCH: "EPOCH" >
 |   < EQUALS: "EQUALS" >
 |   < ERROR: "ERROR" >
@@ -7539,6 +7541,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < FIRST_VALUE: "FIRST_VALUE">
 |   < FLOAT: "FLOAT" >
 |   < FLOOR: "FLOOR" >
+|   < FLUSH: "FLUSH" >
 |   < FOLLOWING: "FOLLOWING" >
 |   < FOR: "FOR" >
 |   < FORMAT: "FORMAT" >
@@ -7562,6 +7565,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GOTO: "GOTO" >
 |   < GRANT: "GRANT" >
 |   < GRANTED: "GRANTED" >
+|   < GRANTS: "GRANTS" >
 |   < GROUP: "GROUP" >
 |   < GROUP_CONCAT: "GROUP_CONCAT" >
 |   < GROUPING: "GROUPING" >
@@ -7572,6 +7576,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < HOP: "HOP" >
 |   < HOUR: "HOUR" >
 |   < HOURS: "HOURS" >
+|   < IDENTIFIED: "IDENTIFIED" >
 |   < IDENTITY: "IDENTITY" >
 |   < IGNORE: "IGNORE" >
 |   < ILIKE: "ILIKE" >
@@ -7583,6 +7588,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < INCLUDE: "INCLUDE" >
 |   < INCLUDING: "INCLUDING" >
 |   < INCREMENT: "INCREMENT" >
+|   < INDEX: "INDEX" >
 |   < INDICATOR: "INDICATOR" >
 |   < INITIAL: "INITIAL" >
 |   < INITIALLY: "INITIALLY" >
@@ -7734,6 +7740,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PASCAL: "PASCAL" >
 |   < PASSING: "PASSING" >
 |   < PASSTHROUGH: "PASSTHROUGH" >
+|   < PASSWORD: "PASSWORD" >
 |   < PAST: "PAST" >
 |   < PATH: "PATH" >
 |   < PATTERN: "PATTERN" >
@@ -7784,6 +7791,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REGR_SYY: "REGR_SYY" >
 |   < RELATIVE: "RELATIVE" >
 |   < RELEASE: "RELEASE" >
+|   < RELOAD: "RELOAD" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
 |   < RESET: "RESET" >
@@ -7934,6 +7942,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TABLE_NAME: "TABLE_NAME" >
 |   < TABLESAMPLE: "TABLESAMPLE" >
 |   < TEMPORARY: "TEMPORARY" >
+|   < THAN: "THAN" >
 |   < THEN: "THEN" >
 |   < TIES: "TIES" >
 |   < TIME: "TIME" >
@@ -7965,14 +7974,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TRUE: "TRUE" >
 |   < TRUNCATE: "TRUNCATE" >
 |   < TTL: "TTL" >
-|   < FLUSH: "FLUSH" >
-|   < GRANTS: "GRANTS" >
-|   < PASSWORD: "PASSWORD" >
-|   < IDENTIFIED: "IDENTIFIED" >
-|   < INDEX: "INDEX" >
-|   < RELOAD: "RELOAD" >
-|   < ATSPLIT: "@" >
-|   < THAN: "THAN" >
 |   < TUMBLE: "TUMBLE" >
 |   < TYPE: "TYPE" >
 |   < UESCAPE: "UESCAPE" >

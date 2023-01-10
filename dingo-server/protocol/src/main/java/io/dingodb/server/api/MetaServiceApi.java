@@ -23,6 +23,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.Part;
 import io.dingodb.server.protocol.meta.Schema;
+import io.dingodb.server.protocol.meta.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public interface MetaServiceApi {
     CommonId createSubMetaService(CommonId schemaId, String name);
 
     @ApiDeclaration
-    Map<String, Schema> getSubSchemas(CommonId schemaId);
+    List<Schema> getSubSchemas(CommonId schemaId);
 
     @ApiDeclaration
     Schema getSubSchema(CommonId schemaId, String name);
@@ -57,7 +58,16 @@ public interface MetaServiceApi {
     CommonId getTableId(CommonId schemaId, @NonNull String tableName);
 
     @ApiDeclaration
+    List<Table> getTableMetas(CommonId schemaId);
+
+    @ApiDeclaration
     Map<String, TableDefinition> getTableDefinitions(CommonId schemaId);
+
+    @ApiDeclaration
+    Table getTableMeta(CommonId schemaId, String name);
+
+    @ApiDeclaration
+    Table getTableMeta(CommonId tableId);
 
     @ApiDeclaration
     TableDefinition getTableDefinition(CommonId schemaId, @NonNull String name);

@@ -23,6 +23,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -301,7 +302,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         boolean includeEnd) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
 
-        if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
+        if (endPrimaryKey != null && !isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
             throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
         }
 
@@ -316,7 +317,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         byte[] endPrimaryKey,
         boolean includeStart,
         boolean includeEnd) {
-        if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
+        if (endPrimaryKey != null || !isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
             throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
         }
 
@@ -630,8 +631,12 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     private boolean isKeysOnSamePart(List<byte[]> keyArrayList) {
-        if (keyArrayList == null || keyArrayList.size() < 1) {
+        if (keyArrayList == null || keyArrayList.isEmpty()) {
             return false;
+        }
+
+        if (keyArrayList.size() == 2 && keyArrayList.contains(null)) {
+            return true;
         }
 
         Part part = getPartByPrimaryKey(keyArrayList.get(0));
@@ -668,10 +673,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
             KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
 
-            ExecutorApi unfinishExecutorcApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
-            ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+            ExecutorApi unfinishedExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
 
-            if (!unfinishExecutorcApi.upsertKeyValue(null, null, id, unfinishKV)) {
+            if (!unfinishedExecutorApi.upsertKeyValue(null, null, id, unfinishKV)) {
                 return false;
             }
 
@@ -686,10 +691,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             if (currentTd.getVersion() != tableDefinitionVersion) {
                 throw new RuntimeException("table definition changed");
             }
-            if (!finishedExecutorcApi.upsertKeyValue(null, null, id, finishedKV)) {
+            if (!finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV)) {
                 return false;
             }
-            if (!unfinishExecutorcApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+            if (!unfinishedExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
                 return false;
             }
             return true;
@@ -841,5 +846,67 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             throw new RuntimeException("no index found");
         }
         return indexExecutor.getRowByIndex(row, tableDefinition, indices.get(0).getName());
+    }
+
+    public void reboot() {
+        if (!tableSidebar.getStatus().equals(TableStatus.STARTING)) {
+            throw new RuntimeException("Table is not in starting status");
+        }
+
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+        if (tableDefinition.getIndexes() == null || tableDefinition.getIndexes().isEmpty()) {
+            return;
+        }
+
+        //delete deleteindex
+        tableDefinition.getDeletedIndexes().forEach(tableSidebar::dropIndex);
+
+        Set<String> indexNames = tableDefinition.getIndexes().keySet();
+        List<Object[]> deleteRecords = indexExecutor.getDeleteRecords();
+        for (Object[] deleteRow : deleteRecords) {
+            KeyValue oriKV = indexExecutor.getOriKV(deleteRow, tableDefinition);
+            KeyValue deleteKV = indexExecutor.getDeleteKV(oriKV);
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+            ExecutorApi deleteExecutorApi = indexExecutor.getExecutor(deleteKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+
+            for (String indexName : indexNames) {
+                indexExecutor.deleteFromIndex(deleteRow, tableDefinition, indexName);
+            }
+            finishedExecutorApi.delete(null, null, id, finishedKV.getPrimaryKey());
+            deleteExecutorApi.delete(null, null, id, deleteKV.getPrimaryKey());
+        }
+
+        List<Object[]> unfinishRecords = indexExecutor.getUnfinishRecords();
+        for (Object[] unfinishRow : unfinishRecords) {
+            KeyValue oriKV = indexExecutor.getOriKV(unfinishRow, tableDefinition);
+
+            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+
+            ExecutorApi unfinishExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+
+            for (String indexName : indexNames) {
+                indexExecutor.insertIndex(unfinishRow, tableDefinition, indexName);
+            }
+            finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV);
+            unfinishExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey());
+        }
+
+        List<String> busyIndexNames = tableDefinition.getBusyIndexes();
+        if (busyIndexNames.size() > 0) {
+            List<Object[]> finishedRecords = indexExecutor.getFinishedRecords();
+            for (String indexName : busyIndexNames) {
+                for (Object[] row : finishedRecords) {
+                    indexExecutor.insertIndex(row, tableDefinition, indexName);
+                }
+                Index index = tableDefinition.getIndexes().get(indexName);
+                index.setStatus(IndexStatus.NORMAL);
+                tableDefinition.removeIndex(indexName);
+                tableDefinition.addIndex(index);
+                tableSidebar.updateDefinition(tableDefinition);
+            }
+        }
     }
 }

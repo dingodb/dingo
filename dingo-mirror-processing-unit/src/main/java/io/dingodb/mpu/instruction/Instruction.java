@@ -18,16 +18,13 @@ package io.dingodb.mpu.instruction;
 
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.mpu.Constant;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 
 @ToString
 @EqualsAndHashCode
-@AllArgsConstructor
 public class Instruction {
 
     public static final int FIXED_LEN = Long.BYTES + Byte.BYTES + Short.BYTES;
@@ -36,8 +33,6 @@ public class Instruction {
     public final byte instructions;
     public final short opcode;
     public final Object[] operand;
-
-    public final transient CompletableFuture<Object> future;
 
     public Instruction(long clock, byte instructions, short opcode) {
         this(clock, instructions, opcode, new Object[0]);
@@ -48,7 +43,6 @@ public class Instruction {
         this.instructions = instructions;
         this.opcode = opcode;
         this.operand = operand;
-        this.future = new CompletableFuture<>();
     }
 
     public byte[] encode() {
@@ -61,11 +55,7 @@ public class Instruction {
     public static Instruction decode(byte[] bytes) {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.get();
-        long sequence = buffer.getLong();
-        byte namespace = buffer.get();
-        short opcode = buffer.getShort();
-        Object[] operand = ProtostuffCodec.read(buffer);
-        return new Instruction(sequence, namespace, opcode, operand, null);
+        return new Instruction(buffer.getLong(), buffer.get(), buffer.getShort(), ProtostuffCodec.read(buffer));
     }
 
 

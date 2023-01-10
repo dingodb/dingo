@@ -18,180 +18,121 @@ package io.dingodb.server.client.connector.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.error.CommonError;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
-import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.server.api.ServiceConnectApi;
+import io.dingodb.net.service.ListenService;
 import io.dingodb.server.client.connector.Connector;
-import io.dingodb.server.protocol.ListenerTags;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.common.util.DebugLog.debug;
 
 @Slf4j
 public class ServiceConnector implements Connector, Supplier<Location> {
 
-    private static final NetService netService = NetService.getDefault();
-    private static final ApiRegistry apiRegistry = ApiRegistry.getDefault();
+    public static final  String MPU_PRIMARY = "MPU-PRIMARY";
 
+    private final LinkedRunner runner;
     private final CommonId serviceId;
-    private final AtomicReference<Channel> leaderChannel = new AtomicReference<>();
+    private final AtomicReference<Location> leader = new AtomicReference<>();
 
-    @Getter
-    private final Set<Location> addresses = new HashSet<>();
-    private final Map<Location, Channel> listenLeaderChannels = new ConcurrentHashMap<>();
+    private Set<Location> addresses = new CopyOnWriteArraySet<>();
+    private final Map<Location, ListenService.Future> listenedAddresses = new ConcurrentHashMap<>();
 
     public ServiceConnector(CommonId serviceId, Set<Location> addresses) {
         this.serviceId = serviceId;
         this.addresses.addAll(addresses);
+        this.runner = new LinkedRunner("service-connector-" + serviceId);
         refresh();
+    }
+
+    public Set<Location> getAddresses() {
+        return new HashSet<>(addresses);
+    }
+
+    @Override
+    public void close() {
+        listenedAddresses.values().forEach(ListenService.Future::cancel);
+        listenedAddresses.clear();
     }
 
     @Override
     public Channel newChannel() {
-        return netService.newChannel(get());
+        return NetService.getDefault().newChannel(get());
     }
 
     @Override
     public boolean verify() {
-        return leaderChannel.get() != null && leaderChannel.get().status() == Channel.Status.ACTIVE;
+        return !leader.compareAndSet(null, null);
     }
 
     @Override
     public void refresh() {
-        Executors.submit("service-connector-refresh", this::initChannels);
+        addresses.forEach(location -> runner.forceFollow(() -> this.listen(location)));
     }
 
     @Override
     public Location get() {
         int times = 10;
-        int sleep = 500;
+        int sleep = 1000;
         while (!verify() && times-- > 0) {
             try {
                 Thread.sleep(sleep);
-                refresh();
-                sleep += sleep;
+                runner.forceFollow(this::refresh);
             } catch (InterruptedException e) {
-                log.error("Wait service connector ready, but interrupted.");
+                log.error("Wait service [{}] connector ready, but interrupted.", serviceId);
             }
         }
         if (!verify()) {
             CommonError.EXEC_TIMEOUT.throwFormatError("wait connector available", Thread.currentThread().getName(), "");
         }
-        return leaderChannel.get().remoteLocation();
+        return leader.get();
     }
 
-    private void initChannels() {
-        for (Location address : addresses) {
-            if (verify()) {
-                return;
-            }
-            try {
-                Channel channel;
-                Location leaderAddress = apiRegistry.proxy(ServiceConnectApi.class, () -> address).leader(serviceId);
-                channel = netService.newChannel(leaderAddress);
-                connectedLeader(channel);
-                return;
-            } catch (Exception e) {
-                log.error("Open service channel error, address: {}", address, e);
-            }
+    private void listen(Location location) {
+        if (listenedAddresses.containsKey(location)) {
+            listenedAddresses.get(location).cancel();
         }
-    }
-
-    private void connected(Message message, Channel channel) {
-        log.info("Connected service [{}] channel.", channel.remoteLocation());
-        addresses.add(channel.remoteLocation());
-        channel.setCloseListener(this::listenClose);
-        channel.setMessageListener(this::listenLeader);
-    }
-
-    private void connectedLeader(Channel channel) {
-        try {
-            if (!leaderChange(channel)) {
-                channel.close();
-                return;
-            }
-            addresses.addAll(netService.apiRegistry()
-                .proxy(ServiceConnectApi.class, channel::remoteLocation).getAll(serviceId).stream()
-                .map(location -> new Location(location.getHost(), location.getPort()))
-                .collect(Collectors.toList()));
-            addresses.stream()
-                .filter(address -> !address.equals(channel.remoteLocation()))
-                .forEach(address -> Executors.submit("ServiceConnector", () -> listenLeaderChannels.computeIfAbsent(
-                    address,
-                    wrap(this::connectFollow, e -> log.error("Open follow channel error, address: {}", address, e)))
-                ));
-            log.info("Connected service leader success, remote: [{}]", channel.remoteLocation());
-        } catch (Exception e) {
-            log.error("Connected service leader error, address: {}", channel, e);
-        }
-    }
-
-    private @NonNull Channel connectFollow(Location address) {
-        Channel ch = netService.newChannel(address);
-        ch.setMessageListener(this::connected);
-        ch.send(new Message(ListenerTags.LISTEN_SERVICE_LEADER, ByteArrayUtils.EMPTY_BYTES));
-        log.info("Open service channel, address: [{}]", address);
-        return ch;
-    }
-
-    private void closeChannel(Channel channel) {
-        try {
-            channel.close();
-        } catch (Exception e) {
-            log.error("Close service channel error, address: [{}].", channel.remoteLocation(), e);
-        }
-    }
-
-    private void listenLeader(Message message, Channel channel) {
-        log.info("Receive leader message from [{}]", channel.remoteLocation().url());
-        leaderChange(channel);
-    }
-
-    private synchronized boolean leaderChange(Channel channel) {
-        Channel oldLeader = this.leaderChannel.get();
-        if (oldLeader != null && oldLeader.isActive() && channel.remoteLocation().equals(oldLeader.remoteLocation())) {
-            log.info("Service leader not changed, remote: {}", channel.remoteLocation());
-            return false;
-        }
-        if (!this.leaderChannel.compareAndSet(oldLeader, channel)) {
-            if (!this.leaderChannel.compareAndSet(null, channel)) {
-                return false;
-            }
-        }
-        log.info("Service leader channel changed, new leader remote: [{}], old leader remote: [{}]",
-            channel.remoteLocation(),
-            oldLeader == null ? null : oldLeader.remoteLocation()
+        ListenService.Future future = ListenService.getDefault().listen(
+            serviceId,
+            MPU_PRIMARY,
+            location,
+            msg -> runner.forceFollow(() -> onCallback(msg, location)),
+            () -> runner.forceFollow(() -> onClose(location))
         );
-
-        if (oldLeader != null) {
-            closeChannel(oldLeader);
-        }
-        channel.setCloseListener(this::listenClose);
-        return true;
+        listenedAddresses.put(location, future);
     }
 
-    private void listenClose(Channel channel) {
-        this.listenLeaderChannels.remove(channel.remoteLocation());
-        log.info("Service channel closed, remote: [{}]", channel.remoteLocation());
-        if (this.leaderChannel.compareAndSet(channel, null)) {
-            log.info("Service leader channel closed, remote: [{}].", channel.remoteLocation());
+    private void onClose(Location location) {
+        listenedAddresses.remove(location);
+        debug(log, "Service [{}] channel closed, remote: [{}]", serviceId, location);
+        if (leader.compareAndSet(location, null)) {
+            debug(log, "Service [{}] leader channel closed, remote: [{}].", serviceId, location);
+        }
+    }
+
+    private void onCallback(Message message, Location location) {
+        Location leader = this.leader.get();
+        if (location.equals(leader)) {
+            // todo on change service distribute
+            //this.addresses = ProtostuffCodec.read(message.content());
+            debug(log, "Service [{}] update locations to : {}", serviceId, addresses);
+        } else {
+            this.leader.set(location);
+            debug(log,
+                "Service [{}] leader channel changed, new leader remote: [{}], old leader remote: [{}]",
+                serviceId, location, leader
+            );
         }
     }
 

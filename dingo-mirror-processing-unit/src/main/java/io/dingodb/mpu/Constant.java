@@ -21,6 +21,9 @@ import io.dingodb.net.api.ApiRegistry;
 
 public class Constant {
 
+    private Constant() {
+    }
+
     // net service
     public static final NetService NET = NetService.getDefault();
     public static final ApiRegistry API = ApiRegistry.getDefault();
@@ -28,7 +31,7 @@ public class Constant {
     // inner tag
     public static final byte T_INSTRUCTION = 1;
     public static final byte T_SYNC = 2;
-    public static final byte T_EXECUTE_CLOCK = 3;
+    public static final byte T_EXECUTED_CLOCK = 3;
     public static final byte T_EXECUTE_INSTRUCTION = 4;
 
     // storage key

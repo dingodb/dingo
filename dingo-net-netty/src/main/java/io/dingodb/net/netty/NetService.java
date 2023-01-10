@@ -21,6 +21,8 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.net.NetError;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
+import io.dingodb.net.netty.service.FileReceiver;
+import io.dingodb.net.netty.service.ListenService;
 import io.dingodb.net.service.FileTransferService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -47,6 +49,8 @@ public class NetService implements io.dingodb.net.NetService {
     private final String hostname = NetConfiguration.host();
     @Delegate
     private final TagRegistry tagRegistry = TagRegistry.INSTANCE;
+    @Delegate
+    private final ApiRegistry apiRegistry = ApiRegistryImpl.INSTANCE;
     private final Map<Location, Connection> connections = new ConcurrentHashMap<>(8);
 
     protected NetService() {
@@ -57,6 +61,8 @@ public class NetService implements io.dingodb.net.NetService {
                 log.error("Close connection error", e);
             }
         }));
+        registerTagMessageListener(Constant.FILE_TRANSFER, FileReceiver::onReceive);
+        registerTagMessageListener(Constant.LISTENER, ListenService::onListen);
     }
 
     @Override
@@ -151,12 +157,15 @@ public class NetService implements io.dingodb.net.NetService {
                 bootstrap.connect().sync().await();
                 connection
                     .ifPresent(Connection::handshake).ifPresent(Connection::auth)
+                    .ifPresent(() -> log.info("Connection open, remote: [{}].", location))
                     .orElseThrow(() -> new NullPointerException("connection"));
             } catch (InterruptedException e) {
+                log.error("Open connection to [{}] interrupted.", location, e);
                 connection.ifPresent(Connection::close);
                 executor.shutdownGracefully();
                 NetError.OPEN_CONNECTION_INTERRUPT.throwFormatError(location);
             } catch (Exception e) {
+                log.error("Open connection to [{}] error.", location, e);
                 connection.ifPresent(Connection::close);
                 executor.shutdownGracefully();
                 throw e;

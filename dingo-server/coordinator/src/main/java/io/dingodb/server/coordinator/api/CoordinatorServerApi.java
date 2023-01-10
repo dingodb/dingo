@@ -21,12 +21,10 @@ import io.dingodb.common.Location;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
-import io.dingodb.mpu.core.Core;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.ServerApi;
-import io.dingodb.server.api.ServiceConnectApi;
-import io.dingodb.server.coordinator.config.Configuration;
+import io.dingodb.server.coordinator.meta.Constant;
 import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
@@ -41,35 +39,28 @@ import io.dingodb.server.protocol.meta.TablePartStats;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static io.dingodb.server.coordinator.api.MetaServiceApi.ROOT_ID;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
-public class CoordinatorServerApi implements ServiceConnectApi, MetaApi, ServerApi {
+public class CoordinatorServerApi implements MetaApi, ServerApi {
 
-    private final Core core;
 
-    public CoordinatorServerApi(Core core) {
-        this.core = core;
-        ApiRegistry.getDefault().register(io.dingodb.server.api.ServiceConnectApi.class, this);
+    public CoordinatorServerApi() {
         ApiRegistry.getDefault().register(io.dingodb.server.api.MetaApi.class, this);
         ApiRegistry.getDefault().register(io.dingodb.server.api.ServerApi.class, this);
     }
 
     @Override
-    public Location leader(CommonId ignore) {
-        return Optional.mapOrNull(core.getPrimary(), __ -> __.location);
-    }
-
-    @Override
-    public List<Location> getAll(CommonId ignore) {
-        return Configuration.servers();
-    }
-
-    @Override
-    public CommonId registerExecutor(Executor executor) {
-        return MetaAdaptorRegistry.getMetaAdaptor(Executor.class).save(executor);
+    public synchronized CommonId registerExecutor(Executor executor) {
+        ExecutorAdaptor adaptor = MetaAdaptorRegistry.getMetaAdaptor(Executor.class);
+        CommonId id = Optional.mapOrNull(adaptor.get(executor.location()), Executor::getId);
+        if (id != null) {
+            return id;
+        }
+        return adaptor.save(executor);
     }
 
     @Override
@@ -78,9 +69,27 @@ public class CoordinatorServerApi implements ServiceConnectApi, MetaApi, ServerA
     }
 
     @Override
+    public List<CommonId> tables(CommonId executorId) {
+        return MetaAdaptorRegistry.<Table, TableAdaptor>getMetaAdaptor(Table.class).getAll().stream()
+            .filter(__ -> __.getLocations().containsKey(executorId))
+            .map(Table::getId)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public TableDefinition getTableDefinition(CommonId tableId) {
+        return MetaAdaptorRegistry.<Table, TableAdaptor>getMetaAdaptor(Table.class).getDefinition(tableId);
+    }
+
+    @Override
+    public Map<CommonId, Location> mirrors(CommonId tableId) {
+        return MetaAdaptorRegistry.<Table, TableAdaptor>getMetaAdaptor(Table.class).get(tableId).getLocations();
+    }
+
+    @Override
     public CommonId tableId(String name) {
         return ((TableAdaptor)MetaAdaptorRegistry.getMetaAdaptor(Table.class))
-            .getTableId(ROOT_ID, name);
+            .getTableId(Constant.DINGO_SCHEMA_ID, name);
     }
 
     @Override

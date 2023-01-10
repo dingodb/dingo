@@ -76,7 +76,7 @@ public class TokenAuthService implements AuthService<Authentication>  {
     }
 
     @Override
-    public Authentication createAuthentication() {
+    public Authentication createCertificate() {
         String token = null;
         if (tokenAuth == null) {
             token =  getInnerAuthToken();

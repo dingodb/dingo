@@ -19,8 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.SchemaPriv;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,16 +34,21 @@ import static io.dingodb.server.protocol.CommonIdConstant.PRIVILEGE_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.data, PRIVILEGE_IDENTIFIER.schemaPrivilege);
 
-    protected final Map<String, SchemaPriv> schemaPrivMap;
+    protected final Map<String, SchemaPriv> schemaPrivMap = new ConcurrentHashMap<>();
 
-    public SchemaPrivAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(SchemaPriv.class, this);
-        schemaPrivMap = new ConcurrentHashMap<>();
+    @Override
+    public Class<SchemaPriv> adaptFor() {
+        return SchemaPriv.class;
+    }
 
+    @Override
+    public void reload() {
+        super.reload();
+        schemaPrivMap.clear();
         metaMap.forEach((k, v) -> {
             schemaPrivMap.put(v.getKey(), v);
         } );
@@ -56,7 +60,7 @@ public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(), ROOT_DOMAIN,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
@@ -72,14 +76,6 @@ public class SchemaPrivAdaptor extends BaseAdaptor<SchemaPriv> {
 
     private SchemaPrivDefinition metaToDefinition(SchemaPriv tablePriv) {
         return new SchemaPrivDefinition();
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<SchemaPriv, SchemaPrivAdaptor> {
-        @Override
-        public SchemaPrivAdaptor create(MetaStore metaStore) {
-            return new SchemaPrivAdaptor(metaStore);
-        }
     }
 
     /**
