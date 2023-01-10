@@ -16,31 +16,37 @@
 
 package io.dingodb.mpu.instruction;
 
-import io.dingodb.mpu.storage.Reader;
-import io.dingodb.mpu.storage.Writer;
-
 import java.util.function.Function;
 
 public interface Instructions {
 
-    interface Processor {
-        <V> V process(Reader reader, Writer writer, Object... operand);
+    interface Processor<V, C extends Context> {
+        V process(C context);
     }
 
-    void processor(int opcode, Processor processor);
+    interface VoidProcessor<V, C extends Context> extends Processor<V, C> {
+        @Override
+        default V process(C context) {
+            voidProcess(context);
+            return null;
+        }
 
-    Processor processor(int opcode);
+        void voidProcess(C context);
 
-    default <V> V process(Reader reader, Writer writer, int opcode, Object... operand) {
-        return processor(opcode).process(reader, writer, operand);
     }
 
-    default <V> V process(Reader reader, Writer writer, Instruction instruction) {
-        return processor(instruction.opcode).process(reader, writer, instruction.operand);
+    <V, C extends Context> Processor<V, C> processor(int opcode);
+
+    default <V, C extends Context> V process(int opcode, C context) {
+        return this.<V, C>processor(opcode).process(context);
     }
 
-    void decoder(int opcode, Function<byte[], Object[]> decoder);
+    default <V, C extends Context> V process(Instruction instruction, C context) {
+        return this.<V, C>processor(instruction.opcode).process(context);
+    }
 
-    Function<byte[], Object[]> decoder(int opcode);
+    default Function<byte[], Object[]> decoder(int opcode) {
+        throw new UnsupportedOperationException();
+    }
 
 }

@@ -16,6 +16,8 @@
 
 package io.dingodb.mpu.core;
 
+import io.dingodb.common.util.Optional;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -26,9 +28,22 @@ import java.util.function.BiConsumer;
 public final class PhaseAck {
 
     CompletableFuture<Long> clock = new CompletableFuture<>();
-    CompletableFuture<Object> result;
+    CompletableFuture<Object> result = new CompletableFuture<>();
 
     PhaseAck() {
+        clock.whenComplete((r, e) -> Optional.ifPresent(e, this::completeExceptionally));
+    }
+
+    protected void completeClock(long clock) {
+        this.clock.complete(clock);
+    }
+
+    protected void completeResult(Object result) {
+        this.result.complete(result);
+    }
+
+    protected void completeExceptionally(Throwable throwable) {
+        this.result.completeExceptionally(throwable);
     }
 
     public long joinClock() {

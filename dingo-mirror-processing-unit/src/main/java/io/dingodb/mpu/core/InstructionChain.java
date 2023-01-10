@@ -17,6 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Unsafe;
 import io.dingodb.mpu.instruction.Instruction;
 import lombok.Getter;
@@ -24,9 +25,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 @Slf4j
 @Getter
@@ -42,93 +40,78 @@ class InstructionChain implements Unsafe {
 
     static {
         try {
-            NEXT_OFFSET = UNSAFE.objectFieldOffset(InstructionNode.class.getDeclaredField(InstructionNode.Fields.next));
+            NEXT_OFFSET = UNSAFE.objectFieldOffset(InstructionNode.class.getDeclaredField("next"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @FieldNameConstants
-    public static class InstructionNode implements Runnable {
+    protected class InstructionNode implements Runnable {
 
         public final Instruction instruction;
-        public final InstructionChain runner;
+        public final InstructionChain chain = InstructionChain.this;
 
         @Delegate
         private final Runnable task;
+        private final Runnable onClose;
 
         private InstructionNode next = null;
 
-        public InstructionNode(Instruction instruction, Runnable task, InstructionChain runner) {
+        public InstructionNode(Instruction instruction, Runnable task, Runnable onClose) {
             this.instruction = instruction;
             this.task = task;
-            this.runner = runner;
+            this.onClose = onClose;
         }
 
         protected boolean follow(InstructionNode next) {
-            long expectClock = (instruction == null ? runner.startClock : instruction.clock) + 1;
-            if (expectClock == next.instruction.clock) {
-                if (UNSAFE.compareAndSwapObject(this, NEXT_OFFSET, null, next)) {
-                    this.runner.last = next;
-                    return true;
-                }
+            if (UNSAFE.compareAndSwapObject(this, NEXT_OFFSET, null, next)) {
+                this.chain.last = next;
+                return true;
             }
             return false;
         }
-
     }
 
-    public final String name;
+    protected final String name;
     private long startClock;
     private InstructionNode current;
     private InstructionNode last;
 
     private final LinkedRunner runner;
 
-    public InstructionChain(long clock, String name) {
+    protected InstructionChain(long clock, String name) {
         this.name = name;
         this.startClock = clock;
-        this.current = this.last = new InstructionNode(null, EMPTY, this);
+        this.current = this.last = new InstructionNode(null, EMPTY, EMPTY);
         this.runner = new LinkedRunner(name);
     }
 
-    public void forceFollow(Instruction instruction, Runnable next) {
-        forceFollow(new InstructionNode(instruction, next, this));
+    protected boolean follow(Instruction instruction, Runnable task) {
+        return last.follow(new InstructionNode(instruction, task, EMPTY));
     }
 
-    public void forceFollow(InstructionNode next) {
-        while (!last.follow(next)) {
-            if ((last.instruction != null && next.instruction.clock <= last.instruction.clock)
-                || next.instruction.clock <= startClock
-            ) {
-                throw new RuntimeException(
-                    "Next clock " + next.instruction.clock + " less than or equal last clock " + last.instruction.clock
-                );
-            }
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
-        }
+    protected boolean follow(Instruction instruction, Runnable task, Runnable onClose) {
+        return last.follow(new InstructionNode(instruction, task, onClose));
     }
 
-    public void reset(long clock, boolean completeExceptionally) {
-        clear(completeExceptionally);
+    protected void reset(long clock) {
+        Optional.ifPresent(current.instruction, current = last = new InstructionNode(null, EMPTY, EMPTY));
         this.startClock = clock;
     }
 
-    public void clear(boolean completeExceptionally) {
-        log.info("Instruction chain {} clear {}.", name, completeExceptionally ? "and complete exceptionally" : "");
+    protected void close() {
+        log.info("Instruction chain {} close.", name);
         while (current != null) {
             if (current.instruction == null) {
                 return;
             }
-            if (completeExceptionally) {
-                current.instruction.future.completeExceptionally(new RuntimeException("Available mirror less than 1."));
-            }
+            current.onClose.run();
             current = current.next;
         }
-        current = last = new InstructionNode(null, EMPTY, this);
+        last = null;
     }
 
-    public void tick() {
+    protected void tick() {
         runner.forceFollow(current = current.next);
     }
 }

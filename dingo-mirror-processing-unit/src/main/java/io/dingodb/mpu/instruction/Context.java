@@ -16,21 +16,31 @@
 
 package io.dingodb.mpu.instruction;
 
-public class EmptyInstructions implements Instructions {
+import io.dingodb.mpu.storage.Reader;
+import io.dingodb.mpu.storage.Writer;
 
-    public static final byte id = 0;
-    public static final int SIZE = 16;
+public interface Context extends AutoCloseable {
 
-    public static final short EMPTY = 0;
-    public static final EmptyInstructions INSTRUCTIONS = new EmptyInstructions();
-
-    public static final VoidProcessor empty = __ -> { };
-
-    private EmptyInstructions() {
+    default long clock() {
+        throw new UnsupportedOperationException();
     }
+
+    Reader reader();
+
+    default Writer writer() {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean hasWrite() {
+        return false;
+    }
+
+    Object[] operand();
+
+    <O> O operand(int index);
 
     @Override
-    public <V, C extends Context> Processor<V, C> processor(int opcode) {
-        return empty;
+    default void close() {
     }
 }
+

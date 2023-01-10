@@ -46,8 +46,8 @@ public class Core {
         this.sidebar = sidebar;
         this.vCore = Optional.ofNullable(mirrors)
             .filter(__ -> !__.isEmpty())
-            .map(__ -> new VCore(meta, __.get(0), __.get(1), storage))
-            .ifAbsentSet(() -> new VCore(meta, storage))
+            .map(__ -> new VCore(this, meta, __.get(0), __.get(1), storage))
+            .ifAbsentSet(() -> new VCore(meta, storage, this))
             .ifPresent(__ -> Optional.ifPresent(this.sidebar, () -> __.registerListener(this.sidebar)))
             .get();
         MPURegister.register(this);

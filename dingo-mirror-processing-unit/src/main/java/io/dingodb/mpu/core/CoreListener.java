@@ -16,9 +16,44 @@
 
 package io.dingodb.mpu.core;
 
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.concurrent.LinkedRunner;
+
+import java.util.List;
 import java.util.function.Consumer;
 
 public interface CoreListener {
+
+    String MPU_PRIMARY = "MPU-PRIMARY";
+
+    enum Event {
+        PRIMARY,
+        BACK,
+        MIRROR,
+        LOSE_PRIMARY,
+        MIRROR_CONNECT,
+        REGISTER,
+        UNREGISTER
+    }
+
+    class Notifier {
+        private final LinkedRunner runner;
+        private final String label;
+
+        public Notifier(String label) {
+            this.label = label;
+            this.runner = new LinkedRunner(label + "-notify");
+        }
+
+        public void notify(List<CoreListener> listeners, Event event, Consumer<CoreListener> notify) {
+            runner.forceFollow(() -> listeners.forEach(__ -> notify(event, () -> notify.accept(__), true)));
+        }
+
+        public void notify(Event event, Runnable notify, boolean async) {
+            runner.forceFollow(async ? () -> Executors.execute(label + "-" + event, notify) : notify);
+        }
+
+    }
 
     default void primary(long clock) {
     }

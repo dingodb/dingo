@@ -25,6 +25,7 @@ import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.StorageApi;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.instruction.Context;
 import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
@@ -754,6 +755,19 @@ public class RocksStorage implements Storage {
             try {
                 writer.close();
             } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public void flush(Context context) {
+        if (context.hasWrite()) {
+            flush(context.writer());
+        } else {
+            try {
+                this.db.put(mcfHandler, CLOCK_K, PrimitiveCodec.encodeLong(context.clock()));
+            } catch (RocksDBException e) {
                 throw new RuntimeException(e);
             }
         }

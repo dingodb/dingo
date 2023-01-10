@@ -17,13 +17,8 @@
 package io.dingodb.mpu.instruction;
 
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.mpu.storage.Reader;
-import io.dingodb.mpu.storage.Writer;
-
-import java.util.function.Function;
 
 public class SeqInstructions implements Instructions {
 
@@ -34,36 +29,25 @@ public class SeqInstructions implements Instructions {
     private SeqInstructions() {
     }
 
-    private final SeqIncrementProcessor processor = new SeqIncrementProcessor();
+    private final SeqIncrementProcessor<Context> processor = new SeqIncrementProcessor();
 
     @Override
-    public void processor(int opcode, Processor processor) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Processor processor(int opcode) {
+    public Processor<Integer, Context> processor(int opcode) {
         return processor;
     }
 
-    @Override
-    public void decoder(int opcode, Function<byte[], Object[]> decoder) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Function<byte[], Object[]> decoder(int opcode) {
-        return ProtostuffCodec::read;
-    }
-
-    static class SeqIncrementProcessor implements Processor {
+    static class SeqIncrementProcessor<C extends Context> implements Processor<Integer, C> {
         @Override
-        public Object process(Reader reader, Writer writer, Object... operand) {
-            byte[] key = ByteArrayUtils.concatByteArray(prefix, (byte[]) operand[0]);
-            return Optional.ofNullable(PrimitiveCodec.decodeInt(reader.get(key)))
-                .ifAbsentSet(0)
+        public Integer process(Context context) {
+            byte[] key = ByteArrayUtils.concatByteArray(prefix, context.operand(0));
+            int defaultSeq = 0;
+            if (context.operand().length > 1) {
+                defaultSeq = context.operand(1);
+            }
+            return Optional.ofNullable(PrimitiveCodec.decodeInt(context.reader().get(key)))
+                .ifAbsentSet(defaultSeq)
                 .map(seq -> seq + 1)
-                .ifPresent(seq -> writer.set(key, PrimitiveCodec.encodeInt(seq)))
+                .ifPresent(seq -> context.writer().set(key, PrimitiveCodec.encodeInt(seq)))
                 .get();
         }
     }
