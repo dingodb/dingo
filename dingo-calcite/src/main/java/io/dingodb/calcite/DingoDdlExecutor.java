@@ -283,7 +283,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         TableDefinition tableDefinition = new TableDefinition(
-            tableName, columns, null, 1, create.getTtl(), create.getPartDefinition(), create.getProperties()
+            tableName,
+            columns,
+            null,
+            1,
+            create.getTtl(),
+            create.getPartDefinition(),
+            create.getEngine(),
+            create.getProperties()
         );
         List<Index> indexList = getIndex(create);
 
