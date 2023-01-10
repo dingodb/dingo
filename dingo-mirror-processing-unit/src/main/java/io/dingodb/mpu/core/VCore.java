@@ -97,12 +97,16 @@ public class VCore {
     }
 
     public void close() {
-        close = true;
-        if (controlUnit != null) {
-            controlUnit.close();
-        }
-        if (mirrorChannel != null) {
-            mirrorChannel.close();
+        try {
+            close = true;
+            if (controlUnit != null) {
+                controlUnit.close();
+            }
+            if (mirrorChannel != null) {
+                mirrorChannel.close();
+            }
+        } catch (Exception e) {
+            log.error("VCore close error. ", e);
         }
     }
 
