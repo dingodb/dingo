@@ -162,12 +162,40 @@ public class Optional<T> {
         return of(optional.flatMap(mapper));
     }
 
-    /**
-     * Use {@link Optional#orElseGet(Supplier)}.
-     */
-    @Deprecated
-    public T orElse(T other) throws Exception {
-        throw new UnsupportedOperationException("Use orElseGet method.");
+    public <E extends Enum<E>> E orElse(E other) {
+        return optional.map(__ -> (E)__).orElse(other);
+    }
+
+    public short orElse(short other) {
+        return optional.map(Short.class::cast).orElse(other);
+    }
+
+    public int orElse(int other) {
+        return optional.map(Integer.class::cast).orElse(other);
+    }
+
+    public long orElse(long other) {
+        return optional.map(Long.class::cast).orElse(other);
+    }
+
+    public float orElse(float other) {
+        return optional.map(Float.class::cast).orElse(other);
+    }
+
+    public double orElse(double other) {
+        return optional.map(Double.class::cast).orElse(other);
+    }
+
+    public boolean orElse(boolean other) {
+        return optional.map(Boolean.class::cast).orElse(other);
+    }
+
+    public char orElse(char other) {
+        return optional.map(Character.class::cast).orElse(other);
+    }
+
+    public String orElse(String other) {
+        return optional.map(String.class::cast).orElse(other);
     }
 
     public <U> U mapOrNull(Function<? super T, U> mapper) {

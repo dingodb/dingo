@@ -23,6 +23,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -842,4 +843,63 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
         return indexExecutor.getRowByIndex(row, tableDefinition, indices.get(0).getName());
     }
+
+    public void reboot() {
+        if (!tableSidebar.getStatus().equals(TableStatus.STARTING)) {
+            throw new RuntimeException("Table is not in starting status");
+        }
+
+        TableDefinition tableDefinition = tableSidebar.getDefinition();
+
+        //delete deleteindex
+
+        Set<String> indexNames = tableDefinition.getIndexes().keySet();
+        List<Object[]> deleteRecords = indexExecutor.getDeleteRecords();
+        for (Object[] deleteRow : deleteRecords) {
+            KeyValue oriKV = indexExecutor.getOriKV(deleteRow, tableDefinition);
+            KeyValue deleteKV = indexExecutor.getDeleteKV(oriKV);
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+            ExecutorApi deleteExecutorApi = indexExecutor.getExecutor(deleteKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+
+            for (String indexName : indexNames) {
+                indexExecutor.deleteFromIndex(deleteRow, tableDefinition, indexName);
+            }
+            finishedExecutorApi.delete(null, null, id, finishedKV.getPrimaryKey());
+            deleteExecutorApi.delete(null, null, id, deleteKV.getPrimaryKey());
+        }
+
+        List<Object[]> unfinishRecords = indexExecutor.getUnfinishRecords();
+        for (Object[] unfinishRow : unfinishRecords) {
+            KeyValue oriKV = indexExecutor.getOriKV(unfinishRow, tableDefinition);
+
+            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
+            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
+
+            ExecutorApi unfinishExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+
+            for (String indexName : indexNames) {
+                indexExecutor.insertIndex(unfinishRow, tableDefinition, indexName);
+            }
+            finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV);
+            unfinishExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey());
+        }
+
+        List<String> busyIndexNames = tableDefinition.getBusyIndexes();
+        if (busyIndexNames.size() > 0) {
+            List<Object[]> finishedRecords = indexExecutor.getFinishedRecords();
+            for (String indexName : busyIndexNames) {
+                for (Object[] row : finishedRecords) {
+                    indexExecutor.insertIndex(row, tableDefinition, indexName);
+                }
+                Index index = tableDefinition.getIndexes().get(indexName);
+                index.setStatus(IndexStatus.NORMAL);
+                tableDefinition.removeIndex(indexName);
+                tableDefinition.addIndex(index);
+                tableSidebar.updateDefinition(tableDefinition);
+            }
+        }
+    }
+
 }

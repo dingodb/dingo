@@ -88,6 +88,10 @@ public class IndexExecutor {
         return opIndexData(row, tableDefinition, indexName, -1);
     }
 
+    public List<Object[]> getDeleteRecords() {
+        return getRecordsByPrefix(new byte[] {deleteKey});
+    }
+
     private boolean opIndexData(Object[] row, TableDefinition tableDefinition, String indexName, int op) {
         int version = tableDefinition.getVersion();
         Map<String, DingoIndexKeyValueCodec> indicsCodec;

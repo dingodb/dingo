@@ -24,7 +24,6 @@ import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.dingodb.net.netty.api.AuthProxyApi;
 import io.dingodb.net.netty.api.HandshakeApi;
 import io.dingodb.net.netty.api.HandshakeApi.Handshake;
-import io.dingodb.net.service.AuthService;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.channel.socket.SocketChannel;
@@ -36,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,12 +130,7 @@ public class Connection {
     }
 
     public void auth() {
-        Map<String, Object> authentications = new HashMap<>();
-        for (AuthService.Provider authServiceProvider : AuthProxyApi.serviceProviders) {
-            AuthService<Object> authService = authServiceProvider.get();
-            authentications.put(authService.tag(), authService.createAuthentication());
-        }
-        authContent = ApiRegistryImpl.instance().proxy(AuthProxyApi.class, channel).auth(null, authentications);
+        authContent = AuthProxyApi.auth(channel);
         log.info("Connection auth success, remote: [{}]", remote.url());
         heartbeatFuture = Executors.scheduleWithFixedDelayAsync(
             String.format("%s-heartbeat", remote.url()), this::sendHeartbeat, 0, 1, SECONDS

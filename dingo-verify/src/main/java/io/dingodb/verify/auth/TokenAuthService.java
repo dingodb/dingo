@@ -76,7 +76,7 @@ public class TokenAuthService implements AuthService<Authentication>  {
     }
 
     @Override
-    public Authentication createAuthentication() {
+    public Authentication createCertificate() {
         String token = null;
         if (tokenAuth == null) {
             token =  getInnerAuthToken();
@@ -92,8 +92,8 @@ public class TokenAuthService implements AuthService<Authentication>  {
     }
 
     @Override
-    public Object auth(Authentication authentication) throws Exception {
-        String token = authentication.getToken();
+    public Object validate(Authentication certificate) throws Exception {
+        String token = certificate.getToken();
         Map<String, Object> clientInfo = verifyToken(token);
         if (clientInfo == null) {
             throw new Exception("auth token error");
@@ -101,9 +101,9 @@ public class TokenAuthService implements AuthService<Authentication>  {
         String host = (String) clientInfo.get("host");
         String user = (String) clientInfo.get("user");
         if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(host) && tokenAuth != null) {
-            authentication.setUsername(user);
-            authentication.setHost(host);
-            tokenAuth.cachePrivileges(authentication);
+            certificate.setUsername(user);
+            certificate.setHost(host);
+            tokenAuth.cachePrivileges(certificate);
         }
         return Certificate.builder().code(100).build();
     }

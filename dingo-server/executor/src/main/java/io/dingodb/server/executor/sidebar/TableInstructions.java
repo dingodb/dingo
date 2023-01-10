@@ -16,8 +16,9 @@
 
 package io.dingodb.server.executor.sidebar;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.mpu.instruction.InstructionSetRegistry;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.mpu.storage.Reader;
 import io.dingodb.mpu.storage.Writer;
 import io.dingodb.server.executor.api.TableApi;
@@ -32,8 +33,14 @@ public class TableInstructions implements io.dingodb.mpu.instruction.Instruction
     public static final TableInstructions INSTANCE = new TableInstructions();
     private static final int SIZE = 32;
 
+    public static final int UPDATE_DEFINITION = 1;
     public static final int START_PART = 11;
+    public static final int CLOSE_PART = 12;
+    public static final int DROP_PART = 13;
     public static final int START_INDEX = 21;
+    public static final int CLOSE_INDEX = 22;
+    public static final int DROP_INDEX = 23;
+
 
     private final io.dingodb.mpu.instruction.Instructions.Processor[] processors = new Processor[SIZE];
 
@@ -54,6 +61,28 @@ public class TableInstructions implements io.dingodb.mpu.instruction.Instruction
             public <V> V process(Reader reader, Writer writer, Object... operand) {
                 Index index = ProtostuffCodec.read((byte[]) operand[0]);
                 TableApi.INSTANCE.get(index.getTable()).startIndex(index);
+                return null;
+            }
+        };
+        INSTANCE.processors[DROP_INDEX] = new Processor() {
+            @Override
+            public <V> V process(Reader reader, Writer writer, Object... operand) {
+                Index index = (Index) operand[0];
+                TableSidebar tableSidebar = TableApi.INSTANCE.get(index.getId());
+                tableSidebar.dropIndex(index, false);
+                writer.erase(index.getId().encode());
+                TableDefinition definition = tableSidebar.getDefinition();
+                definition.removeIndex(index.getName());
+                writer.set(index.getTable().encode(), ProtostuffCodec.write(definition));
+                return null;
+            }
+        };
+        INSTANCE.processors[UPDATE_DEFINITION] = new Processor() {
+            @Override
+            public <V> V process(Reader reader, Writer writer, Object... operand) {
+                CommonId tableId = (CommonId) operand[0];
+                writer.set(tableId.encode(), ProtostuffCodec.write(operand[1]));
+                TableApi.INSTANCE.get(tableId).updateDefinition((TableDefinition) operand[1], false);
                 return null;
             }
         };
