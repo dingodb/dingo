@@ -33,8 +33,9 @@ public class DingoSqlCreateTable extends SqlCreateTable {
 
     @Getter PartitionDefinition partDefinition;
 
-    @Getter
-    int ttl;
+    @Getter int ttl;
+
+    @Getter String engine;
 
     /**
      * Creates a SqlCreateTable.
@@ -55,11 +56,13 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         @Nullable SqlNode query,
         int ttl,
         PartitionDefinition partDefinition,
+        String engine,
         Properties properties
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.properties = properties;
         this.partDefinition = partDefinition;
         this.ttl = ttl;
+        this.engine = engine;
     }
 }

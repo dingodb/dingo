@@ -38,6 +38,7 @@ public class DingoSqlDdlNodes {
         SqlNode query,
         int ttl,
         PartitionDefinition partitionDefinition,
+        String engine,
         Properties properties
     ) {
         return new DingoSqlCreateTable(
@@ -49,6 +50,7 @@ public class DingoSqlDdlNodes {
             query,
             ttl,
             partitionDefinition,
+            engine,
             properties
         );
     }

@@ -276,11 +276,13 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNode query = null;
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
+    String engine = null;
     Properties properties = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
+    [ <ENGINE> <EQ> { engine = getNextToken().image; } ]
     [ <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
         { ttl = positiveInteger(getNextToken().image, "ttl"); }
     ]
@@ -297,7 +299,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
         return DingoSqlDdlNodes.createTable(
-            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, properties
+            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, engine, properties
         );
     }
 }
