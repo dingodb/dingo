@@ -20,6 +20,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.api.InternalApi;
+import io.dingodb.mpu.instruction.Context;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.instruction.InternalInstructions;
 import io.dingodb.mpu.protocol.SelectReturn;
@@ -46,6 +47,7 @@ import static io.dingodb.mpu.protocol.SelectReturn.PRIMARY;
 @Slf4j
 public class VCore {
 
+    public final Core core;
     public final CoreMeta meta;
     public final Storage storage;
     public final CoreMeta firstMirror;
@@ -63,11 +65,12 @@ public class VCore {
 
     private List<CoreListener> listeners = new CopyOnWriteArrayList<>();
 
-    public VCore(CoreMeta meta, Storage storage) {
-        this(meta, null, null, storage);
+    public VCore(CoreMeta meta, Storage storage, Core core) {
+        this(core, meta, null, null, storage);
     }
 
-    public VCore(CoreMeta meta, CoreMeta firstMirror, CoreMeta secondMirror, Storage storage) {
+    public VCore(Core core, CoreMeta meta, CoreMeta firstMirror, CoreMeta secondMirror, Storage storage) {
+        this.core = core;
         if (firstMirror != secondMirror && (firstMirror == null || secondMirror == null)) {
             throw new IllegalArgumentException("Mirror1 and mirror2 can't have just one that's not null.");
         }
@@ -318,17 +321,33 @@ public class VCore {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        PhaseAck ack = new PhaseAck();
-        runner.forceFollow(() -> controlUnit.process(ack, (byte) instructions, (short) opcode, operand));
-        return ack;
+        return controlUnit.process((byte) instructions, (short) opcode, operand);
     }
 
     public <V> V view(int instructions, int opcode, Object... operand) {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
-        try (Reader reader = storage.reader()) {
-            return InstructionSetRegistry.instructions(instructions).process(reader, null, opcode, operand);
+        try (
+            Reader reader = storage.reader();
+            io.dingodb.mpu.instruction.Context context = new io.dingodb.mpu.instruction.Context() {
+                @Override
+                public Reader reader() {
+                    return reader;
+                }
+
+                @Override
+                public Object[] operand() {
+                    return operand;
+                }
+
+                @Override
+                public <O> O operand(int index) {
+                    return (O) operand[index];
+                }
+            }
+        ) {
+            return InstructionSetRegistry.instructions(instructions).process(opcode, context);
         }
     }
 

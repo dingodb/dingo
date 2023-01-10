@@ -40,7 +40,7 @@ class MirrorChannel implements MessageListener {
     @Delegate
     private final Channel channel;
 
-    public MirrorChannel(CoreMeta primary, VCore core, long clock, Channel channel) {
+    protected MirrorChannel(CoreMeta primary, VCore core, long clock, Channel channel) {
         this.primary = primary;
         this.core = core;
         this.channel = channel;

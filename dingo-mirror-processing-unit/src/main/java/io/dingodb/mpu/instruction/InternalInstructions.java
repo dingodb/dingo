@@ -18,8 +18,6 @@ package io.dingodb.mpu.instruction;
 
 import io.dingodb.mpu.core.VCore;
 
-import java.util.function.Function;
-
 public class InternalInstructions implements Instructions {
 
     public static final byte id = 1;
@@ -29,26 +27,9 @@ public class InternalInstructions implements Instructions {
 
     private static final Instructions.Processor[] processors = new Instructions.Processor[SIZE];
 
-    private static final Function<byte[], Object[]>[] decoders = new Function[SIZE];
-
-    @Override
-    public void processor(int opcode, Processor processor) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public Processor processor(int opcode) {
         return processors[opcode];
-    }
-
-    @Override
-    public void decoder(int opcode, Function<byte[], Object[]> decoder) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Function<byte[], Object[]> decoder(int opcode) {
-        return decoders[opcode];
     }
 
     public static void process(VCore core, int opcode, Object... operand) {

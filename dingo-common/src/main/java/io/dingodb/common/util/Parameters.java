@@ -52,6 +52,16 @@ public final class Parameters {
     /**
      * If input is not null, throw exception, else return input.
      * @param input check object
+     * @param message throwable message
+     * @return input
+     */
+    public static <T> T mustNull(T input, String message) {
+        return check(input, Objects::isNull, () -> new IllegalArgumentException(message));
+    }
+
+    /**
+     * If input is not null, throw exception, else return input.
+     * @param input check object
      * @param throwableSupplier throwable supplier
      * @return input
      */
@@ -67,6 +77,20 @@ public final class Parameters {
      */
     public static <T> T mustNull(T input, Function<T, RuntimeException> throwableSupplier) {
         return check(input, Objects::isNull, () -> throwableSupplier.apply(input));
+    }
+
+    /**
+     * If check function return is false, throw exception, else return input.
+     * @param input check object
+     * @param message throwable message
+     * @return input
+     */
+    public static <T> T check(
+        T input,
+        Predicate<T> checkFunction,
+        String message
+    ) {
+        return check(input, checkFunction, () -> new IllegalArgumentException(message));
     }
 
     /**

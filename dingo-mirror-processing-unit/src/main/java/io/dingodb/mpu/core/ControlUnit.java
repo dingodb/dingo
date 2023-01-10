@@ -39,8 +39,8 @@ class ControlUnit {
     private InstructionSyncChannel firstChannel;
     private InstructionSyncChannel secondChannel;
 
-    private LinkedRunner firstRunner;
-    private LinkedRunner secondRunner;
+    private LinkedRunner prepareRunner;
+    private LinkedRunner syncRunner;
     private LinkedRunner executeRunner;
     private InstructionChain chain;
 
@@ -58,19 +58,16 @@ class ControlUnit {
         this.startClock = clock;
         this.clock = clock;
         this.syncedClock = new AtomicLong(clock);
+        this.prepareRunner = new LinkedRunner(core.meta.label + "-prepare");
+        this.syncRunner = new LinkedRunner(core.meta.label + "-sync");
         this.executeRunner = new LinkedRunner(core.meta.label + "-execute");
         this.chain = new InstructionChain(clock, core.meta.label + "-instruction-chain");
         this.local = first == null;
-        if (!local) {
-            this.firstRunner = new LinkedRunner(first.label + "-sync-runner");
-            this.secondRunner = new LinkedRunner(second.label + "-sync-runner");
-        }
     }
 
-    public void close() {
+    protected void close() {
         closed = true;
         log.info("{} control unit close on {}.", core.meta.label, clock);
-        chain.clear(true);
         core.onControlUnitClose();
         if (firstChannel != null) {
             firstChannel.close();
@@ -78,13 +75,14 @@ class ControlUnit {
         if (secondChannel != null) {
             secondChannel.close();
         }
+        chain.close();
     }
 
-    public boolean isClosed() {
+    protected boolean isClosed() {
         return closed;
     }
 
-    public synchronized void onMirrorConnect(CoreMeta mirror, InstructionSyncChannel channel) {
+    protected synchronized void onMirrorConnect(CoreMeta mirror, InstructionSyncChannel channel) {
         if (closed) {
             throw new RuntimeException("Control unit closed.");
         }
@@ -93,14 +91,13 @@ class ControlUnit {
         } else {
             secondChannel = channel;
         }
-        PhaseAck ack = new PhaseAck();
         log.info("{} control unit connect {} on {}.", core.meta.label, mirror.label, clock);
-        core.runner.forceFollow(() -> process(ack, EmptyInstructions.id, EmptyInstructions.EMPTY));
+        PhaseAck ack = process(EmptyInstructions.id, EmptyInstructions.EMPTY);
         ack.join();
         log.info("{} control unit connected {} on {}.", core.meta.label, mirror.label, ack.clock);
     }
 
-    public synchronized void onMirrorClose(CoreMeta mirror) {
+    protected synchronized void onMirrorClose(CoreMeta mirror) {
         if (closed) {
             return;
         }
@@ -115,35 +112,58 @@ class ControlUnit {
         }
     }
 
-    protected void process(PhaseAck ack, byte instructions, short opcode, Object... operand) {
-        Instruction instruction = new Instruction(++clock, instructions, opcode, operand);
-        processInstruction(ack, instruction);
+    protected PhaseAck process(byte instructions, short opcode, Object... operand) {
+        if (extClock) {
+            throw new UnsupportedOperationException("Need clock.");
+        }
+        PhaseAck ack = new PhaseAck();
+        prepareRunner.forceFollow(() -> this.prepare(ack, instructions, opcode, operand));
+        return ack;
     }
 
-    protected void process(PhaseAck ack, long clock, byte instructions, short opcode, Object... operand) {
+    private PhaseAck prepare(PhaseAck ack, byte instructions, short opcode, Object... operand) {
+        Instruction instruction = new Instruction(++clock, instructions, opcode, operand);
+        ack.completeClock(clock);
+        syncRunner.forceFollow(() -> sync(ack, instruction));
+        return ack;
+    }
+
+    protected PhaseAck process(PhaseAck ack, long clock, byte instructions, short opcode, Object... operand) {
         if (!extClock) {
             throw new UnsupportedOperationException("Not ext clock mode.");
         }
         Instruction instruction = new Instruction(clock, instructions, opcode, operand);
-        processInstruction(ack, instruction);
+        ack.completeClock(clock);
+        syncRunner.forceFollow(() -> sync(ack, instruction));
+        sync(ack, instruction);
+        return ack;
     }
 
-    private void processInstruction(PhaseAck ack, Instruction instruction) {
-        ack.result = instruction.future;
-        ack.clock.complete(instruction.clock);
+    private void sync(PhaseAck ack, Instruction instruction) {
         if (local) {
-            executeRunner.forceFollow(() -> core.executionUnit.execute(instruction, ack.result));
+            core.executionUnit.execute(instruction, ack);
             return;
         }
         if (isClosed()) {
-            ack.result.completeExceptionally(new RuntimeException("Control unit closed."));
+            ack.completeExceptionally(new RuntimeException("Control unit closed."));
             return;
         }
         core.storage.saveInstruction(instruction.clock, instruction.encode());
-        executeRunner.forceFollow(() -> chain.forceFollow(
-            instruction, () -> core.executionUnit.execute(instruction, ack.result)));
-        Optional.ifPresent(firstChannel, () -> firstRunner.forceFollow(() -> firstChannel.sync(instruction)));
-        Optional.ifPresent(secondChannel, () -> secondRunner.forceFollow(() -> secondChannel.sync(instruction)));
+        if (
+            chain.follow(
+                instruction,
+                () -> core.executionUnit.execute(instruction, ack),
+                () -> ack.completeExceptionally(new RuntimeException("Unavailable, control unit closed."))
+            )
+        ) {
+            Optional.ifPresent(firstChannel, __ -> __.sync(instruction));
+            Optional.ifPresent(secondChannel, __ -> __.sync(instruction));
+        } else {
+            log.warn("Chain follow failed, clock: {}, reprocess instruction.", instruction.clock);
+            ack.completeExceptionally(new RuntimeException(
+                "Execute error, clock follow failed, clock: " + instruction.clock
+            ));
+        }
     }
 
     protected void onSynced(CoreMeta mirror, Instruction instruction) {

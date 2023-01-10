@@ -16,6 +16,7 @@
 
 package io.dingodb.mpu.instruction;
 
+import io.dingodb.common.util.Parameters;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -27,26 +28,22 @@ public final class InstructionSetRegistry {
     private static final Instructions[] instructionSets = new Instructions[Byte.MAX_VALUE];
 
     public static synchronized void register(int id, Instructions instructions) {
-        if (instructionSets[id] == null) {
-            log.info("Register instructions, id: {}, {}.", id, instructions.getClass().getName());
-            instructionSets[id] = instructions;
-            return;
-        }
-        throw new IllegalArgumentException(id + " registered.");
+        Parameters.check(id, __ -> id > 32, "The instructions id must great than 32.");
+        Parameters.mustNull(instructionSets[id], id + "registered.");
+        log.info("Register instructions, id: {}, {}.", id, instructions.getClass().getName());
+        instructionSets[id] = instructions;
     }
 
     public static Instructions instructions(int id) {
         Instructions instructions = instructionSets[id];
-        if (instructions == null) {
-            throw new IllegalArgumentException("Not found " + id);
-        }
+        Parameters.nonNull(instructions, "Not found" + id);
         return instructions;
     }
 
     static {
-        register(EmptyInstructions.id, EmptyInstructions.INSTRUCTIONS);
-        register(KVInstructions.id, KVInstructions.INSTRUCTIONS);
-        register(SeqInstructions.id, SeqInstructions.INSTRUCTIONS);
+        instructionSets[EmptyInstructions.id] = EmptyInstructions.INSTRUCTIONS;
+        instructionSets[KVInstructions.id] = KVInstructions.INSTRUCTIONS;
+        instructionSets[SeqInstructions.id] = SeqInstructions.INSTRUCTIONS;
     }
 
 }

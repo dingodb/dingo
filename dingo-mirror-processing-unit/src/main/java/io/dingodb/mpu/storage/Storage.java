@@ -17,6 +17,7 @@
 package io.dingodb.mpu.storage;
 
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.instruction.Context;
 import io.dingodb.mpu.instruction.Instruction;
 
 import java.util.concurrent.CompletableFuture;
@@ -68,5 +69,14 @@ public interface Storage {
      * @param writer writer
      */
     void flush(Writer writer);
+
+    /**
+     * Flush data from writer to storage.
+     *
+     * @param context context
+     */
+    default void flush(Context context) {
+        flush(context.writer());
+    }
 
 }
