@@ -16,6 +16,7 @@
 
 package io.dingodb.common.util;
 
+import java.util.Scanner;
 import java.util.StringJoiner;
 
 /**
@@ -101,6 +102,11 @@ public final class StackTraces {
             }
         }
         return joiner.toString();
+    }
+
+    public static void pause() {
+        Scanner scanner = new Scanner(System.in);
+        scanner.next();
     }
 
 }

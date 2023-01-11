@@ -16,14 +16,11 @@
 
 package io.dingodb.exec;
 
-import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.channel.EndpointManager;
 import io.dingodb.exec.impl.JobManagerImpl;
-import io.dingodb.meta.MetaService;
-import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetError;
 import io.dingodb.net.NetService;
@@ -31,45 +28,19 @@ import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
 public final class Services {
     public static final StoreService KV_STORE = Optional.ofNullable(ServiceProviders.KV_STORE_PROVIDER.provider())
         .map(StoreServiceProvider::get).orNull();
-    public static final MetaService META = Objects.requireNonNull(
-        ServiceProviders.META_PROVIDER.provider(),
-        "No meta service provider was found."
-    ).root();
     public static final NetService NET = Objects.requireNonNull(
         ServiceProviders.NET_PROVIDER.provider(),
         "No channel service provider was found."
     ).get();
-    public static final ClusterService CLUSTER = Objects.requireNonNull(
-        ServiceProviders.CLUSTER_PROVIDER.provider(),
-        "No cluster service provider was found."
-    ).get();
-    public static final Map<String, MetaService> metaServices = new HashMap<>();
     public static final String CTRL_TAG = "DINGO_CTRL";
 
-    static {
-        initMetaServices();
-    }
-
     private Services() {
-    }
-
-    public static void initMetaServices() {
-        for (MetaServiceProvider provider : ServiceProviders.META_PROVIDER) {
-            MetaService metaService = provider.root();
-            String serviceName = metaService.name();
-            if (metaServices.containsKey(serviceName)) {
-                throw new RuntimeException("Duplicate meta service name \"" + serviceName + "\" exists.");
-            }
-            metaServices.put(metaService.name(), metaService);
-        }
     }
 
     public static void initNetService() {

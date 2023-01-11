@@ -48,7 +48,7 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
 
         // 1.2 CreateTable
         TableDefinition testTable = getTableDefinition();
-        metaServiceClient.createTable("TEST", testTable);
+        metaServiceClient.createTable(tableName, testTable);
         printInfo();
 
         // 1.3 init tableApi
@@ -145,7 +145,7 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
     private static void printInfo() throws Exception {
         MetaServiceClient metaServiceClient = new MetaServiceClient(CoordinatorConnector.getCoordinatorConnector(coordinatorAddress));
         CommonId tableId = metaServiceClient.getTableId(tableName);
-        IndexExecutor indexExecutor = new IndexExecutor(tableId, metaServiceClient);
+        IndexExecutor indexExecutor = new IndexExecutor(tableId);
 
         TableDefinition tableDefinition = metaServiceClient.getTableDefinition(tableName);
         System.out.println("tableDefinition = " + tableDefinition);

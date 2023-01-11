@@ -80,6 +80,11 @@ public class Privilege implements Meta {
     }
 
     @Override
+    public String getName() {
+        return user + "@" + host;
+    }
+
+    @Override
     public long getCreateTime() {
         return 0;
     }

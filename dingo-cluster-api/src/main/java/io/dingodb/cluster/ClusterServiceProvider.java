@@ -16,6 +16,31 @@
 
 package io.dingodb.cluster;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Iterator;
+import java.util.ServiceLoader;
+
 public interface ClusterServiceProvider {
+
+    @Slf4j
+    class Impl {
+        private static final Impl INSTANCE = new Impl();
+
+        private final ClusterServiceProvider serviceProvider;
+
+        private Impl() {
+            Iterator<ClusterServiceProvider> iterator = ServiceLoader.load(ClusterServiceProvider.class).iterator();
+            this.serviceProvider = iterator.next();
+            if (iterator.hasNext()) {
+                log.warn("Load multi cluster service provider, use {}.", serviceProvider.getClass().getName());
+            }
+        }
+    }
+
     ClusterService get();
+
+    static ClusterServiceProvider getDefault() {
+        return Impl.INSTANCE.serviceProvider;
+    }
 }

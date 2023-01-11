@@ -16,8 +16,6 @@
 
 package io.dingodb.common.privilege;
 
-import jdk.nashorn.internal.objects.annotations.Getter;
-
 public enum DingoSqlAccessEnum {
     SELECT("select"),
     UPDATE("update"),

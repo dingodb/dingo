@@ -18,7 +18,6 @@ package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.table.TableDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -27,9 +26,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -40,10 +36,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Replica implements Meta {
-
-    public static final TableDefinition DEFINITION = new MetaTableDefinitionBuilder("TABLE_PART_REPLICA_META")
-        .addColumns(Arrays.stream(Fields.values()).map(Enum::name).collect(Collectors.toList()))
-        .build();
 
     private CommonId id;
     private String comment;

@@ -23,7 +23,6 @@ import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreService;
 import io.dingodb.server.protocol.meta.Index;
-import io.dingodb.store.api.StoreInstance;
 
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -48,14 +47,14 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
         if (tableSidebar.ttl()) {
-            core.exec(
+            exec(
                 KVInstructions.id,
                 KVInstructions.SET_OC,
                 primaryKey,
                 encodeInt(Utils.currentSecond(), unsliced(row, 0, row.length + 4), row.length, false)
             ).join();
         } else {
-            core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+            exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
         }
 
         return true;
@@ -63,25 +62,26 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
+        return view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return core.view(KVInstructions.id, KVInstructions.SCAN_OC);
+        return view(KVInstructions.id, KVInstructions.SCAN_OC);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan(
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
     ) {
-        return core
-            .view(KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
+        return view(
+            KVInstructions.id, KVInstructions.SCAN_OC, startPrimaryKey, endPrimaryKey, includeStart, includeEnd
+        );
     }
 
     @Override
     public boolean delete(byte[] primaryKey) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKey).join();
+        exec(KVInstructions.id, KVInstructions.DEL_OC, primaryKey).join();
         return true;
     }
 

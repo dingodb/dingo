@@ -161,7 +161,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
         if (isClosed()) {
             return;
         }
-        channel.send(new Message(Message.EMPTY_TAG, new TagClock(Constant.T_EXECUTE_CLOCK, clock).encode()));
+        channel.send(new Message(Message.EMPTY_TAG, new TagClock(Constant.T_EXECUTED_CLOCK, clock).encode()));
     }
 
 }

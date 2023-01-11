@@ -46,6 +46,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.common.util.Parameters.cleanNull;
 import static io.dingodb.net.netty.Constant.API_CANCEL;
 import static io.dingodb.net.netty.Constant.API_EMPTY_ARGS;
@@ -59,10 +60,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
     public static final ApiRegistryImpl INSTANCE = new ApiRegistryImpl();
 
     private ApiRegistryImpl() {
-        register(HandshakeApi.class, HandshakeApi.INSTANCE);
-        register(AuthProxyApi.class, AuthProxyApi.INSTANCE);
         register(Ping.class, Ping.INSTANCE);
-        register(ListenerApi.class, ListenerApi.INSTANCE);
     }
 
     public static ApiRegistryImpl instance() {
@@ -89,11 +87,10 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             declarationMap.put(name, method);
 
             String argumentCodeC = registerTransferArgsCodeCFn(name, method);
-            log.info("Register api: {}, method: {}, argumentCodeC:{} defined: {}",
-                api.getName(),
-                name,
-                argumentCodeC,
-                defined.getClass().getName());
+            debug(log,
+                "Register api: {}, method: {}, argumentCodeC:{} defined: {}",
+                api.getName(), name, argumentCodeC, defined.getClass().getName()
+            );
         }
     }
 
@@ -103,10 +100,10 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         declarationMap.put(name, method);
 
         String transferArgsCodeCFn = registerTransferArgsCodeCFn(name, method);
-        log.info("Register function: {}, transferCodeC:{}, defined: {}",
-            name,
-            transferArgsCodeCFn,
-            defined.getClass().getName());
+        debug(log,
+            "Register function: {}, transferCodeC:{}, defined: {}",
+            name, transferArgsCodeCFn, defined.getClass().getName()
+        );
     }
 
 

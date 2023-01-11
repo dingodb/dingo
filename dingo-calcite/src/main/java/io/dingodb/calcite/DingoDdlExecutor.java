@@ -47,7 +47,6 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
-import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -365,7 +364,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user)
             .host(getRealAddress(sqlGrant.host)).build())) {
-            PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant);
+            PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant, context);
             userService.grant(privilegeDefinition);
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");
@@ -386,7 +385,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user)
             .host(getRealAddress(sqlRevoke.host)).build())) {
-            PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlRevoke);
+            PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlRevoke, context);
             userService.revoke(privilegeDefinition);
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");
@@ -645,7 +644,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @NonNull
-    private PrivilegeDefinition getPrivilegeDefinition(@NonNull SqlGrant sqlGrant) {
+    private PrivilegeDefinition getPrivilegeDefinition(
+        @NonNull SqlGrant sqlGrant, CalcitePrepare.@NonNull Context context
+    ) {
         String table = sqlGrant.table;
         String schema = sqlGrant.schema;
         CommonId schemaId = null;
@@ -656,14 +657,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             privilegeType = PrivilegeType.USER;
         } else if ("*".equals(table)) {
-            schemaId = userService.getSchemaIdByCache(schema);
+            schemaId = userService.getSchemaId(schema);
             privilegeDefinition = SchemaPrivDefinition.builder()
                 .schema(schemaId)
                 .build();
             privilegeType = PrivilegeType.SCHEMA;
         } else {
-            schemaId = userService.getSchemaIdByCache(schema);
-            CommonId tableId = userService.getTableIdByCache(schemaId, table);
+            schemaId = userService.getSchemaId(schema);
+            CommonId tableId = userService.getTableId(schemaId, table);
             log.info("tableId:" + tableId + ", schemaId:" + schemaId);
             privilegeDefinition = TablePrivDefinition.builder()
                 .schema(schemaId)

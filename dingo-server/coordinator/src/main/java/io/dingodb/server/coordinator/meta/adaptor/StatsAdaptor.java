@@ -24,6 +24,10 @@ import java.util.List;
 
 public interface StatsAdaptor<S extends Stats> {
 
+    void reload();
+
+    Class<S> adaptFor();
+
     CommonId statsId();
 
     void onStats(S stats);

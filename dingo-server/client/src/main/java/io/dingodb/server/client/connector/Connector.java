@@ -21,12 +21,15 @@ import io.dingodb.net.Channel;
 
 import java.util.function.Supplier;
 
-public interface Connector extends Supplier<Location> {
+public interface Connector extends Supplier<Location>, AutoCloseable {
 
     Channel newChannel();
 
     boolean verify();
 
     void refresh();
+
+    @Override
+    void close();
 
 }

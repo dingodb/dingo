@@ -17,46 +17,46 @@
 package io.dingodb.server.executor.store;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
 import io.dingodb.common.codec.ProtostuffCodec;
-import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.mpu.core.Core;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.core.Sidebar;
 import io.dingodb.mpu.instruction.KVInstructions;
-import io.dingodb.server.executor.config.Configuration;
 
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.dingodb.mpu.instruction.KVInstructions.SET_BATCH_OC;
+import static io.dingodb.common.config.DingoConfiguration.location;
+import static io.dingodb.common.config.DingoConfiguration.serverId;
+import static io.dingodb.mpu.instruction.KVInstructions.SCAN_OC;
+import static io.dingodb.mpu.instruction.KVInstructions.SET_OC;
+import static io.dingodb.server.executor.config.Configuration.resolvePath;
+import static io.dingodb.server.executor.sidebar.TableSidebar.TABLE_PREFIX;
 
-public class LocalMetaStore {
+public class LocalMetaStore extends Sidebar {
 
-    public static final LocalMetaStore INSTANCE = new LocalMetaStore();
+    public static final LocalMetaStore INSTANCE;
 
     private final Map<CommonId, TableDefinition> tableDefinitions = new ConcurrentHashMap<>();
 
-    private final Core core;
-
-    public LocalMetaStore() {
+    static {
         try {
-            CommonId id = DingoConfiguration.serverId();
-            core = new Core(
-                new CoreMeta(id, DingoConfiguration.location()),
-                null,
-                StorageFactory.create(id.toString(), Configuration.resolvePath(id.toString())),
-                null
-            );
-            core.start();
+            INSTANCE = new LocalMetaStore(serverId());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    private LocalMetaStore(CommonId id) throws Exception {
+        super(new CoreMeta(id, location()), StorageFactory.create(id.toString(), resolvePath(id.toString())));
+        start();
+    }
+
     public void saveTable(CommonId id, TableDefinition tableDefinition) {
-        core.exec(KVInstructions.id, SET_BATCH_OC, id.encode(), ProtostuffCodec.write(tableDefinition)).join();
+        exec(KVInstructions.id, SET_OC, id.encode(), ProtostuffCodec.write(tableDefinition)).join();
         tableDefinitions.put(id, tableDefinition);
     }
 
@@ -65,15 +65,19 @@ public class LocalMetaStore {
     }
 
     public Map<CommonId, TableDefinition> getTables() {
-        return Collections.emptyMap();
-    }
-
-    public Map<CommonId, Location> getTableMirrors(CommonId commonId) {
-        return null;
+        Map<CommonId, TableDefinition> tables = new HashMap<>();
+        Iterator<KeyValue> iterator = view(
+            KVInstructions.id, SCAN_OC, TABLE_PREFIX.encode(), TABLE_PREFIX.encode(), true
+        );
+        while (iterator.hasNext()) {
+            KeyValue next = iterator.next();
+            tables.put(CommonId.decode(next.getKey()), ProtostuffCodec.read(next.getValue()));
+        }
+        return tables;
     }
 
     public void deleteTable(CommonId id) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_OC, id.encode());
+        exec(KVInstructions.id, KVInstructions.DEL_OC, id.encode());
         tableDefinitions.remove(id);
     }
 

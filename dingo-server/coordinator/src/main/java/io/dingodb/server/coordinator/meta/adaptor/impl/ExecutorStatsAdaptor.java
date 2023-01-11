@@ -18,20 +18,20 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.StatsAdaptor;
 import io.dingodb.server.protocol.meta.ExecutorStats;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
 
+@AutoService(StatsAdaptor.class)
 public class ExecutorStatsAdaptor extends BaseStatsAdaptor<ExecutorStats> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.stats, STATS_IDENTIFIER.executor);
 
-    public ExecutorStatsAdaptor(MetaStore metaStatsStore) {
-        super(metaStatsStore);
-        MetaAdaptorRegistry.register(ExecutorStats.class, this);
+    @Override
+    public Class<ExecutorStats> adaptFor() {
+        return ExecutorStats.class;
     }
 
     @Override
@@ -39,12 +39,4 @@ public class ExecutorStatsAdaptor extends BaseStatsAdaptor<ExecutorStats> {
         return META_ID;
     }
 
-    @AutoService(BaseStatsAdaptor.Creator.class)
-    public static class Creator
-        implements BaseStatsAdaptor.Creator<ExecutorStats, ExecutorStatsAdaptor> {
-        @Override
-        public ExecutorStatsAdaptor create(MetaStore metaStore) {
-            return new ExecutorStatsAdaptor(metaStore);
-        }
-    }
 }

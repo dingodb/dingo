@@ -26,6 +26,8 @@ dependencies {
     api project(':dingo-net-api')
     implementation project(":dingo-common")
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
+
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
 }
 
 task fatJar(type: Jar) {

@@ -16,21 +16,22 @@
 
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.Column;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
+@AutoService(Adaptor.class)
 public class ColumnAdaptor extends BaseAdaptor<Column> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.column);
 
-    public ColumnAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(Column.class, this);
+    @Override
+    public Class<Column> adaptFor() {
+        return Column.class;
     }
 
     @Override
@@ -45,7 +46,7 @@ public class ColumnAdaptor extends BaseAdaptor<Column> {
             META_ID.type(),
             META_ID.identifier(),
             tableSeq,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), tableSeq).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier(), tableSeq).encode())
         );
     }
 

@@ -17,7 +17,6 @@
 package io.dingodb.calcite.visitor;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -42,6 +41,7 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionStrategy;
@@ -51,7 +51,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
@@ -91,9 +90,11 @@ import io.dingodb.exec.operator.data.SortDirection;
 import io.dingodb.exec.operator.data.SortNullDirection;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -126,7 +127,6 @@ import static io.dingodb.common.util.Utils.sole;
 public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     private final IdGenerator idGenerator;
     private final Location currentLocation;
-    private final MetaCache metaCache;
     @Getter
     private final Job job;
 
@@ -134,7 +134,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
-        this.metaCache = new MetaCache();
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
@@ -142,7 +141,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot) {
-        MetaCache.initTableDefinitions();
         IdGenerator idGenerator = new IdGeneratorImpl();
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
@@ -152,6 +150,21 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         if (log.isDebugEnabled()) {
             log.info("job = {}", job);
         }
+    }
+
+    private static MetaService getMetaService(@NonNull RelOptTable table) {
+        List<String> names = table.getQualifiedName();
+        // ignore 0 root schema
+        MetaService metaService = MetaService.root();
+        for (int i = 1; i < names.size() - 1; i++) {
+            metaService = metaService.getSubMetaService(names.get(i));
+        }
+        return metaService;
+    }
+
+    public static String getTableName(@NonNull RelOptTable table) {
+        List<String> names = table.getQualifiedName();
+        return names.get(names.size() - 1);
     }
 
     private static @NonNull SortCollation toSortCollation(@NonNull RelFieldCollation collation) {
@@ -341,9 +354,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         @NonNull DingoRelPartitionByTable partition
     ) {
         List<Output> outputs = new LinkedList<>();
-        String tableName = MetaCache.getTableName(partition.getTable());
-        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        String tableName = getTableName(partition.getTable());
+        MetaService metaService = getMetaService(partition.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, Part> parts = metaService.getParts(td.getName());
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         for (Output input : inputs) {
             Task task = input.getTask();
@@ -365,7 +379,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         @NonNull DingoRelPartitionByKeys hash
     ) {
         List<Output> outputs = new LinkedList<>();
-        final Collection<Location> locations = Services.CLUSTER.getComputingLocations();
+        final Collection<Location> locations = ClusterService.getDefault().getComputingLocations();
         final HashStrategy hs = new SimpleHashStrategy();
         for (Output input : inputs) {
             Task task = input.getTask();
@@ -443,10 +457,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoGetByKeys rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-        final TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        final CommonId tableId = this.metaCache.getTableId(tableName);
+        String tableName = getTableName(rel.getTable());
+        MetaService metaService = getMetaService(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        final NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
+        final CommonId tableId = metaService.getTableId(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         List<Object[]> keyTuples = getTuplesFromKeyItems(rel.getKeyItems(), td);
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
@@ -506,9 +521,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     public Collection<Output> visit(@NonNull DingoTableModify rel) {
         Collection<Output> inputs = dingo(rel.getInput()).accept(this);
         List<Output> outputs = new LinkedList<>();
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        final CommonId tableId = this.metaCache.getTableId(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        final CommonId tableId = metaService.getTableId(tableName);
         for (Output input : inputs) {
             Task task = input.getTask();
             Operator operator;
@@ -627,10 +643,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoTableScan rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        List<Location> distributes = this.metaCache.getDistributes(tableName);
-        CommonId tableId = this.metaCache.getTableId(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        List<Location> distributes = metaService.getDistributes(tableName);
+        CommonId tableId = metaService.getTableId(tableName);
         List<Output> outputs = new ArrayList<>(distributes.size());
         RexNode filter = rel.getFilter();
         for (int i = 0; i < distributes.size(); i++) {
@@ -675,9 +692,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         DingoRelPartition distribution = streaming.getDistribution();
         if (distribution instanceof DingoRelPartitionByTable) {
             List<Output> outputs = new LinkedList<>();
-            String tableName = MetaCache.getTableName(((DingoRelPartitionByTable) distribution).getTable());
-            final NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-            final TableDefinition td = this.metaCache.getTableDefinition(tableName);
+            MetaService metaService = getMetaService(((DingoRelPartitionByTable) distribution).getTable());
+            String tableName = getTableName(((DingoRelPartitionByTable) distribution).getTable());
+            final TableDefinition td = metaService.getTableDefinition(tableName);
+            final NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
             final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
             Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
                 rel.getTuples(),
@@ -705,11 +723,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartCountDelete rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        CommonId tableId = this.metaCache.getTableId(tableName);
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
-        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
-        List<Location> distributeNodes = this.metaCache.getDistributes(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        CommonId tableId = metaService.getTableId(tableName);
+        NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
+        List<Location> distributeNodes = metaService.getDistributes(tableName);
 
         List<Output> outputs = new ArrayList<>(distributeNodes.size());
         Map<Location, List<String>> groupAllPartKeysByAddress = groupAllPartKeysByAddress(parts);
@@ -738,14 +757,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartRangeScan rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
         SqlExpr filter = null;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
 
-        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
         byte[] startKey = rel.getStartKey();
         byte[] endKey = rel.getEndKey();
 
@@ -781,7 +801,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             while (partIterator.hasNext()) {
                 Map.Entry<byte[], byte[]> next = partIterator.next();
                 PartRangeScanOperator operator = new PartRangeScanOperator(
-                    this.metaCache.getTableId(tableName),
+                    metaService.getTableId(tableName),
                     next.getKey(),
                     td.getDingoType(),
                     td.getKeyMapping(),
@@ -808,12 +828,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartRangeDelete rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        CommonId tableId = this.metaCache.getTableId(tableName);
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
+        CommonId tableId = metaService.getTableId(tableName);
         List<Output> outputs = new ArrayList<>();
 
-        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
         // Get all partitions based on startKey and endKey
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<byte[], byte[]> partMap = ps.calcPartitionRange(rel.getStartKey(), rel.getEndKey(), false);
@@ -841,13 +862,14 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
     @Override
     public Collection<Output> visit(@NonNull DingoLikeScan rel) {
-        String tableName = MetaCache.getTableName(rel.getTable());
-        TableDefinition td = this.metaCache.getTableDefinition(tableName);
+        MetaService metaService = getMetaService(rel.getTable());
+        String tableName = getTableName(rel.getTable());
+        final TableDefinition td = metaService.getTableDefinition(tableName);
         SqlExpr filter = null;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
-        NavigableMap<ComparableByteArray, Part> parts = this.metaCache.getParts(tableName);
+        NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(tableName);
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
         Map<byte[], byte[]> prefixRange = ps.calcPartitionByPrefix(rel.getPrefix());
         List<Output> outputs = new ArrayList<>();
@@ -856,7 +878,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         while (partIterator.hasNext()) {
             Map.Entry<byte[], byte[]> next = partIterator.next();
             LikeScanOperator operator = new LikeScanOperator(
-                this.metaCache.getTableId(tableName),
+                metaService.getTableId(tableName),
                 next.getKey(),
                 td.getDingoType(),
                 td.getKeyMapping(),

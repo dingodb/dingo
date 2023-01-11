@@ -57,6 +57,8 @@ public class Configuration {
     private ScheduleConfiguration schedule = new ScheduleConfiguration();
     private Integer monitorPort = 9088;
 
+    private boolean mem = false;
+
     public static String dataPath() {
         return INSTANCE.dataPath;
     }
@@ -67,6 +69,10 @@ public class Configuration {
 
     public static Integer monitorPort() {
         return INSTANCE.monitorPort;
+    }
+
+    public static boolean isMem() {
+        return INSTANCE.mem;
     }
 
     public static List<Location> servers() {

@@ -29,8 +29,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.Privilege;
 import io.dingodb.server.protocol.meta.PrivilegeDict;
 import io.dingodb.server.protocol.meta.SchemaPriv;
@@ -55,33 +54,30 @@ import static io.dingodb.server.protocol.ListenerTags.LISTEN_RELOAD_PRIVILEGES;
 import static io.dingodb.server.protocol.ListenerTags.LISTEN_RELOAD_PRIVILEGE_DICT;
 
 @Slf4j
+@AutoService(Adaptor.class)
 public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.privilege, PRIVILEGE_IDENTIFIER.privilege);
 
-    protected final Map<CommonId, List<Privilege>> privilegeMap;
+    protected final Map<CommonId, List<Privilege>> privilegeMap = new ConcurrentHashMap<>();
 
     public List<String> flushPrivileges = new CopyOnWriteArrayList<>();
 
     public List<Channel> channels = new CopyOnWriteArrayList<>();
 
-    public PrivilegeAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(Privilege.class, this);
-        privilegeMap = new ConcurrentHashMap<>();
+    @Override
+    public Class<Privilege> adaptFor() {
+        return Privilege.class;
+    }
 
+    @Override
+    public void reload() {
+        super.reload();
+        privilegeMap.clear();
         metaMap.forEach((k, v) -> privilegeMap.computeIfAbsent(v.getSubjectId(), p -> new ArrayList<>()).add(v));
         log.info("init privilegeMap:" + privilegeMap);
         NetService.getDefault().registerTagMessageListener(LISTEN_REGISTRY_RELOAD, this::registryReloadChannel);
         NetService.getDefault().registerTagMessageListener(LISTEN_RELOAD_PRIVILEGES, this::flushPrivileges);
-    }
-
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<Privilege, PrivilegeAdaptor> {
-        @Override
-        public PrivilegeAdaptor create(MetaStore metaStore) {
-            return new PrivilegeAdaptor(metaStore);
-        }
     }
 
     @Override
@@ -89,7 +85,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(), privilege.getSubjectId().seq(),
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 

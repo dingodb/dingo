@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    api project(":dingo-meta-api")
+    api project(":dingo-common")
 }

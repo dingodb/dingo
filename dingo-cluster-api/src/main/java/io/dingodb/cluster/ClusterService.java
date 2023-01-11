@@ -22,5 +22,10 @@ import io.dingodb.common.Location;
 import java.util.List;
 
 public interface ClusterService {
+
+    static ClusterService getDefault() {
+        return ClusterServiceProvider.getDefault().get();
+    }
+
     List<Location> getComputingLocations();
 }

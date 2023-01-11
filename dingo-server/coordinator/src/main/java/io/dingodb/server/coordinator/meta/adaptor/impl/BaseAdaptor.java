@@ -17,33 +17,75 @@
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.NoBreakFunctions;
+import io.dingodb.server.coordinator.CoordinatorSidebar;
+import io.dingodb.server.coordinator.meta.Constant;
 import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Meta;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.DebugLog.debug;
+import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
+import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
 @Slf4j
 public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
-    protected final NavigableMap<CommonId, M> metaMap = new ConcurrentSkipListMap<>();
-    protected final MetaStore metaStore;
+    @Getter
+    protected final CommonId id = CommonId
+        .prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, 2, Constant.ADAPTOR_SEQ_MAP.get(getClass()));
+    @Getter
+    protected final TableDefinition definition = Constant.ADAPTOR_DEFINITION_MAP.get(adaptFor());
 
-    public BaseAdaptor(MetaStore metaStore) {
-        this.metaStore = metaStore;
-        Iterator<KeyValue> iterator = this.metaStore.keyValueScan(metaId().encode());
+    protected final NavigableMap<CommonId, M> metaMap = new ConcurrentSkipListMap<>();
+
+    protected final DingoKeyValueCodec codec = definition.createCodec();
+
+    protected MetaStore metaStore() {
+        return CoordinatorSidebar.INSTANCE.getMetaStore();
+    }
+
+    @Override
+    public CommonId id() {
+        return id;
+    }
+
+    @Override
+    public synchronized void reload() {
+        metaMap.clear();
+        Iterator<KeyValue> iterator = metaStore().keyValueScan(metaId().encode());
         while (iterator.hasNext()) {
             M meta = decodeMeta(iterator.next().getValue());
             metaMap.put(meta.getId(), meta);
         }
+    }
+
+    @Override
+    public String[] arrayValues(M meta) {
+        Map<String, String> strValueMap = meta.strValues();
+        String[] values = new String[strValueMap.size()];
+        List<ColumnDefinition> columns = definition.getColumns();
+        for (int i = 0; i < columns.size(); i++) {
+            values[i] = strValueMap.get(columns.get(i).getName());
+        }
+        return values;
     }
 
     protected M decodeMeta(byte[] content) {
@@ -57,11 +99,11 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
     protected abstract CommonId newId(M meta);
 
     protected void doSave(M meta) {
-        metaStore.upsertKeyValue(meta.getId().encode(), encodeMeta(meta));
+        metaStore().upsertKeyValue(meta.getId().encode(), encodeMeta(meta));
     }
 
     protected void doDelete(M meta) {
-        metaStore.delete(meta.getId().encode());
+        metaStore().delete(meta.getId().encode());
     }
 
     @Override
@@ -73,7 +115,7 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         meta.setUpdateTime(System.currentTimeMillis());
         doSave(meta);
         metaMap.put(meta.getId(), meta);
-        log.info("Save meta {}", meta);
+        debug(log, "Save meta {}", meta);
         return meta.getId();
     }
 
@@ -102,11 +144,11 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         if (meta == null) {
             throw new RuntimeException("Not found " + id);
         } else {
-            log.info("Execute delete [{}] => {}", id, meta);
+            debug(log, "Execute delete [{}] => {}", id, meta);
         }
         doDelete(meta);
         metaMap.remove(id);
-        log.info("Delete done [{}] => {}", id, meta);
+        debug(log, "Delete done [{}] => {}", id, meta);
     }
 
     @Override
@@ -114,8 +156,28 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
         return new ArrayList<>(metaMap.values());
     }
 
-    public interface Creator<M extends Meta, A extends BaseAdaptor<M>> {
-        A create(MetaStore metaStore);
+    @Override
+    public byte[] getValueByPrimaryKey(byte[] primaryKey) {
+        return getKeyValueByPrimaryKey(primaryKey).getValue();
+    }
+
+    @Override
+    public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
+        try {
+            return codec.encode(arrayValues(get(CommonId.decode(primaryKey))));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
+        return primaryKeys.stream().map(this::getKeyValueByPrimaryKey).collect(Collectors.toList());
+    }
+
+    @Override
+    public Iterator<KeyValue> keyValueScan() {
+        return getAll().stream().map(this::arrayValues).map(NoBreakFunctions.wrap(codec::encode)).iterator();
     }
 
 }

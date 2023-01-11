@@ -17,37 +17,56 @@
 package io.dingodb.server.coordinator.meta.store;
 
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.mpu.core.Core;
-import io.dingodb.mpu.core.VCore;
-import io.dingodb.mpu.instruction.InstructionSetRegistry;
+import io.dingodb.mpu.core.Sidebar;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.mpu.instruction.SeqInstructions;
+import io.dingodb.mpu.storage.Storage;
+import io.dingodb.mpu.storage.mem.MemStorage;
+import io.dingodb.mpu.storage.rocks.RocksStorage;
+import io.dingodb.server.coordinator.config.Configuration;
 import io.dingodb.store.api.StoreInstance;
 
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class MetaStore implements StoreInstance {
 
-    private final Core core;
+    private final Sidebar sidebar;
 
-    public MetaStore(Core core) {
-        this.core = core;
+    public MetaStore(Sidebar sidebar) {
+        this.sidebar = sidebar;
+    }
+
+    public static Storage createStorage(String label) {
+        if (Configuration.isMem()) {
+            return new MemStorage();
+        } else {
+            try {
+                return new RocksStorage(label, Paths.get(Configuration.dataPath(), "db"));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public int generateSeq(byte[] key) {
-        return core.exec(SeqInstructions.id, 0, key).join();
+        return sidebar.exec(SeqInstructions.id, 0, key).join();
+    }
+
+    public int generateSeq(byte[] key, int base) {
+        return sidebar.exec(SeqInstructions.id, 0, key, base).join();
     }
 
     @Override
     public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        return core.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
+        return sidebar.view(KVInstructions.id, KVInstructions.GET_OC, primaryKey);
     }
 
     @Override
     public Iterator<KeyValue> keyValueScan() {
-        return core.view(KVInstructions.id, KVInstructions.SCAN_OC);
+        return sidebar.view(KVInstructions.id, KVInstructions.SCAN_OC);
     }
 
     @Override
@@ -57,24 +76,24 @@ public class MetaStore implements StoreInstance {
 
     @Override
     public Iterator<KeyValue> keyValueScan(byte[] start, byte[] end, boolean includeStart, boolean includeEnd) {
-        return core.view(KVInstructions.id, KVInstructions.SCAN_OC, start, end, includeStart, includeEnd);
+        return sidebar.view(KVInstructions.id, KVInstructions.SCAN_OC, start, end, includeStart, includeEnd);
     }
 
     @Override
     public boolean upsertKeyValue(KeyValue row) {
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, row.getKey(), row.getValue()).join();
+        sidebar.exec(KVInstructions.id, KVInstructions.SET_OC, row.getKey(), row.getValue()).join();
         return true;
     }
 
     @Override
     public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
+        sidebar.exec(KVInstructions.id, KVInstructions.SET_OC, primaryKey, row).join();
         return true;
     }
 
     @Override
     public boolean upsertKeyValue(List<KeyValue> rows) {
-        core.exec(
+        sidebar.exec(
             KVInstructions.id, KVInstructions.SET_BATCH_OC,
             rows.stream().flatMap(kv -> Stream.of(kv.getPrimaryKey(), kv.getValue())).toArray()
         ).join();
@@ -83,13 +102,13 @@ public class MetaStore implements StoreInstance {
 
     @Override
     public boolean delete(byte[] key) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_OC, key).join();
+        sidebar.exec(KVInstructions.id, KVInstructions.DEL_OC, key).join();
         return true;
     }
 
     @Override
     public boolean delete(List<byte[]> primaryKeys) {
-        core.exec(KVInstructions.id, KVInstructions.DEL_BATCH_OC, primaryKeys.toArray()).join();
+        sidebar.exec(KVInstructions.id, KVInstructions.DEL_BATCH_OC, primaryKeys.toArray()).join();
         return true;
     }
 

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoDdlExecutor;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
-import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
@@ -38,7 +37,6 @@ import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.verify.privilege.PrivilegeVerify;
-import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -236,8 +234,7 @@ public final class DingoDriverParser extends DingoParser {
             // todo if schema is null and use default schema (use schema)
             schema = "DINGO";
         }
-        UserService userService = UserServiceProvider.getRoot();
-        return userService.getSchemaIdByCache(schema);
+        return UserServiceProvider.getRoot().getSchemaId(schema);
     }
 
     @Nonnull
@@ -246,7 +243,6 @@ public final class DingoDriverParser extends DingoParser {
         String jobIdPrefix,
         String sql
     ) {
-        MetaCache.initTableDefinitions();
         SqlNode sqlNode;
         try {
             sqlNode = parse(sql);
@@ -275,6 +271,7 @@ public final class DingoDriverParser extends DingoParser {
         try {
             sqlNode = validator.validate(sqlNode);
         } catch (CalciteContextException e) {
+            log.error("Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         }
         Meta.StatementType statementType;

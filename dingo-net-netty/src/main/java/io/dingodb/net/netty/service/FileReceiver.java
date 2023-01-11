@@ -19,8 +19,6 @@ package io.dingodb.net.netty.service;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.Channel;
-import io.dingodb.net.netty.NetService;
-import io.dingodb.net.netty.NetServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -33,27 +31,18 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
-import static io.dingodb.net.netty.Constant.FILE_TRANSFER;
 
 @Slf4j
 public class FileReceiver implements Consumer<ByteBuffer> {
 
-    private static final NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
-
-    // Note: This function is called in FileSender class's static code
-    public static void registerFileTransferMessageListener() {
-        netService.registerTagMessageListener(
-            FILE_TRANSFER,
-            (msg, ch) -> {
-                try {
-                    ((Channel) ch).directListener(
-                        new FileReceiver(Paths.get(PrimitiveCodec.readString(msg.content())), (Channel) ch)
-                    );
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        );
+    public static void onReceive(Message msg, io.dingodb.net.Channel ch) {
+        try {
+            ((Channel) ch).directListener(
+                new FileReceiver(Paths.get(PrimitiveCodec.readString(msg.content())), (Channel) ch)
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private final FileChannel fileChannel;

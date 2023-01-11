@@ -17,6 +17,7 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
@@ -70,9 +71,10 @@ public class SqlHelper {
                 Objects.requireNonNull(SqlHelper.class.getResource("/config.yaml")).getPath()
             );
         }
+
         Services.initNetService();
         Services.NET.listenPort(FakeLocation.PORT);
-        connection = getLocalConnection();
+
         TreeMap<ByteArrayUtils.ComparableByteArray, Part> defaultPart = new TreeMap<>();
         byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
         byte[] endKey = ByteArrayUtils.MAX_BYTES;
@@ -84,8 +86,12 @@ public class SqlHelper {
             endKey
         ));
         MetaService metaService = MetaService.ROOT;
+        metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
         metaService.setParts(defaultPart);
         MetaService.setLocation(new FakeLocation(0));
+
+        connection = getLocalConnection();
+
     }
 
     public SqlHelper(Connection connection) {

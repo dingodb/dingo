@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.mpu.api;
+package io.dingodb.server.protocol;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.annotation.ApiDeclaration;
-import io.dingodb.mpu.MPURegister;
-import io.dingodb.mpu.instruction.KVInstructions;
+import lombok.AllArgsConstructor;
 
-public interface KVApi {
+@AllArgsConstructor
+public class MetaListenEvent {
 
-    @ApiDeclaration
-    default void set(CommonId core, byte[] key, byte[] value) {
-        MPURegister.get(core).exec(KVInstructions.id, KVInstructions.SET_OC, key, value).join();
+    public enum Event {
+        CREATE_SCHEMA,
+        CREATE_TABLE,
+        UPDATE_SCHEMA,
+        UPDATE_TABLE,
+        DELETE_SCHEMA,
+        DELETE_TABLE
     }
 
-    @ApiDeclaration
-    default Object get(CommonId core, byte[] key) {
-        return MPURegister.get(core).view(KVInstructions.id, KVInstructions.GET_OC, key);
+    public final Event event;
+    public final Object meta;
+
+    public <M> M meta() {
+        return (M) meta;
     }
 
 }

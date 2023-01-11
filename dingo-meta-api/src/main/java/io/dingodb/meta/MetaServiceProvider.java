@@ -16,14 +16,32 @@
 
 package io.dingodb.meta;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Iterator;
 import java.util.ServiceLoader;
 
 public interface MetaServiceProvider {
 
+    @Slf4j
+    class Impl {
+        private static final Impl INSTANCE = new Impl();
+
+        private final MetaServiceProvider serviceProvider;
+
+        private Impl() {
+            Iterator<MetaServiceProvider> iterator = ServiceLoader.load(MetaServiceProvider.class).iterator();
+            this.serviceProvider = iterator.next();
+            if (iterator.hasNext()) {
+                log.warn("Load multi meta service provider, use {}.", serviceProvider.getClass().getName());
+            }
+        }
+    }
+
     MetaService root();
 
-    static MetaService getRoot() {
-        return ServiceLoader.load(MetaServiceProvider.class).iterator().next().root();
+    static MetaServiceProvider getDefault() {
+        return Impl.INSTANCE.serviceProvider;
     }
 
 }

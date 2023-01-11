@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Accessors(chain = true, fluent = true)
 class ControlUnit {
 
-    public final VCore core;
-    public final boolean local;
-    public final long startClock;
+    protected final VCore core;
+    protected final boolean local;
+    protected final long startClock;
 
     private CoreMeta first;
     private CoreMeta second;
@@ -94,7 +94,10 @@ class ControlUnit {
         log.info("{} control unit connect {} on {}.", core.meta.label, mirror.label, clock);
         PhaseAck ack = process(EmptyInstructions.id, EmptyInstructions.EMPTY);
         ack.join();
-        log.info("{} control unit connected {} on {}.", core.meta.label, mirror.label, ack.clock);
+        if (core.isAvailable()) {
+            core.notifier.notify(core.listeners, CoreListener.Event.MIRROR_CONNECT, __ -> __.mirrorConnect(clock));
+        }
+        log.info("{} control unit connected {} on {}.", core.meta.label, mirror.label, ack.joinClock());
     }
 
     protected synchronized void onMirrorClose(CoreMeta mirror) {

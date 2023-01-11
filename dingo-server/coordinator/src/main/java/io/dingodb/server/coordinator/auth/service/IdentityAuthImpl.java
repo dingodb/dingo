@@ -22,13 +22,10 @@ import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.server.coordinator.CoordinatorSidebar;
 import io.dingodb.server.coordinator.api.UserServiceApi;
-import io.dingodb.server.coordinator.state.CoordinatorStateMachine;
 import io.dingodb.verify.auth.IdentityAuth;
-import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 public class IdentityAuthImpl implements IdentityAuth {
@@ -64,8 +61,8 @@ public class IdentityAuthImpl implements IdentityAuth {
         String user = authentication.getUsername();
         String host = authentication.getHost();
         UserDefinition userDefinition = null;
-        if (!CoordinatorStateMachine.stateMachine.isPrimary()) {
-            Location location = CoordinatorStateMachine.stateMachine.getServerApi().leader(null);
+        if (!CoordinatorSidebar.INSTANCE.isPrimary()) {
+            Location location = CoordinatorSidebar.INSTANCE.getPrimary().location;
             io.dingodb.server.api.UserServiceApi remoteApi
                 = ApiRegistry.getDefault().proxy(io.dingodb.server.api.UserServiceApi.class, location);
             userDefinition = remoteApi.getUserDefinition(user, host);

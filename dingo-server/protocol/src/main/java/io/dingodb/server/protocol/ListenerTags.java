@@ -16,7 +16,7 @@
 
 package io.dingodb.server.protocol;
 
-public class ListenerTags {
+public final class ListenerTags {
 
     public static final String LISTEN_SERVICE_LEADER = "LISTEN_SERVICE";
 
@@ -24,6 +24,14 @@ public class ListenerTags {
     public static final String LISTEN_RELOAD_PRIVILEGES = "LISTEN_RELOAD_PRIVILEGES";
 
     public static final String LISTEN_RELOAD_PRIVILEGE_DICT = "LISTEN_RELOAD_PRIVILEGE_DICT";
+
+    public final class MetaListener {
+        public static final String TABLE_DEFINITION = "TABLE_DEFINITION";
+        public static final String SCHEMA = "SCHEMA";
+
+        private MetaListener() {
+        }
+    }
 
     private ListenerTags() {
     }

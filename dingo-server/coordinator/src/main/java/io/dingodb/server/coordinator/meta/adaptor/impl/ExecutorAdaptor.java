@@ -19,8 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.Executor;
 
 import java.util.Map;
@@ -30,15 +29,22 @@ import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
 
+@AutoService(Adaptor.class)
 public class ExecutorAdaptor extends BaseAdaptor<Executor> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.service, SERVICE_IDENTIFIER.executor);
 
     protected final Map<Location, Executor> locationMap = new ConcurrentHashMap<>();
 
-    public ExecutorAdaptor(MetaStore metaStore) {
-        super(metaStore);
-        MetaAdaptorRegistry.register(Executor.class, this);
+    @Override
+    public Class<Executor> adaptFor() {
+        return Executor.class;
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+        locationMap.clear();
         metaMap.values().forEach(__ -> locationMap.put(__.location(), __));
     }
 
@@ -63,7 +69,7 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
         return new CommonId(
             META_ID.type(),
             META_ID.identifier(), ROOT_DOMAIN,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode())
         );
     }
 
@@ -75,11 +81,4 @@ public class ExecutorAdaptor extends BaseAdaptor<Executor> {
         return get(id).location();
     }
 
-    @AutoService(BaseAdaptor.Creator.class)
-    public static class Creator implements BaseAdaptor.Creator<Executor, ExecutorAdaptor> {
-        @Override
-        public ExecutorAdaptor create(MetaStore metaStore) {
-            return new ExecutorAdaptor(metaStore);
-        }
-    }
 }

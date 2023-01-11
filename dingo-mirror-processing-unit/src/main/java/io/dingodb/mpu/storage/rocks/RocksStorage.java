@@ -22,7 +22,6 @@ import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
-import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.StorageApi;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.Context;
@@ -79,7 +78,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.API;
 import static io.dingodb.mpu.Constant.CF_DEFAULT;
@@ -372,7 +370,7 @@ public class RocksStorage implements Storage {
 
     @Override
     public CompletableFuture<Void> transferTo(CoreMeta meta) {
-        log.info(String.format("RocksStorage::transferTo [%s][%s]", meta.label, meta.location.toString()));
+        log.info("RocksStorage::transferTo [{}][{}]", meta.label, meta.location.toString());
         return Executors.submit("transfer-to-" + meta.label, () -> {
             // call backup() to create new checkpoint
             backup();
@@ -389,7 +387,6 @@ public class RocksStorage implements Storage {
 
             //call remote node to apply checkpoint into db
             storageApi.applyBackup(meta.coreId);
-            return null;
         });
     }
 
@@ -711,6 +708,22 @@ public class RocksStorage implements Storage {
     }
 
     @Override
+    public Reader metaReader() {
+        if (destroy) {
+            throw new RuntimeException();
+        }
+        return new Reader(db, mcfHandler);
+    }
+
+    @Override
+    public Writer metaWriter(Instruction instruction) {
+        if (destroy) {
+            throw new RuntimeException();
+        }
+        return new Writer(db, instruction, dcfHandler);
+    }
+
+    @Override
     public Reader reader() {
         if (destroy) {
             throw new RuntimeException();
@@ -739,14 +752,14 @@ public class RocksStorage implements Storage {
         try {
             Instruction instruction = writer.instruction();
             WriteBatch batch = ((Writer) writer).writeBatch();
-            byte[] clockValue;
-            if (withTtl) {
-                clockValue = new byte[Long.BYTES + Integer.BYTES];
-                encodeLong(instruction.clock, clockValue, 0);
-                encodeInt(Utils.currentSecond(), clockValue);
-            } else {
-                clockValue = PrimitiveCodec.encodeLong(instruction.clock);
-            }
+            byte[] clockValue = PrimitiveCodec.encodeLong(instruction.clock);
+            //if (withTtl) {
+            //    clockValue = new byte[Long.BYTES + Integer.BYTES];
+            //    encodeLong(instruction.clock, clockValue, 0);
+            //    encodeInt(Utils.currentSecond(), clockValue);
+            //} else {
+            //    clockValue = PrimitiveCodec.encodeLong(instruction.clock);
+            //}
             batch.put(mcfHandler, CLOCK_K, clockValue);
             this.db.write(writeOptions, batch);
         } catch (Exception e) {

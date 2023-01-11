@@ -50,11 +50,6 @@ public class FileSender implements io.dingodb.net.service.FileTransferService {
     public FileSender() {
     }
 
-    // registerTagMessageListener for tag FILE_TRANSFER
-    static {
-        FileReceiver.registerFileTransferMessageListener();
-    }
-
     @Override
     public void transfer(Location location, Path source, Path target) {
         log.info(String.format("FileSender::transfer Location=[%s] Path=from [%s] to [%s]",

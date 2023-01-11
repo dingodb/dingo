@@ -64,6 +64,10 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return table.unwrap(DingoTable.class);
     }
 
+    public DingoSchema getSchema() {
+        return (DingoSchema) context.getSchemaByNames(names).schema;
+    }
+
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return DefinitionMapper.mapToRelDataType(tableDefinition, typeFactory);

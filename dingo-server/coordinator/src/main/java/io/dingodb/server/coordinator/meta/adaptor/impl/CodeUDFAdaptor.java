@@ -16,20 +16,23 @@
 
 package io.dingodb.server.coordinator.meta.adaptor.impl;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.server.coordinator.meta.store.MetaStore;
+import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.CodeUDF;
 
 import static io.dingodb.server.protocol.CommonIdConstant.FUNCTION_IDENTIFIER;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.ROOT_DOMAIN;
 
-public class UDFAdaptor extends BaseAdaptor<CodeUDF> {
+@AutoService(Adaptor.class)
+public class CodeUDFAdaptor extends BaseAdaptor<CodeUDF> {
 
     public static final CommonId META_ID = CommonId.prefix(ID_TYPE.function, FUNCTION_IDENTIFIER.codeUDF);
 
-    public UDFAdaptor(MetaStore metaStore) {
-        super(metaStore);
+    @Override
+    public Class<CodeUDF> adaptFor() {
+        return CodeUDF.class;
     }
 
     @Override
@@ -43,7 +46,7 @@ public class UDFAdaptor extends BaseAdaptor<CodeUDF> {
             META_ID.type(),
             META_ID.identifier(),
             ROOT_DOMAIN,
-            metaStore.generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode()),
+            metaStore().generateSeq(CommonId.prefix(META_ID.type(), META_ID.identifier()).encode()),
             meta.getVersion()
         );
     }

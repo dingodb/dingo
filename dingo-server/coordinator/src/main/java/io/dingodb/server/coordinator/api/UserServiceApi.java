@@ -28,20 +28,17 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.coordinator.meta.adaptor.impl.PrivilegeAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.PrivilegeDictAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.SchemaPrivAdaptor;
-import io.dingodb.server.coordinator.meta.adaptor.impl.TableAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.TablePrivAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.UserAdaptor;
 import io.dingodb.server.protocol.meta.Privilege;
 import io.dingodb.server.protocol.meta.PrivilegeDict;
 import io.dingodb.server.protocol.meta.SchemaPriv;
-import io.dingodb.server.protocol.meta.Table;
 import io.dingodb.server.protocol.meta.TablePriv;
 import io.dingodb.server.protocol.meta.User;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
-import static io.dingodb.server.coordinator.api.MetaServiceApi.ROOT_ID;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
 
 @Slf4j
@@ -118,26 +115,13 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
     public PrivilegeGather getPrivilegeDef(Channel channel, String user, String host) {
         log.info(" user: {}, host: {}", user, host);
         PrivilegeAdaptor privilegeAdaptor = getMetaAdaptor(Privilege.class);
-        PrivilegeGather privilegeDefinition = privilegeAdaptor.getPrivilegeGather(
-            user, host);
+        PrivilegeGather privilegeDefinition = privilegeAdaptor.getPrivilegeGather(user, host);
         return privilegeDefinition;
     }
 
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
         return ((UserAdaptor) getMetaAdaptor(User.class)).getUserDefinition(user, host);
-    }
-
-    @Override
-    public CommonId getSchemaId(String schema) {
-        // todo
-        return ROOT_ID;
-    }
-
-    @Override
-    public CommonId getTableId(CommonId schemaId, String table) {
-        TableAdaptor tableAdaptor = getMetaAdaptor(Table.class);
-        return tableAdaptor.getTableId(schemaId, table.toUpperCase());
     }
 
     public void saveRootPrivilege(String userName, String host) {

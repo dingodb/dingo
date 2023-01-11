@@ -50,6 +50,10 @@ public interface Storage {
 
     long approximateSize();
 
+    Reader metaReader();
+
+    Writer metaWriter(Instruction instruction);
+
     /**
      * Get storage snapshot reader.
      *

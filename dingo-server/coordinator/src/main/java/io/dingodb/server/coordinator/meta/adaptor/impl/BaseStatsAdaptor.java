@@ -19,6 +19,7 @@ package io.dingodb.server.coordinator.meta.adaptor.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.server.coordinator.CoordinatorSidebar;
 import io.dingodb.server.coordinator.meta.adaptor.StatsAdaptor;
 import io.dingodb.server.coordinator.meta.store.MetaStore;
 import io.dingodb.server.protocol.meta.Stats;
@@ -36,11 +37,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public abstract class BaseStatsAdaptor<S extends Stats> implements StatsAdaptor<S> {
 
     protected final NavigableMap<CommonId, S> metaStatsMap = new ConcurrentSkipListMap<>();
-    protected final MetaStore metaStatsStore;
 
-    public BaseStatsAdaptor(MetaStore metaStatsStore) {
-        this.metaStatsStore = metaStatsStore;
-        Iterator<KeyValue> iterator = this.metaStatsStore.keyValueScan(statsId().encode());
+    protected MetaStore metaStatsStore() {
+        return CoordinatorSidebar.INSTANCE.getMetaStore();
+    }
+
+    @Override
+    public void reload() {
+        Iterator<KeyValue> iterator = metaStatsStore().keyValueScan(statsId().encode());
         while (iterator.hasNext()) {
             S tableSegment = decodeStats(iterator.next().getValue());
             metaStatsMap.put(tableSegment.getId(), tableSegment);
@@ -57,7 +61,7 @@ public abstract class BaseStatsAdaptor<S extends Stats> implements StatsAdaptor<
 
     @Override
     public void onStats(S stats) {
-        metaStatsStore.upsertKeyValue(stats.getId().encode(), encodeStats(stats));
+        metaStatsStore().upsertKeyValue(stats.getId().encode(), encodeStats(stats));
         metaStatsMap.put(stats.getId(), stats);
         if (log.isDebugEnabled()) {
             log.debug("Receive stats: {}", stats);
@@ -79,10 +83,6 @@ public abstract class BaseStatsAdaptor<S extends Stats> implements StatsAdaptor<
     @Override
     public Collection<S> getAllStats() {
         return new ArrayList<>(metaStatsMap.values());
-    }
-
-    public interface Creator<S extends Stats, A extends BaseStatsAdaptor<S>> {
-        A create(MetaStore statsMetaStore);
     }
 
 }

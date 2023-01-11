@@ -62,4 +62,5 @@ public interface Writer extends AutoCloseable {
 
     @Override
     void close();
+
 }

@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
@@ -36,6 +37,14 @@ public abstract class MutableSchema extends AbstractSchema {
         this.metaService = metaService;
     }
 
+    public CommonId id() {
+        return metaService.id();
+    }
+
+    public String name() {
+        return metaService.name();
+    }
+
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         metaService.createTable(tableName, tableDefinition);
     }
@@ -54,6 +63,10 @@ public abstract class MutableSchema extends AbstractSchema {
 
     public boolean dropTable(@NonNull String tableName) {
         return metaService.dropTable(tableName);
+    }
+
+    public CommonId getTableId(String tableName) {
+        return metaService.getTableId(tableName);
     }
 
     @Override

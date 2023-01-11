@@ -50,6 +50,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     private static final AtomicInteger tableSeq = new AtomicInteger(1);
     private static Location location;
     private static NavigableMap<ComparableByteArray, Part> defaultPart;
+
     private final CommonId id;
     private final String name;
 
@@ -119,12 +120,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public CommonId getTableId(@NonNull String tableName) {
-        tableName = tableName.toUpperCase();
+        String tableNameU = tableName.toUpperCase();
         return tableDefinitions.subMap(
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq()), true,
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq() + 1), false
             ).entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getValue().getName(), Map.Entry::getKey)).get(tableName);
+            .filter(e -> e.getValue().getName().equals(tableNameU))
+            .findAny().map(Map.Entry::getKey).orElse(null);
     }
 
     @Override
