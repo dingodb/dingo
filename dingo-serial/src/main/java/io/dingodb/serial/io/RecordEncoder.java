@@ -30,23 +30,39 @@ public class RecordEncoder {
     private final int approPerRecordSize;
     private final int perRecordKeySize;
 
-    public RecordEncoder(List<DingoSchema> schemas, short schemaVersion) {
-        this(schemas, schemaVersion, false);
+    private final byte unfishFlag;
+    private final byte finishedFlag;
+    private final byte deletedFlag;
+    private byte[] transactionId = new byte[0];
+
+
+    public RecordEncoder(List<DingoSchema> schemas, short schemaVersion,
+                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId) {
+        this(schemas, schemaVersion, unfishFlag, finishedFlag, deletedFlag, transactionId, false);
     }
 
-    public RecordEncoder(List<DingoSchema> schemas, short schemaVersion, boolean isKey) {
+    public RecordEncoder(List<DingoSchema> schemas, short schemaVersion,
+                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId, boolean isKey) {
         if (!isKey) {
             Utils.sortSchema(schemas);
         }
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;
+        this.unfishFlag = unfishFlag;
+        this.finishedFlag = finishedFlag;
+        this.deletedFlag = deletedFlag;
+        if (transactionId != null) {
+            this.transactionId = transactionId;
+        }
         int[] approSize = Utils.getApproPerRecordSize(schemas);
-        this.approPerRecordSize = approSize[0] + 3;
+        this.approPerRecordSize = approSize[0] + 9 + this.transactionId.length;
         this.perRecordKeySize = approSize[1];
     }
 
     public byte[] encode(Object[] record) throws IOException {
         BinaryEncoder be = new BinaryEncoder(new byte[approPerRecordSize]);
+        be.write(finishedFlag);
+        be.writeBytes(transactionId);
         be.writeShort(schemaVersion);
         for (DingoSchema schema : schemas) {
             switch (schema.getType()) {
@@ -106,6 +122,8 @@ public class RecordEncoder {
 
     public byte[] encode(byte[] record, int[] index, Object[] columns) throws IOException {
         BinaryEncoder be = new BinaryEncoder(record);
+        be.skipByte();
+        be.skipBytes();
         if (be.readShort() == this.schemaVersion) {
             List<Integer> indexList
                 = Arrays.stream(index).boxed().collect(Collectors.toList());
@@ -218,6 +236,8 @@ public class RecordEncoder {
 
     public byte[] encodeKey(byte[] record, int[] index, Object[] columns) throws IOException {
         BinaryEncoder be = new BinaryEncoder(record, perRecordKeySize);
+        be.skipByte();
+        be.skipBytes();
         if (be.readShort() == this.schemaVersion) {
             List<Integer> indexList
                 = Arrays.stream(index).boxed().collect(Collectors.toList());
@@ -334,6 +354,8 @@ public class RecordEncoder {
 
     private BinaryEncoder internalEncodeKey(Object[] record) throws IOException {
         BinaryEncoder be = new BinaryEncoder(new byte[approPerRecordSize], new byte[perRecordKeySize]);
+        be.write(finishedFlag);
+        be.writeBytes(transactionId);
         be.writeShort(schemaVersion);
         for (DingoSchema schema : schemas) {
             switch (schema.getType()) {

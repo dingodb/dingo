@@ -26,7 +26,6 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.Optional;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.AllArgsConstructor;
@@ -342,6 +341,16 @@ public class TableDefinition {
             }
         }
         return count;
+    }
+
+    public List<String> getNormalIndexes() {
+        List<String> normalIndexes = new ArrayList<>();
+        for (Map.Entry<String, Index> entry : indexes.entrySet()) {
+            if (entry.getValue().getStatus() == IndexStatus.NORMAL) {
+                normalIndexes.add(entry.getKey());
+            }
+        }
+        return normalIndexes;
     }
 
     public List<String> getBusyIndexes() {

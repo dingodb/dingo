@@ -28,20 +28,35 @@ public class RecordDecoder {
     private final List<DingoSchema> schemas;
     private final short schemaVersion;
 
-    public RecordDecoder(List<DingoSchema> schemas, short schemaVersion) {
-        this(schemas, schemaVersion, false);
+    private final byte unfishFlag;
+    private final byte finishedFlag;
+    private final byte deletedFlag;
+    private byte[] transactionId = new byte[0];
+
+    public RecordDecoder(List<DingoSchema> schemas, short schemaVersion,
+                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId) {
+        this(schemas, schemaVersion, unfishFlag, finishedFlag, deletedFlag, transactionId, false);
     }
 
-    public RecordDecoder(List<DingoSchema> schemas, short schemaVersion, boolean isKey) {
+    public RecordDecoder(List<DingoSchema> schemas, short schemaVersion,
+                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId, boolean isKey) {
         if (!isKey) {
             Utils.sortSchema(schemas);
         }
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;
+        this.unfishFlag = unfishFlag;
+        this.finishedFlag = finishedFlag;
+        this.deletedFlag = deletedFlag;
+        if (transactionId != null) {
+            this.transactionId = transactionId;
+        }
     }
 
     public Object[] decode(byte[] record) throws IOException {
         BinaryDecoder bd = new BinaryDecoder(record);
+        bd.skipByte();
+        bd.skipBytes();
         if (bd.readShort() == this.schemaVersion) {
             Object[] result = new Object[this.schemas.size()];
             for (DingoSchema schema : schemas) {
@@ -104,6 +119,8 @@ public class RecordDecoder {
 
     public Object[] decode(byte[] record, int[] index) throws IOException {
         BinaryDecoder bd = new BinaryDecoder(record);
+        bd.skipByte();
+        bd.skipBytes();
         if (bd.readShort() == this.schemaVersion) {
             Object[] result = new Object[index.length];
             List<Integer> indexList
@@ -208,6 +225,8 @@ public class RecordDecoder {
 
     public Object[] decodeKey(byte[] record) throws IOException {
         BinaryDecoder bd = new BinaryDecoder(record);
+        bd.skipByte();
+        bd.skipBytes();
         if (bd.readShort() == this.schemaVersion) {
             Object[] result = new Object[this.schemas.size()];
             for (DingoSchema schema : schemas) {
@@ -270,6 +289,8 @@ public class RecordDecoder {
 
     public Object[] decodeKey(byte[] record, int[] index) throws IOException {
         BinaryDecoder bd = new BinaryDecoder(record);
+        bd.skipByte();
+        bd.skipBytes();
         if (bd.readShort() == this.schemaVersion) {
             Object[] result = new Object[index.length];
             List<Integer> indexList

@@ -670,13 +670,14 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
-            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
 
-            ExecutorApi unfinishedExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
-            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+            ExecutorApi unfinishExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getUnfinishKV(oriKV).getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
 
-            if (!unfinishedExecutorApi.upsertKeyValue(null, null, id, unfinishKV)) {
+            if (!unfinishExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getUnfinishKV(oriKV))) {
                 return false;
             }
 
@@ -691,14 +692,17 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             if (currentTd.getVersion() != tableDefinitionVersion) {
                 throw new RuntimeException("table definition changed");
             }
-            if (!finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV)) {
+            if (!finishedExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getFinishedKV(oriKV))) {
                 return false;
             }
-            if (!unfinishedExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+            if (!unfinishExecutorApi
+                .delete(null, null, id, indexExecutor.getUnfinishKV(oriKV).getKey())) {
                 return false;
             }
             return true;
         } finally {
+            indexExecutor.getFinishedKV(oriKV);
             rowLock.remove(oriKV);
         }
     }
@@ -713,9 +717,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         int tableDefinitionVersion = tableDefinition.getVersion();
 
         KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
-        KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
-        ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
-        byte[] oldValue = finishedExecutorcApi.getValueByPrimaryKey(null, null, id, finishedKV.getPrimaryKey());
+        ExecutorApi finishedExecutorApi = indexExecutor
+            .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
+        byte[] oldValue = finishedExecutorApi
+            .getValueByPrimaryKey(null, null, id, indexExecutor.getFinishedKV(oriKV).getKey());
+        if (oldValue == null) {
+            return false;
+        }
         KeyValue oldKV = new KeyValue(oriKV.getKey(), oldValue);
 
         lock.lock();
@@ -728,19 +736,21 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
-            KeyValue oldDeleteKV = indexExecutor.getDeleteKV(oldKV);
 
-            ExecutorApi unfinishExecutorcApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
-            ExecutorApi oldDeleteExecutorcApi = indexExecutor.getExecutor(oldDeleteKV.getKey(), tableDefinition);
+            ExecutorApi unfinishExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getUnfinishKV(oriKV).getKey(), tableDefinition);
+            ExecutorApi oldDeleteExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getDeleteKV(oldKV).getKey(), tableDefinition);
 
             Object[] oldRow = indexExecutor.getRow(oldKV, tableDefinition);
 
-            if (!unfinishExecutorcApi.upsertKeyValue(null, null, id, unfinishKV)) {
+            if (!unfinishExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getUnfinishKV(oriKV))) {
                 return false;
             }
 
-            if (!oldDeleteExecutorcApi.upsertKeyValue(null, null, id, oldDeleteKV)) {
+            if (!oldDeleteExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getDeleteKV(oldKV))) {
                 return false;
             }
 
@@ -754,20 +764,26 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             if (currentTd.getVersion() != tableDefinitionVersion) {
                 throw new RuntimeException("table definition changed");
             }
-            if (!finishedExecutorcApi.delete(null, null, id, finishedKV.getPrimaryKey())) {
+            if (!finishedExecutorApi
+                .delete(null, null, id, indexExecutor.getFinishedKV(oriKV).getKey())) {
                 return false;
             }
-            if (!oldDeleteExecutorcApi.delete(null, null, id, oldDeleteKV.getPrimaryKey())) {
+            if (!oldDeleteExecutorApi
+                .delete(null, null, id, indexExecutor.getDeleteKV(oldKV).getKey())) {
                 return false;
             }
-            if (!finishedExecutorcApi.upsertKeyValue(null, null, id, finishedKV)) {
+            if (!finishedExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getFinishedKV(oriKV))) {
                 return false;
             }
-            if (!unfinishExecutorcApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+            if (!unfinishExecutorApi
+                .delete(null, null, id, indexExecutor.getUnfinishKV(oriKV).getKey())) {
                 return false;
             }
             return true;
         } finally {
+            indexExecutor.getFinishedKV(oriKV);
+            indexExecutor.getFinishedKV(oldKV);
             rowLock.remove(oriKV);
             rowLock.remove(oldKV);
         }
@@ -792,13 +808,19 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
-            KeyValue deleteKV = indexExecutor.getDeleteKV(oriKV);
 
-            ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
-            ExecutorApi deleteExecutorcApi = indexExecutor.getExecutor(deleteKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
+            ExecutorApi deleteExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getDeleteKV(oriKV).getKey(), tableDefinition);
 
-            if (!deleteExecutorcApi.upsertKeyValue(null, null, id, deleteKV)) {
+            if (finishedExecutorApi
+                .getValueByPrimaryKey(null, null, id, indexExecutor.getFinishedKV(oriKV).getKey()) == null) {
+                return false;
+            }
+
+            if (!deleteExecutorApi
+                .upsertKeyValue(null, null, id, indexExecutor.getDeleteKV(oriKV))) {
                 return false;
             }
 
@@ -815,15 +837,18 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
                 throw new RuntimeException("table definition changed");
             }
 
-            if (!finishedExecutorcApi.delete(null, null, id, finishedKV.getPrimaryKey())) {
+            if (!finishedExecutorApi
+                .delete(null, null, id, indexExecutor.getFinishedKV(oriKV).getKey())) {
                 return false;
             }
-            if (!deleteExecutorcApi.delete(null, null, id, deleteKV.getPrimaryKey())) {
+            if (!deleteExecutorApi
+                .delete(null, null, id, indexExecutor.getDeleteKV(oriKV).getKey())) {
                 return false;
             }
 
             return true;
         } finally {
+            indexExecutor.getFinishedKV(oriKV);
             rowLock.remove(oriKV);
         }
     }
@@ -858,7 +883,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             return;
         }
 
-        //delete deleteindex
         tableDefinition.getDeletedIndexes().forEach(tableSidebar::dropIndex);
 
         Set<String> indexNames = tableDefinition.getIndexes().keySet();

@@ -72,10 +72,10 @@ public class RecordTest {
         record[10] = 1L;
         record[11] = 1d;
 
-        RecordEncoder re = new RecordEncoder(schemas, (short) 0);
+        RecordEncoder re = new RecordEncoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         byte[] result = re.encode(record);
 
-        RecordDecoder rd = new RecordDecoder(schemas, (short) 0);
+        RecordDecoder rd = new RecordDecoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         Object[] recordDe = rd.decode(result);
 
         record[3] = true;
@@ -179,10 +179,10 @@ public class RecordTest {
         record[10] = 1L;
         record[11] = 1d;
 
-        RecordEncoder re = new RecordEncoder(schemas, (short) 0);
+        RecordEncoder re = new RecordEncoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         byte[] result = re.encodeKey(record);
 
-        RecordDecoder rd = new RecordDecoder(schemas, (short) 0);
+        RecordDecoder rd = new RecordDecoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         Object[] recordDe = rd.decodeKey(result);
 
         record[3] = true;
@@ -324,10 +324,10 @@ public class RecordTest {
 
         record[7] = 0;
 
-        RecordEncoder re = new RecordEncoder(schemas, (short) 0);
+        RecordEncoder re = new RecordEncoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         byte[] result = re.encode(record);
 
-        RecordDecoder rd = new RecordDecoder(schemas, (short) 0);
+        RecordDecoder rd = new RecordDecoder(schemas, (short) 0, (byte) 1, (byte) 1, (byte) 1, null);
         Object[] recordDe = rd.decode(result);
 
         List<Boolean> booleans1 = (List<Boolean>) recordDe[0];

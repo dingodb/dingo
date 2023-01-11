@@ -39,8 +39,10 @@ public class DingoCodec implements Codec {
     }
 
     public DingoCodec(List<DingoSchema> schemas, TupleMapping mapping, boolean isKey) {
-        this.re = new RecordEncoder(schemas, (short) 0, isKey);
-        this.rd = new RecordDecoder(schemas, (short) 0, isKey);
+        this.re = new RecordEncoder(schemas, (short) 0,
+            CodeTag.UNFINISHFALG, CodeTag.FINISHEDFALG, CodeTag.DELETEFLAG, null, isKey);
+        this.rd = new RecordDecoder(schemas, (short) 0,
+            CodeTag.UNFINISHFALG, CodeTag.FINISHEDFALG, CodeTag.DELETEFLAG, null, isKey);
         this.mapping = mapping;
     }
 
