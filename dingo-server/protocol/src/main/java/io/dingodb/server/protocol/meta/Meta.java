@@ -17,6 +17,9 @@
 package io.dingodb.server.protocol.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.ReflectUtils;
+
+import java.util.Map;
 
 public interface Meta {
 
@@ -28,8 +31,20 @@ public interface Meta {
 
     CommonId getId();
 
+    default String getName() {
+        return getId().toString();
+    }
+
     long getCreateTime();
 
     long getUpdateTime();
+
+    default Map<String, String> strValues() {
+        try {
+            return ReflectUtils.getStrValues(getClass(), this);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

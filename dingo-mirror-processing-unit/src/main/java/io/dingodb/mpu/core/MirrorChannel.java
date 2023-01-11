@@ -75,7 +75,7 @@ class MirrorChannel implements MessageListener {
                 }
                 return;
             }
-            case Constant.T_EXECUTE_CLOCK: {
+            case Constant.T_EXECUTED_CLOCK: {
                 Executors
                     .execute("clear-clock", () -> core.storage.clearClock(TagClock.decode(message.content()).clock));
                 return;

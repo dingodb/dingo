@@ -17,11 +17,19 @@
 package io.dingodb.server.coordinator.meta.adaptor;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.store.api.StoreInstance;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface Adaptor<M> {
+public interface Adaptor<M> extends StoreInstance {
+
+    CommonId id();
+
+    Class<M> adaptFor();
+
+    void reload();
 
     CommonId metaId();
 
@@ -34,5 +42,9 @@ public interface Adaptor<M> {
     List<M> getByDomain(int domain);
 
     Collection<M> getAll();
+
+    String[] arrayValues(M meta);
+
+    TableDefinition getDefinition();
 
 }

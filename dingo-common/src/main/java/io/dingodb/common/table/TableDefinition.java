@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.AllArgsConstructor;

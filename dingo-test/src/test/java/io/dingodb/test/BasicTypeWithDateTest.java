@@ -42,7 +42,7 @@ public class BasicTypeWithDateTest {
     @BeforeAll
     public static void setupAll() throws Exception {
         sqlHelper = new SqlHelper();
-        connection = (sqlHelper = new SqlHelper()).getConnection();
+        connection = sqlHelper.getConnection();
         sqlHelper.execFile("/table-test-create-with-date.sql");
     }
 

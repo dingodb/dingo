@@ -37,7 +37,6 @@ import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
-import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -49,13 +48,13 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
+    private static UserService userService = UserServiceProvider.getRoot();
+
     private final RelOptTableImpl relOptTable;
-
-    private static UserService userService;
-
-    private String user;
-
-    private String host;
+    private final CommonId schemaId;
+    private final CommonId tableId;
+    private final String user;
+    private final String host;
 
     DingoRelOptTable(@NonNull DingoTable table, String user, String host) {
         super();
@@ -63,6 +62,8 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         RelOptSchema relOptSchema = context.getCatalogReader().unwrap(RelOptSchema.class);
         final RelDataType rowType = table.getRowType(context.getTypeFactory());
         relOptTable = RelOptTableImpl.create(relOptSchema, rowType, table.getNames(), table, null);
+        this.schemaId = table.getSchema().id();
+        this.tableId = table.getSchema().getTableId(table.getNames().get(table.getNames().size() - 1));
         this.user = user;
         this.host = host;
     }
@@ -139,40 +140,25 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         if (StringUtils.isBlank(user)) {
             return SqlAccessType.ALL;
         } else {
-            String catalog = null;
-            String schema = null;
-            String table = null;
-            if (names.size() == 3) {
-                catalog = names.get(0);
-                schema = names.get(1);
-                table = names.get(2);
-            }
-            if (userService == null) {
-                userService = UserServiceProvider.getRoot();
-            }
-            CommonId schemaId = userService.getSchemaIdByCache(schema);
-            CommonId tableId = userService.getTableIdByCache(schemaId, table);
-
-            EnumSet accessSet = EnumSet.noneOf(SqlAccessEnum.class);
-
-            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                DingoSqlAccessEnum.SELECT)) {
+            EnumSet<SqlAccessEnum> accessSet = EnumSet.noneOf(SqlAccessEnum.class);
+            if (hasPrivilege(DingoSqlAccessEnum.SELECT)) {
                 accessSet.add(SqlAccessEnum.SELECT);
             }
-            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                DingoSqlAccessEnum.INSERT)) {
+            if (hasPrivilege(DingoSqlAccessEnum.INSERT)) {
                 accessSet.add(SqlAccessEnum.INSERT);
             }
-            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                DingoSqlAccessEnum.UPDATE)) {
+            if (hasPrivilege(DingoSqlAccessEnum.UPDATE)) {
                 accessSet.add(SqlAccessEnum.UPDATE);
             }
-            if (PrivilegeVerify.verify(user, host, schemaId, tableId,
-                DingoSqlAccessEnum.DELETE)) {
+            if (hasPrivilege(DingoSqlAccessEnum.DELETE)) {
                 accessSet.add(SqlAccessEnum.DELETE);
             }
             return new SqlAccessType(accessSet);
         }
+    }
+
+    private boolean hasPrivilege(DingoSqlAccessEnum access) {
+        return PrivilegeVerify.verify(user, host, schemaId, tableId, access);
     }
 
     @Override
@@ -186,17 +172,17 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     }
 
     @Override
-    public <C> @Nullable C unwrap(Class<C> aClass) {
-        return relOptTable.unwrap(aClass);
+    public <C> @Nullable C unwrap(Class<C> targetClass) {
+        return relOptTable.unwrap(targetClass);
     }
 
     @Override
-    public <C> C unwrapOrThrow(Class<C> aClass) {
-        if (aClass != SqlValidatorTable.class) {
-            return requireNonNull(unwrap(aClass),
-                () -> "Can't unwrap " + aClass + " from " + this);
+    public <C> C unwrapOrThrow(Class<C> targetClass) {
+        if (targetClass != SqlValidatorTable.class) {
+            return requireNonNull(unwrap(targetClass),
+                () -> "Can't unwrap " + targetClass + " from " + this);
         } else {
-            return aClass.cast(this);
+            return targetClass.cast(this);
         }
     }
 }

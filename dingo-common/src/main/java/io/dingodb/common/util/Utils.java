@@ -20,6 +20,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class Utils {
@@ -45,6 +46,10 @@ public final class Utils {
         }
         while (++i < len);
         return max;
+    }
+
+    public static <R> R cast(Object target) {
+        return (R) target;
     }
 
     public static void loop(@NonNull Supplier<Boolean> predicate) {
@@ -83,6 +88,23 @@ public final class Utils {
                 exceptionHandler.accept(e);
                 break;
             }
+        }
+    }
+
+    public static <T extends AutoCloseable, R> R tryWithResource(Supplier<T> supplier, Function<T, R> function) {
+        try (T resource = supplier.get()) {
+            return function.apply(resource);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static <T extends AutoCloseable> void tryWithResource(Supplier<T> supplier, Consumer<T> consumer) {
+        try (T resource = supplier.get()) {
+            consumer.accept(resource);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -16,12 +16,14 @@
 
 package io.dingodb.server.client.user.service;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.UserServiceApi;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.client.meta.service.MetaServiceClientProvider;
 import io.dingodb.verify.service.UserService;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +41,18 @@ public class UserServiceClient implements UserService {
     }
 
     public UserServiceClient(CoordinatorConnector connector) {
-        this.userServiceApi = ApiRegistry.getDefault().proxy(UserServiceApi.class,
-            connector);
+        this.userServiceApi = ApiRegistry.getDefault().proxy(UserServiceApi.class, connector);
         this.connector = connector;
+    }
+
+    @Override
+    public CommonId getSchemaId(String schema) {
+        return MetaServiceClientProvider.META_SERVICE_CLIENT.getSubMetaService(schema).id();
+    }
+
+    @Override
+    public CommonId getTableId(CommonId schemaId, String table) {
+        return MetaServiceClientProvider.META_SERVICE_CLIENT.getSubMetaService(schemaId).getTableId(table);
     }
 
     @Override

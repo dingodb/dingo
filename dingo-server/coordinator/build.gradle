@@ -32,6 +32,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
     implementation project(":dingo-common")
+    implementation project(":dingo-calcite")
     implementation project(":dingo-net-api")
     implementation project(":dingo-meta-api")
     implementation project(":dingo-server:dingo-server-protocol")
@@ -39,6 +40,8 @@ dependencies {
     implementation project(':dingo-serial')
     implementation project(':dingo-mirror-processing-unit')
     implementation project(":dingo-verify")
+
+    implementation project(":dingo-net-netty")
 
 }
 

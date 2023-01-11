@@ -16,8 +16,6 @@
 
 package io.dingodb.exec;
 
-import io.dingodb.cluster.ClusterServiceProvider;
-import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.store.api.StoreServiceProvider;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -29,12 +27,8 @@ import java.util.ServiceLoader;
 public final class ServiceProviders<T> implements Iterable<T> {
     public static final ServiceProviders<StoreServiceProvider> KV_STORE_PROVIDER
         = new ServiceProviders<>(StoreServiceProvider.class);
-    public static final ServiceProviders<MetaServiceProvider> META_PROVIDER
-        = new ServiceProviders<>(MetaServiceProvider.class);
     public static final ServiceProviders<NetServiceProvider> NET_PROVIDER
         = new ServiceProviders<>(NetServiceProvider.class);
-    public static final ServiceProviders<ClusterServiceProvider> CLUSTER_PROVIDER
-        = new ServiceProviders<>(ClusterServiceProvider.class);
 
     private final ServiceLoader<T> loader;
 

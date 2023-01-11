@@ -53,7 +53,7 @@ public interface AuthProxyApi {
         @Override
         public Map<String, Object[]> auth(Channel channel, Map<String, ?> certificate) {
             Map<String, Object[]> result = new HashMap<>();
-            if (SecurityConfiguration.isAuth()) {
+            if (!SecurityConfiguration.isAuth()) {
                 return result;
             }
             try {

@@ -23,12 +23,12 @@ import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
+import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
-import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.client.connector.impl.ServiceConnector;
-import io.dingodb.server.client.meta.service.MetaServiceClient;
 import io.dingodb.server.executor.index.IndexExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
 import io.dingodb.server.executor.sidebar.TableStatus;
@@ -41,6 +41,10 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static io.dingodb.common.config.DingoConfiguration.location;
+import static io.dingodb.common.config.DingoConfiguration.serverId;
 
 @Slf4j
 public class TableApi implements io.dingodb.server.api.TableApi {
@@ -87,14 +91,12 @@ public class TableApi implements io.dingodb.server.api.TableApi {
 
             tableSidebar.setBusy();
             IndexExecutor indexExecutor = new IndexExecutor(id);
-            CoordinatorConnector coordinatorConnector = CoordinatorConnector.getDefault();
-            MetaServiceClient metaServiceClient = new MetaServiceClient(coordinatorConnector);
-            NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaServiceClient.getParts(id);
-            for(ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
+            NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = MetaService.root().getParts(id);
+            for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
                 ServiceConnector partConnector = new ServiceConnector(id, partitions.get(partId).getReplicates());
                 ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
                 List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, id, new byte[]{1});
-                for(KeyValue keyValue : keyValues) {
+                for (KeyValue keyValue : keyValues) {
                     indexExecutor.insertIndex(indexExecutor.getOriRow(keyValue, tableDefinition), tableDefinition, index.getName());
                 }
             }
@@ -107,6 +109,11 @@ public class TableApi implements io.dingodb.server.api.TableApi {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void deleteIndex(CommonId id, String name) {
+        tables.get(id).dropIndex(name);
     }
 
     @Override
@@ -152,7 +159,7 @@ public class TableApi implements io.dingodb.server.api.TableApi {
     }
 
     public void register(TableSidebar tableSidebar) {
-        tables.put(tableSidebar.id(), tableSidebar);
+        tables.put(tableSidebar.coreId(), tableSidebar);
     }
 
     public void unregister(CommonId id) {
@@ -167,6 +174,20 @@ public class TableApi implements io.dingodb.server.api.TableApi {
     @Override
     public List<TablePart> partitions(CommonId tableId) {
         return tables.get(tableId).partitions();
+    }
+
+    public static Map<CommonId, Location> mirrors(ServiceConnector connector, CommonId tableId) {
+        return ApiRegistry.getDefault().proxy(io.dingodb.server.api.TableApi.class, connector).mirrors(tableId);
+    }
+
+    @Override
+    public Map<CommonId, Location> mirrors(CommonId tableId) {
+        Map<CommonId, Location> mirrors = get(tableId).getMirrors().stream().collect(Collectors.toMap(
+            meta -> new CommonId(serverId().type, serverId().id0, serverId().id1, serverId().domain, meta.id.seq),
+            CoreMeta::location
+        ));
+        mirrors.put(serverId(), location());
+        return mirrors;
     }
 
     @Override

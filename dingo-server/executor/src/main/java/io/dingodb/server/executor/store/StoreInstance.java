@@ -302,7 +302,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         boolean includeEnd) {
         isValidRangeKey(startPrimaryKey, endPrimaryKey);
 
-        if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
+        if (endPrimaryKey != null && !isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
             throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
         }
 
@@ -317,7 +317,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         byte[] endPrimaryKey,
         boolean includeStart,
         boolean includeEnd) {
-        if (!isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
+        if (endPrimaryKey != null || !isKeysOnSamePart(Arrays.asList(startPrimaryKey, endPrimaryKey))) {
             throw new IllegalArgumentException("The start and end not in same part or not in a same instance.");
         }
 
@@ -631,8 +631,12 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     }
 
     private boolean isKeysOnSamePart(List<byte[]> keyArrayList) {
-        if (keyArrayList == null || keyArrayList.size() < 1) {
+        if (keyArrayList == null || keyArrayList.isEmpty()) {
             return false;
+        }
+
+        if (keyArrayList.size() == 2 && keyArrayList.contains(null)) {
+            return true;
         }
 
         Part part = getPartByPrimaryKey(keyArrayList.get(0));
@@ -669,10 +673,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
             KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
 
-            ExecutorApi unfinishExecutorcApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
-            ExecutorApi finishedExecutorcApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
+            ExecutorApi unfinishedExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
 
-            if (!unfinishExecutorcApi.upsertKeyValue(null, null, id, unfinishKV)) {
+            if (!unfinishedExecutorApi.upsertKeyValue(null, null, id, unfinishKV)) {
                 return false;
             }
 
@@ -687,10 +691,10 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             if (currentTd.getVersion() != tableDefinitionVersion) {
                 throw new RuntimeException("table definition changed");
             }
-            if (!finishedExecutorcApi.upsertKeyValue(null, null, id, finishedKV)) {
+            if (!finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV)) {
                 return false;
             }
-            if (!unfinishExecutorcApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
+            if (!unfinishedExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey())) {
                 return false;
             }
             return true;
@@ -850,8 +854,12 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
 
         TableDefinition tableDefinition = tableSidebar.getDefinition();
+        if (tableDefinition.getIndexes() == null || tableDefinition.getIndexes().isEmpty()) {
+            return;
+        }
 
         //delete deleteindex
+        tableDefinition.getDeletedIndexes().forEach(tableSidebar::dropIndex);
 
         Set<String> indexNames = tableDefinition.getIndexes().keySet();
         List<Object[]> deleteRecords = indexExecutor.getDeleteRecords();
@@ -901,5 +909,4 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             }
         }
     }
-
 }

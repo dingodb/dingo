@@ -29,10 +29,8 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -43,10 +41,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Table implements Meta {
-
-    public static final TableDefinition DEFINITION = new MetaTableDefinitionBuilder("TABLE_META")
-        .addColumns(Arrays.stream(Fields.values()).map(Enum::name).collect(Collectors.toList()))
-        .build();
 
     private CommonId id;
     private String comment;

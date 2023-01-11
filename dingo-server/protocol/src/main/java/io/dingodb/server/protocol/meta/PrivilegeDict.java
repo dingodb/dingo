@@ -24,11 +24,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
 @Builder
 @ToString
+@FieldNameConstants(asEnum = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode

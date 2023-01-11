@@ -17,11 +17,14 @@
 package io.dingodb.server.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.server.protocol.meta.Executor;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ServerApi {
 
@@ -30,5 +33,14 @@ public interface ServerApi {
 
     @ApiDeclaration
     List<Part> storeMap(CommonId id);
+
+    @ApiDeclaration
+    List<CommonId> tables(CommonId executorId);
+
+    @ApiDeclaration
+    TableDefinition getTableDefinition(CommonId tableId);
+
+    @ApiDeclaration
+    Map<CommonId, Location> mirrors(CommonId tableId);
 
 }

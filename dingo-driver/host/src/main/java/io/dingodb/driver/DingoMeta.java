@@ -20,12 +20,11 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.MetaCache;
 import io.dingodb.calcite.MutableSchema;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.privilege.Grant;
 import io.dingodb.common.table.ColumnDefinition;
@@ -37,8 +36,6 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.verify.privilege.PrivilegeVerify;
-import io.dingodb.verify.service.UserService;
-import io.dingodb.verify.service.UserServiceProvider;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
@@ -66,11 +63,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static io.dingodb.calcite.DingoTable.dingo;
 import static java.util.Objects.requireNonNull;
@@ -142,33 +139,18 @@ public class DingoMeta extends MetaImpl {
     }
 
     private Collection<CalciteSchema> getMatchedSubSchema(
-        @NonNull CalciteSchema rootSchema,
+        @NonNull CalciteSchema usedSchema,
         @NonNull Pat pat
     ) {
         final Predicate<String> filter = patToFilter(pat);
-        return rootSchema.getSubSchemaMap().entrySet().stream()
-            .filter(e -> filter.test(e.getKey()) && filterSchema(e.getKey(), null))
-            .map(Map.Entry::getValue)
-            .collect(Collectors.toSet());
-    }
-
-    private boolean filterSchema(String schemaName, String tableName) {
-        try {
-            UserService userService = UserServiceProvider.getRoot();
-            CommonId schemaId = userService.getSchemaIdByCache(schemaName);
-
-            CommonId tableId = null;
-            if (tableName != null) {
-                tableId = userService.getTableIdByCache(schemaId, tableName);
-            }
-
-            DingoConnection dingoConnection = (DingoConnection) connection;
-            String user = dingoConnection.getContext().getOption("user");
-            String host = dingoConnection.getContext().getOption("host");
-            return PrivilegeVerify.verify(user, host, schemaId, tableId);
-        } catch (Exception e) {
-            return true;
+        if (usedSchema.getSubSchemaMap().isEmpty()) {
+            return Collections.emptyList();
         }
+        return usedSchema.getSubSchemaMap().values().stream()
+            .flatMap(s -> Stream.concat(getMatchedSubSchema(s, pat).stream(), Stream.of(s)))
+            .filter(s -> filter.test(((DingoSchema) s.schema).name()))
+            .filter(s -> verifyPrivilege(((DingoSchema) s.schema)))
+            .collect(Collectors.toSet());
     }
 
     private Collection<CalciteSchema.TableEntry> getMatchedTables(
@@ -179,9 +161,24 @@ public class DingoMeta extends MetaImpl {
         return schemas.stream()
             .flatMap(s -> s.getTableNames().stream()
                 .filter(filter)
-                .filter(e -> filterSchema(s.name, e))
-                .map(n -> s.getTable(n, false)))
+                .filter(name -> verifyPrivilege((DingoSchema) s.schema, name))
+                .map(name -> s.getTable(name, false)))
             .collect(Collectors.toList());
+    }
+
+    private boolean verifyPrivilege(DingoSchema schema) {
+        return verifyPrivilege(schema, null);
+    }
+
+    private boolean verifyPrivilege(DingoSchema schema, String tableName) {
+        try {
+            DingoConnection dingoConnection = (DingoConnection) connection;
+            String user = dingoConnection.getContext().getOption("user");
+            String host = dingoConnection.getContext().getOption("host");
+            return PrivilegeVerify.verify(user, host, schema.id(), schema.getTableId(tableName));
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     @NonNull
@@ -289,6 +286,7 @@ public class DingoMeta extends MetaImpl {
             );
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (Throwable e) {
+            log.error("Prepare and execute error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
             if (log.isDebugEnabled()) {
@@ -471,12 +469,10 @@ public class DingoMeta extends MetaImpl {
         Pat tableNamePattern,
         List<String> typeList
     ) {
-        MetaCache.initTableDefinitions();
-        final DingoConnection dingoConnection = (DingoConnection) connection;
-        final DingoParserContext context = dingoConnection.getContext();
-        final CalciteSchema rootSchema = context.getRootSchema();
-        final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
-        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(schemas, tableNamePattern);
+        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(
+            getMatchedSubSchema(((DingoConnection) connection).getContext().getRootSchema(), schemaPattern),
+            tableNamePattern
+        );
         return createResultSet(
             Linq4j.asEnumerable(tables)
                 .select(t -> new MetaTable(
@@ -501,12 +497,10 @@ public class DingoMeta extends MetaImpl {
         Pat tableNamePattern,
         @NonNull Pat columnNamePattern
     ) {
-        MetaCache.initTableDefinitions();
-        final DingoConnection dingoConnection = (DingoConnection) connection;
-        final DingoParserContext context = dingoConnection.getContext();
-        final CalciteSchema rootSchema = context.getRootSchema();
-        final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
-        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(schemas, tableNamePattern);
+        final DingoParserContext context = ((DingoConnection) connection).getContext();
+        final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(
+            getMatchedSubSchema(context.getRootSchema(), schemaPattern), tableNamePattern
+        );
         final Predicate<String> filter = patToFilter(columnNamePattern);
         List<MetaColumn> columns = tables.stream()
             .flatMap(t -> {
@@ -562,9 +556,7 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
-        final DingoConnection dingoConnection = (DingoConnection) connection;
-        final DingoParserContext context = dingoConnection.getContext();
-        final CalciteSchema rootSchema = context.getRootSchema();
+        final CalciteSchema rootSchema = ((DingoConnection) connection).getContext().getRootSchema();
         final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
         return createResultSet(
             Linq4j.asEnumerable(schemas)

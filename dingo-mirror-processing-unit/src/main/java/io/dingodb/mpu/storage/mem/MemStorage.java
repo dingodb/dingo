@@ -21,9 +21,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
-import org.rocksdb.RocksIterator;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +108,16 @@ public class MemStorage implements Storage {
             .map(__ -> __.length)
             .reduce(Integer::sum)
             .orElse(0);
+    }
+
+    @Override
+    public Reader metaReader() {
+        return reader();
+    }
+
+    @Override
+    public Writer metaWriter(Instruction instruction) {
+        return writer(instruction);
     }
 
     @Override

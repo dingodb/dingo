@@ -20,31 +20,31 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.net.Message;
 
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public interface ListenerService {
+public interface ListenService {
 
-    static ListenerService getDefault() {
-        return ServiceLoader.load(ListenerService.class).iterator().next();
+    static ListenService getDefault() {
+        return ServiceLoader.load(ListenService.class).iterator().next();
     }
 
-    interface ListenFuture {
+    interface Future {
         void cancel();
     }
 
-    interface ListenerServer {
+    Future listen(CommonId id, String tag, Location location, Consumer<Message> listener, Runnable onClose);
 
-        String tag();
-
-        void listen(CommonId id, Consumer<Message> listener);
-
-        void cancel(CommonId id, Consumer<Message> listener);
-
+    default Consumer<Message> register(CommonId id, String tag) {
+        return register(id, tag, () -> null);
     }
 
-    ListenFuture listen(Location location, String tag, CommonId resourceId, Consumer<Message> listener);
+    Consumer<Message> register(CommonId id, String tag, Supplier<Message> reply);
 
-    void registerListenerServer(ListenerServer listenerServer);
+    Consumer<Message> register(List<CommonId> ids, String tag, Supplier<Message> reply);
+
+    void unregister(CommonId id, String tag);
 
 }

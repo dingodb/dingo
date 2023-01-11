@@ -24,9 +24,6 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.Channel;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 public interface UserService {
     ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -54,31 +51,9 @@ public interface UserService {
     @ApiDeclaration
     UserDefinition getUserDefinition(String user, String host);
 
-    @ApiDeclaration
-    public CommonId getSchemaId(String schema);
+    CommonId getSchemaId(String schema);
 
-    default CommonId getSchemaIdByCache(String schema) {
-        return env.getSchemaIdMap().computeIfAbsent(schema, k ->
-            getSchemaId(schema)
-        );
-    }
-
-    @ApiDeclaration
-    public CommonId getTableId(CommonId schemaId, String table);
-
-    default CommonId getTableIdByCache(CommonId schemaId, String table) {
-        env.getTableIdMap().computeIfAbsent(schemaId, k -> {
-            Map<String, CommonId> tableIdMapping = new ConcurrentHashMap<>();
-            tableIdMapping.put(table, getTableId(schemaId, table));
-            return tableIdMapping;
-        });
-        return env.getTableIdMap().computeIfPresent(schemaId, (k, v) -> {
-            v.computeIfAbsent(table, t ->
-                 getTableId(schemaId, table)
-            );
-            return v;
-        }).get(table);
-    }
+    CommonId getTableId(CommonId schemaId, String table);
 
     default void flushPrivileges() {
 

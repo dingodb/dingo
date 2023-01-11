@@ -33,6 +33,7 @@ import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
 import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +118,7 @@ public final class JobManagerImpl implements JobManager {
     private void distributeTasks(@NonNull Job job) {
         for (Task task : job.getTasks().values()) {
             if (task.getRoot() != null) {
-                assert task.getLocation().equals(Services.META.currentLocation())
+                assert task.getLocation().equals(MetaService.root().currentLocation())
                     : "The root task must be at current location.";
                 taskManager.addTask(task);
                 continue;
@@ -148,6 +149,7 @@ public final class JobManagerImpl implements JobManager {
         @SuppressWarnings("resource")
         Channel channel = channelMap.computeIfAbsent(location, l ->
             Services.openNewSysChannel(l.getHost(), l.getPort()));
+        channel.setCloseListener(__ -> channelMap.remove(location));
         channel.send(message);
     }
 

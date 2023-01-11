@@ -28,13 +28,17 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
-import io.dingodb.mpu.core.Core;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.mpu.core.CoreListener;
 import io.dingodb.mpu.core.CoreMeta;
+import io.dingodb.mpu.core.Sidebar;
 import io.dingodb.mpu.instruction.KVInstructions;
 import io.dingodb.mpu.instruction.SeqInstructions;
 import io.dingodb.mpu.storage.Storage;
-import io.dingodb.server.api.ServiceConnectApi;
+import io.dingodb.net.Message;
+import io.dingodb.net.service.ListenService;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
+import io.dingodb.server.executor.api.TableApi;
 import io.dingodb.server.executor.config.Configuration;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
@@ -55,6 +59,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.config.DingoConfiguration.location;
@@ -63,6 +68,7 @@ import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.server.executor.sidebar.TableInstructions.UPDATE_DEFINITION;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
+import static io.dingodb.server.protocol.ListenerTags.MetaListener.TABLE_DEFINITION;
 
 @Slf4j
 public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.StoreInstance {
@@ -71,10 +77,9 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     public static final CommonId INDEX_PREFIX = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.index);
     public static final CommonId TABLE_PREFIX = CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table);
 
-    private final CompletableFuture<Void> started = new CompletableFuture<>();
 
     public final CommonId tableId;
-    private final List<CommonId> mirrorServerIds;
+    @Getter
     private final List<CoreMeta> mirrors;
 
     private final List<TablePart> parts = new ArrayList<>();
@@ -85,6 +90,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Getter
     private TableDefinition definition;
+
+    private final Consumer<Message> definitionListener;
 
     @Delegate
     public final StoreInstance storeInstance;
@@ -97,68 +104,68 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         this.tableId = meta.coreId;
         this.definition = definition;
         this.mirrors = mirrors;
-        this.mirrorServerIds = mirrors.stream()
-            .map(CoreMeta::id)
-            .sorted()
-            .collect(Collectors.toList());
         this.storeInstance = new StoreInstance(this);
+        this.definitionListener = ListenService.getDefault().register(tableId, TABLE_DEFINITION);
     }
 
     public static TableSidebar create(
         CommonId tableId, Map<CommonId, Location> mirrors, TableDefinition definition
     ) throws Exception {
         CommonId id = new CommonId(TABLE_PREFIX.type, TABLE_PREFIX.id0, TABLE_PREFIX.id1, tableId.seq, serverId().seq);
+        CoreMeta meta = new CoreMeta(id, tableId, location());
+        Storage storage = StorageFactory.create(meta.label, Configuration.resolvePath(tableId.toString()));
+        mirrors = Parameters.cleanNull(mirrors, () -> TableApi.mirrors(CoordinatorConnector.getDefault(), tableId));
         List<CoreMeta> mirrorMetas = mirrors.entrySet().stream()
             .filter(e -> !e.getKey().equals(serverId()))
             .map(e -> new CoreMeta(
                 new CommonId(id.type, id.id0, id.id1, id.domain, e.getKey().seq), tableId, e.getValue()
             ))
             .collect(Collectors.toList());
-        CoreMeta meta = new CoreMeta(id, tableId, location());
         return new TableSidebar(
-            meta, mirrorMetas, definition,
-            StorageFactory.create(meta.label, Configuration.resolvePath(tableId.toString()))
+            meta, mirrorMetas, definition, storage
         );
     }
 
     public void updateDefinition(TableDefinition definition) {
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
         updateDefinition(definition, true);
     }
 
     public void updateDefinition(TableDefinition definition, boolean sync) {
         if (sync) {
-            core.exec(
+            exec(
                 TableInstructions.id, UPDATE_DEFINITION, tableId, definition
             ).join();
+            definitionListener.accept(new Message(ProtostuffCodec.write(definition)));
         }
         this.definition = definition;
     }
 
-    public Boolean start() {
-        ServiceConnectApi.INSTANCE.register(this);
+    public void start(boolean sync) {
+	StoreService.INSTANCE.registerStoreInstance(tableId, storeInstance);
+        super.start(sync);
+    }
+
+    public boolean start() {
         StoreService.INSTANCE.registerStoreInstance(tableId, storeInstance);
-        core.start();
-        started.join();
-        return core.isPrimary();
+        return super.start();
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        core.destroy();
         FileUtils.deleteIfExists(Configuration.resolvePath(tableId.toString()));
+        ListenService.getDefault().unregister(tableId, TABLE_DEFINITION);
     }
 
     private void initTable() {
-        core.exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, null, null).join();
+        exec(KVInstructions.id, KVInstructions.DEL_RANGE_OC, null, null).join();
         Optional.or(
             definition.getPartDefinition(),
             this::saveDefineParts,
             () -> saveNewPart(TablePart.builder().version(1).table(tableId).start(EMPTY_BYTES).build())
         );
         Optional.ofNullable(definition.getIndexes()).filter(__ -> !__.isEmpty()).ifPresent(this::saveDefineIndexes);
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
     }
 
     private void saveDefineIndexes() {
@@ -198,38 +205,38 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     public void saveNewIndex(Index index) {
         CommonId newId = new CommonId(INDEX_PREFIX.type(), INDEX_PREFIX.identifier(), tableId.seq(),
-            core.exec(SeqInstructions.id, 0, INDEX_PREFIX.encode()).join()
+            exec(SeqInstructions.id, 0, INDEX_PREFIX.encode()).join()
         );
         index.setId(newId);
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(index)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(index)).join();
         log.info("Save new index {}", index);
     }
 
     private void saveNewPart(TablePart tablePart) {
         CommonId newId = new CommonId(PART_PREFIX.type(), PART_PREFIX.identifier(), tableId.seq(),
-            core.exec(SeqInstructions.id, 0, PART_PREFIX.encode()).join()
+            exec(SeqInstructions.id, 0, PART_PREFIX.encode()).join()
         );
         tablePart.setId(newId);
-        core.exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(tablePart)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(tablePart)).join();
         log.info("Save new part {}", tablePart);
     }
 
     private void startParts() {
-        core.<Iterator<KeyValue>>view(
+        this.<Iterator<KeyValue>>view(
             KVInstructions.id, KVInstructions.SCAN_OC, PART_PREFIX.encode(), PART_PREFIX.encode(), true
         ).forEachRemaining(
             __ -> {
                 log.info("start part");
-                core.exec(TableInstructions.id, TableInstructions.START_PART, __.getValue()).join();
+                exec(TableInstructions.id, TableInstructions.START_PART, __.getValue()).join();
             }
         );
     }
 
     public void startIndexes() {
-        core.<Iterator<KeyValue>>view(
+        this.<Iterator<KeyValue>>view(
             KVInstructions.id, KVInstructions.SCAN_OC, INDEX_PREFIX.encode(), INDEX_PREFIX.encode(), true
         ).forEachRemaining(
-            __ -> core.exec(TableInstructions.id, TableInstructions.START_INDEX, __.getValue()).join()
+            __ -> exec(TableInstructions.id, TableInstructions.START_INDEX, __.getValue()).join()
         );
     }
 
@@ -249,17 +256,17 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                     index.getId(),
                     mirror.location))
                 .collect(Collectors.toList());
-            Core vCore = new IndexSidebar(
+            IndexSidebar indexSidebar = new IndexSidebar(
                 this, index, meta, mirrors, Configuration.resolvePath(tableId.toString(), index.getId().toString())
-            ).getCore();
-            addVCore(vCore);
+            );
+            addVSidebar(indexSidebar);
             log.info("Starting index {}......", id);
             CompletableFuture<Void> future = new CompletableFuture<>();
-            vCore.registerListener(CoreListener.primary(__ -> future.complete(null)));
-            vCore.registerListener(CoreListener.mirror(__ -> future.complete(null)));
-            vCore.registerListener(CoreListener.primary(__ -> this.indexes.put(index.getName(), index)));
-            vCore.registerListener(CoreListener.back(__ -> this.indexes.remove(index.getName(), index)));
-            vCore.start();
+            indexSidebar.registerListener(CoreListener.primary(__ -> future.complete(null)));
+            indexSidebar.registerListener(CoreListener.mirror(__ -> future.complete(null)));
+            indexSidebar.registerListener(CoreListener.primary(__ -> this.indexes.put(index.getName(), index)));
+            indexSidebar.registerListener(CoreListener.back(__ -> this.indexes.remove(index.getName(), index)));
+            indexSidebar.start(false);
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("Start index {} error.", index, e);
@@ -283,24 +290,24 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                     part.getId(),
                     mirror.location))
                 .collect(Collectors.toList());
-            Core vCore = new PartitionSidebar(
+            PartitionSidebar sidebar = new PartitionSidebar(
                 part, meta, mirrors, Configuration.resolvePath(tableId.toString(), part.getId().toString())
-            ).getCore();
-            addVCore(vCore);
+            );
+            addVSidebar(sidebar);
             log.info("Starting part {}......", id);
             CompletableFuture<Void> future = new CompletableFuture<>();
-            vCore.registerListener(CoreListener.primary(__ -> future.complete(null)));
-            vCore.registerListener(CoreListener.mirror(__ -> future.complete(null)));
-            vCore.registerListener(CoreListener.primary(__ -> ranges.put(part.getStart(), part)));
-            vCore.registerListener(CoreListener.primary(__ -> storeInstance.onPartAvailable(Part.builder()
+            sidebar.registerListener(CoreListener.primary(__ -> future.complete(null)));
+            sidebar.registerListener(CoreListener.mirror(__ -> future.complete(null)));
+            sidebar.registerListener(CoreListener.primary(__ -> ranges.put(part.getStart(), part)));
+            sidebar.registerListener(CoreListener.primary(__ -> storeInstance.onPartAvailable(Part.builder()
                 .start(part.getStart())
                 .end(part.getEnd())
                 .id(part.getId())
                 .build()))
             );
-            vCore.registerListener(CoreListener.back(__ -> ranges.remove(part.getStart(), part)));
-            vCore.registerListener(CoreListener.back(__ -> storeInstance.onPartDisable(part.getStart())));
-            vCore.start();
+            sidebar.registerListener(CoreListener.back(__ -> ranges.remove(part.getStart(), part)));
+            sidebar.registerListener(CoreListener.back(__ -> storeInstance.onPartDisable(part.getStart())));
+            sidebar.start(false);
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("Start index {} error.", part, e);
@@ -317,19 +324,19 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     public void dropIndex(Index index, boolean sync) {
         if (sync) {
-            core.exec(TableInstructions.id, TableInstructions.DROP_INDEX, index).join();
+            exec(TableInstructions.id, TableInstructions.DROP_INDEX, index).join();
         } else {
             indexes.remove(index.getName());
             getVCore(index.getId()).destroy();
         }
     }
 
-    public Core getPartition(byte[] start) {
-        return Optional.mapOrNull(ranges.get(start), __ -> getVCore(__.getId()));
+    public Sidebar getPartition(byte[] start) {
+        return Optional.mapOrNull(ranges.get(start), __ -> getVSidebar(__.getId()));
     }
 
-    public Core getPartition(CommonId id) {
-        return getVCore(id);
+    public Sidebar getPartition(CommonId id) {
+        return getVSidebar(id);
     }
 
     public boolean ttl() {
@@ -342,32 +349,6 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     public List<TablePart> partitions() {
         return parts;
-    }
-
-    public void primary(long clock) {
-        if (core.view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()) == null) {
-            initTable();
-        }
-        setStarting();
-        startParts();
-        startIndexes();
-        storeInstance.reboot();
-        started.complete(null);
-        setRunning();
-    }
-
-    @Override
-    public void back(long clock) {
-
-    }
-
-    @Override
-    public void mirror(long clock) {
-        started.complete(null);
-    }
-
-    @Override
-    public void losePrimary(long clock) {
     }
 
     public void setStarting() {
@@ -388,5 +369,40 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     public void setStopped() {
         this.status = TableStatus.STOPPED;
+    }
+
+    @Override
+    public void primary(long clock) {
+        if (view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()) == null) {
+            initTable();
+        }
+        setStarting();
+        startParts();
+        startIndexes();
+        storeInstance.reboot();
+        setRunning();
+        super.primary(clock);
+    }
+
+    @Override
+    public void back(long clock) {
+	super.back(clock);
+    }
+
+    @Override
+    public void mirror(long clock) {
+	super.mirror(clock);
+    }
+
+    @Override
+    public void losePrimary(long clock) {
+	super.losePrimary(clock);
+    }
+
+    @Override
+    public void mirrorConnect(long clock) {
+        super.mirrorConnect(clock);
+        startParts();
+        startIndexes();
     }
 }

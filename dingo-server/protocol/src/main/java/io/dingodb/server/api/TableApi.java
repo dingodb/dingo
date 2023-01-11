@@ -33,29 +33,55 @@ import java.util.concurrent.CompletableFuture;
 public interface TableApi {
 
     @ApiDeclaration
-    CompletableFuture<Boolean> createTable(
+    default CompletableFuture<Boolean> createTable(
         CommonId id, TableDefinition tableDefinition, Map<CommonId, Location> mirrors
-    );
+    ) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    CommonId getIndexId(CommonId tableId, String indexName);
+    default CommonId getIndexId(CommonId tableId, String indexName) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    CompletableFuture<Void> deleteTable(CommonId id);
+    default CompletableFuture<Void> deleteTable(CommonId id) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    TableDefinition getDefinition(CommonId tableId);
+    default TableDefinition getDefinition(CommonId tableId) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    List<TablePart> partitions(CommonId tableId);
+    default List<TablePart> partitions(CommonId tableId) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts();
+    default Map<CommonId, Location> mirrors(CommonId tableId) {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    CommonId createIndex(CommonId id, Index index);
+    default NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts() {
+        throw new UnsupportedOperationException();
+    }
 
     @ApiDeclaration
-    boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition);
+    default CommonId createIndex(CommonId id, Index index) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default void deleteIndex(CommonId id, String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    @ApiDeclaration
+    default boolean updateTableDefinition(CommonId id, TableDefinition tableDefinition) {
+        throw new UnsupportedOperationException();
+    }
 
 }
