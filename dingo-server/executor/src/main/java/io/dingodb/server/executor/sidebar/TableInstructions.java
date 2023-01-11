@@ -56,7 +56,7 @@ public class TableInstructions implements io.dingodb.mpu.instruction.Instruction
         };
         INSTANCE.processors[DROP_INDEX] = (VoidProcessor) context -> {
             Index index = context.operand(0);
-            TableSidebar tableSidebar = TableApi.INSTANCE.get(index.getId());
+            TableSidebar tableSidebar = TableApi.INSTANCE.get(index.getTable());
             tableSidebar.dropIndex(index, false);
             context.writer().erase(index.getId().encode());
             TableDefinition definition = tableSidebar.getDefinition();

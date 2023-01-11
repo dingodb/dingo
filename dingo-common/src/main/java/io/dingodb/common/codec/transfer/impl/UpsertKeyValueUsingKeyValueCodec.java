@@ -19,6 +19,7 @@ package io.dingodb.common.codec.transfer.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.transfer.KeyValueTransferCodeC;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -35,13 +36,28 @@ public class UpsertKeyValueUsingKeyValueCodec implements KeyValueTransferCodeC {
          * input: size|commonId in bytes|len(key)|key|len(value)|value
          * output: object[]
          */
-        List<Object> objectArray = new ArrayList<>(2);
-        int commonIdLen = byteBuffer.getInt();
-        byte[] commonIdInBytes = new byte[commonIdLen];
-        byteBuffer.get(commonIdInBytes);
+        List<Object> objectArray = new ArrayList<>(4);
 
-        CommonId commonId = CommonId.decode(commonIdInBytes);
-        objectArray.add(commonId);
+        int channelLen = byteBuffer.getInt();
+        objectArray.add(null);
+        
+        int commonIdLen = byteBuffer.getInt();
+        if (commonIdLen == 0) {
+           objectArray.add(null);
+        } else {
+            byte[] commonIdInBytes = new byte[commonIdLen];
+            byteBuffer.get(commonIdInBytes);
+
+            CommonId commonId = CommonId.decode(commonIdInBytes);
+            objectArray.add(commonId);
+        }
+
+        int tableIdLen = byteBuffer.getInt();
+        byte[] tableIdInBytes = new byte[tableIdLen];
+        byteBuffer.get(tableIdInBytes);
+
+        CommonId tableId = CommonId.decode(tableIdInBytes);
+        objectArray.add(tableId);
 
         int keyLen = byteBuffer.getInt();
         byte[] keyInBytes = new byte[keyLen];
@@ -63,22 +79,29 @@ public class UpsertKeyValueUsingKeyValueCodec implements KeyValueTransferCodeC {
          * output format:
          *  size|commonId in bytes|len(key)|key|len(value)|value|
          */
-        if (objectArray.length != 2) {
+        if (objectArray.length != 4) {
             return null;
         }
 
-        CommonId commonId = (CommonId) objectArray[0];
-        byte[] commonIdInBytes = commonId.encode();
+        CommonId commonId = (CommonId) objectArray[1];
+        byte[] commonIdInBytes = commonId == null ? new byte[0] : commonId.encode();
 
-        KeyValue keyValue = (KeyValue) objectArray[1];
+        CommonId tableId = (CommonId) objectArray[2];
+        byte[] tableIdInBytes = tableId.encode();
+
+        KeyValue keyValue = (KeyValue) objectArray[3];
         int keyLen = (keyValue.getKey() == null) ? 0 : (keyValue.getKey().length);
         int valueLen = (keyValue.getKey() == null) ? 0 : (keyValue.getValue().length);
 
-        int totalLen = commonIdInBytes.length + keyLen + valueLen;
+        int totalLen = 5 * Utils.INTEGER_LEN_IN_BYTES + commonIdInBytes.length
+            + tableIdInBytes.length + keyLen + valueLen;
         ByteBuffer byteBuffer = ByteBuffer.allocate(totalLen);
         byteBuffer
+            .putInt(0)
             .putInt(commonIdInBytes.length)
             .put(commonIdInBytes)
+            .putInt(tableIdInBytes.length)
+            .put(tableIdInBytes)
             .putInt(keyLen)
             .put(keyValue.getKey())
             .putInt(valueLen)

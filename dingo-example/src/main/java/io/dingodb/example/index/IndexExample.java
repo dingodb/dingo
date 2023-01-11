@@ -22,6 +22,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.MetaService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
 import io.dingodb.server.api.TableApi;
@@ -33,7 +34,7 @@ import io.dingodb.server.executor.index.IndexExecutor;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IndexCreateInsertUpdateDeleteSelectExample {
+public class IndexExample {
 
     private static String tableName = "TEST";
     private static String coordinatorAddress = "localhost:19181";
@@ -43,22 +44,23 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setInfo("user", "root");
         env.setInfo("password", "123123");
+
         // 1.1 Init TableApi
-        MetaServiceClient metaServiceClient = new MetaServiceClient(CoordinatorConnector.getCoordinatorConnector(coordinatorAddress));
+        MetaService metaServiceClient = new MetaServiceClient(CoordinatorConnector.getCoordinatorConnector(coordinatorAddress));
 
         // 1.2 CreateTable
         TableDefinition testTable = getTableDefinition();
+        metaServiceClient = metaServiceClient.getSubMetaService("DINGO");
         metaServiceClient.createTable(tableName, testTable);
-        printInfo();
+        printInfo(metaServiceClient);
 
         // 1.3 init tableApi
         CommonId tableId = metaServiceClient.getTableId(tableName);
-        ServiceConnector serviceConnector = metaServiceClient.getTableConnector(tableId);
+        ServiceConnector serviceConnector = ((MetaServiceClient) metaServiceClient).getTableConnector(tableId);
         TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, serviceConnector);
 
         // 1.4 Init ExecutorApi
         ExecutorApi executorcApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, serviceConnector);
-
 
         // 2.1 Prepare index
         Index in1 = getIndexIn1();
@@ -77,36 +79,36 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
 
 
         // 3. insert data1
-        executorcApi.insert(tableId, data1.get(0));
-        executorcApi.insert(tableId, data1.get(1));
-        executorcApi.insert(tableId, data1.get(2));
-        executorcApi.insert(tableId, data1.get(3));
-        executorcApi.insert(tableId, data1.get(4));
-        printInfo();
+        boolean i1 = executorcApi.insert(tableId, data1.get(0));
+        boolean i2 = executorcApi.insert(tableId, data1.get(1));
+        boolean i3 = executorcApi.insert(tableId, data1.get(2));
+        boolean i4 = executorcApi.insert(tableId, data1.get(3));
+        boolean i5 = executorcApi.insert(tableId, data1.get(4));
+        printInfo(metaServiceClient);
 
         // 4. add index in1
-        tableApi.createIndex(tableId, in1);
-        printInfo();
+        CommonId indexIn1Id = tableApi.createIndex(tableId, in1);
+        printInfo(metaServiceClient);
 
         // 5. insert data2
-        executorcApi.insert(tableId, data2.get(0));
-        executorcApi.insert(tableId, data2.get(1));
-        executorcApi.insert(tableId, data2.get(2));
-        executorcApi.insert(tableId, data2.get(3));
-        executorcApi.insert(tableId, data2.get(4));
-        printInfo();
+        boolean i6 = executorcApi.insert(tableId, data2.get(0));
+        boolean i7 = executorcApi.insert(tableId, data2.get(1));
+        boolean i8 = executorcApi.insert(tableId, data2.get(2));
+        boolean i9 = executorcApi.insert(tableId, data2.get(3));
+        boolean i10 = executorcApi.insert(tableId, data2.get(4));
+        printInfo(metaServiceClient);
 
         // 6. add index in2
-        tableApi.createIndex(tableId, in2);
-        printInfo();
+        CommonId indexIn2Id = tableApi.createIndex(tableId, in2);
+        printInfo(metaServiceClient);
 
         // 7. insert data3
-        executorcApi.insert(tableId, data3.get(0));
-        executorcApi.insert(tableId, data3.get(1));
-        executorcApi.insert(tableId, data3.get(2));
-        executorcApi.insert(tableId, data3.get(3));
-        executorcApi.insert(tableId, data3.get(4));
-        printInfo();
+        boolean i11 = executorcApi.insert(tableId, data3.get(0));
+        boolean i12 = executorcApi.insert(tableId, data3.get(1));
+        boolean i13 = executorcApi.insert(tableId, data3.get(2));
+        boolean i14 = executorcApi.insert(tableId, data3.get(3));
+        boolean i15 = executorcApi.insert(tableId, data3.get(4));
+        printInfo(metaServiceClient);
 
         // 8. select by in1
         List<Object[]> r11 = executorcApi.select(tableId, selectIn1Data1.get(0), new boolean[]{false, true, true, true, false});
@@ -119,14 +121,14 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
         List<Object[]> r23 = executorcApi.select(tableId, selectIn2Data1.get(2), new boolean[]{false, true, true, false, true});
 
         // 10. update
-        executorcApi.update(tableId, updateData.get(0));
-        executorcApi.update(tableId, updateData.get(1));
-        executorcApi.update(tableId, updateData.get(2));
-        printInfo();
+        boolean u1 = executorcApi.update(tableId, updateData.get(0));
+        boolean u2 = executorcApi.update(tableId, updateData.get(1));
+        boolean u3 = executorcApi.update(tableId, updateData.get(2));
+        printInfo(metaServiceClient);
 
         // 11. delete
-        executorcApi.delete(tableId, deleteData.get(0));
-        printInfo();
+        boolean d1 = executorcApi.delete(tableId, deleteData.get(0));
+        printInfo(metaServiceClient);
 
         // 12. select by in1
         List<Object[]> r31 = executorcApi.select(tableId, selectIn1Data2.get(0), new boolean[]{false, true, true, true, false});
@@ -139,13 +141,17 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
         List<Object[]> r42 = executorcApi.select(tableId, selectIn2Data2.get(1), new boolean[]{false, true, true, false, true});
         List<Object[]> r43 = executorcApi.select(tableId, selectIn2Data2.get(2), new boolean[]{false, true, true, false, true});
         List<Object[]> r44 = executorcApi.select(tableId, selectIn2Data2.get(3), new boolean[]{false, true, true, false, true});
+
+        // 14. drop index in1
+        tableApi.deleteIndex(tableId, in1.getName());
+
+        // 15. select by in1
+        List<Object[]> r51 = executorcApi.select(tableId, selectIn1Data2.get(0), new boolean[]{false, true, true, true, false});
     }
 
-
-    private static void printInfo() throws Exception {
-        MetaServiceClient metaServiceClient = new MetaServiceClient(CoordinatorConnector.getCoordinatorConnector(coordinatorAddress));
+    private static void printInfo(MetaService metaServiceClient) throws Exception {
         CommonId tableId = metaServiceClient.getTableId(tableName);
-        IndexExecutor indexExecutor = new IndexExecutor(tableId);
+        IndexExecutor indexExecutor = new IndexExecutor(tableId, (MetaServiceClient) metaServiceClient);
 
         TableDefinition tableDefinition = metaServiceClient.getTableDefinition(tableName);
         System.out.println("tableDefinition = " + tableDefinition);
@@ -328,7 +334,6 @@ public class IndexCreateInsertUpdateDeleteSelectExample {
         }
         System.out.println();
     }
-
 
     private static void printKeyValue(KeyValue e) {
         byte[] key = e.getKey();

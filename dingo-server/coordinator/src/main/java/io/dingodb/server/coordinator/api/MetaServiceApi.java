@@ -48,12 +48,12 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.meta.MetaService.DINGO_NAME;
 import static io.dingodb.meta.MetaService.META_NAME;
+import static io.dingodb.server.coordinator.meta.Constant.DINGO_SCHEMA;
 import static io.dingodb.server.coordinator.meta.Constant.DINGO_SCHEMA_ID;
 import static io.dingodb.server.coordinator.meta.Constant.DINGO_SCHEMA_SEQ;
 import static io.dingodb.server.coordinator.meta.Constant.META_SCHEMA;
 import static io.dingodb.server.coordinator.meta.Constant.META_SCHEMA_ID;
 import static io.dingodb.server.coordinator.meta.Constant.META_SCHEMA_SEQ;
-import static io.dingodb.server.coordinator.meta.Constant.ROOT_SCHEMA;
 import static io.dingodb.server.coordinator.meta.Constant.ROOT_SCHEMA_ID;
 import static io.dingodb.server.coordinator.meta.Constant.ROOT_SCHEMA_SEQ;
 import static io.dingodb.server.coordinator.meta.adaptor.MetaAdaptorRegistry.getMetaAdaptor;
@@ -103,7 +103,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
     public List<Schema> getSubSchemas(CommonId id) {
         List<Schema> schemas = new ArrayList<>();
         if (id.seq == Constant.ROOT_SCHEMA_SEQ) {
-            schemas.add(Constant.DINGO_SCHEMA);
+            schemas.add(DINGO_SCHEMA);
             schemas.add(META_SCHEMA);
 	    return schemas;
         }
@@ -118,7 +118,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
                 return META_SCHEMA;
             }
             if (name.equals(DINGO_NAME)) {
-                return ROOT_SCHEMA;
+                return DINGO_SCHEMA;
             }
         }
         return getMetaAdaptor(Schema.class).getByDomain(id.seq).stream()

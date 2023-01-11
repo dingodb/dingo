@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.index;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.CodeTag;
 import io.dingodb.common.codec.DingoIndexKeyValueCodec;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
@@ -34,6 +35,7 @@ import io.dingodb.server.client.meta.service.MetaServiceClientProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,15 +44,15 @@ import java.util.NavigableMap;
 
 public class IndexExecutor {
 
-    private static final MetaServiceClient metaService = MetaServiceClientProvider.META_SERVICE_CLIENT;
+    private MetaServiceClient metaService;
 
     private CommonId tableId;
 
-    private final byte deleteKey = -1;
+    private final byte deleteKey = CodeTag.DELETEFLAG;
 
-    private final byte unfinishedKey = 0;
+    private final byte unfinishKey = CodeTag.UNFINISHFALG;
 
-    private final byte finishedKey = 1;
+    private final byte finishedKey = CodeTag.FINISHEDFALG;
 
     private Map<Integer, KeyValueCodec> codecMap = new HashMap<>();
 
@@ -72,6 +74,12 @@ public class IndexExecutor {
 
     public IndexExecutor(CommonId tableId) {
         this.tableId = tableId;
+        this.metaService = MetaServiceClientProvider.META_SERVICE_CLIENT;
+    }
+
+    public IndexExecutor(CommonId tableId, MetaServiceClient metaService) {
+        this.tableId = tableId;
+        this.metaService = metaService;
     }
 
     public boolean insertIndex(Object[] row, TableDefinition tableDefinition, String indexName) {
@@ -80,10 +88,6 @@ public class IndexExecutor {
 
     public boolean deleteFromIndex(Object[] row, TableDefinition tableDefinition, String indexName) {
         return opIndexData(row, tableDefinition, indexName, -1);
-    }
-
-    public List<Object[]> getDeleteRecords() {
-        return getRecordsByPrefix(new byte[] {deleteKey});
     }
 
     private boolean opIndexData(Object[] row, TableDefinition tableDefinition, String indexName, int op) {
@@ -182,16 +186,8 @@ public class IndexExecutor {
         }
     }
 
-    public Object[] getOriRow(KeyValue kv, TableDefinition tableDefinition) {
-        byte[] key = kv.getKey();
-        byte[] oriKey = new byte[key.length - 1];
-        System.arraycopy(key, 1, oriKey, 0, key.length - 1);
-        kv.setKey(oriKey);
-        return getRow(kv, tableDefinition);
-    }
-
     public KeyValue getUnfinishKV(KeyValue oriKV) {
-        return getNewKV(oriKV, unfinishedKey);
+        return getNewKV(oriKV, unfinishKey);
     }
 
     public KeyValue getFinishedKV(KeyValue oriKV) {
@@ -203,10 +199,8 @@ public class IndexExecutor {
     }
 
     public KeyValue getNewKV(KeyValue oriKV, byte flag) {
-        byte[] newKey = new byte[oriKV.getKey().length + 1];
-        newKey[0] = flag;
-        System.arraycopy(oriKV.getKey(), 0, newKey, 1, oriKV.getKey().length);
-        return new KeyValue(newKey, oriKV.getValue());
+        oriKV.getKey()[0] = flag;
+        return oriKV;
     }
 
     public ExecutorApi getExecutor(byte[] key, TableDefinition tableDefinition) {
@@ -304,11 +298,8 @@ public class IndexExecutor {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            byte[] finishedKey = new byte[key.length + 1];
-            finishedKey[0] = this.finishedKey;
-            System.arraycopy(key, 0, finishedKey, 1, key.length);
-            ExecutorApi tableExecutorApi = getExecutor(finishedKey, tableDefinition);
-            byte[] value = tableExecutorApi.getValueByPrimaryKey(null, null, tableId, finishedKey);
+            ExecutorApi tableExecutorApi = getExecutor(key, tableDefinition);
+            byte[] value = tableExecutorApi.getValueByPrimaryKey(null, null, tableId, key);
             KeyValue oriKeyValue = new KeyValue(key, value);
             try {
                 records.add(codec.decode(oriKeyValue));
@@ -324,7 +315,11 @@ public class IndexExecutor {
     }
 
     public List<Object[]> getUnfinishRecords() {
-        return getRecordsByPrefix(new byte[] {unfinishedKey});
+        return getRecordsByPrefix(new byte[] {unfinishKey});
+    }
+
+    public List<Object[]> getDeleteRecords() {
+        return getRecordsByPrefix(new byte[] {deleteKey});
     }
 
     private List<Object[]> getRecordsByPrefix(byte[] prefix) {
@@ -344,10 +339,6 @@ public class IndexExecutor {
             ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
             List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, tableId, prefix);
             for (KeyValue keyValue : keyValues) {
-                byte[] key = keyValue.getKey();
-                byte[] oriKey = new byte[key.length - prefix.length];
-                System.arraycopy(key, prefix.length, oriKey, 0, oriKey.length);
-                keyValue.setKey(oriKey);
                 try {
                     records.add(codec.decode(keyValue));
                 } catch (IOException e) {

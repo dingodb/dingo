@@ -43,6 +43,7 @@ import io.dingodb.server.executor.config.Configuration;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
 import io.dingodb.server.executor.store.StoreService;
+import io.dingodb.server.protocol.MetaListenEvent;
 import io.dingodb.server.protocol.meta.Index;
 import io.dingodb.server.protocol.meta.TablePart;
 import lombok.Getter;
@@ -135,7 +136,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             exec(
                 TableInstructions.id, UPDATE_DEFINITION, tableId, definition
             ).join();
-            definitionListener.accept(new Message(ProtostuffCodec.write(definition)));
+            definitionListener.accept(new Message(ProtostuffCodec
+                .write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition))));
         }
         this.definition = definition;
     }

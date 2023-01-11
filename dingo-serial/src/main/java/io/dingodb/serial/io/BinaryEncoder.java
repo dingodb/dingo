@@ -55,7 +55,13 @@ public class BinaryEncoder {
         this.reversePosition = lengthBuf.length - 1;
     }
 
+    public void write(byte b) {
+        ensureRemainder(1);
+        buf[forwardPosition++] = b;
+    }
+
     public void writeBoolean(Object bool) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(2);
         if (bool == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -66,6 +72,7 @@ public class BinaryEncoder {
     }
 
     public void writeShort(Object sh) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(3);
         if (sh == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -78,6 +85,7 @@ public class BinaryEncoder {
     }
 
     public void writeKeyShort(Object sh) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(3);
         if (sh == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -90,6 +98,7 @@ public class BinaryEncoder {
     }
 
     public void writeInt(Object in) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(5);
         if (in == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -106,6 +115,7 @@ public class BinaryEncoder {
     }
 
     public void writeKeyInt(Object in) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(5);
         if (in == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -122,6 +132,7 @@ public class BinaryEncoder {
     }
 
     public void writeFloat(Object fo) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(5);
         if (fo == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -139,6 +150,7 @@ public class BinaryEncoder {
     }
 
     public void writeKeyFloat(Object fo) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(5);
         if (fo == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -163,6 +175,7 @@ public class BinaryEncoder {
     }
 
     public void writeLong(Object ln) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(9);
         if (ln == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -187,6 +200,7 @@ public class BinaryEncoder {
     }
 
     public void writeKeyLong(Object ln) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(9);
         if (ln == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -211,6 +225,7 @@ public class BinaryEncoder {
     }
 
     public void writeDouble(Object dl) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(9);
         if (dl == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -236,6 +251,7 @@ public class BinaryEncoder {
     }
 
     public void writeKeyDouble(Object dl) throws IndexOutOfBoundsException, ClassCastException {
+        ensureRemainder(9);
         if (dl == null) {
             writeNull();
             buf[forwardPosition++] = 0;
@@ -780,8 +796,16 @@ public class BinaryEncoder {
         buf[forwardPosition++] = (byte) (255 - remindZero);
     }
 
+    public void skipByte() {
+        skip(1);
+    }
+
     private boolean readIsNull() throws IndexOutOfBoundsException {
         return buf[forwardPosition++] == 0;
+    }
+
+    public byte read() {
+        return buf[forwardPosition++];
     }
 
     public Short readShort() throws IndexOutOfBoundsException, ClassCastException {
@@ -811,8 +835,8 @@ public class BinaryEncoder {
         reversePosition -= 4;
     }
 
-    public void skip(int nu) {
-        this.forwardPosition += nu;
+    public void skip(int length) {
+        forwardPosition += length;
     }
 
     private void ensureRemainder(int length) {

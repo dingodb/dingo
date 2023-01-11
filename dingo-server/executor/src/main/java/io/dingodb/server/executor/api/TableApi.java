@@ -18,6 +18,7 @@ package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.CodeTag;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexStatus;
@@ -28,7 +29,9 @@ import io.dingodb.meta.Part;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.api.ExecutorApi;
+import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.client.connector.impl.ServiceConnector;
+import io.dingodb.server.client.meta.service.MetaServiceClient;
 import io.dingodb.server.executor.index.IndexExecutor;
 import io.dingodb.server.executor.sidebar.TableSidebar;
 import io.dingodb.server.executor.sidebar.TableStatus;
@@ -90,14 +93,18 @@ public class TableApi implements io.dingodb.server.api.TableApi {
             }
 
             tableSidebar.setBusy();
-            IndexExecutor indexExecutor = new IndexExecutor(id);
+            MetaService metaServiceClient = new MetaServiceClient(CoordinatorConnector.getDefault());
+            metaServiceClient = metaServiceClient.getSubMetaService("DINGO");
+            IndexExecutor indexExecutor = new IndexExecutor(id, (MetaServiceClient) metaServiceClient);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = MetaService.root().getParts(id);
             for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
                 ServiceConnector partConnector = new ServiceConnector(id, partitions.get(partId).getReplicates());
                 ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
-                List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, id, new byte[]{1});
+                List<KeyValue> keyValues = executorApi
+                    .getKeyValueByKeyPrefix(null, null, id, new byte[]{CodeTag.FINISHEDFALG});
                 for (KeyValue keyValue : keyValues) {
-                    indexExecutor.insertIndex(indexExecutor.getOriRow(keyValue, tableDefinition), tableDefinition, index.getName());
+                    indexExecutor.insertIndex(indexExecutor.getRow(keyValue, tableDefinition),
+                        tableDefinition, index.getName());
                 }
             }
             index.setStatus(IndexStatus.NORMAL);

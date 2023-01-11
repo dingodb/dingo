@@ -330,6 +330,10 @@ public class BinaryDecoder {
         }
     }
 
+    public void skipByte() {
+        skip(1);
+    }
+
     public void skipBytes() throws IndexOutOfBoundsException {
         if (!readIsNull()) {
             skip(readLength());
@@ -438,7 +442,7 @@ public class BinaryDecoder {
         reversePosition -= 4;
     }
 
-    public void skip(int length) throws IndexOutOfBoundsException {
+    public void skip(int length) {
         forwardPosition += length;
     }
 }

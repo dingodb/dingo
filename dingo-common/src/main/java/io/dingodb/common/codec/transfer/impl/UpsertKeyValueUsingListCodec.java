@@ -38,13 +38,28 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
      * @return CommonId, array of KeyValue
      */
     public Object[] read(ByteBuffer byteBuffer) {
-        List<Object> objectArray = new ArrayList<>(2);
-        int commonIdLen = byteBuffer.getInt();
-        byte[] commonIdInBytes = new byte[commonIdLen];
-        byteBuffer.get(commonIdInBytes);
+        List<Object> objectArray = new ArrayList<>(4);
 
-        CommonId commonId = CommonId.decode(commonIdInBytes);
-        objectArray.add(commonId);
+        int channelLen = byteBuffer.getInt();
+        objectArray.add(null);
+
+        int commonIdLen = byteBuffer.getInt();
+        if (commonIdLen == 0) {
+            objectArray.add(null);
+        } else {
+            byte[] commonIdInBytes = new byte[commonIdLen];
+            byteBuffer.get(commonIdInBytes);
+
+            CommonId commonId = CommonId.decode(commonIdInBytes);
+            objectArray.add(commonId);
+        }
+
+        int tableIdLen = byteBuffer.getInt();
+        byte[] tableIdInBytes = new byte[tableIdLen];
+        byteBuffer.get(tableIdInBytes);
+
+        CommonId tableId = CommonId.decode(tableIdInBytes);
+        objectArray.add(tableId);
 
         int keyValueCnt = byteBuffer.getInt();
         List<KeyValue> keyValueList = null;
@@ -74,14 +89,17 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
      *  size|commonId in bytes|Count(list element)|len(key)|key|len(value)|value|....
      */
     public byte[] write(Object[] objectArray) {
-        if (objectArray.length != 2) {
+        if (objectArray.length != 4) {
             return null;
         }
 
-        CommonId commonId = (CommonId) objectArray[0];
-        byte[] commonIdInBytes = commonId.encode();
+        CommonId commonId = (CommonId) objectArray[1];
+        byte[] commonIdInBytes = commonId == null ? new byte[0] : commonId.encode();
 
-        List<KeyValue> keyValueList = (List<KeyValue>) objectArray[1];
+        CommonId tableId = (CommonId) objectArray[2];
+        byte[] tableIdInBytes = tableId.encode();
+
+        List<KeyValue> keyValueList = (List<KeyValue>) objectArray[3];
         int keyValueCnt = keyValueList.size();
 
         int totalKeySize = keyValueList
@@ -92,14 +110,17 @@ public class UpsertKeyValueUsingListCodec implements KeyValueTransferCodeC {
         /**
          * int(CommonIdSize)|commonId in bytes|Count(list element)|len(key)|key|len(value)|value|....
          */
-        int totalLen = (Utils.INTEGER_LEN_IN_BYTES + commonIdInBytes.length)
+        int totalLen = (3 * Utils.INTEGER_LEN_IN_BYTES + commonIdInBytes.length + tableIdInBytes.length)
             + (Utils.INTEGER_LEN_IN_BYTES + 2 * Utils.INTEGER_LEN_IN_BYTES * keyValueCnt)
             + totalKeySize + totalValueSize;
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(totalLen);
         byteBuffer
+            .putInt(0)
             .putInt(commonIdInBytes.length)
-            .put(commonIdInBytes);
+            .put(commonIdInBytes)
+            .putInt(tableIdInBytes.length)
+            .put(tableIdInBytes);
 
         // total key value count
         byteBuffer.putInt(keyValueCnt);

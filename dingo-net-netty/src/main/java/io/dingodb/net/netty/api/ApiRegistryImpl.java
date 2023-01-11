@@ -186,7 +186,7 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
             Object[] args = null;
             KeyValueTransferCodeC transferCodeC = argumentsCodeCMap.get(name);
             if (transferCodeC != null) {
-                args = deserializeTransferArgs(buffer, method.getParameterTypes(), transferCodeC);
+                args = deserializeTransferArgs(channel, buffer, method.getParameterTypes(), transferCodeC);
             } else {
                 args = deserializeArgs(channel, buffer, method.getParameterTypes());
             }
@@ -240,13 +240,16 @@ public class ApiRegistryImpl implements ApiRegistry, InvocationHandler {
         return args;
     }
 
-    private Object[] deserializeTransferArgs(ByteBuffer buffer,
+    private Object[] deserializeTransferArgs(Channel channel, ByteBuffer buffer,
                                              Class<?>[] parameterTypes,
                                              KeyValueTransferCodeC transferCodeC) {
         if (parameterTypes == null || parameterTypes.length == 0) {
             return API_EMPTY_ARGS;
         }
         Object[] args = transferCodeC.read(buffer);
+        if (parameterTypes[0].isInstance(channel)) {
+            args[0] = channel;
+        }
         return args;
     }
 
