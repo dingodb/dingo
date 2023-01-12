@@ -667,7 +667,7 @@ SqlGrant SqlGrant() : {
    [
      privilege = privilege() { privilegeList.add(privilege); }
      (
-       <COMMA> privilege = privilege() { privilegeList.add(privilege); }
+       <COMMA> privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
      )*
    ]
    <ON>

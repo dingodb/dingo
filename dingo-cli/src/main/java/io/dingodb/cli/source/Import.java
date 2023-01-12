@@ -70,6 +70,12 @@ public class Import {
     @Parameter(names = "--offset-reset", description = "Auto offset reset, Default [latest], optional [earliest]")
     private String offsetReset;
 
+    @Parameter(names = "--user", description = "dingo client login user")
+    private String user;
+
+    @Parameter(names = "--password", description = "dingo client login password")
+    private String password;
+
     public static void main(String[] args) throws Exception {
         Import anImport = new Import();
         JCommander commander = new JCommander(anImport);
@@ -86,6 +92,7 @@ public class Import {
         DingoConfiguration.parse(config);
         String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
         DingoClient dingoClient = new DingoClient(coordinatorServerList, 100);
+        dingoClient.setIdentity(user, password);
         boolean isConnected = dingoClient.open();
         if (!isConnected) {
             log.error("Failed to connect to dingo server");

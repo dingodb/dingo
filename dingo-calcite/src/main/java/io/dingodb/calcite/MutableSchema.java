@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -58,7 +59,12 @@ public abstract class MutableSchema extends AbstractSchema {
     }
 
     public Collection<Index> getIndex(@NonNull String tableName) {
-        return metaService.getIndex(tableName);
+        TableDefinition tableDefinition = metaService.getIndexTableDefinition(tableName);
+        if (tableDefinition != null && tableDefinition.getIndexes() != null) {
+            return tableDefinition.getIndexes().values();
+        } else {
+            return Arrays.asList();
+        }
     }
 
     public boolean dropTable(@NonNull String tableName) {

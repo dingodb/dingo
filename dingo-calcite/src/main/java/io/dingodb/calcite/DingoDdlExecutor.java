@@ -83,6 +83,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -284,7 +285,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition tableDefinition = new TableDefinition(
             tableName,
             columns,
-            null,
+            new ConcurrentHashMap<>(),
             1,
             create.getTtl(),
             create.getPartDefinition(),
@@ -477,6 +478,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
+        validateIndex(schema, tableName, index);
         schema.createIndex(tableName, Arrays.asList(index));
     }
 
@@ -486,6 +488,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlCreateIndex.index, sqlCreateIndex.getColumnNames(), sqlCreateIndex.isUnique);
+        validateIndex(schema, tableName, index);
         schema.createIndex(tableName, Arrays.asList(index));
     }
 
@@ -494,6 +497,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        validateDropIndex(schema, tableName, sqlDropIndex.index);
         schema.dropIndex(tableName, sqlDropIndex.index);
     }
 
@@ -606,6 +610,33 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         return sqlGrants;
+    }
+
+    public void validateDropIndex(MutableSchema schema, String tableName, String indexName) {
+        if (schema.getTable(tableName) == null) {
+            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+        }
+        TableDefinition tableDefinition = schema.getMetaService().getIndexTableDefinition(tableName);
+        if (tableDefinition != null) {
+            if (tableDefinition.getIndexes() == null) {
+                throw new IllegalArgumentException("index " + indexName + " is not exists ");
+            } else {
+                if (!tableDefinition.getIndexes().containsKey(indexName)) {
+                    throw new IllegalArgumentException("index " + indexName + " is not exists ");
+                }
+            }
+
+        }
+    }
+
+    public void validateIndex(MutableSchema schema, String tableName, Index newIndex) {
+        if (schema.getTable(tableName) == null) {
+            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+        }
+        TableDefinition tableDefinition = schema.getMetaService().getIndexTableDefinition(tableName);
+        if (tableDefinition != null) {
+            tableDefinition.validationIndex(newIndex);
+        }
     }
 
     public void validatePartitionBy(
