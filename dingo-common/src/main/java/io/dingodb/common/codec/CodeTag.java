@@ -19,5 +19,5 @@ package io.dingodb.common.codec;
 public class CodeTag {
     public static final byte UNFINISHFALG = 0;
     public static final byte FINISHEDFALG = 1;
-    public static final byte DELETEFLAG = -1;
+    public static final byte DELETEFLAG = 2;
 }

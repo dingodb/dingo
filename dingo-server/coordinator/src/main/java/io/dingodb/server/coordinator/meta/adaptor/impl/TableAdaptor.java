@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
@@ -107,6 +108,7 @@ public class TableAdaptor extends BaseAdaptor<Table> {
     }
 
     public CommonId create(CommonId schemaId, TableDefinition definition) {
+        definition.getIndexes().values().forEach(index -> index.setStatus(IndexStatus.NORMAL));
         Table table = definitionToMeta(schemaId, definition);
         table.setCreateTime(System.currentTimeMillis());
         ArrayList<KeyValue> keyValues = new ArrayList<>(definition.getColumnsCount() + 2);

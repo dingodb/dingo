@@ -164,6 +164,10 @@ public class IndexExample {
         System.out.println("UnfinishedRecord = ");
         record2.stream().forEach(e -> printObjectArray(e));
 
+        List<Object[]> record3 = indexExecutor.getDeleteRecords();
+        System.out.println("DeleteRecord = ");
+        record3.stream().forEach(e -> printObjectArray(e));
+
         try {
             List<KeyValue> in1 = indexExecutor.getIndexKeyValue(getIndexIn1().getName());
             System.out.println("in1 = ");

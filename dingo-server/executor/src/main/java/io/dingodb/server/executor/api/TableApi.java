@@ -108,8 +108,6 @@ public class TableApi implements io.dingodb.server.api.TableApi {
                 }
             }
             index.setStatus(IndexStatus.NORMAL);
-            tableDefinition.removeIndex(index.getName());
-            tableDefinition.addIndex(index);
             tableSidebar.updateDefinition(tableDefinition);
             tableSidebar.setRunning();
             return metaIndex.getId();

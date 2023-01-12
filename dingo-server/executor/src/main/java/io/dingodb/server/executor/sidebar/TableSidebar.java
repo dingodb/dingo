@@ -378,6 +378,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         if (view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()) == null) {
             initTable();
         }
+        definition = ProtostuffCodec.read((byte[]) view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()));
         setStarting();
         startParts();
         startIndexes();

@@ -670,7 +670,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-
             ExecutorApi unfinishExecutorApi = indexExecutor
                 .getExecutor(indexExecutor.getUnfinishKV(oriKV).getKey(), tableDefinition);
             ExecutorApi finishedExecutorApi = indexExecutor
@@ -736,7 +735,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-
             ExecutorApi unfinishExecutorApi = indexExecutor
                 .getExecutor(indexExecutor.getUnfinishKV(oriKV).getKey(), tableDefinition);
             ExecutorApi oldDeleteExecutorApi = indexExecutor
@@ -808,7 +806,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         lock.unlock();
 
         try {
-
             ExecutorApi finishedExecutorApi = indexExecutor
                 .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
             ExecutorApi deleteExecutorApi = indexExecutor
@@ -879,9 +876,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
 
         TableDefinition tableDefinition = tableSidebar.getDefinition();
-        if (tableDefinition.getIndexes() == null || tableDefinition.getIndexes().isEmpty()) {
-            return;
-        }
 
         tableDefinition.getDeletedIndexes().forEach(tableSidebar::dropIndex);
 
@@ -889,33 +883,33 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         List<Object[]> deleteRecords = indexExecutor.getDeleteRecords();
         for (Object[] deleteRow : deleteRecords) {
             KeyValue oriKV = indexExecutor.getOriKV(deleteRow, tableDefinition);
-            KeyValue deleteKV = indexExecutor.getDeleteKV(oriKV);
-            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
-            ExecutorApi deleteExecutorApi = indexExecutor.getExecutor(deleteKV.getKey(), tableDefinition);
-            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
-
+            ExecutorApi deleteExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getDeleteKV(oriKV).getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
             for (String indexName : indexNames) {
                 indexExecutor.deleteFromIndex(deleteRow, tableDefinition, indexName);
             }
-            finishedExecutorApi.delete(null, null, id, finishedKV.getPrimaryKey());
-            deleteExecutorApi.delete(null, null, id, deleteKV.getPrimaryKey());
+            finishedExecutorApi.delete(null, null, id,
+                indexExecutor.getFinishedKV(oriKV).getPrimaryKey());
+            deleteExecutorApi.delete(null, null, id,
+                indexExecutor.getDeleteKV(oriKV).getPrimaryKey());
         }
 
         List<Object[]> unfinishRecords = indexExecutor.getUnfinishRecords();
         for (Object[] unfinishRow : unfinishRecords) {
             KeyValue oriKV = indexExecutor.getOriKV(unfinishRow, tableDefinition);
-
-            KeyValue unfinishKV = indexExecutor.getUnfinishKV(oriKV);
-            KeyValue finishedKV = indexExecutor.getFinishedKV(oriKV);
-
-            ExecutorApi unfinishExecutorApi = indexExecutor.getExecutor(unfinishKV.getKey(), tableDefinition);
-            ExecutorApi finishedExecutorApi = indexExecutor.getExecutor(finishedKV.getKey(), tableDefinition);
-
+            ExecutorApi unfinishExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getUnfinishKV(oriKV).getKey(), tableDefinition);
+            ExecutorApi finishedExecutorApi = indexExecutor
+                .getExecutor(indexExecutor.getFinishedKV(oriKV).getKey(), tableDefinition);
             for (String indexName : indexNames) {
                 indexExecutor.insertIndex(unfinishRow, tableDefinition, indexName);
             }
-            finishedExecutorApi.upsertKeyValue(null, null, id, finishedKV);
-            unfinishExecutorApi.delete(null, null, id, unfinishKV.getPrimaryKey());
+            finishedExecutorApi.upsertKeyValue(null, null,
+                id, indexExecutor.getFinishedKV(oriKV));
+            unfinishExecutorApi.delete(null, null,
+                id, indexExecutor.getUnfinishKV(oriKV).getPrimaryKey());
         }
 
         List<String> busyIndexNames = tableDefinition.getBusyIndexes();
@@ -927,8 +921,6 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
                 }
                 Index index = tableDefinition.getIndexes().get(indexName);
                 index.setStatus(IndexStatus.NORMAL);
-                tableDefinition.removeIndex(indexName);
-                tableDefinition.addIndex(index);
                 tableSidebar.updateDefinition(tableDefinition);
             }
         }
