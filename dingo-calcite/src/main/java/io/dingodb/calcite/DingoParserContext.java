@@ -62,7 +62,7 @@ public final class DingoParserContext implements Context {
     @Getter
     @Setter
     private CalciteSchema usedSchema;
-    private Properties options;
+    private final Properties options;
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
         this(defaultSchemaName, null);

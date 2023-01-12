@@ -18,10 +18,12 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexLiteral;
@@ -34,22 +36,37 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public final class DingoGetByKeys extends DingoGetByIndex {
-    public DingoGetByKeys(
+public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
+    @Getter
+    protected final Collection<Map<Integer, RexLiteral>> points;
+    @Getter
+    private final String indexName;
+
+    public DingoGetByIndex(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         List<RelHint> hints,
         RelOptTable table,
         RexNode filter,
         @Nullable TupleMapping selection,
+        String indexName,
         Collection<Map<Integer, RexLiteral>> points
     ) {
-        super(cluster, traitSet, hints, table, filter, selection, null, points);
+        super(cluster, traitSet, hints, table, filter, selection);
+        this.indexName = indexName;
+        this.points = points;
     }
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return points.size() / DingoTableScan.ASSUME_PARTS;
+        return points.size();
+    }
+
+    @Override
+    public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
+        super.explainTerms(pw);
+        pw.item("points", points);
+        return pw;
     }
 
     @Override

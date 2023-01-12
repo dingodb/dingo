@@ -3,3 +3,5 @@ cluster:
 exchange:
   host: localhost
   port: 0
+client:
+  coordinatorExchangeSvrList: localhost:19181

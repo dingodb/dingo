@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 @JsonTypeName("hash")
-@JsonPropertyOrder({"strategy", "keyMapping"})
+@JsonPropertyOrder({"strategy", "keyMapping", "outputs"})
 public class HashOperator extends FanOutOperator {
     @JsonProperty("strategy")
     private final HashStrategy strategy;

@@ -69,7 +69,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.dingodb.calcite.DingoTable.dingo;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
@@ -573,8 +572,7 @@ public class DingoMeta extends MetaImpl {
         final CalciteSchema rootSchema = context.getRootSchema();
         final CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
         final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
-        final DingoTable dingoTable = dingo(table.getTable());
-        final TableDefinition tableDefinition = dingoTable.getTableDefinition();
+        final TableDefinition tableDefinition = ((DingoTable) table.getTable()).getTableDefinition();
         final TupleMapping mapping = tableDefinition.getKeyMapping();
         return createResultSet(
             Linq4j.asEnumerable(IntStream.range(0, mapping.size())
@@ -627,11 +625,11 @@ public class DingoMeta extends MetaImpl {
         List indexScanList = new ArrayList();
         if (schemaName != null) {
             final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
-            MutableSchema schema  = (MutableSchema) calciteSchema.schema;
+            MutableSchema schema = (MutableSchema) calciteSchema.schema;
             if (schema != null && schema.getTable(tableName) != null) {
                 Collection<Index> indices = schema.getIndex(tableName);
 
-                indexScanList =  indices.stream().flatMap(index -> {
+                indexScanList = indices.stream().flatMap(index -> {
                     String[] columns = index.getColumns();
                     IndexScan[] indexScans = new IndexScan[columns.length];
                     for (int i = 0; i < columns.length; i ++) {

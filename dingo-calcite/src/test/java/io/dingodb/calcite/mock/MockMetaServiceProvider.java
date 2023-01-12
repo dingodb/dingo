@@ -23,6 +23,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
+import io.dingodb.meta.local.LocalMetaService;
 
 import java.io.IOException;
 import java.util.TreeMap;
@@ -67,13 +68,13 @@ public class MockMetaServiceProvider {
             byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
             rangeSegments.put(new ComparableByteArray(key0), new Part(null, LOC_0, ImmutableSet.of(LOC_0)));
             rangeSegments.put(new ComparableByteArray(keyA), new Part(null, LOC_1, ImmutableSet.of(LOC_1)));
-            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test), rangeSegments);
-            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(test1), rangeSegments);
-            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(tableDate),
+            ((LocalMetaService) metaService).setParts(metaService.getTableId(test), rangeSegments);
+            ((LocalMetaService) metaService).setParts(metaService.getTableId(test1), rangeSegments);
+            ((LocalMetaService) metaService).setParts(metaService.getTableId(tableDate),
                 rangeSegments);
-            ((io.dingodb.meta.local.MetaService) metaService).setParts(metaService.getTableId(tableArray),
+            ((LocalMetaService) metaService).setParts(metaService.getTableId(tableArray),
                 rangeSegments);
-            io.dingodb.meta.local.MetaService.setLocation(LOC_0);
+            LocalMetaService.setLocation(LOC_0);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

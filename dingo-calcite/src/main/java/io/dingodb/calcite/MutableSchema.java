@@ -27,6 +27,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -63,7 +64,7 @@ public abstract class MutableSchema extends AbstractSchema {
         if (tableDefinition != null && tableDefinition.getIndexes() != null) {
             return tableDefinition.getIndexes().values();
         } else {
-            return Arrays.asList();
+            return Collections.emptyList();
         }
     }
 

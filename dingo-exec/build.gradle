@@ -23,6 +23,7 @@ dependencies {
     api project(':dingo-cluster-api')
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
+    api project(':dingo-server:dingo-server-protocol')
     api project(':dingo-store-api')
     annotationProcessor project(':dingo-expr:dingo-expr-annotations')
     compileOnly project(':dingo-expr:dingo-expr-annotations')

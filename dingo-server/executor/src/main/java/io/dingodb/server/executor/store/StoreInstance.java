@@ -227,8 +227,11 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
         if (doDeleting) {
             return tableSidebar.getPartition(part.getId()).exec(
-                KVInstructions.id, KVInstructions.DEL_RANGE_WITH_COUNT_OC, ByteArrayUtils.EMPTY_BYTES, null)
-                .join();
+                KVInstructions.id,
+                KVInstructions.DEL_RANGE_WITH_COUNT_OC,
+                ByteArrayUtils.EMPTY_BYTES,
+                null
+            ).join();
         }
         return tableSidebar.getPartition(part.getId()).view(KVInstructions.id, KVInstructions.COUNT_OC, null, null);
     }
@@ -856,6 +859,9 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             throw new RuntimeException("Table is not in running status");
         }
         TableDefinition tableDefinition = tableSidebar.getDefinition();
+        if (log.isDebugEnabled()) {
+            log.debug("Definition of table = {}", tableDefinition);
+        }
         List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
         List<String> columnNames = new ArrayList<>();
         for (int i = 0; i < hasData.length; i++) {

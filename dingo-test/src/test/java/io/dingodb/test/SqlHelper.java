@@ -26,7 +26,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.Part;
-import io.dingodb.meta.local.MetaService;
+import io.dingodb.meta.local.LocalMetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.utils.CsvUtils;
 import io.dingodb.test.utils.ResultSetUtils;
@@ -85,10 +85,10 @@ public class SqlHelper {
             startKey,
             endKey
         ));
-        MetaService metaService = MetaService.ROOT;
+        LocalMetaService metaService = LocalMetaService.ROOT;
         metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
         metaService.setParts(defaultPart);
-        MetaService.setLocation(new FakeLocation(0));
+        LocalMetaService.setLocation(new FakeLocation(0));
 
         connection = getLocalConnection();
 
@@ -150,7 +150,7 @@ public class SqlHelper {
 
     public void cleanUp() throws SQLException {
         connection.close();
-        MetaService.clear();
+        LocalMetaService.clear();
     }
 
     public RandomTable randomTable() {

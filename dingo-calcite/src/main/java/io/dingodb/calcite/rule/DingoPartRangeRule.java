@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
@@ -39,8 +40,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static io.dingodb.calcite.DingoTable.dingo;
-
 @Slf4j
 @Value.Enclosing
 public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
@@ -52,7 +51,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
-        TableDefinition td = dingo(rel.getTable()).getTableDefinition();
+        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         Codec codec = new DingoCodec(Collections.singletonList(
             td.getColumn(firstPrimaryColumnIndex).getType().toDingoSchema(0)), null, true);

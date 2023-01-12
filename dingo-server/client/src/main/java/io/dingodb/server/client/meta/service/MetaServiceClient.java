@@ -45,8 +45,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -238,9 +236,9 @@ public class MetaServiceClient implements MetaService {
         if (subMetaService == null) {
             Schema schema = api.getSubSchema(id, name);
             subMetaService = Optional.ofNullable(schema)
-            .ifPresent(this::addSubMetaServiceCache)
-            .map(Schema::getId)
-            .mapOrNull(metaServiceCache::get);
+                .ifPresent(this::addSubMetaServiceCache)
+                .map(Schema::getId)
+                .mapOrNull(metaServiceCache::get);
         }
         return subMetaService;
     }
@@ -343,4 +341,9 @@ public class MetaServiceClient implements MetaService {
         tableApi.deleteIndex(tableId, indexName);
     }
 
+    @Override
+    public <T> T getTableProxy(Class<T> clazz, CommonId tableId) {
+        ServiceConnector serviceConnector = getTableConnector(tableId);
+        return ApiRegistry.getDefault().proxy(clazz, serviceConnector);
+    }
 }

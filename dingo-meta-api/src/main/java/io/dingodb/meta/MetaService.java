@@ -23,11 +23,9 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.stream.Collectors;
 
 public interface MetaService {
 
@@ -81,6 +79,7 @@ public interface MetaService {
     /**
      * Drop sub meta service by name.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
+     *
      * @param name meta service name
      * @return true if success
      */
@@ -90,7 +89,7 @@ public interface MetaService {
      * Create and save table meta, initialize table storage.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
      *
-     * @param tableName table name
+     * @param tableName       table name
      * @param tableDefinition table definition
      */
     void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
@@ -155,20 +154,6 @@ public interface MetaService {
     NavigableMap<ComparableByteArray, Part> getParts(CommonId id);
 
     /**
-     * Get table storage locations by name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param tableName table name
-     * @return storage locations
-     */
-    default List<Location> getDistributes(String tableName) {
-        return getParts(tableName).values().stream()
-            .map(Part::getLeader)
-            .distinct()
-            .collect(Collectors.toList());
-    }
-
-    /**
      * Returns current process location.
      *
      * @return current process location
@@ -179,4 +164,5 @@ public interface MetaService {
 
     void dropIndex(String tableName, String indexName);
 
+    <T> T getTableProxy(Class<T> clazz, CommonId tableId);
 }

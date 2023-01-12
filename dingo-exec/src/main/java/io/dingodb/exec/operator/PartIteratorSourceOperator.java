@@ -19,7 +19,6 @@ package io.dingodb.exec.operator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -28,27 +27,17 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import io.dingodb.store.api.StoreInstance;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Iterator;
-
-public abstract class PartIteratorSourceOperator extends IteratorSourceOperator {
+public abstract class PartIteratorSourceOperator extends FilterProjectSourceOperator {
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
     @JsonProperty("part")
     protected final Object partId;
-    @JsonProperty("schema")
-    protected final DingoType schema;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
-    @JsonProperty("filter")
-    protected final SqlExpr filter;
-    @JsonProperty("selection")
-    protected final TupleMapping selection;
 
     protected Part part;
 
@@ -60,23 +49,13 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
         SqlExpr filter,
         TupleMapping selection
     ) {
+        super(schema, filter, selection);
         this.tableId = tableId;
         this.partId = partId;
-        this.schema = schema;
         this.keyMapping = keyMapping;
-        this.filter = filter;
-        this.selection = selection;
         OutputHint hint = new OutputHint();
         hint.setPartId(partId);
         output.setHint(hint);
-    }
-
-    @Override
-    public void setParas(Object[] paras) {
-        super.setParas(paras);
-        if (filter != null) {
-            filter.setParas(paras);
-        }
     }
 
     @Override
@@ -88,25 +67,5 @@ public abstract class PartIteratorSourceOperator extends IteratorSourceOperator 
             schema,
             keyMapping
         );
-        if (filter != null) {
-            filter.compileIn(schema, getParasType());
-        }
     }
-
-    @Override
-    protected @NonNull Iterator<Object[]> createIterator() {
-        Iterator<Object[]> iterator = createSourceIterator();
-        if (filter != null) {
-            iterator = Iterators.filter(
-                iterator,
-                tuple -> RtLogicalOp.test(filter.eval(tuple))
-            );
-        }
-        if (selection != null) {
-            iterator = Iterators.transform(iterator, selection::revMap);
-        }
-        return iterator;
-    }
-
-    protected abstract @NonNull Iterator<Object[]> createSourceIterator();
 }

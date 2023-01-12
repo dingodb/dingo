@@ -48,7 +48,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
-    private static UserService userService = UserServiceProvider.getRoot();
+    private static final UserService userService = UserServiceProvider.getRoot();
 
     private final RelOptTableImpl relOptTable;
     private final CommonId schemaId;
@@ -157,10 +157,6 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         }
     }
 
-    private boolean hasPrivilege(DingoSqlAccessEnum access) {
-        return PrivilegeVerify.verify(user, host, schemaId, tableId, access);
-    }
-
     @Override
     public boolean supportsModality(SqlModality modality) {
         return relOptTable.supportsModality(modality);
@@ -169,6 +165,10 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     @Override
     public boolean isTemporal() {
         return relOptTable.isTemporal();
+    }
+
+    private boolean hasPrivilege(DingoSqlAccessEnum access) {
+        return PrivilegeVerify.verify(user, host, schemaId, tableId, access);
     }
 
     @Override

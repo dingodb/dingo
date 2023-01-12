@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop", "engine"})
 @EqualsAndHashCode
@@ -145,12 +146,18 @@ public class TableDefinition {
         return -1;
     }
 
-    public int[] getColumnIndices(@NonNull List<String> names) {
-        int[] indices = new int[names.size()];
-        for (int i = 0; i < names.size(); ++i) {
-            indices[i] = getColumnIndex(names.get(i));
+    public List<Integer> getColumnIndices(@NonNull List<String> names) {
+        return names.stream()
+            .map(this::getColumnIndex)
+            .collect(Collectors.toList());
+    }
+
+    public int[] getColumnIndices(@NonNull String @NonNull [] names) {
+        int[] result = new int[names.length];
+        for (int i = 0; i < names.length; ++i) {
+            result[i] = getColumnIndex(names[i]);
         }
-        return indices;
+        return result;
     }
 
     public int getPrimaryKeyCount() {
@@ -168,7 +175,7 @@ public class TableDefinition {
     }
 
     public TupleMapping getKeyMapping() {
-        return getColumnMapping(true);
+        return TupleMapping.of(getKeyColumnIndices());
     }
 
     public TupleMapping getRevKeyMapping() {
@@ -210,6 +217,16 @@ public class TableDefinition {
             ++index;
         }
         return TupleMapping.of(indices);
+    }
+
+    public @NonNull List<Integer> getKeyColumnIndices() {
+        List<Integer> indices = new LinkedList<>();
+        for (int i = 0; i < columns.size(); ++i) {
+            if (columns.get(i).isPrimary()) {
+                indices.add(i);
+            }
+        }
+        return indices;
     }
 
     public List<DingoSchema> getDingoSchemaOfKey() {
@@ -340,7 +357,7 @@ public class TableDefinition {
         int count = 0;
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
             if (entry.getValue().getStatus() != IndexStatus.DELETED) {
-                count ++;
+                count++;
             }
         }
         return count;
@@ -411,7 +428,6 @@ public class TableDefinition {
     public List<Index> getIndexesByEqualsColumnNames(List<String> columnNames) {
         return getIndexes(getIndexNamesByEqualsColumnNames(columnNames));
     }
-
 
 
     public List<String> getIndexNamesByEqualsColumnNames(List<String> columnNames) {
