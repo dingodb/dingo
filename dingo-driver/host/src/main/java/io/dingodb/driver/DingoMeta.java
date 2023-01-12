@@ -258,11 +258,11 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-        MetaResultSet showMetaResultSet = getShowMetaResultSet(sql, parser);
-        if (showMetaResultSet != null) {
-            return new ExecuteResult(ImmutableList.of(showMetaResultSet));
-        }
         try {
+            MetaResultSet showMetaResultSet = getShowMetaResultSet(sql, parser);
+            if (showMetaResultSet != null) {
+                return new ExecuteResult(ImmutableList.of(showMetaResultSet));
+            }
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");

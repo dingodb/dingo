@@ -77,9 +77,11 @@ public class PrivilegeVerify {
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
-            return verify(user, host, schema, table, accessType, privilegeGather);
+            if (privilegeGather == null) {
+                return false;
+            }
         }
-        return true;
+        return verify(user, host, schema, table, accessType, privilegeGather);
     }
 
     public static boolean verify(String user, String host, CommonId schema, CommonId table,
@@ -130,9 +132,11 @@ public class PrivilegeVerify {
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
-            return verify(schema, table, privilegeGather);
+            if (privilegeGather == null) {
+                return false;
+            }
         }
-        return true;
+        return verify(schema, table, privilegeGather);
     }
 
     public static boolean verify(CommonId schema, CommonId table,
