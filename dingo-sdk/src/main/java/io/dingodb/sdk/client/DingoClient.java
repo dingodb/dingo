@@ -23,6 +23,7 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.MetaService;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.common.Record;
@@ -97,8 +98,12 @@ public class DingoClient {
      * @param retryTimes this times is used to retry when operation is failed.
      */
     public DingoClient(String coordinatorExchangeSvrList, Integer retryTimes) {
+        this(coordinatorExchangeSvrList, MetaService.DINGO_NAME, retryTimes);
+    }
+
+    public DingoClient(String coordinatorExchangeSvrList, String schema, Integer retryTimes) {
         try {
-            connection = new DingoConnection(coordinatorExchangeSvrList);
+            connection = new DingoConnection(coordinatorExchangeSvrList, schema);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

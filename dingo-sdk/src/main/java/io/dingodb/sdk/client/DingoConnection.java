@@ -36,13 +36,16 @@ public class DingoConnection extends ClientBase {
 
     private ApiRegistry apiRegistry;
 
+    private String schema;
+
     /**
      * Construct connection to Dingo Cluster.
      * @param coordinatorExchangeSvrList coordinator server list.
      */
-    public DingoConnection(String coordinatorExchangeSvrList) {
+    public DingoConnection(String coordinatorExchangeSvrList, String schema) {
         super(coordinatorExchangeSvrList);
         this.metaClient = new MetaClient(coordinatorExchangeSvrList);
+        this.schema = schema;
     }
 
     /**
@@ -52,7 +55,7 @@ public class DingoConnection extends ClientBase {
     @Override
     public void initConnection() throws Exception {
         super.initConnection();
-        this.metaClient.init();
+        this.metaClient.init(schema);
         this.apiRegistry = super.getNetService().apiRegistry();
     }
 
