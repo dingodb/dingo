@@ -37,10 +37,7 @@ public class SqlDropUser extends SqlDrop {
 
     public SqlDropUser(SqlParserPos pos, boolean ifExists, String name, String host) {
         super(OPERATOR, pos, ifExists);
-        if (name.contains("'")) {
-            name = name.replace(",", "");
-        }
-        this.name = name;
+        this.name = name.startsWith("'") ? name.replace("'", "") : name;
         if (StringUtils.isBlank(host)) {
             host = "%";
         }

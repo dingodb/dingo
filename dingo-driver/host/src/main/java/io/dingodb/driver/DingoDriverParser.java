@@ -21,7 +21,10 @@ import io.dingodb.calcite.DingoDdlExecutor;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
+import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
@@ -193,24 +196,18 @@ public final class DingoDriverParser extends DingoParser {
         String host = connection.getContext().getOption("host");
         List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
         CommonId schemaId = null;
+        CommonId tableId = null;
+        CommonId[] schemaTableIds = null;
         if (sqlNode instanceof DingoSqlCreateTable) {
             accessTypes.add(DingoSqlAccessEnum.CREATE);
             DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
-            String schema = null;
-            if (sqlCreateTable.name.names.size() > 1) {
-                schema = sqlCreateTable.name.names.get(0);
-            }
-            schemaId = getSchemaId(schema);
+            schemaTableIds = initSchemaTable(sqlCreateTable.name.names);
         } else if (sqlNode instanceof SqlDropUser) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
         } else if (sqlNode instanceof SqlDropTable) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             SqlDropTable sqlDropTable = (SqlDropTable) sqlNode;
-            String schema = null;
-            if (sqlDropTable.name.names.size() > 1) {
-                schema = sqlDropTable.name.names.get(0);
-            }
-            schemaId = getSchemaId(schema);
+            schemaTableIds = initSchemaTable(sqlDropTable.name.names);
         } else if (sqlNode instanceof SqlCreateUser || sqlNode instanceof SqlRevoke || sqlNode instanceof SqlGrant) {
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlFlushPrivileges) {
@@ -222,11 +219,45 @@ public final class DingoDriverParser extends DingoParser {
         } else if (sqlNode instanceof SqlTruncate) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             accessTypes.add(DingoSqlAccessEnum.CREATE);
+        } else if (sqlNode instanceof SqlAlterTable) {
+            accessTypes.add(DingoSqlAccessEnum.ALTER);
+            SqlAlterTable sqlAlterTable = (SqlAlterTable) sqlNode;
+            schemaTableIds = initSchemaTable(sqlAlterTable.table.names);
+        } else if (sqlNode instanceof SqlCreateIndex) {
+            accessTypes.add(DingoSqlAccessEnum.CREATE);
+        } else if (sqlNode instanceof SqlDropIndex) {
+            accessTypes.add(DingoSqlAccessEnum.DROP);
+            SqlDropIndex sqlDropIndex = (SqlDropIndex) sqlNode;
+            schemaTableIds = initSchemaTable(sqlDropIndex.table.names);
         }
-        if (!PrivilegeVerify.verifyDuplicate(user, host, schemaId, null,
+        if (schemaTableIds != null) {
+            schemaId = schemaTableIds[0];
+            tableId = schemaTableIds[1];
+        }
+        if (!PrivilegeVerify.verifyDuplicate(user, host, schemaId, tableId,
             accessTypes)) {
             throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
         }
+    }
+
+    public CommonId[] initSchemaTable(ImmutableList<String> names) {
+        String schema = null;
+        String table = null;
+        if (names.size() == 1) {
+            table = names.get(0).toUpperCase();
+        } else {
+            schema = names.get(0);
+            table = names.get(1).toUpperCase();
+        }
+        if (schema != null) {
+            schema = schema.toUpperCase();
+        }
+        CommonId schemaId = getSchemaId(schema);
+        CommonId tableId = null;
+        if (schemaId != null) {
+            tableId = UserServiceProvider.getRoot().getTableId(schemaId, table);
+        }
+        return new CommonId[] {schemaId, tableId};
     }
 
     public CommonId getSchemaId(String schema) {

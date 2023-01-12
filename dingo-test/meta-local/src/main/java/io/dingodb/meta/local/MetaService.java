@@ -175,7 +175,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public Collection<Index> getIndex(String tableName) {
+    public TableDefinition getIndexTableDefinition(String tableName) {
         return null;
     }
 

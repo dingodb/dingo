@@ -45,6 +45,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +149,9 @@ public class MetaServiceClient implements MetaService {
     }
 
     private void addTableCache(Table table) {
+        if (table == null) {
+            return;
+        }
         CommonId id = table.getId();
         String name = table.getName();
         tableIdCache.computeIfAbsent(name, __ -> id);
@@ -233,10 +237,10 @@ public class MetaServiceClient implements MetaService {
         MetaServiceClient subMetaService = Optional.mapOrNull(metaServiceIdCache.get(name), metaServiceCache::get);
         if (subMetaService == null) {
             Schema schema = api.getSubSchema(id, name);
-	    subMetaService = Optional.ofNullable(schema)
-		.ifPresent(this::addSubMetaServiceCache)
-		.map(Schema::getId)
-		.mapOrNull(metaServiceCache::get);
+            subMetaService = Optional.ofNullable(schema)
+            .ifPresent(this::addSubMetaServiceCache)
+            .map(Schema::getId)
+            .mapOrNull(metaServiceCache::get);
         }
         return subMetaService;
     }
@@ -334,15 +338,19 @@ public class MetaServiceClient implements MetaService {
 
     @Override
     public void dropIndex(String tableName, String indexName) {
-
+        CommonId tableId = getTableId(tableName);
+        TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(tableId));
+        tableApi.deleteIndex(tableId, indexName);
     }
 
     @Override
-    public Collection<Index> getIndex(String tableName) {
+    public TableDefinition getIndexTableDefinition(String tableName) {
         CommonId commonId = getTableId(tableName);
+        if (commonId == null) {
+            return null;
+        }
         TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(commonId));
-        TableDefinition tableDefinition = tableApi.getDefinition(commonId);
-        return tableDefinition.getIndexes().values();
+        return tableApi.getDefinition(commonId);
     }
 
 }

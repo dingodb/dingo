@@ -38,7 +38,7 @@ public class SqlDropIndex extends SqlDrop {
 
     public SqlDropIndex(SqlParserPos pos, boolean ifExists, String index, SqlIdentifier table) {
         super(OPERATOR, pos, ifExists);
-        this.index = index;
+        this.index = index.startsWith("'") ? index.replace("'", "") : index;
         this.table = table;
     }
 

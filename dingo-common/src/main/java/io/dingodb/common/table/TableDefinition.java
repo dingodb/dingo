@@ -284,16 +284,19 @@ public class TableDefinition {
         if (indexes == null) {
             indexes = new ConcurrentHashMap<>();
         }
-        for (String columnName : newIndex.getColumns()) {
-            if (getColumn(columnName) == null) {
-                throw new IllegalArgumentException("Column " + columnName + " not found in table " + name);
-            }
-        }
-        validation(newIndex);
+        validationIndex(newIndex);
         indexes.put(newIndex.getName(), newIndex);
     }
 
-    public void validation(Index newIndex) {
+    public void validationIndex(Index newIndex) {
+        for (String columnName : newIndex.getColumns()) {
+            if (getColumn(columnName) == null) {
+                throw new IllegalArgumentException("Column " + columnName + " not found in table " + columnName);
+            }
+        }
+        if (indexes == null) {
+            return;
+        }
         if (indexes.containsKey(newIndex.getName())) {
             throw new IllegalArgumentException("index " + newIndex.getName() + " is exists ");
         }

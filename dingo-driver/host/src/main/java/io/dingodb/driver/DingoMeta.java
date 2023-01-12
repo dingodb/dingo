@@ -624,27 +624,26 @@ public class DingoMeta extends MetaImpl {
         final DingoConnection dingoConnection = (DingoConnection) connection;
         final DingoParserContext context = dingoConnection.getContext();
         final CalciteSchema rootSchema = context.getRootSchema();
+        List indexScanList = new ArrayList();
+        if (schemaName != null) {
+            final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
+            MutableSchema schema  = (MutableSchema) calciteSchema.schema;
+            if (schema != null && schema.getTable(tableName) != null) {
+                Collection<Index> indices = schema.getIndex(tableName);
 
-        final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
-        MutableSchema schema  = (MutableSchema) calciteSchema.schema;
-        List indexScanList = null;
-        if (schema != null) {
-            Collection<Index> indices = schema.getIndex(tableName);
-
-            indexScanList =  indices.stream().flatMap(index -> {
-                String[] columns = index.getColumns();
-                IndexScan[] indexScans = new IndexScan[columns.length];
-                for (int i = 0; i < columns.length; i ++) {
-                    String columnName = columns[0];
-                    short p = (short) i;
-                    IndexScan indexScan = new IndexScan(null, schemaName, tableName, index.isUnique(),
-                        null, index.getName(), p, p, columnName, "asc", null, 1, null);
-                    indexScans[i] = indexScan;
-                }
-                return Arrays.stream(indexScans);
-            }).collect(Collectors.toList());
-        } else {
-            indexScanList = new ArrayList();
+                indexScanList =  indices.stream().flatMap(index -> {
+                    String[] columns = index.getColumns();
+                    IndexScan[] indexScans = new IndexScan[columns.length];
+                    for (int i = 0; i < columns.length; i ++) {
+                        String columnName = columns[0];
+                        short p = (short) i;
+                        IndexScan indexScan = new IndexScan(null, schemaName, tableName, index.isUnique(),
+                            null, index.getName(), p, p, columnName, "asc", null, 1, null);
+                        indexScans[i] = indexScan;
+                    }
+                    return Arrays.stream(indexScans);
+                }).collect(Collectors.toList());
+            }
         }
 
         return createResultSet(
