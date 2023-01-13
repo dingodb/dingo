@@ -179,5 +179,4 @@ public interface MetaService {
 
     void dropIndex(String tableName, String indexName);
 
-    TableDefinition getIndexTableDefinition(String tableName);
 }

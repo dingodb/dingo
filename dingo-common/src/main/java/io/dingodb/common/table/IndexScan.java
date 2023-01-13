@@ -27,7 +27,7 @@ public class IndexScan {
     public final String tableCat;
     public final String tableSchema;
     public final String tableName;
-    public final boolean nonUnique;
+    public final boolean unique;
     public final String indexQualifier;
     public final String indexName;
     public final short type;

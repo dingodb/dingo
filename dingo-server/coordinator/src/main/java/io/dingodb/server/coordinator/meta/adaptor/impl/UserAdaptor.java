@@ -107,7 +107,9 @@ public class UserAdaptor extends BaseAdaptor<User> {
     }
 
     public boolean isExist(UserDefinition userDefinition) {
-        log.info("user key:" + userDefinition.getKey() + ", userMap:" + userMap);
+        if (log.isDebugEnabled()) {
+            log.debug("user key:" + userDefinition.getKey() + ", userMap:" + userMap);
+        }
         if (userMap.containsKey(userDefinition.getKey())) {
             return true;
         }
@@ -123,7 +125,10 @@ public class UserAdaptor extends BaseAdaptor<User> {
         User user = userMap.remove(userDefinition.getKey());
         if (user != null) {
             this.doDelete(user);
-            log.info("do delete userMap:" + userMap);
+            if (log.isDebugEnabled()) {
+                log.debug("do delete userMap:" + userMap);
+            }
+
             return user.getId();
         } else {
             log.error("remove user is null");
@@ -152,6 +157,8 @@ public class UserAdaptor extends BaseAdaptor<User> {
         String digestPwd = AlgorithmPlugin.digestAlgorithm(definition.getPassword(), user.getPlugin());
         user.setPassword(digestPwd);
         doSave(user);
-        log.info("usermap:" + userMap);
+        if (log.isDebugEnabled()) {
+            log.info("usermap:" + userMap);
+        }
     }
 }

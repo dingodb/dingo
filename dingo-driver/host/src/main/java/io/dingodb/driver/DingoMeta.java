@@ -635,7 +635,7 @@ public class DingoMeta extends MetaImpl {
                     String[] columns = index.getColumns();
                     IndexScan[] indexScans = new IndexScan[columns.length];
                     for (int i = 0; i < columns.length; i ++) {
-                        String columnName = columns[0];
+                        String columnName = columns[i];
                         short p = (short) i;
                         IndexScan indexScan = new IndexScan(null, schemaName, tableName, index.isUnique(),
                             null, index.getName(), p, p, columnName, "asc", null, 1, null);
@@ -652,7 +652,7 @@ public class DingoMeta extends MetaImpl {
             "TABLE_CAT",
             "TABLE_SCHEMA",
             "TABLE_NAME",
-            "NON_UNIQUE",
+            "UNIQUE",
             "INDEX_QUALIFIER",
             "INDEX_NAME",
             "TYPE",

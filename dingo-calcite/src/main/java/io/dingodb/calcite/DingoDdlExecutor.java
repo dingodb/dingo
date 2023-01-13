@@ -616,7 +616,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schema.getTable(tableName) == null) {
             throw new IllegalArgumentException("table " + tableName + " is not exists ");
         }
-        TableDefinition tableDefinition = schema.getMetaService().getIndexTableDefinition(tableName);
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {
             if (tableDefinition.getIndexes() == null) {
                 throw new IllegalArgumentException("index " + indexName + " is not exists ");
@@ -633,7 +633,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schema.getTable(tableName) == null) {
             throw new IllegalArgumentException("table " + tableName + " is not exists ");
         }
-        TableDefinition tableDefinition = schema.getMetaService().getIndexTableDefinition(tableName);
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {
             tableDefinition.validationIndex(newIndex);
         }

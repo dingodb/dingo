@@ -343,14 +343,4 @@ public class MetaServiceClient implements MetaService {
         tableApi.deleteIndex(tableId, indexName);
     }
 
-    @Override
-    public TableDefinition getIndexTableDefinition(String tableName) {
-        CommonId commonId = getTableId(tableName);
-        if (commonId == null) {
-            return null;
-        }
-        TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(commonId));
-        return tableApi.getDefinition(commonId);
-    }
-
 }
