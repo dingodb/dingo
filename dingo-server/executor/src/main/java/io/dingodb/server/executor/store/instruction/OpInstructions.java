@@ -64,8 +64,11 @@ public class OpInstructions implements Instructions {
             // todo get udf executive from executiveApi
             /*ExecutiveApi executiveApi = ApiRegistry.getDefault()
                 .proxy(ExecutiveApi.class, CoordinatorConnector.defaultConnector());*/
+            Writer w = null;
             Reader r = new Reader(context.reader());
-            Writer w = new Writer(context.writer());
+            if (!head.readOnly()) {
+                w = new Writer(context.writer());
+            }
             head.context().reader(r).writer(w).startKey(startBytes).endKey(endBytes).timestamp(timestamp);
 
             Executive headExec = ExecutiveRegistry.getExecutive(head.execId());
