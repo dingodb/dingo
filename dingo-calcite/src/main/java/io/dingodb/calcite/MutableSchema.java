@@ -59,7 +59,7 @@ public abstract class MutableSchema extends AbstractSchema {
     }
 
     public Collection<Index> getIndex(@NonNull String tableName) {
-        TableDefinition tableDefinition = metaService.getIndexTableDefinition(tableName);
+        TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
         if (tableDefinition != null && tableDefinition.getIndexes() != null) {
             return tableDefinition.getIndexes().values();
         } else {

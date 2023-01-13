@@ -174,11 +174,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     }
 
-    @Override
-    public TableDefinition getIndexTableDefinition(String tableName) {
-        return null;
-    }
-
     public void setParts(CommonId id, NavigableMap<ComparableByteArray, Part> part) {
         parts.put(id, part);
     }
