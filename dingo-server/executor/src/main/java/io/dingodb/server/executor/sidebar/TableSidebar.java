@@ -375,14 +375,19 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Override
     public void primary(long clock) {
+        boolean isCreate = false;
         if (view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()) == null) {
             initTable();
+            isCreate = true;
         }
-        definition = ProtostuffCodec.read((byte[]) view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()));
         setStarting();
         startParts();
         startIndexes();
-        storeInstance.reboot();
+        if (!isCreate) {
+            definition = ProtostuffCodec
+                .read((byte[]) view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()));
+            storeInstance.reboot();
+        }
         setRunning();
         super.primary(clock);
     }
