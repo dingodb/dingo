@@ -94,8 +94,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
             return userMap.get(userKey).getId();
         } else {
             User user = definitionToMeta(userDefinition);
-            user.setId(newId(user));
-            doSave(user);
+            save(user);
             return user.getId();
         }
     }
