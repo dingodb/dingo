@@ -35,19 +35,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoSqlValidator {
     private DingoParser parser;
-    private SqlValidator validator;
 
     @BeforeEach
     public void setupAll() {
         MockMetaServiceProvider.init();
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
         parser = new DingoParser(context);
-        validator = context.getSqlValidator();
     }
 
     @Test
     public void testGetValidatedNodeType() throws SqlParseException {
         SqlNode sqlNode = parser.parse("select id, name, amount from test");
+        SqlValidator validator = parser.getSqlValidator();
         validator.validate(sqlNode);
         RelDataType type = validator.getValidatedNodeType(sqlNode);
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
@@ -70,6 +69,7 @@ public class TestDingoSqlValidator {
     @Test
     public void testGetFieldOrigins() throws SqlParseException {
         SqlNode sqlNode = parser.parse("select id, name, amount from test");
+        SqlValidator validator = parser.getSqlValidator();
         validator.validate(sqlNode);
         List<List<String>> fieldOrigins = validator.getFieldOrigins(sqlNode);
         String tableName = "TEST";

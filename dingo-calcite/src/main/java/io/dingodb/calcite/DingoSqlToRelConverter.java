@@ -36,14 +36,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DingoSqlToRelConverter extends SqlToRelConverter {
-    public static final Config CONFIG = SqlToRelConverter.CONFIG
+class DingoSqlToRelConverter extends SqlToRelConverter {
+    static final Config CONFIG = SqlToRelConverter.CONFIG
         .withTrimUnusedFields(true)
         .withExpand(false)
         // Disable simplify to use Dingo's own expr evaluation.
         .addRelBuilderConfigTransform(c -> c.withSimplify(false));
 
-    public DingoSqlToRelConverter(
+    DingoSqlToRelConverter(
         RelOptTable.ViewExpander viewExpander,
         @Nullable SqlValidator validator,
         Prepare.CatalogReader catalogReader,
