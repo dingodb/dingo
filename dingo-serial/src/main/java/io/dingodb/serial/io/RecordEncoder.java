@@ -30,25 +30,25 @@ public class RecordEncoder {
     private final int approPerRecordSize;
     private final int perRecordKeySize;
 
-    private final byte unfishFlag;
+    private final byte unfinishFlag;
     private final byte finishedFlag;
     private final byte deletedFlag;
     private byte[] transactionId = new byte[0];
 
 
     public RecordEncoder(List<DingoSchema> schemas, short schemaVersion,
-                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId) {
-        this(schemas, schemaVersion, unfishFlag, finishedFlag, deletedFlag, transactionId, false);
+                         byte unfinishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId) {
+        this(schemas, schemaVersion, unfinishFlag, finishedFlag, deletedFlag, transactionId, false);
     }
 
     public RecordEncoder(List<DingoSchema> schemas, short schemaVersion,
-                         byte unfishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId, boolean isKey) {
+                         byte unfinishFlag, byte finishedFlag, byte deletedFlag, byte[] transactionId, boolean isKey) {
         if (!isKey) {
             Utils.sortSchema(schemas);
         }
         this.schemas = schemas;
         this.schemaVersion = schemaVersion;
-        this.unfishFlag = unfishFlag;
+        this.unfinishFlag = unfinishFlag;
         this.finishedFlag = finishedFlag;
         this.deletedFlag = deletedFlag;
         if (transactionId != null) {
