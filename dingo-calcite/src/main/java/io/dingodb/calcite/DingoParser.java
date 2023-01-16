@@ -76,6 +76,8 @@ public class DingoParser {
     private final RelOptCluster cluster;
     @Getter
     private final VolcanoPlanner planner;
+    @Getter
+    private final DingoSqlValidator sqlValidator;
 
     public DingoParser(final @NonNull DingoParserContext context) {
         this.context = context;
@@ -100,6 +102,9 @@ public class DingoParser {
                 Objects.requireNonNull(cluster.getMetadataProvider())
             )
         ));
+
+        // Create SqlValidator
+        sqlValidator = context.getSqlValidator();
     }
 
     @SuppressWarnings("MethodMayBeStatic")
@@ -120,7 +125,7 @@ public class DingoParser {
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
-            context.getSqlValidator(),
+            sqlValidator,
             context.getCatalogReader(),
             cluster,
             sqlNode.getKind() == SqlKind.EXPLAIN

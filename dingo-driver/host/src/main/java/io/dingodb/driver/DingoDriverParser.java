@@ -257,7 +257,7 @@ public final class DingoDriverParser extends DingoParser {
         if (schemaId != null) {
             tableId = UserServiceProvider.getRoot().getTableId(schemaId, table);
         }
-        return new CommonId[] {schemaId, tableId};
+        return new CommonId[]{schemaId, tableId};
     }
 
     public CommonId getSchemaId(String schema) {
@@ -298,7 +298,7 @@ public final class DingoDriverParser extends DingoParser {
             explain = (SqlExplain) sqlNode;
             sqlNode = explain.getExplicandum();
         }
-        SqlValidator validator = getContext().getSqlValidator();
+        SqlValidator validator = getSqlValidator();
         try {
             sqlNode = validator.validate(sqlNode);
         } catch (CalciteContextException e) {

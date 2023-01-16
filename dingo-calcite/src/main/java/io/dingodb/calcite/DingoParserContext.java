@@ -31,7 +31,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -49,8 +48,6 @@ public final class DingoParserContext implements Context {
     @Getter
     private final CalciteCatalogReader catalogReader;
     @Getter
-    private final SqlValidator sqlValidator;
-    @Getter
     private final CalciteSchema rootSchema;
     @Getter
     private final String defaultSchemaName;
@@ -58,11 +55,10 @@ public final class DingoParserContext implements Context {
     private final CalciteConnectionConfig config;
     @Getter
     private final TimeZone timeZone;
-
+    private final Properties options;
     @Getter
     @Setter
     private CalciteSchema usedSchema;
-    private final Properties options;
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
         this(defaultSchemaName, null);
@@ -100,30 +96,31 @@ public final class DingoParserContext implements Context {
             this.config
         );
 
-        // Create SqlValidator.
-        // CatalogReader is also serving as SqlOperatorTable.
-        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         // Register operators
+        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
         tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
         SqlLikeBinaryOperator.register();
 
         this.options = options;
-        sqlValidator = new DingoSqlValidator(catalogReader, getTypeFactory());
 
         usedSchema = getDefaultSchema();
-
-        // Register all the functions
-        /*
-        DingoFunctions.getInstance().getDingoFunctions().forEach(method -> {
-            rootSchema.plus().add(method.getName().toUpperCase(), ScalarFunctionImpl.create(method.getMethod()));
-        });
-         */
     }
 
     @SuppressWarnings("MethodMayBeStatic")
     public JavaTypeFactory getTypeFactory() {
         return DingoSqlTypeFactory.INSTANCE;
+    }
+
+    /**
+     * Get a {@link DingoSqlValidator}. Sql validation must begin with a new sql validator.
+     *
+     * @return the sql validator
+     */
+    public @NonNull DingoSqlValidator getSqlValidator() {
+        // Create SqlValidator.
+        // CatalogReader is also serving as SqlOperatorTable.
+        return new DingoSqlValidator(catalogReader, getTypeFactory());
     }
 
     public CalciteSchema getDefaultSchema() {
