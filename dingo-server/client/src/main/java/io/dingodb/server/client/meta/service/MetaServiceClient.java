@@ -169,6 +169,7 @@ public class MetaServiceClient implements MetaService {
             .ifPresent(tableDefinitionCache::remove)
             .map(this::partitionServices)
             .ifPresent(__ -> __.forEach(pid -> Optional.ifPresent(serviceCache.remove(pid), ServiceConnector::close)));
+        tableIdCache.remove(name);
     }
 
     private Set<CommonId> partitionServices(CommonId tableId) {

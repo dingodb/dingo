@@ -46,7 +46,9 @@ public class SqlAlterAddIndex extends SqlAlterTable {
     }
 
     public String[] getColumnNames() {
-        String[] columnNames = columns.stream().map(column -> column.getSimple()).toArray(String[]::new);
+        String[] columnNames = columns.stream().map(column -> column.getSimple())
+            .map(String::toUpperCase)
+            .toArray(String[]::new);
         return columnNames;
     }
 }

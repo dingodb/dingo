@@ -77,8 +77,9 @@ public class TableApi implements io.dingodb.server.api.TableApi {
 
     @Override
     public CommonId createIndex(CommonId id, Index index) {
+        TableDefinition tableDefinition = null;
         try {
-            TableDefinition tableDefinition = getDefinition(id);
+            tableDefinition = getDefinition(id);
             index.setStatus(IndexStatus.BUSY);
             tableDefinition.addIndex(index);
             tableDefinition.increaseVersion();
@@ -112,6 +113,9 @@ public class TableApi implements io.dingodb.server.api.TableApi {
             tableSidebar.setRunning();
             return metaIndex.getId();
         } catch (Exception e) {
+            if (tableDefinition != null) {
+               tableDefinition.removeIndex(index.getName());
+            }
             throw new RuntimeException(e);
         }
     }
