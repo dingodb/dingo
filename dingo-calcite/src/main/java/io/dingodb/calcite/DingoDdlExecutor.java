@@ -423,7 +423,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
             .host(getRealAddress(sqlDropUser.host)).build();
         if (!userService.existsUser(userDefinition)) {
-            throw new RuntimeException("user is not exists");
+            throw new RuntimeException("user does not exist");
         }
         userService.dropUser(userDefinition);
     }
@@ -617,15 +617,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void validateDropIndex(MutableSchema schema, String tableName, String indexName) {
         if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+            throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {
             if (tableDefinition.getIndexes() == null) {
-                throw new IllegalArgumentException("index " + indexName + " is not exists ");
+                throw new IllegalArgumentException("index " + indexName + " does not exist ");
             } else {
                 if (!tableDefinition.getIndexes().containsKey(indexName)) {
-                    throw new IllegalArgumentException("index " + indexName + " is not exists ");
+                    throw new IllegalArgumentException("index " + indexName + " does not exist ");
                 }
             }
 
@@ -634,7 +634,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void validateIndex(MutableSchema schema, String tableName, Index newIndex) {
         if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+            throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {

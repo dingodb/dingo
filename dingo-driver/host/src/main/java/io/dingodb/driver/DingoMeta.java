@@ -625,7 +625,10 @@ public class DingoMeta extends MetaImpl {
         List indexScanList = new ArrayList();
         if (schemaName != null) {
             final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
-            MutableSchema schema = (MutableSchema) calciteSchema.schema;
+            if (calciteSchema == null) {
+                throw ExceptionUtils.toRuntime(new IllegalArgumentException("schema does not exist"));
+            }
+            MutableSchema schema  = (MutableSchema) calciteSchema.schema;
             if (schema != null && schema.getTable(tableName) != null) {
                 Collection<Index> indices = schema.getIndex(tableName);
 
@@ -641,6 +644,8 @@ public class DingoMeta extends MetaImpl {
                     }
                     return Arrays.stream(indexScans);
                 }).collect(Collectors.toList());
+            } else {
+                throw ExceptionUtils.toRuntime(new IllegalArgumentException("table does not exist"));
             }
         }
 

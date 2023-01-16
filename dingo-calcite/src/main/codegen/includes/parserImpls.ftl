@@ -665,7 +665,7 @@ SqlGrant SqlGrant() : {
    <GRANT> { s = span(); }
    [ <ALL> <PRIVILEGES> { isAllPrivileges = true; } ]
    [
-     privilege = privilege() { privilegeList.add(privilege); }
+     privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
      (
        <COMMA> privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
      )*
