@@ -88,7 +88,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     Lock lock = new ReentrantLock();
 
-    private Set<KeyValue> rowLock = new HashSet<>();
+    private Set<KeyRowLock> rowLock = new HashSet<>();
 
     public StoreInstance(TableSidebar tableSidebar) {
         this.tableSidebar = tableSidebar;
@@ -664,12 +664,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         int tableDefinitionVersion = tableDefinition.getVersion();
 
         KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
+        KeyRowLock keyRowLock = new KeyRowLock(oriKV.getPrimaryKey());
         lock.lock();
-        if (rowLock.contains(oriKV)) {
+        if (rowLock.contains(keyRowLock)) {
             lock.unlock();
             return false;
         }
-        rowLock.add(oriKV);
+        rowLock.add(keyRowLock);
         lock.unlock();
 
         try {
@@ -705,7 +706,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             return true;
         } finally {
             indexExecutor.getFinishedKV(oriKV);
-            rowLock.remove(oriKV);
+            rowLock.remove(keyRowLock);
         }
     }
 
@@ -728,13 +729,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
         KeyValue oldKV = new KeyValue(oriKV.getKey(), oldValue);
 
+        KeyRowLock keyRowLock = new KeyRowLock(oriKV.getPrimaryKey());
         lock.lock();
-        if (rowLock.contains(oriKV) || rowLock.contains(oldKV)) {
+        if (rowLock.contains(keyRowLock)) {
             lock.unlock();
             return false;
         }
-        rowLock.add(oriKV);
-        rowLock.add(oldKV);
+        rowLock.add(keyRowLock);
         lock.unlock();
 
         try {
@@ -784,9 +785,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             return true;
         } finally {
             indexExecutor.getFinishedKV(oriKV);
-            indexExecutor.getFinishedKV(oldKV);
-            rowLock.remove(oriKV);
-            rowLock.remove(oldKV);
+            rowLock.remove(keyRowLock);
         }
     }
 
@@ -800,12 +799,13 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         int tableDefinitionVersion = tableDefinition.getVersion();
 
         KeyValue oriKV = indexExecutor.getOriKV(row, tableDefinition);
+        KeyRowLock keyRowLock = new KeyRowLock(oriKV.getPrimaryKey());
         lock.lock();
-        if (rowLock.contains(oriKV)) {
+        if (rowLock.contains(keyRowLock)) {
             lock.unlock();
             return false;
         }
-        rowLock.add(oriKV);
+        rowLock.add(keyRowLock);
         lock.unlock();
 
         try {
@@ -849,7 +849,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             return true;
         } finally {
             indexExecutor.getFinishedKV(oriKV);
-            rowLock.remove(oriKV);
+            rowLock.remove(keyRowLock);
         }
     }
 
@@ -931,4 +931,26 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
             }
         }
     }
+
+    private class KeyRowLock {
+        byte[] primaryKey;
+
+        public KeyRowLock(byte[] primaryKey) {
+            this.primaryKey = primaryKey;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj != null && !(obj instanceof KeyRowLock)) {
+                return false;
+            }
+            return Arrays.equals(primaryKey, ((KeyRowLock) obj).primaryKey);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(primaryKey);
+        }
+    }
 }
+
