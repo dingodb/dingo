@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.test.cases;
 
-import io.dingodb.test.cases.CasesInFileJUnit5;
-import io.dingodb.test.cases.InputTestFile;
+import io.dingodb.test.SqlHelper;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Stream;
 
-public class TestCases {
+public class CasesInFileTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -40,9 +43,28 @@ public class TestCases {
         sqlHelper.cleanUp();
     }
 
+    @NonNull
+    public static Stream<Arguments> getParametersTemp() {
+        return Stream.of(
+            CasesInFileJUnit5.fileCase(
+                "Double as primary key",
+                "double_pm/create.sql",
+                "double_pm/data.sql",
+                "select_all.sql",
+                "double_pm/data.csv"
+            )
+        );
+    }
+
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(CasesInFileJUnit5.class)
     public void test(String ignored, List<InputTestFile> files) throws SQLException, IOException {
         sqlHelper.randomTable().doTestFiles(files);
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("getParametersTemp")
+    public void testTemp(String ignored, List<InputTestFile> files) throws SQLException, IOException {
+        test(ignored, files);
     }
 }

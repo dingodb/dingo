@@ -92,16 +92,16 @@ public class BinaryDecoder {
             return null;
         }
         int i = 0;
-        if ((buf[forwardPosition] & 0xFF) > 0x80) {
+        if ((buf[forwardPosition] & 0xFF) >= 0x80) {
             i = (((buf[forwardPosition++] & 0xFF ^ 0x80) << 24)
                 | ((buf[forwardPosition++] & 0xFF) << 16)
                 | ((buf[forwardPosition++] & 0xFF) << 8)
                 | buf[forwardPosition++] & 0xFF);
         } else {
-            i = (((~ buf[forwardPosition++] & 0xFF) << 24)
-                | ((~ buf[forwardPosition++] & 0xFF) << 16)
-                | ((~ buf[forwardPosition++] & 0xFF) << 8)
-                | ~ buf[forwardPosition++] & 0xFF);
+            i = (((~buf[forwardPosition++] & 0xFF) << 24)
+                | ((~buf[forwardPosition++] & 0xFF) << 16)
+                | ((~buf[forwardPosition++] & 0xFF) << 8)
+                | ~buf[forwardPosition++] & 0xFF);
         }
         return Float.intBitsToFloat(i);
     }
@@ -147,7 +147,7 @@ public class BinaryDecoder {
             return null;
         }
         long l = 0;
-        if ((buf[forwardPosition] & 0xFF) > 0x80) {
+        if ((buf[forwardPosition] & 0xFF) >= 0x80) {
             l |= buf[forwardPosition++] & 0xFF ^ 0x80;
             for (int i = 0; i < 7; i++) {
                 l <<= 8;
@@ -156,7 +156,7 @@ public class BinaryDecoder {
         } else {
             for (int i = 0; i < 8; i++) {
                 l <<= 8;
-                l |= ~ buf[forwardPosition++] & 0xFF;
+                l |= ~buf[forwardPosition++] & 0xFF;
             }
         }
         return Double.longBitsToDouble(l);
@@ -193,11 +193,11 @@ public class BinaryDecoder {
                     if (i % 9 != 0) {
                         buf[bi++] = this.buf[forwardPosition++];
                     } else {
-                        forwardPosition ++;
+                        forwardPosition++;
                     }
                 }
                 forwardPosition += reminderZero;
-                forwardPosition ++;
+                forwardPosition++;
                 return buf;
             }
             return new byte[0];

@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class CasesInFileJUnit5 implements ArgumentsProvider {
-    private static @NonNull Arguments fileCase(String name, String... fileNames) {
+    public static @NonNull Arguments fileCase(String name, String... fileNames) {
         return arguments(name, Arrays.stream(fileNames)
             .map(InputTestFile::fromFileName)
             .collect(Collectors.toList())
