@@ -105,7 +105,7 @@ public final class PartInKvStore implements Part {
         try {
             KeyValue row = codec.encode(tuple);
             if (!store.exist(row.getPrimaryKey())) {
-                store.upsertKeyValue(row);
+                store.insert(tuple);
                 return true;
             }
         } catch (IOException e) {
@@ -122,10 +122,7 @@ public final class PartInKvStore implements Part {
     public void upsert(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
-            KeyValue row = codec.encode(tuple);
-            store.upsertKeyValue(row);
-        } catch (IOException e) {
-            log.error("Upsert: encode error.", e);
+            store.update(tuple);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore upsert cost: {}ms.", System.currentTimeMillis() - startTime);
