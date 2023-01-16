@@ -395,7 +395,6 @@ public class BinaryTest {
         Assertions.assertEquals(s3.get(0), "a3");
         Assertions.assertEquals(s3.get(1), "b3");
         Assertions.assertEquals(s3.get(2), "c3");
-
     }
 
     @Test
@@ -449,6 +448,44 @@ public class BinaryTest {
             Assertions.assertArrayEquals(b3.get(i), b33.get(i));
         }
         Assertions.assertArrayEquals(b2.get(3), new byte[] {1, 1});
+    }
+
+    @Test
+    public void testKeyDouble() {
+        BinaryEncoder be = new BinaryEncoder(1);
+        be.writeKeyDouble(-1.1);
+        be.writeKeyDouble(-2.2);
+        be.writeKeyDouble(0.0);
+        be.writeKeyDouble(3.3);
+        byte[] record = be.getByteArray();
+        BinaryDecoder bd = new BinaryDecoder(record);
+        double d1 = bd.readKeyDouble();
+        double d2 = bd.readKeyDouble();
+        double d3 = bd.readKeyDouble();
+        double d4 = bd.readKeyDouble();
+        assertEquals(d1, -1.1);
+        assertEquals(d2, -2.2);
+        assertEquals(d3, 0.0);
+        assertEquals(d4, 3.3);
+    }
+
+    @Test
+    public void testKeyFloat() {
+        BinaryEncoder be = new BinaryEncoder(1);
+        be.writeKeyFloat(-1.1f);
+        be.writeKeyFloat(-2.2f);
+        be.writeKeyFloat(0.0f);
+        be.writeKeyFloat(3.3f);
+        byte[] record = be.getByteArray();
+        BinaryDecoder bd = new BinaryDecoder(record);
+        float f1 = bd.readKeyFloat();
+        float f2 = bd.readKeyFloat();
+        float f3 = bd.readKeyFloat();
+        float f4 = bd.readKeyFloat();
+        assertEquals(f1, -1.1f);
+        assertEquals(f2, -2.2f);
+        assertEquals(f3, 0.0f);
+        assertEquals(f4, 3.3f);
     }
 
     // stream : 739 455 463 471 470 463 464 459 458 456
