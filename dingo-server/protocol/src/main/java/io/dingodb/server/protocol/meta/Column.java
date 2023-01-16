@@ -47,7 +47,7 @@ public class Column implements Meta {
     private CommonId table;
     private String alias;
     private boolean nullable;
-    private boolean primary;
+    private int primary;
     private int scale;
     private int precision;
     private String type;

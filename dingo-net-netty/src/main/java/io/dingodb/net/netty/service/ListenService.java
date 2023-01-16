@@ -96,7 +96,7 @@ public final class ListenService implements io.dingodb.net.service.ListenService
         replies.computeIfAbsent(ltag, __ -> reply);
         listenerChannels.computeIfAbsent(ltag, __ -> new CopyOnWriteArraySet<>());
         return msg -> runner.forceFollow(() -> Optional.ifPresent(listenerChannels.get(ltag),
-            __ -> __.forEach(ch -> Executors.execute("listener-proxy-call-" + id, () ->  ch.send(msg)))
+            __ -> __.forEach(ch -> Executors.execute("listener-proxy-call-" + id, () -> ch.send(msg), true))
         ));
     }
 

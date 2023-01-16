@@ -4,31 +4,33 @@
     {
       "name": "id0",
       "type": "integer",
-      "primary": true,
+      "primary": 0,
       "nullable": false
     },
     {
       "name": "id1",
       "type": "varchar",
-      "primary": true,
+      "primary": 1,
       "nullable": false
     },
     {
       "name": "id2",
       "type": "boolean",
-      "primary": true,
+      "primary": 2,
       "nullable": false
     },
     {
       "name": "name",
       "type": "varchar",
       "precision": 64,
+      "primary": -1,
       "default": "Peso",
       "nullable": false
     },
     {
       "name": "amount",
       "type": "double",
+      "primary": -1,
       "nullable": true
     }
   ]

@@ -192,7 +192,7 @@ public class IndexExample {
             .precision(-1)
             .scale(Integer.MIN_VALUE)
             .nullable(false)
-            .primary(true)
+            .primary(0)
             .defaultValue("0")
             .build();
 
@@ -202,7 +202,7 @@ public class IndexExample {
             .precision(-1)
             .scale(Integer.MIN_VALUE)
             .nullable(false)
-            .primary(false)
+            .primary(-1)
             .defaultValue("0")
             .build();
 
@@ -212,7 +212,7 @@ public class IndexExample {
             .precision(-1)
             .scale(Integer.MIN_VALUE)
             .nullable(false)
-            .primary(false)
+            .primary(-1)
             .defaultValue("0")
             .build();
 
@@ -222,7 +222,7 @@ public class IndexExample {
             .precision(-1)
             .scale(Integer.MIN_VALUE)
             .nullable(false)
-            .primary(false)
+            .primary(-1)
             .defaultValue("0")
             .build();
 
@@ -232,7 +232,7 @@ public class IndexExample {
             .precision(-1)
             .scale(Integer.MIN_VALUE)
             .nullable(false)
-            .primary(false)
+            .primary(-1)
             .defaultValue("0")
             .build();
 

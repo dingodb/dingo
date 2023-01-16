@@ -21,6 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.Part;
 import io.dingodb.net.Message;
 import io.dingodb.net.api.ApiRegistry;
@@ -89,8 +90,13 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
         return ROOT_SCHEMA_ID;
     }
 
+    public CommonId cleanId(CommonId schemaId) {
+        return Parameters.cleanNull(schemaId, ROOT_SCHEMA_ID);
+    }
+
     @Override
     public CommonId createSubMetaService(CommonId id, String name) {
+        cleanId(id);
         if (id.seq == Constant.META_SCHEMA_SEQ) {
             throw new UnsupportedOperationException("Meta schema cannot create sub schema");
         }
@@ -101,18 +107,20 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public List<Schema> getSubSchemas(CommonId id) {
+        cleanId(id);
         List<Schema> schemas = new ArrayList<>();
         if (id.seq == Constant.ROOT_SCHEMA_SEQ) {
             schemas.add(DINGO_SCHEMA);
             schemas.add(META_SCHEMA);
-	    return schemas;
+            return schemas;
         }
-	schemas.addAll(getMetaAdaptor(Schema.class).getByDomain(id.seq));
+        schemas.addAll(getMetaAdaptor(Schema.class).getByDomain(id.seq));
         return schemas;
     }
 
     @Override
     public Schema getSubSchema(CommonId id, String name) {
+        cleanId(id);
         if (id.seq == ROOT_SCHEMA_SEQ) {
             if (name.equals(META_NAME)) {
                 return META_SCHEMA;
@@ -127,6 +135,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public boolean dropSchema(CommonId id) {
+        cleanId(id);
         if (id.seq == META_SCHEMA_SEQ || id.seq == ROOT_SCHEMA_SEQ || id.seq == DINGO_SCHEMA_SEQ) {
             throw new UnsupportedOperationException("Root, meta, dingo schema cannot drop.");
         }
@@ -140,6 +149,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
     public CommonId createTable(
         CommonId schemaId, @NonNull String tableName, @NonNull TableDefinition tableDefinition
     ) {
+        cleanId(schemaId);
         if (schemaId.seq == META_SCHEMA_SEQ || schemaId.seq == ROOT_SCHEMA_SEQ) {
             throw new UnsupportedOperationException("Root schema and meta schema cannot create table.");
         }
@@ -155,6 +165,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public synchronized boolean dropTable(CommonId schemaId, @NonNull String tableName) {
+        cleanId(schemaId);
         if (schemaId.seq == META_SCHEMA_SEQ || schemaId.seq == ROOT_SCHEMA_SEQ) {
             throw new UnsupportedOperationException("Root schema and meta schema cannot drop table.");
         }
@@ -170,11 +181,13 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public CommonId getTableId(@NonNull CommonId id, @NonNull String tableName) {
+        cleanId(id);
         return adaptor.getTableId(id, tableName);
     }
 
     @Override
     public List<Table> getTableMetas(CommonId schemaId) {
+        cleanId(schemaId);
         if (schemaId.seq == META_SCHEMA_SEQ) {
             return MetaAdaptorRegistry.getAll().stream().map(
                 adaptor -> Table.builder()
@@ -187,6 +200,7 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions(@NonNull CommonId id) {
+        cleanId(id);
         if (id.seq == META_SCHEMA_SEQ) {
             return Constant.ADAPTOR_DEFINITION_MAP.values().stream()
                 .collect(Collectors.toMap(TableDefinition::getName, Function.identity()));
@@ -196,16 +210,19 @@ public class MetaServiceApi implements io.dingodb.server.api.MetaServiceApi {
 
     @Override
     public Table getTableMeta(CommonId schemaId, String name) {
+        cleanId(schemaId);
         return adaptor.get(schemaId, name);
     }
 
     @Override
     public Table getTableMeta(CommonId tableId) {
+        cleanId(tableId);
         return adaptor.get(tableId);
     }
 
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id, @NonNull String name) {
+        cleanId(id);
         return adaptor.getDefinition(id, name);
     }
 

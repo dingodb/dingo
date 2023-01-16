@@ -72,7 +72,7 @@ public class DingoOperationExample {
         System.out.println(TABLE_SCHEMA);
 
         TableDefinition definition = new TableDefinition(tableName);
-        ColumnDefinition id = ColumnDefinition.builder().name("id").type("integer").primary(true).build();
+        ColumnDefinition id = ColumnDefinition.builder().name("id").type("integer").primary(0).build();
         ColumnDefinition age = ColumnDefinition.builder().name("age").type("integer").build();
         ColumnDefinition amount = ColumnDefinition.builder().name("amount").type("integer").build();
         definition.setColumns(ImmutableList.of(id, age, amount));

@@ -69,6 +69,9 @@ public abstract class BaseAdaptor<M extends Meta> implements Adaptor<M> {
 
     @Override
     public synchronized void reload() {
+        if (metaId() == null) {
+            return;
+        }
         metaMap.clear();
         Iterator<KeyValue> iterator = metaStore().keyValueScan(metaId().encode());
         while (iterator.hasNext()) {

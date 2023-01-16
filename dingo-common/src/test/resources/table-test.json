@@ -4,18 +4,20 @@
     {
       "name": "id",
       "type": "integer",
-      "primary": true,
+      "primary": 0,
       "nullable": false
     },
     {
       "name": "name",
       "type": "varchar",
       "precision": 64,
+      "primary": -1,
       "default": "Peso",
       "nullable": false
     },
     {
       "name": "value",
+      "primary": -1,
       "type": "double"
     }
   ]

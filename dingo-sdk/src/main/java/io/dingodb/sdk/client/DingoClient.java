@@ -344,7 +344,7 @@ public class DingoClient {
                     .name(c.getName())
                     .type(c.getTypeName())
                     .elementType(c.getElementType())
-                    .primary(c.isPrimary())
+                    .primary(c.getPrimary())
                     .scale(c.getScale())
                     .precision(c.getPrecision())
                     .defaultValue(c.getDefaultValue())
@@ -596,8 +596,8 @@ public class DingoClient {
     }
 
     public boolean unregisterUDF(String tableName, String udfName, int version) {
-        CommonId id = connection.getMetaClient().getTableId(tableName);
-        return connection.getMetaClient().unregister(udfName, version);
+        connection.getMetaClient().unregister(udfName, version);
+        return true;
     }
 
     public boolean updateRecordUsingUDF(String tableName, String udfName,

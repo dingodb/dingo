@@ -44,6 +44,7 @@ import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
@@ -88,6 +89,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -174,17 +176,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String name = scd.name.getSimple().toUpperCase();
-        boolean isPrimary = (pkSet != null && pkSet.contains(name));
+        assert pkSet != null;
+        int primary = pkSet.indexOf(name);
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()
             .name(name)
             .type(typeName.getName())
-            .elementType(Optional.mapOrNull(elementTypeName, SqlTypeName::getName))
+            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
             .precision(precision)
             .scale(scale)
-            .nullable(!isPrimary && dataType.isNullable())
-            .primary(isPrimary)
+            .nullable(!(primary >= 0) && dataType.isNullable())
+            .primary(primary)
             .defaultValue(defaultValue)
             .build();
     }
@@ -663,10 +666,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
 
                 for (PartitionDetailDefinition rangePart : partDefinition.getDetails()) {
-                    List<Object> operand = rangePart.getOperand();
-                    for (int i = 0; i < operand.size(); i++) {
-                        operand.set(i, cols.get(i).getType().convertFrom(operand.get(i).toString(), converter));
+                    Object[] operand = rangePart.getOperand().toArray(new Object[keyList.size()]);
+                    for (int i = 0; i < keyList.size(); i++) {
+                        DingoType type = cols.get(i).getType();
+                        operand[i] = mapOrNull(operand[i], v -> type.convertFrom(v.toString(), converter));
                     }
+                    rangePart.setOperand(Arrays.asList(operand));
                 }
                 break;
             default:

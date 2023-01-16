@@ -45,8 +45,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -78,7 +76,7 @@ public class MetaServiceClient implements MetaService {
     private ListenService.Future future;
 
     @Getter
-    private final CommonId id;
+    private CommonId id;
     @Getter
     private final String name;
 
@@ -90,7 +88,6 @@ public class MetaServiceClient implements MetaService {
         Parameters.nonNull(connector, "connector");
         this.api = ApiRegistry.getDefault().proxy(MetaServiceApi.class, connector);
         this.connector = connector;
-        this.id = api.rootId();
         this.name = MetaService.ROOT_NAME;
         Executors.execute("meta-service-client-reload", this::reload);
     }
@@ -108,6 +105,9 @@ public class MetaServiceClient implements MetaService {
             return;
         }
         try {
+            if (id == null) {
+                id = api.rootId();
+            }
             future = listenService.listen(id, SCHEMA, connector.get(), this::onCallback, () -> {
                 clearCache();
                 reload();
@@ -166,8 +166,8 @@ public class MetaServiceClient implements MetaService {
     }
 
     private void deleteTableCache(String name) {
-        Optional.ofNullable(tableIdCache.get(name))
-            .ifPresent(id -> serviceCache.get(id).close())
+        Optional.ofNullable(tableIdCache.remove(name))
+            .ifPresent(id -> serviceCache.remove(id).close())
             .ifPresent(tableDefinitionCache::remove)
             .map(this::partitionServices)
             .ifPresent(__ -> __.forEach(pid -> Optional.ifPresent(serviceCache.remove(pid), ServiceConnector::close)));
@@ -219,6 +219,9 @@ public class MetaServiceClient implements MetaService {
 
     @Override
     public void createSubMetaService(String name) {
+        if (id == null) {
+            throw new RuntimeException("Meta service not ready.");
+        }
         api.createSubMetaService(id, name);
     }
 
@@ -234,6 +237,9 @@ public class MetaServiceClient implements MetaService {
 
     @Override
     public MetaService getSubMetaService(String name) {
+        if (id == null) {
+            throw new RuntimeException("Meta service not ready.");
+        }
         MetaServiceClient subMetaService = Optional.mapOrNull(metaServiceIdCache.get(name), metaServiceCache::get);
         if (subMetaService == null) {
             Schema schema = api.getSubSchema(id, name);
@@ -254,16 +260,25 @@ public class MetaServiceClient implements MetaService {
 
     @Override
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+        if (id == null) {
+            throw new RuntimeException("Meta service not ready.");
+        }
         tableIdCache.put(tableName, api.createTable(id, tableName, tableDefinition));
     }
 
     @Override
     public boolean dropTable(@NonNull String tableName) {
+        if (id == null) {
+            throw new RuntimeException("Meta service not ready.");
+        }
         return api.dropTable(id, tableName);
     }
 
     @Override
     public CommonId getTableId(@NonNull String tableName) {
+        if (id == null) {
+            throw new RuntimeException("Meta service not ready.");
+        }
         CommonId id = tableIdCache.get(tableName);
         if (id == null) {
             addTableCache(api.getTableMeta(this.id, tableName));
@@ -296,7 +311,6 @@ public class MetaServiceClient implements MetaService {
     public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(String tableName) {
         CommonId tableId = getTableId(tableName);
         return getParts(tableId);
-
     }
 
     @Override
@@ -326,10 +340,10 @@ public class MetaServiceClient implements MetaService {
     @Override
     public void createIndex(String tableName, List<Index> indexList) {
         try {
-            CommonId commonId = getTableId(tableName);
-            TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(commonId));
+            CommonId tableId = getTableId(tableName);
+            TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(tableId));
             indexList.forEach(index -> {
-                tableApi.createIndex(commonId, index);
+                tableApi.createIndex(tableId, index);
             });
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());

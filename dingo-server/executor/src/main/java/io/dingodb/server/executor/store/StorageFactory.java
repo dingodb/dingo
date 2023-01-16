@@ -29,10 +29,14 @@ public final class StorageFactory {
     }
 
     public static Storage create(String label, Path path) throws Exception {
+        return create(label, path, 0);
+    }
+
+    public static Storage create(String label, Path path, int ttl) throws Exception {
         if (Configuration.isMem()) {
             return new MemStorage();
         }
-        return new RocksStorage(label, path);
+        return new RocksStorage(label, path, ttl, ttl > 0);
     }
 
 }

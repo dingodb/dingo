@@ -523,6 +523,7 @@ public class DdlTest {
     @Test
     public void testCreateTableWithPartition1() throws SQLException, JsonProcessingException {
         RandomTable table = sqlHelper.randomTable();
+        table.execSqls("create table parttest32(id int, name varchar(32) not null, age int, amount double,  primary key(id,age,name)) partition by range values (100,60) with \n" + "\n" + "(propKey=propValue)");
         table.execSqls(
             "create table {table} ("
                 + "id varchar(20),"

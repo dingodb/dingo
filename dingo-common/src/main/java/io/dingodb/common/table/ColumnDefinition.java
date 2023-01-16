@@ -72,10 +72,9 @@ public class ColumnDefinition {
 
     @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("primary")
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
     @Builder.Default
-    private final boolean primary = false;
+    private final int primary = -1;
 
     @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("default")
@@ -92,7 +91,7 @@ public class ColumnDefinition {
         @JsonProperty("precision") Integer precision,
         @JsonProperty("scale") Integer scale,
         @JsonProperty("nullable") boolean nullable,
-        @JsonProperty("primary") boolean primary,
+        @JsonProperty("primary") int primary,
         @JsonProperty("default") String defaultValue
     ) {
         return builder()
@@ -105,6 +104,10 @@ public class ColumnDefinition {
             .primary(primary)
             .defaultValue(defaultValue)
             .build();
+    }
+
+    public boolean isPrimary() {
+        return primary > -1;
     }
 
     public DingoType getType() {

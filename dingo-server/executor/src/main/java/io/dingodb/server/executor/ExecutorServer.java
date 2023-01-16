@@ -100,18 +100,18 @@ public class ExecutorServer {
 	log.info("Get current server tables from coordinator, table ids: {}", tableIds);
         tables.entrySet().forEach(NoBreakFunctions.wrap(
             e -> {
-	        log.info("Recovery table {}", e.getKey());
+                log.info("Recovery table {}", e.getKey());
                 if (tableIds.contains(e.getKey())) {
                     tableIds.remove(e.getKey());
                     startTable(e.getKey(), null, e.getValue());
                 } else {
-		    log.info("The table {} not in current server, delete it.", e.getKey());
-		    TableApi.INSTANCE.deleteTable(e.getKey());
-		}
+                    log.info("The table {} not in current server, delete it.", e.getKey());
+                    TableApi.INSTANCE.deleteTable(e.getKey());
+                }
             }
         ));
         tableIds.forEach(id -> Executors.execute("recovery-create-table", () -> {
-	    log.info("The table {} not init on current server, create and start.", id);
+            log.info("The table {} not init on current server, create and start.", id);
             TableApi.INSTANCE.createTable(id, serverApi.getTableDefinition(id), serverApi.mirrors(id));
         }));
         ReloadHandler.handler.registryReloadChannel();

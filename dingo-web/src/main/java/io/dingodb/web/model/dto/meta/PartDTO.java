@@ -14,23 +14,31 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.api;
+package io.dingodb.web.model.dto.meta;
 
-import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.util.List;
+import java.util.Set;
 
-public interface CodeUDFApi {
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode
+public class PartDTO {
 
-    @ApiDeclaration
-    int register(String name, String code);
-
-    @ApiDeclaration
-    void unregister(String name, int version);
-
-    List<String> get(String name);
-
-    @ApiDeclaration
-    String get(String name, int version);
+    private CommonId id;
+    private Location leader;
+    private Set<Location> replicates;
+    private byte[] startKey;
+    private byte[] endKey;
 
 }

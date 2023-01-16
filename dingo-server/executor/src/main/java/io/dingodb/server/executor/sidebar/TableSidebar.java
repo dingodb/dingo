@@ -39,7 +39,6 @@ import io.dingodb.net.Message;
 import io.dingodb.net.service.ListenService;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.executor.api.TableApi;
-import io.dingodb.server.executor.config.Configuration;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
 import io.dingodb.server.executor.store.StoreService;
@@ -50,6 +49,7 @@ import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +66,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.common.config.DingoConfiguration.location;
 import static io.dingodb.common.config.DingoConfiguration.serverId;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
+import static io.dingodb.server.executor.config.Configuration.resolvePath;
 import static io.dingodb.server.executor.sidebar.TableInstructions.UPDATE_DEFINITION;
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
@@ -114,7 +115,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     ) throws Exception {
         CommonId id = new CommonId(TABLE_PREFIX.type, TABLE_PREFIX.id0, TABLE_PREFIX.id1, tableId.seq, serverId().seq);
         CoreMeta meta = new CoreMeta(id, tableId, location());
-        Storage storage = StorageFactory.create(meta.label, Configuration.resolvePath(tableId.toString()));
+        Storage storage = StorageFactory.create(meta.label, resolvePath(tableId.toString()));
         mirrors = Parameters.cleanNull(mirrors, () -> TableApi.mirrors(CoordinatorConnector.getDefault(), tableId));
         List<CoreMeta> mirrorMetas = mirrors.entrySet().stream()
             .filter(e -> !e.getKey().equals(serverId()))
@@ -143,7 +144,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     }
 
     public void start(boolean sync) {
-	StoreService.INSTANCE.registerStoreInstance(tableId, storeInstance);
+        StoreService.INSTANCE.registerStoreInstance(tableId, storeInstance);
         super.start(sync);
     }
 
@@ -155,7 +156,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     @Override
     public void destroy() {
         super.destroy();
-        FileUtils.deleteIfExists(Configuration.resolvePath(tableId.toString()));
+        FileUtils.deleteIfExists(resolvePath(tableId.toString()));
         ListenService.getDefault().unregister(tableId, TABLE_DEFINITION);
     }
 
@@ -258,9 +259,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                     index.getId(),
                     mirror.location))
                 .collect(Collectors.toList());
-            IndexSidebar indexSidebar = new IndexSidebar(
-                this, index, meta, mirrors, Configuration.resolvePath(tableId.toString(), index.getId().toString())
-            );
+            Path path = resolvePath(tableId.toString(), index.getId().toString());
+            IndexSidebar indexSidebar = new IndexSidebar(this, index, meta, mirrors, path, definition.getTtl());
             addVSidebar(indexSidebar);
             log.info("Starting index {}......", id);
             CompletableFuture<Void> future = new CompletableFuture<>();
@@ -293,7 +293,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                     mirror.location))
                 .collect(Collectors.toList());
             PartitionSidebar sidebar = new PartitionSidebar(
-                part, meta, mirrors, Configuration.resolvePath(tableId.toString(), part.getId().toString())
+                part, meta, mirrors, resolvePath(tableId.toString(), part.getId().toString()), definition.getTtl()
             );
             addVSidebar(sidebar);
             log.info("Starting part {}......", id);
@@ -394,17 +394,17 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Override
     public void back(long clock) {
-	super.back(clock);
+        super.back(clock);
     }
 
     @Override
     public void mirror(long clock) {
-	super.mirror(clock);
+        super.mirror(clock);
     }
 
     @Override
     public void losePrimary(long clock) {
-	super.losePrimary(clock);
+        super.losePrimary(clock);
     }
 
     @Override

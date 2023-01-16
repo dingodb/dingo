@@ -4,24 +4,27 @@
     {
       "name": "id",
       "type": "integer",
-      "primary": true,
+      "primary": 0,
       "nullable": false
     },
     {
       "name": "n1",
       "type": "varchar",
       "precision": 64,
+      "primary": -1,
       "nullable": false
     },
     {
       "name": "n2",
       "type": "varchar",
       "precision": 64,
+      "primary": -1,
       "nullable": false
     },
     {
       "name": "value",
-      "type": "integer"
+      "type": "integer",
+      "primary": -1
     }
   ]
 }
