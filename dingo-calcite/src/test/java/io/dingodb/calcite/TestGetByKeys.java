@@ -24,7 +24,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -39,7 +39,6 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
 
-import static io.dingodb.calcite.DingoTable.dingo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -95,9 +94,9 @@ public class TestGetByKeys {
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
-        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
-            getByKeys.getKeyItems(),
-            dingo(getByKeys.getTable()).getTableDefinition()
+        List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
+            getByKeys.getPoints(),
+            TableUtils.getTableDefinition(getByKeys.getTable())
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", true});
@@ -119,9 +118,9 @@ public class TestGetByKeys {
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
-        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
-            getByKeys.getKeyItems(),
-            dingo(getByKeys.getTable()).getTableDefinition()
+        List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
+            getByKeys.getPoints(),
+            TableUtils.getTableDefinition(getByKeys.getTable())
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", false});
@@ -143,9 +142,9 @@ public class TestGetByKeys {
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoGetByKeys.class)
             .getInstance();
-        List<Object[]> keyTuples = DingoJobVisitor.getTuplesFromKeyItems(
-            getByKeys.getKeyItems(),
-            dingo(getByKeys.getTable()).getTableDefinition()
+        List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
+            getByKeys.getPoints(),
+            TableUtils.getTableDefinition(getByKeys.getTable())
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(

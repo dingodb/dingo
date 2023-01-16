@@ -70,6 +70,20 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return item0;
     }
 
+    private static @NonNull Set<Map<Integer, RexLiteral>> product(
+        final @NonNull Set<Map<Integer, RexLiteral>> items,
+        final Map<Integer, RexLiteral> item
+    ) {
+        items.removeIf(v -> merge(v, item) == null);
+        return items;
+    }
+
+    private static @NonNull Set<Map<Integer, RexLiteral>> singleton(Map<Integer, RexLiteral> item) {
+        Set<Map<Integer, RexLiteral>> items = new HashSet<>();
+        items.add(item);
+        return items;
+    }
+
     private Set<Map<Integer, RexLiteral>> product(
         final Set<Map<Integer, RexLiteral>> items0, final Set<Map<Integer, RexLiteral>> items1
     ) {
@@ -92,26 +106,12 @@ class KeyFilterRexVisitor extends RexVisitorImpl<Set<Map<Integer, RexLiteral>>> 
         return newItems;
     }
 
-    private static @NonNull Set<Map<Integer, RexLiteral>> product(
-        final @NonNull Set<Map<Integer, RexLiteral>> items,
-        final Map<Integer, RexLiteral> item
-    ) {
-        items.removeIf(v -> merge(v, item) == null);
-        return items;
-    }
-
-    private static @NonNull Set<Map<Integer, RexLiteral>> singleton(Map<Integer, RexLiteral> item) {
-        Set<Map<Integer, RexLiteral>> items = new HashSet<>();
-        items.add(item);
-        return items;
-    }
-
     /**
      * Check the keys set to see if a full scan needed.
      *
      * @param items key tuples to be checked
      * @return {@code true} means the primary columns are all set for each row
-     *     {@code false} means any columns are not set for some rows, so full scan is needed
+     * {@code false} means any columns are not set for some rows, so full scan is needed
      */
     boolean checkKeyItems(Set<Map<Integer, RexLiteral>> items) {
         if (items == null) {

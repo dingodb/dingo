@@ -16,10 +16,10 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.TableDefinition;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,8 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Objects;
-
-import static io.dingodb.calcite.DingoTable.dingo;
 
 public class DingoTableModifyRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -49,9 +47,7 @@ public class DingoTableModifyRule extends ConverterRule {
     }
 
     private static void checkUpdateInPart(@NonNull LogicalTableModify rel) {
-        DingoTable table = dingo(rel.getTable());
-        assert table != null;
-        TableDefinition td = table.getTableDefinition();
+        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         List<String> updateList = rel.getUpdateColumnList();
         if (updateList != null && updateList.stream().anyMatch(c ->
             Objects.requireNonNull(td.getColumn(c)).isPrimary())

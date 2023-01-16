@@ -24,15 +24,13 @@ import java.util.Iterator;
 
 @Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
-    private Iterator<Object[]> iterator;
-
     @Override
     public boolean push() {
         long count = 0;
         long startTime = System.currentTimeMillis();
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(startTime);
-        iterator = createIterator();
+        Iterator<Object[]> iterator = createIterator();
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
             ++count;

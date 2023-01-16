@@ -29,8 +29,8 @@ public final class DingoRules {
         = DingoAggregateRule.DEFAULT.toRule(DingoAggregateRule.class);
     public static final DingoFilterRule DINGO_FILTER_RULE
         = DingoFilterRule.DEFAULT.toRule(DingoFilterRule.class);
-    public static final DingoGetByKeysRule DINGO_GET_BY_KEYS_RULE
-        = DingoGetByKeysRule.Config.DEFAULT.toRule();
+    public static final DingoGetByIndexRule DINGO_GET_BY_INDEX_RULE
+        = DingoGetByIndexRule.DEFAULT.toRule(DingoGetByIndexRule.class);
     public static final DingoHashJoinDistributeRule DINGO_HASH_JOIN_DISTRIBUTE_RULE
         = DingoHashJoinDistributeRule.Config.DEFAULT.toRule();
     public static final DingoHashJoinRule DINGO_HASH_JOIN_RULE
@@ -86,7 +86,7 @@ public final class DingoRules {
         DINGO_AGGREGATE_REDUCE_RULE,
         DINGO_AGGREGATE_RULE,
         DINGO_FILTER_RULE,
-        DINGO_GET_BY_KEYS_RULE,
+        DINGO_GET_BY_INDEX_RULE,
         DINGO_HASH_JOIN_DISTRIBUTE_RULE,
         DINGO_HASH_JOIN_RULE,
         DINGO_LIKE_RULE,

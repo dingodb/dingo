@@ -29,7 +29,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
@@ -54,14 +53,6 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         this.context = context;
         this.names = names;
         this.tableDefinition = tableDefinition;
-    }
-
-    public static DingoTable dingo(Table table) {
-        return (DingoTable) table;
-    }
-
-    public static DingoTable dingo(@NonNull RelOptTable table) {
-        return table.unwrap(DingoTable.class);
     }
 
     public DingoSchema getSchema() {

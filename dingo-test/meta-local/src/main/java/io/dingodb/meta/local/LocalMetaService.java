@@ -17,33 +17,38 @@
 package io.dingodb.meta.local;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.Part;
+import io.dingodb.net.Channel;
+import io.dingodb.server.api.ExecutorApi;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 
-public class MetaService implements io.dingodb.meta.MetaService {
+public class LocalMetaService implements MetaService {
 
     public static final CommonId ROOT_ID = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.schema, 1, 1);
     public static final String ROOT_NAME = "LOCAL_ROOT";
-    public static final MetaService ROOT = new MetaService(ROOT_ID, ROOT_NAME);
-    private static final NavigableMap<CommonId, MetaService> metaServices = new ConcurrentSkipListMap<>();
+    public static final LocalMetaService ROOT = new LocalMetaService(ROOT_ID, ROOT_NAME);
+    private static final NavigableMap<CommonId, LocalMetaService> metaServices = new ConcurrentSkipListMap<>();
     private static final NavigableMap<CommonId, TableDefinition> tableDefinitions = new ConcurrentSkipListMap<>();
     private static final Map<CommonId, NavigableMap<ComparableByteArray, Part>> parts = new ConcurrentSkipListMap<>();
     private static final AtomicInteger metaServiceSeq = new AtomicInteger(1);
@@ -54,7 +59,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     private final CommonId id;
     private final String name;
 
-    private MetaService(CommonId id, String name) {
+    private LocalMetaService(CommonId id, String name) {
         this.id = id;
         this.name = name;
     }
@@ -66,7 +71,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     public static void setLocation(Location location) {
-        MetaService.location = location;
+        LocalMetaService.location = location;
     }
 
     @Override
@@ -82,7 +87,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public void createSubMetaService(String name) {
         CommonId newId = new CommonId(id.type(), id.identifier(), id.seq(), metaServiceSeq.incrementAndGet());
-        metaServices.put(newId, new MetaService(newId, name));
+        metaServices.put(newId, new LocalMetaService(newId, name));
     }
 
     @Override
@@ -91,7 +96,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq()), true,
                 CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq() + 1), false
             ).values().stream()
-            .collect(Collectors.toMap(MetaService::name, __ -> __));
+            .collect(Collectors.toMap(LocalMetaService::name, __ -> __));
     }
 
     @Override
@@ -165,13 +170,89 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createIndex(String tableName, List<Index> indexList) {
-
+    public void createIndex(String tableName, @NonNull List<Index> indexList) {
+        TableDefinition td = getTableDefinition(tableName);
+        indexList.forEach(td::addIndex);
     }
 
     @Override
     public void dropIndex(String tableName, String indexName) {
 
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T getTableProxy(@NonNull Class<T> clazz, CommonId tableId) {
+        if (clazz.isAssignableFrom(ExecutorApi.class)) {
+            return (T) new ExecutorApi() {
+
+                @Override
+                public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row) {
+                    return false;
+                }
+
+                @Override
+                public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows) {
+                    return false;
+                }
+
+                @Override
+                public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row) {
+                    return false;
+                }
+
+                @Override
+                public byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey) {
+                    return new byte[0];
+                }
+
+                @Override
+                public List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys) {
+                    return null;
+                }
+
+                @Override
+                public boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey) {
+                    return false;
+                }
+
+                @Override
+                public boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys) {
+                    return false;
+                }
+
+                @Override
+                public boolean deleteRange(Channel channel, CommonId schema, CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+                    return false;
+                }
+
+                @Override
+                public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId, byte[] startPrimaryKey, byte[] endPrimaryKey) {
+                    return null;
+                }
+
+                @Override
+                public List<KeyValue> getKeyValueByKeyPrefix(Channel channel, CommonId schema, CommonId tableId, byte[] keyPrefix) {
+                    return null;
+                }
+
+                @Override
+                public List<KeyValue> getAllKeyValue(Channel channel, CommonId schema, CommonId tableId) {
+                    return null;
+                }
+
+                @Override
+                public Future<Object> operator(CommonId tableId, List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op, boolean readOnly) {
+                    return null;
+                }
+
+                @Override
+                public List<Object[]> select(CommonId tableId, Object[] row, boolean[] hasData) {
+                    return ImmutableList.of();
+                }
+            };
+        }
+        return null;
     }
 
     public void setParts(CommonId id, NavigableMap<ComparableByteArray, Part> part) {
@@ -189,5 +270,4 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return ROOT;
         }
     }
-
 }

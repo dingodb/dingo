@@ -16,14 +16,12 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -54,6 +52,10 @@ public class TestCreateTable {
         for (String key : keyList) {
             System.out.println("---> primary key:" + key);
         }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("---");
     }
 
     @Test
@@ -171,10 +173,6 @@ public class TestCreateTable {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-    }
-
-    public static void main(String[] args) {
-        System.out.println("---");
     }
 
 }

@@ -20,6 +20,7 @@ import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
@@ -33,12 +34,11 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.util.Collections;
-
-import static io.dingodb.calcite.DingoTable.dingo;
 
 @Slf4j
 @Value.Enclosing
@@ -48,17 +48,47 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         super(config);
     }
 
+    static RexLiteral getPrefix(RexLiteral rexLiteral) {
+        StringBuilder stringBuilder = new StringBuilder();
+        // Process redundant ''
+        String patternStr = rexLiteral.toString().replaceAll("'", "");
+        if (patternStr.trim().length() == 0) {
+            return null;
+        }
+
+        char[] prefixChars = patternStr.toCharArray();
+        // Record the previous one to determine whether the wildcard is escaped
+        char previousChar = 0;
+        for (char prefixChar : prefixChars) {
+            // If it is % or _ or [, indicates a wildcard is encountered
+            if (prefixChar == '%' || prefixChar == '_' || prefixChar == '[') {
+                // If the previous bit is not '\\', the prefix has ended
+                if (previousChar != '\\') {
+                    break;
+                }
+            }
+            previousChar = prefixChar;
+            stringBuilder.append(prefixChar);
+        }
+
+        if (stringBuilder.length() == 0) {
+            return null;
+        }
+
+        return RexLiteral.fromJdbcString(rexLiteral.getType(), rexLiteral.getTypeName(), stringBuilder.toString());
+    }
+
     @Override
-    public void onMatch(RelOptRuleCall call) {
+    public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
-        TableDefinition td = dingo(rel.getTable()).getTableDefinition();
+        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
         RexCall filter = (RexCall) rel.getFilter();
 
         RexLiteral rexLiteral = (RexLiteral) filter.operands.get(1);
         RexLiteral prefix = getPrefix(rexLiteral);
         if (prefix == null) {
-            log.warn("The prefix is empty, original filter string is {}", rexLiteral.toString());
+            log.warn("The prefix is empty, original filter string is {}", rexLiteral);
             return;
         }
 
@@ -131,35 +161,5 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         default DingoLikeRule toRule() {
             return new DingoLikeRule(this);
         }
-    }
-
-    static RexLiteral getPrefix(RexLiteral rexLiteral) {
-        StringBuilder stringBuilder = new StringBuilder();
-        // Process redundant ''
-        String patternStr = rexLiteral.toString().replaceAll("\'", "");
-        if (patternStr.trim().length() == 0) {
-            return null;
-        }
-
-        char[] prefixChars = patternStr.toCharArray();
-        // Record the previous one to determine whether the wildcard is escaped
-        char previousChar = 0;
-        for (char prefixChar : prefixChars) {
-            // If it is % or _ or [, indicates a wildcard is encountered
-            if (prefixChar == '%' || prefixChar == '_' || prefixChar == '[') {
-                // If the previous bit is not '\\', the prefix has ended
-                if (previousChar != '\\') {
-                    break;
-                }
-            }
-            previousChar = prefixChar;
-            stringBuilder.append(prefixChar);
-        }
-
-        if (stringBuilder.length() == 0) {
-            return null;
-        }
-
-        return RexLiteral.fromJdbcString(rexLiteral.getType(), rexLiteral.getTypeName(), stringBuilder.toString());
     }
 }

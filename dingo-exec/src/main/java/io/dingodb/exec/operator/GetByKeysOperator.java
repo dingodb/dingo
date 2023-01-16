@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -80,22 +79,11 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
 
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
-        if (keyTuples.size() == 1) {
-            for (Object[] keyTuple : keyTuples) {
-                Object[] tuple = part.getByKey(keyTuple);
-                if (tuple != null) {
-                    return Iterators.singletonIterator(tuple);
-                }
-                break;
-            }
-        } else if (keyTuples.size() != 0) {
-            return keyTuples.stream()
-                .map(part::getByKey)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList())
-                .iterator();
-        }
-        return Iterators.forArray();
+        return keyTuples.stream()
+            .map(part::getByKey)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList())
+            .iterator();
     }
 
     // This method is only used by json serialization.

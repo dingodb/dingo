@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.ColumnDefinition;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
@@ -98,7 +99,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
     @Override
     public ColumnStrategy generationStrategy(RelOptTable table, int column) {
-        ColumnDefinition columnDefinition = DingoTable.dingo(table).getTableDefinition().getColumn(column);
+        ColumnDefinition columnDefinition = TableUtils.getTableDefinition(table).getColumn(column);
         if (columnDefinition.getDefaultValue() != null) {
             return ColumnStrategy.DEFAULT;
         } else {
@@ -108,8 +109,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
     @Override
     public RexNode newColumnDefaultValue(RelOptTable table, int column, InitializerContext context) {
-        DingoTable dingoTable = DingoTable.dingo(table);
-        String defaultValue = dingoTable.getTableDefinition().getColumn(column).getDefaultValue();
+        String defaultValue = TableUtils.getTableDefinition(table).getColumn(column).getDefaultValue();
         if (defaultValue == null) {
             return super.newColumnDefaultValue(table, column, context);
         }

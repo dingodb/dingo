@@ -22,6 +22,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
+import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.TableDefinition;
@@ -41,8 +42,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static io.dingodb.calcite.DingoTable.dingo;
 
 @Slf4j
 @Value.Enclosing
@@ -86,7 +85,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableModify rel0 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
-        TableDefinition td = dingo(rel.getTable()).getTableDefinition();
+        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         Codec codec = new DingoCodec(Collections.singletonList(
             td.getColumn(td.getFirstPrimaryColumnIndex()).getType().toDingoSchema(0)), null, true);
 
