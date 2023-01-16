@@ -97,7 +97,7 @@ public class RandomTable {
     }
 
     public void doTestFiles(
-            @NonNull List<InputTestFile> files
+        @NonNull List<InputTestFile> files
     ) throws SQLException, IOException {
         try (Statement statement = sqlHelper.getConnection().createStatement()) {
             for (InputTestFile file : files) {
