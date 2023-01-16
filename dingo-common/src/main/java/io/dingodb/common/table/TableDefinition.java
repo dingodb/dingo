@@ -199,7 +199,7 @@ public class TableDefinition {
     public int getFirstPrimaryColumnIndex() {
         int index = 0;
         for (ColumnDefinition column : columns) {
-            if (column.isPrimary()) {
+            if (column.getPrimary() == 0) {
                 return index;
             }
             ++index;
@@ -216,6 +216,13 @@ public class TableDefinition {
             }
             ++index;
         }
+        if (keyOrValue) {
+            int[] pkIndices = new int[indices.size()];
+            for (int i = 0; i < indices.size(); i++) {
+                pkIndices[columns.get(indices.get(i)).getPrimary()] = indices.get(i);
+            }
+            return TupleMapping.of(pkIndices);
+        }
         return TupleMapping.of(indices);
     }
 
@@ -231,11 +238,10 @@ public class TableDefinition {
 
     public List<DingoSchema> getDingoSchemaOfKey() {
         List<DingoSchema> keySchema = new ArrayList<>();
-        int index = 0;
-        for (ColumnDefinition column : columns) {
-            if (column.isPrimary()) {
-                keySchema.add(column.getType().toDingoSchema(index++));
-            }
+        TupleMapping keyMapping = getKeyMapping();
+        int[] mappings = keyMapping.getMappings();
+        for (int mapping : mappings) {
+            keySchema.add(columns.get(mapping).getType().toDingoSchema(mapping));
         }
         return keySchema;
     }

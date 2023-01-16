@@ -22,17 +22,16 @@ import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
 import io.dingodb.server.api.MetaApi;
 import io.dingodb.server.api.MetaServiceApi;
 import io.dingodb.server.protocol.meta.Executor;
-import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.web.mapper.DTOMapper;
 import io.dingodb.web.model.dto.meta.ExecutorDTO;
-import io.dingodb.web.model.dto.meta.ReplicaDTO;
+import io.dingodb.web.model.dto.meta.PartDTO;
 import io.dingodb.web.model.dto.meta.TableDTO;
 import io.dingodb.web.model.dto.meta.TablePartDTO;
-import io.dingodb.web.model.dto.meta.TablePartStatsDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,8 +52,6 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.server.protocol.CommonIdConstant.ID_TYPE;
 import static io.dingodb.server.protocol.CommonIdConstant.SERVICE_IDENTIFIER;
-import static io.dingodb.server.protocol.CommonIdConstant.STATS_IDENTIFIER;
-import static io.dingodb.server.protocol.CommonIdConstant.TABLE_IDENTIFIER;
 import static java.util.stream.Collectors.toMap;
 
 @Api("Meta")
@@ -69,89 +66,38 @@ public class MetaController {
     private MetaServiceApi metaServiceApi;
 
     @Autowired
+    private MetaService metaService;
+
+    @Autowired
     private DTOMapper mapper;
 
     @ApiOperation("Get tables")
     @GetMapping("/table")
     public ResponseEntity<List<TableDTO>> getTables() {
-        return ResponseEntity.ok(metaApi.table().stream().map(mapper::mapping).collect(Collectors.toList()));
+        return ResponseEntity.ok(
+            metaServiceApi.getTableMetas(metaService.id()).stream().map(mapper::mapping).collect(Collectors.toList())
+        );
     }
 
     @ApiOperation("Get table")
     @GetMapping("/{table}/definition")
     public ResponseEntity<String> getTableDef(@PathVariable String table) {
-        return ResponseEntity.ok(metaApi.tableDefinition(metaApi.tableId(table.toUpperCase())).toString());
+        return ResponseEntity.ok(metaService.getTableDefinition(table).toString());
     }
 
     @ApiOperation("Get table")
     @GetMapping("/{table}")
     public ResponseEntity<TableDTO> getTable(@PathVariable String table) {
-        return ResponseEntity.ok(mapper.mapping(metaApi.table(metaApi.tableId(table.toUpperCase()))));
+        return ResponseEntity.ok(
+            mapper.mapping(metaServiceApi.getTableMeta(metaService.getTableId(table.toUpperCase())))
+        );
     }
 
     @ApiOperation("Get table parts")
     @GetMapping("/{table}/parts")
-    public ResponseEntity<List<TablePartDTO>> getTableParts(@PathVariable String table) {
+    public ResponseEntity<List<PartDTO>> getTableParts(@PathVariable String table) {
         return ResponseEntity.ok(
-            metaApi.tableParts(table.toUpperCase()).stream()
-                .map(mapper::mapping)
-                .collect(Collectors.toList())
-        );
-    }
-
-    @ApiOperation("Get table stats")
-    @GetMapping("/{table}/stats")
-    public ResponseEntity<List<TablePartStatsDTO>> getTableStats(@PathVariable String table) {
-        return ResponseEntity.ok(
-            metaApi.tableParts(metaApi.tableId(table.toUpperCase())).stream()
-                .map(TablePart::getId)
-                .map(metaApi::tablePartStats)
-                .map(mapper::mapping)
-                .collect(Collectors.toList())
-        );
-    }
-
-    @ApiOperation("Get table stats")
-    @GetMapping("/{table}/replicas")
-    public ResponseEntity<Map<String, List<ReplicaDTO>>> getTableReplicas(@PathVariable String table) {
-        List<TablePart> tableParts = metaApi.tableParts(table.toUpperCase());
-        return ResponseEntity.ok(
-            tableParts.stream().collect(toMap(
-                tp -> tp.getId().toString(),
-                tp -> metaApi.replicas(tp.getId()).stream().map(mapper::mapping).collect(Collectors.toList())
-            )));
-    }
-
-    @ApiOperation("Get table part stats")
-    @GetMapping("/{table}/{part}/stats")
-    public ResponseEntity<TablePartStatsDTO> getTablePartStats(@PathVariable String table, @PathVariable Integer part) {
-        return ResponseEntity.ok(mapper.mapping(metaApi.tablePartStats(
-            new CommonId(ID_TYPE.stats, STATS_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seq(), part)
-        )));
-    }
-
-    @ApiOperation("Get table part")
-    @GetMapping("/{table}/{part}/part")
-    public ResponseEntity<TablePartDTO> getTablePart(@PathVariable String table, @PathVariable Integer part) {
-        return ResponseEntity.ok(mapper.mapping(metaApi.tablePart(
-            new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.part, metaApi.tableId(table.toUpperCase()).seq(), part)
-        )));
-    }
-
-    @ApiOperation("Get table part")
-    @GetMapping("/{table}/{part}/replica")
-    public ResponseEntity<List<ReplicaDTO>> getTablePartReplica(
-        @PathVariable String table, @PathVariable Integer part
-    ) {
-        return ResponseEntity.ok(metaApi
-            .replicas(new CommonId(
-                ID_TYPE.table,
-                TABLE_IDENTIFIER.part,
-                metaApi.tableId(table.toUpperCase()).seq(),
-                part
-            )).stream()
-            .map(mapper::mapping)
-            .collect(Collectors.toList())
+            metaService.getParts(table).values().stream().map(mapper::mapping).collect(Collectors.toList())
         );
     }
 
@@ -162,7 +108,7 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
-        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(metaServiceApi.rootId(), table);
+        NavigableMap<ComparableByteArray, Part> parts = metaService.getParts(table);
         TableDefinition def = metaApi.tableDefinition(table);
         Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)
@@ -181,7 +127,6 @@ public class MetaController {
     ) throws IOException {
         table = table.toUpperCase();
         params = params.entrySet().stream().collect(toMap(__ -> __.getKey().toUpperCase(), Map.Entry::getValue));
-        NavigableMap<ComparableByteArray, Part> parts = metaServiceApi.getParts(metaServiceApi.rootId(), table);
         TableDefinition def = metaApi.tableDefinition(table);
         Object[] keys = def.getKeyMapping().revMap((Object[]) def.getDingoType().parse(def.getColumns().stream()
             .map(ColumnDefinition::getName)

@@ -55,7 +55,7 @@ public class MetaDefinitionBuilder {
                     .name("id")
                     .type("VARCHAR")
                     .nullable(false)
-                    .primary(true)
+                    .primary(0)
                     .build());
             cols.forEach(col -> definition.addColumn(buildColumn(col)));
             return definition;

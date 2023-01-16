@@ -17,10 +17,9 @@
 package io.dingodb.server.executor.sidebar;
 
 import io.dingodb.mpu.core.CoreMeta;
-import io.dingodb.mpu.core.Sidebar;
-import io.dingodb.mpu.storage.rocks.RocksStorage;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.protocol.meta.TablePart;
+import lombok.Builder;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -29,8 +28,11 @@ public class PartitionSidebar extends BaseSidebar {
 
     public final TablePart part;
 
-    public PartitionSidebar(TablePart part, CoreMeta meta, List<CoreMeta> mirrors, Path path) throws Exception {
-        super(meta, mirrors, StorageFactory.create(meta.label, path));
+    @Builder
+    public PartitionSidebar(
+        TablePart part, CoreMeta meta, List<CoreMeta> mirrors, Path path, int ttl
+    ) throws Exception {
+        super(meta, mirrors, StorageFactory.create(meta.label, path, ttl));
         this.part = part;
     }
 

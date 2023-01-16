@@ -4,19 +4,21 @@
     {
       "name": "id",
       "type": "integer",
-      "primary": true,
+      "primary": 0,
       "nullable": false
     },
     {
       "name": "set",
       "type": "multiset",
       "elementType": "integer",
+      "primary": -1,
       "nullable": true
     },
     {
       "name": "arr",
       "type": "array",
       "elementType": "integer",
+      "primary": -1,
       "nullable": true
     }
   ]

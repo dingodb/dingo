@@ -18,6 +18,7 @@ package io.dingodb.web.mapper;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.meta.Part;
 import io.dingodb.server.protocol.meta.Executor;
 import io.dingodb.server.protocol.meta.ExecutorStats;
 import io.dingodb.server.protocol.meta.Replica;
@@ -27,6 +28,7 @@ import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.server.protocol.meta.TablePartStats;
 import io.dingodb.web.model.dto.meta.ExecutorDTO;
 import io.dingodb.web.model.dto.meta.ExecutorStatsDTO;
+import io.dingodb.web.model.dto.meta.PartDTO;
 import io.dingodb.web.model.dto.meta.ReplicaDTO;
 import io.dingodb.web.model.dto.meta.SchemaDTO;
 import io.dingodb.web.model.dto.meta.TableDTO;
@@ -44,6 +46,8 @@ import java.util.stream.Collectors;
 
 @Mapper(unmappedSourcePolicy = ReportingPolicy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DTOMapper {
+
+    PartDTO mapping(Part part);
 
     ExecutorDTO mapping(Executor executor);
 

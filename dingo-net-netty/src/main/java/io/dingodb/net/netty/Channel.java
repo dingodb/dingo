@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static io.dingodb.common.concurrent.Executors.threadName;
+import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.net.netty.Constant.ACK_C;
 import static io.dingodb.net.netty.Constant.API_T;
 import static io.dingodb.net.netty.Constant.CLOSE_C;
@@ -91,7 +93,7 @@ public class Channel implements io.dingodb.net.Channel {
 
     public synchronized void close() {
         if (this.status == Status.CLOSE) {
-            log.warn("Channel [{}] already close", channelId);
+            debug(log, "Channel [{}] already close", channelId);
             return;
         }
         this.shutdown();
@@ -143,7 +145,7 @@ public class Channel implements io.dingodb.net.Channel {
     @Override
     public void send(Message message, boolean sync) {
         if (isClosed()) {
-            throw new RuntimeException("The channel is closed");
+            throw new RuntimeException("The channel [" + channelId + "] is closed, current thread " + threadName());
         }
         byte[] msg = message.encode();
         if (log.isTraceEnabled()) {

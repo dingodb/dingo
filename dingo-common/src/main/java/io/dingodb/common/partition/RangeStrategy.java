@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.codec.Codec;
 import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DingoConverter;
@@ -47,7 +48,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     @JsonProperty("ranges")
     private final NavigableSet<ComparableByteArray> ranges;
 
-    private final transient Codec codec;
+    private final transient DingoKeyValueCodec codec;
     private final transient DingoType keySchema;
 
     @JsonCreator
@@ -58,7 +59,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         this.ranges = ranges;
         this.definition = definition;
         this.keySchema = definition.getDingoType(true);
-        this.codec = new DingoCodec(definition.getDingoSchemaOfKey(), null, true);
+        this.codec = definition.createCodec();
     }
 
     @Override
@@ -69,7 +70,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     @Override
     public ComparableByteArray calcPartId(Object @NonNull [] keyTuple) {
         try {
-            return calcPartId(codec.encodeKey((Object[]) keySchema.convertTo(keyTuple, DingoConverter.INSTANCE)));
+            return calcPartId(codec.encodeKey(keyTuple));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

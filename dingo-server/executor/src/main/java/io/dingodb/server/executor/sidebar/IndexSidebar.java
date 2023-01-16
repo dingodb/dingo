@@ -37,9 +37,9 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
     private final TableSidebar tableSidebar;
 
     public IndexSidebar(
-        TableSidebar tableSidebar, Index index, CoreMeta meta, List<CoreMeta> mirrors, Path path
+        TableSidebar tableSidebar, Index index, CoreMeta meta, List<CoreMeta> mirrors, Path path, int ttl
     ) throws Exception {
-        super(meta, mirrors, StorageFactory.create(meta.label, path));
+        super(meta, mirrors, StorageFactory.create(meta.label, path, ttl));
         this.tableSidebar = tableSidebar;
         this.index = index;
     }

@@ -872,6 +872,7 @@ public class ClassCacheEntry<T> {
         TableDefinition tableDefinition = new TableDefinition(tableName);
         List<Field> keyFieldList = this.keys.stream()
             .map(v -> ((ValueType.FieldValue) v).getField()).collect(Collectors.toList());
+        int pkIndex = 0;
         for (Field thisField : this.clazz.getDeclaredFields()) {
             boolean isKey = false;
             if (thisField.isAnnotationPresent(DingoKey.class)) {
@@ -916,7 +917,10 @@ public class ClassCacheEntry<T> {
                     thisField.getType().toGenericString(),
                     elementTypeName);
             }
-
+            int primary = -1;
+            if (isKey) {
+                primary = pkIndex++;
+            }
             ColumnDefinition columnDefinition = ColumnDefinition.getInstance(
                 columnName,
                 sqlTypeInfo.getSqlTypeName(),
@@ -924,7 +928,7 @@ public class ClassCacheEntry<T> {
                 sqlTypeInfo.getPrecision(),
                 sqlTypeInfo.getScale(),
                 !isKey,
-                isKey,
+                primary,
                 sqlTypeInfo.getDefaultValue()
             );
             tableDefinition.addColumn(columnDefinition);

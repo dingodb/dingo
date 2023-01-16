@@ -27,6 +27,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static io.dingodb.common.util.DebugLog.error;
+
 @Slf4j
 public final class Executors {
 
@@ -56,12 +58,20 @@ public final class Executors {
     private Executors() {
     }
 
+    public static String threadName() {
+        return Thread.currentThread().getName();
+    }
+
     public static Executor executor(String name) {
         return command -> execute(name, command);
     }
 
     public static void execute(String name, Runnable command) {
         GLOBAL_POOL.execute(wrap(name, command));
+    }
+
+    public static void execute(String name, Runnable command, boolean ignoreError) {
+        GLOBAL_POOL.execute(wrap(name, command, ignoreError));
     }
 
     public static ScheduledFuture<CompletableFuture<?>> scheduleAsync(
@@ -127,14 +137,22 @@ public final class Executors {
     }
 
     private static <V> Callable<V> wrap(String name, Callable<V> callable) {
-        return () -> call(name, callable);
+        return () -> call(name, callable, false);
+    }
+
+    private static <V> Callable<V> wrap(String name, Callable<V> callable, boolean ignoreError) {
+        return () -> call(name, callable, ignoreError);
     }
 
     private static Runnable wrap(String name, Runnable runnable) {
-        return () -> run(name, runnable);
+        return () -> run(name, runnable, false);
     }
 
-    private static <V> V call(String name, Callable<V> callable) throws Exception {
+    private static Runnable wrap(String name, Runnable runnable, boolean ignoreError) {
+        return () -> run(name, runnable, ignoreError);
+    }
+
+    private static <V> V call(String name, Callable<V> callable, boolean ignoreFalse) throws Exception {
         Thread thread = Thread.currentThread();
         try {
             if (log.isTraceEnabled()) {
@@ -145,8 +163,13 @@ public final class Executors {
             thread.setName(builder.toString());
             return callable.call();
         } catch (Throwable e) {
-            log.error("Execute {} catch error.", name, e);
-            throw e;
+            if (ignoreFalse) {
+                error(log, "Execute {} catch error.", name, e);
+                return null;
+            } else {
+                log.error("Execute {} catch error.", name, e);
+                throw e;
+            }
         } finally {
             thread.setName(FREE_THREAD_NAME);
             if (log.isTraceEnabled()) {
@@ -155,7 +178,7 @@ public final class Executors {
         }
     }
 
-    private static void run(String name, Runnable runnable) {
+    private static void run(String name, Runnable runnable, boolean ignoreError) {
         Thread thread = Thread.currentThread();
         try {
             if (log.isTraceEnabled()) {
@@ -166,8 +189,12 @@ public final class Executors {
             thread.setName(builder.toString());
             runnable.run();
         } catch (Throwable e) {
-            log.error("Execute {} catch error.", name, e);
-            throw e;
+            if (ignoreError) {
+                error(log, "Execute {} catch error.", name, e);
+            } else {
+                log.error("Execute {} catch error.", name, e);
+                throw e;
+            }
         } finally {
             thread.setName(FREE_THREAD_NAME);
             if (log.isTraceEnabled()) {

@@ -4,7 +4,7 @@
     {
       "name": "id",
       "type": "integer",
-      "primary": true,
+      "primary": 0,
       "nullable": false
     },
     {
@@ -12,11 +12,13 @@
       "type": "varchar",
       "precision": 64,
       "default": "'Peso'",
+      "primary": -1,
       "nullable": false
     },
     {
       "name": "amount",
       "type": "double",
+      "primary": -1,
       "nullable": true
     }
   ]
