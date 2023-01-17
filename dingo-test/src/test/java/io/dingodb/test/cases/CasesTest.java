@@ -21,16 +21,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.stream.Stream;
-
-public class CasesInFileTest {
+public class CasesTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -43,29 +36,15 @@ public class CasesInFileTest {
         sqlHelper.cleanUp();
     }
 
-    @NonNull
-    public static Stream<Arguments> getParametersTemp() {
-        return Stream.of(
-            // In list with >= 20 elements is converted as join with values.
-            CasesInFileJUnit5.fileCase("In list with >=20 elements",
-                "string_int_double_string/create.sql",
-                "string_int_double_string/data.sql",
-                "string_int_double_string/update_1.sql",
-                "select_all.sql",
-                "string_int_double_string/data_updated_1.csv"
-            )
-        );
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(CasesProvider.class)
+    public void test(String ignored, @NonNull Case testCase) throws Exception {
+        testCase.run(sqlHelper.getConnection());
     }
 
-    @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(CasesInFileJUnit5.class)
-    public void test(String ignored, List<InputTestFile> files) throws SQLException, IOException {
-        sqlHelper.randomTable().doTestFiles(files);
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("getParametersTemp")
-    public void testTemp(String ignored, List<InputTestFile> files) throws SQLException, IOException {
-        test(ignored, files);
+    @ParameterizedTest(name = "StatementForEachStep [{index}] {0}")
+    @ArgumentsSource(CasesProvider.class)
+    public void testWithStatementForEachStep(String ignored, @NonNull Case testCase) throws Exception {
+        testCase.runWithStatementForEachStep(sqlHelper.getConnection());
     }
 }

@@ -1,0 +1,11 @@
+id, name, flag
+INTEGER, STRING, STRING
+1, Alice, N
+2, Betty, N
+3, Cindy, N
+4, Doris, N
+5, Emily, N
+6, Alice, Y
+7, Betty, Y
+8, Alice, Y
+9, Cindy, Y

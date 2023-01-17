@@ -18,10 +18,10 @@ package io.dingodb.test;
 
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
-import io.dingodb.test.cases.CasesInFileJUnit5;
+import io.dingodb.test.cases.Case;
+import io.dingodb.test.cases.CasesProvider;
 import io.dingodb.test.cases.ClassTestMethod;
 import io.dingodb.test.cases.ExceptionCasesJUnit5;
-import io.dingodb.test.cases.InputTestFile;
 import io.dingodb.test.cases.ParametersCasesJUnit5;
 import io.dingodb.test.cases.RexCasesJUnit5;
 import io.dingodb.test.cases.StressCasesJUnit5;
@@ -77,9 +77,9 @@ public class DingoDriverClientIT {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(CasesInFileJUnit5.class)
-    public void testInFiles(String ignored, List<InputTestFile> files) throws SQLException, IOException {
-        sqlHelper.randomTable().doTestFiles(files);
+    @ArgumentsSource(CasesProvider.class)
+    public void test(String ignored, @NonNull Case testCase) throws Exception {
+        testCase.run(sqlHelper.getConnection());
     }
 
     @ParameterizedTest(name = "[{index}] {0}")

@@ -31,6 +31,7 @@ import lombok.Setter;
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(AggregateOperator.class),
+    @JsonSubTypes.Type(EmptySourceOperator.class),
     @JsonSubTypes.Type(CoalesceOperator.class),
     @JsonSubTypes.Type(FilterOperator.class),
     @JsonSubTypes.Type(GetByIndexOperator.class),
