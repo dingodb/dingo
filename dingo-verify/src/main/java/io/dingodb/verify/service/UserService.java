@@ -55,6 +55,8 @@ public interface UserService {
 
     CommonId getTableId(CommonId schemaId, String table);
 
+    void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew);
+
     default void flushPrivileges() {
 
     }

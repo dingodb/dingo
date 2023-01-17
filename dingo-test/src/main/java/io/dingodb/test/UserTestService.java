@@ -86,4 +86,9 @@ public class UserTestService implements UserService {
         return null;
     }
 
+    @Override
+    public void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew) {
+
+    }
+
 }

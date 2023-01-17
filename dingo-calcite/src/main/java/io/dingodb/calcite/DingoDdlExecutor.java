@@ -43,6 +43,7 @@ import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.StrParseConverter;
@@ -128,7 +129,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(String::toUpperCase)
             .toArray(String[]::new);
         SqlIdentifier name = (SqlIdentifier) sqlKeyConstraint.getOperandList().get(0);
-        Index index = new Index(name.names.get(0), columns, true);
+        Index index = new Index(name.names.get(0).toUpperCase(), columns, true);
         return index;
     }
 
@@ -342,15 +343,28 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString()));
         }
-
+        CommonId tableIdOld = schema.getTableId(tableName);
         if (!schema.dropTable(tableName)) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString())
             );
         }
+        List<Index> indexList = tableDefinition.getIndexes().values().stream().map(index -> {
+            index.setStatus(IndexStatus.NEW);
+            return index;
+        }).collect(Collectors.toList());
+        tableDefinition.getIndexes().clear();
         schema.createTable(tableName, tableDefinition);
 
+        if (indexList.size() > 0) {
+            schema.createIndex(tableName, indexList);
+        }
+
+        CommonId tableIdNew = schema.getTableId(tableName);
+        CommonId schemaId = schema.id();
+
+        UserServiceProvider.getRoot().reloadTableId(schemaId, tableIdOld, tableIdNew);
     }
 
 
@@ -423,7 +437,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
             .host(getRealAddress(sqlDropUser.host)).build();
         if (!userService.existsUser(userDefinition)) {
-            throw new RuntimeException("user is not exists");
+            throw new RuntimeException("user does not exist");
         }
         userService.dropUser(userDefinition);
     }
@@ -617,15 +631,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void validateDropIndex(MutableSchema schema, String tableName, String indexName) {
         if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+            throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {
             if (tableDefinition.getIndexes() == null) {
-                throw new IllegalArgumentException("index " + indexName + " is not exists ");
+                throw new IllegalArgumentException("index " + indexName + " does not exist ");
             } else {
                 if (!tableDefinition.getIndexes().containsKey(indexName)) {
-                    throw new IllegalArgumentException("index " + indexName + " is not exists ");
+                    throw new IllegalArgumentException("index " + indexName + " does not exist ");
                 }
             }
 
@@ -634,7 +648,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void validateIndex(MutableSchema schema, String tableName, Index newIndex) {
         if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " is not exists ");
+            throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         if (tableDefinition != null) {

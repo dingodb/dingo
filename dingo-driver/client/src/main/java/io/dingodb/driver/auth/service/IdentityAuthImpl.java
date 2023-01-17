@@ -65,8 +65,8 @@ public class IdentityAuthImpl implements IdentityAuth {
     public void cachePrivileges(Authentication authentication) {
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
-            if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
+        if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
+            if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
                 PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, user, host);
                 env.getPrivilegeGatherMap().put(privilegeGather.key(),
                     privilegeGather);

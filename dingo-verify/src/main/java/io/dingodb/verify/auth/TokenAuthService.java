@@ -42,7 +42,12 @@ public class TokenAuthService implements AuthService<Authentication>  {
         try {
             for (TokenAuth.Provider tokenAuthProvider : serviceProviders) {
                 TokenAuth tokenAuth = tokenAuthProvider.get();
-                this.tokenAuth = tokenAuth;
+                // 1. web token auth role is null  2. sdk token auth / executor token auth
+                // local test ServiceLoader load multiService  / linux ServiceLoader load single service
+                if ((tokenAuth.getRole() != null && env.getRole() == tokenAuth.getRole())
+                    || tokenAuth.getRole() == null) {
+                    this.tokenAuth = tokenAuth;
+                }
             }
         } catch (NoSuchElementException e) {
             this.tokenAuth = null;
@@ -79,8 +84,10 @@ public class TokenAuthService implements AuthService<Authentication>  {
     public Authentication createCertificate() {
         String token = null;
         if (tokenAuth == null) {
+            log.info("tokenAuth = null");
             token =  getInnerAuthToken();
         } else {
+            log.info("tokenAuth:" + tokenAuth);
             token = tokenAuth.getAuthToken();
         }
         if (StringUtils.isNotBlank(token)) {

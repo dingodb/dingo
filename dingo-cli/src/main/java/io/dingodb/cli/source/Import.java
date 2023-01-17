@@ -70,10 +70,10 @@ public class Import {
     @Parameter(names = "--offset-reset", description = "Auto offset reset, Default [latest], optional [earliest]")
     private String offsetReset;
 
-    @Parameter(names = "--user", description = "dingo client login user")
+    @Parameter(names = "--user", description = "dingo client login user", required = true)
     private String user;
 
-    @Parameter(names = "--password", description = "dingo client login password")
+    @Parameter(names = "--password", description = "dingo client login password", required = true)
     private String password;
 
     public static void main(String[] args) throws Exception {

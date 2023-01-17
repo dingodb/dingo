@@ -186,7 +186,7 @@ void TableElement(List<SqlNode> list) :
     |
         <INDEX> { s.add(this); }
         ( <QUOTED_STRING> | <IDENTIFIER> )
-        { index = token.image; }
+        { index = token.image.toUpperCase(); }
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList));
         }
@@ -532,7 +532,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     [ <UNIQUE> { isUnique = true;}]
     <INDEX> ifNotExists = IfNotExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
-     { index = token.image; }
+     { index = token.image.toUpperCase(); }
     <ON> table = CompoundIdentifier()
     <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
     (
@@ -644,7 +644,7 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
 {
     <INDEX> ifExists = IfExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
-    { index = token.image; }
+    { index = token.image.toUpperCase(); }
     <ON>
     id = CompoundIdentifier()
     {
@@ -665,7 +665,7 @@ SqlGrant SqlGrant() : {
    <GRANT> { s = span(); }
    [ <ALL> <PRIVILEGES> { isAllPrivileges = true; } ]
    [
-     privilege = privilege() { privilegeList.add(privilege); }
+     privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
      (
        <COMMA> privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
      )*

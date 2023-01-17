@@ -122,7 +122,7 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
     private void flushPrivileges(Message message, Channel channel) {
         log.info("flush privileges, user:" + flushPrivileges.size() + ", channel size:" + channels.size());
         if (flushPrivileges.size() == 0) {
-            UserAdaptor userAdaptor = ((UserAdaptor) getMetaAdaptor(User.class));
+            UserAdaptor userAdaptor = getMetaAdaptor(User.class);
             flushPrivileges.addAll(userAdaptor.userMap.keySet());
         }
         flushPrivileges.forEach(flush -> {
@@ -138,7 +138,9 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
                 }
             });
         });
-        channel.close();
+        if (channel != null) {
+            channel.close();
+        }
         log.info("flush privileges complete.");
     }
 
@@ -330,4 +332,25 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
             x -> ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).delete(x)).count();
     }
 
+    public void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew) {
+        Iterator<List<Privilege>> iterator = privilegeMap.values().iterator();
+        while (iterator.hasNext()) {
+            List<Privilege> privileges = iterator.next();
+            for (int i = 0; i < privileges.size(); i ++) {
+                Privilege privilege = privileges.get(i);
+                if (privilege.getSchema() != null && privilege.getTable() != null
+                    && privilege.getSchema().compareTo(schemaId) == 0
+                    && privilege.getTable().compareTo(tableIdOld) == 0) {
+
+                    privilege.setTable(tableIdNew);
+                    save(privilege);
+                    String user = privilege.getUser();
+                    if (!flushPrivileges.contains(user)) {
+                        flushPrivileges.add(user);
+                    }
+                }
+            }
+        }
+        flushPrivileges(null ,null);
+    }
 }
