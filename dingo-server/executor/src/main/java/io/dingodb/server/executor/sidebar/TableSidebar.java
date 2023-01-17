@@ -23,6 +23,7 @@ import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.FileUtils;
@@ -43,8 +44,10 @@ import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
 import io.dingodb.server.executor.store.StoreService;
 import io.dingodb.server.protocol.MetaListenEvent;
+import io.dingodb.server.executor.store.column.TypeConvert;
 import io.dingodb.server.protocol.meta.Index;
 import io.dingodb.server.protocol.meta.TablePart;
+import io.dingodb.strorage.column.ColumnStorage;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -56,11 +59,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.config.DingoConfiguration.location;
@@ -89,6 +94,9 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     @Getter
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
+
+    private static ColumnStorage columnStorage;
+    private static AtomicBoolean columnInitialized = new AtomicBoolean(false);
 
     @Getter
     private TableDefinition definition;
@@ -167,8 +175,43 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             this::saveDefineParts,
             () -> saveNewPart(TablePart.builder().version(1).table(tableId).start(EMPTY_BYTES).build())
         );
+
         Optional.ofNullable(definition.getIndexes()).filter(__ -> !__.isEmpty()).ifPresent(this::saveDefineIndexes);
         exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
+    }
+
+    private void columnInit(String partitionId) {
+        log.info("TableSidebar, columnInit, table: {}", partitionId);
+        long currentTime1 = System.currentTimeMillis();
+        if (this.columnInitialized.compareAndSet(false, true)) {
+            log.info("TableSidebar, CK columnInit.");
+            ColumnStorage.loadLibrary();
+            columnStorage = new ColumnStorage();
+            long currentTime2 = System.currentTimeMillis();
+            log.info("TableSidebar load library, cost: {}ms.", currentTime2 - currentTime1);
+            columnStorage.columnInit("/tmp/dingo_column/data_dir", "/tmp/dingo_column/log_dir");
+            log.info("TableSidebar column init, cost: {}ms.", System.currentTimeMillis() - currentTime2);
+        }
+
+        List<ColumnDefinition> columns = definition.getColumns();
+        int size = columns.size();
+        final String[] columnNames = new String[size];
+        final int[] columnTypes = new int[size];
+        int i = 0;
+        for (ColumnDefinition column : columns) {
+            columnNames[i] = column.getName();
+            int type = TypeConvert.DingoTypeToCKType(column.getType());
+            columnTypes[i] = type;
+            i++;
+        }
+
+        long currentTime3 = System.currentTimeMillis();
+        final String sessionID = UUID.randomUUID().toString();
+        this.columnStorage.createTable(sessionID, "default", partitionId.toString(), "MergeTree",
+            columnNames, columnTypes);
+        long currentTime4 = System.currentTimeMillis();
+        log.info("TableSidebar create table: {}, cost: {}ms, total cost: {}ms.", partitionId,
+            currentTime4 - currentTime3, currentTime4 - currentTime1);
     }
 
     private void saveDefineIndexes() {
@@ -292,8 +335,12 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                     part.getId(),
                     mirror.location))
                 .collect(Collectors.toList());
+            if (definition.getEngine() != null && definition.getEngine().equals("MergeTree")) {
+                this.columnInit(part.getId().toString());
+            }
             PartitionSidebar sidebar = new PartitionSidebar(
-                part, meta, mirrors, resolvePath(tableId.toString(), part.getId().toString()), definition.getTtl()
+                part, meta, mirrors, resolvePath(tableId.toString(), part.getId().toString()), definition.getTtl(),
+			definition
             );
             addVSidebar(sidebar);
             log.info("Starting part {}......", id);

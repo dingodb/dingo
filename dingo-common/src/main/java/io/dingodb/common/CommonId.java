@@ -122,7 +122,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     @Override
     public String toString() {
         if (str == null) {
-            this.str = new String(new byte[] {type, '-', id0, id1}) + '-' + domain + '-' + seq + '-' + ver;
+            this.str = new String(new byte[] {type, '_', id0, id1}) + '_' + domain + '_' + seq + '_' + ver;
         }
         return str;
     }

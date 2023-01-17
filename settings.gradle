@@ -78,4 +78,5 @@ include 'dingo-cli:sqlline'
 findProject(':dingo-cli:sqlline')?.name = 'sqlline'
 include 'dingo-cli:driver-server'
 findProject(':dingo-cli:driver-server')?.name = 'driver-server'
+include 'dingo-column'
 
