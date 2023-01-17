@@ -40,18 +40,6 @@ public class Starter {
     @Parameter(names = "--port", description = "Coordinator port.", order = 6)
     private Integer port = 8765;
 
-    @Parameter(names = "--class", description = "Log class name.", order = 7)
-    private String className;
-
-    @Parameter(names = "--level", description = "Log level.", order = 8)
-    private String level;
-
-    @Parameter(names = "--serverHost", description = "Server host.", order = 9)
-    private String serverHost;
-
-    @Parameter(names = "--serverPort", description = "Server port.", order = 10)
-    private Integer serverPort;
-
     public static void main(String[] args) throws Exception {
         Starter starter = new Starter();
         JCommander commander = new JCommander(starter);

@@ -76,7 +76,7 @@ public class DingoClient {
 
     private StoreOperationUtils storeOpUtils;
 
-    public static Integer retryTimes = 10;
+    public static Integer retryTimes = 30;
     public static volatile boolean isConnectionInit = false;
 
 
@@ -103,7 +103,7 @@ public class DingoClient {
 
     public DingoClient(String coordinatorExchangeSvrList, String schema, Integer retryTimes) {
         try {
-            connection = new DingoConnection(coordinatorExchangeSvrList, schema);
+            connection = new DingoConnection(coordinatorExchangeSvrList, schema, retryTimes);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

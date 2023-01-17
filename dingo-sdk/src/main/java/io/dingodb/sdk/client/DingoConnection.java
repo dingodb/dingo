@@ -37,15 +37,17 @@ public class DingoConnection extends ClientBase {
     private ApiRegistry apiRegistry;
 
     private String schema;
+    private Integer retryTimes;
 
     /**
      * Construct connection to Dingo Cluster.
      * @param coordinatorExchangeSvrList coordinator server list.
      */
-    public DingoConnection(String coordinatorExchangeSvrList, String schema) {
+    public DingoConnection(String coordinatorExchangeSvrList, String schema, Integer retryTimes) {
         super(coordinatorExchangeSvrList);
         this.metaClient = new MetaClient(coordinatorExchangeSvrList);
         this.schema = schema;
+        this.retryTimes = retryTimes;
     }
 
     /**
@@ -55,7 +57,7 @@ public class DingoConnection extends ClientBase {
     @Override
     public void initConnection() throws Exception {
         super.initConnection();
-        this.metaClient.init(schema);
+        this.metaClient.init(schema, retryTimes);
         this.apiRegistry = super.getNetService().apiRegistry();
     }
 
