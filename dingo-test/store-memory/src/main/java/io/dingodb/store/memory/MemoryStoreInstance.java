@@ -16,12 +16,17 @@
 
 package io.dingodb.store.memory;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +38,18 @@ import java.util.stream.Collectors;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
 
+@Slf4j
 public class MemoryStoreInstance implements StoreInstance {
     private final Map<byte[], Part> startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
     private final NavigableMap<byte[], byte[]> db = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
+
+    private DingoKeyValueCodec codec;
+
+    public void initCodec(CommonId tableId) {
+        codec = MetaService.root().getSubMetaService(MetaService.DINGO_NAME)
+            .getTableDefinition(tableId)
+            .createCodec();
+    }
 
     @Override
     public void assignPart(Part part) {
@@ -222,5 +236,30 @@ public class MemoryStoreInstance implements StoreInstance {
     @Override
     public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
         return keyValueScan(prefix, prefix, true, true);
+    }
+
+    @Override
+    public boolean insert(Object[] row) {
+        KeyValue keyValue = convertRow(row);
+        db.put(keyValue.getKey(), keyValue.getValue());
+        return true;
+    }
+
+    @Override
+    public boolean update(Object[] row) {
+        KeyValue keyValue = convertRow(row);
+        db.put(keyValue.getKey(), keyValue.getValue());
+        return true;
+    }
+
+    private KeyValue convertRow(Object[] row) {
+        KeyValue keyValue = null;
+        try {
+            keyValue = codec.encode(row);
+            return keyValue;
+        } catch (IOException e) {
+            log.error("Encode data error: {}", e.getMessage(), e);
+        }
+        return null;
     }
 }
