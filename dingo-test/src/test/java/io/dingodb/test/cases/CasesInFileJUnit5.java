@@ -96,6 +96,20 @@ public class CasesInFileJUnit5 implements ArgumentsProvider {
                 "array/data.sql",
                 "array/select_array_item_all.sql",
                 "array/data_array_item_all.csv"
+            ),
+            fileCase(
+                "Double as primary key",
+                "double_pm/create.sql",
+                "double_pm/data.sql",
+                "select_all.sql",
+                "double_pm/data.csv"
+            ),
+            fileCase("Update using function",
+                "string_int_double_string/create.sql",
+                "string_int_double_string/data.sql",
+                "string_int_double_string/update.sql",
+                "select_all.sql",
+                "string_int_double_string/data_updated.csv"
             )
         );
     }

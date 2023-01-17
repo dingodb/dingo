@@ -17,9 +17,11 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.Location;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+@EqualsAndHashCode
 public class OutputHint {
     /**
      * Used by PartModify.

@@ -46,12 +46,13 @@ public class CasesInFileTest {
     @NonNull
     public static Stream<Arguments> getParametersTemp() {
         return Stream.of(
-            CasesInFileJUnit5.fileCase(
-                "Double as primary key",
-                "double_pm/create.sql",
-                "double_pm/data.sql",
+            // In list with >= 20 elements is converted as join with values.
+            CasesInFileJUnit5.fileCase("In list with >=20 elements",
+                "string_int_double_string/create.sql",
+                "string_int_double_string/data.sql",
+                "string_int_double_string/update_1.sql",
                 "select_all.sql",
-                "double_pm/data.csv"
+                "string_int_double_string/data_updated_1.csv"
             )
         );
     }

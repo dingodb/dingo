@@ -259,14 +259,17 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                     input.setLink(operator.getInput(i));
                     ++i;
                 }
+                Output newOutput = operator.getSoleOutput();
+                newOutput.copyHint(one);
                 if (one.isToSumUp()) {
                     Operator sumUpOperator = new SumUpOperator();
                     sumUpOperator.setId(idGenerator.get());
                     task.putOperator(sumUpOperator);
                     operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
-                    outputs.addAll(sumUpOperator.getOutputs());
+                    sumUpOperator.getSoleOutput().copyHint(newOutput);
+                    outputs.add(sumUpOperator.getSoleOutput());
                 } else {
-                    outputs.addAll(operator.getOutputs());
+                    outputs.add(newOutput);
                 }
             }
         }

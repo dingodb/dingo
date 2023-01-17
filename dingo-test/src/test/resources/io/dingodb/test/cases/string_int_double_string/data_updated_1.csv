@@ -1,0 +1,11 @@
+ID, NAME, AGE, AMOUNT, ADDRESS
+INT, STRING, INT, DOUBLE, STRING
+1, a, 20, 1.0, Beijing
+2, b, 20, 1.0, Beijing
+3, c, 20, 1.0, New York
+4, d, 20, 1.0, Singapore
+5, e, 20, 1.0, TaiPei
+6, f, 20, 1.0, Los Angeles
+7, g, 20, 1.0, Hong Kong
+8, h, 20, 1.0, London
+9, i, 20, 1.0, Shanghai
