@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoDdlExecutor;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
@@ -201,6 +202,13 @@ public final class DingoDriverParser extends DingoParser {
         if (sqlNode instanceof DingoSqlCreateTable) {
             accessTypes.add(DingoSqlAccessEnum.CREATE);
             DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
+            if (sqlCreateTable.columnList != null) {
+                long indexCount = sqlCreateTable.columnList.stream()
+                    .filter(col -> col.getKind() == SqlKind.CREATE_INDEX).count();
+                if (indexCount > 0) {
+                    accessTypes.add(DingoSqlAccessEnum.INDEX);
+                }
+            }
             schemaTableIds = initSchemaTable(sqlCreateTable.name.names);
         } else if (sqlNode instanceof SqlDropUser) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
@@ -219,14 +227,19 @@ public final class DingoDriverParser extends DingoParser {
         } else if (sqlNode instanceof SqlTruncate) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             accessTypes.add(DingoSqlAccessEnum.CREATE);
-        } else if (sqlNode instanceof SqlAlterTable) {
+            SqlTruncate sqlTruncate = (SqlTruncate) sqlNode;
+            schemaTableIds = initSchemaTable(sqlTruncate.id.names);
+        } else if (sqlNode instanceof SqlAlterAddIndex) {
             accessTypes.add(DingoSqlAccessEnum.ALTER);
-            SqlAlterTable sqlAlterTable = (SqlAlterTable) sqlNode;
+            accessTypes.add(DingoSqlAccessEnum.INDEX);
+            SqlAlterAddIndex sqlAlterTable = (SqlAlterAddIndex) sqlNode;
             schemaTableIds = initSchemaTable(sqlAlterTable.table.names);
         } else if (sqlNode instanceof SqlCreateIndex) {
-            accessTypes.add(DingoSqlAccessEnum.CREATE);
+            accessTypes.add(DingoSqlAccessEnum.INDEX);
+            SqlCreateIndex sqlCreateIndex = (SqlCreateIndex) sqlNode;
+            schemaTableIds = initSchemaTable(sqlCreateIndex.table.names);
         } else if (sqlNode instanceof SqlDropIndex) {
-            accessTypes.add(DingoSqlAccessEnum.DROP);
+            accessTypes.add(DingoSqlAccessEnum.INDEX);
             SqlDropIndex sqlDropIndex = (SqlDropIndex) sqlNode;
             schemaTableIds = initSchemaTable(sqlDropIndex.table.names);
         }

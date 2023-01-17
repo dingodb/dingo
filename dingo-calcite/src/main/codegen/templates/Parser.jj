@@ -4205,7 +4205,7 @@ SqlAlter SqlAlter() :
        id = CompoundIdentifier()
        <ADD> [ <UNIQUE> { isUnique = true;} ] [ <INDEX> ]
        ( <QUOTED_STRING> | <IDENTIFIER> )
-       { index = token.image; }
+       { index = token.image.toUpperCase(); }
        <LPAREN>
             column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
             (

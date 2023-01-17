@@ -123,4 +123,11 @@ public class Privilege implements Meta {
             throw new RuntimeException("grant is error");
         }
     }
+
+    public String getUser() {
+        StringBuilder stringBuilder = new StringBuilder(user);
+        stringBuilder.append("#");
+        stringBuilder.append(host);
+        return stringBuilder.toString();
+    }
 }

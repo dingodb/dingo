@@ -23,6 +23,8 @@ import io.dingodb.server.coordinator.meta.adaptor.Adaptor;
 import io.dingodb.server.protocol.meta.TablePriv;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -102,7 +104,9 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
 
     public CommonId create(TablePrivDefinition tablePrivDefinition) {
         String tablePrivKey = tablePrivDefinition.getKey();
-        log.info("table privilege map:" + tablePrivMap);
+        if (log.isDebugEnabled()) {
+            log.debug("table privilege map:" + tablePrivMap);
+        }
         if (tablePrivMap.containsKey(tablePrivKey)) {
             return tablePrivMap.get(tablePrivKey).getId();
         } else {
@@ -131,6 +135,24 @@ public class TablePrivAdaptor extends BaseAdaptor<TablePriv> {
             log.error("Delete table privilege is null.");
         }
         return null;
+    }
+
+    public void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew) {
+        List<TablePriv> tablePrivs = new ArrayList();
+        Iterator iterator = tablePrivMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, TablePriv> entry = (Map.Entry) iterator.next();
+            if (entry.getValue().getSchema() != null && entry.getValue().getTable() != null
+                && entry.getValue().getSchema().compareTo(schemaId) == 0
+                && entry.getValue().getTable().compareTo(tableIdOld) == 0) {
+                iterator.remove();
+                tablePrivs.add(entry.getValue());
+            }
+        }
+        tablePrivs.forEach(tablePriv -> {
+            tablePriv.setTable(tableIdNew);
+            this.save(tablePriv);
+        });
     }
 
 }

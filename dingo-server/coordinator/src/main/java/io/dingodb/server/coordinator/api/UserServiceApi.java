@@ -124,6 +124,12 @@ public class UserServiceApi implements io.dingodb.server.api.UserServiceApi {
         return ((UserAdaptor) getMetaAdaptor(User.class)).getUserDefinition(user, host);
     }
 
+    @Override
+    public void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew) {
+        ((TablePrivAdaptor)getMetaAdaptor(TablePriv.class)).reloadTableId(schemaId, tableIdOld, tableIdNew);
+        ((PrivilegeAdaptor)getMetaAdaptor(Privilege.class)).reloadTableId(schemaId, tableIdOld, tableIdNew);
+    }
+
     public void saveRootPrivilege(String userName, String host) {
         User user = ((UserAdaptor) getMetaAdaptor(User.class)).getUser(userName, host);
         if (user != null) {

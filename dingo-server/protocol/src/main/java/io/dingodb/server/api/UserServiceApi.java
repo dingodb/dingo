@@ -16,6 +16,7 @@
 
 package io.dingodb.server.api;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
@@ -47,5 +48,8 @@ public interface UserServiceApi {
 
     @ApiDeclaration
     UserDefinition getUserDefinition(String user, String host);
+
+    @ApiDeclaration
+    void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew);
 
 }
