@@ -33,10 +33,23 @@ public class MetaClient extends ClientBase implements MetaService {
         super(coordinatorExchangeSvrList);
     }
 
-    public void init(String schema) throws Exception {
+    public void init(String schema, Integer retryTimes) throws Exception {
         super.initConnection();
-        metaServiceClient = (MetaServiceClient)
-            new MetaServiceClient(getCoordinatorConnector()).getSubMetaService(schema);
+        metaServiceClient = new MetaServiceClient(getCoordinatorConnector());
+        MetaServiceClient subMetaService = null;
+        boolean flag = false;
+        do {
+            try {
+                subMetaService = (MetaServiceClient) metaServiceClient.getSubMetaService(schema);
+            } catch (Exception ex) {
+                Thread.sleep(100);
+            } finally {
+                if (subMetaService != null) {
+                    metaServiceClient = subMetaService;
+                    flag = true;
+                }
+            }
+        } while (!flag || --retryTimes > 0);
         codeUDFApi = ApiRegistry.getDefault().proxy(CodeUDFApi.class, super.getCoordinatorConnector());
     }
 

@@ -346,7 +346,7 @@ public class MetaServiceClient implements MetaService {
                 tableApi.createIndex(tableId, index);
             });
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 

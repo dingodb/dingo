@@ -93,9 +93,8 @@ public class TableApi implements io.dingodb.server.api.TableApi {
             }
 
             tableSidebar.setBusy();
-            MetaService metaServiceClient = new MetaServiceClient(CoordinatorConnector.getDefault());
-            metaServiceClient = metaServiceClient.getSubMetaService("DINGO");
-            IndexExecutor indexExecutor = new IndexExecutor(id, (MetaServiceClient) metaServiceClient);
+            MetaService metaService = MetaService.root().getSubMetaService(MetaService.DINGO_NAME);
+            IndexExecutor indexExecutor = new IndexExecutor(id, (MetaServiceClient) metaService);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = MetaService.root().getParts(id);
             for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
                 ServiceConnector partConnector = new ServiceConnector(id, partitions.get(partId).getReplicates());
