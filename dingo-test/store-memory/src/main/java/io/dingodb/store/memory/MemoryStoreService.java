@@ -53,6 +53,7 @@ public class MemoryStoreService implements StoreService {
             // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
             // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
             store.put(id, instance);
+            instance.initCodec(id);
         }
         return instance;
     }

@@ -150,7 +150,7 @@ public class LocalMetaService implements MetaService {
     }
 
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
-        return null;
+        return tableDefinitions.get(id);
     }
 
     @Override

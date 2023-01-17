@@ -24,6 +24,7 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly project(':dingo-store-api')
     implementation project(':dingo-common')
+    api project(':dingo-meta-api')
 }
 
 //task fatJar(type: Jar) {
