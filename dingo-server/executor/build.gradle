@@ -45,6 +45,7 @@ dependencies {
     implementation project(":dingo-server:dingo-server-protocol")
     implementation project(":dingo-server:dingo-server-driver-proxy")
     implementation project(":dingo-verify")
+    implementation project(":dingo-column")
 
     implementation project(":dingo-sdk")
     implementation project(":dingo-mirror-processing-unit")

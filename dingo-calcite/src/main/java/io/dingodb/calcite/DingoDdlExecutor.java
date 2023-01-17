@@ -661,6 +661,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         @NonNull TableDefinition tableDefinition,
         @NonNull PartitionDefinition partDefinition
     ) {
+        if (!partDefinition.getDetails().isEmpty() && tableDefinition.getEngine() != null
+		&& tableDefinition.getEngine().equals("MergeTree")) {
+            throw new RuntimeException("dingo column storage partition error.");
+	}
+
         StrParseConverter converter = StrParseConverter.INSTANCE;
         List<ColumnDefinition> cols = keyList.stream().map(tableDefinition::getColumn).collect(Collectors.toList());
         String strategy = partDefinition.getFuncName().toUpperCase();

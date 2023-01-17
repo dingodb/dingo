@@ -16,10 +16,12 @@
 
 package io.dingodb.server.executor.store;
 
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.mpu.storage.mem.MemStorage;
 import io.dingodb.mpu.storage.rocks.RocksStorage;
 import io.dingodb.server.executor.config.Configuration;
+import io.dingodb.server.executor.store.column.DingoColumnStorage;
 
 import java.nio.file.Path;
 
@@ -37,6 +39,14 @@ public final class StorageFactory {
             return new MemStorage();
         }
         return new RocksStorage(label, path, ttl, ttl > 0);
+    }
+
+    public static Storage create(String label, Path path, int ttl, String table, TableDefinition definition) throws Exception {
+        if (definition.getEngine() != null && definition.getEngine().equals("MergeTree")) {
+            return new DingoColumnStorage(label, path, table, definition);
+        } else {
+            return new RocksStorage(label, path, ttl, ttl > 0);
+        }
     }
 
 }

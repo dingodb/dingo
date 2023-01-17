@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.sidebar;
 
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.protocol.meta.TablePart;
@@ -30,9 +31,9 @@ public class PartitionSidebar extends BaseSidebar {
 
     @Builder
     public PartitionSidebar(
-        TablePart part, CoreMeta meta, List<CoreMeta> mirrors, Path path, int ttl
+        TablePart part, CoreMeta meta, List<CoreMeta> mirrors, Path path, int ttl, TableDefinition definition
     ) throws Exception {
-        super(meta, mirrors, StorageFactory.create(meta.label, path, ttl));
+        super(meta, mirrors, StorageFactory.create(meta.label, path, ttl, part.getId().toString(), definition));
         this.part = part;
     }
 
