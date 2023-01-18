@@ -67,6 +67,7 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
+import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByIndexOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
@@ -453,9 +454,17 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final NavigableMap<ComparableByteArray, Part> parts = tableInfo.getParts();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, parts.navigableKeySet());
+        final List<Output> outputs = new LinkedList<>();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
+        if (keyTuples.isEmpty()) {
+            EmptySourceOperator operator = new EmptySourceOperator();
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(currentLocation, idGenerator);
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
+            return outputs;
+        }
         Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
-        List<Output> outputs = new LinkedList<>();
         for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysOperator operator = new GetByKeysOperator(
                 tableInfo.getId(),
