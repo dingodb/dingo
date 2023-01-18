@@ -252,6 +252,13 @@ public class MemoryStoreInstance implements StoreInstance {
         return true;
     }
 
+    @Override
+    public boolean delete(Object[] row) {
+        KeyValue keyValue = convertRow(row);
+        db.remove(keyValue.getKey());
+        return true;
+    }
+
     private KeyValue convertRow(Object[] row) {
         KeyValue keyValue = null;
         try {

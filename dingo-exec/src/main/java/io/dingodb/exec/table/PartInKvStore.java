@@ -134,16 +134,12 @@ public final class PartInKvStore implements Part {
     public boolean remove(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
-            KeyValue row = codec.encode(tuple);
-            return store.delete(row.getPrimaryKey());
-        } catch (IOException e) {
-            log.error("Remove: encode error.", e);
+            return store.delete(tuple);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore remove cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
-        return false;
     }
 
     @Override
