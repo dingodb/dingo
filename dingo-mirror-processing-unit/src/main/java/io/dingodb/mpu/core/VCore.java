@@ -138,7 +138,7 @@ public class VCore {
         }
         this.controlUnit = null;
         long clock = clock();
-        notifier.notify(listeners, CoreListener.Event.BACK, __ -> __.back(controlUnit.clock));
+        notifier.notify(listeners, CoreListener.Event.BACK, __ -> __.back(clock));
         selectPrimary();
     }
 
@@ -169,7 +169,7 @@ public class VCore {
             return NO;
         }
         long localClock = clock();
-        if (clock > localClock || (clock == localClock && mirror.id.compareTo(meta.id) > 0)) {
+        if (clock > localClock || (clock == localClock && mirror.compareTo(meta) > 0)) {
             return OK;
         }
         return NO;

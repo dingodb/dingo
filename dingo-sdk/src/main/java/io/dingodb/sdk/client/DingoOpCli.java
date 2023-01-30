@@ -175,7 +175,7 @@ public class DingoOpCli implements DingoMapper {
         }
 
         boolean hasPrimaryKey = false;
-        hasPrimaryKey = tableDefinition.getColumns().stream().anyMatch(col -> col.isPrimary());
+        hasPrimaryKey = tableDefinition.getColumns().stream().anyMatch(ColumnDefinition::isPrimary);
         if (!hasPrimaryKey) {
             throw new DingoClientException("Table " + tableName + " does not have a primary key");
         }
