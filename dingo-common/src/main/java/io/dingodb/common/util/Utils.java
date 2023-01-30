@@ -19,6 +19,7 @@ package io.dingodb.common.util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -53,10 +54,13 @@ public final class Utils {
     }
 
     public static void loop(@NonNull Supplier<Boolean> predicate) {
-        while (true) {
-            if (!predicate.get()) {
-                break;
-            }
+        while (predicate.get()) {
+        }
+    }
+
+    public static void loop(@NonNull Supplier<Boolean> predicate, long nanos) {
+        while (predicate.get()) {
+            LockSupport.parkNanos(nanos);
         }
     }
 
