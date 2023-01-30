@@ -374,8 +374,12 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     public void dropIndex(Index index, boolean sync) {
         if (sync) {
             exec(TableInstructions.id, TableInstructions.DROP_INDEX, index).join();
+            definition.removeIndex(index.getName());
+            definitionListener.accept(new Message(ProtostuffCodec
+                .write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition))));
         } else {
             indexes.remove(index.getName());
+            definition.removeIndex(index.getName());
             getVCore(index.getId()).destroy();
         }
     }
