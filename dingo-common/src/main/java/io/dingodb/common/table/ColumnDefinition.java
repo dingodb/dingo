@@ -66,7 +66,6 @@ public class ColumnDefinition {
     @SuppressWarnings("FieldMayBeStatic")
     @JsonProperty("nullable")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    @Getter
     @Builder.Default
     private final boolean nullable = true;
 
@@ -116,6 +115,10 @@ public class ColumnDefinition {
 
     public String getTypeName() {
         return type;
+    }
+
+    public boolean isNullable() {
+        return !isPrimary() && nullable;
     }
 
 }

@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop", "engine"})
 @EqualsAndHashCode
@@ -187,13 +189,7 @@ public class TableDefinition {
     }
 
     public TupleMapping getMapping() {
-        List<Integer> indices = new LinkedList<>();
-        int index = 0;
-        for (ColumnDefinition column : columns) {
-            indices.add(index);
-            ++index;
-        }
-        return TupleMapping.of(indices);
+        return TupleMapping.of(IntStream.range(0, columns.size()).toArray());
     }
 
     public int getFirstPrimaryColumnIndex() {
@@ -208,6 +204,10 @@ public class TableDefinition {
     }
 
     private @NonNull TupleMapping getColumnMapping(boolean keyOrValue) {
+        return TupleMapping.of(getColumnIndices(keyOrValue));
+    }
+
+    private @NonNull List<Integer> getColumnIndices(boolean keyOrValue) {
         List<Integer> indices = new LinkedList<>();
         int index = 0;
         for (ColumnDefinition column : columns) {
@@ -217,23 +217,17 @@ public class TableDefinition {
             ++index;
         }
         if (keyOrValue) {
-            int[] pkIndices = new int[indices.size()];
+            Integer[] pkIndices = new Integer[indices.size()];
             for (int i = 0; i < indices.size(); i++) {
                 pkIndices[columns.get(indices.get(i)).getPrimary()] = indices.get(i);
             }
-            return TupleMapping.of(pkIndices);
+            return Arrays.asList(pkIndices);
         }
-        return TupleMapping.of(indices);
+        return indices;
     }
 
     public @NonNull List<Integer> getKeyColumnIndices() {
-        List<Integer> indices = new LinkedList<>();
-        for (int i = 0; i < columns.size(); ++i) {
-            if (columns.get(i).isPrimary()) {
-                indices.add(i);
-            }
-        }
-        return indices;
+        return getColumnIndices(true);
     }
 
     public List<DingoSchema> getDingoSchemaOfKey() {
