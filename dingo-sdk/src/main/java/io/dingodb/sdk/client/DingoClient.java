@@ -23,6 +23,7 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.Key;
@@ -173,20 +174,17 @@ public class DingoClient {
             log.error("connection has not been initialized, please call openConnection first");
             return false;
         }
-
-        String tableName = tableDef == null || tableDef.getName() == null ? "null" : tableDef.getName();
-        if (tableDef == null || tableDef.getName() == null || tableDef.getName().isEmpty()) {
-            log.error("Invalid TableDefinition:{}", tableDef);
-            throw new DingoClientException.InvalidTableName(tableName);
-        }
+        Parameters.nonNull(tableDef, () -> new DingoClientException.InvalidTableName(null));
+        Parameters.nonNull(tableDef.getName(), () -> new DingoClientException.InvalidTableName(null));
+        Parameters.check(tableDef.getName(), __ -> !__.isEmpty(), () -> new DingoClientException.InvalidTableName(""));
 
         copyColumnDefinition(tableDef);
 
         boolean isSuccess = false;
         try {
-            connection.getMetaClient().createTable(tableName, tableDef);
+            connection.getMetaClient().createTable(tableDef.getName(), tableDef);
             isSuccess = true;
-            storeOpUtils.updateCacheOfTableDefinition(tableName, tableDef);
+            storeOpUtils.updateCacheOfTableDefinition(tableDef.getName(), tableDef);
         } catch (Exception e) {
             isSuccess = false;
             log.error("create table: {} definition:{} failed:{}",

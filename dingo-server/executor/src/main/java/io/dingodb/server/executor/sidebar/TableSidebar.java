@@ -340,7 +340,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             }
             PartitionSidebar sidebar = new PartitionSidebar(
                 part, meta, mirrors, resolvePath(tableId.toString(), part.getId().toString()), definition.getTtl(),
-			definition
+                definition
             );
             addVSidebar(sidebar);
             log.info("Starting part {}......", id);

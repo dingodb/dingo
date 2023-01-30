@@ -686,6 +686,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
                 for (PartitionDetailDefinition rangePart : partDefinition.getDetails()) {
                     Object[] operand = rangePart.getOperand().toArray(new Object[keyList.size()]);
+                    if (operand.length != keyList.size()) {
+                        throw new IllegalArgumentException(
+                            "Partition values count must be <= key columns count, but values count is " + operand.length
+                        );
+                    }
                     for (int i = 0; i < keyList.size(); i++) {
                         DingoType type = cols.get(i).getType();
                         operand[i] = mapOrNull(operand[i], v -> type.convertFrom(v.toString(), converter));

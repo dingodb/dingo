@@ -263,7 +263,9 @@ public class MetaServiceClient implements MetaService {
         if (id == null) {
             throw new RuntimeException("Meta service not ready.");
         }
-        tableIdCache.put(tableName, api.createTable(id, tableName, tableDefinition));
+        CommonId tableId = api.createTable(id, tableName, tableDefinition);
+        tableIdCache.put(tableName, tableId);
+        tableDefinitionCache.put(tableId, tableDefinition);
     }
 
     @Override
