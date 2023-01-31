@@ -101,12 +101,13 @@ public final class Converter {
         }
 
         List<KeyValue> keyValueList = null;
+        List<Object[]> rows = new ArrayList<>();
         if (inputContext.getRecordList() != null) {
             keyValueList = inputContext.getRecordList().stream().map(x -> {
                 try {
                     Object[] columnValues = x.getColumnValuesInOrder().toArray();
-                    KeyValue keyValue = codec.encode(columnValues);
-                    return keyValue;
+                    rows.add(columnValues);
+                    return codec.encode(columnValues);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -119,6 +120,7 @@ public final class Converter {
             .recordList(keyValueList)
             .udfContext(inputContext.getUdfContext())
             .skippedWhenExisted(inputContext.isSkippedWhenExisted())
+            .rows(rows)
             .build();
     }
 }

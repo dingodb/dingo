@@ -23,6 +23,7 @@ import io.dingodb.common.Executive;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.sdk.common.Key;
 import io.dingodb.sdk.operation.context.Context;
 import io.dingodb.sdk.operation.executive.AbstractExecutive;
 import io.dingodb.sdk.operation.result.CollectionOpResult;
@@ -54,13 +55,34 @@ public class ScanExec extends AbstractExecutive<Context, Void> {
         List<Object[]> list = new ArrayList<>();
 
         try {
-            byte[] start = context.startKey().get(0);
-            byte[] end = context.endKey().get(0);
+            byte[] startBytesKey = context.startKey().get(0);
+            byte[] endBytesKey = context.endKey().get(0);
             Iterator<KeyValue> iterator = context.reader()
-                .scan(start, end, true, ByteArrayUtils.equal(start, end));
+                .scan(startBytesKey, endBytesKey, true, ByteArrayUtils.equal(startBytesKey, endBytesKey));
+            Key startKey = context.getStartPrimaryKeys().get(0);
+            Key endKey = context.getEndPrimaryKeys().get(0);
+            List<Object> startUserKey = startKey.getUserKey();
+            List<Object> endUserKey = endKey.getUserKey();
             iterator.forEachRemaining(kv -> {
                 try {
-                    list.add(codec.decode(kv));
+                    Object[] objects = codec.decode(kv);
+                    List<Integer> keyColumnIndices = context.definition.getKeyColumnIndices();
+                    boolean b = true;
+                    for (int i = 0; i < keyColumnIndices.size(); i++) {
+                        if (!b) {
+                            continue;
+                        }
+                        if (((Comparable) objects[keyColumnIndices.get(i)]).compareTo(startUserKey.get(i)) < 0) {
+                            b = false;
+                            continue;
+                        }
+                        if (((Comparable) objects[keyColumnIndices.get(i)]).compareTo(endUserKey.get(i)) > 0) {
+                            b = false;
+                        }
+                    }
+                    if (b) {
+                        list.add(objects);
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
