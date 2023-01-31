@@ -118,6 +118,11 @@ public abstract class Sidebar implements CoreListener {
     }
 
     @Override
+    public void back(long clock) {
+        ListenService.getDefault().clear(id(), MPU_PRIMARY);
+    }
+
+    @Override
     public void mirror(long clock) {
         started.complete(null);
     }

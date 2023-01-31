@@ -17,6 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.storage.Storage;
@@ -58,7 +59,9 @@ public class Core {
     }
 
     public void destroy() {
-        vCores.values().forEach(__ -> Optional.or(__.sidebar, __.sidebar::destroy, __::destroy));
+        vCores.values().forEach(NoBreakFunctions.wrap(__ -> {
+            Optional.or(__.sidebar, __.sidebar::destroy, __::destroy);
+        }));
         vCore.destroy();
     }
 

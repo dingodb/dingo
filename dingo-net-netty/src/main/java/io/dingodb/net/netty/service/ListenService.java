@@ -22,6 +22,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
@@ -70,7 +71,9 @@ public final class ListenService implements io.dingodb.net.service.ListenService
             }
             channels.add(channel);
             channel.setCloseListener(channels::remove);
-            Optional.ifPresent(replies.get(tag).get(), channel::send);
+            Optional.ifPresent(replies.get(tag).get(), NoBreakFunctions.wrap(msg -> {
+                channel.send(msg);
+            }, e -> DebugLog.error(log, "Send listen reply failed.", e)));
         });
     }
 
@@ -108,12 +111,17 @@ public final class ListenService implements io.dingodb.net.service.ListenService
 
     @Override
     public void unregister(CommonId id, String tag) {
-        runner.forceFollow(() -> {
-            Optional.ifPresent(
-                listenerChannels.remove(new Tag(id, tag)),
-                __ -> __.forEach(NoBreakFunctions.wrap(Channel::close))
-            );
-        });
+        runner.forceFollow(() -> Optional.ifPresent(
+            listenerChannels.remove(new Tag(id, tag)),
+            __ -> __.forEach(NoBreakFunctions.wrap(Channel::close))
+        ));
     }
 
+    @Override
+    public void clear(CommonId id, String tag) {
+        runner.forceFollow(() -> Optional.ifPresent(
+            listenerChannels.get(new Tag(id, tag)),
+            __ -> __.forEach(NoBreakFunctions.wrap(Channel::close)))
+        );
+    }
 }

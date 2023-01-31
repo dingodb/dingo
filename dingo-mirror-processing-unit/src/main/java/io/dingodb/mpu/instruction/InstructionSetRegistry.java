@@ -17,6 +17,7 @@
 package io.dingodb.mpu.instruction;
 
 import io.dingodb.common.util.Parameters;
+import io.dingodb.mpu.core.InternalInstructions;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -44,6 +45,7 @@ public final class InstructionSetRegistry {
         instructionSets[EmptyInstructions.id] = EmptyInstructions.INSTRUCTIONS;
         instructionSets[KVInstructions.id] = KVInstructions.INSTRUCTIONS;
         instructionSets[SeqInstructions.id] = SeqInstructions.INSTRUCTIONS;
+        instructionSets[InternalInstructions.id] = InternalInstructions.INSTANCE;
     }
 
 }

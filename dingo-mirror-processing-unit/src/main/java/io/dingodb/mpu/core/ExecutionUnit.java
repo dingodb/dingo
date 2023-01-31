@@ -46,11 +46,17 @@ class ExecutionUnit {
     }
 
     private <V> V execute0(Instruction instruction) {
-        // todo exec internal instructions
         try (Context context = new Context(core.core, instruction)) {
             V result = instructions(instruction.instructions).process(instruction, context);
-            core.storage.flush(context);
+            if (!isInternal(instruction)) {
+                core.storage.flush(context);
+            }
             return result;
         }
     }
+
+    private boolean isInternal(Instruction instruction) {
+        return instruction.instructions == InternalInstructions.id;
+    }
+
 }

@@ -281,7 +281,7 @@ public class DingoColumnStorage implements Storage {
             RocksDB.destroyDB(this.instructionPath.toAbsolutePath().toString(), options);
 
             if (this.path != null) {
-                FileUtils.delete(this.path.toFile());
+                FileUtils.deleteIfExists(this.path);
             }
         } catch (RocksDBException e) {
             log.error("DingoColumnStorage destroy db failed", e);
@@ -354,7 +354,7 @@ public class DingoColumnStorage implements Storage {
     @Override
     public Writer metaWriter(Instruction instruction) {
         throw new RuntimeException("Unsupported");
-    } 
+    }
 
     @Override
     public Reader reader() {

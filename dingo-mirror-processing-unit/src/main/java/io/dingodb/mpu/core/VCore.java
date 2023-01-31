@@ -17,10 +17,8 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.mpu.MPURegister;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
-import io.dingodb.mpu.instruction.InternalInstructions;
 import io.dingodb.mpu.protocol.SelectReturn;
 import io.dingodb.mpu.protocol.SyncChannel;
 import io.dingodb.mpu.storage.Reader;
@@ -35,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.common.concurrent.Executors.execute;
 import static io.dingodb.mpu.Constant.NET;
@@ -59,6 +58,7 @@ public class VCore {
     private MirrorChannel mirrorChannel;
 
     private boolean close;
+    protected final AtomicInteger viewCount = new AtomicInteger(0);
 
     protected List<CoreListener> listeners = new ArrayList<>();
 
@@ -91,9 +91,9 @@ public class VCore {
     }
 
     protected void destroy() {
-        // todo exec(InternalInstructions.id, InternalInstructions.DESTROY_OC);
-        InternalInstructions.process(this, InternalInstructions.DESTROY_OC);
-        MPURegister.unregister(meta.coreId);
+        if (isAvailable()) {
+            exec(InternalInstructions.id, InternalInstructions.DESTROY_OC).join();
+        }
     }
 
     public void close() {
@@ -337,6 +337,10 @@ public class VCore {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("Not available.");
         }
+        if (viewCount.incrementAndGet() < 0) {
+            viewCount.decrementAndGet();
+            throw new UnsupportedOperationException("Not available.");
+        }
         try (
             Reader reader = storage.reader();
             io.dingodb.mpu.instruction.Context context = new io.dingodb.mpu.instruction.Context() {
@@ -357,6 +361,8 @@ public class VCore {
             }
         ) {
             return InstructionSetRegistry.instructions(instructions).process(opcode, context);
+        } finally {
+            viewCount.decrementAndGet();
         }
     }
 
