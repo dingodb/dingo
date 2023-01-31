@@ -47,7 +47,7 @@ public class Reader implements io.dingodb.mpu.storage.Reader {
 
     @Override
     public long count(byte[] start, byte[] end) {
-        throw new RuntimeException("Count not support!");
+        throw new RuntimeException("Count or delete operation cannot be supported.");
     }
 
     @Override

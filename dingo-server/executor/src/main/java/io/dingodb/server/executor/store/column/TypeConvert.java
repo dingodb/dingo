@@ -56,7 +56,7 @@ public class TypeConvert {
         }
 
         if (dt instanceof BooleanType) {
-            return Boolean.valueOf(str);
+            return !str.equals("0");
         } else if (dt instanceof DecimalType) {
             return new BigDecimal(str);
         } else if (dt instanceof DoubleType) {
@@ -81,7 +81,10 @@ public class TypeConvert {
         if (dt instanceof BinaryType) {
             return obj.toString();
         } else if (dt instanceof BooleanType) {
-            return obj.toString();
+            if((boolean) obj){
+                return "1";
+            }
+            return "0";
         } else if (dt instanceof DecimalType) {
             return obj.toString();
         } else if (dt instanceof DoubleType) {

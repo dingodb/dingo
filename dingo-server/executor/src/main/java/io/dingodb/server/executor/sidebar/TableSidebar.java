@@ -40,6 +40,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.service.ListenService;
 import io.dingodb.server.client.connector.impl.CoordinatorConnector;
 import io.dingodb.server.executor.api.TableApi;
+import io.dingodb.server.executor.config.Configuration;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
 import io.dingodb.server.executor.store.StoreService;
@@ -189,7 +190,9 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             columnStorage = new ColumnStorage();
             long currentTime2 = System.currentTimeMillis();
             log.info("TableSidebar load library, cost: {}ms.", currentTime2 - currentTime1);
-            columnStorage.columnInit("/tmp/dingo_column/data_dir", "/tmp/dingo_column/log_dir");
+            final String dataDir = Configuration.dataPath() + "/dingo_column/data_dir";
+            final String logDir = Configuration.dataPath() + "/dingo_column/log_dir";
+                columnStorage.columnInit(dataDir, logDir);
             log.info("TableSidebar column init, cost: {}ms.", System.currentTimeMillis() - currentTime2);
         }
 
