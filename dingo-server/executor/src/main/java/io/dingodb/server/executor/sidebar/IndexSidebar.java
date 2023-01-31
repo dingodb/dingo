@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.sidebar;
 
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.KVInstructions;
@@ -35,6 +36,7 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
 
     private final Index index;
     private final TableSidebar tableSidebar;
+    private final Path path;
 
     public IndexSidebar(
         TableSidebar tableSidebar, Index index, CoreMeta meta, List<CoreMeta> mirrors, Path path, int ttl
@@ -42,6 +44,13 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
         super(meta, mirrors, StorageFactory.create(meta.label, path, ttl));
         this.tableSidebar = tableSidebar;
         this.index = index;
+        this.path = path;
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        FileUtils.deleteIfExists(path);
     }
 
     @Override

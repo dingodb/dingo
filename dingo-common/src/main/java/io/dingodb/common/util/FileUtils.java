@@ -18,11 +18,10 @@ package io.dingodb.common.util;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.stream.Stream;
 
 @Slf4j
 public final class FileUtils {
@@ -42,23 +41,11 @@ public final class FileUtils {
     public static void deleteIfExists(Path path) {
         try {
             if (Files.isDirectory(path)) {
-                Files.list(path).forEach(FileUtils::deleteIfExists);
+                try (Stream<Path> pathStream = Files.list(path)) {
+                    pathStream.forEach(FileUtils::deleteIfExists);
+                }
             }
             Files.deleteIfExists(path);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void delete(File file) {
-        try {
-            if (file == null || !file.exists()) {
-                return;
-            }
-            if (file.isDirectory() && file.listFiles() != null) {
-                Arrays.stream(file.listFiles()).forEach(FileUtils::delete);
-            }
-            file.delete();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

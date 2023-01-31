@@ -349,7 +349,7 @@ public class RocksStorage implements Storage {
             RocksDB.destroyDB(this.instructionPath.toAbsolutePath().toString(), options);
 
             if (this.path != null) {
-                FileUtils.delete(this.path.toFile());
+                FileUtils.deleteIfExists(this.path);
             }
         } catch (RocksDBException e) {
             log.error("destroy db failed", e);

@@ -47,4 +47,6 @@ public interface ListenService {
 
     void unregister(CommonId id, String tag);
 
+    void clear(CommonId id, String tag);
+
 }

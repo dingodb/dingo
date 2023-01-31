@@ -43,8 +43,8 @@ import io.dingodb.server.executor.api.TableApi;
 import io.dingodb.server.executor.store.StorageFactory;
 import io.dingodb.server.executor.store.StoreInstance;
 import io.dingodb.server.executor.store.StoreService;
-import io.dingodb.server.protocol.MetaListenEvent;
 import io.dingodb.server.executor.store.column.TypeConvert;
+import io.dingodb.server.protocol.MetaListenEvent;
 import io.dingodb.server.protocol.meta.Index;
 import io.dingodb.server.protocol.meta.TablePart;
 import io.dingodb.strorage.column.ColumnStorage;
@@ -64,8 +64,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.config.DingoConfiguration.location;
@@ -164,8 +164,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     @Override
     public void destroy() {
         super.destroy();
-        FileUtils.deleteIfExists(resolvePath(tableId.toString()));
         ListenService.getDefault().unregister(tableId, TABLE_DEFINITION);
+        FileUtils.deleteIfExists(resolvePath(tableId.toString()));
     }
 
     private void initTable() {
@@ -380,7 +380,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         } else {
             indexes.remove(index.getName());
             definition.removeIndex(index.getName());
-            getVCore(index.getId()).destroy();
+            delVCore(index.getId()).destroy();
         }
     }
 

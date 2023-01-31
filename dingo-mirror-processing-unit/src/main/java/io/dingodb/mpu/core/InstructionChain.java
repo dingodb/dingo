@@ -16,7 +16,6 @@
 
 package io.dingodb.mpu.core;
 
-import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Unsafe;
 import io.dingodb.mpu.instruction.Instruction;
@@ -77,13 +76,11 @@ class InstructionChain implements Unsafe {
     private InstructionNode current;
     private InstructionNode last;
 
-    private final LinkedRunner runner;
 
     protected InstructionChain(long clock, String name) {
         this.name = name;
         this.startClock = clock;
         this.current = this.last = new InstructionNode(null, EMPTY, EMPTY);
-        this.runner = new LinkedRunner(name);
     }
 
     protected boolean follow(Instruction instruction, Runnable task) {
@@ -112,6 +109,7 @@ class InstructionChain implements Unsafe {
     }
 
     protected void tick() {
-        runner.forceFollow(current = current.next);
+        current = current.next;
+        current.run();
     }
 }

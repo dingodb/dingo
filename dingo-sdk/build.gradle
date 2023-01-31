@@ -58,7 +58,8 @@ fatJar.dependsOn(
     ':dingo-expr:dingo-expr-json-runtime:jar',
     ':dingo-store-api:jar',
     ':dingo-serial:jar',
-    ':dingo-server:dingo-server-client:jar'
+    ':dingo-server:dingo-server-client:jar',
+    ':dingo-net-netty:jar'
 )
 
 tasks.named("build") { x ->

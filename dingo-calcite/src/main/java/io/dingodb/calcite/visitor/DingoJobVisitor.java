@@ -125,6 +125,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.common.util.Utils.sole;
 
 @Slf4j
@@ -213,10 +214,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             String startKeyBase64 = ByteArrayUtils.enCodeBytes2Base64(keyBytes);
             startKeys.add(startKeyBase64);
             groupStartKeysByAddress.put(part.getLeader(), startKeys);
-            log.info("group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
+            debug(log,
+                "group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
                 part.getLeader(),
                 Arrays.toString(keyBytes),
-                startKeyBase64);
+                startKeyBase64
+            );
         }
 
         groupStartKeysByAddress.forEach((k, v) -> {
@@ -227,9 +230,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 builder.append(result).append(",");
             });
 
-            log.info("group all part start keys by address:{} startKeys:{}",
-                k.toString(),
-                builder);
+            debug(log, "group all part start keys by address:{} startKeys:{}", k, builder);
         });
         return groupStartKeysByAddress;
     }

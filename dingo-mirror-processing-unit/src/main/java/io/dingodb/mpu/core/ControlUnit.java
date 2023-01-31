@@ -41,7 +41,6 @@ class ControlUnit {
 
     private LinkedRunner prepareRunner;
     private LinkedRunner syncRunner;
-    private LinkedRunner executeRunner;
     private InstructionChain chain;
 
     private boolean closed = false;
@@ -60,7 +59,6 @@ class ControlUnit {
         this.syncedClock = new AtomicLong(clock);
         this.prepareRunner = new LinkedRunner(core.meta.label + "-prepare");
         this.syncRunner = new LinkedRunner(core.meta.label + "-sync");
-        this.executeRunner = new LinkedRunner(core.meta.label + "-execute");
         this.chain = new InstructionChain(clock, core.meta.label + "-instruction-chain");
         this.local = first == null;
     }
@@ -171,7 +169,7 @@ class ControlUnit {
 
     protected void onSynced(CoreMeta mirror, Instruction instruction) {
         if (syncedClock.compareAndSet(instruction.clock - 1, instruction.clock)) {
-            executeRunner.forceFollow(chain::tick);
+            chain.tick();
         } else {
             core.storage.clearClock(instruction.clock);
             firstChannel.executed(instruction.clock);
