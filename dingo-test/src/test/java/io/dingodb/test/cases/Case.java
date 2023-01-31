@@ -43,8 +43,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class Case {
     private final List<Step> steps;
 
+    public static @NonNull Case of(Step... steps) {
+        return new Case(Arrays.asList(steps));
+    }
+
     public static @NonNull Arguments of(String name, Step... steps) {
-        return Arguments.arguments(name, new Case(Arrays.asList(steps)));
+        return Arguments.arguments(name, of(steps));
     }
 
     public static @NonNull Step exec(String sqlString) {

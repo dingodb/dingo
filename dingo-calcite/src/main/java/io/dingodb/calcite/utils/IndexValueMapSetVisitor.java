@@ -17,12 +17,12 @@
 package io.dingodb.calcite.utils;
 
 import com.google.common.collect.Range;
-import io.dingodb.common.table.TableDefinition;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Sarg;
@@ -34,33 +34,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Integer, RexLiteral>> {
-    private final TableDefinition tableDefinition;
+public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Integer, RexNode>> {
     private final RexBuilder rexBuilder;
 
-    public IndexValueMapSetVisitor(@NonNull TableDefinition tableDefinition, RexBuilder rexBuilder) {
+    public IndexValueMapSetVisitor(RexBuilder rexBuilder) {
         super(true);
-        this.tableDefinition = tableDefinition;
         this.rexBuilder = rexBuilder;
     }
 
-    private static @NonNull IndexValueMapSet<Integer, RexLiteral> checkOperands(@NonNull RexNode op0, RexNode op1) {
-        if (op0.isA(SqlKind.INPUT_REF) && op1.isA(SqlKind.LITERAL)) {
+    private static @NonNull IndexValueMapSet<Integer, RexNode> checkOperands(@NonNull RexNode op0, RexNode op1) {
+        if (op0.isA(SqlKind.INPUT_REF) && RexUtil.isConstant(op1)) {
             RexInputRef inputRef = (RexInputRef) op0;
-            RexLiteral literal = (RexLiteral) op1;
-            return IndexValueMapSet.single(inputRef.getIndex(), literal);
+            return IndexValueMapSet.single(inputRef.getIndex(), op1);
         }
         return IndexValueMapSet.one();
     }
 
     @Override
-    public IndexValueMapSet<Integer, RexLiteral> visitInputRef(@NonNull RexInputRef inputRef) {
+    public IndexValueMapSet<Integer, RexNode> visitInputRef(@NonNull RexInputRef inputRef) {
         return IndexValueMapSet.single(inputRef.getIndex(), rexBuilder.makeLiteral(true));
     }
 
     // `null` means the RexNode is not related to primary column
     @Override
-    public IndexValueMapSet<Integer, RexLiteral> visitCall(@NonNull RexCall call) {
+    public IndexValueMapSet<Integer, RexNode> visitCall(@NonNull RexCall call) {
         List<RexNode> operands = call.getOperands();
         switch (call.getKind()) {
             case SEARCH:
@@ -70,7 +67,7 @@ public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Int
                     Sarg<?> value = (Sarg<?>) literal.getValue();
                     assert value != null;
                     if (value.isPoints()) {
-                        Set<Map<Integer, RexLiteral>> set = new HashSet<>();
+                        Set<Map<Integer, RexNode>> set = new HashSet<>();
                         for (Range<?> range : value.rangeSet.asRanges()) {
                             Object s = range.lowerEndpoint();
                             set.add(Collections.singletonMap(
@@ -83,21 +80,21 @@ public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Int
                 }
                 break;
             case OR: {
-                IndexValueMapSet<Integer, RexLiteral> o = IndexValueMapSet.zero();
+                IndexValueMapSet<Integer, RexNode> o = IndexValueMapSet.zero();
                 for (RexNode operand : operands) {
                     o = o.or(operand.accept(this));
                 }
                 return o;
             }
             case AND: {
-                IndexValueMapSet<Integer, RexLiteral> o = IndexValueMapSet.one();
+                IndexValueMapSet<Integer, RexNode> o = IndexValueMapSet.one();
                 for (RexNode operand : operands) {
                     o = o.and(operand.accept(this));
                 }
                 return o;
             }
             case EQUALS: {
-                IndexValueMapSet<Integer, RexLiteral> o = checkOperands(operands.get(0), operands.get(1));
+                IndexValueMapSet<Integer, RexNode> o = checkOperands(operands.get(0), operands.get(1));
                 if (o.isOne()) {
                     o = checkOperands(operands.get(1), operands.get(0));
                 }
