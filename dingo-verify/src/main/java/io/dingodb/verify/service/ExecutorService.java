@@ -117,4 +117,13 @@ public interface ExecutorService {
 
     @ApiDeclaration
     public boolean udfUpdate(CommonId tableId, byte[] primaryKey, String udfName, String functionName, int version);
+
+    @ApiDeclaration
+    public boolean insert(CommonId tableId, Object[] row);
+
+    @ApiDeclaration
+    public boolean update(CommonId tableId, Object[] row);
+
+    @ApiDeclaration
+    public boolean delete(CommonId tableId, Object[] row);
 }

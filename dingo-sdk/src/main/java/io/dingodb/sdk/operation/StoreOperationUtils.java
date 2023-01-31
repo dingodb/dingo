@@ -269,6 +269,7 @@ public class StoreOperationUtils {
                 .operationListInBytes(wholeContext.getOperationListInBytes())
                 .udfContext(wholeContext.getUdfContext())
                 .skippedWhenExisted(wholeContext.isSkippedWhenExisted())
+                .rows(wholeContext.getRows())
                 .build();
             contextGroupyByExecutor.put(leaderAddress, subStoreContext);
         }

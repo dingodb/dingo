@@ -285,9 +285,27 @@ public class DingoClient {
             keyList.add(entry.getKey());
             recordList.add(entry.getValue());
         }
-        WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
-        DingoOpResult result = exec(op);
-        return (boolean) result.getValue();
+        TableDefinition definition = getTableDefinition(tableName);
+        if (definition.getIndexes().isEmpty()) {
+            WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
+            DingoOpResult result = exec(op);
+            return (boolean) result.getValue();
+        } else {
+            ResultForClient result = storeOpUtils.doOperation(
+                StoreOperationType.PUT,
+                keyList.get(0).getTable(),
+                ContextForClient.builder()
+                    .startKeyList(keyList)
+                    .endKeyList(Collections.emptyList())
+                    .recordList(recordList)
+                    .skippedWhenExisted(skippedWhenExisted)
+                    .build());
+            if (!result.getStatus()) {
+                log.error("Execute put command failed:{}", result.getErrorMessage());
+                return false;
+            }
+            return true;
+        }
     }
 
     private HashMap<Key, Record> convertObjectArray2Record(String tableName,
@@ -544,9 +562,27 @@ public class DingoClient {
     }
 
     private boolean doPut(List<Key> keyList, List<Record> recordList, boolean skippedWhenExisted) {
-        WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
-        DingoOpResult result = exec(op);
-        return (boolean) result.getValue();
+        TableDefinition definition = getTableDefinition(keyList.get(0).getTable());
+        if (definition.getIndexes().isEmpty()) {
+            WriteOp op = Op.put(keyList, recordList, skippedWhenExisted);
+            DingoOpResult result = exec(op);
+            return (boolean) result.getValue();
+        } else {
+            ResultForClient result = storeOpUtils.doOperation(
+                StoreOperationType.PUT,
+                keyList.get(0).getTable(),
+                ContextForClient.builder()
+                    .startKeyList(keyList)
+                    .endKeyList(Collections.emptyList())
+                    .recordList(recordList)
+                    .skippedWhenExisted(skippedWhenExisted)
+                    .build());
+            if (!result.getStatus()) {
+                log.error("Execute put command failed:{}", result.getErrorMessage());
+                return false;
+            }
+            return true;
+        }
     }
 
     private List<Record> doQuery(Key startKey, Key endKey, DingoFilter filter) {

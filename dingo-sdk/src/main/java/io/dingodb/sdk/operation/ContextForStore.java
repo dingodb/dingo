@@ -32,6 +32,7 @@ public final class ContextForStore {
     private final List<byte[]> endKeyListInBytes;
     private final List<KeyValue> recordList;
     private final byte[] operationListInBytes;
+    private final List<Object[]> rows;
 
     private final UDFContext udfContext;
 

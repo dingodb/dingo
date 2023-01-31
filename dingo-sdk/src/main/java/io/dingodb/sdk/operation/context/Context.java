@@ -156,6 +156,14 @@ public class Context {
         }).collect(Collectors.toList());
     }
 
+    public List<Key> getStartPrimaryKeys() {
+        return startPrimaryKeys;
+    }
+
+    public List<Key> getEndPrimaryKeys() {
+        return endPrimaryKeys;
+    }
+
     public Column[] column() {
         return column;
     }
