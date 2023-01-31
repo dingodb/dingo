@@ -17,10 +17,13 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.exception.ExprCompileException;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -38,7 +41,7 @@ public final class TableUtils {
     }
 
     public static List<Object[]> getTuplesForMapping(
-        @NonNull Collection<Map<Integer, RexLiteral>> items,
+        @NonNull Collection<Map<Integer, RexNode>> items,
         @NonNull TableDefinition td,
         @NonNull TupleMapping mapping
     ) {
@@ -46,11 +49,13 @@ public final class TableUtils {
         return items.stream()
             .map(item -> {
                 Object[] tuple = new Object[item.size()];
-                for (Map.Entry<Integer, RexLiteral> entry : item.entrySet()) {
-                    tuple[revMapping.get(entry.getKey())] = RexLiteralUtils.convertFromRexLiteral(
-                        entry.getValue(),
-                        td.getColumn(entry.getKey()).getType()
-                    );
+                for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
+                    Expr expr = RexConverter.convert(entry.getValue());
+                    try {
+                        tuple[revMapping.get(entry.getKey())] = expr.compileIn(null).eval(null);
+                    } catch (ExprCompileException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 return tuple;
             })
@@ -58,7 +63,7 @@ public final class TableUtils {
     }
 
     public static List<Object[]> getTuplesForKeyMapping(
-        @NonNull Collection<Map<Integer, RexLiteral>> items,
+        @NonNull Collection<Map<Integer, RexNode>> items,
         @NonNull TableDefinition td
     ) {
         return getTuplesForMapping(items, td, td.getKeyMapping());

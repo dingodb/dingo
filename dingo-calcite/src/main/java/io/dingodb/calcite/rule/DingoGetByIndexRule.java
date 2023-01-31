@@ -61,9 +61,9 @@ public class DingoGetByIndexRule extends ConverterRule {
     public @Nullable RelNode convert(@NonNull RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
-        TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
-        IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(td, rel.getCluster().getRexBuilder());
-        IndexValueMapSet<Integer, RexLiteral> indexValueMapSet = rexNode.accept(visitor);
+        IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(rel.getCluster().getRexBuilder());
+        IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
+        final TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
         List<Integer> keyIndices = td.getKeyColumnIndices();
         if (indexValueMapSet.satisfyIndices(keyIndices)) {
             RelTraitSet traits = scan.getTraitSet()
@@ -83,24 +83,31 @@ public class DingoGetByIndexRule extends ConverterRule {
         if (log.isDebugEnabled()) {
             log.debug("Definition of table = {}", td);
         }
+        Index selectedIndex = null;
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
             Index index = entry.getValue();
             List<Integer> indices = td.getColumnIndices(Arrays.asList(index.getColumns()));
             if (indexValueMapSet.satisfyIndices(indices)) {
-                RelTraitSet traits = scan.getTraitSet()
-                    .replace(DingoConvention.INSTANCE)
-                    .replace(DingoRelStreaming.ROOT);
-                return new DingoGetByIndex(
-                    scan.getCluster(),
-                    traits,
-                    scan.getHints(),
-                    scan.getTable(),
-                    scan.getFilter(),
-                    scan.getSelection(),
-                    entry.getKey(),
-                    indexValueMapSet.filterIndices(indices)
-                );
+                if (selectedIndex == null || selectedIndex.getColumns().length < index.getColumns().length) {
+                    selectedIndex = index;
+                }
             }
+        }
+        if (selectedIndex != null) {
+            RelTraitSet traits = scan.getTraitSet()
+                .replace(DingoConvention.INSTANCE)
+                .replace(DingoRelStreaming.ROOT);
+            List<Integer> indices = td.getColumnIndices(Arrays.asList(selectedIndex.getColumns()));
+            return new DingoGetByIndex(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getSelection(),
+                selectedIndex.getName(),
+                indexValueMapSet.filterIndices(indices)
+            );
         }
         return null;
     }

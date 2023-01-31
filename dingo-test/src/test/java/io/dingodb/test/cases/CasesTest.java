@@ -20,8 +20,12 @@ import io.dingodb.test.SqlHelper;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static io.dingodb.test.cases.Case.exec;
+import static io.dingodb.test.cases.Case.file;
 
 public class CasesTest {
     private static SqlHelper sqlHelper;
@@ -34,6 +38,33 @@ public class CasesTest {
     @AfterAll
     public static void cleanUpAll() throws Exception {
         sqlHelper.cleanUp();
+    }
+
+    @Test
+    public void testTemp() throws Exception {
+        Case testCase = Case.of(
+            exec(file("index/create.sql")),
+            exec(file("index/data.sql")),
+            exec(
+                "alter TABLE {table} add index int_index2(CARD_NO);"
+                    + "alter TABLE {table} add index char_index2(NAME);"
+                    + "alter TABLE {table} add index date_index(TIME_DATE);"
+                    + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
+            ),
+            exec(
+                "select * from {table} where time_datetime=now()"
+            ).result(
+                "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+            ),
+            exec(
+                "select * from {table} where time_date='2023-01-09'"
+            ).result(
+                "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+            )
+        );
+        testCase.run(sqlHelper.getConnection());
     }
 
     @ParameterizedTest(name = "[{index}] {0}")

@@ -42,7 +42,7 @@ public final class DingoGetByKeys extends DingoGetByIndex {
         RelOptTable table,
         RexNode filter,
         @Nullable TupleMapping selection,
-        Collection<Map<Integer, RexLiteral>> points
+        Collection<Map<Integer, RexNode>> points
     ) {
         super(cluster, traitSet, hints, table, filter, selection, null, points);
     }

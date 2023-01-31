@@ -26,7 +26,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -38,7 +37,7 @@ import java.util.Map;
 @Slf4j
 public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
     @Getter
-    protected final Collection<Map<Integer, RexLiteral>> points;
+    protected final Collection<Map<Integer, RexNode>> points;
     @Getter
     private final String indexName;
 
@@ -50,7 +49,7 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         RexNode filter,
         @Nullable TupleMapping selection,
         String indexName,
-        Collection<Map<Integer, RexLiteral>> points
+        Collection<Map<Integer, RexNode>> points
     ) {
         super(cluster, traitSet, hints, table, filter, selection);
         this.indexName = indexName;

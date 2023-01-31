@@ -258,6 +258,22 @@ public class CasesProvider implements ArgumentsProvider {
                         "ID, NAME, AMOUNT",
                         "INT, STRING, DOUBLE"
                     )
+            ),
+            Case.of(
+                "Nested indices",
+                exec(file("index/create.sql")),
+                exec(file("index/data.sql")),
+                exec(
+                    "alter TABLE {table} add index int_index2(CARD_NO);"
+                        + "alter TABLE {table} add index char_index2(NAME);"
+                        + "create index multi_index on {table} (card_no, account)"
+                ),
+                exec(
+                    "select * from {table} where card_no=23 and account=14"
+                ).result(
+                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
             )
         );
     }
