@@ -39,11 +39,13 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     private DingoKeyValueCodec codec;
     private TableDefinition definition;
     protected List<Object[]> records = new ArrayList<>();
+    private final Reader reader;
 
-    public Writer(Instruction instruction, TableDefinition definition) {
+    public Writer(Instruction instruction, TableDefinition definition, Reader reader) {
         this.instruction = instruction;
         this.definition = definition;
         this.codec = definition.createCodec();
+        this.reader = reader;
     }
 
     @Override
@@ -56,6 +58,9 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
         if (key != null && key.length > 0 && key[0] == CodeTag.UNFINISHFALG) {
             log.info("Writer set, not real set.");
             return;
+        }
+        if (reader.get(key) != null) {
+            throw new RuntimeException("Unsupported operation!");
         }
 
         try {
@@ -80,6 +85,7 @@ public class Writer implements io.dingodb.mpu.storage.Writer {
     }
 
     public void close() {
+        reader.close();
         return;
     }
 

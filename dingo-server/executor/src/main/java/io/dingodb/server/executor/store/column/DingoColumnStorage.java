@@ -363,7 +363,7 @@ public class DingoColumnStorage implements Storage {
 
     @Override
     public Writer writer(Instruction instruction) {
-        return new Writer(instruction, definition);
+        return new Writer(instruction, definition, this.reader());
     }
 
     @Override
