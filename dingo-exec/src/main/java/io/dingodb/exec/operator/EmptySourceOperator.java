@@ -17,10 +17,18 @@
 package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.fin.OperatorProfile;
 
 @JsonTypeName("empty")
 public class EmptySourceOperator extends SourceOperator {
+    public EmptySourceOperator() {
+        super();
+        OutputHint hint = new OutputHint();
+        hint.setPartId(null);
+        output.setHint(hint);
+    }
+
     @Override
     public boolean push() {
         OperatorProfile profile = getProfile();

@@ -16,51 +16,56 @@
 
 package io.dingodb.test.cases;
 
-import io.dingodb.test.RandomTable;
-import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.io.IOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static io.dingodb.test.cases.Case.exec;
+import static io.dingodb.test.cases.Case.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("MethodMayBeStatic")
 @Slf4j
 public final class StressCasesJUnit5 implements ArgumentsProvider {
-    public void insert(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles("string_double/create.sql");
+    private static final int RECORD_NUM = 100;
+
+    public void insert(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql"))
+        ).run(connection, randomTable);
         Random random = new Random();
-        try (Statement statement = sqlHelper.getConnection().createStatement()) {
-            for (int id = 1; id <= 1000; ++id) {
+        try (Statement statement = connection.createStatement()) {
+            for (int id = 1; id <= RECORD_NUM; ++id) {
                 String sql = "insert into {table} values"
                     + "(" + id + ", '" + UUID.randomUUID() + "', " + random.nextDouble() + ")";
                 log.info("Exec {}", sql);
-                randomTable.execSql(statement, sql);
+                statement.execute(randomTable.transSql(sql));
                 assertThat(statement.getUpdateCount()).isEqualTo(1);
             }
         } finally {
-            randomTable.drop();
+            Case.dropRandomTables(connection, randomTable);
         }
     }
 
-    public void insertWithParameters(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles("string_double/create.sql");
+    public void insertWithParameters(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql"))
+        ).run(connection, randomTable);
         Random random = new Random();
         String sql = "insert into {table} values(?, ?, ?)";
-        try (PreparedStatement statement = randomTable.prepare(sql)) {
-            for (int id = 1; id <= 1000; ++id) {
+        try (PreparedStatement statement = connection.prepareStatement(randomTable.transSql(sql))) {
+            for (int id = 1; id <= RECORD_NUM; ++id) {
                 statement.setInt(1, id);
                 statement.setString(2, UUID.randomUUID().toString());
                 statement.setDouble(3, random.nextDouble());
@@ -69,17 +74,19 @@ public final class StressCasesJUnit5 implements ArgumentsProvider {
                 assertThat(statement.getUpdateCount()).isEqualTo(1);
             }
         } finally {
-            randomTable.drop();
+            Case.dropRandomTables(connection, randomTable);
         }
     }
 
-    public void insertWithParametersBatch(@NonNull SqlHelper sqlHelper) throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles("string_double/create.sql");
+    public void insertWithParametersBatch(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql"))
+        ).run(connection, randomTable);
         Random random = new Random();
         String sql = "insert into {table} values(?, ?, ?)";
-        try (PreparedStatement statement = randomTable.prepare(sql)) {
-            for (int id = 1; id <= 1000; ++id) {
+        try (PreparedStatement statement = connection.prepareStatement(randomTable.transSql(sql))) {
+            for (int id = 1; id <= RECORD_NUM; ++id) {
                 statement.setInt(1, id);
                 statement.setString(2, UUID.randomUUID().toString());
                 statement.setDouble(3, random.nextDouble());
@@ -92,7 +99,7 @@ public final class StressCasesJUnit5 implements ArgumentsProvider {
                 }
             }
         } finally {
-            randomTable.drop();
+            Case.dropRandomTables(connection, randomTable);
         }
     }
 

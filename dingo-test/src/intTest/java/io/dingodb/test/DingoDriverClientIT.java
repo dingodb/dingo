@@ -45,7 +45,7 @@ import java.util.Properties;
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DingoDriverClientIT {
-    private static SqlHelper sqlHelper;
+    private static Connection connection;
 
     public static Connection getConnection() throws ClassNotFoundException, SQLException, IOException {
         Class.forName("io.dingodb.driver.client.DingoDriverClient");
@@ -60,26 +60,25 @@ public class DingoDriverClientIT {
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        Connection connection = getConnection();
-        sqlHelper = new SqlHelper(connection);
+        connection = getConnection();
     }
 
     @AfterAll
     public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
+        connection.close();
     }
 
     @ParameterizedTest
     @ArgumentsSource(RexCasesJUnit5.class)
     public void testSqlExpression(String sqlExpression, String ignored, Object value) throws SQLException {
-        Object result = sqlHelper.querySingleValue("select " + sqlExpression);
+        Object result = new SqlHelper(connection).querySingleValue("select " + sqlExpression);
         Assert.of(result).isEqualTo(value);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(CasesProvider.class)
     public void test(String ignored, @NonNull Case testCase) throws Exception {
-        testCase.run(sqlHelper.getConnection());
+        testCase.run(connection);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -91,27 +90,27 @@ public class DingoDriverClientIT {
         String sqlState,
         boolean needDropping
     ) {
-        sqlHelper.exceptionTest(sqlList, needDropping, sqlCode, sqlState);
+        new SqlHelper(connection).exceptionTest(sqlList, needDropping, sqlCode, sqlState);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(ParametersCasesJUnit5.class)
     public void testParameters(String ignored, @NonNull ClassTestMethod method) throws Exception {
-        method.getMethod().run(sqlHelper);
+        method.getMethod().run(connection);
     }
 
     @Test
-    public void testStressInsert() throws SQLException, IOException {
-        new StressCasesJUnit5().insert(sqlHelper);
+    public void testStressInsert() throws Exception {
+        new StressCasesJUnit5().insert(connection);
     }
 
     @Test
-    public void testStressInsertWithParameters() throws SQLException, IOException {
-        new StressCasesJUnit5().insertWithParameters(sqlHelper);
+    public void testStressInsertWithParameters() throws Exception {
+        new StressCasesJUnit5().insertWithParameters(connection);
     }
 
     @Test
-    public void testStressInsertWithParametersBatch() throws SQLException, IOException {
-        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper);
+    public void testStressInsertWithParametersBatch() throws Exception {
+        new StressCasesJUnit5().insertWithParametersBatch(connection);
     }
 }

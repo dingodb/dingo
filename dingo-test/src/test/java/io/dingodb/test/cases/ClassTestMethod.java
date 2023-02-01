@@ -17,10 +17,11 @@
 package io.dingodb.test.cases;
 
 
-import io.dingodb.test.SqlHelper;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.provider.Arguments;
+
+import java.sql.Connection;
 
 public class ClassTestMethod {
     @Getter
@@ -35,6 +36,6 @@ public class ClassTestMethod {
     }
 
     public interface Method {
-        void run(SqlHelper sqlHelper) throws Exception;
+        void run(@NonNull Connection connection) throws Exception;
     }
 }

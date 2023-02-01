@@ -27,8 +27,6 @@ import static io.dingodb.test.cases.Case.exec;
 import static io.dingodb.test.cases.Case.file;
 
 public class CasesProvider implements ArgumentsProvider {
-    private static final String SELECT_ALL = "select * from {table}";
-
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
@@ -36,7 +34,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Create, insert and select",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/data.sql")).updateCount(9),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("string_double/data.csv"))
             ),
             Case.of(
@@ -145,7 +143,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "With null",
                 exec(file("double/create.sql")),
                 exec(file("double/data_with_null.sql")).updateCount(2),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("double/data_with_null_all.csv"))
             ),
             Case.of(
@@ -178,7 +176,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Date as primary key",
                 exec(file("date_key/create.sql")),
                 exec(file("date_key/data.sql")).updateCount(2),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("date_key/data_all.csv"))
             ),
             Case.of(
@@ -230,7 +228,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Double as primary key",
                 exec(file("double_pm/create.sql")),
                 exec(file("double_pm/data.sql")).updateCount(3),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("double_pm/data.csv"))
             ),
             Case.of(
@@ -238,7 +236,7 @@ public class CasesProvider implements ArgumentsProvider {
                 exec(file("string_int_double_string/create.sql")),
                 exec(file("string_int_double_string/data.sql")).updateCount(9),
                 exec(file("string_int_double_string/update.sql")).updateCount(2),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("string_int_double_string/data_updated.csv"))
             ),
             // In list with >= 20 elements is converted as join with values.
@@ -247,11 +245,11 @@ public class CasesProvider implements ArgumentsProvider {
                 exec(file("string_int_double_string/create.sql")),
                 exec(file("string_int_double_string/data.sql")).updateCount(9),
                 exec(file("string_int_double_string/update_1.sql")).updateCount(9),
-                exec(SELECT_ALL)
+                exec(Case.SELECT_ALL)
                     .result(file("string_int_double_string/data_updated_1.csv"))
             ),
             Case.of(
-                "Conflicting conditions",
+                "Select with conflicting conditions",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/select_conflict.sql"))
                     .result(
@@ -270,6 +268,29 @@ public class CasesProvider implements ArgumentsProvider {
                 ),
                 exec(
                     "select * from {table} where card_no=23 and account=14"
+                ).result(
+                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
+            ),
+            Case.of(
+                "Index of date/time",
+                exec(file("index/create.sql")),
+                exec(file("index/data.sql")),
+                exec(
+                    "alter TABLE {table} add index int_index2(CARD_NO);"
+                        + "alter TABLE {table} add index char_index2(NAME);"
+                        + "alter TABLE {table} add index date_index(TIME_DATE);"
+                        + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
+                ),
+                exec(
+                    "select * from {table} where time_datetime=now()"
+                ).result(
+                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                ),
+                exec(
+                    "select * from {table} where time_date='2023-01-09'"
                 ).result(
                     "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
                     "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"

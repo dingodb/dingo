@@ -34,13 +34,12 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
-import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Case {
+    public static final String SELECT_ALL = "select * from {table}";
     private final List<Step> steps;
 
     public static @NonNull Case of(Step... steps) {
@@ -78,12 +77,22 @@ public final class Case {
         return randomTables;
     }
 
-    private static void dropRandomTables(
-        Statement statement,
-        RandomTable @NonNull [] randomTables
+    public static void dropRandomTables(
+        Connection connection,
+        RandomTable @NonNull ... randomTables
     ) throws SQLException {
-        for (RandomTable randomTable : randomTables) {
-            statement.execute("drop table " + randomTable.getName());
+        try (Statement statement = connection.createStatement()) {
+            for (RandomTable randomTable : randomTables) {
+                statement.execute("drop table " + randomTable.getName());
+            }
+        }
+    }
+
+    public void run(Connection connection, RandomTable... randomTables) throws Exception {
+        try (Statement statement = connection.createStatement()) {
+            for (Step step : steps) {
+                step.run(statement, randomTables);
+            }
         }
     }
 
@@ -93,12 +102,8 @@ public final class Case {
 
     public void run(Connection connection, int randomTableNum) throws Exception {
         RandomTable[] randomTables = initRandomTable(randomTableNum);
-        try (Statement statement = connection.createStatement()) {
-            for (Step step : steps) {
-                step.run(statement, randomTables);
-            }
-            dropRandomTables(statement, randomTables);
-        }
+        run(connection, randomTables);
+        dropRandomTables(connection, randomTables);
     }
 
     public void runWithStatementForEachStep(Connection connection) throws Exception {
@@ -112,9 +117,7 @@ public final class Case {
                 step.run(statement, randomTables);
             }
         }
-        try (Statement statement = connection.createStatement()) {
-            dropRandomTables(statement, randomTables);
-        }
+        dropRandomTables(connection, randomTables);
     }
 
     public interface Step {
@@ -123,6 +126,8 @@ public final class Case {
         @NonNull Step result(InputStream resultFile);
 
         @NonNull Step result(String... csvString);
+
+        @NonNull Step result(String[] columnLabels, List<Object[]> tuples);
 
         @NonNull Step updateCount(int updateCount);
     }
@@ -171,6 +176,15 @@ public final class Case {
         }
 
         @Override
+        public @NonNull Step result(String[] columnLabels, List<Object[]> tuples) {
+            return new Exec(
+                sqlString,
+                new ColumnResultChecker(columnLabels, tuples),
+                null
+            );
+        }
+
+        @Override
         public @NonNull Step updateCount(int updateCount) {
             return new Exec(sqlString, null, updateCount);
         }
@@ -203,41 +217,17 @@ public final class Case {
         }
 
         @Override
-        public @NonNull Step updateCount(int updateCount) {
-            return new ExecFile(inputStream, null, updateCount);
-        }
-    }
-
-    private static class RandomTable {
-        private static final String TABLE_NAME_PLACEHOLDER = "table";
-
-        private final String name;
-        private final int index;
-
-        public RandomTable() {
-            this(0);
-        }
-
-        public RandomTable(int index) {
-            this.name = "tbl_" + UUID.randomUUID().toString().replace('-', '_');
-            this.index = index;
+        public @NonNull Step result(String[] columnLabels, List<Object[]> tuples) {
+            return new ExecFile(
+                inputStream,
+                new ColumnResultChecker(columnLabels, tuples),
+                null
+            );
         }
 
         @Override
-        public @Nonnull String toString() {
-            return getName();
-        }
-
-        public @Nonnull String getName() {
-            return name + (index > 0 ? "_" + index : "");
-        }
-
-        private @Nonnull String getPlaceholder() {
-            return "{" + TABLE_NAME_PLACEHOLDER + (index > 0 ? "_" + index : "") + "}";
-        }
-
-        private @NonNull String transSql(@NonNull String sql) {
-            return sql.replace(getPlaceholder(), getName());
+        public @NonNull Step updateCount(int updateCount) {
+            return new ExecFile(inputStream, null, updateCount);
         }
     }
 
@@ -259,6 +249,19 @@ public final class Case {
         public void assertSame(ResultSet resultSet) throws Exception {
             InputStream inputStream = new ReaderInputStream(new StringReader(csvString), StandardCharsets.UTF_8);
             new CsvFileResultChecker(inputStream).assertSame(resultSet);
+        }
+    }
+
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    private static class ColumnResultChecker implements ResultChecker {
+        private final String[] columnLabels;
+        private final List<Object[]> tuples;
+
+        @Override
+        public void assertSame(ResultSet resultSet) throws Exception {
+            Assert.resultSet(resultSet)
+                .columnLabels(columnLabels)
+                .isRecords(tuples);
         }
     }
 }
