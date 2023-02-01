@@ -24,9 +24,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
 @Slf4j
 @Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -44,17 +41,17 @@ public class StressTest {
     }
 
     @Test
-    public void testInsert() throws SQLException, IOException {
-        new StressCasesJUnit5().insert(sqlHelper);
+    public void testInsert() throws Exception {
+        new StressCasesJUnit5().insert(sqlHelper.getConnection());
     }
 
     @Test
-    public void testInsertParameters() throws SQLException, IOException {
-        new StressCasesJUnit5().insertWithParameters(sqlHelper);
+    public void testInsertParameters() throws Exception {
+        new StressCasesJUnit5().insertWithParameters(sqlHelper.getConnection());
     }
 
     @Test
-    public void testInsertParametersBatch() throws SQLException, IOException {
-        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper);
+    public void testInsertParametersBatch() throws Exception {
+        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper.getConnection());
     }
 }

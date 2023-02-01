@@ -16,15 +16,12 @@
 
 package io.dingodb.test;
 
-import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.InputTestFile;
 import org.apache.commons.io.IOUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -64,10 +61,6 @@ public class RandomTable {
         return sql.replace(getPlaceholder(), getName());
     }
 
-    public PreparedStatement prepare(String sql) throws SQLException {
-        return sqlHelper.getConnection().prepareStatement(transSql(sql));
-    }
-
     public void execSql(Statement statement, String sql) throws SQLException {
         SqlHelper.execSql(statement, transSql(sql));
     }
@@ -93,24 +86,6 @@ public class RandomTable {
     }
 
     public void drop() throws SQLException {
-        sqlHelper.dropTable(getName());
-    }
-
-    public void doTestFiles(
-        @NonNull List<InputTestFile> files
-    ) throws SQLException, IOException {
-        try (Statement statement = sqlHelper.getConnection().createStatement()) {
-            for (InputTestFile file : files) {
-                if (file.getType() == InputTestFile.Type.SQL) {
-                    String sql = IOUtils.toString(file.getStream(), StandardCharsets.UTF_8);
-                    execSql(statement, transSql(sql));
-                } else if (file.getType() == InputTestFile.Type.CSV) {
-                    ResultSet resultSet = statement.getResultSet();
-                    Assert.resultSet(resultSet).asInCsv(file.getStream());
-                    resultSet.close();
-                }
-            }
-        }
         sqlHelper.dropTable(getName());
     }
 

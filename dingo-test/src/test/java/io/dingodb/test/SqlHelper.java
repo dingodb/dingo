@@ -283,16 +283,6 @@ public class SqlHelper {
         execFile(Objects.requireNonNull(SqlHelper.class.getResourceAsStream(sqlFile)));
     }
 
-    public int execUpdate(@Nonnull String sqlCmd) throws SQLException {
-        int result = -1;
-        try (Statement statement = connection.createStatement()) {
-            if (!sqlCmd.trim().isEmpty()) {
-                result = statement.executeUpdate(sqlCmd);
-            }
-        }
-        return result;
-    }
-
     public void clearTable(String tableName) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("delete from " + tableName);

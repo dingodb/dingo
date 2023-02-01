@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static io.dingodb.test.cases.Case.SELECT_ALL;
 import static io.dingodb.test.cases.Case.exec;
 import static io.dingodb.test.cases.Case.file;
 
@@ -42,29 +43,14 @@ public class CasesTest {
 
     @Test
     public void testTemp() throws Exception {
-        Case testCase = Case.of(
-            exec(file("index/create.sql")),
-            exec(file("index/data.sql")),
-            exec(
-                "alter TABLE {table} add index int_index2(CARD_NO);"
-                    + "alter TABLE {table} add index char_index2(NAME);"
-                    + "alter TABLE {table} add index date_index(TIME_DATE);"
-                    + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
-            ),
-            exec(
-                "select * from {table} where time_datetime=now()"
-            ).result(
-                "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-                "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-            ),
-            exec(
-                "select * from {table} where time_date='2023-01-09'"
-            ).result(
-                "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-                "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+        Case.of(
+            exec(file("string_double/create.sql")),
+            exec("delete from {table} where name = 'Alice' and name = 'Betty'").updateCount(0),
+            exec(SELECT_ALL).result(
+                "ID, NAME, AMOUNT",
+                "INT, STRING, DOUBLE"
             )
-        );
-        testCase.run(sqlHelper.getConnection());
+        ).run(sqlHelper.getConnection());
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
