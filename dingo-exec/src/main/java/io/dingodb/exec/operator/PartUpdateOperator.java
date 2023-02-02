@@ -59,7 +59,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public boolean pushTuple(Object[] tuple) {
         Object[] newTuple = Arrays.copyOf(tuple, tuple.length);
         boolean updated = false;
         int i = 0;

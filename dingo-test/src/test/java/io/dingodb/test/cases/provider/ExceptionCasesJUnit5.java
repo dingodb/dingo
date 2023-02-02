@@ -14,28 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.provider;
 
 import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class ExceptionCasesJUnit5 implements ArgumentsProvider {
-    private static @NonNull Arguments fileCase(String name, String... fileNames) {
-        return arguments(name, Arrays.stream(fileNames)
-            .map(InputTestFile::fromFileName)
-            .collect(Collectors.toList())
-        );
-    }
-
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(

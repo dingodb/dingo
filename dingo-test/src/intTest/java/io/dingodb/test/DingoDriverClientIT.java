@@ -19,12 +19,12 @@ package io.dingodb.test;
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.Case;
-import io.dingodb.test.cases.CasesProvider;
+import io.dingodb.test.cases.provider.CasesJUnit5;
 import io.dingodb.test.cases.ClassTestMethod;
-import io.dingodb.test.cases.ExceptionCasesJUnit5;
-import io.dingodb.test.cases.ParametersCasesJUnit5;
+import io.dingodb.test.cases.provider.ExceptionCasesJUnit5;
+import io.dingodb.test.cases.provider.ParametersCasesJUnit5;
 import io.dingodb.test.cases.RexCasesJUnit5;
-import io.dingodb.test.cases.StressCasesJUnit5;
+import io.dingodb.test.cases.provider.StressCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
@@ -76,7 +76,7 @@ public class DingoDriverClientIT {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(CasesProvider.class)
+    @ArgumentsSource(CasesJUnit5.class)
     public void test(String ignored, @NonNull Case testCase) throws Exception {
         testCase.run(connection);
     }

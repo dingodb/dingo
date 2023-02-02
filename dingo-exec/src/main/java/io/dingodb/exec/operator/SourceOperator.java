@@ -42,8 +42,6 @@ public abstract class SourceOperator extends SoleOutOperator {
         return push();
     }
 
-    public abstract boolean push();
-
     @Override
     public synchronized void fin(int pin, Fin fin) {
         if (fin instanceof FinWithException) {
@@ -53,6 +51,8 @@ public abstract class SourceOperator extends SoleOutOperator {
         }
         profiles.clear();
     }
+
+    public abstract boolean push();
 
     public OperatorProfile getProfile() {
         OperatorProfile profile = new OperatorProfile();

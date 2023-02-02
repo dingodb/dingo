@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.test;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.cases.provider.ExceptionCasesJUnit5;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

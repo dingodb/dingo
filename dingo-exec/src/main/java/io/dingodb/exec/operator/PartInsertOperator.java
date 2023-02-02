@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.converter.ValueConverter;
 
 @JsonTypeName("insert")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
@@ -42,9 +43,10 @@ public final class PartInsertOperator extends PartModifyOperator {
         super.init();
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
-        if (part.insert(tuple)) {
+    public boolean pushTuple(Object[] tuple) {
+        if (part.insert((Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE))) {
             count++;
         }
         return true;

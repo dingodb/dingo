@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.provider;
 
+import io.dingodb.test.cases.Case;
+import io.dingodb.test.cases.ClassTestMethod;
+import io.dingodb.test.cases.RandomTable;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;

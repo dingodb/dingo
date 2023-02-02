@@ -43,7 +43,7 @@ public final class PartDeleteOperator extends PartModifyOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    protected boolean pushTuple(Object[] tuple) {
         if (part.remove(tuple)) {
             count++;
         }

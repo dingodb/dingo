@@ -14,36 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.converter;
 
-import com.google.common.collect.ImmutableList;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.fin.Fin;
+import io.dingodb.common.type.converter.DataConverter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
+public class ValueConverter implements DataConverter {
+    public static final ValueConverter INSTANCE = new ValueConverter();
 
-/**
- * Sink operator has only one input and no output.
- */
-public abstract class SinkOperator extends AbstractOperator {
-    protected abstract boolean push(Object[] tuple);
-
-    @Override
-    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
-        return push(tuple);
+    private ValueConverter() {
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        fin(fin);
+    public Integer convertIntegerFrom(@NonNull Object value) {
+        return ((Number) value).intValue();
     }
 
     @Override
-    public List<Output> getOutputs() {
-        return ImmutableList.of();
+    public Long convertLongFrom(@NonNull Object value) {
+        return ((Number) value).longValue();
     }
 
-    protected abstract void fin(Fin fin);
-
+    @Override
+    public Double convertDoubleFrom(@NonNull Object value) {
+        return ((Number) value).doubleValue();
+    }
 }
