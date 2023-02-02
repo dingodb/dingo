@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.store.column;
 
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -26,9 +27,12 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.strorage.column.ColumnConstant;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
+@Slf4j
 public class TypeConvert {
     public static int DingoTypeToCKType(DingoType dt) {
         if (dt instanceof BooleanType) {
@@ -68,7 +72,7 @@ public class TypeConvert {
         } else if (dt instanceof StringType) {
             return str;
         } else if (dt instanceof TimestampType) {
-            return Long.valueOf(str);
+            return DingoConverter.INSTANCE.convertTimestampFrom(Long.valueOf(str));
         }
         throw new RuntimeException("Unsupported type: " + dt.getClass() + ", str: " + str);
     }
@@ -96,7 +100,7 @@ public class TypeConvert {
         } else if (dt instanceof StringType) {
             return obj.toString();
         } else if (dt instanceof TimestampType) {
-            return obj.toString();
+            return DingoConverter.INSTANCE.convert((Timestamp) obj).toString();
         }
 
         throw new RuntimeException("Unsupported type" + obj.getClass());
