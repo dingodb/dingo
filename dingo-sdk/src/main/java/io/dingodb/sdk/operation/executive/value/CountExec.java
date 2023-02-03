@@ -53,6 +53,7 @@ public class CountExec extends AbstractExecutive<Context, Iterator<Object[]>> {
         String col = context.column()[0].name;
         Map<String, NumberUnit> map = new HashMap<>();
         int keyIndex = context.definition.getColumnIndex(col);
+        map.put(col, new CountUnit(ComputeLong.of(0)));
         while (records.hasNext()) {
             Object[] record = records.next();
             NumberUnit unit = new CountUnit(record[keyIndex] == null ? ComputeLong.of(0) : ComputeLong.of(1));
