@@ -28,6 +28,7 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonProperty("table")
@@ -41,7 +42,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
-    protected Part part;
+    protected Part part = null;
     protected long count;
 
     protected PartModifyOperator(
@@ -57,16 +58,27 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         this.keyMapping = keyMapping;
     }
 
-    @Override
-    public void init() {
-        super.init();
+    protected Part getPart() {
         StoreInstance store = Services.KV_STORE.getInstance(tableId);
-        part = new PartInKvStore(
+        return new PartInKvStore(
             store,
             schema,
             keyMapping
         );
+    }
+
+    @Override
+    public void init() {
+        super.init();
         count = 0;
+    }
+
+    @Override
+    public synchronized boolean push(int pin, @Nullable Object[] tuple) {
+        if (part == null) {
+            part = getPart();
+        }
+        return pushTuple(tuple);
     }
 
     @Override
@@ -78,4 +90,6 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         // Reset
         count = 0;
     }
+
+    protected abstract boolean pushTuple(@Nullable Object[] tuple);
 }

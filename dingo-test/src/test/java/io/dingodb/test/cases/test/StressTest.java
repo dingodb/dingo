@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.test;
 
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.cases.provider.StressCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

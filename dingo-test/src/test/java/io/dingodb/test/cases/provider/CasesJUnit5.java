@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.provider;
 
 import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.test.cases.Case;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -26,7 +27,9 @@ import java.util.stream.Stream;
 import static io.dingodb.test.cases.Case.exec;
 import static io.dingodb.test.cases.Case.file;
 
-public class CasesProvider implements ArgumentsProvider {
+public class CasesJUnit5 implements ArgumentsProvider {
+    public static final String SELECT_ALL = "select * from {table}";
+
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
@@ -34,7 +37,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Create, insert and select",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/data.sql")).updateCount(9),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("string_double/data.csv"))
             ),
             Case.of(
@@ -143,7 +146,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "With null",
                 exec(file("double/create.sql")),
                 exec(file("double/data_with_null.sql")).updateCount(2),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("double/data_with_null_all.csv"))
             ),
             Case.of(
@@ -176,7 +179,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Date as primary key",
                 exec(file("date_key/create.sql")),
                 exec(file("date_key/data.sql")).updateCount(2),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("date_key/data_all.csv"))
             ),
             Case.of(
@@ -228,7 +231,7 @@ public class CasesProvider implements ArgumentsProvider {
                 "Double as primary key",
                 exec(file("double_pm/create.sql")),
                 exec(file("double_pm/data.sql")).updateCount(3),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("double_pm/data.csv"))
             ),
             Case.of(
@@ -236,7 +239,7 @@ public class CasesProvider implements ArgumentsProvider {
                 exec(file("string_int_double_string/create.sql")),
                 exec(file("string_int_double_string/data.sql")).updateCount(9),
                 exec(file("string_int_double_string/update.sql")).updateCount(2),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("string_int_double_string/data_updated.csv"))
             ),
             // In list with >= 20 elements is converted as join with values.
@@ -245,7 +248,7 @@ public class CasesProvider implements ArgumentsProvider {
                 exec(file("string_int_double_string/create.sql")),
                 exec(file("string_int_double_string/data.sql")).updateCount(9),
                 exec(file("string_int_double_string/update_1.sql")).updateCount(9),
-                exec(Case.SELECT_ALL)
+                exec(SELECT_ALL)
                     .result(file("string_int_double_string/data_updated_1.csv"))
             ),
             Case.of(
@@ -256,6 +259,20 @@ public class CasesProvider implements ArgumentsProvider {
                         "ID, NAME, AMOUNT",
                         "INT, STRING, DOUBLE"
                     )
+            ),
+            Case.of(
+                "Delete with conflicting conditions",
+                exec(file("string_double/create.sql")),
+                exec(file("string_double/data.sql")),
+                exec("delete from {table} where name = 'Alice' and name = 'Betty'").updateCount(0),
+                exec(SELECT_ALL).result(file("string_double/data.csv"))
+            ),
+            Case.of(
+                "Update with conflicting conditions",
+                exec(file("string_double/create.sql")),
+                exec(file("string_double/data.sql")),
+                exec("update {table} set amount = 0.0 where name = 'Alice' and name = 'Betty'").updateCount(0),
+                exec(SELECT_ALL).result(file("string_double/data.csv"))
             ),
             Case.of(
                 "Nested indices",
@@ -294,6 +311,16 @@ public class CasesProvider implements ArgumentsProvider {
                 ).result(
                     "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
                     "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
+            ),
+            Case.of(
+                "Insert int to long",
+                exec(file("long_double/create.sql")),
+                exec(file("long_double/data.sql")),
+                exec(SELECT_ALL).result(
+                    "ID,AMT,AMOUNT",
+                    "INT,LONG,DOUBLE",
+                    "1,55,23.45"
                 )
             )
         );

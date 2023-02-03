@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.test;
 
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.cases.ClassTestMethod;
+import io.dingodb.test.cases.provider.ParametersCasesJUnit5;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static io.dingodb.test.cases.Case.SELECT_ALL;
-import static io.dingodb.test.cases.Case.exec;
-import static io.dingodb.test.cases.Case.file;
-
-public class CasesTest {
+@Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class ParametersTest {
+    @Getter
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -43,25 +47,12 @@ public class CasesTest {
 
     @Test
     public void testTemp() throws Exception {
-        Case.of(
-            exec(file("string_double/create.sql")),
-            exec("delete from {table} where name = 'Alice' and name = 'Betty'").updateCount(0),
-            exec(SELECT_ALL).result(
-                "ID, NAME, AMOUNT",
-                "INT, STRING, DOUBLE"
-            )
-        ).run(sqlHelper.getConnection());
+        new ParametersCasesJUnit5().getByKeys(sqlHelper.getConnection());
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(CasesProvider.class)
-    public void test(String ignored, @NonNull Case testCase) throws Exception {
-        testCase.run(sqlHelper.getConnection());
-    }
-
-    @ParameterizedTest(name = "StatementForEachStep [{index}] {0}")
-    @ArgumentsSource(CasesProvider.class)
-    public void testWithStatementForEachStep(String ignored, @NonNull Case testCase) throws Exception {
-        testCase.runWithStatementForEachStep(sqlHelper.getConnection());
+    @ArgumentsSource(ParametersCasesJUnit5.class)
+    public void test(String ignored, @NonNull ClassTestMethod method) throws Exception {
+        method.getMethod().run(sqlHelper.getConnection());
     }
 }

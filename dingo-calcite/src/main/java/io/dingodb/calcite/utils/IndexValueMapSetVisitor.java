@@ -22,7 +22,6 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Sarg;
@@ -43,7 +42,7 @@ public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Int
     }
 
     private static @NonNull IndexValueMapSet<Integer, RexNode> checkOperands(@NonNull RexNode op0, RexNode op1) {
-        if (op0.isA(SqlKind.INPUT_REF) && RexUtil.isConstant(op1)) {
+        if (op0.isA(SqlKind.INPUT_REF) && ConstantTester.isConst(op1)) {
             RexInputRef inputRef = (RexInputRef) op0;
             return IndexValueMapSet.single(inputRef.getIndex(), op1);
         }

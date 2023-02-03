@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.cases.provider;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.cases.Case;
+import io.dingodb.test.cases.ClassTestMethod;
+import io.dingodb.test.cases.RandomTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -78,6 +81,25 @@ public class ParametersCasesJUnit5 implements ArgumentsProvider {
                 Assert.resultSet(resultSet).isRecords(ImmutableList.of(
                     new Object[]{7, "Betty", 6.5}
                 ));
+            }
+        } finally {
+            Case.dropRandomTables(connection, randomTable);
+        }
+    }
+
+    public void getByKeys(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql")),
+            exec(file("string_double/data.sql"))
+        ).run(connection, randomTable);
+        String sql = "select * from {table} where id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(randomTable.transSql(sql))) {
+            statement.setInt(1, 1);
+            try (ResultSet resultSet = statement.executeQuery()) {
+            }
+            statement.setInt(1, 2);
+            try (ResultSet resultSet = statement.executeQuery()) {
             }
         } finally {
             Case.dropRandomTables(connection, randomTable);
@@ -202,7 +224,7 @@ public class ParametersCasesJUnit5 implements ArgumentsProvider {
             assertThat(count).isEqualTo(1);
         }
         Case.of(
-            exec(Case.SELECT_ALL).result(
+            exec(CasesJUnit5.SELECT_ALL).result(
                 new String[]{"id", "data", "data1", "data2"},
                 ImmutableList.of(
                     new Object[]{1, new Date(0).toString(), new Time(0).toString(), new Timestamp(0)},
@@ -246,16 +268,37 @@ public class ParametersCasesJUnit5 implements ArgumentsProvider {
         Case.dropRandomTables(connection, randomTable);
     }
 
+    public void delete(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql")),
+            exec(file("string_double/data.sql"))
+        ).run(connection, randomTable);
+        String sql = "delete from {table} where name = ?";
+        try (PreparedStatement statement = connection.prepareStatement(randomTable.transSql(sql))) {
+            statement.setString(1, "Alice");
+            int count = statement.executeUpdate();
+            assertThat(count).isEqualTo(3);
+            statement.setString(1, "Betty");
+            count = statement.executeUpdate();
+            assertThat(count).isEqualTo(2);
+        } finally {
+            Case.dropRandomTables(connection, randomTable);
+        }
+    }
+
     @Override
     public Stream<? extends Arguments> provideArguments(@NonNull ExtensionContext context) {
         return Stream.of(
             ClassTestMethod.argumentsOf(this::simple, "Simple values"),
             ClassTestMethod.argumentsOf(this::query, "Query"),
+            ClassTestMethod.argumentsOf(this::getByKeys, "Get by primary keys"),
             ClassTestMethod.argumentsOf(this::filter, "Filter"),
             ClassTestMethod.argumentsOf(this::filterWithFun, "Filter with fun"),
             ClassTestMethod.argumentsOf(this::insert, "Insert"),
             ClassTestMethod.argumentsOf(this::insertBatch, "Insert batch"),
-            ClassTestMethod.argumentsOf(this::insertWithDateTime, "Insert with date/time")
+            ClassTestMethod.argumentsOf(this::insertWithDateTime, "Insert with date/time"),
+            ClassTestMethod.argumentsOf(this::delete, "Delete")
         );
     }
 }

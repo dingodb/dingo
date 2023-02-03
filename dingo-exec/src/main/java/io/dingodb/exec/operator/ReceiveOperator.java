@@ -107,18 +107,6 @@ public final class ReceiveOperator extends SourceOperator {
     }
 
     @Override
-    public void destroy() {
-        Services.NET.unregisterTagMessageListener(tag, messageListener);
-        safeCloseEndpoint();
-    }
-
-    private void safeCloseEndpoint() {
-        if (endpoint != null) {
-            endpoint.close();
-        }
-    }
-
-    @Override
     public boolean push() {
         long count = 0;
         OperatorProfile profile = getProfile();
@@ -153,6 +141,18 @@ public final class ReceiveOperator extends SourceOperator {
             }
         }
         return false;
+    }
+
+    @Override
+    public void destroy() {
+        Services.NET.unregisterTagMessageListener(tag, messageListener);
+        safeCloseEndpoint();
+    }
+
+    private void safeCloseEndpoint() {
+        if (endpoint != null) {
+            endpoint.close();
+        }
     }
 
     private class ReceiveMessageListener implements MessageListener {

@@ -39,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Case {
-    public static final String SELECT_ALL = "select * from {table}";
     private final List<Step> steps;
 
     public static @NonNull Case of(Step... steps) {
