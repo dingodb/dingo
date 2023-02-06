@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.sidebar;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.common.util.Utils;
@@ -28,6 +29,7 @@ import io.dingodb.server.protocol.meta.Index;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 import static io.dingodb.common.util.ByteArrayUtils.unsliced;
@@ -50,7 +52,12 @@ public class IndexSidebar extends BaseSidebar implements io.dingodb.store.api.St
     @Override
     public void destroy() {
         super.destroy();
-        FileUtils.deleteIfExists(path);
+        Executors.scheduleAsync(
+            "clear-table-data",
+            () -> FileUtils.deleteIfExists(path),
+            30,
+            TimeUnit.SECONDS
+        );
     }
 
     @Override

@@ -36,6 +36,8 @@ public interface Storage {
 
     void destroy();
 
+    boolean isDestroy();
+
     CompletableFuture<Void> transferTo(CoreMeta meta);
 
     String filePath();

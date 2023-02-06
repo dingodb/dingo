@@ -42,6 +42,9 @@ public class InternalInstructions implements Instructions {
         processors[DESTROY_OC] = (VoidProcessor) __ -> {
             Context context = (Context) __;
             VCore vCore = context.core.vCore;
+            if (vCore.isAvailable()) {
+                vCore.getControlUnit().chain.tick();
+            }
             MPURegister.unregister(vCore.meta.coreId);
             vCore.close();
             Utils.loop(() -> !vCore.viewCount.compareAndSet(0, Integer.MIN_VALUE), TimeUnit.MILLISECONDS.toNanos(10));

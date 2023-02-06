@@ -114,7 +114,7 @@ class InstructionSyncChannel implements Channel, MessageListener {
         TagClock tagClock = TagClock.decode(content);
         switch (tagClock.tag) {
             case Constant.T_SYNC: {
-                chain.tick();
+                chain.tick().run();
                 return;
             }
             default: {
