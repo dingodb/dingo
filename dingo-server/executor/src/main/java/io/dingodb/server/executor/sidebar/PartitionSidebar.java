@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.sidebar;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.mpu.core.CoreMeta;
@@ -25,6 +26,7 @@ import lombok.Builder;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class PartitionSidebar extends BaseSidebar {
 
@@ -43,6 +45,11 @@ public class PartitionSidebar extends BaseSidebar {
     @Override
     public void destroy() {
         super.destroy();
-        FileUtils.deleteIfExists(path);
+        Executors.scheduleAsync(
+            "clear-table-data",
+            () -> FileUtils.deleteIfExists(path),
+            30,
+            TimeUnit.SECONDS
+        );
     }
 }

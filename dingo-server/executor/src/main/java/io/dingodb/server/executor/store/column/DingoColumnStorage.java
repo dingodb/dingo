@@ -29,6 +29,7 @@ import io.dingodb.mpu.storage.rocks.ColumnFamilyConfiguration;
 import io.dingodb.mpu.storage.rocks.RocksConfiguration;
 import io.dingodb.strorage.column.ColumnBlock;
 import io.dingodb.strorage.column.ColumnStorage;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.Cache;
@@ -77,6 +78,7 @@ public class DingoColumnStorage implements Storage {
 
     private ColumnFamilyDescriptor mcfDesc;
     private ColumnFamilyDescriptor icfDesc;
+    @Getter
     private boolean destroy = false;
     private DBOptions instructionDBOptions;
     private DBOptions metaDBOptions;

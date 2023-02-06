@@ -108,8 +108,12 @@ class InstructionChain implements Unsafe {
         last = null;
     }
 
-    protected void tick() {
-        current = current.next;
-        current.run();
+    protected Runnable tick() {
+        return current = current.next;
     }
+
+    protected Runnable get() {
+        return current;
+    }
+
 }

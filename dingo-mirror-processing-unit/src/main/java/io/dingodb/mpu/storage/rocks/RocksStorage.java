@@ -29,6 +29,7 @@ import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
 import io.dingodb.net.service.FileTransferService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.AbstractEventListener;
 import org.rocksdb.BackgroundErrorReason;
@@ -132,6 +133,7 @@ public class RocksStorage implements Storage {
     private ColumnFamilyDescriptor mcfDesc;
     private ColumnFamilyDescriptor icfDesc;
 
+    @Getter
     private boolean destroy = false;
     private boolean disableCheckpointPurge = false;
 

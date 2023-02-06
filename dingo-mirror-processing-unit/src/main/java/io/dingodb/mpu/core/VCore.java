@@ -17,6 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.protocol.SelectReturn;
@@ -54,7 +55,9 @@ public class VCore {
 
     @Getter
     private CoreMeta primary;
+    @Getter
     private ControlUnit controlUnit;
+    @Getter
     private MirrorChannel mirrorChannel;
 
     private boolean close;
@@ -91,9 +94,13 @@ public class VCore {
     }
 
     protected void destroy() {
+        log.info("{} vCore destroy start.", meta.label);
         if (isAvailable()) {
             exec(InternalInstructions.id, InternalInstructions.DESTROY_OC).join();
+        } else {
+            Utils.loop(() -> !close || !storage.isDestroy(), TimeUnit.SECONDS.toNanos(1));
         }
+        log.info("{} vCore destroy finish.", meta.label);
     }
 
     public void close() {

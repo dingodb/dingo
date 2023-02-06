@@ -21,6 +21,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.mpu.core.CoreMeta;
 import io.dingodb.mpu.instruction.Instruction;
 import io.dingodb.mpu.storage.Storage;
+import lombok.Getter;
 
 import java.util.Iterator;
 import java.util.List;
@@ -36,6 +37,9 @@ import static io.dingodb.common.util.ByteArrayUtils.lessThan;
 import static io.dingodb.common.util.ByteArrayUtils.lessThanOrEqual;
 
 public class MemStorage implements Storage {
+
+    @Getter
+    private boolean destroy = false;
 
     protected final NavigableMap<byte[], byte[]> db = new TreeMap<>(ByteArrayUtils::compare);
     private final NavigableMap<Long, byte[]> instructions = new TreeMap<>();
@@ -68,7 +72,7 @@ public class MemStorage implements Storage {
 
     @Override
     public void destroy() {
-
+        destroy = true;
     }
 
     @Override

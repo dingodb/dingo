@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.codec.ProtostuffCodec;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
@@ -166,7 +167,12 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     public void destroy() {
         super.destroy();
         ListenService.getDefault().unregister(tableId, TABLE_DEFINITION);
-        FileUtils.deleteIfExists(resolvePath(tableId.toString()));
+        Executors.scheduleAsync(
+            "clear-table-data",
+            () -> FileUtils.deleteIfExists(resolvePath(tableId.toString())),
+            30,
+            TimeUnit.SECONDS
+        );
     }
 
     private void initTable() {

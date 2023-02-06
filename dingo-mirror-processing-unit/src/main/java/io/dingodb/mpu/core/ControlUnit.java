@@ -20,6 +20,7 @@ import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.Optional;
 import io.dingodb.mpu.instruction.EmptyInstructions;
 import io.dingodb.mpu.instruction.Instruction;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,15 +34,17 @@ class ControlUnit {
     protected final boolean local;
     protected final long startClock;
 
-    private CoreMeta first;
-    private CoreMeta second;
+    protected final CoreMeta first;
+    protected final CoreMeta second;
 
+    @Getter
     private InstructionSyncChannel firstChannel;
+    @Getter
     private InstructionSyncChannel secondChannel;
 
-    private LinkedRunner prepareRunner;
-    private LinkedRunner syncRunner;
-    private InstructionChain chain;
+    protected final LinkedRunner prepareRunner;
+    protected final LinkedRunner syncRunner;
+    protected final InstructionChain chain;
 
     private boolean closed = false;
     private final boolean extClock = false;
@@ -169,7 +172,7 @@ class ControlUnit {
 
     protected void onSynced(CoreMeta mirror, Instruction instruction) {
         if (syncedClock.compareAndSet(instruction.clock - 1, instruction.clock)) {
-            chain.tick();
+            chain.tick().run();
         } else {
             core.storage.clearClock(instruction.clock);
             firstChannel.executed(instruction.clock);
