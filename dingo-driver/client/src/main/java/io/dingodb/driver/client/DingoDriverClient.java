@@ -19,8 +19,10 @@ package io.dingodb.driver.client;
 import io.dingodb.common.Location;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
+import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
@@ -211,6 +213,9 @@ public class DingoDriverClient extends Driver {
 
         NetConfiguration.resetAllTimeout(timeout);
         final DingoServiceImpl service = new DingoServiceImpl(locationSupplier, timeout);
+        NetService.getDefault().newChannel(location).setCloseListener(NoBreakFunctions.wrap(ch -> {
+            connection.close();
+        }));
         connection.setService(service);
         return new DingoRemoteMeta(
             connection, service, ApiRegistry.getDefault().proxy(MetaApi.class, locationSupplier, timeout)
