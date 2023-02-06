@@ -17,6 +17,7 @@
 package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
@@ -316,7 +317,12 @@ public class VCore {
             }
             log.info("Connect mirror {}.", mirror.label);
             InstructionSyncChannel channel = new InstructionSyncChannel(this, mirror, clock());
-            channel.connect();
+            if (channel.connect() == NO) {
+                Optional.ifPresent(controlUnit, __ -> {
+                    controlUnit.close();
+                    Executors.scheduleAsync(meta.label + "-select-primary", this::selectPrimary, 1, TimeUnit.SECONDS);
+                });
+            }
             channel.assignControlUnit(controlUnit);
         });
     }

@@ -322,7 +322,7 @@ public class RocksStorage implements Storage {
     }
 
     @Override
-    public void destroy() throws NullPointerException {
+    public synchronized void destroy() throws NullPointerException {
         destroy = true;
         this.writeOptions.close();
         closeDB();

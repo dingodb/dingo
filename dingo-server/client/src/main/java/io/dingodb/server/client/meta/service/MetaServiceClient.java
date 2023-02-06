@@ -127,7 +127,7 @@ public class MetaServiceClient implements MetaService {
         future.cancel();
     }
 
-    private void clearCache() {
+    private synchronized void clearCache() {
         metaServiceIdCache.clear();
         tableIdCache.clear();
         tableDefinitionCache.clear();
@@ -135,20 +135,20 @@ public class MetaServiceClient implements MetaService {
         serviceCache.clear();
     }
 
-    private void addSubMetaServiceCache(Schema schema) {
+    private synchronized void addSubMetaServiceCache(Schema schema) {
         metaServiceIdCache.computeIfAbsent(schema.getName(), __ -> schema.getId());
         metaServiceCache.computeIfAbsent(
             schema.getId(), __ -> new MetaServiceClient(schema.getId(), schema.getName(), connector, api)
         );
     }
 
-    private void deleteSubMetaServiceCache(String name) {
+    private synchronized void deleteSubMetaServiceCache(String name) {
         Optional.ifPresent(
             Optional.mapOrNull(metaServiceIdCache.remove(name), metaServiceCache::remove), MetaServiceClient::close
         );
     }
 
-    private void addTableCache(Table table) {
+    private synchronized void addTableCache(Table table) {
         if (table == null) {
             return;
         }
@@ -161,11 +161,11 @@ public class MetaServiceClient implements MetaService {
         listenService.listen(id, TABLE_DEFINITION, connector.get(), this::onCallback, () -> deleteTableCache(name));
     }
 
-    private void updateTableCache(TableDefinition definition) {
+    private synchronized void updateTableCache(TableDefinition definition) {
         tableDefinitionCache.put(tableIdCache.get(definition.getName()), definition);
     }
 
-    private void deleteTableCache(String name) {
+    private synchronized void deleteTableCache(String name) {
         Optional.ofNullable(tableIdCache.remove(name))
             .ifPresent(id -> serviceCache.remove(id).close())
             .ifPresent(tableDefinitionCache::remove)
@@ -259,7 +259,7 @@ public class MetaServiceClient implements MetaService {
     }
 
     @Override
-    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+    public synchronized void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         if (id == null) {
             throw new RuntimeException("Meta service not ready.");
         }
@@ -269,7 +269,7 @@ public class MetaServiceClient implements MetaService {
     }
 
     @Override
-    public boolean dropTable(@NonNull String tableName) {
+    public synchronized boolean dropTable(@NonNull String tableName) {
         if (id == null) {
             throw new RuntimeException("Meta service not ready.");
         }

@@ -22,7 +22,6 @@ import io.dingodb.driver.api.MetaApi;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.server.api.LogLevelApi;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.proto.Common;
