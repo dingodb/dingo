@@ -256,7 +256,10 @@ public class DingoColumnStorage implements Storage {
     }
 
     @Override
-    public void destroy() {
+    public synchronized void destroy() {
+        if (destroy) {
+            return;
+        }
         destroy = true;
         closeDB();
         if (this.icfHandler != null) {

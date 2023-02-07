@@ -294,8 +294,9 @@ public class MetaServiceClient implements MetaService {
         if (tableDefinitionCache.isEmpty()) {
             reload();
         }
-        return tableDefinitionCache.values().stream()
+        return tableIdCache.values().stream().map(tableDefinitionCache::get)
             .collect(Collectors.toMap(TableDefinition::getName, Function.identity()));
+
     }
 
     @Override
