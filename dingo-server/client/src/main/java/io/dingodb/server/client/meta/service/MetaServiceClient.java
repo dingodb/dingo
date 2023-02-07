@@ -155,7 +155,7 @@ public class MetaServiceClient implements MetaService {
         CommonId id = table.getId();
         String name = table.getName();
         tableIdCache.computeIfAbsent(name, __ -> id);
-        tableDefinitionCache.computeIfAbsent(id, __ -> table.getDefinition());
+        tableDefinitionCache.put(id, table.getDefinition());
         ServiceConnector connector = serviceCache
             .computeIfAbsent(id, __ -> new ServiceConnector(id, api.getTableDistribute(id)));
         listenService.listen(id, TABLE_DEFINITION, connector.get(), this::onCallback, () -> deleteTableCache(name));

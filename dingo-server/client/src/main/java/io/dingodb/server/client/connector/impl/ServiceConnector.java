@@ -96,10 +96,15 @@ public class ServiceConnector implements Connector, Supplier<Location> {
         if (!verify()) {
             CommonError.EXEC_TIMEOUT.throwFormatError("wait connector available", Thread.currentThread().getName(), "");
         }
+        if (listenedAddresses.size() != addresses.size()) {
+            addresses.stream()
+                .filter(location -> !listenedAddresses.containsKey(location))
+                .forEach(location -> runner.forceFollow(() -> this.listen(location)));
+        }
         return leader.get();
     }
 
-    private void listen(Location location) {
+    private synchronized void listen(Location location) {
         if (listenedAddresses.containsKey(location)) {
             listenedAddresses.get(location).cancel();
         }
@@ -113,7 +118,7 @@ public class ServiceConnector implements Connector, Supplier<Location> {
         listenedAddresses.put(location, future);
     }
 
-    private void onClose(Location location) {
+    private synchronized void onClose(Location location) {
         listenedAddresses.remove(location);
         debug(log, "Service [{}] channel closed, remote: [{}]", serviceId, location);
         if (leader.compareAndSet(location, null)) {
@@ -121,7 +126,7 @@ public class ServiceConnector implements Connector, Supplier<Location> {
         }
     }
 
-    private void onCallback(Message message, Location location) {
+    private synchronized void onCallback(Message message, Location location) {
         Location leader = this.leader.get();
         if (location.equals(leader)) {
             // todo on change service distribute
