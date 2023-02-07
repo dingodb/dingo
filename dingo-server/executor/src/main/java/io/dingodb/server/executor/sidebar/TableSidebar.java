@@ -67,6 +67,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -331,6 +332,11 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         try {
             CommonId id = part.getId();
             if (getVCore(id) != null) {
+                int times = 30;
+                Sidebar vSidebar = getVSidebar(id);
+                while (!(vSidebar.isMirror() || vSidebar.isPrimary()) && --times > 0) {
+                    LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+                }
                 return;
             }
             parts.add(part);
@@ -354,17 +360,20 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             addVSidebar(sidebar);
             log.info("Starting part {}......", id);
             CompletableFuture<Void> future = new CompletableFuture<>();
-            sidebar.registerListener(CoreListener.primary(__ -> future.complete(null)));
+            sidebar.registerListener(CoreListener.primary(__ -> {
+                future.complete(null);
+                ranges.put(part.getStart(), part);
+                storeInstance.onPartAvailable(Part.builder()
+                    .start(part.getStart())
+                    .end(part.getEnd())
+                    .id(part.getId())
+                    .build());
+            }));
             sidebar.registerListener(CoreListener.mirror(__ -> future.complete(null)));
-            sidebar.registerListener(CoreListener.primary(__ -> ranges.put(part.getStart(), part)));
-            sidebar.registerListener(CoreListener.primary(__ -> storeInstance.onPartAvailable(Part.builder()
-                .start(part.getStart())
-                .end(part.getEnd())
-                .id(part.getId())
-                .build()))
-            );
-            sidebar.registerListener(CoreListener.back(__ -> ranges.remove(part.getStart(), part)));
-            sidebar.registerListener(CoreListener.back(__ -> storeInstance.onPartDisable(part.getStart())));
+            sidebar.registerListener(CoreListener.back(__ -> {
+                ranges.remove(part.getStart(), part);
+                storeInstance.onPartDisable(part.getStart());
+            }));
             sidebar.start(false);
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -441,12 +450,21 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             isCreate = true;
         }
         setStarting();
-        startParts();
-        startIndexes();
-        if (!isCreate) {
-            definition = ProtostuffCodec
-                .read((byte[]) view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()));
-            storeInstance.reboot();
+        int times = 30;
+        while (--times > 0) {
+            try {
+                startParts();
+                startIndexes();
+                if (!isCreate) {
+                    definition = ProtostuffCodec
+                        .read((byte[]) view(KVInstructions.id, KVInstructions.GET_OC, tableId.encode()));
+                    storeInstance.reboot();
+                }
+                break;
+            } catch (Exception  e) {
+                log.error("{} reboot failed.", tableId);
+                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+            }
         }
         setRunning();
         super.primary(clock);

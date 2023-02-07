@@ -82,6 +82,10 @@ public abstract class Sidebar implements CoreListener {
         }
     }
 
+    public void close() {
+        core.vCore.close();
+    }
+
     public void destroy() {
         ListenService.getDefault().unregister(core.vCore.meta.coreId, MPU_PRIMARY);
         core.destroy();
@@ -105,6 +109,10 @@ public abstract class Sidebar implements CoreListener {
 
     public boolean isPrimary() {
         return core.vCore.isPrimary();
+    }
+
+    public boolean isMirror() {
+        return core.vCore.isMirror();
     }
 
     public CoreMeta getPrimary() {

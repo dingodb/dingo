@@ -18,7 +18,6 @@ package io.dingodb.mpu.core;
 
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.Utils;
 import io.dingodb.mpu.api.InternalApi;
 import io.dingodb.mpu.instruction.InstructionSetRegistry;
 import io.dingodb.mpu.protocol.SelectReturn;
@@ -36,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.dingodb.common.concurrent.Executors.execute;
 import static io.dingodb.mpu.Constant.NET;
@@ -84,6 +84,7 @@ public class VCore {
     }
 
     public void start() {
+        close = false;
         log.info("Start core {} on {}.", meta.label, clock());
         if (firstMirror == null && secondMirror == null) {
             log.info("Core {} start without mirror.", meta.label);
@@ -99,7 +100,14 @@ public class VCore {
         if (isAvailable()) {
             exec(InternalInstructions.id, InternalInstructions.DESTROY_OC).join();
         } else {
-            Utils.loop(() -> !close || !storage.isDestroy(), TimeUnit.SECONDS.toNanos(1));
+            int times = 30;
+            while ((!close || !storage.isDestroy()) && --times > 0) {
+                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+            }
+            if (!close || !storage.isDestroy()) {
+                close();
+                storage.destroy();
+            }
         }
         log.info("{} vCore destroy finish.", meta.label);
     }
@@ -329,6 +337,10 @@ public class VCore {
 
     public boolean isPrimary() {
         return controlUnit != null;
+    }
+
+    public boolean isMirror() {
+        return mirrorChannel != null;
     }
 
     public boolean isAvailable() {
