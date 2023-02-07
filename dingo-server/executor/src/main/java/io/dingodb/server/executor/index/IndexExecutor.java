@@ -35,7 +35,6 @@ import io.dingodb.server.client.meta.service.MetaServiceClientProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -221,7 +220,9 @@ public class IndexExecutor {
         if (executorApiMap.containsKey(partId)) {
             executorcApi = executorApiMap.get(partId);
         } else {
-            ServiceConnector unfinishedPartConnector = new ServiceConnector(tableId, partitions.get(partId).getReplicates());
+            ServiceConnector unfinishedPartConnector = new ServiceConnector(
+                partitions.get(partId).getId(), partitions.get(partId).getReplicates()
+            );
             executorcApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, unfinishedPartConnector);
             executorApiMap.put(partId, executorcApi);
         }
@@ -335,9 +336,14 @@ public class IndexExecutor {
         NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = metaService.getParts(tableId);
         List<Object[]> records = new ArrayList<>();
         for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
-            ServiceConnector partConnector = new ServiceConnector(tableId, partitions.get(partId).getReplicates());
+            Part part = partitions.get(partId);
+            ServiceConnector partConnector = new ServiceConnector(
+                part.getId(), part.getReplicates()
+            );
             ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
-            List<KeyValue> keyValues = executorApi.getKeyValueByKeyPrefix(null, null, tableId, prefix);
+            List<KeyValue> keyValues = executorApi.getKeyValueByRange(
+                null, null, tableId, prefix, null
+            );
             for (KeyValue keyValue : keyValues) {
                 try {
                     records.add(codec.decode(keyValue));

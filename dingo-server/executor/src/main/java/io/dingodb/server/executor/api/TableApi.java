@@ -97,10 +97,11 @@ public class TableApi implements io.dingodb.server.api.TableApi {
             IndexExecutor indexExecutor = new IndexExecutor(id, (MetaServiceClient) metaService);
             NavigableMap<ByteArrayUtils.ComparableByteArray, Part> partitions = MetaService.root().getParts(id);
             for (ByteArrayUtils.ComparableByteArray partId : partitions.keySet()) {
-                ServiceConnector partConnector = new ServiceConnector(id, partitions.get(partId).getReplicates());
+                Part part = partitions.get(partId);
+                ServiceConnector partConnector = new ServiceConnector(part.getId(), part.getReplicates());
                 ExecutorApi executorApi = ApiRegistry.getDefault().proxy(ExecutorApi.class, partConnector);
                 List<KeyValue> keyValues = executorApi
-                    .getKeyValueByKeyPrefix(null, null, id, new byte[]{CodeTag.FINISHEDFALG});
+                    .getKeyValueByRange(null, null, id, part.getStartKey(), null);
                 for (KeyValue keyValue : keyValues) {
                     indexExecutor.insertIndex(indexExecutor.getRow(keyValue, tableDefinition),
                         tableDefinition, index.getName());

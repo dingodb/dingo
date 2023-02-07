@@ -71,6 +71,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.codec.ProtostuffCodec.write;
 import static io.dingodb.common.config.DingoConfiguration.location;
 import static io.dingodb.common.config.DingoConfiguration.serverId;
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
@@ -118,7 +119,11 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         this.definition = definition;
         this.mirrors = mirrors;
         this.storeInstance = new StoreInstance(this);
-        this.definitionListener = ListenService.getDefault().register(tableId, TABLE_DEFINITION);
+        this.definitionListener = ListenService.getDefault().register(
+            tableId,
+            TABLE_DEFINITION,
+            () -> new Message(write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition)))
+        );
     }
 
     public static TableSidebar create(
@@ -148,8 +153,9 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             exec(
                 TableInstructions.id, UPDATE_DEFINITION, tableId, definition
             ).join();
-            definitionListener.accept(new Message(ProtostuffCodec
-                .write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition))));
+            definitionListener.accept(
+                new Message(write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition)))
+            );
         }
         this.definition = definition;
     }
@@ -185,7 +191,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         );
 
         Optional.ofNullable(definition.getIndexes()).filter(__ -> !__.isEmpty()).ifPresent(this::saveDefineIndexes);
-        exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), ProtostuffCodec.write(definition)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, tableId.encode(), write(definition)).join();
     }
 
     private void columnInit(String partitionId) {
@@ -264,7 +270,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             exec(SeqInstructions.id, 0, INDEX_PREFIX.encode()).join()
         );
         index.setId(newId);
-        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(index)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), write(index)).join();
         log.info("Save new index {}", index);
     }
 
@@ -273,7 +279,7 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
             exec(SeqInstructions.id, 0, PART_PREFIX.encode()).join()
         );
         tablePart.setId(newId);
-        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), ProtostuffCodec.write(tablePart)).join();
+        exec(KVInstructions.id, KVInstructions.SET_OC, newId.encode(), write(tablePart)).join();
         log.info("Save new part {}", tablePart);
     }
 
@@ -393,8 +399,8 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
         if (sync) {
             exec(TableInstructions.id, TableInstructions.DROP_INDEX, index).join();
             definition.removeIndex(index.getName());
-            definitionListener.accept(new Message(ProtostuffCodec
-                .write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition))));
+            definitionListener.accept(new Message(
+                write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition))));
         } else {
             indexes.remove(index.getName());
             definition.removeIndex(index.getName());
@@ -462,10 +468,13 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
                 }
                 break;
             } catch (Exception  e) {
-                log.error("{} reboot failed.", tableId);
+                log.error("{} reboot failed.", tableId, e);
                 LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
             }
         }
+        definitionListener.accept(
+            new Message(write(new MetaListenEvent(MetaListenEvent.Event.UPDATE_TABLE, definition)))
+        );
         setRunning();
         super.primary(clock);
     }
@@ -473,16 +482,19 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     @Override
     public void back(long clock) {
         super.back(clock);
+        setStopped();
     }
 
     @Override
     public void mirror(long clock) {
         super.mirror(clock);
+        setRunning();
     }
 
     @Override
     public void losePrimary(long clock) {
         super.losePrimary(clock);
+        setStopped();
     }
 
     @Override
