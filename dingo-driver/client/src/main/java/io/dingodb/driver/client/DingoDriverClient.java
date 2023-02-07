@@ -214,6 +214,7 @@ public class DingoDriverClient extends Driver {
         NetConfiguration.resetAllTimeout(timeout);
         final DingoServiceImpl service = new DingoServiceImpl(locationSupplier, timeout);
         NetService.getDefault().newChannel(location).setCloseListener(NoBreakFunctions.wrap(ch -> {
+            log.warn("Connection channel closed, close connection.");
             connection.close();
         }));
         connection.setService(service);
