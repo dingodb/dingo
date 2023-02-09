@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.common.codec.PrimitiveCodec.encodeLong;
 import static io.dingodb.mpu.Constant.CF_DEFAULT;
@@ -72,6 +73,7 @@ public class DingoColumnStorage implements Storage {
     public Checkpoint checkPoint;
     public RocksDB instruction;
     public RocksDB db;
+    private final AtomicInteger runningCount;
 
     private ColumnFamilyHandle mcfHandler;
     private ColumnFamilyHandle icfHandler;
@@ -87,6 +89,7 @@ public class DingoColumnStorage implements Storage {
     public DingoColumnStorage(String label, Path path, final String table, TableDefinition definition) throws Exception {
         this.label = label;
         this.runner = new LinkedRunner(label);
+        this.runningCount = new AtomicInteger(0);
         this.path = path.toAbsolutePath();
 
         RocksConfiguration rocksConfiguration = RocksConfiguration.refreshRocksConfiguration();
@@ -197,13 +200,16 @@ public class DingoColumnStorage implements Storage {
 
     @Override
     public long clocked() {
-        if (destroy) {
-            throw new RuntimeException();
+        if (runningCount.incrementAndGet() < 0) {
+            runningCount.decrementAndGet();
+            throw new RuntimeException("Storage already destroy.");
         }
         try {
             return Optional.mapOrGet(db.get(mcfHandler, CLOCK_K), PrimitiveCodec::decodeLong, () -> 0L);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
+        } finally {
+            runningCount.decrementAndGet();
         }
     }
 
@@ -233,25 +239,31 @@ public class DingoColumnStorage implements Storage {
 
     @Override
     public void saveInstruction(long clock, byte[] instruction) {
-        if (destroy) {
-            throw new RuntimeException();
+        if (runningCount.incrementAndGet() < 0) {
+            runningCount.decrementAndGet();
+            throw new RuntimeException("Storage already destroy.");
         }
         try {
             this.instruction.put(icfHandler, PrimitiveCodec.encodeLong(clock), instruction);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
+        } finally {
+            runningCount.decrementAndGet();
         }
     }
 
     @Override
     public byte[] reappearInstruction(long clock) {
-        if (destroy) {
-            throw new RuntimeException();
+        if (runningCount.incrementAndGet() < 0) {
+            runningCount.decrementAndGet();
+            throw new RuntimeException("Storage already destroy.");
         }
         try {
             return instruction.get(icfHandler, PrimitiveCodec.encodeLong(clock));
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
+        } finally {
+            runningCount.decrementAndGet();
         }
     }
 
@@ -328,8 +340,9 @@ public class DingoColumnStorage implements Storage {
 
     @Override
     public void clearClock(long clock) {
-        if (destroy) {
-            throw new RuntimeException();
+        if (runningCount.incrementAndGet() < 0) {
+            runningCount.decrementAndGet();
+            throw new RuntimeException("Storage already destroy.");
         }
         try {
             instruction.delete(icfHandler, encodeLong(clock));
@@ -338,6 +351,8 @@ public class DingoColumnStorage implements Storage {
             }
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
+        } finally {
+            runningCount.decrementAndGet();
         }
     }
 
