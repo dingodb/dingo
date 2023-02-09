@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.converter.ValueConverter;
 
 @JsonTypeName("sum0")
 public class Sum0Agg extends SumAgg {
@@ -33,6 +34,6 @@ public class Sum0Agg extends SumAgg {
 
     @Override
     public Object getValue(Object var) {
-        return var != null ? var : 0L;
+        return var != null ? var : type.convertFrom(0, ValueConverter.INSTANCE);
     }
 }

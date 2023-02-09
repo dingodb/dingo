@@ -28,7 +28,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static io.dingodb.test.cases.Case.exec;
 import static io.dingodb.test.cases.Case.file;
-import static io.dingodb.test.cases.provider.CasesJUnit5.SELECT_ALL;
 
 public class CasesTest {
     private static SqlHelper sqlHelper;
@@ -47,9 +46,11 @@ public class CasesTest {
     public void testTemp() throws Exception {
         Case.of(
             exec(file("string_double/create.sql")),
-            exec(file("string_double/data.sql")),
-            exec("update {table} set amount = 0.0 where name = 'Alice' and name = 'Betty'").updateCount(0),
-            exec(SELECT_ALL).result(file("string_double/data.csv"))
+            exec("select sum(id) as `sum`, avg(amount) as `avg` from {table}").result(
+                "SUM,AVG",
+                "INT,DOUBLE",
+                "NULL,NULL"
+            )
         ).run(sqlHelper.getConnection());
     }
 
