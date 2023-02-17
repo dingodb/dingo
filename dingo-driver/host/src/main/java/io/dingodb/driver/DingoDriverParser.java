@@ -22,7 +22,6 @@ import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
-import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
@@ -72,6 +71,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -352,8 +352,8 @@ public final class DingoDriverParser extends DingoParser {
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
                 SqlExplainLevel.ALL_ATTRIBUTES);
             return new DingoExplainSignature(
-                ImmutableList.of(metaData(typeFactory, 0, "PLAN",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null)),
+                new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))),
                 sql,
                 createParameterList(parasType),
                 null,

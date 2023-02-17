@@ -97,10 +97,6 @@ public class DriverProxyServer extends LocalService implements DriverProxyApi, M
                 }
             }
         } else {
-            cursorFactory = Meta.CursorFactory.LIST;
-        }
-
-        if (cursorFactory != resultSet.signature.cursorFactory) {
             signature = signature.setCursorFactory(cursorFactory);
         }
 
