@@ -45,7 +45,7 @@ final class DingoExplainSignature extends Meta.Signature {
     @JsonProperty("job")
     @Getter
     @Setter
-    private Job job;
+    private String job;
 
     public DingoExplainSignature(
         List<ColumnMetaData> columns,
@@ -61,16 +61,13 @@ final class DingoExplainSignature extends Meta.Signature {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.physicalPlan = physicalPlan;
         this.logicalPlan = logicalPlan;
-        this.job = job;
+        this.job = job.toString();
     }
 
     @Override
     public String toString() {
         StringBuilder resultBuilder = new StringBuilder();
-        String space = String.join("", Collections.nCopies(40, " "));
         String separate = String.join("", Collections.nCopies(100, "-"));
-        resultBuilder.append(space + "QUERY PLAN\n");
-        resultBuilder.append(separate + "\n");
 
         // sql
         resultBuilder.append("SQL: \n" + this.physicalPlan + "\n");
@@ -85,7 +82,7 @@ final class DingoExplainSignature extends Meta.Signature {
         resultBuilder.append(separate + "\n");
 
         // job
-        resultBuilder.append("IMPLEMENTATION PLAN: \n" + this.job.toString());
+        resultBuilder.append("IMPLEMENTATION PLAN: \n" + this.job);
         return resultBuilder.toString();
     }
 }
