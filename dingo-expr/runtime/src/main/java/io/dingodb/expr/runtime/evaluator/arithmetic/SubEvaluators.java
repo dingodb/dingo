@@ -25,8 +25,9 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class SubEvaluators {
@@ -38,6 +39,10 @@ final class SubEvaluators {
     }
 
     static long sub(long value0, long value1) {
+        return value0 - value1;
+    }
+
+    static float sub(float value0, float value1) {
         return value0 - value1;
     }
 

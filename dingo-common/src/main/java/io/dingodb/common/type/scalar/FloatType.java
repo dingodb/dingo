@@ -23,18 +23,19 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.DoubleSchema;
+import io.dingodb.serial.schema.FloatSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonTypeName("double")
-public class DoubleType extends AbstractScalarType {
+@JsonTypeName("float")
+public class FloatType extends AbstractScalarType {
     @JsonCreator
-    public DoubleType(@JsonProperty("nullable") boolean nullable) {
-        super(TypeCode.DOUBLE, nullable);
+    public FloatType(@JsonProperty("nullable") boolean nullable) {
+        super(TypeCode.FLOAT, nullable);
     }
 
     @Override
-    public DoubleType copy() {
-        return new DoubleType(nullable);
+    public FloatType copy() {
+        return new FloatType(nullable);
     }
 
     @Override
@@ -49,7 +50,6 @@ public class DoubleType extends AbstractScalarType {
 
     @Override
     protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
-        return converter.convertDoubleFrom(value);
+        return converter.convertFloatFrom(value);
     }
-
 }

@@ -34,6 +34,10 @@ final class AbsEvaluators {
         return Math.abs(num);
     }
 
+    static float abs(float num) {
+        return Math.abs(num);
+    }
+
     static double abs(double num) {
         return Math.abs(num);
     }

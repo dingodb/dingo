@@ -29,8 +29,9 @@ import java.util.Arrays;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class EqEvaluators {
@@ -42,6 +43,10 @@ final class EqEvaluators {
     }
 
     static boolean eq(long value0, long value1) {
+        return value0 == value1;
+    }
+
+    static boolean eq(float value0, float value1) {
         return value0 == value1;
     }
 

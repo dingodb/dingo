@@ -25,9 +25,10 @@ import java.math.BigDecimal;
         long.class,
         BigDecimal.class,
         double.class,
+        float.class,
         int.class,
         boolean.class,
-        String.class,
+        String.class
     },
     checkRange = true
 )

@@ -22,6 +22,7 @@ import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;
@@ -66,6 +67,8 @@ public final class DingoTypeFactory {
                 return new BooleanType(nullable);
             case TypeCode.LONG:
                 return new LongType(nullable);
+            case TypeCode.FLOAT:
+                return new FloatType(nullable);
             case TypeCode.DOUBLE:
                 return new DoubleType(nullable);
             case TypeCode.DECIMAL:

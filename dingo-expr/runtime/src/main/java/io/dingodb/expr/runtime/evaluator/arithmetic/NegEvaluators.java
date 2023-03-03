@@ -25,8 +25,9 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class NegEvaluators {
@@ -38,6 +39,10 @@ final class NegEvaluators {
     }
 
     static long neg(long value) {
+        return -value;
+    }
+
+    static float neg(float value) {
         return -value;
     }
 

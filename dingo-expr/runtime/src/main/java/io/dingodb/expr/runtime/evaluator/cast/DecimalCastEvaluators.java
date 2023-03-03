@@ -25,10 +25,11 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class,
         boolean.class,
-        String.class,
+        String.class
     }
 )
 final class DecimalCastEvaluators {

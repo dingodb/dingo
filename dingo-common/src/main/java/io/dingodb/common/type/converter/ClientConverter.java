@@ -25,12 +25,4 @@ public class ClientConverter implements DataConverter {
 
     public ClientConverter() {
     }
-
-    @Override
-    public Double convertDoubleFrom(@NonNull Object value) {
-        if (value instanceof Float) {
-            return BigDecimal.valueOf((Float) value).doubleValue();
-        }
-        return (Double) value;
-    }
 }

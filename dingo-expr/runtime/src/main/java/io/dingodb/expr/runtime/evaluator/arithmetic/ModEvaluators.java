@@ -25,6 +25,7 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class
     }

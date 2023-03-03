@@ -24,6 +24,7 @@ import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;
@@ -47,6 +48,7 @@ import java.util.List;
     @JsonSubTypes.Type(DateType.class),
     @JsonSubTypes.Type(DecimalType.class),
     @JsonSubTypes.Type(DoubleType.class),
+    @JsonSubTypes.Type(FloatType.class),
     @JsonSubTypes.Type(IntegerType.class),
     @JsonSubTypes.Type(LongType.class),
     @JsonSubTypes.Type(ObjectType.class),

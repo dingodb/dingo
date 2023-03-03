@@ -33,6 +33,11 @@ public class ExprConverter implements DataConverter {
     }
 
     @Override
+    public Double convertFloatFrom(@NonNull Object value) {
+        return ((Number) value).doubleValue();
+    }
+
+    @Override
     public Double convertDoubleFrom(@NonNull Object value) {
         return ((Number) value).doubleValue();
     }

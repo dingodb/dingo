@@ -46,6 +46,7 @@ import static io.dingodb.expr.core.TypeCode.BOOL;
 import static io.dingodb.expr.core.TypeCode.DATE;
 import static io.dingodb.expr.core.TypeCode.DECIMAL;
 import static io.dingodb.expr.core.TypeCode.DOUBLE;
+import static io.dingodb.expr.core.TypeCode.FLOAT;
 import static io.dingodb.expr.core.TypeCode.INT;
 import static io.dingodb.expr.core.TypeCode.LONG;
 import static io.dingodb.expr.core.TypeCode.STRING;
@@ -191,6 +192,7 @@ public final class DefinitionMapper {
             case Types.BIGINT:
                 return LONG;
             case Types.FLOAT:
+                return FLOAT;
             case Types.DOUBLE:
             case Types.REAL:
                 return DOUBLE;

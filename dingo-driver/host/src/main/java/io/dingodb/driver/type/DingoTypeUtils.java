@@ -78,6 +78,7 @@ public final class DingoTypeUtils {
             case Types.BIGINT:
                 return TypeCode.LONG;
             case Types.FLOAT:
+                return TypeCode.FLOAT;
             case Types.DOUBLE:
             case Types.REAL:
                 return TypeCode.DOUBLE;
