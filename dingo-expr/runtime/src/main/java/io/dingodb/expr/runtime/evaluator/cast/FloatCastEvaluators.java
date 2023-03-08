@@ -14,43 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.expr.runtime.evaluator.arithmetic;
+package io.dingodb.expr.runtime.evaluator.cast;
 
 import io.dingodb.expr.annotations.Evaluators;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 
 @Evaluators(
     induceSequence = {
+        float.class,
         BigDecimal.class,
         double.class,
-        float.class,
         long.class,
-        int.class
+        int.class,
+        boolean.class,
+        String.class
     }
 )
-final class MulEvaluators {
-    private MulEvaluators() {
+final class FloatCastEvaluators {
+    private FloatCastEvaluators() {
     }
 
-    static int mul(int value0, int value1) {
-        return value0 * value1;
-    }
-
-    static long mul(long value0, long value1) {
-        return value0 * value1;
-    }
-
-    static float mul(float value0, float value1) {
-        return value0 * value1;
-    }
-
-    static double mul(double value0, double value1) {
-        return value0 * value1;
-    }
-
-    static @NonNull BigDecimal mul(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
-        return value0.multiply(value1);
+    static float floatCast(float value) {
+        return value;
     }
 }

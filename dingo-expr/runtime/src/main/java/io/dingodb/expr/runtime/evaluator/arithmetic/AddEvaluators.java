@@ -25,8 +25,9 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class AddEvaluators {
@@ -38,6 +39,10 @@ final class AddEvaluators {
     }
 
     static long add(long value0, long value1) {
+        return value0 + value1;
+    }
+
+    static float add(float value0, float value1) {
         return value0 + value1;
     }
 

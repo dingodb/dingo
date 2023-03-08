@@ -31,10 +31,11 @@ import java.sql.Timestamp;
         String.class,
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class,
         boolean.class,
-        byte[].class,
+        byte[].class
     }
 )
 final class StringCastEvaluators {

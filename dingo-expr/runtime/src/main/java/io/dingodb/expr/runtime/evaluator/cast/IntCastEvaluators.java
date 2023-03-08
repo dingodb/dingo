@@ -25,9 +25,10 @@ import java.math.BigDecimal;
         int.class,
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         boolean.class,
-        String.class,
+        String.class
     }
 )
 final class IntCastEvaluators {

@@ -98,6 +98,10 @@ public interface DataConverter {
         return (Long) value;
     }
 
+    default Double convertFloatFrom(@NonNull Object value) {
+        return convertDoubleFrom(value);
+    }
+
     default Double convertDoubleFrom(@NonNull Object value) {
         return (Double) value;
     }

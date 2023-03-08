@@ -38,6 +38,14 @@ public final class Casting {
         throw intRangeException(value);
     }
 
+    public static int floatToInt(float value) {
+        return Math.round(value);
+    }
+
+    public static int floatToIntRC(float value) {
+        return longToIntRC(floatToLongRC(value));
+    }
+
     public static int doubleToInt(double value) {
         return (int) Math.round(value);
     }
@@ -64,6 +72,18 @@ public final class Casting {
 
     public static long intToLong(int value) {
         return value;
+    }
+
+    public static long floatToLong(float value) {
+        return Math.round(value);
+    }
+
+    public static long floatToLongRC(float value) {
+        long r = floatToLong(value);
+        if (r != Long.MIN_VALUE && r != Long.MAX_VALUE) {
+            return r;
+        }
+        throw longRangeException(value);
     }
 
     public static long doubleToLong(double value) {
@@ -111,8 +131,32 @@ public final class Casting {
         return value != 0.0;
     }
 
+    public static boolean floatToBool(float value) {
+        return value != 0.0f;
+    }
+
     public static boolean decimalToBool(@NonNull BigDecimal value) {
         return value.compareTo(BigDecimal.ZERO) != 0;
+    }
+
+    public static float intToFloat(int value) {
+        return value;
+    }
+
+    public static float longToFloat(long value) {
+        return (float) value;
+    }
+
+    public static float boolToFloat(boolean value) {
+        return value ? 1.0f : 0.0f;
+    }
+
+    public static float decimalToFloat(@NonNull BigDecimal value) {
+        return value.floatValue();
+    }
+
+    public static float stringToFloat(@NonNull String value) {
+        return Float.parseFloat(value);
     }
 
     public static double intToDouble(int value) {
@@ -123,6 +167,9 @@ public final class Casting {
         return (double) value;
     }
 
+    public static double floatToDouble(float value) {
+        return Double.parseDouble(String.valueOf(value));
+    }
     public static double boolToDouble(boolean value) {
         return value ? 1.0 : 0.0;
     }
@@ -140,6 +187,10 @@ public final class Casting {
     }
 
     public static @NonNull BigDecimal longToDecimal(long value) {
+        return BigDecimal.valueOf(value);
+    }
+
+    public static @NonNull BigDecimal floatToDecimal(float value) {
         return BigDecimal.valueOf(value);
     }
 
@@ -161,6 +212,10 @@ public final class Casting {
 
     public static @NonNull String longToString(long value) {
         return Long.toString(value);
+    }
+
+    public static @NonNull String floatToString(float value) {
+        return Float.toString(value);
     }
 
     public static @NonNull String doubleToString(double value) {

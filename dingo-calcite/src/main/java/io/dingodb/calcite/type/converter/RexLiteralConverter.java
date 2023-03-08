@@ -73,6 +73,11 @@ public class RexLiteralConverter implements DataConverter {
     }
 
     @Override
+    public Double convertFloatFrom(@NonNull Object value) {
+        return ((BigDecimal) value).doubleValue();
+    }
+
+    @Override
     public Double convertDoubleFrom(@NonNull Object value) {
         return ((BigDecimal) value).doubleValue();
     }

@@ -35,6 +35,7 @@ public final class TypeCode {
     public static final int DECIMAL = 5;
     public static final int STRING = 6;
     public static final int BINARY = 7;
+    public static final int FLOAT = 8;
     public static final int DATE = 101;
     public static final int TIME = 102;
     public static final int TIMESTAMP = 103;
@@ -66,6 +67,8 @@ public final class TypeCode {
                 return "STRING";
             case BINARY:
                 return "BINARY";
+            case FLOAT:
+                return "FLOAT";
             case DATE:
                 return "DATE";
             case TIME:
@@ -105,9 +108,10 @@ public final class TypeCode {
             case "BOOLEAN":
                 return BOOL;
             case "DOUBLE":
-            case "FLOAT":
             case "REAL":
                 return DOUBLE;
+            case "FLOAT":
+                return FLOAT;
             case "DECIMAL":
                 return DECIMAL;
             case "STRING":
@@ -170,6 +174,8 @@ public final class TypeCode {
             return BOOL;
         } else if (double.class.isAssignableFrom(type) || Double.class.isAssignableFrom(type)) {
             return DOUBLE;
+        } else if (float.class.isAssignableFrom(type) || Float.class.isAssignableFrom(type)) {
+            return FLOAT;
         } else if (BigDecimal.class.isAssignableFrom(type)) {
             return DECIMAL;
         } else if (String.class.isAssignableFrom(type)) {

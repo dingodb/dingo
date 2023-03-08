@@ -22,6 +22,7 @@ import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
@@ -41,6 +42,8 @@ public class TypeConvert {
             return ColumnConstant.ColumnTypeFloat32;
         } else if (dt instanceof DoubleType) {
             return ColumnConstant.ColumnTypeFloat64;
+        } else if (dt instanceof FloatType) {
+            return ColumnConstant.ColumnTypeFloat32;
         } else if (dt instanceof IntegerType) {
             return ColumnConstant.ColumnTypeInt32;
         } else if (dt instanceof LongType) {
@@ -65,6 +68,8 @@ public class TypeConvert {
             return new BigDecimal(str);
         } else if (dt instanceof DoubleType) {
             return Double.valueOf(str);
+        } else if (dt instanceof FloatType) {
+            return Float.valueOf(str);
         } else if (dt instanceof IntegerType) {
             return Integer.valueOf(str);
         } else if (dt instanceof LongType) {
@@ -92,6 +97,8 @@ public class TypeConvert {
         } else if (dt instanceof DecimalType) {
             return obj.toString();
         } else if (dt instanceof DoubleType) {
+            return obj.toString();
+        } else if (dt instanceof FloatType) {
             return obj.toString();
         } else if (dt instanceof IntegerType) {
             return obj.toString();

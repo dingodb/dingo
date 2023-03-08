@@ -55,6 +55,14 @@ public class StrParseConverter implements DataConverter {
     }
 
     @Override
+    public Double convertFloatFrom(@NonNull Object value) {
+        if (value.toString().trim().isEmpty()) {
+            return null;
+        }
+        return Double.parseDouble(value.toString());
+    }
+
+    @Override
     public Double convertDoubleFrom(@NonNull Object value) {
         if (value.toString().trim().isEmpty()) {
             return null;

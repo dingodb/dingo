@@ -134,6 +134,9 @@ public class Value<T> implements Expr {
         ) {
             return wrapByCast(TypeCode.DECIMAL, value.toString());
         }
+        if (value instanceof Float) {
+            return wrapByCast(TypeCode.FLOAT, Float.toString((Float) value));
+        }
         if (value instanceof Double) {
             return wrapByCast(TypeCode.DOUBLE, Double.toString((Double) value));
         }

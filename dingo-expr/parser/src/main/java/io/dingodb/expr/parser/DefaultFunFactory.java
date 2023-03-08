@@ -36,6 +36,7 @@ import io.dingodb.expr.runtime.evaluator.cast.BooleanCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DateCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DecimalCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.DoubleCastEvaluatorsFactory;
+import io.dingodb.expr.runtime.evaluator.cast.FloatCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.IntCastEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.IntCastRCEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.cast.LongCastEvaluatorsFactory;
@@ -109,6 +110,7 @@ public class DefaultFunFactory implements FunFactory {
         registerCastFun(TypeCode.INT);
         registerCastFun(TypeCode.LONG);
         registerCastFun(TypeCode.DOUBLE);
+        registerCastFun(TypeCode.FLOAT);
         registerCastFun(TypeCode.BOOL);
         registerCastFun(TypeCode.DECIMAL);
         registerCastFun(TypeCode.STRING);
@@ -137,6 +139,8 @@ public class DefaultFunFactory implements FunFactory {
                 return checkRange ? LongCastRCEvaluatorsFactory.INSTANCE : LongCastEvaluatorsFactory.INSTANCE;
             case TypeCode.DOUBLE:
                 return DoubleCastEvaluatorsFactory.INSTANCE;
+            case TypeCode.FLOAT:
+                return FloatCastEvaluatorsFactory.INSTANCE;
             case TypeCode.BOOL:
                 return BooleanCastEvaluatorsFactory.INSTANCE;
             case TypeCode.DECIMAL:

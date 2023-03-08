@@ -21,6 +21,7 @@ import io.dingodb.serial.schema.BooleanListSchema;
 import io.dingodb.serial.schema.BytesListSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.DoubleListSchema;
+import io.dingodb.serial.schema.FloatListSchema;
 import io.dingodb.serial.schema.IntegerListSchema;
 import io.dingodb.serial.schema.LongListSchema;
 import io.dingodb.serial.schema.StringListSchema;
@@ -35,6 +36,8 @@ public final class TypeUtils {
                 return new BooleanListSchema(-1);
             case TypeCode.INT:
                 return new IntegerListSchema(-1);
+            case TypeCode.FLOAT:
+                return new FloatListSchema(-1);
             case TypeCode.DOUBLE:
                 return new DoubleListSchema(-1);
             case TypeCode.STRING:

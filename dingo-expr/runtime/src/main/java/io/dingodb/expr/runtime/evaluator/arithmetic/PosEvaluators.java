@@ -25,8 +25,9 @@ import java.math.BigDecimal;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class PosEvaluators {
@@ -38,6 +39,10 @@ final class PosEvaluators {
     }
 
     static long pos(long value) {
+        return value;
+    }
+
+    static float pos(float value) {
         return value;
     }
 

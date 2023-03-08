@@ -38,7 +38,7 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
         if (type instanceof BasicSqlType) {
             switch (type.getSqlTypeName()) {
                 case FLOAT:
-                    return Double.class;
+                    return Float.class;
                 case DATE:
                     return Date.class;
                 case TIME:
@@ -54,25 +54,16 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
 
     @Override
     public RelDataType createSqlType(SqlTypeName typeName) {
-        if (typeName == SqlTypeName.FLOAT) {
-            return super.createSqlType(SqlTypeName.DOUBLE);
-        }
         return super.createSqlType(typeName);
     }
 
     @Override
     public RelDataType createSqlType(SqlTypeName typeName, int precision) {
-        if (typeName == SqlTypeName.FLOAT) {
-            return super.createSqlType(SqlTypeName.DOUBLE, precision);
-        }
         return super.createSqlType(typeName, precision);
     }
 
     @Override
     public RelDataType createSqlType(SqlTypeName typeName, int precision, int scale) {
-        if (typeName == SqlTypeName.FLOAT) {
-            return super.createSqlType(SqlTypeName.DOUBLE, precision, scale);
-        }
         return super.createSqlType(typeName, precision, scale);
     }
 

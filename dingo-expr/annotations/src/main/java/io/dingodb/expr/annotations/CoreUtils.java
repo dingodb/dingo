@@ -36,6 +36,7 @@ public final class CoreUtils {
     private static final TypeName INTEGER = TypeName.get(Integer.class);
     private static final TypeName LONG = TypeName.get(Long.class);
     private static final TypeName BOOLEAN = TypeName.get(Boolean.class);
+    private static final TypeName FLOAT = TypeName.get(Float.class);
     private static final TypeName DOUBLE = TypeName.get(Double.class);
     private static final TypeName DECIMAL = TypeName.get(BigDecimal.class);
     private static final TypeName STRING = TypeName.get(String.class);
@@ -56,6 +57,10 @@ public final class CoreUtils {
 
     private static boolean isBoolType(@NonNull TypeName typeName) {
         return typeName.equals(TypeName.BOOLEAN) || typeName.equals(BOOLEAN);
+    }
+
+    private static boolean isFloatType(@NonNull TypeName typeName) {
+        return typeName.equals(TypeName.FLOAT) || typeName.equals(FLOAT);
     }
 
     private static boolean isDoubleType(@NonNull TypeName typeName) {
@@ -105,6 +110,8 @@ public final class CoreUtils {
             return TypeCode.LONG;
         } else if (isBoolType(typeName)) {
             return TypeCode.BOOL;
+        }else if (isFloatType(typeName)) {
+            return TypeCode.FLOAT;
         } else if (isDoubleType(typeName)) {
             return TypeCode.DOUBLE;
         } else if (isDecimalType(typeName)) {
@@ -159,6 +166,8 @@ public final class CoreUtils {
         if (isIntType(target)) {
             if (isLongType(source)) {
                 return isCheckRange ? "longToIntRC" : "longToInt";
+            } else if (isFloatType(source)) {
+                return isCheckRange ? "floatToIntRC" : "floatToInt";
             } else if (isDoubleType(source)) {
                 return isCheckRange ? "doubleToIntRC" : "doubleToInt";
             } else if (isBoolType(source)) {
@@ -171,6 +180,8 @@ public final class CoreUtils {
         } else if (isLongType(target)) {
             if (isIntType(source)) {
                 return "intToLong";
+            } else if (isFloatType(source)) {
+                return isCheckRange ? "floatToLongRC" : "floatToLong";
             } else if (isDoubleType(source)) {
                 return isCheckRange ? "doubleToLongRC" : "doubleToLong";
             } else if (isBoolType(source)) {
@@ -185,16 +196,32 @@ public final class CoreUtils {
                 return "intToBool";
             } else if (isLongType(source)) {
                 return "longToBool";
+            } else if (isFloatType(source)) {
+                return "floatToBool";
             } else if (isDoubleType(source)) {
                 return "doubleToBool";
             } else if (isDecimalType(source)) {
                 return "decimalToBool";
+            }
+        } else if (isFloatType(target)) {
+            if (isIntType(source)) {
+                return "intToFloat";
+            } else if (isLongType(source)) {
+                return "longToFloat";
+            } else if (isBoolType(source)) {
+                return "boolToFloat";
+            } else if (isDecimalType(source)) {
+                return "decimalToFloat";
+            } else if (isStringType(source)) {
+                return "stringToFloat";
             }
         } else if (isDoubleType(target)) {
             if (isIntType(source)) {
                 return "intToDouble";
             } else if (isLongType(source)) {
                 return "longToDouble";
+            } else if (isFloatType(source)) {
+                return "floatToDouble";
             } else if (isBoolType(source)) {
                 return "boolToDouble";
             } else if (isDecimalType(source)) {
@@ -207,6 +234,8 @@ public final class CoreUtils {
                 return "intToDecimal";
             } else if (isLongType(source)) {
                 return "longToDecimal";
+            } else if (isFloatType(source)) {
+                return "floatToDecimal";
             } else if (isDoubleType(source)) {
                 return "doubleToDecimal";
             } else if (isBoolType(source)) {
@@ -219,6 +248,8 @@ public final class CoreUtils {
                 return "intToString";
             } else if (isLongType(source)) {
                 return "longToString";
+            } else if (isFloatType(source)) {
+                return "floatToString";
             } else if (isDoubleType(source)) {
                 return "doubleToString";
             } else if (isBoolType(source)) {

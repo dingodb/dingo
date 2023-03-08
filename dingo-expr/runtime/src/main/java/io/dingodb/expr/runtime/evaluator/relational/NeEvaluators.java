@@ -29,8 +29,9 @@ import java.util.Arrays;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class NeEvaluators {
@@ -42,6 +43,10 @@ final class NeEvaluators {
     }
 
     static boolean ne(long value0, long value1) {
+        return value0 != value1;
+    }
+
+    static boolean ne(float value0, float value1) {
         return value0 != value1;
     }
 

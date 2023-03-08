@@ -28,8 +28,9 @@ import java.sql.Timestamp;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
-        int.class,
+        int.class
     }
 )
 final class GtEvaluators {
@@ -41,6 +42,10 @@ final class GtEvaluators {
     }
 
     static boolean gt(long value0, long value1) {
+        return value0 > value1;
+    }
+
+    static boolean gt(float value0, float value1) {
         return value0 > value1;
     }
 
