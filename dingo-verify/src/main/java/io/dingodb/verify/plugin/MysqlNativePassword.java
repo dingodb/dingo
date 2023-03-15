@@ -31,28 +31,28 @@ public class MysqlNativePassword extends AlgorithmPlugin {
             if (StringUtils.isEmpty(password)) {
                 return "";
             }
-            return sha1(sha1(password));
+            return scramble(password);
         } catch (UnsupportedEncodingException e) {
             log.error("Encoded password error : {}", e.getMessage(), e);
         }
         return null;
     }
 
-    private static String sha1(String inStr) throws UnsupportedEncodingException {
+    private static String scramble(String password) throws UnsupportedEncodingException {
         MessageDigest sha = null;
         try {
-            sha = MessageDigest.getInstance("SHA");
+            sha = MessageDigest.getInstance("SHA-1");
         } catch (Exception e) {
-            System.out.println(e.toString());
-            e.printStackTrace();
             return "";
         }
+        byte[] passwordHashStage1 = sha.digest(password.getBytes());
+        sha.reset();
 
-        byte[] byteArray = inStr.getBytes("UTF-8");
-        byte[] md5Bytes = sha.digest(byteArray);
+        byte[] passwordHashStage2 = sha.digest(passwordHashStage1);
+
         StringBuffer hexValue = new StringBuffer();
-        for (int i = 0; i < md5Bytes.length; i++) {
-            int val = ((int) md5Bytes[i]) & 0xff;
+        for (int i = 0; i < passwordHashStage2.length; i++) {
+            int val = ((int) passwordHashStage2[i]) & 0xff;
             if (val < 16) {
                 hexValue.append("0");
             }

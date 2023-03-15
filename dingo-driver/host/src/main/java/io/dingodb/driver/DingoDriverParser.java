@@ -32,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -275,8 +276,7 @@ public final class DingoDriverParser extends DingoParser {
 
     public CommonId getSchemaId(String schema) {
         if (schema == null) {
-            // todo if schema is null and use default schema (use schema)
-            schema = "DINGO";
+            schema = connection.getContext().getUsedSchema().getName();
         }
         return UserServiceProvider.getRoot().getSchemaId(schema);
     }
@@ -293,6 +293,7 @@ public final class DingoDriverParser extends DingoParser {
         } catch (SqlParseException e) {
             throw ExceptionUtils.toRuntime(e);
         }
+
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             verify(sqlNode);
             final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
@@ -306,6 +307,24 @@ public final class DingoDriverParser extends DingoParser {
             );
         }
         JavaTypeFactory typeFactory = connection.getTypeFactory();
+        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
+        // for compatible mysql protocol
+        if (compatibleMysql(sqlNode)) {
+            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
+            List<ColumnMetaData> columns = new ArrayList<>();
+            for (String column : operation.columns()) {
+                columns.add(metaData(typeFactory, 0, column,
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null));
+            }
+            List<AvaticaParameter> parameters = new ArrayList();
+            return new MysqlSignature(columns,
+                sql,
+                parameters,
+                null,
+                cursorFactory,
+                Meta.StatementType.SELECT,
+                operation);
+        }
         SqlExplain explain = null;
         if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
             explain = (SqlExplain) sqlNode;
@@ -335,7 +354,7 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType jdbcType = makeStruct(typeFactory, type);
         List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
-        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
+
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
         CalciteSchema rootSchema = connection.getRootSchema();
@@ -373,16 +392,5 @@ public final class DingoDriverParser extends DingoParser {
             statementType,
             job.getJobId()
         );
-    }
-
-    public List<SqlGrant> getGrantForUser(String sql) {
-        try {
-            SqlShowGrants sqlNode = (SqlShowGrants) parse(sql);
-            DingoDdlExecutor ddlExecutor = (DingoDdlExecutor) PARSER_CONFIG.parserFactory().getDdlExecutor();
-            return ddlExecutor.execute(sqlNode);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
     }
 }
