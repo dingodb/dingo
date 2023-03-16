@@ -17,7 +17,10 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.ddl.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
+import io.dingodb.calcite.operation.Operation;
+import io.dingodb.calcite.operation.SqlToOperationConverter;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -39,8 +42,11 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -51,6 +57,7 @@ import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
 
@@ -160,5 +167,28 @@ public class DingoParser {
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
             return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
         }
+    }
+
+    protected boolean compatibleMysql(SqlNode sqlNode) {
+        if (sqlNode instanceof SqlShow) {
+            return true;
+        } else if (sqlNode instanceof SqlSelect) {
+            SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
+            SqlNode selectItem1 = sqlNodes.get(0);
+            if (selectItem1 instanceof SqlBasicCall) {
+                SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
+                String operatorName = sqlBasicCall.getOperator().getName();
+                if (operatorName.equalsIgnoreCase("database")) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return false;
+        }
+    }
+
+    public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
+        return SqlToOperationConverter.convert(sqlNode, connection, context).get();
     }
 }

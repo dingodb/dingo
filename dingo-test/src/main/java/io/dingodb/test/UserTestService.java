@@ -62,7 +62,7 @@ public class UserTestService implements UserService {
     @Override
     public PrivilegeGather getPrivilegeDef(Channel channel, String user, String host) {
         UserDefinition userDefinition = UserDefinition.builder().user("root").host("%")
-            .password("cbcce4ebcf0e63f32a3d6904397792720f7e40ba").plugin("mysql_native_password").build();
+            .password("e56a114692fe0de073f9a1dd68a00eeb9703f3f1").plugin("mysql_native_password").build();
         Boolean[] privileges = new Boolean[35];
         for (int i = 0; i < privileges.length; i ++) {
             privileges[i] = true;
@@ -73,7 +73,7 @@ public class UserTestService implements UserService {
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
         return UserDefinition.builder().user("root").host("%")
-            .password("cbcce4ebcf0e63f32a3d6904397792720f7e40ba").plugin("mysql_native_password").build();
+            .password("e56a114692fe0de073f9a1dd68a00eeb9703f3f1").plugin("mysql_native_password").build();
     }
 
     @Override

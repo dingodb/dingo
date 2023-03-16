@@ -29,7 +29,7 @@ public class SqlShowGrants extends SqlShow {
     public String host;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("SHOW GRANTS", SqlKind.OTHER_DDL);
+        new SqlSpecialOperator("SHOW GRANTS", SqlKind.SELECT);
 
     /**
      * Creates a SqlDdl.
