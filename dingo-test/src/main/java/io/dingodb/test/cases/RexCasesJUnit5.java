@@ -192,7 +192,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
             arguments("substring('DingoDatabase', 1, 5)", "substring('DingoDatabase', 1, 5)", "Dingo"),
             arguments("substring('DingoDatabase', 1, 100)", "substring('DingoDatabase', 1, 100)", "DingoDatabase"),
             arguments("substring('DingoDatabase', 2, 2.5)", "substring('DingoDatabase', 2, 2.5)", "ing"),
-            arguments("substring('DingoDatabase', 2, cast (2.5 as int))", "substring('DingoDatabase', 2, 3)", "ing"),
+            arguments("substring('DingoDatabase', 2, cast (2.5 as int))", "substring('DingoDatabase', 2, INT(2.5))", "ing"),
             arguments("substring('DingoDatabase', 2, -3)", "substring('DingoDatabase', 2, -3)", ""),
             arguments("substring('DingoDatabase', -4, 4)", "substring('DingoDatabase', -4, 4)", "base"),
             arguments("substring('abc-def', 1, 8)", "substring('abc-def', 1, 8)", "abc-def"),
