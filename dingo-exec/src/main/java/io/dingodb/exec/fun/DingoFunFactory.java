@@ -35,6 +35,7 @@ import io.dingodb.exec.fun.special.RtSliceFun;
 import io.dingodb.exec.fun.special.ThrowOp;
 import io.dingodb.exec.fun.string.CharLengthFun;
 import io.dingodb.exec.fun.string.ConcatFun;
+import io.dingodb.exec.fun.string.GlobalVariableFun;
 import io.dingodb.exec.fun.string.LTrimFun;
 import io.dingodb.exec.fun.string.LeftFun;
 import io.dingodb.exec.fun.string.LocateFun;
@@ -115,6 +116,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(CharLengthFun.NAME, CharLengthFun::new);
         registerUdf(ConcatFun.NAME, ConcatFun::new);
         registerUdf(LeftFun.NAME, LeftFun::new);
+        registerUdf(GlobalVariableFun.NAME, GlobalVariableFun::new);
         registerUdf(LocateFun.NAME, LocateFun::new);
         registerUdf(LTrimFun.NAME, LTrimFun::new);
         registerUdf(MidFun.NAME, MidFun::new);

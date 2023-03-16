@@ -22,6 +22,7 @@ import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.number.FormatFun;
 import io.dingodb.exec.fun.number.PowFun;
 import io.dingodb.exec.fun.string.ConcatFun;
+import io.dingodb.exec.fun.string.GlobalVariableFun;
 import io.dingodb.exec.fun.string.LTrimFun;
 import io.dingodb.exec.fun.string.LeftFun;
 import io.dingodb.exec.fun.string.LocateFun;
@@ -229,6 +230,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             DingoFunFactory.THROW,
             ReturnTypes.VARCHAR_2000_NULLABLE,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            GlobalVariableFun.NAME,
+            ReturnTypes.VARCHAR_2000,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING

@@ -258,10 +258,6 @@ public class DingoMeta extends MetaImpl {
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
         try {
-            MetaResultSet showMetaResultSet = getShowMetaResultSet(sql, parser);
-            if (showMetaResultSet != null) {
-                return new ExecuteResult(ImmutableList.of(showMetaResultSet));
-            }
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
@@ -595,25 +591,6 @@ public class DingoMeta extends MetaImpl {
             "COLUMN_NAME",
             "KEY_SEQ"
         );
-    }
-
-    public MetaResultSet getShowMetaResultSet(String sql, DingoDriverParser parser) {
-        if (sql.startsWith("show") || sql.startsWith("SHOW")) {
-            List<SqlGrant> sqlGrants = parser.getGrantForUser(sql);
-            List<String> showGrants = sqlGrants.stream().map(sqlGrant -> sqlGrant.toString())
-                .collect(Collectors.toList());
-
-            return createResultSet(
-                Linq4j.asEnumerable(showGrants)
-                    .select(t -> new Grant(
-                        t
-                    )),
-                Grant.class,
-                "grants"
-            );
-        } else {
-            return null;
-        }
     }
 
     @Override
