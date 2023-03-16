@@ -61,7 +61,7 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         DingoParserContext context = table.getContext();
         RelOptSchema relOptSchema = context.getCatalogReader().unwrap(RelOptSchema.class);
         final RelDataType rowType = table.getRowType(context.getTypeFactory());
-        relOptTable = RelOptTableImpl.create(relOptSchema, rowType, table.getNames(), table, null);
+        relOptTable = RelOptTableImpl.create(relOptSchema, rowType, table.getNames(), table, (Expression) null);
         this.schemaId = table.getSchema().id();
         this.tableId = table.getSchema().getTableId(table.getNames().get(table.getNames().size() - 1));
         this.user = user;
