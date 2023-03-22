@@ -261,7 +261,7 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     <USER> ifNotExists = IfNotExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
      { user = token.image; }
-    [ <ATSPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
+    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
     <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; }
     {
        return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists);
@@ -595,7 +595,7 @@ SqlDrop SqlDropUser(Span s, boolean replace) :
     <USER> ifExists = IfExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
     { user = token.image; }
-    [ <ATSPLIT> (<QUOTED_STRING> | <IDENTIFIER> ) { host = token.image;} ]
+    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER> ) { host = token.image;} ]
     {
         return new SqlDropUser(s.end(this), ifExists, user, host);
     }
@@ -675,7 +675,7 @@ SqlGrant SqlGrant() : {
    <TO>
    ( <QUOTED_STRING> | <IDENTIFIER> )
    { user = token.image; }
-    [<ATSPLIT> (<QUOTED_STRING>|<IDENTIFIER>) { host = token.image;} ]
+    [<AT_SPLIT> (<QUOTED_STRING>|<IDENTIFIER>) { host = token.image;} ]
     {
         return new SqlGrant(s.end(this), isAllPrivileges, privilegeList, subject, user, host);
     }
@@ -818,7 +818,7 @@ SqlRevoke SqlRevoke() : {
    <FROM>
     ( <QUOTED_STRING> | <IDENTIFIER> )
     { user = user = token.image; }
-    [<ATSPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
+    [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
     {
         return new SqlRevoke(s.end(this), isAllPrivileges, privilegeList, subject, user, host);
     }
@@ -857,23 +857,118 @@ SqlFlushPrivileges SqlFlush ():{
 
 SqlShow SqlShow(): {
   final Span s;
+  final SqlShow show;
+} {
+  <SHOW> { s = span(); }
+  (
+    show = SqlShowGrants(s)
+    |
+    show = SqlShowWarnings(s)
+    |
+    show = SqlShowDatabases(s)
+    |
+    show = SqlShowTables(s)
+  )
+  {
+    return show;
+  }
+}
+
+SqlShow SqlShowDatabases(Span s): {
+} {
+  <DATABASES>
+  { return new SqlShowDatabases(s.end(this)); }
+}
+
+SqlShow SqlShowTables(Span s): {
+} {
+  <TABLES>
+  { return new SqlShowTables(s.end(this)); }
+}
+
+SqlShow SqlShowWarnings(Span s): {
+
+} {
+  <WARNINGS>
+  {
+    return new SqlShowWarnings(s.end(this));
+  }
+}
+
+SqlShow SqlShowGrants(Span s): {
   SqlIdentifier userIdentifier;
   String user = null;
   String host = "%";
 } {
-  <SHOW> { s = span(); } <GRANTS> <FOR>
+  <GRANTS> <FOR>
   [
        <QUOTED_STRING> { user = token.image; }
-       [<ATSPLIT> <QUOTED_STRING> { host = token.image;} ]
+       [<AT_SPLIT> <QUOTED_STRING> { host = token.image;} ]
        {
        return new SqlShowGrants(s.end(this), user, host);
        }
   ]
   userIdentifier = CompoundIdentifier() { user = userIdentifier.getSimple(); }
-  [<ATSPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
+  [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
   {
     return new SqlShowGrants(s.end(this), user, host);
   }
 }
 
+SqlNode ScopeVariable(): {
+       final SqlFunctionCategory funcType;
+       final SqlIdentifier qualifiedName;
+       final Span s;
+       SqlCharStringLiteral literal;
+       final SqlIdentifier id;
+       final List<SqlNode> args = new ArrayList();
+       SqlLiteral quantifier = null;
+} {
+   (
+     <AT_SPLIT>
+         {
+         qualifiedName = new SqlIdentifier("@", getPos());
+         }
+   |
+     <AT_SPLIT_2>
+         {
+         qualifiedName = new SqlIdentifier("@@", getPos());
+         }
+   )
+     id = CompoundIdentifier()
+     {
+         String p = null;
+         if (id.names.size() == 1) {
+             p = id.names.get(0);
+         } else if (id.names.size() == 2) {
+             p = id.names.get(0) + "." + id.names.get(1);
+         }
+         literal = SqlLiteral.createCharString(p, getPos());
+         args.add(literal);
+
+         funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
+         s = span();
+         quantifier = null;
+
+         return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
+     }
+}
+
+SqlCommit SqlCommit(): {
+   Span s;
+} {
+   <COMMIT> { s = span(); return new SqlCommit(s.end(this)); }
+}
+
+SqlRollback SqlRollback(): {
+   Span s;
+} {
+  <ROLLBACK> { s = span(); return new SqlRollback(s.end(this)); }
+}
+
+SqlUseSchema SqlUseSchema(): {
+   Span s;
+} {
+  <USE> <IDENTIFIER> { s = span(); return new SqlUseSchema(s.end(this), token.image); }
+}
 

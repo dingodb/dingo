@@ -83,6 +83,9 @@ public class DingoStatement extends AvaticaStatement {
         } else if (signature instanceof DingoSignature) {
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
             return jobManager.createIterator(job, null);
+        } else if (signature instanceof MysqlSignature) {
+            MysqlSignature mysqlSignature = (MysqlSignature) signature;
+            return mysqlSignature.getOperation().getIterator();
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }

@@ -37,6 +37,7 @@ services:
     container_name: executor1
     ports:
       - 8765:8765
+      - 3307:3307
     networks:
       - dingo_net
     depends_on:

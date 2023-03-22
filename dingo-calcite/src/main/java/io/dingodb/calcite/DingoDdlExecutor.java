@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
@@ -26,17 +27,15 @@ import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
+import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
-import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
-import io.dingodb.common.privilege.PrivilegeDict;
-import io.dingodb.common.privilege.PrivilegeGather;
-import io.dingodb.common.privilege.PrivilegeList;
 import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
@@ -65,13 +64,13 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
@@ -87,7 +86,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.util.Optional.mapOrNull;
@@ -459,36 +457,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
-        UserDefinition userDef = UserDefinition.builder()
-            .user(sqlShowGrants.user)
-            .host(getRealAddress(sqlShowGrants.host))
-            .build();
-        if (!userService.existsUser(userDef)) {
-            throw new RuntimeException("user is not exist");
-        }
-        PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, sqlShowGrants.user,
-            getRealAddress(sqlShowGrants.host));
-        List<SchemaPrivDefinition> schemaPrivDefinitions = privilegeGather
-            .getSchemaPrivDefMap().values().stream().collect(Collectors.toList());
-        List<TablePrivDefinition> tablePrivDefinitions = privilegeGather
-            .getTablePrivDefMap().values().stream().collect(Collectors.toList());
-        UserDefinition userDefinition = privilegeGather.getUserDef();
-
-        if (userDefinition == null) {
-            return new ArrayList<>();
-        }
-
-        List<SqlGrant> sqlGrants = new ArrayList<>();
-        SqlGrant userGrant = null;
-        if ((userGrant = getUserGrant(sqlShowGrants, userDefinition)) != null) {
-            sqlGrants.add(userGrant);
-        }
-        sqlGrants.addAll(getSchemaGrant(sqlShowGrants, schemaPrivDefinitions));
-        sqlGrants.addAll(getTableGrant(sqlShowGrants, tablePrivDefinitions));
-        return sqlGrants;
-    }
-
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
         final Pair<MutableSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddIndex.table, context);
@@ -518,115 +486,21 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         schema.dropIndex(tableName, sqlDropIndex.index);
     }
 
-    public SqlGrant getUserGrant(@NonNull SqlShowGrants dingoSqlShowGrants, UserDefinition userDefinition) {
-        List<Boolean> userPrivileges = Arrays.asList(userDefinition.getPrivileges());
-        long count = userPrivileges.stream()
-            .filter(isPrivilege -> isPrivilege).count();
-
-        if (count > 0) {
-            boolean isAllPrivilege = false;
-            List<String> privileges = null;
-
-            if (count == PrivilegeList.privilegeMap.get(PrivilegeType.USER).size()) {
-                isAllPrivilege = true;
-                privileges = new ArrayList<>();
-                privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.USER));
-            } else {
-                List<Integer> indexs = new ArrayList<>();
-                Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
-                    if (userPrivileges.get(i)) {
-                        indexs.add(i);
-                    }
-                });
-                privileges = PrivilegeDict.getPrivilege(indexs);
-            }
-            SqlParserPos pos = new SqlParserPos(0, 0);
-            SqlIdentifier subject = new SqlIdentifier(Arrays.asList("*", "*"), null,
-                pos,
-                new ArrayList<SqlParserPos>());
-            SqlGrant sqlGrant = new SqlGrant(pos, isAllPrivilege, privileges, subject,
-                dingoSqlShowGrants.user, dingoSqlShowGrants.host);
-            log.info("user sqlGrant:" + sqlGrant.toString());
-            return sqlGrant;
-        }
-        return null;
+    public void execute(@NonNull SqlSetOption sqlSetOption, CalcitePrepare.Context context) {
+        log.info("sql set option");
     }
 
-    public List<SqlGrant> getSchemaGrant(@NonNull SqlShowGrants sqlShowGrants,
-                                         List<SchemaPrivDefinition> schemaPrivDefinitions) {
-        List<SqlGrant> sqlGrants = new ArrayList<>();
-        for (SchemaPrivDefinition schemaPrivDefinition : schemaPrivDefinitions) {
-            List<Boolean> schemaPrivileges = Arrays.asList(schemaPrivDefinition.getPrivileges());
-            long count = schemaPrivileges.stream()
-                .filter(isPrivilege -> isPrivilege).count();
-
-            if (count > 0) {
-                boolean isAllPrivilege = false;
-                List<String> privileges = null;
-                if (count == PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA).size()) {
-                    isAllPrivilege = true;
-                    privileges = new ArrayList<>();
-                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA));
-                } else {
-                    List<Integer> indexs = new ArrayList<>();
-                    Stream.iterate(0, i -> i + 1).limit(schemaPrivileges.size()).forEach(i -> {
-                        if (schemaPrivileges.get(i)) {
-                            indexs.add(i);
-                        }
-                    });
-                    privileges = PrivilegeDict.getPrivilege(indexs);
-                }
-                SqlParserPos sqlParserPos = new SqlParserPos(0, 0);
-                SqlIdentifier subject = new SqlIdentifier(Arrays.asList(schemaPrivDefinition.getSchemaName(), "*"),
-                    null, sqlParserPos,
-                    new ArrayList<SqlParserPos>());
-                SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
-                    sqlShowGrants.user, sqlShowGrants.host);
-                log.info("schema sqlGrant:" + sqlGrant.toString());
-                sqlGrants.add(sqlGrant);
-            }
-        }
-        return sqlGrants;
+    public void execute(@NonNull SqlCommit sqlCommit, CalcitePrepare.Context context) {
+        log.info("commit");
     }
 
-    public List<SqlGrant> getTableGrant(@NonNull SqlShowGrants sqlShowGrants,
-                                        List<TablePrivDefinition> tablePrivDefinitions) {
-        List<SqlGrant> sqlGrants = new ArrayList<>();
-        for (TablePrivDefinition tablePrivDefinition : tablePrivDefinitions) {
-            if (tablePrivDefinition == null) {
-                continue;
-            }
-            List<Boolean> userPrivileges = Arrays.asList(tablePrivDefinition.getPrivileges());
-            long count = userPrivileges.stream()
-                .filter(isPrivilege -> isPrivilege).count();
+    public void execute(@NonNull SqlRollback sqlRollback, CalcitePrepare.Context context) {
+        log.info("rollback");
+    }
 
-            if (count > 0) {
-                boolean isAllPrivilege = false;
-                List<String> privileges = null;
-                if (count == PrivilegeList.privilegeMap.get(PrivilegeType.TABLE).size()) {
-                    isAllPrivilege = true;
-                    privileges = new ArrayList<>();
-                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.TABLE));
-                } else {
-                    List<Integer> indexs = new ArrayList<>();
-                    Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
-                        if (userPrivileges.get(i)) {
-                            indexs.add(i);
-                        }
-                    });
-                    privileges = PrivilegeDict.getPrivilege(indexs);
-                }
-                SqlParserPos sqlParserPos = new SqlParserPos(0, 0);
-                SqlIdentifier subject = new SqlIdentifier(Arrays.asList(tablePrivDefinition.getSchemaName(),
-                    tablePrivDefinition.getTableName()), null, sqlParserPos,
-                    new ArrayList<SqlParserPos>());
-                SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
-                    sqlShowGrants.user, sqlShowGrants.host);
-                log.info("table sqlGrant:" + sqlGrant.toString());
-                sqlGrants.add(sqlGrant);
-            }
-        }
-        return sqlGrants;
+    public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
+        String schema = sqlUseSchema.schema;
+        log.info("use schema");
     }
 
     public void validateDropIndex(MutableSchema schema, String tableName, String indexName) {

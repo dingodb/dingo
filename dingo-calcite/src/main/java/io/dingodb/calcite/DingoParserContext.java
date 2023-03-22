@@ -35,6 +35,7 @@ import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -46,18 +47,17 @@ import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 // These are static for every sql parsing.
 public final class DingoParserContext implements Context {
     @Getter
-    private final CalciteCatalogReader catalogReader;
+    private final DingoCatalogReader catalogReader;
     @Getter
     private final CalciteSchema rootSchema;
     @Getter
-    private final String defaultSchemaName;
+    private String defaultSchemaName;
     @Getter
     private final CalciteConnectionConfig config;
     @Getter
     private final TimeZone timeZone;
     private final Properties options;
     @Getter
-    @Setter
     private CalciteSchema usedSchema;
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
@@ -89,9 +89,14 @@ public final class DingoParserContext implements Context {
         this.config = config
             .set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(PARSER_CONFIG.caseSensitive()));
         // Create CatalogReader.
-        catalogReader = new CalciteCatalogReader(
+        List<String> schemas = new ArrayList<>();
+        schemas.add(defaultSchemaName);
+        List<List<String>> schemaPaths = new ArrayList<>();
+        schemaPaths.add(schemas);
+        schemaPaths.add(new ArrayList<>());
+        catalogReader = new DingoCatalogReader(
             rootSchema,
-            Collections.singletonList(defaultSchemaName),
+            schemaPaths,
             getTypeFactory(),
             this.config
         );
@@ -146,5 +151,22 @@ public final class DingoParserContext implements Context {
 
     public String getOption(String field) {
         return options != null ? options.getOrDefault(field, "").toString() : "";
+    }
+
+    public void setUsedSchema(CalciteSchema schema) {
+        this.usedSchema = schema;
+        this.defaultSchemaName = schema.getName();
+        boolean exists = false;
+        for (List<String> item : catalogReader.getSchemaPaths()) {
+            if (item.contains(schema.getName())) {
+                exists = true;
+            }
+        }
+        if (!exists) {
+            int size = catalogReader.getSchemaPaths().size();
+            List<String> array = catalogReader.getSchemaPaths().get(size - 1);
+            array.add(schema.getName());
+            catalogReader.getSchemaPaths().add(new ArrayList<>());
+        }
     }
 }
