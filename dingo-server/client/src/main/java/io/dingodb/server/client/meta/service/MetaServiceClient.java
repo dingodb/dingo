@@ -117,7 +117,6 @@ public class MetaServiceClient implements MetaService {
             log.error("Can not load [{}] meta service.", id, e);
             return;
         }
-
         api.getTableMetas(id).forEach(this::addTableCache);
         api.getSubSchemas(id).forEach(this::addSubMetaServiceCache);
     }
@@ -358,6 +357,8 @@ public class MetaServiceClient implements MetaService {
         CommonId tableId = getTableId(tableName);
         TableApi tableApi = ApiRegistry.getDefault().proxy(TableApi.class, getTableConnector(tableId));
         tableApi.deleteIndex(tableId, indexName);
+        TableDefinition tableDefinition = tableDefinitionCache.get(tableId);
+        tableDefinition.removeIndex(indexName);
     }
 
     @Override

@@ -30,7 +30,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
 
     DingoSqlValidator(
-        CalciteCatalogReader catalogReader,
+        DingoCatalogReader catalogReader,
         RelDataTypeFactory typeFactory
     ) {
         super(

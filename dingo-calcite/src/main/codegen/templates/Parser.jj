@@ -1172,6 +1172,12 @@ SqlNode SqlStmt() :
         stmt = SqlFlush()
     |
         stmt = SqlShow()
+    |
+        stmt = SqlCommit()
+    |
+        stmt = SqlRollback()
+    |
+        stmt = SqlUseSchema()
     )
     {
         return stmt;
@@ -4112,6 +4118,8 @@ SqlNode AtomicRowExpression() :
         e = CaseExpression()
     |
         e = SequenceExpression()
+    |
+        e = ScopeVariable()
     )
     { return e; }
 }
@@ -4198,7 +4206,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
              <PASSWORD> <FOR>
              ( <QUOTED_STRING> | <IDENTIFIER> )
               { user = token.image; }
-              [<ATSPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; }  ]
+              [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; }  ]
               <EQ>
               <PASSWORD>
               <LPAREN>
@@ -4209,6 +4217,12 @@ SqlSetOption SqlSetOption(Span s, String scope) :
               }
         ]
         name = CompoundIdentifier()
+        (
+         <IDENTIFIER>  {
+            val = new SqlIdentifier(token.image, s.end(this));
+            return new SqlSetOption(s.end(this), scope, name, val);
+          }
+        |
         <EQ>
         (
             val = Literal()
@@ -4224,6 +4238,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         {
             return new SqlSetOption(s.end(val), scope, name, val);
         }
+        )
     |
         <RESET> {
             s.add(this);
@@ -7635,7 +7650,8 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ASYMMETRIC: "ASYMMETRIC" >
 |   < AT: "AT" >
 |   < ATOMIC: "ATOMIC" >
-|   < ATSPLIT: "@" >
+|   < AT_SPLIT: "@" >
+|   < AT_SPLIT_2: "@@" >
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >
 |   < AUTHORIZATION: "AUTHORIZATION" >
@@ -7737,6 +7753,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < CYCLE: "CYCLE" >
 |   < DATA: "DATA" >
 |   < DATABASE: "DATABASE" >
+|   < DATABASES: "DATABASES" >
 |   < DATE: "DATE" >
 |   < DATE_TRUNC: "DATE_TRUNC" >
 |   < DATETIME: "DATETIME" >
@@ -8219,6 +8236,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SYSTEM_TIME: "SYSTEM_TIME" >
 |   < SYSTEM_USER: "SYSTEM_USER" >
 |   < TABLE: "TABLE" > { beforeTableName(); }
+|   < TABLES: "TABLES" >
 |   < TABLE_NAME: "TABLE_NAME" >
 |   < TABLESAMPLE: "TABLESAMPLE" >
 |   < TEMPORARY: "TEMPORARY" >
@@ -8277,6 +8295,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UPPER: "UPPER" >
 |   < UPSERT: "UPSERT" >
 |   < USAGE: "USAGE" >
+|   < USE: "USE" >
 |   < USER: "USER" >
 |   < USER_DEFINED_TYPE_CATALOG: "USER_DEFINED_TYPE_CATALOG" >
 |   < USER_DEFINED_TYPE_CODE: "USER_DEFINED_TYPE_CODE" >
@@ -8297,6 +8316,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIEW: "VIEW" >
+|   < WARNINGS: "WARNINGS" >
 |   < WEDNESDAY: "WEDNESDAY" >
 |   < WEEK: "WEEK" >
 |   < WEEKS: "WEEKS" >
