@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.channel;
+package io.dingodb.exec.channel.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.net.Message;
@@ -26,35 +27,30 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.charset.StandardCharsets;
 
-public class ControlMessage {
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type"
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(EndTask.class),
+    @JsonSubTypes.Type(IncreaseBuffer.class),
+})
+public abstract class Control {
     private static final Parser PARSER = Parser.JSON;
 
     @Getter
     @JsonProperty("tag")
     private final String tag;
-    @Getter
-    @JsonProperty("status")
-    private final ControlStatus status;
 
-    private ControlMessage(
-        String tag,
-        ControlStatus status
+    protected Control(
+        String tag
     ) {
         this.tag = tag;
-        this.status = status;
     }
 
-    @JsonCreator
-    public static @NonNull ControlMessage of(
-        @JsonProperty("tag") String tag,
-        @JsonProperty("status") ControlStatus status
-    ) {
-        return new ControlMessage(tag, status);
-    }
-
-    public static ControlMessage fromMessage(@NonNull Message message) throws JsonProcessingException {
+    public static Control fromMessage(@NonNull Message message) throws JsonProcessingException {
         String str = new String(message.content(), StandardCharsets.UTF_8);
-        return PARSER.parse(str, ControlMessage.class);
+        return PARSER.parse(str, Control.class);
     }
 
     public byte[] toBytes() throws JsonProcessingException {

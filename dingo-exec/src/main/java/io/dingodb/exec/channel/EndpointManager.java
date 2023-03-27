@@ -17,41 +17,49 @@
 package io.dingodb.exec.channel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.exec.channel.message.Control;
+import io.dingodb.exec.channel.message.EndTask;
+import io.dingodb.exec.channel.message.IncreaseBuffer;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public final class EndpointManager {
     public static EndpointManager INSTANCE = new EndpointManager();
 
     private final Map<String, SendEndpoint> sendEndpointMap;
-    private final Map<String, ControlStatus> signals;
+    private final Map<String, AtomicInteger> availableBufferCounts;
 
     private EndpointManager() {
         sendEndpointMap = new ConcurrentHashMap<>();
-        signals = new ConcurrentHashMap<>();
+        availableBufferCounts = new ConcurrentHashMap<>();
     }
 
     public void onControlMessage(@NonNull Message message) {
-        ControlMessage msg;
+        Control msg;
         try {
-            msg = ControlMessage.fromMessage(message);
+            msg = Control.fromMessage(message);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse control message", e);
             throw new RuntimeException("Deserializing control message failed.");
         }
-        String tag = msg.getTag();
-        ControlStatus status = msg.getStatus();
         if (log.isDebugEnabled()) {
-            log.debug("Received control message \"{}\" of tag {}.", status, tag);
+            log.debug("Received control message {}.", msg);
         }
-        signals.put(tag, status);
+        String tag = msg.getTag();
+        AtomicInteger bufferCount = getBufferCount(tag);
+        if (msg instanceof EndTask) {
+            bufferCount.set(-1);
+        } else if (msg instanceof IncreaseBuffer) {
+            bufferCount.getAndAdd(((IncreaseBuffer) msg).getBytes());
+        }
         SendEndpoint sendEndpoint = sendEndpointMap.get(tag);
-        if (sendEndpoint != null && status == ControlStatus.READY) {
+        if (sendEndpoint != null) {
             sendEndpoint.wakeUp();
         }
     }
@@ -63,10 +71,13 @@ public final class EndpointManager {
     public void unregisterSendEndpoint(@NonNull SendEndpoint endpoint) {
         String tag = endpoint.getTag();
         sendEndpointMap.remove(tag);
-        signals.remove(tag);
+        availableBufferCounts.remove(tag);
     }
 
-    public ControlStatus getStatus(@NonNull String tag) {
-        return signals.get(tag);
+    AtomicInteger getBufferCount(String tag) {
+        return availableBufferCounts.computeIfAbsent(
+            tag,
+            (t) -> new AtomicInteger(0)
+        );
     }
 }

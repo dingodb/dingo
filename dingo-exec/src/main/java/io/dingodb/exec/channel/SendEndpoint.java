@@ -21,6 +21,9 @@ import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class SendEndpoint {
@@ -50,39 +53,38 @@ public class SendEndpoint {
         notify();
     }
 
-    synchronized ControlStatus checkStatus() {
-        ControlStatus status = EndpointManager.INSTANCE.getStatus(tag);
-        if (status == ControlStatus.STOP) {
-            return status;
-        }
-        if (status != ControlStatus.READY) {
-            while (true) {
+    synchronized boolean checkAvailableBufferCount(int size) {
+        boolean successful = false;
+        AtomicInteger bufferCount = EndpointManager.INSTANCE.getBufferCount(tag);
+        while (!successful) {
+            int origSize = bufferCount.get();
+            if (origSize < 0) {
+                return false;
+            }
+            if (origSize > size) {
+                successful = bufferCount.compareAndSet(origSize, origSize - size);
+            } else {
                 try {
                     wait();
                 } catch (InterruptedException e) {
                     log.warn("Catch (tag = {}) Interrupted while waiting for channel to be ready.", tag);
-                    continue;
-                }
-                status = EndpointManager.INSTANCE.getStatus(tag);
-                if (status == ControlStatus.READY) {
-                    break;
                 }
             }
         }
-        return status;
+        return true;
     }
 
     public boolean send(byte[] content) {
         return send(content, false);
     }
 
-    public boolean send(byte[] content, boolean needed) {
-        ControlStatus status = checkStatus();
-        if (status == ControlStatus.READY || needed) {
+    public boolean send(byte @NonNull [] content, boolean needed) {
+        boolean ok = checkAvailableBufferCount(content.length);
+        if (ok || needed) {
             Message msg = new Message(tag, content);
             channel.send(msg);
         }
-        return status != ControlStatus.STOP;
+        return ok;
     }
 
     public void close() {
