@@ -24,7 +24,6 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.channel.ControlStatus;
 import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.DingoSerialTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
@@ -48,7 +47,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 @JsonPropertyOrder({"host", "port", "schema", "output"})
 @JsonTypeName("receive")
 public final class ReceiveOperator extends SourceOperator {
-    private static final int LOW_WATER_LEVEL = 10;
+    private static final int BUFFER_LENGTH = 65536;
     private static final int QUEUE_CAPACITY = 1024;
 
     @JsonProperty("host")
@@ -64,6 +63,7 @@ public final class ReceiveOperator extends SourceOperator {
     private ReceiveMessageListener messageListener;
     private ReceiveEndpoint endpoint;
     private Fin finObj;
+    private boolean stopped;
 
     @JsonCreator
     public ReceiveOperator(
@@ -90,6 +90,8 @@ public final class ReceiveOperator extends SourceOperator {
         if (log.isDebugEnabled()) {
             log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
         }
+        stopped = false;
+        endpoint.sendIncreaseBuffer(BUFFER_LENGTH);
     }
 
     @Override
@@ -112,9 +114,6 @@ public final class ReceiveOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
-            if (tupleQueue.size() < LOW_WATER_LEVEL) {
-                endpoint.sendControlMessage(ControlStatus.READY);
-            }
             Object[] tuple = QueueUtils.forceTake(tupleQueue);
             if (!(tuple[0] instanceof Fin)) {
                 ++count;
@@ -122,7 +121,8 @@ public final class ReceiveOperator extends SourceOperator {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
                 }
                 if (!output.push(tuple)) {
-                    endpoint.sendControlMessage(ControlStatus.STOP);
+                    endpoint.sendEndTask();
+                    stopped = true;
                     // Stay in loop to receive FIN.
                 }
             } else {
@@ -160,6 +160,7 @@ public final class ReceiveOperator extends SourceOperator {
         public void onMessage(@NonNull Message message, Channel channel) {
             try {
                 final byte[] content = message.content();
+                endpoint.sendIncreaseBuffer(content.length);
                 int count = 0;
                 int offset = 0;
                 while (offset < content.length) {
@@ -182,12 +183,9 @@ public final class ReceiveOperator extends SourceOperator {
                     }
                     offset += pair.getValue();
                     count++;
-                    if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
+                    if (!stopped || tuple[0] instanceof Fin) {
                         QueueUtils.forcePut(tupleQueue, tuple);
                     }
-                }
-                if (tupleQueue.remainingCapacity() < SendOperator.SEND_MAX_COUNT * 2) {
-                    endpoint.sendControlMessage(ControlStatus.HALT);
                 }
                 if (log.isDebugEnabled()) {
                     log.debug("ReceiveMessageListener onMessage, content length: {}, tupleCount: {}, "

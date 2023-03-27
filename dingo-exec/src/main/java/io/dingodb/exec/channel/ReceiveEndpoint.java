@@ -18,12 +18,13 @@ package io.dingodb.exec.channel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.channel.message.Control;
+import io.dingodb.exec.channel.message.EndTask;
+import io.dingodb.exec.channel.message.IncreaseBuffer;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.dingodb.exec.Services.CTRL_TAG;
 
@@ -34,7 +35,6 @@ public class ReceiveEndpoint {
     private final String tag;
 
     private Channel channel;
-    private AtomicReference<ControlStatus> emittedStatus;
 
     public ReceiveEndpoint(String host, int port, String tag) {
         this.host = host;
@@ -47,51 +47,36 @@ public class ReceiveEndpoint {
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
         }
-        emittedStatus = new AtomicReference<>(ControlStatus.HALT);
-    }
-
-    public void sendControlMessage(@NonNull ControlStatus status) {
-        switch (status) {
-            case READY:
-                if (!emittedStatus.compareAndSet(ControlStatus.HALT, ControlStatus.READY)) {
-                    return;
-                }
-                break;
-            case HALT:
-                if (!emittedStatus.compareAndSet(ControlStatus.READY, ControlStatus.HALT)) {
-                    return;
-                }
-                break;
-            case STOP:
-                if (emittedStatus.getAndSet(ControlStatus.STOP) == ControlStatus.STOP) {
-                    return;
-                }
-                break;
-            default:
-                throw new IllegalStateException("Unexpected status: " + status);
-        }
-        byte[] content;
-        try {
-            content = ControlMessage.of(tag, status).toBytes();
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize control message: host:{} port:{} tag:{}, status:{}",
-                host, port, tag, status, e);
-            throw new RuntimeException("Serialize control message failed.", e);
-        }
-        channel.send(new Message(CTRL_TAG, content));
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Sent control message \"{}\".", tag, status);
-        }
-    }
-
-    public boolean isStopped() {
-        return emittedStatus.get() == ControlStatus.STOP;
     }
 
     public void close() {
         channel.close();
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
+        }
+    }
+
+    public void sendEndTask() {
+        EndTask control = new EndTask(tag);
+        sendControl(control);
+    }
+
+    public void sendIncreaseBuffer(int bytes) {
+        IncreaseBuffer control = new IncreaseBuffer(tag, bytes);
+        sendControl(control);
+    }
+
+    private void sendControl(@NonNull Control control) {
+        byte[] content;
+        try {
+            content = control.toBytes();
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize control message: {}", control);
+            throw new RuntimeException("Failed to serialize control message.", e);
+        }
+        channel.send(new Message(CTRL_TAG, content));
+        if (log.isDebugEnabled()) {
+            log.debug("(tag = {}) Sent control message \"{}\".", control);
         }
     }
 }

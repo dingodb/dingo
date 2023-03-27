@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.channel;
+package io.dingodb.exec.channel.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
-public enum ControlStatus {
-    @JsonProperty("ready")
-    READY, // The receiver is ready to receive messages.
-    @JsonProperty("halt")
-    HALT, // The receiver's queue is about full, so the sender must wait for READY signal.
-    @JsonProperty("stop")
-    STOP, // The receiver need no more messages, so the sender should exit.
+@JsonTypeName("end")
+public class EndTask extends Control {
+    @JsonCreator
+    public EndTask(@JsonProperty("tag") String tag) {
+        super(tag);
+    }
 }
