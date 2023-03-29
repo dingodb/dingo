@@ -165,4 +165,6 @@ public interface MetaService {
     void dropIndex(String tableName, String indexName);
 
     <T> T getTableProxy(Class<T> clazz, CommonId tableId);
+
+    TableStatistic getTableStatistic(@NonNull String tableName);
 }

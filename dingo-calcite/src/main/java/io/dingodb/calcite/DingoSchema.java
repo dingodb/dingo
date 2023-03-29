@@ -58,7 +58,8 @@ public class DingoSchema extends MutableSchema {
                     .addAll(names)
                     .add(name)
                     .build(),
-                td
+                td,
+                metaService.getTableStatistic(name)
             )
         ));
         return tableMap;

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.TableStatistic;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
@@ -48,11 +49,17 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
     private final TableDefinition tableDefinition;
 
-    protected DingoTable(DingoParserContext context, List<String> names, TableDefinition tableDefinition) {
+    private final TableStatistic tableStatistic;
+
+    protected DingoTable(DingoParserContext context,
+                         List<String> names,
+                         TableDefinition tableDefinition,
+                         TableStatistic tableStatistic) {
         super();
         this.context = context;
         this.names = names;
         this.tableDefinition = tableDefinition;
+        this.tableStatistic = tableStatistic;
     }
 
     public DingoSchema getSchema() {
@@ -85,7 +92,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return new Statistic() {
             @Override
             public Double getRowCount() {
-                return 30000.0d;
+                return tableStatistic.getRowCount();
             }
 
             @Override
