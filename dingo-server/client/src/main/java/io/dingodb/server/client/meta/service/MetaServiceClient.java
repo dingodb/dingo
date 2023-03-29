@@ -28,6 +28,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.Part;
+import io.dingodb.meta.TableStatistic;
 import io.dingodb.net.Message;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.service.ListenService;
@@ -365,5 +366,10 @@ public class MetaServiceClient implements MetaService {
     public <T> T getTableProxy(Class<T> clazz, CommonId tableId) {
         ServiceConnector serviceConnector = getTableConnector(tableId);
         return ApiRegistry.getDefault().proxy(clazz, serviceConnector);
+    }
+
+    @Override
+    public TableStatistic getTableStatistic(@NonNull String tableName) {
+        return () -> 30000d;
     }
 }

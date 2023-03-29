@@ -28,6 +28,7 @@ import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.Part;
+import io.dingodb.meta.TableStatistic;
 import io.dingodb.net.Channel;
 import io.dingodb.server.api.ExecutorApi;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -269,5 +270,10 @@ public class LocalMetaService implements MetaService {
         public io.dingodb.meta.MetaService root() {
             return ROOT;
         }
+    }
+
+    @Override
+    public TableStatistic getTableStatistic(@NonNull String tableName) {
+        return () -> 30000d;
     }
 }
