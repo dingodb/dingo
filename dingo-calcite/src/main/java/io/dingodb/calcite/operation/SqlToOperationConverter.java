@@ -17,14 +17,16 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.grammar.ddl.SqlShowDatabases;
-import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
-import io.dingodb.calcite.grammar.ddl.SqlShowTables;
-import io.dingodb.calcite.grammar.ddl.SqlShowWarnings;
+import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
+import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowTables;
+import io.dingodb.calcite.grammar.dql.SqlShowVariables;
+import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSetOption;
 
 import java.sql.Connection;
 import java.util.Optional;
@@ -37,13 +39,16 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlShowGrants) {
             return Optional.of(new ShowGrantsOperation(sqlNode));
         } else if (sqlNode instanceof SqlShowDatabases) {
-            return Optional.of(new ShowDatabaseOperation(connection));
+            SqlShowDatabases sqlShowDatabases = (SqlShowDatabases) sqlNode;
+            return Optional.of(new ShowDatabaseOperation(connection, sqlShowDatabases.sqlLikePattern));
         } else if (sqlNode instanceof SqlShowTables) {
             String usedSchema = "";
             if (context.getUsedSchema() != null) {
                 usedSchema = context.getUsedSchema().getName();
             }
-            return Optional.of(new ShowTableOperation(usedSchema, connection));
+            SqlShowTables sqlShowTables = (SqlShowTables) sqlNode;
+            String pattern = sqlShowTables.sqlLikePattern;
+            return Optional.of(new ShowTableOperation(usedSchema, connection, pattern));
         } else if (sqlNode instanceof SqlSelect) {
             SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
             SqlNode selectItem1 = sqlNodes.get(0);
@@ -51,10 +56,17 @@ public class SqlToOperationConverter {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
                 String operatorName = sqlBasicCall.getOperator().getName();
                 if (operatorName.equalsIgnoreCase("database")) {
-                   return Optional.of(new ShowCurrentDatabase(context));
+                    return Optional.of(new ShowCurrentDatabase(context));
                 }
             }
             return Optional.empty();
+        } else if (sqlNode instanceof SqlShowVariables) {
+            SqlShowVariables sqlShowVariables = (SqlShowVariables) sqlNode;
+            return Optional.of(new ShowVariablesOperation(sqlShowVariables.sqlLikePattern, sqlShowVariables.isGlobal,
+                connection));
+        } else if (sqlNode instanceof SqlSetOption) {
+            SqlSetOption setOption = (SqlSetOption) sqlNode;
+            return Optional.of(new SetOptionOperation(connection, setOption));
         } else {
             return Optional.empty();
         }

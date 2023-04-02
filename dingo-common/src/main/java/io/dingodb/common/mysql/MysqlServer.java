@@ -24,7 +24,7 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_LONG_PASSWORD.getCode();
         flag |= CapabilityFlags.CLIENT_FOUND_ROWS.getCode();
         flag |= CapabilityFlags.CLIENT_LONG_FLAG.getCode();
-        //flag |= CapabilityFlags.CLIENT_CONNECT_WITH_DB.getCode();
+        flag |= CapabilityFlags.CLIENT_CONNECT_WITH_DB.getCode();
         //flag |= CapabilityFlags.CLIENT_ODBC.getCode();
         flag |= CapabilityFlags.CLIENT_IGNORE_SPACE.getCode();
         flag |= CapabilityFlags.CLIENT_PROTOCOL_41.getCode();
@@ -32,7 +32,7 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_IGNORE_SIGPIPE.getCode();
         //flag |= CapabilityFlags.CLIENT_TRANSACTIONS.getCode();
         flag |= CapabilityFlags.CLIENT_SECURE_CONNECTION.getCode();
-        //flag |= CapabilityFlags.CLIENT_SSL.getCode();
+        flag |= CapabilityFlags.CLIENT_SSL.getCode();
         //upper
         flag |= CapabilityFlags.CLIENT_MULTI_STATEMENTS.getCode();
         flag |= CapabilityFlags.CLIENT_MULTI_RESULTS.getCode();
@@ -43,4 +43,5 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_SESSION_TRACK.getCode();
         return flag;
     }
+
 }

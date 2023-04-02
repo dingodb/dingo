@@ -19,16 +19,8 @@ package io.dingodb.calcite.operation;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowGlobalVariablesOperation implements Operation {
+public interface QueryOperation extends Operation {
+    Iterator getIterator();
 
-    @Override
-    public Iterator getIterator() {
-
-        return null;
-    }
-
-    @Override
-    public List<String> columns() {
-        return null;
-    }
+    List<String> columns();
 }

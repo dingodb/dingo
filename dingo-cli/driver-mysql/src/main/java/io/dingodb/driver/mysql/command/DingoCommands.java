@@ -34,7 +34,7 @@ public class DingoCommands {
 
     public void executeShowFields(String table, AtomicLong packetId, MysqlConnection mysqlConnection) {
         try {
-            ResultSet rs = mysqlConnection.connection.getMetaData().getColumns(null, null,
+            ResultSet rs = mysqlConnection.getConnection().getMetaData().getColumns(null, null,
                 table, null);
             MysqlResponseHandler.responseShowField(rs, packetId, mysqlConnection);
         } catch (SQLException e) {
@@ -61,7 +61,7 @@ public class DingoCommands {
         Statement statement = null;
         boolean hasResults;
         try {
-            statement = mysqlConnection.connection.createStatement();
+            statement = mysqlConnection.getConnection().createStatement();
             hasResults = statement.execute(sql);
             if (hasResults) {
                 // select

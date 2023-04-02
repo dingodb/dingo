@@ -36,12 +36,11 @@ public class MessageProcess {
 
     public static final DingoCommands commands = new DingoCommands();
 
-    public static List<MysqlPacket> process(ByteBuf msg, MysqlConnection mysqlConnection) {
+    public static void process(ByteBuf msg, MysqlConnection mysqlConnection) {
         int length = msg.readableBytes();
         byte[] array = new byte[length];
         msg.getBytes(msg.readerIndex(), array);
         byte flg = array[1];
-        List<MysqlPacket> mysqlPacketList = null;
         byte packetIdByte = array[0];
         AtomicLong packetId = new AtomicLong(packetIdByte);
         packetId.incrementAndGet();
@@ -50,7 +49,6 @@ public class MessageProcess {
                 // quit
                 if (mysqlConnection.channel.isActive()) {
                     mysqlConnection.channel.close();
-                    return null;
                 }
                 break;
             case 0x02:
@@ -58,7 +56,7 @@ public class MessageProcess {
                 // use database
                 byte[] schemaBytes = new byte[length - 2];
                 System.arraycopy(array, 2, schemaBytes, 0, schemaBytes.length);
-                DingoConnection connection = (DingoConnection) mysqlConnection.connection;
+                DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
                 String usedSchema = new String(schemaBytes);
                 usedSchema = usedSchema.toUpperCase();
                 CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, true);
@@ -110,13 +108,27 @@ public class MessageProcess {
                 break;
             case 0x0E:
                 // test ping
+                okPacket = MysqlResponseHandler.getOkPacket(0, packetId, 0);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 break;
             case 0x0F:
+                // time
+                break;
             case 0x10:
+                // delayedInsert
+                break;
             case 0x11:
+                // change user
+                break;
             case 0x12:
+                // bin log dump
+                break;
             case 0x13:
+                // table dump
+                break;
             case 0x14:
+                // connect out
+                break;
             case 0x15:
             case 0x16:
                 // prepare sql
@@ -128,10 +140,10 @@ public class MessageProcess {
                 // send blob data
                 break;
             case 0x19:
-                // destroy prepare sql
+                // statement close
                 break;
             case 0x1A:
-                // destroy prepare sql param cache
+                // destroy prepare sql param cache  : statement reset
                 break;
             case 0x1B:
                 // set option
@@ -139,9 +151,20 @@ public class MessageProcess {
             case 0x1C:
                 // fetch prepare statement result
                 break;
+            case 0x1D:
+                // daemon
+                break;
+            case 0x1E:
+                // binlog dump
+                break;
+            case 0x1F:
+                // reset connection
+                break;
+            case 0x20:
+                // end
+                break;
             default:
                 break;
         }
-        return mysqlPacketList;
     }
 }

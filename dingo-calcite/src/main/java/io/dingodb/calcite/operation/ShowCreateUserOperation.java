@@ -19,7 +19,7 @@ package io.dingodb.calcite.operation;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCreateUserOperation implements Operation{
+public class ShowCreateUserOperation implements QueryOperation {
     @Override
     public Iterator getIterator() {
         return null;

@@ -14,31 +14,31 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.ddl;
+package io.dingodb.calcite.grammar.dql;
 
-import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlShowTables extends SqlShow {
+import java.util.List;
 
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("SHOW TABLES", SqlKind.SELECT);
+public class SqlShow extends SqlDdl {
 
     /**
      * Creates a SqlDdl.
      *
-     * @param pos      pos
+     * @param operator show
+     * @param pos pos
      */
-    public SqlShowTables(SqlParserPos pos) {
-        super(OPERATOR, pos);
+    protected SqlShow(SqlOperator operator, SqlParserPos pos) {
+        super(operator, pos);
     }
 
     @Override
-    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("SHOW ");
-        writer.keyword("TABLES");
+    public List<SqlNode> getOperandList() {
+        return null;
     }
+
 }

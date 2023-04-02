@@ -14,31 +14,37 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.ddl;
+package io.dingodb.calcite.grammar.dql;
 
-import org.apache.calcite.sql.SqlDdl;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-import java.util.List;
+public class SqlShowVariables extends SqlShow {
 
-public class SqlShow extends SqlDdl {
+    public String sqlLikePattern;
+
+    public boolean isGlobal;
+
+    private static final SqlOperator OPERATOR =
+        new SqlSpecialOperator("SHOW VARIABLES", SqlKind.SELECT);
 
     /**
      * Creates a SqlDdl.
      *
-     * @param operator show
-     * @param pos pos
+     * @param pos      pos
      */
-    protected SqlShow(SqlOperator operator, SqlParserPos pos) {
-        super(operator, pos);
+    public SqlShowVariables(SqlParserPos pos, String sqlLikePattern, boolean isGlobal) {
+        super(OPERATOR, pos);
+        this.sqlLikePattern = sqlLikePattern;
+        this.isGlobal = isGlobal;
     }
 
     @Override
-    public List<SqlNode> getOperandList() {
-        return null;
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("SHOW");
+        writer.keyword("VARIABLES");
     }
-
 }

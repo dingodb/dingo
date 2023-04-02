@@ -14,20 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.common.mysql.client;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.Observable;
 
-public class ShowCreateTableOperation implements QueryOperation {
+public class SessionVariableWatched extends Observable {
+    private static SessionVariableWatched instance = null;
 
-    @Override
-    public Iterator getIterator() {
-        return null;
+    public void notifyObservers(Object arg) {
+
+        super.setChanged();
+
+        super.notifyObservers(arg);
+
     }
 
-    @Override
-    public List<String> columns() {
-        return null;
+    public static SessionVariableWatched getInstance() {
+        if (instance == null) {
+            synchronized (SessionVariableWatched.class) {
+                if (instance == null) {
+                    instance = new SessionVariableWatched();
+                }
+            }
+        }
+        return instance;
     }
 }

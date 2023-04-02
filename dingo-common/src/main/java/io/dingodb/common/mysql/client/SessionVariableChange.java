@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.string;
+package io.dingodb.common.mysql.client;
 
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtStringFun;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-public class SessionVariableFun extends RtStringFun {
-    protected SessionVariableFun(RtExpr[] paras) {
-        super(paras);
-    }
-
-    @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        return null;
-    }
+@ToString
+@Getter
+@Setter
+@Builder
+public class SessionVariableChange {
+    private String id;
+    private String name;
+    private String value;
 }

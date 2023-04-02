@@ -17,7 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.grammar.ddl.SqlShow;
+import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
@@ -47,6 +47,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -183,9 +184,13 @@ public class DingoParser {
                 }
             }
             return false;
-        } else {
-            return false;
+        } else if (sqlNode instanceof SqlSetOption) {
+            SqlSetOption setOption = (SqlSetOption) sqlNode;
+            if ("session".equalsIgnoreCase(setOption.getScope())) {
+                return true;
+            }
         }
+        return false;
     }
 
     public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {

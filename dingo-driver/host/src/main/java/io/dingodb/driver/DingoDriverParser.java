@@ -17,7 +17,6 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoDdlExecutor;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
@@ -30,9 +29,10 @@ import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
-import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
+import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -75,6 +75,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -298,6 +299,33 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
 
+        JavaTypeFactory typeFactory = connection.getTypeFactory();
+        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
+        // for compatible mysql protocol
+        if (compatibleMysql(sqlNode)) {
+            boolean isDdl = sqlNode.getKind().belongsTo(SqlKind.DDL);
+            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
+            List<ColumnMetaData> columns = new ArrayList<>();
+            if (!isDdl) {
+                columns = ((QueryOperation)operation).columns().stream().map(column -> metaData(typeFactory, 0, column,
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
+                    .collect(Collectors.toList());
+            } else {
+                ((DdlOperation)operation).execute();
+            }
+
+            Meta.StatementType statementType = isDdl
+                ? Meta.StatementType.OTHER_DDL
+                : Meta.StatementType.SELECT;
+            return new MysqlSignature(columns,
+                sql,
+                null,
+                null,
+                cursorFactory,
+                statementType,
+                operation);
+        }
+
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             verify(sqlNode);
             final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
@@ -310,25 +338,7 @@ public final class DingoDriverParser extends DingoParser {
                 null
             );
         }
-        JavaTypeFactory typeFactory = connection.getTypeFactory();
-        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
-        // for compatible mysql protocol
-        if (compatibleMysql(sqlNode)) {
-            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
-            List<ColumnMetaData> columns = new ArrayList<>();
-            for (String column : operation.columns()) {
-                columns.add(metaData(typeFactory, 0, column,
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null));
-            }
-            List<AvaticaParameter> parameters = new ArrayList();
-            return new MysqlSignature(columns,
-                sql,
-                parameters,
-                null,
-                cursorFactory,
-                Meta.StatementType.SELECT,
-                operation);
-        }
+
         SqlExplain explain = null;
         if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
             explain = (SqlExplain) sqlNode;

@@ -24,6 +24,7 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
 
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()

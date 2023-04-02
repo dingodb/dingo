@@ -4216,6 +4216,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
                 return new SqlSetPassword(s.end(this), user, host, password);
               }
         ]
+        [ <GLOBAL> { scope = "SYSTEM"; } ]
         name = CompoundIdentifier()
         (
          <IDENTIFIER>  {
@@ -4236,6 +4237,9 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             }
         )
         {
+            if (scope == null) {
+               scope = "session";
+            }
             return new SqlSetOption(s.end(val), scope, name, val);
         }
         )
@@ -8312,6 +8316,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VAR_SAMP: "VAR_SAMP" >
 |   < VARBINARY: "VARBINARY" >
 |   < VARCHAR: "VARCHAR" >
+|   < VARIABLES: "VARIABLES" >
 |   < VARYING: "VARYING" >
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >

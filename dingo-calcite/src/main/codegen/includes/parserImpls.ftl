@@ -868,6 +868,10 @@ SqlShow SqlShow(): {
     show = SqlShowDatabases(s)
     |
     show = SqlShowTables(s)
+    |
+    show = SqlShowVariables(s)
+    |
+    show = SqlShowGlobalVariables(s)
   )
   {
     return show;
@@ -875,15 +879,17 @@ SqlShow SqlShow(): {
 }
 
 SqlShow SqlShowDatabases(Span s): {
+   String pattern = null;
 } {
-  <DATABASES>
-  { return new SqlShowDatabases(s.end(this)); }
+  <DATABASES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowDatabases(s.end(this), pattern); }
 }
 
 SqlShow SqlShowTables(Span s): {
+   String pattern = null;
 } {
-  <TABLES>
-  { return new SqlShowTables(s.end(this)); }
+  <TABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowTables(s.end(this), pattern); }
 }
 
 SqlShow SqlShowWarnings(Span s): {
@@ -912,6 +918,26 @@ SqlShow SqlShowGrants(Span s): {
   [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
   {
     return new SqlShowGrants(s.end(this), user, host);
+  }
+}
+
+SqlShow SqlShowVariables(Span s): {
+  String pattern = null;
+  boolean isGlobal = false;
+} {
+  <VARIABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
+  {
+    return new SqlShowVariables(s.end(this), pattern, isGlobal);
+  }
+}
+
+SqlShow SqlShowGlobalVariables(Span s): {
+  String pattern = null;
+  boolean isGlobal = true;
+} {
+  <GLOBAL> <VARIABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
+  {
+    return new SqlShowVariables(s.end(this), pattern, isGlobal);
   }
 }
 

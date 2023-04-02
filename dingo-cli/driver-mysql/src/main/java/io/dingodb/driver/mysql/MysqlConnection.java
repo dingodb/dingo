@@ -16,22 +16,37 @@
 
 package io.dingodb.driver.mysql;
 
+import io.dingodb.driver.DingoConnection;
+import io.dingodb.driver.mysql.netty.MysqlIdleStateHandler;
 import io.dingodb.driver.mysql.packet.AuthPacket;
 import io.netty.channel.socket.SocketChannel;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.sql.Connection;
 
 public class MysqlConnection {
+    @Getter
+    private String id;
+
     public SocketChannel channel;
 
-    public Connection connection;
+    @Getter
+    private Connection connection;
 
     public boolean authed;
 
     public AuthPacket authPacket;
 
+    public MysqlIdleStateHandler mysqlIdleStateHandler;
+
     public MysqlConnection(SocketChannel channel) {
         this.channel = channel;
+    }
+
+    public void setConnection(DingoConnection dingoConnection) {
+        connection = dingoConnection;
+        this.id = dingoConnection.id;
     }
 
     public void close() {

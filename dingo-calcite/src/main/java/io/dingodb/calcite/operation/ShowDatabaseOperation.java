@@ -17,7 +17,9 @@
 package io.dingodb.calcite.operation;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.common.util.SqlLikeUtils;
 import org.apache.calcite.avatica.Meta;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -26,12 +28,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowDatabaseOperation implements Operation {
+public class ShowDatabaseOperation implements QueryOperation {
 
     Connection connection;
 
-    public ShowDatabaseOperation(Connection connection) {
+    private String sqlLikePattern;
+
+    public ShowDatabaseOperation(Connection connection, String sqlLikePattern) {
         this.connection = connection;
+        this.sqlLikePattern = sqlLikePattern;
     }
 
     @Override
@@ -40,8 +45,10 @@ public class ShowDatabaseOperation implements Operation {
         try {
             ResultSet rs = connection.getMetaData().getSchemas();
             while (rs.next()) {
-                Object[] tuples = new Object[] {rs.getString("TABLE_SCHEM")};
-                schemas.add(tuples);
+                String schemaName = rs.getString("TABLE_SCHEM");
+                if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(schemaName, sqlLikePattern)) {
+                    schemas.add(new Object[] {schemaName});
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

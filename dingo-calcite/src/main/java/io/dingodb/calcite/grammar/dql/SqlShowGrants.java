@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.ddl;
+package io.dingodb.calcite.grammar.dql;
 
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
