@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
@@ -60,6 +61,8 @@ public class Starter {
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
             .iterator().next().get();
         mysqlNetService.listenPort(port);
+
+        SessionVariableWatched.getInstance().addObserver(new IdleTimeWatcher());
     }
 
     private int listenRandomPort(NetService netService)  {

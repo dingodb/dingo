@@ -17,6 +17,7 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import org.apache.calcite.avatica.AvaticaStatement;
@@ -84,8 +85,8 @@ public class DingoStatement extends AvaticaStatement {
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
             return jobManager.createIterator(job, null);
         } else if (signature instanceof MysqlSignature) {
-            MysqlSignature mysqlSignature = (MysqlSignature) signature;
-            return mysqlSignature.getOperation().getIterator();
+            QueryOperation queryOperation = (QueryOperation) ((MysqlSignature) signature).getOperation();
+            return queryOperation.getIterator();
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.ddl;
+package io.dingodb.calcite.grammar.dql;
 
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -22,23 +22,26 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlShowDatabases extends SqlShow {
+public class SqlShowTables extends SqlShow {
+
+    public String sqlLikePattern;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("SHOW DATABASES", SqlKind.SELECT);
+        new SqlSpecialOperator("SHOW TABLES", SqlKind.SELECT);
 
     /**
-     * Creates a SqlDdl.
+     * Creates a sqlDql.
      *
      * @param pos      pos
      */
-    public SqlShowDatabases(SqlParserPos pos) {
+    public SqlShowTables(SqlParserPos pos, String sqlLikePattern) {
         super(OPERATOR, pos);
+        this.sqlLikePattern = sqlLikePattern;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("SHOW");
-        writer.keyword("DATABASES");
+        writer.keyword("SHOW ");
+        writer.keyword("TABLES");
     }
 }

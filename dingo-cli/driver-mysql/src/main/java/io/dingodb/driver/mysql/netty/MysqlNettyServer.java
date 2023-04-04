@@ -26,18 +26,22 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Builder
 public class MysqlNettyServer {
     public final String host;
     public final int port;
-    private final Set<Connection> connections = new CopyOnWriteArraySet<>();
+    public static final Map<String, MysqlConnection> connections = new ConcurrentHashMap<>();
 
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
@@ -63,10 +67,14 @@ public class MysqlNettyServer {
             @Override
             protected void initChannel(SocketChannel ch) {
                 MysqlConnection mysqlConnection = new MysqlConnection(ch);
-                ch.closeFuture().addListener(f -> connections.remove(mysqlConnection))
+                ch.closeFuture().addListener(f -> connections.remove(mysqlConnection.getId()))
                     .addListener(f -> mysqlConnection.close());
                 ch.pipeline().addLast("handshake", new HandshakeHandler(mysqlConnection));
                 ch.pipeline().addLast("decoder", new MysqlDecoder());
+                MysqlIdleStateHandler mysqlIdleStateHandler = new MysqlIdleStateHandler(
+                    28800);
+                mysqlConnection.mysqlIdleStateHandler = mysqlIdleStateHandler;
+                ch.pipeline().addLast("idleStateHandler", mysqlIdleStateHandler);
                 ch.pipeline()
                     .addLast("mysqlHandler", new MysqlHandler(mysqlConnection));
             }

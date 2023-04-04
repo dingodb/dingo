@@ -19,6 +19,8 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.common.mysql.client.SessionVariableChange;
+import io.dingodb.common.mysql.client.SessionVariableWatched;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
@@ -41,6 +43,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
@@ -50,6 +53,8 @@ import java.util.TimeZone;
 public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context {
     @Getter
     private final DingoParserContext context;
+
+    private final Properties sessionVariables;
 
     protected DingoConnection(
         DingoDriver driver,
@@ -66,6 +71,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             log.info("Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         }
         context = new DingoParserContext(defaultSchema, info);
+        sessionVariables = new Properties();
     }
 
     public DingoMeta getMeta() {
@@ -166,6 +172,25 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         long maxRowCount
     ) throws SQLException, NoSuchStatementException {
         return super.prepareAndExecuteInternal(statement, sql, maxRowCount);
+    }
+
+    @Override
+    public void setClientInfo(String name, String value) throws SQLClientInfoException {
+        sessionVariables.setProperty(name, value);
+
+        SessionVariableWatched.getInstance().notifyObservers(
+            SessionVariableChange.builder().id(id).name(name).value(value).build()
+        );
+    }
+
+    @Override
+    public String getClientInfo(String name) throws SQLException {
+        return sessionVariables.getProperty(name);
+    }
+
+    @Override
+    public Properties getClientInfo() throws SQLException {
+        return sessionVariables;
     }
 
     static class DingoDataContext implements DataContext {

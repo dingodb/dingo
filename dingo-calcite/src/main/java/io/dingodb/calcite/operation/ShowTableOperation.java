@@ -16,6 +16,9 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.util.SqlLikeUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,24 +26,27 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowTableOperation implements Operation{
+public class ShowTableOperation implements QueryOperation{
     private String schemaName;
     Connection connection;
 
-    public ShowTableOperation(String schemaName, Connection connection) {
+    private String sqlLikePattern;
+
+    public ShowTableOperation(String schemaName, Connection connection, String pattern) {
         this.schemaName = schemaName;
         this.connection = connection;
+        this.sqlLikePattern = pattern;
     }
 
     @Override
     public Iterator getIterator() {
         try {
             List<Object[]> tables = new ArrayList<>();
-            ResultSet rs = connection.getMetaData().getTables(null, null, null, null);
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName, null, null);
             while (rs.next()) {
-                String schema = rs.getString("TABLE_SCHEM");
-                if (schema.equalsIgnoreCase(schemaName)) {
-                    Object[] tuples = new Object[] {rs.getString("TABLE_NAME")};
+                String tableName = rs.getString("TABLE_NAME");
+                if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
+                    Object[] tuples = new Object[] {tableName};
                     tables.add(tuples);
                 }
             }

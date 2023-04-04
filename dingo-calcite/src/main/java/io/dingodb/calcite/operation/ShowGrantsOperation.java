@@ -17,7 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
-import io.dingodb.calcite.grammar.ddl.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.common.privilege.*;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 
 @Slf4j
-public class ShowGrantsOperation implements Operation {
+public class ShowGrantsOperation implements QueryOperation {
     @Setter
     public SqlNode sqlNode;
     static UserService userService = UserServiceProvider.getRoot();

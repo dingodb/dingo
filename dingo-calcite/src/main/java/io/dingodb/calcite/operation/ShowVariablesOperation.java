@@ -16,5 +16,58 @@
 
 package io.dingodb.calcite.operation;
 
-public class ShowVariablesOperation {
+import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.util.SqlLikeUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+public class ShowVariablesOperation implements QueryOperation {
+
+    private String sqlLikePattern;
+
+    private boolean isGlobal;
+
+    private Connection connection;
+
+    public ShowVariablesOperation(String sqlLikePattern, boolean isGlobal, Connection connection) {
+        this.sqlLikePattern = sqlLikePattern;
+        this.isGlobal = isGlobal;
+        this.connection = connection;
+    }
+
+    @Override
+    public Iterator getIterator() {
+        Properties variablesMap = null;
+        if (isGlobal) {
+            variablesMap = ScopeVariables.globalVariables;
+        } else {
+            try {
+                variablesMap = connection.getClientInfo();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        List<Object[]> tables = new ArrayList<>();
+        variablesMap.forEach((key, value) -> {
+            if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(key.toString(), sqlLikePattern)) {
+                tables.add(new Object[] {key,value});
+            }
+        });
+        return tables.iterator();
+    }
+
+    @Override
+    public List<String> columns() {
+        List<String> columns = new ArrayList<>();
+        columns.add("Variable_name");
+        columns.add("Value");
+        return columns;
+    }
 }

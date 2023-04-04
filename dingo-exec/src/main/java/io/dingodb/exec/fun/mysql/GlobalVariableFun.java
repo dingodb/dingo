@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.string;
+package io.dingodb.exec.fun.mysql;
 
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.expr.runtime.RtExpr;
@@ -37,9 +37,9 @@ public class GlobalVariableFun extends RtStringFun {
         str = str.toLowerCase();
         if (str.startsWith("session.")) {
             str = str.substring(8);
-            return ScopeVariables.sessionVariables.get(str);
+            return ScopeVariables.sessionVariables.getOrDefault(str, "");
         } else {
-            return ScopeVariables.globalVariables.get(str);
+            return ScopeVariables.globalVariables.getOrDefault(str, "");
         }
     }
 }

@@ -22,7 +22,7 @@ import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.number.FormatFun;
 import io.dingodb.exec.fun.number.PowFun;
 import io.dingodb.exec.fun.string.ConcatFun;
-import io.dingodb.exec.fun.string.GlobalVariableFun;
+import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.string.LTrimFun;
 import io.dingodb.exec.fun.string.LeftFun;
 import io.dingodb.exec.fun.string.LocateFun;

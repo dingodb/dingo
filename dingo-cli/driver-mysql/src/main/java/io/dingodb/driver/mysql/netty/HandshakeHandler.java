@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.Versions;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.command.MysqlResponseHandler;
 import io.dingodb.driver.mysql.facotry.SecureChatSslContextFactory;
@@ -41,6 +42,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.commons.lang3.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -148,7 +151,15 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         ctx.writeAndFlush(buffer);
                         mysqlConnection.authed = true;
                         mysqlConnection.authPacket = authPacket;
-                        mysqlConnection.connection = getLocalConnection();
+                        DingoConnection dingoConnection = (DingoConnection) getLocalConnection();
+                        mysqlConnection.setConnection(dingoConnection);
+                        MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
+                        if (StringUtils.isNotBlank(authPacket.database)) {
+                            String usedSchema = authPacket.database.toUpperCase();
+                            CalciteSchema schema = dingoConnection.getContext().getRootSchema()
+                                .getSubSchema(usedSchema, true);
+                            dingoConnection.getContext().setUsedSchema(schema);
+                        }
                     } else {
                         ErrorCode.ER_ACCESS_DENIED_ERROR.message =
                             String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");

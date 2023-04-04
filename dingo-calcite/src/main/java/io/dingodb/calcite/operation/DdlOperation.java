@@ -16,5 +16,6 @@
 
 package io.dingodb.calcite.operation;
 
-public interface Operation {
+public interface DdlOperation extends Operation {
+    public void execute();
 }
