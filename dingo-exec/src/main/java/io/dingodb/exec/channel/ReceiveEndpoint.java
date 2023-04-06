@@ -19,8 +19,8 @@ package io.dingodb.exec.channel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.message.Control;
-import io.dingodb.exec.channel.message.EndTask;
 import io.dingodb.exec.channel.message.IncreaseBuffer;
+import io.dingodb.exec.channel.message.StopTx;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +56,8 @@ public class ReceiveEndpoint {
         }
     }
 
-    public void sendEndTask() {
-        EndTask control = new EndTask(tag);
+    public void sendStopTx() {
+        StopTx control = new StopTx(tag);
         sendControl(control);
     }
 
@@ -74,7 +74,7 @@ public class ReceiveEndpoint {
             log.error("Failed to serialize control message: {}", control);
             throw new RuntimeException("Failed to serialize control message.", e);
         }
-        channel.send(new Message(CTRL_TAG, content));
+        channel.send(new Message(CTRL_TAG, content), false);
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Sent control message \"{}\".", control);
         }

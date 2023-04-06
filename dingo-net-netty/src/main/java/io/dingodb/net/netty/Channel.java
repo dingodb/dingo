@@ -25,6 +25,7 @@ import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -98,7 +99,7 @@ public class Channel implements io.dingodb.net.Channel {
         }
         this.shutdown();
         try {
-            this.sendAsync(buffer(COMMAND_T, 1).writeByte(CLOSE_C));
+            connection.sendAsync(buffer(COMMAND_T, 1).writeByte(CLOSE_C));
         } catch (Exception e) {
             log.error("Send close message error.", e);
         }
@@ -147,22 +148,27 @@ public class Channel implements io.dingodb.net.Channel {
         if (isClosed()) {
             throw new RuntimeException("The channel [" + channelId + "] is closed, current thread " + threadName());
         }
-        byte[] msg = message.encode();
         if (log.isTraceEnabled()) {
             log.trace("Send message to [{}] on [{}].", remoteLocation().url(), channelId);
         }
-        if (sync) {
-            try {
-                send(buffer(USER_DEFINE_T, msg.length).writeBytes(msg));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        ByteBuf header = Unpooled.buffer(4 + 8 + 1); // size of int + long + byte
+        header.writeInt(message.length() + 8 + 1)
+            .writeLong(channelId)
+            .writeByte(USER_DEFINE_T);
+        ByteBuf bytes = Unpooled.wrappedBuffer(
+            header,
+            Unpooled.wrappedBuffer(message.getTag()),
+            Unpooled.wrappedBuffer(message.getContent())
+        );
+        try {
+            if (sync) {
+                connection.send(bytes);
+            } else {
+                connection.sendAsync(bytes);
             }
-        } else {
-            try {
-                sendAsync(buffer(USER_DEFINE_T, msg.length).writeBytes(msg));
-            } catch (Exception e) {
-                log.error("Send message to {} on {} error.", remoteLocation().url(), channelId, e);
-            }
+        } catch (Exception e) {
+            log.error("Send message to {} on {} error.", remoteLocation().url(), channelId, e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -228,7 +234,7 @@ public class Channel implements io.dingodb.net.Channel {
                 if (log.isTraceEnabled()) {
                     log.trace("Channel [{}] receive ping command.", channelId);
                 }
-                sendAsync(buffer(COMMAND_T, 1).writeByte(PONG_C));
+                connection.sendAsync(buffer(COMMAND_T, 1).writeByte(PONG_C));
                 return;
             case CLOSE_C:
                 if (log.isTraceEnabled()) {
@@ -244,5 +250,4 @@ public class Channel implements io.dingodb.net.Channel {
                 throw new IllegalStateException("Unexpected value: " + command);
         }
     }
-
 }

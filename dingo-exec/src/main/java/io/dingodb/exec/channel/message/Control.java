@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
     property = "type"
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(EndTask.class),
+    @JsonSubTypes.Type(StopTx.class),
     @JsonSubTypes.Type(IncreaseBuffer.class),
 })
 public abstract class Control {

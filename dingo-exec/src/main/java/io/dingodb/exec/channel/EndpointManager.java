@@ -18,8 +18,8 @@ package io.dingodb.exec.channel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.exec.channel.message.Control;
-import io.dingodb.exec.channel.message.EndTask;
 import io.dingodb.exec.channel.message.IncreaseBuffer;
+import io.dingodb.exec.channel.message.StopTx;
 import io.dingodb.net.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -53,7 +53,7 @@ public final class EndpointManager {
         }
         String tag = msg.getTag();
         AtomicInteger bufferCount = getBufferCount(tag);
-        if (msg instanceof EndTask) {
+        if (msg instanceof StopTx) {
             bufferCount.set(-1);
         } else if (msg instanceof IncreaseBuffer) {
             bufferCount.getAndAdd(((IncreaseBuffer) msg).getBytes());

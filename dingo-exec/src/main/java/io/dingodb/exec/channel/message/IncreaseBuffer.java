@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Getter;
+import lombok.ToString;
 
+@ToString
 @JsonTypeName("inc")
 public class IncreaseBuffer extends Control {
     @Getter

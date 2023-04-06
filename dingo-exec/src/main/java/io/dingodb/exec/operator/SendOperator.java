@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.channel.SendEndpoint;
@@ -32,16 +31,14 @@ import io.dingodb.exec.utils.TagUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 
 @Slf4j
 @JsonPropertyOrder({"host", "port", "tag", "schema"})
 @JsonTypeName("send")
 public final class SendOperator extends SinkOperator {
-    public static final int SEND_MAX_COUNT = 200;
-
-    private static final int SEND_BUFFER_MAX_SIZE = 8192;
-    private static final int SEND_BUFFER_HALF_SIZE = (SEND_BUFFER_MAX_SIZE >> 1);
+    public static final int SEND_BATCH_SIZE = 256;
 
     @JsonProperty("host")
     private final String host;
@@ -51,10 +48,9 @@ public final class SendOperator extends SinkOperator {
     private final Id receiveId;
     @JsonProperty("schema")
     private final DingoType schema;
-    private final ByteBuffer sendBuffer;
+    private final List<Object[]> tupleList;
     private TxRxCodec codec;
     private SendEndpoint endpoint;
-    private int tupleCount;
 
     @JsonCreator
     public SendOperator(
@@ -67,7 +63,7 @@ public final class SendOperator extends SinkOperator {
         this.port = port;
         this.receiveId = receiveId;
         this.schema = schema;
-        this.sendBuffer = ByteBuffer.wrap(new byte[SEND_BUFFER_MAX_SIZE]);
+        this.tupleList = new LinkedList<>();
     }
 
     @Override
@@ -92,30 +88,10 @@ public final class SendOperator extends SinkOperator {
     @Override
     public boolean push(Object[] tuple) {
         try {
-            byte[] encodeArr = codec.encode(tuple);
-            byte[] array = PrimitiveCodec.encodeArray(encodeArr);
-            if (log.isDebugEnabled()) {
-                log.debug("Will send tuple ({}) to ({}, {}, {}), arr len: {}, total len: {}, buff pos: {}, "
-                        + "hashcode: {}", schema.format(tuple), host, port, receiveId, encodeArr.length,
-                    array.length, this.sendBuffer.position(), this.hashCode());
+            tupleList.add(tuple);
+            if (tupleList.size() >= SEND_BATCH_SIZE) {
+                return sendTupleList();
             }
-
-            if (array.length >= SEND_BUFFER_HALF_SIZE) {
-                // send data in buffer first
-                if (!this.sendBufferData()) {
-                    return false;
-                }
-                // send directly
-                return endpoint.send(array);
-            }
-
-            if ((array.length + this.sendBuffer.position() > this.sendBuffer.capacity())
-                || this.tupleCount >= SEND_MAX_COUNT) {
-                if (!this.sendBufferData()) {
-                    return false;
-                }
-            }
-            this.putArray(array);
             return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -125,46 +101,26 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(Fin fin) {
         try {
-            byte[] encodeArr = codec.encodeFin(fin);
-            byte[] array = PrimitiveCodec.encodeArray(encodeArr);
+            byte[] bytes = codec.encodeFin(fin);
             if (!(fin instanceof FinWithException)) {
-                this.sendBufferData();
+                sendTupleList();
             }
             if (log.isDebugEnabled()) {
                 log.debug("Send FIN with detail:\n{}", fin.detail());
             }
-            endpoint.send(array, true);
+            endpoint.send(bytes, true);
         } catch (IOException e) {
             log.error("Encode FIN failed. fin = {}", fin, e);
         }
     }
 
-    private void putArray(byte[] array) {
-        this.sendBuffer.put(array);
-        this.tupleCount++;
-    }
-
-    private boolean sendBufferData() {
-        if (this.tupleCount <= 0) {
-            return true;
+    private boolean sendTupleList() throws IOException {
+        if (!tupleList.isEmpty()) {
+            byte[] bytes = codec.encodeTuples(tupleList);
+            boolean result = endpoint.send(bytes);
+            tupleList.clear();
+            return result;
         }
-        this.sendBuffer.flip();
-        int length = this.sendBuffer.limit() - this.sendBuffer.position();
-        if (length <= 0) {
-            log.error("Send data to ({}, {}, {}) failed, length: {}.", this.host, this.port, this.receiveId, length);
-            return true;
-        }
-        byte[] array = new byte[length];
-        this.sendBuffer.get(array);
-        if (!endpoint.send(array)) {
-            return false;
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("SendOperator send data to ({}, {}, {}) done, length: {}, tupleCount: {}, hashCode: {}.",
-                this.host, this.port, this.receiveId, length, this.tupleCount, this.hashCode());
-        }
-        this.sendBuffer.clear();
-        this.tupleCount = 0;
         return true;
     }
 }

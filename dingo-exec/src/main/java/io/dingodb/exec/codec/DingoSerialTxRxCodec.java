@@ -22,31 +22,39 @@ import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 public class DingoSerialTxRxCodec implements TxRxCodec {
-    public static final int TUPLE_FLAG = 0;
+    public static final int TUPLES_FLAG = 0;
     public static final int NORMAL_FIN_FLAG = 1;
     public static final int ABNORMAL_FIN_FLAG = 2;
 
     private final DingoType schema;
     private final DingoCodec codec;
 
-    public DingoSerialTxRxCodec(DingoType schema) {
+    public DingoSerialTxRxCodec(@NonNull DingoType schema) {
         this.schema = schema;
         this.codec = new DingoCodec(schema.toDingoSchemas());
     }
 
     @Override
-    public byte[] encode(Object[] tuple) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        tuple = (Object[]) schema.convertTo(tuple, DingoConverter.INSTANCE);
-        baos.write(TUPLE_FLAG);
-        baos.write(codec.encode(tuple));
-        return baos.toByteArray();
+    public byte[] encodeTuples(@NonNull List<Object[]> tuples) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(TUPLES_FLAG);
+        for (Object[] tuple : tuples) {
+            tuple = (Object[]) schema.convertTo(tuple, DingoConverter.INSTANCE);
+            byte[] content = codec.encode(tuple);
+            CodecUtils.encodeVarInt(bos, content.length);
+            bos.write(content);
+        }
+        return bos.toByteArray();
     }
 
     @Override
@@ -62,18 +70,25 @@ public class DingoSerialTxRxCodec implements TxRxCodec {
     }
 
     @Override
-    public Object[] decode(byte[] bytes) throws IOException {
+    public List<Object[]> decode(byte[] bytes) throws IOException {
         ByteArrayInputStream is = new ByteArrayInputStream(bytes);
         int flag = is.read();
         switch (flag) {
-            case TUPLE_FLAG:
-                byte[] content = new byte[is.available()];
-                is.read(content);
-                return (Object[]) schema.convertFrom(codec.decode(content), DingoConverter.INSTANCE);
+            case TUPLES_FLAG:
+                List<Object[]> tuples = new LinkedList<>();
+                while (is.available() > 0) {
+                    int len = CodecUtils.decodeVarInt(is);
+                    byte[] content = new byte[len];
+                    is.read(content);
+                    Object[] tuple = codec.decode(content);
+                    tuple = (Object[]) schema.convertFrom(tuple, DingoConverter.INSTANCE);
+                    tuples.add(tuple);
+                }
+                return tuples;
             case NORMAL_FIN_FLAG:
-                return new Object[]{FinWithProfiles.deserialize(is)};
+                return Collections.singletonList(new Object[]{FinWithProfiles.deserialize(is)});
             case ABNORMAL_FIN_FLAG:
-                return new Object[]{FinWithException.deserialize(is)};
+                return Collections.singletonList(new Object[]{FinWithException.deserialize(is)});
             default:
         }
         throw new IllegalStateException("Unexpected data message flag \"" + flag + "\".");
