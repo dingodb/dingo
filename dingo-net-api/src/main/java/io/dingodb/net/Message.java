@@ -35,7 +35,9 @@ public final class Message {
 
     public static final Message EMPTY = new Message(EMPTY_TAG, EMPTY_BYTES);
 
+    @Getter
     private final byte[] tag;
+    @Getter
     private final byte[] content;
     private String tagStr;
 
@@ -57,6 +59,10 @@ public final class Message {
         this.tag = tag;
         this.content = content;
         this.tagStr = new String(tag);
+    }
+
+    public int length() {
+        return tag.length + content.length;
     }
 
     public String tag() {

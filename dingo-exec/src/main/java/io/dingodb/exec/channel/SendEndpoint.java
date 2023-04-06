@@ -74,7 +74,7 @@ public class SendEndpoint {
         return true;
     }
 
-    public boolean send(byte[] content) {
+    public boolean send(byte @NonNull [] content) {
         return send(content, false);
     }
 
@@ -82,7 +82,7 @@ public class SendEndpoint {
         boolean ok = checkAvailableBufferCount(content.length);
         if (ok || needed) {
             Message msg = new Message(tag, content);
-            channel.send(msg);
+            channel.send(msg, needed);
         }
         return ok;
     }

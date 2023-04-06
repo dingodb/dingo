@@ -17,13 +17,15 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.exec.fin.Fin;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface TxRxCodec {
-    byte[] encode(Object[] tuple) throws IOException;
+    byte[] encodeTuples(@NonNull List<Object[]> tuples) throws IOException;
 
     byte[] encodeFin(Fin fin) throws IOException;
 
-    Object[] decode(byte[] bytes) throws IOException;
+    List<Object[]> decode(byte[] bytes) throws IOException;
 }

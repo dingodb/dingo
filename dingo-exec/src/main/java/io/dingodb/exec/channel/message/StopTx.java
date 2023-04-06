@@ -19,11 +19,13 @@ package io.dingodb.exec.channel.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import lombok.ToString;
 
-@JsonTypeName("end")
-public class EndTask extends Control {
+@ToString
+@JsonTypeName("stop")
+public class StopTx extends Control {
     @JsonCreator
-    public EndTask(@JsonProperty("tag") String tag) {
+    public StopTx(@JsonProperty("tag") String tag) {
         super(tag);
     }
 }

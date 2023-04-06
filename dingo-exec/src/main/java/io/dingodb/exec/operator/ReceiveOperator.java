@@ -20,9 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.DingoSerialTxRxCodec;
@@ -40,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -121,7 +120,7 @@ public final class ReceiveOperator extends SourceOperator {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
                 }
                 if (!output.push(tuple)) {
-                    endpoint.sendEndTask();
+                    endpoint.sendStopTx();
                     stopped = true;
                     // Stay in loop to receive FIN.
                 }
@@ -161,35 +160,11 @@ public final class ReceiveOperator extends SourceOperator {
             try {
                 final byte[] content = message.content();
                 endpoint.sendIncreaseBuffer(content.length);
-                int count = 0;
-                int offset = 0;
-                while (offset < content.length) {
-                    Pair<byte[], Integer> pair = PrimitiveCodec.decodeArray(content, offset);
-                    if (pair == null) {
-                        log.error("ReceiveMessageListener, parse error.");
-                        return;
-                    }
-                    int arrLen = pair.getKey().length;
-                    Object[] tuple = codec.decode(pair.getKey());
-                    if (log.isDebugEnabled()) {
-                        if (!(tuple[0] instanceof Fin)) {
-                            log.debug("ReceiveMessageListener (tag = {}) Received tuple {}, arr len: {}, "
-                                    + "total len: {}, offset: {}, hashCode: {}.", tag, schema.format(tuple),
-                                arrLen, pair.getValue(), offset, this.hashCode());
-                        } else {
-                            log.debug("ReceiveMessageListener (tag = {}) Received FIN, arr len: {}, "
-                                + "offset: {}, hashCode: {}.", tag, pair.getKey().length, offset, this.hashCode());
-                        }
-                    }
-                    offset += pair.getValue();
-                    count++;
+                List<Object[]> tuples = codec.decode(content);
+                for (Object[] tuple : tuples) {
                     if (!stopped || tuple[0] instanceof Fin) {
                         QueueUtils.forcePut(tupleQueue, tuple);
                     }
-                }
-                if (log.isDebugEnabled()) {
-                    log.debug("ReceiveMessageListener onMessage, content length: {}, tupleCount: {}, "
-                        + "hashCode: {}.", content.length, count, this.hashCode());
                 }
             } catch (IOException e) {
                 log.error("ReceiveMessageListener ({}:{} tag = {}) catch exception:{}",
