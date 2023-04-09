@@ -16,11 +16,7 @@
 
 package io.dingodb.common.mysql.scope;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class ScopeVariables {
     public static Properties globalVariables = new Properties();
@@ -52,5 +48,6 @@ public class ScopeVariables {
         globalVariables.put("character_set_client", "utf8");
         globalVariables.put("auto_increment_increment", "1");
 
+        sessionVariables.put("transaction_read_only", "0");
     }
 }

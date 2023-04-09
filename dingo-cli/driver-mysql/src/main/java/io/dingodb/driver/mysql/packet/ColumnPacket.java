@@ -20,7 +20,9 @@ import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
+import lombok.Builder;
 
+@Builder
 public class ColumnPacket extends MysqlPacket {
     public String catalog;
     public String schema;
@@ -74,12 +76,12 @@ public class ColumnPacket extends MysqlPacket {
         BufferUtil.writeWithLength(buffer, name.getBytes());
         BufferUtil.writeWithLength(buffer, orgName.getBytes());;
         buffer.writeByte((byte) 0x0c);
-        byte[] charsetNum = MysqlByteUtil.shortToByteLittle(characterSet);
+        byte[] charsetNum = MysqlByteUtil.shortToBytesLittleEndian(characterSet);
         buffer.writeBytes(charsetNum);
-        byte[] length = MysqlByteUtil.intToByteLittle(columnLength);
+        byte[] length = MysqlByteUtil.intToBytesLittleEndian(columnLength);
         buffer.writeBytes(length);
         buffer.writeByte(type);
-        buffer.writeBytes(MysqlByteUtil.shortToByteLittle(flags));
+        buffer.writeBytes(MysqlByteUtil.shortToBytesLittleEndian(flags));
         buffer.writeByte(decimals);
         buffer.writeByte((byte) 0x00);
         buffer.writeByte((byte) 0x00);

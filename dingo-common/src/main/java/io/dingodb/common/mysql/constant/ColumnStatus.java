@@ -38,4 +38,6 @@ public class ColumnStatus {
     public static final int COLUMN_TIMESTAMP = 0X0400;
 
     public static final int COLUMN_SET = 0X0800;
+
+    public static final int allEmpty = 0x8000;
 }
