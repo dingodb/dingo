@@ -29,7 +29,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-
 @Slf4j
 @ChannelHandler.Sharable
 public class MysqlIdleStateHandler extends ChannelDuplexHandler {
@@ -49,6 +48,8 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
 
     private long lastWriteTime;
 
+    private long delayTime;
+
     private ScheduledFuture<?> idleTimeoutFuture;
 
     private byte state; // 0 - none, 1 - initialized, 2 - destroyed
@@ -63,7 +64,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
         if (unit == null) {
             throw new NullPointerException("unit");
         }
-
+        delayTime = unit.toNanos(600);
         if (allIdleTime <= 0) {
             idleTimeNanos = 0;
         } else {
@@ -169,6 +170,8 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             case 1:
             case 2:
                 return;
+            default:
+                break;
         }
 
         state = 1;
@@ -190,7 +193,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
     }
 
     ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
-        return service.scheduleAtFixedRate(task, delay, delay, unit);
+        return service.scheduleAtFixedRate(task, delayTime, delay, unit);
     }
 
     private void destroy() {

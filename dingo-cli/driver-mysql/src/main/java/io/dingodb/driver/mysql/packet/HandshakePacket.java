@@ -105,7 +105,7 @@ public class HandshakePacket extends MysqlPacket {
         buffer.writeByte(packetId);
         buffer.writeByte(protocolVersion);
         BufferUtil.writeWithNull(buffer, serverVersion);
-        buffer.writeBytes(MysqlByteUtil.intToByteLittle(threadId));
+        buffer.writeBytes(MysqlByteUtil.intToBytesLittleEndian(threadId));
         BufferUtil.writeWithNull(buffer, seed);
         BufferUtil.writeUB2(buffer, serverCapabilities);
         buffer.writeByte(serverCharsetIndex);

@@ -135,4 +135,22 @@ public class BufferUtil {
         }
     }
 
+    public static String getBinaryStrFromByte(byte byteVar) {
+        String result = "";
+        byte a = byteVar;
+        ;
+        for (int i = 0; i < 8; i++) {
+            byte c = a;
+            a = (byte) (a >> 1);
+            a = (byte) (a << 1);
+            if (a == c) {
+                result = "0" + result;
+            } else {
+                result = "1" + result;
+            }
+            a = (byte) (a >> 1);
+        }
+        return result;
+    }
+
 }

@@ -18,8 +18,11 @@ package io.dingodb.driver.mysql.packet;
 
 import io.dingodb.common.mysql.CapabilityFlags;
 import io.dingodb.common.mysql.MysqlMessage;
+import io.dingodb.common.mysql.constant.ErrorCode;
+import io.dingodb.driver.mysql.NativeConstants;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.StringUtils;
 
 public class ERRPacket extends MysqlPacket {
 
@@ -53,10 +56,13 @@ public class ERRPacket extends MysqlPacket {
     public void write(ByteBuf buffer) {
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.writeByte(packetId);
-        buffer.writeByte((byte) 0xff);
+        buffer.writeByte(NativeConstants.TYPE_ID_ERROR);
         BufferUtil.writeUB2(buffer, errorCode);
         if ((capabilities & CapabilityFlags.CLIENT_PROTOCOL_41.getCode()) > 0) {
             buffer.writeByte((byte) '#');
+            if (StringUtils.isBlank(sqlState)) {
+                sqlState = ErrorCode.ER_NO.sqlState;
+            }
             buffer.writeBytes(sqlState.getBytes());
         }
         if (errorMessage != null) {

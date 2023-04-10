@@ -17,6 +17,7 @@
 package io.dingodb.driver.mysql.packet;
 
 import io.dingodb.common.mysql.MysqlMessage;
+import io.dingodb.driver.mysql.NativeConstants;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 
@@ -41,7 +42,7 @@ public class QueryPacket extends MysqlPacket {
         int size = calcPacketSize();
         BufferUtil.writeUB3(buffer, size);
         buffer.writeByte(packetId);
-        buffer.writeByte(COM_QUERY);
+        buffer.writeByte(NativeConstants.COM_QUERY);
         buffer.writeBytes(message);
     }
 
