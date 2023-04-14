@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
