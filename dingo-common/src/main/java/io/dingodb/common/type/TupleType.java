@@ -111,6 +111,11 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
+    }
+
+    @Override
     public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             Object[] tuple = (Object[]) value;

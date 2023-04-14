@@ -20,14 +20,15 @@ plugins {
 }
 
 dependencies {
+    annotationProcessor project(':dingo-expr:dingo-expr-annotations')
     api project(':dingo-cluster-api')
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
     api project(':dingo-server:dingo-server-protocol')
     api project(':dingo-store-api')
-    annotationProcessor project(':dingo-expr:dingo-expr-annotations')
     compileOnly project(':dingo-expr:dingo-expr-annotations')
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
+    implementation group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
     implementation project(':dingo-expr:dingo-expr-parser')
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation project(':dingo-expr:dingo-expr-test')

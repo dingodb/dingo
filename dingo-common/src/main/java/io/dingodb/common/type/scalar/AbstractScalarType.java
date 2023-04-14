@@ -31,7 +31,6 @@ public abstract class AbstractScalarType extends NullableType {
         super(typeCode, nullable);
     }
 
-
     @Override
     public List<DingoSchema> toDingoSchemas() {
         return null;
@@ -62,5 +61,4 @@ public abstract class AbstractScalarType extends NullableType {
         String name = TypeCode.nameOf(typeCode);
         return nullable ? name + "|" + NullType.NULL : name;
     }
-
 }

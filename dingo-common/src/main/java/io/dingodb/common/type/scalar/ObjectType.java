@@ -19,6 +19,7 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.BytesSchema;
@@ -40,6 +41,11 @@ public class ObjectType extends AbstractScalarType {
     @Override
     public DingoSchema toDingoSchema(int index) {
         return new BytesSchema(index);
+    }
+
+    @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
     }
 
     @Override

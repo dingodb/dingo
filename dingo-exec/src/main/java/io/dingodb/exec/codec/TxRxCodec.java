@@ -20,12 +20,13 @@ import io.dingodb.exec.fin.Fin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 public interface TxRxCodec {
-    byte[] encodeTuples(@NonNull List<Object[]> tuples) throws IOException;
+    void encodeTuples(OutputStream os, @NonNull List<Object[]> tuples) throws IOException;
 
-    byte[] encodeFin(Fin fin) throws IOException;
+    void encodeFin(OutputStream os, Fin fin) throws IOException;
 
     List<Object[]> decode(byte[] bytes) throws IOException;
 }

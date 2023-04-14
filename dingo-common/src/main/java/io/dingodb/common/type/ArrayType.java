@@ -24,6 +24,7 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -33,6 +34,7 @@ import java.util.List;
 @JsonPropertyOrder({"element", "nullable"})
 @EqualsAndHashCode(of = {"elementType"}, callSuper = true)
 public class ArrayType extends NullableType {
+    @Getter
     @JsonProperty("element")
     private final DingoType elementType;
 
@@ -68,6 +70,11 @@ public class ArrayType extends NullableType {
     @Override
     public DingoSchema toDingoSchema(int index) {
         return null;
+    }
+
+    @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
     }
 
     @Override

@@ -71,6 +71,11 @@ public class NullType extends AbstractDingoType {
     }
 
     @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
+    }
+
+    @Override
     public @NonNull String format(Object value) {
         return "NULL";
     }

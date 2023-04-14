@@ -16,57 +16,43 @@
 
 package io.dingodb.exec.codec;
 
-import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
-public class DingoSerialTxRxCodec implements TxRxCodec {
+public class TxRxCodecImpl implements TxRxCodec {
     public static final int TUPLES_FLAG = 0;
     public static final int NORMAL_FIN_FLAG = 1;
     public static final int ABNORMAL_FIN_FLAG = 2;
 
-    private final DingoType schema;
-    private final DingoCodec codec;
+    private final TupleCodec codec;
 
-    public DingoSerialTxRxCodec(@NonNull DingoType schema) {
-        this.schema = schema;
-        this.codec = new DingoCodec(schema.toDingoSchemas());
+    public TxRxCodecImpl(@NonNull DingoType schema) {
+        this.codec = new AvroTupleCodec(schema);
     }
 
     @Override
-    public byte[] encodeTuples(@NonNull List<Object[]> tuples) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        bos.write(TUPLES_FLAG);
-        for (Object[] tuple : tuples) {
-            tuple = (Object[]) schema.convertTo(tuple, DingoConverter.INSTANCE);
-            byte[] content = codec.encode(tuple);
-            CodecUtils.encodeVarInt(bos, content.length);
-            bos.write(content);
-        }
-        return bos.toByteArray();
+    public void encodeTuples(@NonNull OutputStream os, @NonNull List<Object[]> tuples) throws IOException {
+        os.write(TUPLES_FLAG);
+        codec.encode(os, tuples);
     }
 
     @Override
-    public byte[] encodeFin(Fin fin) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+    public void encodeFin(OutputStream os, Fin fin) throws IOException {
         if (fin instanceof FinWithProfiles) {
             os.write(NORMAL_FIN_FLAG);
         } else {
             os.write(ABNORMAL_FIN_FLAG);
         }
         fin.writeStream(os);
-        return os.toByteArray();
     }
 
     @Override
@@ -75,16 +61,7 @@ public class DingoSerialTxRxCodec implements TxRxCodec {
         int flag = is.read();
         switch (flag) {
             case TUPLES_FLAG:
-                List<Object[]> tuples = new LinkedList<>();
-                while (is.available() > 0) {
-                    int len = CodecUtils.decodeVarInt(is);
-                    byte[] content = new byte[len];
-                    is.read(content);
-                    Object[] tuple = codec.decode(content);
-                    tuple = (Object[]) schema.convertFrom(tuple, DingoConverter.INSTANCE);
-                    tuples.add(tuple);
-                }
-                return tuples;
+                return codec.decode(is);
             case NORMAL_FIN_FLAG:
                 return Collections.singletonList(new Object[]{FinWithProfiles.deserialize(is)});
             case ABNORMAL_FIN_FLAG:
