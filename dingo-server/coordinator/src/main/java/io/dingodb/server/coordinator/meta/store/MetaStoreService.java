@@ -53,16 +53,6 @@ public class MetaStoreService implements StoreService {
     }
 
     @Override
-    public String name() {
-        return null;
-    }
-
-    @Override
-    public StoreInstance getOrCreateInstance(@NonNull CommonId id, int ttl) {
-        return storeInstances.get(id);
-    }
-
-    @Override
     public StoreInstance getInstance(@NonNull CommonId id) {
         return storeInstances.get(id);
     }

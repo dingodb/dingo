@@ -23,10 +23,10 @@ import lombok.Getter;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class DingoSchema extends MutableSchema {
     @Getter
@@ -67,10 +67,6 @@ public class DingoSchema extends MutableSchema {
 
     @Override
     protected Map<String, Schema> getSubSchemaMap() {
-        return metaService.getSubMetaServices().entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> new DingoSchema(context, names, metaService.getSubMetaService(e.getKey())))
-            );
+        return Collections.emptyMap();
     }
 }

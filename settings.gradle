@@ -81,4 +81,5 @@ findProject(':dingo-cli:driver-server')?.name = 'driver-server'
 include 'dingo-column'
 include 'dingo-cli:driver-mysql'
 findProject(':dingo-cli:driver-mysql')?.name = 'driver-mysql'
+include 'dingo-executor'
 

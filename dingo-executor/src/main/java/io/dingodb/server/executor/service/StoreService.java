@@ -14,36 +14,30 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.executor.store;
+package io.dingodb.server.executor.service;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.FileUtils;
-import io.dingodb.mpu.instruction.InstructionSetRegistry;
-import io.dingodb.server.executor.store.instruction.OpInstructions;
 import io.dingodb.store.api.StoreInstance;
-import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 public class StoreService implements io.dingodb.store.api.StoreService {
+    public static final StoreService DEFAULT_INSTANCE = new StoreService();
 
-    public static final StoreService INSTANCE = new StoreService();
-
-    private final Map<CommonId, StoreInstance> storeInstanceMap = new ConcurrentHashMap<>();
-    private final Path path = Paths.get(StoreConfiguration.dbPath());
-
-    private StoreService() {
-        FileUtils.createDirectories(path);
-        InstructionSetRegistry.register(OpInstructions.id, OpInstructions.INSTRUCTIONS);
+    @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
+    public static class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
+        @Override
+        public io.dingodb.store.api.StoreService get() {
+            return DEFAULT_INSTANCE;
+        }
     }
 
-    public void registerStoreInstance(CommonId id, StoreInstance storeInstance) {
-        this.storeInstanceMap.put(id, storeInstance);
+    private final Map<CommonId, StoreInstance> storeInstanceMap = new ConcurrentHashMap<>();
+
+    private StoreService() {
     }
 
     @Override

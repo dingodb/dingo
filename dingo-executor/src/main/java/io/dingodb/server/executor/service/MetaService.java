@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.api;
+package io.dingodb.server.executor.service;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import com.google.auto.service.AutoService;
 
-import java.util.Map;
+// todo: impl and remove abstract
+public abstract class MetaService implements io.dingodb.meta.MetaService {
 
-public interface StoreService {
+    public static final io.dingodb.meta.MetaService ROOT = null;
 
-    static StoreService getDefault() {
-        return StoreServiceProvider.getDefault().get();
+    @AutoService(io.dingodb.meta.MetaServiceProvider.class)
+    public static class MetaServiceProvider implements io.dingodb.meta.MetaServiceProvider {
+        @Override
+        public io.dingodb.meta.MetaService root() {
+            return ROOT;
+        }
     }
-
-    StoreInstance getInstance(@NonNull CommonId id);
-
-    void deleteInstance(CommonId id);
 
 }

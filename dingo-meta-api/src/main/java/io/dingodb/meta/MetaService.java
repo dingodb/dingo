@@ -51,6 +51,10 @@ public interface MetaService {
      */
     String name();
 
+    default boolean isRoot() {
+        return id().equals(root().id());
+    }
+
     /**
      * Create sub meta service.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
@@ -58,7 +62,6 @@ public interface MetaService {
      * @param name sub meta service name
      */
     void createSubMetaService(String name);
-
 
     /**
      * Get all sub meta services.
@@ -152,6 +155,17 @@ public interface MetaService {
      * @return table parts meta
      */
     NavigableMap<ComparableByteArray, Part> getParts(CommonId id);
+
+    /**
+     * Get range distributions by table id.
+     *
+     * @param id table id
+     * @return table range distributions
+     */
+    default NavigableMap<Comparable<byte[]>, RangeDistribution> getRangeDistribution(CommonId id) {
+        // todo
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Returns current process location.

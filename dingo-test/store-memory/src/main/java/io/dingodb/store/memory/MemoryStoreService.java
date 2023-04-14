@@ -35,16 +35,6 @@ public class MemoryStoreService implements StoreService {
     private final Map<CommonId, MemoryStoreInstance> store = new ConcurrentHashMap<>();
 
     @Override
-    public String name() {
-        return "MEMORY";
-    }
-
-    @Override
-    public StoreInstance getOrCreateInstance(@NonNull CommonId id, int ttl) {
-        return getInstance(id);
-    }
-
-    @Override
     public StoreInstance getInstance(@NonNull CommonId id) {
         MemoryStoreInstance instance = store.get(id);
         if (instance == null) {
