@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.NullType;
+import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
@@ -48,6 +49,11 @@ public class TimestampType extends AbstractScalarType {
     }
 
     @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
+    }
+
+    @Override
     public @NonNull String format(@Nullable Object value) {
         return value != null
             ? DateTimeUtils.timestampFormat((Timestamp) value) + ":" + this
@@ -63,5 +69,4 @@ public class TimestampType extends AbstractScalarType {
     protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertTimestampFrom(value);
     }
-
 }

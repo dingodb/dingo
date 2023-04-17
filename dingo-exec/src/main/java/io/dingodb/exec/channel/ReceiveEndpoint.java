@@ -76,7 +76,7 @@ public class ReceiveEndpoint {
         }
         channel.send(new Message(CTRL_TAG, content), false);
         if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Sent control message \"{}\".", control);
+            log.debug("(tag = {}) Sent control message \"{}\".", tag, control);
         }
     }
 }

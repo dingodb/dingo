@@ -70,7 +70,7 @@ public interface DingoType extends CompileContext {
      * Number of the fields for a tuple type.
      *
      * @return number of fields if this is a tuple type;
-     *     -1 if this is a scalar type
+     * -1 if this is a scalar type
      */
     int fieldCount();
 
@@ -92,6 +92,8 @@ public interface DingoType extends CompileContext {
     List<DingoSchema> toDingoSchemas();
 
     DingoSchema toDingoSchema(int index);
+
+    <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter);
 
     /**
      * Parse string(s) into value(s) of this type. Specially, {@code "NULL"} is parsed to null.

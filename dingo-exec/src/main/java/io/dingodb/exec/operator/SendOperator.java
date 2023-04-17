@@ -23,13 +23,14 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.channel.SendEndpoint;
-import io.dingodb.exec.codec.DingoSerialTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
+import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.utils.TagUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,6 +53,8 @@ public final class SendOperator extends SinkOperator {
     private TxRxCodec codec;
     private SendEndpoint endpoint;
 
+    private transient int maxBufferSize;
+
     @JsonCreator
     public SendOperator(
         @JsonProperty("host") String host,
@@ -64,12 +67,13 @@ public final class SendOperator extends SinkOperator {
         this.receiveId = receiveId;
         this.schema = schema;
         this.tupleList = new LinkedList<>();
+        this.maxBufferSize = 4096;
     }
 
     @Override
     public void init() {
         super.init();
-        codec = new DingoSerialTxRxCodec(schema);
+        codec = new TxRxCodecImpl(schema);
         endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
         endpoint.init();
     }
@@ -101,14 +105,15 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(Fin fin) {
         try {
-            byte[] bytes = codec.encodeFin(fin);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            codec.encodeFin(bos, fin);
             if (!(fin instanceof FinWithException)) {
                 sendTupleList();
             }
             if (log.isDebugEnabled()) {
                 log.debug("Send FIN with detail:\n{}", fin.detail());
             }
-            endpoint.send(bytes, true);
+            endpoint.send(bos.toByteArray(), true);
         } catch (IOException e) {
             log.error("Encode FIN failed. fin = {}", fin, e);
         }
@@ -116,8 +121,12 @@ public final class SendOperator extends SinkOperator {
 
     private boolean sendTupleList() throws IOException {
         if (!tupleList.isEmpty()) {
-            byte[] bytes = codec.encodeTuples(tupleList);
-            boolean result = endpoint.send(bytes);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(maxBufferSize);
+            codec.encodeTuples(bos, tupleList);
+            if (bos.size() > maxBufferSize) {
+                maxBufferSize = bos.size();
+            }
+            boolean result = endpoint.send(bos.toByteArray());
             tupleList.clear();
             return result;
         }

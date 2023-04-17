@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ReceiveEndpoint;
-import io.dingodb.exec.codec.DingoSerialTxRxCodec;
 import io.dingodb.exec.codec.TxRxCodec;
+import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
@@ -79,7 +79,7 @@ public final class ReceiveOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        codec = new DingoSerialTxRxCodec(schema);
+        codec = new TxRxCodecImpl(schema);
         tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
         messageListener = new ReceiveMessageListener();
         tag = TagUtils.tag(getTask().getJobId(), getId());

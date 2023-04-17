@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.channel.message;
+package io.dingodb.exec.codec;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import lombok.Getter;
-import lombok.ToString;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-@ToString
-@JsonTypeName("inc")
-public class IncreaseBuffer extends Control {
-    @Getter
-    @JsonProperty("bytes")
-    private final int bytes;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
 
-    @JsonCreator
-    public IncreaseBuffer(@JsonProperty("tag") String tag, @JsonProperty("bytes") int bytes) {
-        super(tag);
-        this.bytes = bytes;
-    }
+public interface TupleCodec {
+    void encode(@NonNull OutputStream os, @NonNull List<Object @NonNull []> tuples) throws IOException;
+
+    @NonNull List<Object[]> decode(@NonNull InputStream is) throws IOException;
 }

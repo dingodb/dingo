@@ -19,6 +19,7 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
@@ -43,6 +44,11 @@ public class DoubleType extends AbstractScalarType {
     }
 
     @Override
+    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
+        return converter.createSchema(this);
+    }
+
+    @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         return super.convertValueTo(value, converter);
     }
@@ -51,5 +57,4 @@ public class DoubleType extends AbstractScalarType {
     protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
         return converter.convertDoubleFrom(value);
     }
-
 }

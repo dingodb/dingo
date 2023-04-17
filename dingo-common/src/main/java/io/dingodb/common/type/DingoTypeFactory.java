@@ -154,6 +154,4 @@ public final class DingoTypeFactory {
     public static @NonNull MapType map(String keyType, String valueType, boolean nullable) {
         return map(scalar(keyType), scalar(valueType), nullable);
     }
-
-
 }
