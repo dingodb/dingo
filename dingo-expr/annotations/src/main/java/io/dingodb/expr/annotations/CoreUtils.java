@@ -210,6 +210,8 @@ public final class CoreUtils {
                 return "longToFloat";
             } else if (isBoolType(source)) {
                 return "boolToFloat";
+            } else if (isDoubleType(source)) {
+                return "doubleToFloat";
             } else if (isDecimalType(source)) {
                 return "decimalToFloat";
             } else if (isStringType(source)) {

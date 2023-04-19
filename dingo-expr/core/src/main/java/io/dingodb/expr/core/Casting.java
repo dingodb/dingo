@@ -147,6 +147,10 @@ public final class Casting {
         return (float) value;
     }
 
+    public static float doubleToFloat(double value) {
+        return Double.valueOf(value).floatValue();
+    }
+
     public static float boolToFloat(boolean value) {
         return value ? 1.0f : 0.0f;
     }

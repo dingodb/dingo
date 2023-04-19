@@ -21,8 +21,11 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DingoUnion extends Union implements DingoRel {
@@ -43,5 +46,25 @@ public class DingoUnion extends Union implements DingoRel {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        int size = this.inputs.size();
+        List<RelTraitSet> traitSetList = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            traitSetList.add(childTraits);
+        }
+        return Pair.of(childTraits, traitSetList);
+    }
+
+    @Override
+    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
+        int size = this.inputs.size();
+        List<RelTraitSet> traitSetList = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            traitSetList.add(required);
+        }
+        return Pair.of(required, traitSetList);
     }
 }

@@ -103,6 +103,9 @@ public interface DataConverter {
     }
 
     default Double convertDoubleFrom(@NonNull Object value) {
+        if (value instanceof Float) {
+            return ((Float) value).doubleValue();
+        }
         return (Double) value;
     }
 
