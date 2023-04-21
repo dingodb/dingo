@@ -17,5 +17,14 @@
 package io.dingodb.meta;
 
 public interface TableStatistic {
+    default byte[] getMinKey() {
+        return null;
+    }
+    default byte[] getMaxKey() {
+        return null;
+    }
+    default long getPartCount() {
+        return 0;
+    }
     Double getRowCount();
 }

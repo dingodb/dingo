@@ -27,7 +27,11 @@ public interface StoreService {
         return StoreServiceProvider.getDefault().get();
     }
 
-    StoreInstance getInstance(@NonNull CommonId id);
+    default StoreInstance getInstance(@NonNull CommonId tableId) {return null;}
+
+    default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
+        return null;
+    }
 
     void deleteInstance(CommonId id);
 

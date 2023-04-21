@@ -188,7 +188,7 @@ public class TableApi implements io.dingodb.server.api.TableApi {
     @Override
     public Map<CommonId, Location> mirrors(CommonId tableId) {
         Map<CommonId, Location> mirrors = get(tableId).getMirrors().stream().collect(Collectors.toMap(
-            meta -> new CommonId(serverId().type, serverId().id0, serverId().id1, serverId().domain, meta.id.seq),
+            meta -> new CommonId(serverId().type, serverId().domain, meta.id.seq),
             CoreMeta::location
         ));
         mirrors.put(serverId(), location());

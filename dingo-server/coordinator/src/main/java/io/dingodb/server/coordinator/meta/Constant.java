@@ -18,7 +18,6 @@ package io.dingodb.server.coordinator.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.server.coordinator.meta.adaptor.impl.CodeUDFAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ColumnAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutiveAdaptor;
 import io.dingodb.server.coordinator.meta.adaptor.impl.ExecutorAdaptor;
@@ -95,7 +94,6 @@ public class Constant {
             SchemaPrivAdaptor.class,
             TableAdaptor.class,
             TablePrivAdaptor.class,
-            CodeUDFAdaptor.class,
             UserAdaptor.class
         );
         for (int i = 0; i < metaAdaptors.size(); i++) {
