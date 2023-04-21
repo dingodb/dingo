@@ -43,13 +43,13 @@ public class RangeDistribution {
     private byte[] endKey;
 
     @JsonCreator
-    public RangeDistribution(@JsonProperty("leader") CommonId id) {
+    public RangeDistribution(@JsonProperty("id") CommonId id) {
         this.id = id;
     }
 
     @JsonCreator
     public RangeDistribution(
-        @JsonProperty("leader") CommonId id,
+        @JsonProperty("id") CommonId id,
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey
     ) {

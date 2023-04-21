@@ -26,7 +26,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.server.coordinator.api.ClusterServiceApi;
-import io.dingodb.server.coordinator.api.CodeUDFApi;
 import io.dingodb.server.coordinator.api.LogLevelApi;
 import io.dingodb.server.coordinator.api.TableApi;
 import io.dingodb.server.coordinator.config.Configuration;
@@ -71,7 +70,6 @@ public class Starter {
         apiRegistry.register(io.dingodb.server.api.LogLevelApi.class, LogLevelApi.instance());
         apiRegistry.register(io.dingodb.server.api.ClusterServiceApi.class, ClusterServiceApi.instance());
         apiRegistry.register(io.dingodb.server.api.TableApi.class, TableApi.INSTANCE);
-        apiRegistry.register(io.dingodb.server.api.CodeUDFApi.class, CodeUDFApi.INSTANCE);
         CoordinatorSidebar coordinatorSidebar = CoordinatorSidebar.INSTANCE;
         Services.initNetService();
     }

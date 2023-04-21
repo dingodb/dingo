@@ -129,14 +129,14 @@ public class TableSidebar extends BaseSidebar implements io.dingodb.store.api.St
     public static TableSidebar create(
         CommonId tableId, Map<CommonId, Location> mirrors, TableDefinition definition
     ) throws Exception {
-        CommonId id = new CommonId(TABLE_PREFIX.type, TABLE_PREFIX.id0, TABLE_PREFIX.id1, tableId.seq, serverId().seq);
+        CommonId id = new CommonId(TABLE_PREFIX.type, tableId.seq, serverId().seq);
         CoreMeta meta = new CoreMeta(id, tableId, location());
         Storage storage = StorageFactory.create(meta.label, resolvePath(tableId.toString()));
         mirrors = Parameters.cleanNull(mirrors, () -> TableApi.mirrors(CoordinatorConnector.getDefault(), tableId));
         List<CoreMeta> mirrorMetas = mirrors.entrySet().stream()
             .filter(e -> !e.getKey().equals(serverId()))
             .map(e -> new CoreMeta(
-                new CommonId(id.type, id.id0, id.id1, id.domain, e.getKey().seq), tableId, e.getValue()
+                new CommonId(id.type, id.domain, e.getKey().seq), tableId, e.getValue()
             ))
             .collect(Collectors.toList());
         return new TableSidebar(

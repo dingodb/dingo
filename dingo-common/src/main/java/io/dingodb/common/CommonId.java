@@ -55,13 +55,14 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     private byte[] content;
 
     @Getter public final byte type;
-    @Getter public final byte id0;
-    @Getter public final byte id1;
     @Getter public final int domain;
     @Getter public final int seq;
-    @Getter public final int ver;
 
     private transient volatile String str;
+
+    public CommonId(byte type, int domain, int seq) {
+        this(type, (byte) 0, (byte) 0, domain, seq, 0);
+    }
 
     public CommonId(byte type, byte[] identifier, int domain, int seq) {
         this(type, identifier, domain, seq, 1);
@@ -77,11 +78,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     public CommonId(byte type, byte id0, byte id1, int domain, int seq, int ver) {
         this.type = type;
-        this.id0 = id0;
-        this.id1 = id1;
         this.domain = domain;
         this.seq = seq;
-        this.ver = ver;
         initContent(type, id0, id1, domain, seq, ver);
     }
 
@@ -110,7 +108,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     public byte[] identifier() {
-        return new byte[] {id0, id1};
+        return new byte[] {0, 0};
     }
 
     public byte[] content() {
@@ -122,7 +120,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     @Override
     public String toString() {
         if (str == null) {
-            this.str = new String(new byte[] {type, '_', id0, id1}) + '_' + domain + '_' + seq + '_' + ver;
+            this.str = new String(new byte[] {type, '_', 0, 0}) + '_' + domain + '_' + seq + '_' + 0;
         }
         return str;
     }
@@ -152,6 +150,10 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     public static CommonId prefix(byte type, byte[] identifier) {
         return prefix(type, identifier, 0);
+    }
+
+    public static CommonId prefix(byte type, int domain) {
+        return new CommonId(type, domain, 0);
     }
 
     public static CommonId prefix(byte type, byte[] identifier, int domain) {

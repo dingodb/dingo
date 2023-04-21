@@ -162,7 +162,7 @@ public interface MetaService {
      * @param id table id
      * @return table range distributions
      */
-    default NavigableMap<Comparable<byte[]>, RangeDistribution> getRangeDistribution(CommonId id) {
+    default NavigableMap<Comparable<ComparableByteArray>, RangeDistribution> getRangeDistribution(CommonId id) {
         // todo
         throw new UnsupportedOperationException();
     }

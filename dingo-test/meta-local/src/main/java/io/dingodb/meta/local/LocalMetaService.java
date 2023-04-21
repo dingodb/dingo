@@ -87,15 +87,15 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public void createSubMetaService(String name) {
-        CommonId newId = new CommonId(id.type(), id.identifier(), id.seq(), metaServiceSeq.incrementAndGet());
+        CommonId newId = new CommonId(id.type(), id.seq(), metaServiceSeq.incrementAndGet());
         metaServices.put(newId, new LocalMetaService(newId, name));
     }
 
     @Override
     public Map<String, io.dingodb.meta.MetaService> getSubMetaServices() {
         return metaServices.subMap(
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq()), true,
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.schema, id.seq() + 1), false
+                CommonId.prefix(ID_TYPE.table, id.seq()), true,
+                CommonId.prefix(ID_TYPE.table, id.seq() + 1), false
             ).values().stream()
             .collect(Collectors.toMap(LocalMetaService::name, __ -> __));
     }
@@ -113,7 +113,7 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
-        CommonId tableId = new CommonId(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq(), tableSeq.incrementAndGet());
+        CommonId tableId = new CommonId(ID_TYPE.table, id.seq(), tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
     }
 
@@ -128,8 +128,8 @@ public class LocalMetaService implements MetaService {
     public CommonId getTableId(@NonNull String tableName) {
         String tableNameU = tableName.toUpperCase();
         return tableDefinitions.subMap(
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq()), true,
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq() + 1), false
+                CommonId.prefix(ID_TYPE.table, id.seq()), true,
+                CommonId.prefix(ID_TYPE.table, id.seq() + 1), false
             ).entrySet().stream()
             .filter(e -> e.getValue().getName().equals(tableNameU))
             .findAny().map(Map.Entry::getKey).orElse(null);
@@ -138,8 +138,8 @@ public class LocalMetaService implements MetaService {
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
         return tableDefinitions.subMap(
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq()), true,
-                CommonId.prefix(ID_TYPE.table, TABLE_IDENTIFIER.table, id.seq() + 1), false
+                CommonId.prefix(ID_TYPE.table, id.seq()), true,
+                CommonId.prefix(ID_TYPE.table, id.seq() + 1), false
             ).values().stream()
             .collect(Collectors.toMap(TableDefinition::getName, __ -> __));
     }
