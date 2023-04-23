@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.common;
 
+import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
@@ -55,12 +56,15 @@ public class TableDefinition implements Table {
 
     @Override
     public Partition getPartDefinition() {
+        if (tableDefinition.getPartDefinition() == null) {
+            return null;
+        }
         return new PartitionRule(tableDefinition.getPartDefinition());
     }
 
     @Override
     public String getEngine() {
-        return tableDefinition.getEngine();
+        return Optional.ofNullable(tableDefinition.getEngine()).orElse("ENG_ROCKSDB");
     }
 
     @Override
@@ -72,6 +76,6 @@ public class TableDefinition implements Table {
 
     @Override
     public int getReplica() {
-        return 3;
+        return 1;
     }
 }

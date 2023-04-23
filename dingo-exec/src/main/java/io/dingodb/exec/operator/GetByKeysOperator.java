@@ -44,7 +44,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
 
     public GetByKeysOperator(
         CommonId tableId,
-        Object partId,
+        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
         List<Object[]> keyTuples,
@@ -58,7 +58,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
     @JsonCreator
     public static @NonNull GetByKeysOperator fromJson(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonDeserialize(using = RawJsonDeserializer.class)

@@ -17,22 +17,29 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Optional;
+import io.dingodb.meta.RangeDistribution;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
+import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.store.StoreServiceClient;
-import io.dingodb.server.executor.common.Mapping;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.server.executor.common.Mapping.mapping;
+import static io.dingodb.server.executor.service.MetaService.getParentSchemaId;
 
+@Slf4j
 public class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
 
@@ -60,9 +67,12 @@ public class StoreService implements io.dingodb.store.api.StoreService {
 
     }
 
-    class StoreInstance implements io.dingodb.store.api.StoreInstance {
+    static class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
         private final StoreServiceClient storeService;
+        private final DingoKeyValueCodec codec;
+        private final RangeDistribution distribution;
+
         private final DingoCommonId tableId;
         private final DingoCommonId regionId;
 
@@ -70,89 +80,96 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             this.storeService = storeService;
             this.tableId = mapping(tableId);
             this.regionId = mapping(regionId);
+            MetaService metaService = MetaService.ROOT.getSubMetaService(getParentSchemaId(tableId));
+            distribution = metaService
+                .getRangeDistribution(tableId).values().stream().filter(d -> d.id().equals(regionId)).findAny().get();
+            Table table = metaService.metaServiceClient.getTableDefinition(mapping(tableId));
+            codec = new DingoKeyValueCodec(table.getDingoType(), table.getKeyMapping(), tableId.seq);
         }
 
         @Override
-        public boolean upsertKeyValue(KeyValue keyValue) {
-            return storeService.kvPut(tableId, regionId, mapping(keyValue));
-        }
-
-        @Override
-        public boolean upsertKeyValue(List<KeyValue> keyValues) {
-            return storeService.kvBatchPut(
-                tableId,
-                regionId,
-                keyValues.stream().map(Mapping::mapping).collect(Collectors.toList()));
-        }
-
-        @Override
-        public boolean delete(byte[] primaryKey) {
-            return delete(Collections.singletonList(primaryKey));
-        }
-
-        @Override
-        public boolean delete(List<byte[]> primaryKeys) {
-            return storeService.kvBatchDelete(tableId, regionId, primaryKeys);
-        }
-
-        @Override
-        public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-            return storeService.kvDeleteRange(
-                tableId,
-                regionId,
-                new RangeWithOptions(new Range(startPrimaryKey, endPrimaryKey), true, false)) > 0;
-        }
-
-        @Override
-        public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
-            return new KeyValue(primaryKey, storeService.kvGet(tableId, regionId, primaryKey));
-        }
-
-        @Override
-        public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-            return storeService.kvBatchGet(tableId, regionId, primaryKeys)
-                .stream().map(Mapping::mapping).collect(Collectors.toList());
-        }
-
-        @Override
-        public Iterator<KeyValue> keyValueScan(byte[] key) {
-            return keyValueScan(key, key, true, true);
-        }
-
-        @Override
-        public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-            return keyValueScan(startPrimaryKey, endPrimaryKey, true, false);
-        }
-
-        @Override
-        public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
-            Iterator<io.dingodb.sdk.common.KeyValue> iterator = storeService.scan(
-                tableId,
-                regionId,
-                new Range(startPrimaryKey, endPrimaryKey),
-                includeStart,
-                includeEnd);
-            return new KeyValueIterator(iterator);
-        }
-
-        class KeyValueIterator implements Iterator<KeyValue> {
-            private final Iterator<io.dingodb.sdk.common.KeyValue> iterator;
-
-            public KeyValueIterator(Iterator<io.dingodb.sdk.common.KeyValue> iterator) {
-                this.iterator = iterator;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public KeyValue next() {
-                return mapping(iterator.next());
+        public boolean insert(Object[] row) {
+            try {
+                return storeService.kvPutIfAbsent(tableId, regionId, codec.encode(row));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
+        @Override
+        public boolean update(Object[] row) {
+            try {
+                return storeService.kvPut(tableId, regionId, codec.encode(row));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Object[] getTupleByPrimaryKey(Object[] primaryKey) {
+            try {
+                byte[] key = codec.encodeKey(primaryKey);
+                return codec.decode(new io.dingodb.sdk.common.KeyValue(key, storeService.kvGet(tableId, regionId, key)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Iterator<Object[]> tupleScan() {
+            return Iterators.transform(storeService.scan(
+                tableId,
+                regionId,
+                new Range(distribution.getStartKey(), distribution.getEndKey()),
+                true,
+                false
+            ), wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply);
+        }
+
+        @Override
+        public Iterator<Object[]> tupleScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
+            if (start == null && end == null) {
+                return tupleScan();
+            }
+            withEnd = end != null && withEnd;
+            byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), distribution::getStartKey);
+            byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), distribution::getEndKey);
+            return Iterators.transform(
+                storeService.scan(tableId, regionId, new Range(startKey, endKey), withStart, withEnd),
+                wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+            );
+        }
+
+        @Override
+        public boolean delete(Object[] row) {
+            try {
+                return storeService.kvBatchDelete(tableId, regionId, Collections.singletonList(codec.encodeKey(row)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public long countDeleteByRange(
+            Object[] start, Object[] end, boolean withStart, boolean withEnd, boolean doDelete
+        ) {
+            withEnd = end != null && withEnd;
+            byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), distribution::getStartKey);
+            byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), distribution::getEndKey);
+            if (doDelete) {
+                return storeService.kvDeleteRange(
+                    tableId, regionId, new RangeWithOptions(new Range(startKey, endKey), withStart, withEnd)
+                );
+            }
+            long count = 0;
+            Iterator<KeyValue> iterator = storeService.scan(
+                tableId, regionId, new Range(startKey, endKey), true, false);
+            while (iterator.hasNext()) {
+                iterator.next();
+                count++;
+            }
+            return count;
+        }
     }
 
 }

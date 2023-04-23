@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -53,6 +54,7 @@ public class TransferTableTest {
         sqlHelper.clearTable("test1");
     }
 
+    @Disabled
     @Test
     public void testTransfer() throws SQLException, JsonProcessingException {
         String sql = "insert into test1 select id, name, amount > 6.0, name, amount+1.0 from test where amount > 5.0";

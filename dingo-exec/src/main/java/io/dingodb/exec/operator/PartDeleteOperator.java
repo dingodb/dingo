@@ -30,7 +30,7 @@ public final class PartDeleteOperator extends PartModifyOperator {
     @JsonCreator
     public PartDeleteOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {

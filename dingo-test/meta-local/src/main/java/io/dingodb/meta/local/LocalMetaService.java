@@ -28,6 +28,7 @@ import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.Part;
+import io.dingodb.meta.RangeDistribution;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.net.Channel;
 import io.dingodb.server.api.ExecutorApi;
@@ -36,6 +37,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,10 +54,12 @@ public class LocalMetaService implements MetaService {
     private static final NavigableMap<CommonId, LocalMetaService> metaServices = new ConcurrentSkipListMap<>();
     private static final NavigableMap<CommonId, TableDefinition> tableDefinitions = new ConcurrentSkipListMap<>();
     private static final Map<CommonId, NavigableMap<ComparableByteArray, Part>> parts = new ConcurrentSkipListMap<>();
+    private static final Map<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributions = new ConcurrentSkipListMap<>();
     private static final AtomicInteger metaServiceSeq = new AtomicInteger(1);
     private static final AtomicInteger tableSeq = new AtomicInteger(1);
     private static Location location;
     private static NavigableMap<ComparableByteArray, Part> defaultPart;
+    private static NavigableMap<ComparableByteArray, RangeDistribution> defaultDistributions;
 
     private final CommonId id;
     private final String name;
@@ -166,6 +170,11 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
+    }
+
+    @Override
     public Location currentLocation() {
         return location;
     }
@@ -262,6 +271,23 @@ public class LocalMetaService implements MetaService {
 
     public void setParts(NavigableMap<ComparableByteArray, Part> part) {
         defaultPart = part;
+    }
+
+    public void addRangeDistributions(CommonId id, byte[] start, byte[] end) {
+        distributions.compute(id, (k,v) -> {
+            if (v == null) {
+                v = new TreeMap<>();
+            }
+            v.put(
+                new ComparableByteArray(start),
+                new RangeDistribution(new CommonId(ID_TYPE.table, id.seq(), v.size() + 1) , start, end)
+            );
+            return v;
+        });
+    }
+
+    public void setRangeDistributions(NavigableMap<ComparableByteArray, RangeDistribution> distributions) {
+        defaultDistributions = distributions;
     }
 
     @AutoService(MetaServiceProvider.class)

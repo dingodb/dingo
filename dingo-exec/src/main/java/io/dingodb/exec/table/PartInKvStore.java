@@ -19,10 +19,8 @@ package io.dingodb.exec.table;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +29,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -48,7 +44,6 @@ public final class PartInKvStore implements Part {
 
     public PartInKvStore(StoreInstance store, DingoType schema, TupleMapping keyMapping) {
         this.store = store;
-
         this.codec = new DingoKeyValueCodec(schema, keyMapping);
     }
 
@@ -56,10 +51,7 @@ public final class PartInKvStore implements Part {
     public @NonNull Iterator<Object[]> getIterator() {
         final long startTime = System.currentTimeMillis();
         try {
-            return Iterators.transform(
-                store.keyValueScan(),
-                wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-            );
+            return store.tupleScan();
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -73,19 +65,14 @@ public final class PartInKvStore implements Part {
     ) {
         final long startTime = System.currentTimeMillis();
         try {
-            // todo replace
-            if (!prefixScan) {
-                return Iterators.transform(
-                    store.keyValueScan(startKey, endKey, includeStart, includeEnd),
-                    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-                );
-            } else {
-                includeEnd = true;
-                return Iterators.transform(
-                    store.keyValuePrefixScan(startKey, endKey, includeStart, includeEnd),
-                    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-                );
-            }
+            return store.tupleScan(
+                startKey == null ? null : codec.decodeKey(startKey),
+                endKey == null ? null: codec.decodeKey(endKey),
+                includeStart,
+                includeEnd
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -95,20 +82,33 @@ public final class PartInKvStore implements Part {
 
     @Override
     public long countDeleteByRange(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
-        return store.countDeleteByRange(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
+        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
+    ) {
+        return countOrDeleteByRange(startPrimaryKey, endPrimaryKey, includeStart, includeEnd, true);
+    }
+
+    public long countOrDeleteByRange(
+        byte[] start, byte[] end, boolean includeStart, boolean includeEnd, boolean doDelete
+    ) {
+        try {
+            return store.countDeleteByRange(
+                start == null || start.length == 0 ? null : codec.decodeKey(start),
+                end == null ? null : codec.decodeKey(end),
+                includeStart,
+                includeEnd,
+                doDelete
+            );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public boolean insert(Object @NonNull [] tuple) {
         final long startTime = System.currentTimeMillis();
         try {
-            KeyValue row = codec.encode(tuple);
-            if (!store.exist(row.getPrimaryKey())) {
-                store.insert(tuple);
-                return true;
-            }
-        } catch (IOException e) {
+            return store.insert(tuple);
+        } catch (Exception e) {
             log.error("Insert: encode error.", e);
         } finally {
             if (log.isDebugEnabled()) {
@@ -143,32 +143,25 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public long getEntryCntAndDeleteByPart(@NonNull List<String> startKeyList) {
-        return getEntryCntOrDeleteByPart(startKeyList, true);
+    public long getEntryCntAndDeleteByPart() {
+        return countOrDeleteByRange(null, null, true, false, true);
     }
 
     @Override
-    public long getEntryCnt(@NonNull List<String> startKeyList) {
-        return getEntryCntOrDeleteByPart(startKeyList, false);
+    public long getEntryCnt(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd) {
+        return countOrDeleteByRange(startKey, endKey, includeStart, includeEnd, false);
     }
 
     @Override
     public Object @Nullable [] getByKey(Object @NonNull [] keyTuple) {
         final long startTime = System.currentTimeMillis();
         try {
-            byte[] key = codec.encodeKey(keyTuple);
-            byte[] value = store.getValueByPrimaryKey(key);
-            if (value != null) {
-                return codec.mapKeyAndDecodeValue(keyTuple, value);
-            }
-        } catch (IOException e) {
-            log.error("GetByKey: codec error.", e);
+            return store.getTupleByPrimaryKey(keyTuple);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore getByKey cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
-        return null;
     }
 
     @Override
@@ -180,22 +173,15 @@ public final class PartInKvStore implements Part {
         List<Object[]> tuples = new ArrayList<>(keyList.size());
         final long startTime = System.currentTimeMillis();
         try {
-            List<KeyValue> valueList = store.getKeyValueByPrimaryKeys(keyList);
+            List<Object[]> valueList = store.getTuplesByPrimaryKeys(keyTuples);
             if (keyList.size() != valueList.size()) {
                 log.error("Get KeyValues from Store => keyCnt:{} mismatch valueCnt:{}",
                     keyList.size(),
                     valueList.size()
                 );
             }
-            ListIterator<Object[]> keyIt = keyTuples.listIterator();
-            for (KeyValue row : valueList) {
-                if (row == null) {
-                    keyIt.next();
-                    continue;
-                }
-                tuples.add(codec.mapKeyAndDecodeValue(keyIt.next(), row.getValue()));
-            }
-        } catch (IOException e) {
+            return valueList;
+        } catch (Exception e) {
             log.error("Get KeyValues from Store => Catch Exception:{} when read data", e.getMessage(), e);
         } finally {
             if (log.isDebugEnabled()) {
@@ -203,39 +189,6 @@ public final class PartInKvStore implements Part {
             }
         }
         return tuples;
-    }
-
-    private long getEntryCntOrDeleteByPart(@NonNull List<String> startKeyList, boolean doDeleting) {
-        final long startTime = System.currentTimeMillis();
-        long totalCnt = 0L;
-        try {
-            for (String partStartKey : startKeyList) {
-                long currentCnt = 0;
-                boolean isOK = false;
-                byte[] partStartKeyInBytes = ByteArrayUtils.deCodeBase64String2Bytes(partStartKey);
-                if (partStartKeyInBytes != null && partStartKeyInBytes.length > 0) {
-                    isOK = true;
-                    currentCnt = store.countOrDeletePart(partStartKeyInBytes, doDeleting);
-                } else {
-                    currentCnt = store.countOrDeletePart(ByteArrayUtils.EMPTY_BYTES, doDeleting);
-                }
-                totalCnt += currentCnt;
-                log.info("count or delete table by part(Base64): {}, startBytes:{}, currentCnt:{}, AccumulatorCnt:{}"
-                        + ", doDeleting: {}.",
-                    partStartKey,
-                    isOK ? Arrays.toString(partStartKeyInBytes) : "EMPTY_BYTES",
-                    currentCnt,
-                    totalCnt,
-                    doDeleting);
-            }
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("getEntryCntAndDeleteByPart total part:{} delete cost: {} ms.",
-                    startKeyList.size(),
-                    System.currentTimeMillis() - startTime);
-            }
-        }
-        return totalCnt;
     }
 
     public Iterator<Object[]> keyValuePrefixScan(byte[] prefix) {

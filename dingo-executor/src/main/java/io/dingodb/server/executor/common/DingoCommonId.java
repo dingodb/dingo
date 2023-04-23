@@ -54,7 +54,7 @@ public class DingoCommonId implements io.dingodb.sdk.common.DingoCommonId {
         }
     }
 
-    enum EntityType {
+    public enum EntityType {
         ENTITY_TYPE_TABLE(0),
         ENTITY_TYPE_SCHEMA(1),
         ENTITY_TYPE_PART(2);

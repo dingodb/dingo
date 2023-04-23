@@ -43,9 +43,13 @@ public interface Part {
 
     boolean remove(Object @NonNull [] tuple);
 
-    long getEntryCntAndDeleteByPart(@NonNull List<String> startKey);
+    long getEntryCntAndDeleteByPart();
 
-    long getEntryCnt(@NonNull List<String> startKeyList);
+    default long getEntryCnt() {
+        return getEntryCnt(null, null, true, false);
+    }
+
+    long getEntryCnt(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd);
 
     Object @Nullable [] getByKey(Object @NonNull [] keyTuple);
 

@@ -20,7 +20,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.store.Row;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 
 import java.util.Iterator;
@@ -64,6 +63,13 @@ public interface StoreInstance {
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
         throw new UnsupportedOperationException();
     }
+
+    default long countDeleteByRange(
+        Object[] startPrimaryKey, Object[] endPrimaryKey, boolean includeStart, boolean includeEnd, boolean doDelete
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
 
     default boolean exist(byte[] primaryKey) {
         throw new UnsupportedOperationException();
@@ -123,7 +129,7 @@ public interface StoreInstance {
         delete(prefix, stopInBytes);
     }
 
-    default Row getByPrimaryKey(byte[] primaryKey) {
+    default Row getTupleByPrimaryKey(byte[] primaryKey) {
         throw new UnsupportedOperationException();
     }
 
@@ -135,11 +141,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Object[] getTupleByPrimaryKey(Object[] primaryKey) {
+        throw new UnsupportedOperationException();
+    }
+
     default KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
         return new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
     }
 
     default List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<Object[]> getTuplesByPrimaryKeys(List<Object[]> primaryKeys) {
         throw new UnsupportedOperationException();
     }
 
@@ -156,7 +170,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Iterator<Object[]> tupleScan() {
+        throw new UnsupportedOperationException();
+    }
+
     default Iterator<KeyValue> keyValueScan() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> keyValueScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<Object[]> tupleScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
         throw new UnsupportedOperationException();
     }
 
@@ -181,6 +207,10 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<Object[]> keyValuePrefixScan(Object[] prefix) {
         throw new UnsupportedOperationException();
     }
 

@@ -14,32 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 
-@EqualsAndHashCode
-public class OutputHint {
-    /**
-     * Used by PartModify.
-     */
-    @Getter
-    @Setter
-    private CommonId partId = null;
-    /**
-     * Used by Exchange.
-     */
-    @Getter
-    @Setter
-    private Location location = null;
-    /**
-     * Used by Coalesce.
-     */
-    @Getter
-    @Setter
-    private boolean toSumUp = false;
+public interface Distribution {
+    CommonId id();
 }

@@ -17,32 +17,23 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Part;
-import lombok.Getter;
+import io.dingodb.meta.Distribution;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
 import java.util.NavigableMap;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class TableInfo {
-    @Getter
-    private final CommonId id;
-    @Getter
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, Part> parts;
 
-    /**
-     * Get table storage locations
-     *
-     * @return storage locations
-     */
-    public List<Location> getLocations() {
-        return parts.values().stream()
-            .map(Part::getLeader)
-            .distinct()
-            .collect(Collectors.toList());
+    private final CommonId id;
+    private final NavigableMap<ByteArrayUtils.ComparableByteArray, ? extends Distribution> distributions;
+
+    public CommonId getId() {
+        return this.id;
+    }
+
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, Distribution> getDistributions() {
+        return (NavigableMap<ByteArrayUtils.ComparableByteArray, Distribution>) this.distributions;
     }
 }

@@ -51,11 +51,12 @@ public class Configuration {
     }
 
     private String coordinators;
-    private int port = 8765;
 
     public static String coordinators() {
         return INSTANCE.coordinators;
     }
-    public static int port() {return INSTANCE.port;};
+    public static int port() {
+        return DingoConfiguration.port();
+    };
 
 }

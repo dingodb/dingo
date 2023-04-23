@@ -50,7 +50,7 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     @JsonCreator
     public PartRangeScanOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,

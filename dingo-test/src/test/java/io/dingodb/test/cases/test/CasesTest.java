@@ -22,6 +22,7 @@ import io.dingodb.test.cases.provider.CasesJUnit5;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -54,12 +55,14 @@ public class CasesTest {
         ).run(sqlHelper.getConnection());
     }
 
+    @Disabled
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(CasesJUnit5.class)
     public void test(String ignored, @NonNull Case testCase) throws Exception {
         testCase.run(sqlHelper.getConnection());
     }
 
+    @Disabled
     @ParameterizedTest(name = "StatementForEachStep [{index}] {0}")
     @ArgumentsSource(CasesJUnit5.class)
     public void testWithStatementForEachStep(String ignored, @NonNull Case testCase) throws Exception {

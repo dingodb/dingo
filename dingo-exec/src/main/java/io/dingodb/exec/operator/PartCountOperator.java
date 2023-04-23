@@ -42,8 +42,10 @@ public final class PartCountOperator extends SourceOperator {
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
-    @JsonProperty("startKeyList")
-    private final List<String> startKeyLists;
+    @JsonProperty("part")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId partId;
     @JsonProperty("schema")
     private final DingoType schema;
     @JsonProperty("keyMapping")
@@ -54,12 +56,12 @@ public final class PartCountOperator extends SourceOperator {
     @JsonCreator
     public PartCountOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("startKeyList") List<String> partStartKey,
+        @JsonProperty("table") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         this.tableId = tableId;
-        this.startKeyLists = partStartKey;
+        this.partId = partId;
         this.keyMapping = keyMapping;
         this.schema = schema;
     }
@@ -67,7 +69,7 @@ public final class PartCountOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId);
+        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
             store,
             schema,
@@ -80,7 +82,7 @@ public final class PartCountOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.getEntryCnt(startKeyLists);
+        long count = part.getEntryCnt();
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Count table by partition, get count: {}, cost: {} ms.",

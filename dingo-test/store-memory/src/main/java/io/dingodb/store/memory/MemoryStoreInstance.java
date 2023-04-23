@@ -21,27 +21,30 @@ import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.store.Part;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.ByteArrayUtils.EMPTY_BYTES;
 import static io.dingodb.common.util.ByteArrayUtils.MAX_BYTES;
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public class MemoryStoreInstance implements StoreInstance {
-    private final Map<byte[], Part> startKeyPartMap = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
-    private final NavigableMap<byte[], byte[]> db = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
+    private final NavigableMap<byte[], Object[]> db = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
 
     private DingoKeyValueCodec codec;
 
@@ -52,166 +55,62 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public void assignPart(Part part) {
-        startKeyPartMap.put(part.getStart(), part);
-    }
-
-    @Override
-    public void unassignPart(Part part) {
-        deletePart(part);
-    }
-
-    @Override
-    public void deletePart(@NonNull Part part) {
-        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
-            db.entrySet().iterator(), part.getStart(), part.getEnd(), true, false);
-        treeMap.keySet().forEach(db::remove);
-        startKeyPartMap.remove(part.getStart());
-    }
-
-    @Override
-    public long countOrDeletePart(byte[] startKey, boolean doDeleting) {
-        Part part = startKeyPartMap.get(startKey);
-        byte[] startKeyInBytes = part.getStart() == null ? EMPTY_BYTES : part.getStart();
-        byte[] endKeyInBytes = part.getEnd() == null ? MAX_BYTES : part.getEnd();
-
-        TreeMap<byte[], byte[]> subMap = getTreeMapByRange(
-            db.entrySet().iterator(), startKeyInBytes, endKeyInBytes, true, false);
-        long count = subMap.size();
-        if (doDeleting) {
-            delete(part.getStart(), part.getEnd());
+    public Object[] getTupleByPrimaryKey(Object[] primaryKey) {
+        try {
+            return db.get(codec.encodeKey(primaryKey));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return count;
     }
 
     @Override
-    public long countDeleteByRange(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
-        if (endPrimaryKey == null) {
-            endPrimaryKey = db.lastKey();
-        }
-        TreeMap<byte[], byte[]> subMap = getTreeMapByRange(
-            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
-        long count = subMap.size();
-        delete(startPrimaryKey, endPrimaryKey);
-
-        return count;
-    }
-
-    @Override
-    public boolean exist(byte[] primaryKey) {
-        return db.containsKey(primaryKey);
-    }
-
-    @Override
-    public boolean existAny(List<byte[]> primaryKeys) {
-        for (byte[] primaryKey : primaryKeys) {
-            if (exist(primaryKey)) {
-                return true;
+    public List<Object[]> getTuplesByPrimaryKeys(List<Object[]> primaryKeys) {
+        try {
+            List<Object[]> result = new ArrayList<>(primaryKeys.size());
+            for (Object[] key : primaryKeys) {
+                    result.add(db.get(codec.encodeKey(key)));
             }
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return false;
     }
 
     @Override
-    public boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
-            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
-        return treeMap.size() > 0;
+    public Iterator<Object[]> tupleScan() {
+        return db.values().iterator();
     }
 
     @Override
-    public boolean upsertKeyValue(KeyValue row) {
-        db.put(row.getKey(), row.getValue());
-        return true;
-    }
-
-    @Override
-    public boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        db.put(primaryKey, row);
-        return true;
-    }
-
-    @Override
-    public boolean upsertKeyValue(List<KeyValue> rows) {
-        rows.forEach(row -> db.put(row.getKey(), row.getValue()));
-        return true;
-    }
-
-    @Override
-    public boolean delete(byte[] primaryKey) {
-        db.remove(primaryKey);
-        return true;
-    }
-
-    @Override
-    public boolean delete(List<byte[]> primaryKeys) {
-        primaryKeys.forEach(db::remove);
-        return true;
-    }
-
-    @Override
-    public boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
-            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
-        treeMap.keySet().forEach(db::remove);
-        return true;
-    }
-
-    @Override
-    public byte[] getValueByPrimaryKey(byte[] primaryKey) {
-        return db.get(primaryKey);
-    }
-
-    @Override
-    public KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
-        return new KeyValue(primaryKey, db.get(primaryKey));
-    }
-
-    @Override
-    public List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        return primaryKeys.stream().map(key -> new KeyValue(key, db.get(key))).collect(Collectors.toList());
-    }
-
-    @Override
-    public Iterator<KeyValue> keyValueScan() {
-        return new KeyValueIterator(new TreeMap<>(db).entrySet().iterator());
-    }
-
-    @Override
-    public Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        if (endPrimaryKey == null) {
-            endPrimaryKey = db.lastKey();
+    public Iterator<Object[]> tupleScan(
+        Object[] start, Object[] end, boolean withStart, boolean withEnd
+    ) {
+        if (start == null && end == null) {
+            return tupleScan();
         }
+        withEnd = end != null && withEnd;
+        byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), db::firstKey);
+        byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), db::lastKey);
 
-        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
-            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, true, false);
-        return new KeyValueIterator(treeMap.entrySet().iterator()
-        );
+        return getTreeMapByRange(db.entrySet().iterator(), startKey, endKey, withStart, withEnd).values().iterator();
     }
 
     @Override
-    public Iterator<KeyValue> keyValueScan(
+    public Iterator<KeyValue> keyValuePrefixScan(
         byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
     ) {
-        if (endPrimaryKey == null) {
-            endPrimaryKey = db.lastKey();
-        }
-
-        TreeMap<byte[], byte[]> treeMap = getTreeMapByRange(
-            db.entrySet().iterator(), startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
-        return new KeyValueIterator(treeMap.entrySet().iterator());
+        return StoreInstance.super.keyValuePrefixScan(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
     }
 
-    private TreeMap<byte[], byte[]> getTreeMapByRange(Iterator<Map.Entry<byte[], byte[]>> iterator,
+    private TreeMap<byte[], Object[]> getTreeMapByRange(Iterator<Map.Entry<byte[], Object[]>> iterator,
                                                       byte[] startPrimaryKey,
                                                       byte[] endPrimaryKey,
                                                       boolean includeStart,
                                                       boolean includeEnd) {
-        TreeMap<byte[], byte[]> treeMap = new TreeMap<>(ByteArrayUtils::compareWithoutLen);
+        TreeMap<byte[], Object[]> treeMap = new TreeMap<>(ByteArrayUtils::compareWithoutLen);
 
         while (iterator.hasNext()) {
-            Map.Entry<byte[], byte[]> next = iterator.next();
+            Map.Entry<byte[], Object[]> next = iterator.next();
             boolean start = true;
             boolean end = false;
             if (includeStart) {
@@ -234,21 +133,37 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
-        return keyValueScan(prefix, prefix, true, true);
+    public long countDeleteByRange(
+        Object[] start, Object[] end, boolean withStart, boolean withEnd, boolean doDelete
+    ) {
+        if (start == null && end == null) {
+            long count = db.size();
+            if (doDelete) {
+                db.clear();
+            }
+            return count;
+        }
+        withEnd = end == null || withEnd;
+        byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), db::firstKey);
+        byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), db::lastKey);
+        Set<byte[]> keys = getTreeMapByRange(db.entrySet().iterator(), startKey, endKey, withStart, withEnd).keySet();
+        if (doDelete) {
+            keys.forEach(db::remove);
+        }
+        return keys.size();
     }
 
     @Override
     public boolean insert(Object[] row) {
         KeyValue keyValue = convertRow(row);
-        db.put(keyValue.getKey(), keyValue.getValue());
+        db.put(keyValue.getKey(), row);
         return true;
     }
 
     @Override
     public boolean update(Object[] row) {
         KeyValue keyValue = convertRow(row);
-        db.put(keyValue.getKey(), keyValue.getValue());
+        db.put(keyValue.getKey(), row);
         return true;
     }
 

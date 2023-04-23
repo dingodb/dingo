@@ -36,9 +36,10 @@ public final class MetaServiceUtils {
     public static @NonNull TableInfo getTableInfo(RelOptTable table) {
         String tableName = getTableName(table);
         MetaService metaService = getMetaService(table);
+        CommonId tableId = metaService.getTableId(tableName);
         return new TableInfo(
-            metaService.getTableId(tableName),
-            metaService.getParts(tableName)
+            tableId,
+            metaService.getRangeDistribution(tableId)
         );
     }
 

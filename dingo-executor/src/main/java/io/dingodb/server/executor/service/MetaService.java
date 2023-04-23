@@ -29,6 +29,7 @@ import io.dingodb.meta.TableStatistic;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.server.executor.Configuration;
+import io.dingodb.server.executor.common.DingoCommonId;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -45,12 +46,17 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     public static final MetaService ROOT = new MetaService(
         new MetaServiceClient(MetaServiceConnector.getMetaServiceConnector(Configuration.coordinators())));
+
     @AutoService(io.dingodb.meta.MetaServiceProvider.class)
     public static class MetaServiceProvider implements io.dingodb.meta.MetaServiceProvider {
         @Override
         public io.dingodb.meta.MetaService root() {
             return ROOT;
         }
+    }
+
+    public static CommonId getParentSchemaId(CommonId tableId) {
+        return new CommonId((byte) DingoCommonId.EntityType.ENTITY_TYPE_SCHEMA.getCode(), 0, tableId.domain);
     }
 
     protected final MetaServiceClient metaServiceClient;
@@ -66,7 +72,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public String name() {
-        return metaServiceClient.name();
+        return metaServiceClient.name().toUpperCase();
     }
 
     @Override
@@ -84,6 +90,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public io.dingodb.meta.MetaService getSubMetaService(String name) {
         return new MetaService(metaServiceClient.getSubMetaService(name));
+    }
+
+    public MetaService getSubMetaService(CommonId id) {
+        return new MetaService(metaServiceClient.getSubMetaService(mapping(id)));
     }
 
     @Override
@@ -136,8 +146,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public NavigableMap<Comparable<ByteArrayUtils.ComparableByteArray>, RangeDistribution> getRangeDistribution(CommonId id) {
-        NavigableMap<Comparable<ByteArrayUtils.ComparableByteArray>, RangeDistribution> result = new TreeMap<>();
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         NavigableMap<io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> distribution =
             metaServiceClient.getRangeDistribution(mapping(id));
         for (Map.Entry<io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {

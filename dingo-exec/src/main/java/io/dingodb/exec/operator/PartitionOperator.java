@@ -26,7 +26,8 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.meta.Part;
+import io.dingodb.meta.Distribution;
+import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -60,19 +61,18 @@ public final class PartitionOperator extends FanOutOperator {
         return partIndices.get(partId.toString());
     }
 
-    public void createOutputs(@NonNull NavigableMap<ComparableByteArray, Part> partLocations) {
-        int size = partLocations.size();
+    public void createOutputs(@NonNull NavigableMap<ComparableByteArray, Distribution> distributions) {
+        int size = distributions.size();
         outputs = new ArrayList<>(size);
         partIndices = new HashMap<>(size);
-        for (Map.Entry<ComparableByteArray, Part> entry : partLocations.entrySet()) {
-            Object partId = entry.getKey();
+        for (Distribution distribution : distributions.values()) {
             Output output = OutputIml.of(this);
             OutputHint hint = new OutputHint();
-            hint.setLocation(entry.getValue().getLeader());
-            hint.setPartId(partId);
+            hint.setLocation(MetaService.root().currentLocation());
+            hint.setPartId(distribution.id());
             output.setHint(hint);
             outputs.add(output);
-            partIndices.put(partId.toString(), outputs.size() - 1);
+            partIndices.put(distribution.id().toString(), outputs.size() - 1);
         }
     }
 }

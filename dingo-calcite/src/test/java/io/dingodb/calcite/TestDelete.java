@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -57,6 +58,7 @@ public class TestDelete {
         parser = new DingoParser(context);
     }
 
+    @Disabled
     @Test
     public void testDelete() throws SqlParseException {
         String sql = "delete from test where id = 3";

@@ -16,12 +16,16 @@
 
 package io.dingodb.server.executor.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.meta.RangeDistribution;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.partition.PartitionDetail;
 import io.dingodb.sdk.common.table.Column;
@@ -53,7 +57,7 @@ public final class Mapping {
     public static ColumnDefinition mapping(Column column) {
         return ColumnDefinition.getInstance(
             column.getName(),
-            column.getType(),
+            column.getType().equals("STRING") ? "VARCHAR" : column.getType(),
             column.getElementType(),
             column.getPrecision(),
             column.getScale(),
@@ -63,6 +67,9 @@ public final class Mapping {
     }
 
     public static PartitionDefinition mapping(Partition partition) {
+        if (partition == null) {
+            return null;
+        }
         return new PartitionDefinition(
             partition.strategy(),
             partition.cols(),
@@ -86,13 +93,14 @@ public final class Mapping {
 
     public static CommonId mapping(DingoCommonId commonId) {
         return new CommonId(
-            (byte) io.dingodb.server.executor.common.DingoCommonId.EntityType.ENTITY_TYPE_TABLE.getCode(),
+            (byte) commonId.type().ordinal(),
             (int) commonId.parentId(),
             (int) commonId.entityId());
     }
 
     public static DingoCommonId mapping(CommonId commonId) {
-        return new io.dingodb.server.executor.common.DingoCommonId(commonId);
+        //return new io.dingodb.server.executor.common.DingoCommonId(commonId);
+        return new SDKCommonId(DingoCommonId.Type.values()[commonId.type], commonId.domain, commonId.seq);
     }
 
     public static io.dingodb.sdk.common.KeyValue mapping(KeyValue keyValue) {
@@ -103,4 +111,21 @@ public final class Mapping {
         return new KeyValue(keyValue.getKey(), keyValue.getValue());
     }
 
+    public static DingoType mapping(io.dingodb.sdk.common.type.DingoType type) {
+        //todo need optimize
+        try {
+            return Parser.JSON.parse(Parser.JSON.stringify(type), DingoType.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static io.dingodb.sdk.common.type.DingoType mapping(DingoType type) {
+        //todo need optimize
+        try {
+            return Parser.JSON.parse(Parser.JSON.stringify(type), io.dingodb.sdk.common.type.DingoType.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

@@ -32,23 +32,23 @@ import java.util.List;
 import java.util.Map;
 
 public class DingoExampleUsingJdbc {
-    private static final String defaultConnectIp = "172.20.3.13";
+    private static final String defaultConnectIp = "localhost";
     private static Logger log = LoggerFactory.getLogger(DingoExampleUsingJdbc.class);
     private static String connectUrl = "url=" + defaultConnectIp + ":8765";
     private static Connection connection;
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
-                + "\t\t 172.20.3.14 create exampletest dingo 123123 \r\n"
-                + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
-                + "\t\t 172.20.3.14 query  exampletest dingo 123123");
-            return;
-        }
+        //if (args.length < 2) {
+        //    System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
+        //        + "\t\t 172.20.3.14 create exampletest dingo 123123 \r\n"
+        //        + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
+        //        + "\t\t 172.20.3.14 query  exampletest dingo 123123");
+        //    return;
+        //}
 
-        String inputConnect = args[0];
-        String command = args[1];
-        String tableName = args[2];
+        //String inputConnect = "localhost:8765";
+        String command = "query";
+        String tableName = "example";
         String user = "root";
         String password = "123123";
         if ("create".equalsIgnoreCase(command) || "query".equalsIgnoreCase(command)
@@ -66,7 +66,7 @@ public class DingoExampleUsingJdbc {
         Statement statement = null;
         final Long startTime = System.currentTimeMillis();
         // default ip:172.20.3.13
-        connectUrl = connectUrl.replace(defaultConnectIp, inputConnect);
+        //connectUrl = connectUrl.replace(defaultConnectIp, inputConnect);
 
         try {
             Class.forName("io.dingodb.driver.client.DingoDriverClient");
@@ -206,7 +206,7 @@ public class DingoExampleUsingJdbc {
     }
 
     private static void queryData(final Statement statement, final String tableName) throws SQLException {
-        String sql = "select * from " + tableName;
+        String sql = "select * from " + tableName + " where id > 50 and id < 60";
 
         try (ResultSet resultSet = statement.executeQuery(sql)) {
             ResultSetMetaData metaData = resultSet.getMetaData();
