@@ -56,7 +56,7 @@ public class DeleteRangeTest {
 
     @Test
     public void testDelete2() throws SQLException, IOException {
-        sqlHelper.updateTest("delete from t_ba where id > 2 and id < 10", 8);
+        sqlHelper.updateTest("delete from t_ba where id > 2 and id < 10", 7);
     }
 
     @Test

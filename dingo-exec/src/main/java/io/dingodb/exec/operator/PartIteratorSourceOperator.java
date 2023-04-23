@@ -35,7 +35,9 @@ public abstract class PartIteratorSourceOperator extends FilterProjectSourceOper
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
     @JsonProperty("part")
-    protected final Object partId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    protected final CommonId partId;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
@@ -43,7 +45,7 @@ public abstract class PartIteratorSourceOperator extends FilterProjectSourceOper
 
     protected PartIteratorSourceOperator(
         CommonId tableId,
-        Object partId,
+        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
         SqlExpr filter,
@@ -61,7 +63,7 @@ public abstract class PartIteratorSourceOperator extends FilterProjectSourceOper
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId);
+        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
             store,
             schema,

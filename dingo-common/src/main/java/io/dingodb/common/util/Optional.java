@@ -211,7 +211,11 @@ public class Optional<T> {
     }
 
     public static <T, U> U mapOrGet(T value, Function<? super T, ? extends U> mapper, Supplier<U> other) {
-        return value == null ? other.get() : mapper.apply(value);
+        U result = value == null ? other.get() : mapper.apply(value);
+        if (result == null) {
+            return other.get();
+        }
+        return result;
     }
 
     public static <T, U> U mapOrThrow(T value, Function<? super T, ? extends U> mapper, String message) {

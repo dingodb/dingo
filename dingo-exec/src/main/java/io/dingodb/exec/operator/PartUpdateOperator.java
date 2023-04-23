@@ -41,7 +41,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @JsonCreator
     public PartUpdateOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,

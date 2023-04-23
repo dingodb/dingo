@@ -43,8 +43,10 @@ public final class RemovePartOperator extends SourceOperator {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
 
-    @JsonProperty("startKeyList")
-    private final List<String> startKeyLists;
+    @JsonProperty("part")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId partId;
 
     @JsonProperty("schema")
     private final DingoType schema;
@@ -57,12 +59,12 @@ public final class RemovePartOperator extends SourceOperator {
     @JsonCreator
     public RemovePartOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("startKeyList") List<String> partStartKey,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         this.tableId = tableId;
-        this.startKeyLists = partStartKey;
+        this.partId = partId;
         this.keyMapping = keyMapping;
         this.schema = schema;
     }
@@ -70,7 +72,7 @@ public final class RemovePartOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId);
+        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
             store,
             schema,
@@ -83,7 +85,7 @@ public final class RemovePartOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.getEntryCntAndDeleteByPart(startKeyLists);
+        long count = part.getEntryCntAndDeleteByPart();
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("delete table by partition, get count: {}, cost: {} ms.",

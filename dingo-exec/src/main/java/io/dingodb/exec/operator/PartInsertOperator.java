@@ -31,7 +31,7 @@ public final class PartInsertOperator extends PartModifyOperator {
     @JsonCreator
     public PartInsertOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {

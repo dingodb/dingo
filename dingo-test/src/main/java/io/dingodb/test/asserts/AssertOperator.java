@@ -43,7 +43,7 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
         return operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null);
     }
 
-    public AssertOperator isPartScan(CommonId tableId, Object partId) {
+    public AssertOperator isPartScan(CommonId tableId, CommonId partId) {
         return isA(PartScanOperator.class)
             .prop("tableId", tableId)
             .prop("partId", partId);

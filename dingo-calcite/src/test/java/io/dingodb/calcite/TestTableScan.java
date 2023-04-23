@@ -66,7 +66,9 @@ public class TestTableScan {
         parser = new DingoParser(context);
         DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
         currentLocation = dingoSchema.getMetaService().currentLocation();
-        tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
+        //tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
+        // The current version runs all operations in the same task.
+        tableTestPartNum = 1;
     }
 
     @ParameterizedTest

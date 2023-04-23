@@ -195,6 +195,9 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     public void verify(SqlNode sqlNode) {
+        if (!PrivilegeVerify.isVerify) {
+            return;
+        }
         String user = connection.getContext().getOption("user");
         String host = connection.getContext().getOption("host");
         List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();

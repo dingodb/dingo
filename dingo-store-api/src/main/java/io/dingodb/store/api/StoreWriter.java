@@ -27,7 +27,7 @@ public interface StoreWriter {
         throw new UnsupportedOperationException();
     }
 
-    default boolean insert(List<Row> rows) {
+    default long insert(List<Row> rows) {
         throw new UnsupportedOperationException();
     }
 
@@ -43,11 +43,11 @@ public interface StoreWriter {
         throw new UnsupportedOperationException();
     }
 
-    default boolean update(Row oldRow, Row newRow) {
+    default long update(Row oldRow, Row newRow) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean update(List<Row> oldRows, List<Row> newRows) {
+    default long update(List<Row> oldRows, List<Row> newRows) {
         throw new UnsupportedOperationException();
     }
 
@@ -59,7 +59,7 @@ public interface StoreWriter {
         throw new UnsupportedOperationException();
     }
 
-    default boolean updateKeyValue(List<KeyValue> oldRows, List<KeyValue> oldValue) {
+    default long updateKeyValue(List<KeyValue> oldRows, List<KeyValue> oldValue) {
         throw new UnsupportedOperationException();
     }
 
@@ -67,15 +67,15 @@ public interface StoreWriter {
         throw new UnsupportedOperationException();
     }
 
-    default boolean delete(List<byte[]> primaryKeys) {
+    default long delete(List<byte[]> primaryKeys) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean delete(byte[] begin, byte[] end) {
+    default long delete(byte[] begin, byte[] end) {
         return delete(begin, end, true, false);
     }
 
-    default boolean delete(byte[] begin, byte[] end, boolean withBegin, boolean withEnd) {
+    default long delete(byte[] begin, byte[] end, boolean withBegin, boolean withEnd) {
         throw new UnsupportedOperationException();
     }
 

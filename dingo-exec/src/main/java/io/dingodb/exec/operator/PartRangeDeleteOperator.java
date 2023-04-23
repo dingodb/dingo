@@ -43,6 +43,11 @@ public final class PartRangeDeleteOperator extends SourceOperator {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
 
+    @JsonProperty("part")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId partId;
+
     @JsonProperty("schema")
     private final DingoType schema;
     @JsonProperty("keyMapping")
@@ -63,6 +68,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
     @JsonCreator
     public PartRangeDeleteOperator(
         @JsonProperty("table") CommonId tableId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("startKey") byte[] startKey,
@@ -71,6 +77,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         @JsonProperty("includeEnd") boolean includeEnd
     ) {
         this.tableId = tableId;
+        this.partId = partId;
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.startKey = startKey;
@@ -82,7 +89,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId);
+        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
             store,
             schema,

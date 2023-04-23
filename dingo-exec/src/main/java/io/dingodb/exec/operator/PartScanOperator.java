@@ -37,7 +37,7 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
     @JsonCreator
     public PartScanOperator(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") Object partId,
+        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,

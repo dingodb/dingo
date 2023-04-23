@@ -19,6 +19,7 @@ package io.dingodb.server.executor;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.net.NetService;
 
@@ -42,10 +43,11 @@ public class Starter {
             commander.usage();
             return;
         }
+        DingoConfiguration.parse(config);
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);
 
-        NetService.getDefault().listenPort(Configuration.port());
+        NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
 

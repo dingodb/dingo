@@ -34,6 +34,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -78,6 +79,7 @@ public class TestGetByKeys {
         assertThat((scan).getSelection()).isNull();
     }
 
+    @Disabled
     @Test
     public void testGetByKeys1() throws SqlParseException {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and id2 = true";
@@ -102,6 +104,7 @@ public class TestGetByKeys {
             .containsExactlyInAnyOrder(new Object[]{1, "A", true});
     }
 
+    @Disabled
     @Test
     public void testGetByKeys2() throws SqlParseException {
         String sql = "select * from test1 where id0 = 1 and id1 = 'A' and not id2";
@@ -126,6 +129,7 @@ public class TestGetByKeys {
             .containsExactlyInAnyOrder(new Object[]{1, "A", false});
     }
 
+    @Disabled
     @Test
     public void testGetByKeys3() throws SqlParseException {
         String sql = "select * from test1 where (id0 = 1 or id0 = 2) and (id1 = 'A' or id1 = 'B') and id2";

@@ -35,15 +35,15 @@ public class MemoryStoreService implements StoreService {
     private final Map<CommonId, MemoryStoreInstance> store = new ConcurrentHashMap<>();
 
     @Override
-    public StoreInstance getInstance(@NonNull CommonId id) {
-        MemoryStoreInstance instance = store.get(id);
+    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
+        MemoryStoreInstance instance = store.get(tableId);
         if (instance == null) {
             instance = new MemoryStoreInstance();
-            instance.assignPart(createPart(id, ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES));
+            // instance.assignPart(createPart(tableId, ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES));
             // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
             // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
-            store.put(id, instance);
-            instance.initCodec(id);
+            store.put(tableId, instance);
+            instance.initCodec(tableId);
         }
         return instance;
     }

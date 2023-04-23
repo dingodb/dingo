@@ -18,6 +18,7 @@ package io.dingodb.calcite.mock;
 
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -33,7 +34,7 @@ public class MockMetaServiceProvider {
     public static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
     public static final String TABLE_NAME = "TEST";
     public static final Location LOC_0 = new Location("host1", 26535);
-    public static final Location LOC_1 = new Location("host2", 26535);
+    public static final Location LOC_1 = new Location("host1", 26535);
     private static boolean inited = false;
 
     public synchronized static void init() {
@@ -63,17 +64,35 @@ public class MockMetaServiceProvider {
                 tableArray,
                 TableDefinition.readJson(MockMetaServiceProvider.class.getResourceAsStream("/table-with-array.json"))
             );
-            TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
+
             byte[] key0 = {};
             byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
+            CommonId testTableId = metaService.getTableId(test);
+            CommonId test1TableId = metaService.getTableId(test1);
+            CommonId testDateTableId = metaService.getTableId(tableDate);
+            CommonId testArrayTableId = metaService.getTableId(tableArray);
+
+            TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
             rangeSegments.put(new ComparableByteArray(key0), new Part(null, LOC_0, ImmutableSet.of(LOC_0)));
             rangeSegments.put(new ComparableByteArray(keyA), new Part(null, LOC_1, ImmutableSet.of(LOC_1)));
-            ((LocalMetaService) metaService).setParts(metaService.getTableId(test), rangeSegments);
-            ((LocalMetaService) metaService).setParts(metaService.getTableId(test1), rangeSegments);
-            ((LocalMetaService) metaService).setParts(metaService.getTableId(tableDate),
-                rangeSegments);
-            ((LocalMetaService) metaService).setParts(metaService.getTableId(tableArray),
-                rangeSegments);
+            ((LocalMetaService) metaService).setParts(testTableId, rangeSegments);
+            ((LocalMetaService) metaService).setParts(test1TableId, rangeSegments);
+            ((LocalMetaService) metaService).setParts(testDateTableId, rangeSegments);
+            ((LocalMetaService) metaService).setParts(testArrayTableId, rangeSegments);
+
+            ((LocalMetaService) metaService).addRangeDistributions(testTableId, key0, keyA);
+            ((LocalMetaService) metaService).addRangeDistributions(testTableId, keyA, null);
+
+            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, key0, keyA);
+            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, keyA, null);
+
+
+            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, key0, keyA);
+            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, keyA, null);
+
+            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, key0, keyA);
+            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, keyA, null);
+
             LocalMetaService.setLocation(LOC_0);
         } catch (IOException e) {
             throw new RuntimeException(e);

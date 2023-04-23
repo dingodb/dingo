@@ -36,7 +36,9 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
     @JsonProperty("part")
-    protected final Object partId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    protected final CommonId partId;
     @JsonProperty("schema")
     protected final DingoType schema;
     @JsonProperty("keyMapping")
@@ -47,7 +49,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
 
     protected PartModifyOperator(
         CommonId tableId,
-        Object partId,
+        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping
     ) {
@@ -59,7 +61,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     }
 
     protected Part getPart() {
-        StoreInstance store = Services.KV_STORE.getInstance(tableId);
+        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         return new PartInKvStore(
             store,
             schema,

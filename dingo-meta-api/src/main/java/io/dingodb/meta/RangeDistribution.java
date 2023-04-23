@@ -28,7 +28,7 @@ import lombok.ToString;
 @Setter
 @ToString
 @EqualsAndHashCode
-public class RangeDistribution {
+public class RangeDistribution implements Distribution {
 
 
     private static final long serialVersionUID = -2767354268752865267L;
@@ -58,4 +58,8 @@ public class RangeDistribution {
         this.endKey = endKey;
     }
 
+    @Override
+    public CommonId id() {
+        return id;
+    }
 }
