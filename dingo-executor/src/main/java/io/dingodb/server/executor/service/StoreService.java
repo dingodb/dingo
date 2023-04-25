@@ -152,8 +152,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public boolean delete(Object[] row) {
             try {
-                return storeService.kvBatchDelete(tableId, regionId,
-                    Collections.singletonList(codec.encodeKey(row))).get(0);
+                return storeService.kvBatchDelete(
+                    tableId, regionId, Collections.singletonList(codec.encodeKey(row))).get(0);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
