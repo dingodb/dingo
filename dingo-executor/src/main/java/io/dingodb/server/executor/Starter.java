@@ -29,6 +29,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
 import lombok.extern.slf4j.Slf4j;
+import io.dingodb.server.executor.service.ClusterService;
 
 import java.net.DatagramSocket;
 import java.util.ServiceLoader;
@@ -62,6 +63,9 @@ public class Starter {
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
 
+        // Register cluster heartbeat.
+        ClusterService.register();
+
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
         log.info("Listen exchange port {}.", listenRandomPort(netService));
         Services.initControlMsgService();
@@ -88,5 +92,4 @@ public class Starter {
         }
         throw new RuntimeException("Listen port failed.");
     }
-
 }

@@ -24,9 +24,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 @Getter
 @Setter
 @ToString
@@ -52,6 +49,10 @@ public class Configuration {
 
     private String coordinators;
 
+    private String user;
+    private String keyring;
+    private String resourceTag;
+
     public static String coordinators() {
         return INSTANCE.coordinators;
     }
@@ -59,4 +60,15 @@ public class Configuration {
         return DingoConfiguration.port();
     };
 
+    public static String user() {
+        return INSTANCE.user;
+    }
+
+    public static String keyring() {
+        return INSTANCE.keyring;
+    }
+
+    public static String resourceTag() {
+        return INSTANCE.resourceTag;
+    }
 }
