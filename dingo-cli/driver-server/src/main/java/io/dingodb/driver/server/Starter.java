@@ -56,7 +56,6 @@ public class Starter {
             return;
         }
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.setRole(DingoRole.JDBC);
         DingoConfiguration.parse(this.config);
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 

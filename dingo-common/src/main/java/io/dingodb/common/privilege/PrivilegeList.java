@@ -65,11 +65,6 @@ public class PrivilegeList {
         userGlobalList.add(DingoSqlAccessEnum.REPL_CLIENT.getAccessType());
         userGlobalList.add(DingoSqlAccessEnum.CREATE_USER.getAccessType());
         userGlobalList.add(DingoSqlAccessEnum.CREATE_TABLESPACE.getAccessType());
-        userGlobalList.add(DingoSqlAccessEnum.EXTEND1.getAccessType());
-        userGlobalList.add(DingoSqlAccessEnum.EXTEND2.getAccessType());
-        userGlobalList.add(DingoSqlAccessEnum.EXTEND3.getAccessType());
-        userGlobalList.add(DingoSqlAccessEnum.EXTEND4.getAccessType());
-        userGlobalList.add(DingoSqlAccessEnum.EXTEND5.getAccessType());
 
         schemaPrivilegeList.add(DingoSqlAccessEnum.SELECT.getAccessType());
         schemaPrivilegeList.add(DingoSqlAccessEnum.INSERT.getAccessType());

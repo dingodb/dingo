@@ -63,7 +63,7 @@ public class ShowGrantsOperation implements QueryOperation {
         return columns;
     }
 
-    public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
+    public static List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
         UserDefinition userDef = UserDefinition.builder()
             .user(sqlShowGrants.user)
             .host(getRealAddress(sqlShowGrants.host))
@@ -71,12 +71,12 @@ public class ShowGrantsOperation implements QueryOperation {
         if (!userService.existsUser(userDef)) {
             throw new RuntimeException("user is not exist");
         }
-        PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, sqlShowGrants.user,
+        PrivilegeGather privilegeGather = userService.getPrivilegeDef(sqlShowGrants.user,
             getRealAddress(sqlShowGrants.host));
-        List<SchemaPrivDefinition> schemaPrivDefinitions = privilegeGather
-            .getSchemaPrivDefMap().values().stream().collect(Collectors.toList());
-        List<TablePrivDefinition> tablePrivDefinitions = privilegeGather
-            .getTablePrivDefMap().values().stream().collect(Collectors.toList());
+        List<SchemaPrivDefinition> schemaPrivDefinitions = new ArrayList<>(privilegeGather
+            .getSchemaPrivDefMap().values());
+        List<TablePrivDefinition> tablePrivDefinitions = new ArrayList<>(privilegeGather
+            .getTablePrivDefMap().values());
         UserDefinition userDefinition = privilegeGather.getUserDef();
 
         if (userDefinition == null) {
@@ -84,7 +84,7 @@ public class ShowGrantsOperation implements QueryOperation {
         }
 
         List<SqlGrant> sqlGrants = new ArrayList<>();
-        SqlGrant userGrant = null;
+        SqlGrant userGrant;
         if ((userGrant = getUserGrant(sqlShowGrants, userDefinition)) != null) {
             sqlGrants.add(userGrant);
         }
@@ -93,19 +93,18 @@ public class ShowGrantsOperation implements QueryOperation {
         return sqlGrants;
     }
 
-    public SqlGrant getUserGrant(@NonNull SqlShowGrants dingoSqlShowGrants, UserDefinition userDefinition) {
+    public static SqlGrant getUserGrant(@NonNull SqlShowGrants dingoSqlShowGrants, UserDefinition userDefinition) {
         List<Boolean> userPrivileges = Arrays.asList(userDefinition.getPrivileges());
         long count = userPrivileges.stream()
             .filter(isPrivilege -> isPrivilege).count();
 
         if (count > 0) {
             boolean isAllPrivilege = false;
-            List<String> privileges = null;
+            List<String> privileges;
 
             if (count == PrivilegeList.privilegeMap.get(PrivilegeType.USER).size()) {
                 isAllPrivilege = true;
-                privileges = new ArrayList<>();
-                privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.USER));
+                privileges = new ArrayList<>(PrivilegeList.privilegeMap.get(PrivilegeType.USER));
             } else {
                 List<Integer> indexs = new ArrayList<>();
                 Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
@@ -118,16 +117,16 @@ public class ShowGrantsOperation implements QueryOperation {
             SqlParserPos pos = new SqlParserPos(0, 0);
             SqlIdentifier subject = new SqlIdentifier(Arrays.asList("*", "*"), null,
                 pos,
-                new ArrayList<SqlParserPos>());
+                new ArrayList<>());
             SqlGrant sqlGrant = new SqlGrant(pos, isAllPrivilege, privileges, subject,
                 dingoSqlShowGrants.user, dingoSqlShowGrants.host);
-            log.info("user sqlGrant:" + sqlGrant.toString());
+            log.info("user sqlGrant:" + sqlGrant);
             return sqlGrant;
         }
         return null;
     }
 
-    public List<SqlGrant> getSchemaGrant(@NonNull SqlShowGrants sqlShowGrants,
+    public static List<SqlGrant> getSchemaGrant(@NonNull SqlShowGrants sqlShowGrants,
                                          List<SchemaPrivDefinition> schemaPrivDefinitions) {
         List<SqlGrant> sqlGrants = new ArrayList<>();
         for (SchemaPrivDefinition schemaPrivDefinition : schemaPrivDefinitions) {
@@ -137,11 +136,10 @@ public class ShowGrantsOperation implements QueryOperation {
 
             if (count > 0) {
                 boolean isAllPrivilege = false;
-                List<String> privileges = null;
+                List<String> privileges;
                 if (count == PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA).size()) {
                     isAllPrivilege = true;
-                    privileges = new ArrayList<>();
-                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA));
+                    privileges = new ArrayList<>(PrivilegeList.privilegeMap.get(PrivilegeType.SCHEMA));
                 } else {
                     List<Integer> indexs = new ArrayList<>();
                     Stream.iterate(0, i -> i + 1).limit(schemaPrivileges.size()).forEach(i -> {
@@ -154,17 +152,17 @@ public class ShowGrantsOperation implements QueryOperation {
                 SqlParserPos sqlParserPos = new SqlParserPos(0, 0);
                 SqlIdentifier subject = new SqlIdentifier(Arrays.asList(schemaPrivDefinition.getSchemaName(), "*"),
                     null, sqlParserPos,
-                    new ArrayList<SqlParserPos>());
+                    new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
                     sqlShowGrants.user, sqlShowGrants.host);
-                log.info("schema sqlGrant:" + sqlGrant.toString());
+                log.info("schema sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }
         }
         return sqlGrants;
     }
 
-    public List<SqlGrant> getTableGrant(@NonNull SqlShowGrants sqlShowGrants,
+    public static List<SqlGrant> getTableGrant(@NonNull SqlShowGrants sqlShowGrants,
                                         List<TablePrivDefinition> tablePrivDefinitions) {
         List<SqlGrant> sqlGrants = new ArrayList<>();
         for (TablePrivDefinition tablePrivDefinition : tablePrivDefinitions) {
@@ -177,11 +175,10 @@ public class ShowGrantsOperation implements QueryOperation {
 
             if (count > 0) {
                 boolean isAllPrivilege = false;
-                List<String> privileges = null;
+                List<String> privileges;
                 if (count == PrivilegeList.privilegeMap.get(PrivilegeType.TABLE).size()) {
                     isAllPrivilege = true;
-                    privileges = new ArrayList<>();
-                    privileges.addAll(PrivilegeList.privilegeMap.get(PrivilegeType.TABLE));
+                    privileges = new ArrayList<>(PrivilegeList.privilegeMap.get(PrivilegeType.TABLE));
                 } else {
                     List<Integer> indexs = new ArrayList<>();
                     Stream.iterate(0, i -> i + 1).limit(userPrivileges.size()).forEach(i -> {
@@ -194,10 +191,10 @@ public class ShowGrantsOperation implements QueryOperation {
                 SqlParserPos sqlParserPos = new SqlParserPos(0, 0);
                 SqlIdentifier subject = new SqlIdentifier(Arrays.asList(tablePrivDefinition.getSchemaName(),
                     tablePrivDefinition.getTableName()), null, sqlParserPos,
-                    new ArrayList<SqlParserPos>());
+                    new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
                     sqlShowGrants.user, sqlShowGrants.host);
-                log.info("table sqlGrant:" + sqlGrant.toString());
+                log.info("table sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }
         }

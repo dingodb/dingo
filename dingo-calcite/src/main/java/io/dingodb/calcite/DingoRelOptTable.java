@@ -16,11 +16,8 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
-import io.dingodb.verify.service.UserService;
-import io.dingodb.verify.service.UserServiceProvider;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -48,11 +45,9 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
-    private static final UserService userService = UserServiceProvider.getRoot();
-
     private final RelOptTableImpl relOptTable;
-    private final CommonId schemaId;
-    private final CommonId tableId;
+    private final String tableName;
+    private final String schemaName;
     private final String user;
     private final String host;
 
@@ -62,8 +57,8 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         RelOptSchema relOptSchema = context.getCatalogReader().unwrap(RelOptSchema.class);
         final RelDataType rowType = table.getRowType(context.getTypeFactory());
         relOptTable = RelOptTableImpl.create(relOptSchema, rowType, table.getNames(), table, (Expression) null);
-        this.schemaId = table.getSchema().id();
-        this.tableId = table.getSchema().getTableId(table.getNames().get(table.getNames().size() - 1));
+        this.schemaName =  table.getSchema().name();
+        this.tableName = table.getNames().get(table.getNames().size() - 1);
         this.user = user;
         this.host = host;
     }
@@ -136,7 +131,6 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
 
     @Override
     public SqlAccessType getAllowedAccess() {
-        List<String> names = relOptTable.getQualifiedName();
         if (StringUtils.isBlank(user)) {
             return SqlAccessType.ALL;
         } else {
@@ -168,7 +162,7 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     }
 
     private boolean hasPrivilege(DingoSqlAccessEnum access) {
-        return PrivilegeVerify.verify(user, host, schemaId, tableId, access);
+        return PrivilegeVerify.verify(user, host, schemaName, tableName, access);
     }
 
     @Override

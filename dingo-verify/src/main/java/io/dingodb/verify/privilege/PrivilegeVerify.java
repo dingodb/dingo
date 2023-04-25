@@ -16,7 +16,6 @@
 
 package io.dingodb.verify.privilege;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.SecurityConfiguration;
@@ -36,7 +35,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Slf4j
-public class PrivilegeVerify {
+public final class PrivilegeVerify {
 
     static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -46,11 +45,11 @@ public class PrivilegeVerify {
 
     public static boolean isVerify;
 
-    public static boolean verify(Channel channel, CommonId schema, CommonId table, DingoSqlAccessEnum accessType) {
-        if (!isVerify) {
-            return true;
-        }
+    private PrivilegeVerify() {
+    }
 
+    public static boolean verify(Channel channel, String schema, String table,
+                                 DingoSqlAccessEnum accessType) {
         Object[] objects = channel.auth().get("token");
         if (objects == null) {
             throw new IllegalArgumentException("Access denied, invalid parameter.");
@@ -61,18 +60,11 @@ public class PrivilegeVerify {
         return verify(user, host, schema, table, accessType);
     }
 
-    public static boolean verify(String user, String host, CommonId schema, CommonId table,
-                             DingoSqlAccessEnum accessType) {
-        if (!isVerify) {
+    public static boolean verify(String user, String host, String schema, String table,
+                                 DingoSqlAccessEnum accessType) {
+        if (prefilter(user)) {
             return true;
         }
-        if (DingoRole.SQLLINE == env.getRole()) {
-            return true;
-        }
-        if (StringUtils.isBlank(user)) {
-            return true;
-        }
-
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
@@ -84,7 +76,7 @@ public class PrivilegeVerify {
         return verify(user, host, schema, table, accessType, privilegeGather);
     }
 
-    public static boolean verify(String user, String host, CommonId schema, CommonId table,
+    public static boolean verify(String user, String host, String schema, String table,
                                  DingoSqlAccessEnum accessType, PrivilegeGather privilegeGather) {
         if (privilegeGather == null) {
             return false;
@@ -96,7 +88,6 @@ public class PrivilegeVerify {
         if (index == null) {
             return true;
         }
-
         UserDefinition userDef = privilegeGather.getUserDef();
         if (userDef != null && userDef.getPrivileges()[index]) {
             return true;
@@ -104,29 +95,18 @@ public class PrivilegeVerify {
         if (schema == null) {
             return false;
         }
-        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
+        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema.toUpperCase());
         if (schemaDef != null && schemaDef.getPrivileges()[index]) {
             return true;
         }
 
         // Table verify
         TablePrivDefinition tableDef = privilegeGather.getTablePrivDefMap().get(table);
-        if (tableDef != null && tableDef.getPrivileges()[index]) {
-            return true;
-        }
-        return false;
+        return tableDef != null && tableDef.getPrivileges()[index];
     }
 
-    public static boolean verify(String user, String host, CommonId schema, CommonId table) {
-        if (!isVerify) {
-            return true;
-        }
-        if (DingoRole.SQLLINE == env.getRole()) {
-            return true;
-        }
-        if (StringUtils.isBlank(user)) {
-            return true;
-        }
+    public static boolean verify(String user, String host, String schema, String table) {
+        if (prefilter(user)) return true;
 
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));
@@ -139,7 +119,17 @@ public class PrivilegeVerify {
         return verify(schema, table, privilegeGather);
     }
 
-    public static boolean verify(CommonId schema, CommonId table,
+    private static boolean prefilter(String user) {
+        if (!isVerify) {
+            return true;
+        }
+        if (DingoRole.SQLLINE == env.getRole()) {
+            return true;
+        }
+        return StringUtils.isBlank(user);
+    }
+
+    public static boolean verify(String schema, String table,
                                  PrivilegeGather privilegeGather) {
         if (privilegeGather == null) {
             return false;
@@ -156,6 +146,7 @@ public class PrivilegeVerify {
         if (schema == null) {
             return false;
         }
+
         SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
         if (schemaDef != null) {
             for (boolean privilege: schemaDef.getPrivileges()) {
@@ -168,7 +159,7 @@ public class PrivilegeVerify {
         if (table == null) {
             Collection<TablePrivDefinition> definitionCollection = privilegeGather.getTablePrivDefMap().values();
             return definitionCollection.stream().anyMatch(tableDef -> {
-                if (schema.equals(tableDef.getSchema())) {
+                if (schema.equalsIgnoreCase(tableDef.getSchemaName())) {
                     log.info("schema verify:" + schema);
                     for (boolean privilege : tableDef.getPrivileges()) {
                         if (privilege) {
@@ -183,7 +174,6 @@ public class PrivilegeVerify {
             if (tableDef != null) {
                 for (boolean privilege : tableDef.getPrivileges()) {
                     if (privilege) {
-                        log.info("table verify result:" + true);
                         return true;
                     }
                 }
@@ -192,17 +182,8 @@ public class PrivilegeVerify {
         return false;
     }
 
-    public static boolean verifyDuplicate(String user, String host, CommonId schema, CommonId table,
+    public static boolean verifyDuplicate(String user, String host, String schema, String table,
                                           List<DingoSqlAccessEnum> accessTypes) {
-        if (accessTypes.stream().anyMatch(accessType -> {
-            if (!verify(user, host, schema, table, accessType)) {
-                return true;
-            }
-            return false;
-        })) {
-            return false;
-        } else {
-            return true;
-        }
+        return accessTypes.stream().noneMatch(accessType -> !verify(user, host, schema, table, accessType));
     }
 }

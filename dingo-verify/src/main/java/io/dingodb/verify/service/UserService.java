@@ -22,7 +22,6 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.net.Channel;
 
 public interface UserService {
     ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -46,16 +45,14 @@ public interface UserService {
     void revoke(PrivilegeDefinition privilegeDefinition);
 
     @ApiDeclaration
-    PrivilegeGather getPrivilegeDef(Channel channel, String user, String host);
+    PrivilegeGather getPrivilegeDef(String user, String host);
 
     @ApiDeclaration
     UserDefinition getUserDefinition(String user, String host);
 
     CommonId getSchemaId(String schema);
 
-    CommonId getTableId(CommonId schemaId, String table);
-
-    void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew);
+    CommonId getTableId(String schemaName, String table);
 
     default void flushPrivileges() {
 

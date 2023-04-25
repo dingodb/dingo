@@ -23,6 +23,7 @@ public enum ErrorCode {
     ER_YES(1003, "HY000", "YES"),
     ER_CANT_CREATE_FILE(1004, "HY000", " Can't create file '%s' (errno: %d - %s)"),
     ER_CANT_CREATE_DB(1006, "HY000", "Can't create table '%s' (errno: %d)"),
+    ER_ACCESS_DB_DENIED_ERROR(1044, "42000", "Access denied for user '%s'@'%s' to database '%s'"),
     ER_ACCESS_DENIED_ERROR(1045, "28000", "Access denied for user '%s'@'%s' (using password: %s)"),
     ER_NO_DATABASE_ERROR(1046, "3D000", "No database selected"),
     ER_BAD_DB_ERROR(1049, "42000", "Unknown database '%s'"),

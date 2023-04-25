@@ -16,14 +16,13 @@
 
 package io.dingodb.common.privilege;
 
-import io.dingodb.common.CommonId;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -34,20 +33,18 @@ public class PrivilegeDefinition {
     String host;
 
     public String key() {
-        return new StringBuilder(user).append("#").append(host).toString();
+        return user + "#" + host;
     }
 
-    List<Integer> privilegeIndexs;
+    List<String> privilegeList;
+
+    public void setPrivilegeList(List<String> privilegeList) {
+        this.privilegeList = privilegeList.stream().map(String::toLowerCase)
+                .collect(Collectors.toList());
+    }
 
     public PrivilegeDefinition(String user, String host) {
         this.user = user;
         this.host = host;
-    }
-
-    public void setPrivilegeIndexs(List<String> privileges) {
-        privilegeIndexs = new ArrayList<>();
-        privileges.forEach(k -> {
-            privilegeIndexs.add(PrivilegeDict.privilegeIndexDict.get(k));
-        });
     }
 }

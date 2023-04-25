@@ -89,7 +89,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public io.dingodb.meta.MetaService getSubMetaService(String name) {
-        return new MetaService(metaServiceClient.getSubMetaService(name));
+        return new MetaService(metaServiceClient.getSubMetaService(name.toLowerCase()));
     }
 
     public MetaService getSubMetaService(CommonId id) {

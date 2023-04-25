@@ -66,7 +66,7 @@ public class SqlHelper {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.JDBC);
         env.setInfo("user", "root");
-        env.setInfo("password", "123123");
+        env.setInfo("password", "");
         // Configure for local test.
         if (DingoConfiguration.instance() == null) {
             DingoConfiguration.parse(

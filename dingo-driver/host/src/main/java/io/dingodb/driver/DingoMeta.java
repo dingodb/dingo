@@ -172,7 +172,7 @@ public class DingoMeta extends MetaImpl {
             DingoConnection dingoConnection = (DingoConnection) connection;
             String user = dingoConnection.getContext().getOption("user");
             String host = dingoConnection.getContext().getOption("host");
-            return PrivilegeVerify.verify(user, host, schema.id(), schema.getTableId(tableName));
+            return PrivilegeVerify.verify(user, host, schema.name(), tableName);
         } catch (Exception e) {
             return true;
         }

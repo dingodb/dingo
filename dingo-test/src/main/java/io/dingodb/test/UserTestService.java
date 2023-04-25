@@ -60,9 +60,9 @@ public class UserTestService implements UserService {
     }
 
     @Override
-    public PrivilegeGather getPrivilegeDef(Channel channel, String user, String host) {
+    public PrivilegeGather getPrivilegeDef(String user, String host) {
         UserDefinition userDefinition = UserDefinition.builder().user("root").host("%")
-            .password("e56a114692fe0de073f9a1dd68a00eeb9703f3f1").plugin("mysql_native_password").build();
+            .password("").plugin("mysql_native_password").build();
         Boolean[] privileges = new Boolean[35];
         for (int i = 0; i < privileges.length; i ++) {
             privileges[i] = true;
@@ -73,7 +73,7 @@ public class UserTestService implements UserService {
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
         return UserDefinition.builder().user("root").host("%")
-            .password("e56a114692fe0de073f9a1dd68a00eeb9703f3f1").plugin("mysql_native_password").build();
+            .password("").plugin("mysql_native_password").build();
     }
 
     @Override
@@ -82,13 +82,13 @@ public class UserTestService implements UserService {
     }
 
     @Override
-    public CommonId getTableId(CommonId schemaId, String table) {
+    public CommonId getTableId(String schemaName, String table) {
         return null;
     }
 
     @Override
-    public void reloadTableId(CommonId schemaId, CommonId tableIdOld, CommonId tableIdNew) {
-
+    public void flushPrivileges() {
+        UserService.super.flushPrivileges();
     }
 
 }

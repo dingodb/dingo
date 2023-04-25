@@ -24,6 +24,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,9 @@ public class DingoSchema extends MutableSchema {
 
     @Override
     protected Map<String, Table> getTableMap() {
+        if (metaService.name().equalsIgnoreCase("root")) {
+           return new HashMap<>();
+        }
         Map<String, TableDefinition> tds = metaService.getTableDefinitions();
         if (tds == null) {
             return super.getTableMap(); // empty map

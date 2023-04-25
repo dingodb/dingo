@@ -21,11 +21,11 @@ import io.dingodb.common.auth.DingoRole;
 
 public interface TokenAuth<C> {
 
-    public DingoRole getRole();
+    DingoRole getRole();
 
-    public String getAuthToken();
+    String getAuthToken();
 
-    public void cachePrivileges(Authentication authentication);
+    void cachePrivileges(Authentication authentication);
 
     interface Provider {
         <C> TokenAuth<C> get();

@@ -17,7 +17,6 @@
 package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.calcite.DingoRootSchema;
-import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.MysqlMessage;
@@ -25,6 +24,7 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
+import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -61,6 +61,8 @@ import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCO
 @ChannelHandler.Sharable
 @Slf4j
 public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
     public MysqlConnection mysqlConnection;
 
     private byte[] fullSeed;
@@ -88,7 +90,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
         boolean isSSL = false;
         if (!mysqlConnection.authed) {
             AuthPacket authPacket = new AuthPacket();
@@ -99,8 +101,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 msg.markReaderIndex();
                 byte[] headLength = new byte[3];
                 msg.readBytes(headLength);
-                byte reqPacketId = msg.readByte();
-                authPacket.packetId = reqPacketId;
+                authPacket.packetId = msg.readByte();
                 MysqlMessage mysqlMessage = new MysqlMessage(headLength);
                 int contentLength = mysqlMessage.readUB3();
                 if (!msg.isReadable(contentLength)) {
@@ -115,7 +116,6 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
                 isSSL = authPacket.isSSL;
                 if (!authPacket.isSSL) {
-                    byte[] password = authPacket.password;
                     String user = authPacket.user;
 
                     String ip = ctx.channel().remoteAddress().toString()
@@ -132,14 +132,11 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         isUserExists = false;
                     }
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("real password:" + dbPwd + ", login user:" + user + ", pwd:" + new String(password));
-                    }
                     ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
                     AtomicLong packetId = new AtomicLong(authPacket.packetId);
                     //mysql protocol packet auto increment based by 0;
                     packetId.incrementAndGet();
-                    if (isUserExists && validator(dbPwd, fullSeed, password)) {
+                    if (isUserExists && validator(dbPwd, fullSeed, authPacket.password)) {
                         OKPacket okPacket = new OKPacket();
                         okPacket.capabilities = MysqlServer.getServerCapabilities();
                         okPacket.affectedRows = 0;
@@ -151,14 +148,18 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         ctx.writeAndFlush(buffer);
                         mysqlConnection.authed = true;
                         mysqlConnection.authPacket = authPacket;
-                        DingoConnection dingoConnection = (DingoConnection) getLocalConnection();
+                        DingoConnection dingoConnection = (DingoConnection) getLocalConnection(user, ip);
                         mysqlConnection.setConnection(dingoConnection);
+                        PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, ip);
+                        env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
                         MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
                                 .getSubSchema(usedSchema, true);
-                            dingoConnection.getContext().setUsedSchema(schema);
+                            if (schema != null) {
+                                dingoConnection.getContext().setUsedSchema(schema);
+                            }
                         }
                     } else {
                         ErrorCode.ER_ACCESS_DENIED_ERROR.message =
@@ -196,7 +197,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public java.sql.Connection getLocalConnection() {
+    public static java.sql.Connection getLocalConnection(String user, String host) {
         try {
             Class.forName("io.dingodb.driver.DingoDriver");
         } catch (ClassNotFoundException e) {
@@ -206,12 +207,11 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         properties.setProperty("defaultSchema", DingoRootSchema.DEFAULT_SCHEMA_NAME);
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
-        properties.setProperty("user", "root");
-        properties.setProperty("password", "123123");
+        properties.setProperty("user", user);
+        properties.setProperty("host", host);
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.setRole(DingoRole.SQLLINE);
         env.putAll(properties);
-        java.sql.Connection connection = null;
+        java.sql.Connection connection;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
         } catch (SQLException e) {
@@ -236,11 +236,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         int numToXor = toBeXord.length;
 
         if (clientPwd.length == 0) {
-            if (dbPwd.length() == 0) {
-                return true;
-            } else {
-                return false;
-            }
+            return dbPwd.length() == 0;
         }
         for (int i = 0; i < numToXor; i++) {
             toBeXord[i] = (byte) (toBeXord[i] ^ clientPwd[i]);
@@ -248,6 +244,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         md.reset();
 
         byte[] password = md.digest(toBeXord);
+        if (password.length != pwd.length) {
+           return false;
+        }
         for (int i = 0; i < password.length; i++) {
             if (password[i] != pwd[i]) {
                 return false;
@@ -256,7 +255,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         return true;
     }
 
-    private HandshakePacket createHandShakePacket() {
+    private static HandshakePacket createHandShakePacket() {
         HandshakePacket handshakePacket = new HandshakePacket();
         handshakePacket.protocolVersion = PROTOCOL_VERSION;
         handshakePacket.serverVersion = Versions.SERVER_VERSION;
@@ -278,12 +277,12 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         return handshakePacket;
     }
 
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
-    private static char[] ch = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
-        'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b',
-        'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-        'x', 'y', 'z', '0', '1'};
+    private static final char[] ch = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
+        'v', 'w', 'x', 'y', 'z', '0', '1'};
 
     public static synchronized String createRandomString(int length) {
         if (length > 0) {

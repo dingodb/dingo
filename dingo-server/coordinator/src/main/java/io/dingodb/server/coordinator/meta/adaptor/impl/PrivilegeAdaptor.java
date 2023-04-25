@@ -150,54 +150,55 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
     }
 
     public boolean delete(PrivilegeDefinition definition, CommonId subjectId) {
-        List<Privilege> privileges = this.privilegeMap.computeIfPresent(subjectId, (k, v) -> {
-            Iterator iterator = v.iterator();
-            while (iterator.hasNext()) {
-                Privilege privilege = (Privilege) iterator.next();
-                if (definition.getPrivilegeIndexs().contains(privilege.getPrivilegeIndex())) {
-                    iterator.remove();
-                    this.doDelete(privilege);
-                }
-            }
-            if (v.size() == 0) {
-                return null;
-            }
-            return v;
-        });
-        if (!flushPrivileges.contains(definition.key())) {
-            flushPrivileges.add(definition.key());
-        }
-        return privileges == null ? true : false;
+//        List<Privilege> privileges = this.privilegeMap.computeIfPresent(subjectId, (k, v) -> {
+//            Iterator iterator = v.iterator();
+//            while (iterator.hasNext()) {
+//                Privilege privilege = (Privilege) iterator.next();
+//                if (definition.getPrivilegeIndexs().contains(privilege.getPrivilegeIndex())) {
+//                    iterator.remove();
+//                    this.doDelete(privilege);
+//                }
+//            }
+//            if (v.size() == 0) {
+//                return null;
+//            }
+//            return v;
+//        });
+//        if (!flushPrivileges.contains(definition.key())) {
+//            flushPrivileges.add(definition.key());
+//        }
+//        return privileges == null ? true : false;
+        return true;
     }
 
     public void create(PrivilegeDefinition definition, CommonId id) {
-        delete(definition, id);
-        definition.getPrivilegeIndexs().forEach(k -> {
-            Privilege privilege = Privilege.builder()
-                .host(definition.getHost())
-                .user(definition.getUser())
-                .privilegeIndex(k)
-                .build();
-            if (definition instanceof UserDefinition) {
-                privilege.setPrivilegeType(PrivilegeType.USER);
-            } else if (definition instanceof SchemaPrivDefinition) {
-                privilege.setSchema(((SchemaPrivDefinition) definition).getSchema());
-                privilege.setPrivilegeType(PrivilegeType.SCHEMA);
-            } else if (definition instanceof TablePrivDefinition) {
-                privilege.setSchema(((TablePrivDefinition) definition).getSchema());
-                privilege.setTable(((TablePrivDefinition) definition).getTable());
-                privilege.setPrivilegeType(PrivilegeType.TABLE);
-            }
-            privilege.setSubjectId(id);
-            privilege.setId(newId(privilege));
-            this.doSave(privilege);
-        });
-        if (!flushPrivileges.contains(definition.key())) {
-            flushPrivileges.add(definition.key());
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("privilege map:" + privilegeMap);
-        }
+//        delete(definition, id);
+//        definition.getPrivilegeIndexs().forEach(k -> {
+//            Privilege privilege = Privilege.builder()
+//                .host(definition.getHost())
+//                .user(definition.getUser())
+//                .privilegeIndex(k)
+//                .build();
+//            if (definition instanceof UserDefinition) {
+//                privilege.setPrivilegeType(PrivilegeType.USER);
+//            } else if (definition instanceof SchemaPrivDefinition) {
+//                privilege.setSchema(((SchemaPrivDefinition) definition).getSchema());
+//                privilege.setPrivilegeType(PrivilegeType.SCHEMA);
+//            } else if (definition instanceof TablePrivDefinition) {
+//                privilege.setSchema(((TablePrivDefinition) definition).getSchema());
+//                privilege.setTable(((TablePrivDefinition) definition).getTable());
+//                privilege.setPrivilegeType(PrivilegeType.TABLE);
+//            }
+//            privilege.setSubjectId(id);
+//            privilege.setId(newId(privilege));
+//            this.doSave(privilege);
+//        });
+//        if (!flushPrivileges.contains(definition.key())) {
+//            flushPrivileges.add(definition.key());
+//        }
+//        if (log.isDebugEnabled()) {
+//            log.debug("privilege map:" + privilegeMap);
+//        }
     }
 
     public void create(Privilege privilege) {
@@ -298,21 +299,22 @@ public class PrivilegeAdaptor extends BaseAdaptor<Privilege> {
     }
 
     public PrivilegeGather getPrivilegeGather(String user, String host) {
-        UserDefinition userDefinition = metaToDefinition(
-            ((UserAdaptor) getMetaAdaptor(User.class)).getUser(user, host));
-
-        Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions = schemaPrivDefinitions(
-            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilegesWithCurrentHost(user, host));
-        Map<CommonId, TablePrivDefinition> tablePrivDefinitions = tablePrivDefinitions(
-            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilegesWithCurrentHost(user, host));
-
-        return PrivilegeGather.builder()
-            .userDef(userDefinition)
-            .schemaPrivDefMap(schemaPrivDefinitions)
-            .tablePrivDefMap(tablePrivDefinitions)
-            .user(user)
-            .host(userDefinition.getHost())
-            .build();
+//        UserDefinition userDefinition = metaToDefinition(
+//            ((UserAdaptor) getMetaAdaptor(User.class)).getUser(user, host));
+//
+//        Map<CommonId, SchemaPrivDefinition> schemaPrivDefinitions = schemaPrivDefinitions(
+//            ((SchemaPrivAdaptor) getMetaAdaptor(SchemaPriv.class)).getSchemaPrivilegesWithCurrentHost(user, host));
+//        Map<CommonId, TablePrivDefinition> tablePrivDefinitions = tablePrivDefinitions(
+//            ((TablePrivAdaptor) getMetaAdaptor(TablePriv.class)).getTablePrivilegesWithCurrentHost(user, host));
+//
+//        return PrivilegeGather.builder()
+//            .userDef(userDefinition)
+//            .schemaPrivDefMap(schemaPrivDefinitions)
+//            .tablePrivDefMap(tablePrivDefinitions)
+//            .user(user)
+//            .host(userDefinition.getHost())
+//            .build();
+          return null;
     }
 
     public void deletePrivileges(String user, String host) {

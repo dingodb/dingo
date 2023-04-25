@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.executor.auth.service;
+package io.dingodb.server.executor.service.auth;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
@@ -31,14 +31,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TokenAuthImpl implements TokenAuth {
 
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-
     private static final TokenAuth INSTANCE = new TokenAuthImpl();
 
-    private UserService userService;
 
-    @AutoService(TokenAuth.Provider.class)
-    public static class TokenAuthServiceProvider implements TokenAuth.Provider {
+    @AutoService(Provider.class)
+    public static class TokenAuthServiceProvider implements Provider {
 
         @Override
         public <C> TokenAuth<C> get() {
@@ -58,21 +55,6 @@ public class TokenAuthImpl implements TokenAuth {
 
     @Override
     public void cachePrivileges(Authentication authentication) {
-        if (userService == null) {
-            userService = UserServiceProvider.getRoot();
-        }
-        String user = authentication.getUsername();
-        String host = authentication.getHost();
-        if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
-            if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
-                PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, host);
-                env.getPrivilegeGatherMap().put(privilegeGather.key(),
-                    privilegeGather);
-            }
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("sdk to executor token auth success: user:" + user + ", host:" + host + ", privileges:"
-                + env.getPrivilegeGatherMap());
-        }
+
     }
 }
