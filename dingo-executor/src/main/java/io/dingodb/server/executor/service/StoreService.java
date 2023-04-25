@@ -109,6 +109,10 @@ public class StoreService implements io.dingodb.store.api.StoreService {
         public Object[] getTupleByPrimaryKey(Object[] primaryKey) {
             try {
                 byte[] key = codec.encodeKey(primaryKey);
+                byte[] value = storeService.kvGet(tableId, regionId, key);
+                if (value == null || value.length == 0) {
+                   return null;
+                }
                 return codec.decode(new io.dingodb.sdk.common.KeyValue(key, storeService.kvGet(tableId, regionId, key)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -134,8 +138,13 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             withEnd = end != null && withEnd;
             byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), distribution::getStartKey);
             byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), distribution::getEndKey);
+            Iterator<KeyValue> keyValueIterator = storeService.scan(tableId, regionId,
+                new Range(startKey, endKey), withStart, withEnd);
+            if (keyValueIterator == null) {
+                return null;
+            }
             return Iterators.transform(
-                storeService.scan(tableId, regionId, new Range(startKey, endKey), withStart, withEnd),
+                keyValueIterator,
                 wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
             );
         }
@@ -143,7 +152,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public boolean delete(Object[] row) {
             try {
-                return storeService.kvBatchDelete(tableId, regionId, Collections.singletonList(codec.encodeKey(row)));
+                return storeService.kvBatchDelete(tableId, regionId,
+                    Collections.singletonList(codec.encodeKey(row))).get(0);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -37,6 +37,14 @@ public class TablePrivDefinition extends PrivilegeDefinition {
 
     Boolean[] privileges;
 
+    public String getKey() {
+        StringBuilder schemaPrivKey = new StringBuilder();
+        return schemaPrivKey.append(user)
+            .append("#").append(host)
+            .append("#").append(schema)
+            .append("#").append(table).toString();
+    }
+
     @Builder(toBuilder = true)
     TablePrivDefinition(String user, String host, CommonId schema, CommonId table,
                         String schemaName, String tableName) {
@@ -45,13 +53,5 @@ public class TablePrivDefinition extends PrivilegeDefinition {
         this.table = table;
         this.schemaName = schemaName;
         this.tableName = tableName;
-    }
-
-    public String getKey() {
-        StringBuilder schemaPrivKey = new StringBuilder();
-        return schemaPrivKey.append(user)
-            .append("#").append(host)
-            .append("#").append(schema)
-            .append("#").append(table).toString();
     }
 }

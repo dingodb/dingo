@@ -77,7 +77,7 @@ public class DingoDriverClient extends Driver {
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.setRole(DingoRole.JDBC);
+        //env.setRole(DingoRole.JDBC);
         if ((props = this.parseURL(url, info)) == null) {
             throw new IllegalArgumentException("Bad url: " + url);
         } else {

@@ -16,7 +16,6 @@
 
 package io.dingodb.common.privilege;
 
-import io.dingodb.common.CommonId;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,10 +41,8 @@ public class UserDefinition extends PrivilegeDefinition {
     }
 
     public String getKey() {
-        StringBuilder schemaPrivKey = new StringBuilder();
-        return schemaPrivKey.append(user)
-            .append("#").append(host)
-            .toString();
+        return user +
+            "#" + host;
     }
 
 }

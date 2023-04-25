@@ -66,7 +66,7 @@ public class TokenAuthImpl implements TokenAuth {
         }
     }
 
-    private String getToken() {
+    private static String getToken() {
         try {
             log.info("sdk token get coordinator leader:" + CoordinatorConnector.getDefault().get());
             Map<String, Object[]> authContent = NetService.getDefault().auth(CoordinatorConnector.getDefault().get());

@@ -35,8 +35,8 @@ public class PrivilegeGather implements Serializable {
     private String user;
     private String host;
     private UserDefinition userDef;
-    private Map<CommonId, SchemaPrivDefinition> schemaPrivDefMap;
-    private Map<CommonId, TablePrivDefinition> tablePrivDefMap;
+    private Map<String, SchemaPrivDefinition> schemaPrivDefMap;
+    private Map<String, TablePrivDefinition> tablePrivDefMap;
 
     public String key() {
         return user + "#" + host;

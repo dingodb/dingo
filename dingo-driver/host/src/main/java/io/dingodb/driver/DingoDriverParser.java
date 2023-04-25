@@ -19,29 +19,14 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
-import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
-import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
-import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
-import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
-import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
-import io.dingodb.calcite.grammar.ddl.SqlDropUser;
-import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
-import io.dingodb.calcite.grammar.ddl.SqlGrant;
-import io.dingodb.calcite.grammar.ddl.SqlRevoke;
-import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
-import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.verify.privilege.PrivilegeVerify;
-import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -62,7 +47,6 @@ import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -194,101 +178,6 @@ public final class DingoDriverParser extends DingoParser {
         return parameters;
     }
 
-    public void verify(SqlNode sqlNode) {
-        if (!PrivilegeVerify.isVerify) {
-            return;
-        }
-        String user = connection.getContext().getOption("user");
-        String host = connection.getContext().getOption("host");
-        List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
-        CommonId schemaId = null;
-        CommonId tableId = null;
-        CommonId[] schemaTableIds = null;
-        if (sqlNode instanceof DingoSqlCreateTable) {
-            accessTypes.add(DingoSqlAccessEnum.CREATE);
-            DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
-            if (sqlCreateTable.columnList != null) {
-                long indexCount = sqlCreateTable.columnList.stream()
-                    .filter(col -> col.getKind() == SqlKind.CREATE_INDEX).count();
-                if (indexCount > 0) {
-                    accessTypes.add(DingoSqlAccessEnum.INDEX);
-                }
-            }
-            schemaTableIds = initSchemaTable(sqlCreateTable.name.names);
-        } else if (sqlNode instanceof SqlDropUser) {
-            accessTypes.add(DingoSqlAccessEnum.DROP);
-        } else if (sqlNode instanceof SqlDropTable) {
-            accessTypes.add(DingoSqlAccessEnum.DROP);
-            SqlDropTable sqlDropTable = (SqlDropTable) sqlNode;
-            schemaTableIds = initSchemaTable(sqlDropTable.name.names);
-        } else if (sqlNode instanceof SqlCreateUser || sqlNode instanceof SqlRevoke || sqlNode instanceof SqlGrant) {
-            accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
-        } else if (sqlNode instanceof SqlFlushPrivileges) {
-            accessTypes.add(DingoSqlAccessEnum.RELOAD);
-        } else if (sqlNode instanceof SqlSetPassword) {
-            if (!"root".equals(user)) {
-                throw new RuntimeException("Access denied");
-            }
-        } else if (sqlNode instanceof SqlTruncate) {
-            accessTypes.add(DingoSqlAccessEnum.DROP);
-            accessTypes.add(DingoSqlAccessEnum.CREATE);
-            SqlTruncate sqlTruncate = (SqlTruncate) sqlNode;
-            schemaTableIds = initSchemaTable(sqlTruncate.id.names);
-        } else if (sqlNode instanceof SqlAlterAddIndex) {
-            accessTypes.add(DingoSqlAccessEnum.ALTER);
-            accessTypes.add(DingoSqlAccessEnum.INDEX);
-            SqlAlterAddIndex sqlAlterTable = (SqlAlterAddIndex) sqlNode;
-            schemaTableIds = initSchemaTable(sqlAlterTable.table.names);
-        } else if (sqlNode instanceof SqlCreateIndex) {
-            accessTypes.add(DingoSqlAccessEnum.INDEX);
-            SqlCreateIndex sqlCreateIndex = (SqlCreateIndex) sqlNode;
-            schemaTableIds = initSchemaTable(sqlCreateIndex.table.names);
-        } else if (sqlNode instanceof SqlDropIndex) {
-            accessTypes.add(DingoSqlAccessEnum.INDEX);
-            SqlDropIndex sqlDropIndex = (SqlDropIndex) sqlNode;
-            schemaTableIds = initSchemaTable(sqlDropIndex.table.names);
-        }
-        if (schemaTableIds != null) {
-            schemaId = schemaTableIds[0];
-            tableId = schemaTableIds[1];
-        }
-        if (!PrivilegeVerify.verifyDuplicate(user, host, schemaId, tableId,
-            accessTypes)) {
-            throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
-        }
-    }
-
-    public CommonId[] initSchemaTable(ImmutableList<String> names) {
-        String schema = null;
-        String table = null;
-        if (names.size() == 1) {
-            table = names.get(0).toUpperCase();
-        } else {
-            schema = names.get(0);
-            table = names.get(1).toUpperCase();
-        }
-        if (schema != null) {
-            schema = schema.toUpperCase();
-        }
-        CommonId schemaId = getSchemaId(schema);
-        CommonId tableId = null;
-        if (schemaId != null) {
-            tableId = UserServiceProvider.getRoot().getTableId(schemaId, table);
-        }
-        return new CommonId[]{schemaId, tableId};
-    }
-
-    public CommonId getSchemaId(String schema) {
-        if (schema == null) {
-            if (connection.getContext().getUsedSchema() == null) {
-                schema = connection.getContext().getDefaultSchemaName();
-            } else {
-                schema = connection.getContext().getUsedSchema().getName();
-            }
-        }
-        return UserServiceProvider.getRoot().getSchemaId(schema);
-    }
-
     @Nonnull
     public Meta.Signature parseQuery(
         JobManager jobManager,
@@ -306,6 +195,7 @@ public final class DingoDriverParser extends DingoParser {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         // for compatible mysql protocol
         if (compatibleMysql(sqlNode)) {
+            DingoDdlVerify.verify(sqlNode, connection);
             boolean isDdl = sqlNode.getKind().belongsTo(SqlKind.DDL);
             Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
             List<ColumnMetaData> columns = new ArrayList<>();
@@ -330,7 +220,7 @@ public final class DingoDriverParser extends DingoParser {
         }
 
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
-            verify(sqlNode);
+            DingoDdlVerify.verify(sqlNode, connection);
             final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
             ddlExecutor.executeDdl(connection, sqlNode);
             return new DingoSignature(

@@ -21,8 +21,19 @@ import com.beust.jcommander.Parameter;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.driver.mysql.IdleTimeWatcher;
+import io.dingodb.exec.Services;
+import io.dingodb.net.MysqlNetService;
+import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
+import io.dingodb.net.NetServiceProvider;
+import lombok.extern.slf4j.Slf4j;
 
+import java.net.DatagramSocket;
+import java.util.ServiceLoader;
+
+@Slf4j
 public class Starter {
 
     @Parameter(names = "--help", description = "Print usage.", help = true, order = 0)
@@ -51,6 +62,31 @@ public class Starter {
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
 
+        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+        log.info("Listen exchange port {}.", listenRandomPort(netService));
+        Services.initControlMsgService();
+        MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
+            .iterator().next().get();
+        mysqlNetService.listenPort(3307);
+
+        SessionVariableWatched.getInstance().addObserver(new IdleTimeWatcher());
+
+    }
+
+    private int listenRandomPort(NetService netService)  {
+        int times = 3;
+        while (times-- > 0) {
+            try {
+                DatagramSocket datagramSocket = new DatagramSocket();
+                netService.listenPort(datagramSocket.getLocalPort());
+                DingoConfiguration.instance().getExchange().setPort(datagramSocket.getLocalPort());
+                datagramSocket.close();
+                return datagramSocket.getLocalPort();
+            } catch (Exception e) {
+                log.error("Listen port error.", e);
+            }
+        }
+        throw new RuntimeException("Listen port failed.");
     }
 
 }

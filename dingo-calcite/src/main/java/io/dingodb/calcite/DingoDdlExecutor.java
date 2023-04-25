@@ -31,7 +31,6 @@ import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -82,6 +81,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -114,7 +114,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(SqlKeyConstraint.class::isInstance)
             .map(SqlKeyConstraint.class::cast)
             .filter(constraint -> constraint.getOperator().getKind() == SqlKind.UNIQUE)
-            .map(constraint -> fromSqlKeyConstraint(constraint)).collect(Collectors.toList()));
+            .map(DingoDdlExecutor::fromSqlKeyConstraint).collect(Collectors.toList()));
         return indexList;
     }
 
@@ -127,8 +127,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(String::toUpperCase)
             .toArray(String[]::new);
         SqlIdentifier name = (SqlIdentifier) sqlKeyConstraint.getOperandList().get(0);
-        Index index = new Index(name.names.get(0).toUpperCase(), columns, true);
-        return index;
+        return new Index(name.names.get(0).toUpperCase(), columns, true);
     }
 
     private static @Nullable Index fromSqlIndexDeclaration(
@@ -140,8 +139,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .map(SqlIdentifier::getSimple)
                 .map(String::toUpperCase)
                 .toArray(String[]::new);
-        Index index = new Index(indexDeclaration.index, columns, false);
-        return index;
+        return new Index(indexDeclaration.index, columns, false);
     }
 
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
@@ -341,7 +339,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 name.getParserPosition(),
                 RESOURCE.tableNotFound(name.toString()));
         }
-        CommonId tableIdOld = schema.getTableId(tableName);
         if (!schema.dropTable(tableName)) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
@@ -359,10 +356,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema.createIndex(tableName, indexList);
         }
 
-        CommonId tableIdNew = schema.getTableId(tableName);
-        CommonId schemaId = schema.id();
-
-        UserServiceProvider.getRoot().reloadTableId(schemaId, tableIdOld, tableIdNew);
     }
 
 
@@ -464,7 +457,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
         validateIndex(schema, tableName, index);
-        schema.createIndex(tableName, Arrays.asList(index));
+        schema.createIndex(tableName, Collections.singletonList(index));
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
@@ -499,7 +492,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
-        String schema = sqlUseSchema.schema;
         log.info("use schema");
     }
 
@@ -581,32 +573,37 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     private PrivilegeDefinition getPrivilegeDefinition(
         @NonNull SqlGrant sqlGrant, CalcitePrepare.@NonNull Context context
     ) {
-        String table = sqlGrant.table;
-        String schema = sqlGrant.schema;
-        CommonId schemaId = null;
-        PrivilegeDefinition privilegeDefinition = null;
-        PrivilegeType privilegeType = null;
-        if ("*".equals(table) && "*".equals(schema)) {
+        String tableName = sqlGrant.table;
+        String schemaName = sqlGrant.schema;
+        PrivilegeDefinition privilegeDefinition;
+        PrivilegeType privilegeType;
+        if ("*".equals(tableName) && "*".equals(schemaName)) {
             privilegeDefinition = UserDefinition.builder()
                 .build();
             privilegeType = PrivilegeType.USER;
-        } else if ("*".equals(table)) {
-            schemaId = userService.getSchemaId(schema);
+        } else if ("*".equals(tableName)) {
+            if (context.getRootSchema().getSubSchema(schemaName, true) == null) {
+                throw new RuntimeException("schema " + schemaName + " does not exist");
+            }
             privilegeDefinition = SchemaPrivDefinition.builder()
-                .schema(schemaId)
+                .schemaName(schemaName)
                 .build();
             privilegeType = PrivilegeType.SCHEMA;
         } else {
-            schemaId = userService.getSchemaId(schema);
-            CommonId tableId = userService.getTableId(schemaId, table);
-            log.info("tableId:" + tableId + ", schemaId:" + schemaId);
+            CalciteSchema schema = context.getRootSchema().getSubSchema(schemaName, true);
+            if (schema == null) {
+                throw new RuntimeException("schema " + schemaName + " does not exist");
+            }
+            if (schema.getTable(tableName, true) == null) {
+                throw new RuntimeException("table " + tableName + " does not exist");
+            }
             privilegeDefinition = TablePrivDefinition.builder()
-                .schema(schemaId)
-                .table(tableId)
+                .schemaName(schemaName)
+                .tableName(tableName)
                 .build();
             privilegeType = PrivilegeType.TABLE;
         }
-        privilegeDefinition.setPrivilegeIndexs(sqlGrant.getPrivileges(privilegeType));
+        privilegeDefinition.setPrivilegeList(sqlGrant.getPrivileges(privilegeType));
         privilegeDefinition.setUser(sqlGrant.user);
         privilegeDefinition.setHost(sqlGrant.host);
         return privilegeDefinition;

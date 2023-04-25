@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'io.dingodb'
-version '0.5.0-SNAPSHOT'
+version '0.6.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -35,8 +35,6 @@ dependencies {
     implementation project(":dingo-common")
 
     implementation project(":dingo-driver:dingo-driver-host")
-    implementation project(":dingo-server:dingo-server-client")
-    implementation project(":dingo-server:dingo-server-protocol")
     implementation project(':dingo-verify')
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'

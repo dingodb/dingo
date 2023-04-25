@@ -47,7 +47,7 @@ public class ShowDatabaseOperation implements QueryOperation {
             while (rs.next()) {
                 String schemaName = rs.getString("TABLE_SCHEM");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(schemaName, sqlLikePattern)) {
-                    schemas.add(new Object[] {schemaName});
+                    schemas.add(new Object[] {schemaName.toLowerCase()});
                 }
             }
         } catch (SQLException e) {

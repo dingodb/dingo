@@ -46,7 +46,7 @@ public class ShowTableOperation implements QueryOperation{
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
-                    Object[] tuples = new Object[] {tableName};
+                    Object[] tuples = new Object[] {tableName.toLowerCase()};
                     tables.add(tuples);
                 }
             }

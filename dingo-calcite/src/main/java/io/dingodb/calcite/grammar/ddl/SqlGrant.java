@@ -63,6 +63,7 @@ public class SqlGrant extends SqlDdl {
         }
         if (!"*".equals(table)) {
             List<String> nameList = new ArrayList<>();
+            nameList.add(schema);
             nameList.add(table);
             tableIdentifier = new SqlIdentifier(nameList, null, pos, new ArrayList<SqlParserPos>());
         }

@@ -17,16 +17,11 @@
 package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.driver.mysql.MysqlConnection;
-import io.dingodb.driver.mysql.packet.MysqlPacket;
 import io.dingodb.driver.mysql.process.MessageProcess;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 public class MysqlHandler extends SimpleChannelInboundHandler<ByteBuf> {
@@ -37,7 +32,7 @@ public class MysqlHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
         MessageProcess.process(msg, mysqlConnection);
     }
 

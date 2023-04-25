@@ -67,8 +67,11 @@ public class MysqlNettyServer {
             @Override
             protected void initChannel(SocketChannel ch) {
                 MysqlConnection mysqlConnection = new MysqlConnection(ch);
-                ch.closeFuture().addListener(f -> connections.remove(mysqlConnection.getId()))
-                    .addListener(f -> mysqlConnection.close());
+                ch.closeFuture().addListener(f -> {
+                    if (mysqlConnection.getId() != null) {
+                        connections.remove(mysqlConnection.getId());
+                    }
+                }).addListener(f -> mysqlConnection.close());
                 ch.pipeline().addLast("handshake", new HandshakeHandler(mysqlConnection));
                 ch.pipeline().addLast("decoder", new MysqlDecoder());
                 MysqlIdleStateHandler mysqlIdleStateHandler = new MysqlIdleStateHandler(

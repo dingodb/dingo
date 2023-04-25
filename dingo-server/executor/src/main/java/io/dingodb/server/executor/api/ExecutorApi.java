@@ -17,12 +17,10 @@
 package io.dingodb.server.executor.api;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.net.Channel;
 import io.dingodb.net.NetService;
 import io.dingodb.store.api.StoreService;
-import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -47,59 +45,50 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, KeyValue row) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT);
         return storeService.getInstance(tableId).upsertKeyValue(row);
 
     }
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, List<KeyValue> rows) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT);
         return storeService.getInstance(tableId).upsertKeyValue(rows);
     }
 
     @Override
     public boolean upsertKeyValue(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey, byte[] row) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.INSERT);
         return storeService.getInstance(tableId).upsertKeyValue(primaryKey, row);
     }
 
     @Override
     public byte[] getValueByPrimaryKey(Channel channel, CommonId schema, CommonId tableId, byte[] primaryKey) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
         return storeService.getInstance(tableId).getValueByPrimaryKey(primaryKey);
     }
 
     @Override
     public List<KeyValue> getKeyValueByPrimaryKeys(Channel channel, CommonId schema, CommonId tableId,
                                                    List<byte[]> primaryKeys) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
         return storeService.getInstance(tableId).getKeyValueByPrimaryKeys(primaryKeys);
     }
 
     @Override
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, byte[] key) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE);
         return storeService.getInstance(tableId).delete(key);
     }
 
     @Override
     public boolean delete(Channel channel, CommonId schema, CommonId tableId, List<byte[]> primaryKeys) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE);
         return storeService.getInstance(tableId).delete(primaryKeys);
     }
 
     @Override
     public boolean deleteRange(Channel channel, CommonId schema, CommonId tableId,
                                byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.DELETE);
         return storeService.getInstance(tableId).delete(startPrimaryKey, endPrimaryKey);
     }
 
     @Override
     public List<KeyValue> getKeyValueByRange(Channel channel, CommonId schema, CommonId tableId,
                                              byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
         if (log.isDebugEnabled()) {
             log.info("Get Key value by range: instance:{} tableId:{}, startPrimaryKey: {}, endPrimaryKey: {}",
                 storeService.getInstance(tableId).getClass().getSimpleName(),
@@ -121,7 +110,6 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public List<KeyValue> getKeyValueByKeyPrefix(Channel channel, CommonId schema, CommonId tableId, byte[] keyPrefix) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
         if (log.isDebugEnabled()) {
             log.info("Get Key value by scan: instance:{} tableId:{}, keyPrefix: {}",
                 storeService.getInstance(tableId).getClass().getSimpleName(),
@@ -142,7 +130,6 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
 
     @Override
     public List<KeyValue> getAllKeyValue(Channel channel, CommonId schema, CommonId tableId) {
-        verify(channel, schema, tableId, DingoSqlAccessEnum.SELECT);
         if (log.isDebugEnabled()) {
             log.info("Get All Key value by scan: instance:{} tableId:{}",
                 storeService.getInstance(tableId).getClass().getSimpleName(),
@@ -180,16 +167,6 @@ public class ExecutorApi implements io.dingodb.server.api.ExecutorApi {
     public boolean udfUpdate(CommonId tableId, byte[] primaryKey,
                              String udfName, String functionName, int version) {
         return storeService.getInstance(tableId).udfUpdate(primaryKey, udfName, functionName, version);
-    }
-
-    private void verify(Channel channel, CommonId schema, CommonId tableId, DingoSqlAccessEnum accessType) {
-        boolean verify = PrivilegeVerify.verify(channel, schema, tableId, accessType);
-        if (log.isDebugEnabled()) {
-            log.debug("Verify:{}, access type: {}", verify, accessType.name());
-        }
-        if (!verify) {
-            throw new RuntimeException("Access denied for user");
-        }
     }
 
     @Override

@@ -17,7 +17,7 @@
 package io.dingodb.driver.mysql.process;
 
 import io.dingodb.common.mysql.MysqlByteUtil;
-import io.dingodb.common.mysql.MysqlMessage;
+import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
@@ -29,21 +29,23 @@ import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
-import io.dingodb.driver.mysql.util.BufferUtil;
+import io.dingodb.verify.privilege.PrivilegeVerify;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.jdbc.CalciteSchema;
 
-import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
-public class MessageProcess {
+public final class MessageProcess {
 
     public static final DingoCommands commands = new DingoCommands();
+
+    private MessageProcess() {
+    }
 
     public static void process(ByteBuf msg, MysqlConnection mysqlConnection) {
         int length = msg.readableBytes();
@@ -68,11 +70,23 @@ public class MessageProcess {
                 DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
                 String usedSchema = new String(schemaBytes);
                 usedSchema = usedSchema.toUpperCase();
+                String user = connection.getContext().getOption("user");
+                String host = connection.getContext().getOption("host");
+                if (!PrivilegeVerify.verify(user, host, usedSchema, null)) {
+                    ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message =
+                        String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_ACCESS_DB_DENIED_ERROR);
+                }
                 CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, true);
-                connection.getContext().setUsedSchema(schema);
-                OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,
-                    ServerStatus.SERVER_SESSION_STATE_CHANGED);
-                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                if (schema != null) {
+                    connection.getContext().setUsedSchema(schema);
+                    OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,
+                       ServerStatus.SERVER_SESSION_STATE_CHANGED);
+                    MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                } else {
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                        ErrorCode.ER_NO_DATABASE_ERROR);
+                }
                 break;
             case NativeConstants.COM_QUERY:
                 QueryPacket queryPacket = new QueryPacket();
@@ -117,7 +131,7 @@ public class MessageProcess {
                 break;
             case NativeConstants.COM_PING:
                 // test ping
-                okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, 0);
+                OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId);
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 break;
             case NativeConstants.COM_TIME:
@@ -153,8 +167,8 @@ public class MessageProcess {
                 System.arraycopy(array, 2, statementIdBytes, 0, statementIdBytes.length);
                 int statementId = MysqlByteUtil.bytesToIntLittleEndian(statementIdBytes);
                 connection = (DingoConnection) mysqlConnection.getConnection();
-                int paramCount = 0;
-                boolean isSelect = false;
+                int paramCount;
+                boolean isSelect;
                 DingoPreparedStatement preparedStatement;
                 try {
                     preparedStatement

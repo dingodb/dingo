@@ -41,13 +41,9 @@ public class TokenAuthService implements AuthService<Authentication>  {
     public TokenAuthService() {
         try {
             for (TokenAuth.Provider tokenAuthProvider : serviceProviders) {
-                TokenAuth tokenAuth = tokenAuthProvider.get();
-                // 1. web token auth role is null  2. sdk token auth / executor token auth
+                this.tokenAuth = tokenAuthProvider.get();
+                log.info("tokenAuth:" + tokenAuth);
                 // local test ServiceLoader load multiService  / linux ServiceLoader load single service
-                if ((tokenAuth.getRole() != null && env.getRole() == tokenAuth.getRole())
-                    || tokenAuth.getRole() == null) {
-                    this.tokenAuth = tokenAuth;
-                }
             }
         } catch (NoSuchElementException e) {
             this.tokenAuth = null;
@@ -65,14 +61,12 @@ public class TokenAuthService implements AuthService<Authentication>  {
         }
     }
 
-    public String getInnerAuthToken() {
-        String token = TokenManager.INSTANCE.createInnerToken();
-        return token;
+    public static String getInnerAuthToken() {
+        return TokenManager.INSTANCE.createInnerToken();
     }
 
-    private Map<String, Object> verifyToken(String token) {
-        Map<String, Object> claims = TokenManager.INSTANCE.certificateToken(token);
-        return claims;
+    private static Map<String, Object> verifyToken(String token) {
+        return TokenManager.INSTANCE.certificateToken(token);
     }
 
     @Override
@@ -91,8 +85,7 @@ public class TokenAuthService implements AuthService<Authentication>  {
             token = tokenAuth.getAuthToken();
         }
         if (StringUtils.isNotBlank(token)) {
-            Authentication authentication = Authentication.builder().token(token).role(env.getRole()).build();
-            return authentication;
+            return Authentication.builder().token(token).role(env.getRole()).build();
         } else {
             return null;
         }

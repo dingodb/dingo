@@ -26,26 +26,26 @@ public enum DingoSqlAccessEnum {
     CREATE("create"),
     DROP("drop"),
     GRANT("grant"),
-    CREATE_VIEW("create_view"),
-    SHOW_VIEW("show_view"),
-    CREATE_ROUTINE("create_routine"),
-    ALTER_ROUTINE("alter_routine"),
+    CREATE_VIEW("create view"),
+    SHOW_VIEW("show view"),
+    CREATE_ROUTINE("create routine"),
+    ALTER_ROUTINE("alter routine"),
     EXECUTE("execute"),
     TRIGGER("trigger"),
     EVENT("event"),
-    CREATE_TMP_TABLE("create_tmp_table"),
-    LOCK_TABLES("lock_tables"),
+    CREATE_TMP_TABLE("create temporary tables"),
+    LOCK_TABLES("lock tables"),
     REFERENCES("references"),
     RELOAD("reload"),
     SHUTDOWN("shutdown"),
     PROCESS("process"),
     FILE("file"),
-    SHOW_DB("show_db"),
+    SHOW_DB("show databases"),
     SUPER("super"),
-    REPL_SLAVE("repl_slave"),
-    REPL_CLIENT("repl_client"),
-    CREATE_USER("create_user"),
-    CREATE_TABLESPACE("create_tablespace"),
+    REPL_SLAVE("replication slave"),
+    REPL_CLIENT("replication client"),
+    CREATE_USER("create user"),
+    CREATE_TABLESPACE("create tablespace"),
     EXTEND1("extend1"),
     EXTEND2("extend2"),
     EXTEND3("extend3"),
@@ -62,13 +62,4 @@ public enum DingoSqlAccessEnum {
         return accessType;
     }
 
-    public static DingoSqlAccessEnum findEnumByName(String name) {
-        for (DingoSqlAccessEnum accessEnum : DingoSqlAccessEnum.values()) {
-            if (accessEnum.accessType.equalsIgnoreCase(name)) {
-                return accessEnum;
-            }
-
-        }
-        throw new IllegalArgumentException("name is not support");
-    }
 }

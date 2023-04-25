@@ -32,19 +32,16 @@ public class SchemaPrivDefinition extends PrivilegeDefinition {
 
     private String schemaName;
 
-    private CommonId commonId;
-
     Boolean[] privileges;
+
+    public String getKey() {
+        return user + "#" + host + "#" + schema;
+    }
 
     @Builder(toBuilder = true)
     SchemaPrivDefinition(String user, String host, CommonId schema, String schemaName) {
         super(user, host);
         this.schema = schema;
         this.schemaName = schemaName;
-    }
-
-    public String getKey() {
-        StringBuilder key = new StringBuilder();
-        return key.append(user).append("#").append(host).append("#").append(schema).toString();
     }
 }

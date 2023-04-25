@@ -33,14 +33,13 @@ public class IdentityAuthImpl implements IdentityAuth {
     ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     private UserService userService;
-
     private static final IdentityAuth INSTANCE = new IdentityAuthImpl();
 
     @AutoService(IdentityAuth.Provider.class)
     public static class IdentityAuthImplProvider implements IdentityAuth.Provider {
 
         @Override
-        public <C> IdentityAuth<C> get() {
+        public IdentityAuth get() {
             return INSTANCE;
         }
     }
@@ -57,21 +56,16 @@ public class IdentityAuthImpl implements IdentityAuth {
         }
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        UserDefinition userDef = userService.getUserDefinition(user, host);
-        return userDef;
+        return userService.getUserDefinition(user, host);
     }
 
     @Override
     public void cachePrivileges(Authentication authentication) {
         String user = authentication.getUsername();
         String host = authentication.getHost();
-        if (!env.getPrivilegeGatherMap().containsKey(authentication.getUser())) {
-            if (!env.getPrivilegeGatherMap().containsKey(authentication.getNormalUser())) {
-                PrivilegeGather privilegeGather = userService.getPrivilegeDef(null, user, host);
-                env.getPrivilegeGatherMap().put(privilegeGather.key(),
-                    privilegeGather);
-            }
-        }
+        PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, host);
+        env.getPrivilegeGatherMap().put(privilegeGather.key(),
+            privilegeGather);
         log.info("cache privileges:" + env.getPrivilegeGatherMap());
     }
 }

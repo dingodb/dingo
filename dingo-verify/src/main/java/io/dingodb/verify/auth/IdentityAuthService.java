@@ -24,6 +24,7 @@ import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.service.AuthService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.token.TokenManager;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetAddress;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+@Slf4j
 public class IdentityAuthService implements AuthService<Authentication> {
 
     ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -42,10 +44,8 @@ public class IdentityAuthService implements AuthService<Authentication> {
 
     public IdentityAuthService() {
         for (IdentityAuth.Provider identityAuthProvider : serviceProviders) {
-            IdentityAuth identityAuth = identityAuthProvider.get();
-            if (identityAuth.getRole() == env.getRole()) {
-                this.identityAuth = identityAuth;
-            }
+            this.identityAuth = identityAuthProvider.get();
+            log.info("IdentityAuth: {}", identityAuth);
         }
     }
 

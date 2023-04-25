@@ -56,7 +56,7 @@ public class UserAdaptor extends BaseAdaptor<User> {
         User user = User.builder().user("root")
             .host("%")
             .plugin("mysql_native_password")
-            .password("e56a114692fe0de073f9a1dd68a00eeb9703f3f1")
+            .password("")
             .build();
         user.setId(newId(user));
         userMap.putIfAbsent(user.getKey(), user);
