@@ -30,7 +30,6 @@ import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.converter.JsonConverter;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.MetaService;
-import io.dingodb.server.api.ExecutorApi;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -52,8 +51,6 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
     private final TupleMapping indices;
     @JsonProperty("indexValues")
     private final List<Object[]> indexValues;
-
-    private ExecutorApi executorApi;
 
     public GetByIndexOperator(
         CommonId tableId,
@@ -110,7 +107,6 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
     public void init() {
         super.init();
         MetaService metaService = MetaService.root();
-        executorApi = metaService.getTableProxy(ExecutorApi.class, tableId);
     }
 
     private List<Object[]> retrieveByIndex(Object[] indexValues) {
@@ -126,6 +122,6 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
             log.debug("indices = {}, index values = {}", indices, schema.select(indices).format(indexValues));
             log.debug("data = {}, hasData = {}", schema.format(data), hasData);
         }
-        return executorApi.select(tableId, data, hasData);
+        return null;
     }
 }

@@ -56,9 +56,6 @@ public class Configuration {
     public static String coordinators() {
         return INSTANCE.coordinators;
     }
-    public static int port() {
-        return DingoConfiguration.port();
-    };
 
     public static String user() {
         return INSTANCE.user;

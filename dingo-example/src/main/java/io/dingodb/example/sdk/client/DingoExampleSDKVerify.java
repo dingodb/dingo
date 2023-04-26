@@ -16,13 +16,8 @@
 
 package io.dingodb.example.sdk.client;
 
-import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.sdk.client.DingoClient;
-import io.dingodb.server.client.config.ClientConfiguration;
 
 public class DingoExampleSDKVerify {
-
-    private static DingoClient dingoClient;
 
     private static int  selectTotalCnt = 2;
 
@@ -37,15 +32,15 @@ public class DingoExampleSDKVerify {
         String coordinatorCfg = args[0];
         System.out.println("coordinatorCfg: " + coordinatorCfg);
 
-        DingoConfiguration.parse(coordinatorCfg);
-        String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
-        dingoClient = new DingoClient(coordinatorServerList);
-        dingoClient.setIdentity(args[2], args[3]);
-
-        boolean isOK = dingoClient.open();
-        if (isOK) {
-            scanAllRecords(args[1]);
-        }
+        //DingoConfiguration.parse(coordinatorCfg);
+        //String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
+        //dingoClient = new DingoClient(coordinatorServerList);
+        //dingoClient.setIdentity(args[2], args[3]);
+        //
+        //boolean isOK = dingoClient.open();
+        //if (isOK) {
+        //    scanAllRecords(args[1]);
+        //}
     }
 
     @SuppressWarnings("unchecked")
@@ -59,7 +54,7 @@ public class DingoExampleSDKVerify {
             startTime = System.currentTimeMillis();
             Object[] key = new Object[]{i};
             try {
-                Object[] record = dingoClient.getWithVerify(tableName, key);
+                Object[] record = null;// = dingoClient.getWithVerify(tableName, key);
                 System.out.println(" record size:" + record.length);
                 for (Object r : record) {
                     System.out.println(" record item:" + r);

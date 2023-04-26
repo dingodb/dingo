@@ -54,6 +54,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoJobVisitor {
@@ -112,10 +113,10 @@ public class TestDingoJobVisitor {
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
         assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0)
-            .source(0).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 1))
+            .source(0).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isNull();
         assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-            .source(1).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
+            .source(1).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
             .soleOutput().isNull();
     }
 
@@ -145,9 +146,9 @@ public class TestDingoJobVisitor {
         CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
-        assertTask.source(0).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 1))
+        assertTask.source(0).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isNull();
-        assertTask.source(1).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
+        assertTask.source(1).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
             .soleOutput().isNull();
         //assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
         //    .soleSource().isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
@@ -180,9 +181,9 @@ public class TestDingoJobVisitor {
         CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
-        assertTask.source(0).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 1))
+        assertTask.source(0).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isA(CoalesceOperator.class);
-        assertTask.source(1).isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
+        assertTask.source(1).isPartScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
             .soleOutput().isA(CoalesceOperator.class);
         //assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
         //    .soleSource().isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))

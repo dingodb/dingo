@@ -1,42 +1,10 @@
 cluster:
     name: dingo
 exchange:
-    host: node1
-    port: 19191
+    host: localhost
+    port: 8765
 server:
-    coordinatorExchangeSvrList: node1:19181,node2:19181,node3:19181
-    dataPath: /opt/dingo/data/executor
-    monitorPort: 9099
-store:
-    dbPath: /opt/dingo/data/executor/db
-    dcfConfiguration:
-      tcBlockSize: 131072
-      tcBlockCacheSize: 67108864
-      cfArenaBlockSize: 67108864
-      cfMinWriteBufferNumberToMerge: 4
-      cfMaxWriteBufferNumber: 2
-      cfMaxCompactionBytes: 134217728
-      cfWriteBufferSize: 67108864
-      cfFixedLengthPrefixExtractor: 8
-      cfMaxBytesForLevelBase: 134217728
-      cfTargetFileSizeBase: 67108864
-    icfConfiguration:
-      tcBlockSize: 131072
-      tcBlockCacheSize: 67108864
-      cfArenaBlockSize: 67108864
-      cfMinWriteBufferNumberToMerge: 4
-      cfMaxWriteBufferNumber: 3
-      cfMaxCompactionBytes: 134217728
-      cfWriteBufferSize: 67108864
-      cfFixedLengthPrefixExtractor: 8
-      cfMaxBytesForLevelBase: 134217728
-      cfTargetFileSizeBase: 67108864
-    collectStatsInterval: 5
-security:
-    cipher:
-        keyPath: /opt/dingo/conf/dingodb.jks
-        keyPass: dingodb
-        storePass: dingodb
-        alias: dingodb
-        issuer: dingo
-    verify: true
+    coordinators: coordinator:12321
+    user: user
+    keyring: keyring
+    resourceTag: 1

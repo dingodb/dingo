@@ -27,117 +27,9 @@ import java.util.List;
 
 public interface StoreInstance {
 
-    // todo A temporary solution need refactor report stats
-    @Deprecated
-    default void openReportStats(CommonId part) {
-        throw new UnsupportedOperationException();
-    }
-
-    // todo A temporary solution need refactor report stats
-    @Deprecated
-    default void closeReportStats(CommonId part) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void assignPart(Part part) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void reassignPart(Part part) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void unassignPart(Part part) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void deletePart(Part part) {
-        throw new UnsupportedOperationException();
-    }
-
-    default long countOrDeletePart(byte[] startKey, boolean doDeleting) {
-        throw new UnsupportedOperationException();
-    }
-
-    default long countDeleteByRange(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd) {
-        throw new UnsupportedOperationException();
-    }
-
     default long countDeleteByRange(
         Object[] startPrimaryKey, Object[] endPrimaryKey, boolean includeStart, boolean includeEnd, boolean doDelete
     ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    default boolean exist(byte[] primaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean existAny(List<byte[]> primaryKeys) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean existAny(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean upsert(Row row) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean upsert(List<Row> rows) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean upsertKeyValue(KeyValue row) {
-        return upsertKeyValue(row.getKey(), row.getValue());
-    }
-
-    default boolean upsertKeyValue(byte[] primaryKey, byte[] row) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean upsertKeyValue(List<KeyValue> rows) {
-        rows.forEach(this::upsertKeyValue);
-        return true;
-    }
-
-    default Object compute(List<byte[]> startPrimaryKey, List<byte[]> endPrimaryKey, byte[] op, boolean readOnly) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean update(Row row) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean delete(byte[] primaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean delete(List<byte[]> primaryKeys) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean delete(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void deleteByPrefixPrimaryKey(byte[] prefix) {
-        byte[] stopInBytes = ByteArrayUtils.increment(prefix);
-        delete(prefix, stopInBytes);
-    }
-
-    default Row getTupleByPrimaryKey(byte[] primaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default List<Row> getByPrimaryKeys(List<byte[]> primaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default byte[] getValueByPrimaryKey(byte[] primaryKey) {
         throw new UnsupportedOperationException();
     }
 
@@ -145,28 +37,7 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default KeyValue getKeyValueByPrimaryKey(byte[] primaryKey) {
-        return new KeyValue(primaryKey, getValueByPrimaryKey(primaryKey));
-    }
-
-    default List<KeyValue> getKeyValueByPrimaryKeys(List<byte[]> primaryKeys) {
-        throw new UnsupportedOperationException();
-    }
-
     default List<Object[]> getTuplesByPrimaryKeys(List<Object[]> primaryKeys) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<Row> scan() {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<Row> scan(byte[] key) {
-        byte[] stopInBytes = ByteArrayUtils.increment(key);
-        return scan(key, stopInBytes);
-    }
-
-    default Iterator<Row> scan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
         throw new UnsupportedOperationException();
     }
 
@@ -174,59 +45,11 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> keyValueScan() {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<KeyValue> keyValueScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
-        throw new UnsupportedOperationException();
-    }
-
     default Iterator<Object[]> tupleScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> keyValueScan(byte[] key) {
-        return keyValueScan(key, ByteArrayUtils.increment(key));
-    }
-
-    default Iterator<KeyValue> keyValueScan(byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        return keyValueScan(startPrimaryKey, endPrimaryKey, true, false);
-    }
-
-    default Iterator<KeyValue> keyValueScan(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<KeyValue> keyValuePrefixScan(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<KeyValue> keyValuePrefixScan(byte[] prefix) {
-        throw new UnsupportedOperationException();
-    }
-
     default Iterator<Object[]> keyValuePrefixScan(Object[] prefix) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<byte[]> columnScan(int columnIndex) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Iterator<byte[]> columnScan(int columnIndex, byte[] startPrimaryKey, byte[] endPrimaryKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    default KeyValue udfGet(byte[] primaryKey, String udfName, String functionName, int version) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean udfUpdate(byte[] primaryKey, String udfName, String functionName, int version) {
         throw new UnsupportedOperationException();
     }
 
@@ -242,7 +65,4 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default List<Object[]> select(Object[] row, boolean[] hasData) {
-        throw new UnsupportedOperationException();
-    }
 }

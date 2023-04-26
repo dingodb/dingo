@@ -96,10 +96,9 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public Iterator<KeyValue> keyValuePrefixScan(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
-        return StoreInstance.super.keyValuePrefixScan(startPrimaryKey, endPrimaryKey, includeStart, includeEnd);
+    public Iterator<Object[]> keyValuePrefixScan(Object[] prefix) {
+        // todo
+        return StoreInstance.super.keyValuePrefixScan(prefix);
     }
 
     private TreeMap<byte[], Object[]> getTreeMapByRange(Iterator<Map.Entry<byte[], Object[]>> iterator,

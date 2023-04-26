@@ -16,18 +16,14 @@
 
 package io.dingodb.calcite.mock;
 
-import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.Part;
 import io.dingodb.meta.local.LocalMetaService;
 
 import java.io.IOException;
-import java.util.TreeMap;
 
 public class MockMetaServiceProvider {
 
@@ -71,14 +67,6 @@ public class MockMetaServiceProvider {
             CommonId test1TableId = metaService.getTableId(test1);
             CommonId testDateTableId = metaService.getTableId(tableDate);
             CommonId testArrayTableId = metaService.getTableId(tableArray);
-
-            TreeMap<ComparableByteArray, Part> rangeSegments = new TreeMap<>();
-            rangeSegments.put(new ComparableByteArray(key0), new Part(null, LOC_0, ImmutableSet.of(LOC_0)));
-            rangeSegments.put(new ComparableByteArray(keyA), new Part(null, LOC_1, ImmutableSet.of(LOC_1)));
-            ((LocalMetaService) metaService).setParts(testTableId, rangeSegments);
-            ((LocalMetaService) metaService).setParts(test1TableId, rangeSegments);
-            ((LocalMetaService) metaService).setParts(testDateTableId, rangeSegments);
-            ((LocalMetaService) metaService).setParts(testArrayTableId, rangeSegments);
 
             ((LocalMetaService) metaService).addRangeDistributions(testTableId, key0, keyA);
             ((LocalMetaService) metaService).addRangeDistributions(testTableId, keyA, null);

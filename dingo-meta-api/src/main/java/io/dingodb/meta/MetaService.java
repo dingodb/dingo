@@ -18,6 +18,7 @@ package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -140,23 +141,6 @@ public interface MetaService {
     TableDefinition getTableDefinition(@NonNull CommonId id);
 
     /**
-     * Get table parts meta by table name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param tableName table name
-     * @return table parts meta
-     */
-    NavigableMap<ComparableByteArray, Part> getParts(String tableName);
-
-    /**
-     * Get table parts meta by table id.
-     *
-     * @param id table id
-     * @return table parts meta
-     */
-    NavigableMap<ComparableByteArray, Part> getParts(CommonId id);
-
-    /**
      * Get range distributions by table id.
      *
      * @param id table id
@@ -177,8 +161,6 @@ public interface MetaService {
     void createIndex(String tableName, List<Index> indexList);
 
     void dropIndex(String tableName, String indexName);
-
-    <T> T getTableProxy(Class<T> clazz, CommonId tableId);
 
     TableStatistic getTableStatistic(@NonNull String tableName);
 }

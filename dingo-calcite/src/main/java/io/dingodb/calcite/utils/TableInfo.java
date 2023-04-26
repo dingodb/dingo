@@ -18,7 +18,7 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Distribution;
+import io.dingodb.common.partition.Distribution;
 import lombok.RequiredArgsConstructor;
 
 import java.util.NavigableMap;

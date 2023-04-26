@@ -47,6 +47,7 @@ import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.Distribution;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.partition.RangeStrategy;
 import io.dingodb.common.table.Index;
@@ -97,8 +98,6 @@ import io.dingodb.exec.operator.data.SortDirection;
 import io.dingodb.exec.operator.data.SortNullDirection;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
-import io.dingodb.meta.Distribution;
-import io.dingodb.meta.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -112,7 +111,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -127,7 +125,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.common.util.Utils.sole;
 
 @Slf4j
@@ -203,38 +200,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 schema
             ))
             .collect(Collectors.toList());
-    }
-
-    private static @NonNull Map<Location, List<String>> groupAllPartKeysByAddress(
-        final @NonNull NavigableMap<ComparableByteArray, Part> parts
-    ) {
-        Map<Location, List<String>> groupStartKeysByAddress = new HashMap<>();
-        for (Map.Entry<ComparableByteArray, Part> entry : parts.entrySet()) {
-            Part part = entry.getValue();
-            List<String> startKeys = groupStartKeysByAddress.computeIfAbsent(part.getLeader(), k -> new ArrayList<>());
-            byte[] keyBytes = entry.getKey().getBytes();
-            String startKeyBase64 = ByteArrayUtils.enCodeBytes2Base64(keyBytes);
-            startKeys.add(startKeyBase64);
-            groupStartKeysByAddress.put(part.getLeader(), startKeys);
-            debug(log,
-                "group start keys in partion by host:{}, keyBytes:{}, startKeyBase64:{}",
-                part.getLeader(),
-                Arrays.toString(keyBytes),
-                startKeyBase64
-            );
-        }
-
-        groupStartKeysByAddress.forEach((k, v) -> {
-            StringBuilder builder = new StringBuilder();
-            v.forEach(s -> {
-                byte[] bytes = ByteArrayUtils.deCodeBase64String2Bytes(s);
-                String result = Arrays.toString(bytes);
-                builder.append(result).append(",");
-            });
-
-            debug(log, "group all part start keys by address:{} startKeys:{}", k, builder);
-        });
-        return groupStartKeysByAddress;
     }
 
     private @NonNull List<Output> coalesce(@NonNull Collection<Output> inputs) {
@@ -333,7 +298,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
         NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
+        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(
@@ -456,7 +421,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
+        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
         final List<Output> outputs = new LinkedList<>();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
         if (keyTuples.isEmpty()) {
@@ -467,11 +432,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             outputs.addAll(operator.getOutputs());
             return outputs;
         }
-        Map<ComparableByteArray, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
-        for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
+        Map<CommonId, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
+        for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysOperator operator = new GetByKeysOperator(
                 tableInfo.getId(),
-                distributions.floorEntry(entry.getKey()).getValue().id(),
+                entry.getKey(),
                 td.getDingoType(),
                 td.getKeyMapping(),
                 entry.getValue(),
@@ -700,19 +665,19 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
                 ((DingoRelPartitionByTable) distribution).getTable()
             );
             final NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-            final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
-            Map<ComparableByteArray, List<Object[]>> partMap = ps.partTuples(
+            final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
+            Map<CommonId, List<Object[]>> partMap = ps.partTuples(
                 rel.getTuples(),
                 td.getKeyMapping()
             );
-            for (Map.Entry<ComparableByteArray, List<Object[]>> entry : partMap.entrySet()) {
+            for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 ValuesOperator operator = new ValuesOperator(
                     entry.getValue(),
                     Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
                 );
                 operator.setId(idGenerator.get());
                 OutputHint hint = new OutputHint();
-                hint.setPartId(distributions.floorEntry(entry.getKey()).getValue().id());
+                hint.setPartId(entry.getKey());
                 Location location = currentLocation;
                 hint.setLocation(location);
                 operator.getSoleOutput().setHint(hint);
@@ -793,7 +758,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             endKey = entry.getValue();
 
             // Get all partitions based on startKey and endKey
-            final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
+            final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
             Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, rel.isIncludeEnd());
 
             Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
@@ -834,7 +799,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
 
         NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
         // Get all partitions based on startKey and endKey
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
+        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
         Map<byte[], byte[]> partMap = ps.calcPartitionRange(rel.getStartKey(), rel.getEndKey(), false);
         for (Map.Entry<byte[], byte[]> next : partMap.entrySet()) {
             PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
@@ -864,7 +829,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         }
         NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<ComparableByteArray> ps = new RangeStrategy(td, distributions.navigableKeySet());
+        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
         Map<byte[], byte[]> prefixRange = ps.calcPartitionByPrefix(rel.getPrefix());
         List<Output> outputs = new ArrayList<>();
 

@@ -44,7 +44,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
-    implementation project(":dingo-sdk")
+    implementation project(":dingo-client")
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")
@@ -65,7 +65,6 @@ task fatJar(type: Jar) {
 
 fatJar.dependsOn([
     ':dingo-driver:dingo-driver-client:fatJar',
-    ':dingo-server:dingo-server-driver-proxy:jar'
 ])
 
 tasks.named("build") { x ->

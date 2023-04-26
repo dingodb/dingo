@@ -23,7 +23,6 @@ import com.google.common.base.Strings;
 import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -46,7 +45,6 @@ public class CsvFetch extends AbstractParser implements Fetch {
         String localFile,
         String separator,
         boolean state,
-        DingoClient dingoClient,
         TableDefinition tableDefinition) {
         try {
             List<Object[]> records = new ArrayList<>();
@@ -74,12 +72,12 @@ public class CsvFetch extends AbstractParser implements Fetch {
                 records.add(arr);
                 totalReadCnt++;
                 if (records.size() >= 1000) {
-                    totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                    totalWriteCnt += this.parse(tableDefinition, records);
                     records.clear();
                 }
             }
             if (records.size() != 0) {
-                totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                totalWriteCnt += this.parse(tableDefinition, records);
             }
             System.out.println("The total read count from File is:" + totalReadCnt
                 + ", real write count:" + totalWriteCnt);
@@ -89,11 +87,11 @@ public class CsvFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(Properties props, String topic, TableDefinition tableDefinition) {
     }
 
     @Override
-    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        return super.parse(tableDefinition, records, dingoClient);
+    public long parse(TableDefinition tableDefinition, List<Object[]> records) {
+        return super.parse(tableDefinition, records);
     }
 }

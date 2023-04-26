@@ -41,7 +41,7 @@ jobs:
       run: |
         mkdir dingo
         unzip ./dingo-dist/build/distributions/dingo.zip -d dingo
-        cp -r ./dingo-sdk/build/docs/javadoc ./dingo/javadoc
+        cp -r ./dingo-client/build/docs/javadoc ./dingo/javadoc
         cp -r ./docker/templates/bin/* ./dingo/bin/
         cp -r ./docker/templates/conf/* ./dingo/conf/
         rm -rf ./dingo/conf/logback.xml

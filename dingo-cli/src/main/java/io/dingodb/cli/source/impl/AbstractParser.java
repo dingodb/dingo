@@ -20,7 +20,6 @@ import io.dingodb.cli.source.Parser;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ import java.util.List;
 public abstract class AbstractParser implements Parser {
 
     @Override
-    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+    public long parse(TableDefinition tableDefinition, List<Object[]> records) {
         long totalInsertCnt = 0L;
         List<Object[]> result = new ArrayList<>();
         for (Object[] arr : records) {
@@ -48,7 +47,7 @@ public abstract class AbstractParser implements Parser {
             }
         }
         try {
-            dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
+            //dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
         } catch (Exception e) {
             log.error("Error encoding record", e);
             totalInsertCnt = 0;

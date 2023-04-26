@@ -27,11 +27,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
-import io.dingodb.net.NetServiceProvider;
-import lombok.extern.slf4j.Slf4j;
 import io.dingodb.server.executor.service.ClusterService;
+import lombok.extern.slf4j.Slf4j;
 
-import java.net.DatagramSocket;
 import java.util.ServiceLoader;
 
 @Slf4j
@@ -66,8 +64,6 @@ public class Starter {
         // Register cluster heartbeat.
         ClusterService.register();
 
-        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        log.info("Listen exchange port {}.", listenRandomPort(netService));
         Services.initControlMsgService();
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
             .iterator().next().get();
@@ -77,19 +73,4 @@ public class Starter {
 
     }
 
-    private int listenRandomPort(NetService netService)  {
-        int times = 3;
-        while (times-- > 0) {
-            try {
-                DatagramSocket datagramSocket = new DatagramSocket();
-                netService.listenPort(datagramSocket.getLocalPort());
-                DingoConfiguration.instance().getExchange().setPort(datagramSocket.getLocalPort());
-                datagramSocket.close();
-                return datagramSocket.getLocalPort();
-            } catch (Exception e) {
-                log.error("Listen port error.", e);
-            }
-        }
-        throw new RuntimeException("Listen port failed.");
-    }
 }

@@ -43,7 +43,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -65,7 +64,6 @@ public class TestUpdate {
         parser = new DingoParser(context);
     }
 
-    @Disabled
     @Test
     public void testUpdate() throws SqlParseException {
         String sql = "update test set amount = 2.0 where id = 1";
@@ -86,7 +84,6 @@ public class TestUpdate {
             .soleInput().isA(DingoGetByKeys.class);
     }
 
-    @Disabled
     @Test
     public void testUpdate1() throws SqlParseException {
         String sql = "update test set amount = amount + 2.0 where id = 1";
@@ -107,7 +104,6 @@ public class TestUpdate {
             .soleInput().isA(DingoGetByKeys.class);
     }
 
-    @Disabled
     @Test
     public void testUpdateWithMultiset() throws SqlParseException {
         String sql = "update `table-with-array` set `set` = multiset[1, 2, 3] where id = 1";

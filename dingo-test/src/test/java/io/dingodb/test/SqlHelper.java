@@ -22,12 +22,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
-import io.dingodb.meta.Part;
-import io.dingodb.meta.RangeDistribution;
 import io.dingodb.meta.local.LocalMetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.utils.CsvUtils;
@@ -46,7 +45,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -54,6 +52,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -77,26 +76,16 @@ public class SqlHelper {
         Services.initNetService();
         Services.NET.listenPort(FakeLocation.PORT);
 
-        // todo clean code
-        TreeMap<ByteArrayUtils.ComparableByteArray, Part> defaultPart = new TreeMap<>();
         TreeMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> defaultDistribution = new TreeMap<>();
         byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
         byte[] endKey = ByteArrayUtils.MAX_BYTES;
-        defaultPart.put(new ByteArrayUtils.ComparableByteArray(startKey), new Part(
-            null,
-            new FakeLocation(1),
-            Collections.singleton(new FakeLocation(1)),
-            startKey,
-            endKey
-        ));
-        defaultDistribution.put(new ByteArrayUtils.ComparableByteArray(startKey), new RangeDistribution(
-            new CommonId((byte) 0, 1, 1),
-            startKey,
-            endKey
+
+        defaultDistribution.put(
+            new ByteArrayUtils.ComparableByteArray(startKey),
+            new RangeDistribution(new CommonId(DISTRIBUTION, 1, 1), startKey, endKey
         ));
         LocalMetaService metaService = LocalMetaService.ROOT;
         metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        metaService.setParts(defaultPart);
         metaService.setRangeDistributions(defaultDistribution);
         LocalMetaService.setLocation(new FakeLocation(0));
 

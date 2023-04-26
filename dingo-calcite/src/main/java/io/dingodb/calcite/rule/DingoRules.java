@@ -87,6 +87,7 @@ public final class DingoRules {
         DINGO_AGGREGATE_RULE,
         DINGO_FILTER_RULE,
         DINGO_HASH_JOIN_DISTRIBUTE_RULE,
+        DINGO_GET_BY_INDEX_RULE,
         DINGO_HASH_JOIN_RULE,
         DINGO_LIKE_RULE,
         DINGO_PART_COUNT_RULE,

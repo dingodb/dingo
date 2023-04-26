@@ -20,12 +20,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.codec.Codec;
-import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -34,19 +32,20 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
 @JsonPropertyOrder({"definition", "ranges"})
 @JsonTypeName("RangeHash")
-public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
+public class RangeStrategy extends PartitionStrategy<CommonId> {
 
     @JsonProperty("definition")
     private final TableDefinition definition;
 
     @JsonProperty("ranges")
-    private final NavigableSet<ComparableByteArray> ranges;
+    private final NavigableMap<ComparableByteArray, Distribution> ranges;
 
     private final transient DingoKeyValueCodec codec;
     private final transient DingoType keySchema;
@@ -54,7 +53,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     @JsonCreator
     public RangeStrategy(
         @JsonProperty("definition") @NonNull TableDefinition definition,
-        @JsonProperty("ranges") NavigableSet<ComparableByteArray> ranges
+        @JsonProperty("ranges") NavigableMap<ComparableByteArray, Distribution> ranges
     ) {
         this.ranges = ranges;
         this.definition = definition;
@@ -68,7 +67,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     }
 
     @Override
-    public ComparableByteArray calcPartId(Object @NonNull [] keyTuple) {
+    public CommonId calcPartId(Object @NonNull [] keyTuple) {
         try {
             return calcPartId(codec.encodeKey(keyTuple));
         } catch (IOException e) {
@@ -77,8 +76,8 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
     }
 
     @Override
-    public ComparableByteArray calcPartId(byte @NonNull [] keyBytes) {
-        return ranges.floor(new ComparableByteArray(keyBytes));
+    public CommonId calcPartId(byte @NonNull [] keyBytes) {
+        return ranges.floorEntry(new ComparableByteArray(keyBytes)).getValue().id();
     }
 
     @Override
@@ -87,6 +86,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         byte @NonNull [] endKey,
         boolean includeEnd
     ) {
+        NavigableSet<ComparableByteArray> ranges = this.ranges.navigableKeySet();
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
         LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
         // Support > < condition when deleting
@@ -141,6 +141,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         boolean includeEnd,
         boolean prefixRange
     ) {
+        NavigableSet<ComparableByteArray> ranges = this.ranges.navigableKeySet();
         Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
 
         SortedSet<ComparableByteArray> subSet = ranges.subSet(
@@ -179,7 +180,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
         boolean isLeft = true;
         ComparableByteArray previousKey = null;
         // Traverse to find partitions
-        for (ComparableByteArray key : ranges) {
+        for (ComparableByteArray key : ranges.navigableKeySet()) {
             if (isLeft) {
                 if (ByteArrayUtils.lessThanOrEqual(prefix, key.getBytes())) {
                     if (previousKey != null) {
@@ -199,7 +200,7 @@ public class RangeStrategy extends PartitionStrategy<ComparableByteArray> {
 
         // If there is no satisfied partition, take the last partition
         if (keySet.size() == 0) {
-            keyMap.put(ranges.last().getBytes(), null);
+            keyMap.put(ranges.lastKey().getBytes(), null);
             return keyMap;
         }
 

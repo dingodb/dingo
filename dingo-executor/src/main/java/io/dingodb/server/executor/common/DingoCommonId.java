@@ -43,11 +43,11 @@ public class DingoCommonId implements io.dingodb.sdk.common.DingoCommonId {
 
     private Type getType() {
         switch (commonId.type) {
-            case 0:
+            case TABLE:
                 return Type.valueOf(EntityType.ENTITY_TYPE_TABLE.name());
-            case 1:
+            case SCHEMA:
                 return Type.valueOf(EntityType.ENTITY_TYPE_SCHEMA.name());
-            case 2:
+            case DISTRIBUTION:
                 return Type.valueOf(EntityType.ENTITY_TYPE_PART.name());
             default:
                 throw new RuntimeException("Unsupported type");

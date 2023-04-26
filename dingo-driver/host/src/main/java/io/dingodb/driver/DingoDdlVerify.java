@@ -43,6 +43,9 @@ public class DingoDdlVerify {
     }
 
     public static void verify(SqlNode sqlNode, DingoConnection connection) {
+        if (!PrivilegeVerify.isVerify) {
+            return;
+        }
         String user = connection.getContext().getOption("user");
         String host = connection.getContext().getOption("host");
         List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();

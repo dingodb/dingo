@@ -60,5 +60,5 @@ public interface Part {
             .collect(Collectors.toList());
     }
 
-    public Iterator<Object[]> keyValuePrefixScan(byte[] prefix);
+    Iterator<Object[]> keyValuePrefixScan(byte[] prefix);
 }
