@@ -31,13 +31,8 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-server:dingo-server-executor').layout.buildDirectory) {
-        include('libs/dingo-server-executor-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
-    from(project(':dingo-server:dingo-server-coordinator').layout.buildDirectory) {
-        include('libs/dingo-server-coordinator-*-all.jar')
+    from(project(':dingo-executor').layout.buildDirectory) {
+        include('libs/dingo-executor-*-all.jar')
     }
     into layout.projectDirectory.dir("dingo")
 
@@ -48,11 +43,6 @@ task copyDepends(type: Copy) {
 
     from(project(':dingo-cli:sqlline').layout.buildDirectory) {
         include('libs/sqlline-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
-    from(project(':dingo-cli:driver-server').layout.buildDirectory) {
-        include('libs/driver-server-*-all.jar')
     }
     into layout.projectDirectory.dir("dingo")
 
@@ -91,16 +81,14 @@ tasks.register('packageDistribution', Zip) {
 }
 
 copyDepends.dependsOn([
-    ':dingo-server:dingo-server-coordinator:fatJar',
-    ':dingo-server:dingo-server-executor:fatJar',
     ':dingo-cli:fatJar',
     ':dingo-driver:dingo-driver-client:fatJar',
     ':dingo-example:fatJar',
     ':dingo-web:build',
     ':dingo-net-netty:fatJar',
-    ':dingo-cli:driver-server:fatJar',
     ':dingo-cli:sqlline:fatJar',
-    ':dingo-cli:driver-mysql:fatJar'
+    ':dingo-cli:driver-mysql:fatJar',
+    ':dingo-executor:fatJar'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

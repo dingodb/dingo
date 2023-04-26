@@ -53,7 +53,6 @@ dependencies {
     implementation project(':dingo-expr:dingo-expr-test')
     implementation project(':dingo-net-netty')
     implementation project(':dingo-verify')
-    implementation project(':dingo-server:dingo-server-driver-proxy')
     implementation project(':dingo-test:dingo-meta-local')
     implementation project(':dingo-test:dingo-store-memory')
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()

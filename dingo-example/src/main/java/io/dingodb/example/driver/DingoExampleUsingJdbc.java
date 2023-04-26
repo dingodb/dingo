@@ -38,17 +38,17 @@ public class DingoExampleUsingJdbc {
     private static Connection connection;
 
     public static void main(String[] args) {
-        //if (args.length < 2) {
-        //    System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
-        //        + "\t\t 172.20.3.14 create exampletest dingo 123123 \r\n"
-        //        + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
-        //        + "\t\t 172.20.3.14 query  exampletest dingo 123123");
-        //    return;
-        //}
+        if (args.length < 2) {
+            System.out.println("Usage: java -jar io.dingodb.example.driver.DingoExampleUsingJdbc \r\n"
+                + "\t\t 172.20.3.14 create exampletest dingo 123123 \r\n"
+                + "\t\t 172.20.3.14 insert exampletest 100000 10 startKey(default 1)\r\n"
+                + "\t\t 172.20.3.14 query  exampletest dingo 123123");
+            return;
+        }
 
-        //String inputConnect = "localhost:8765";
-        String command = "query";
-        String tableName = "example";
+        String inputConnect = args[0];
+        String command = args[1];
+        String tableName = args[2];
         String user = "root";
         String password = "123123";
         if ("create".equalsIgnoreCase(command) || "query".equalsIgnoreCase(command)

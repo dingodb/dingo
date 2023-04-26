@@ -19,8 +19,8 @@ package io.dingodb.server.executor.service;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.Optional;
-import io.dingodb.meta.RangeDistribution;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.Range;
@@ -72,7 +72,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
         private final StoreServiceClient storeService;
         private final DingoKeyValueCodec codec;
         private final RangeDistribution distribution;
-
+        private final Table table;
         private final DingoCommonId tableId;
         private final DingoCommonId regionId;
 
@@ -81,10 +81,10 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             this.tableId = mapping(tableId);
             this.regionId = mapping(regionId);
             MetaService metaService = MetaService.ROOT.getSubMetaService(getParentSchemaId(tableId));
-            distribution = metaService
+            this.distribution = metaService
                 .getRangeDistribution(tableId).values().stream().filter(d -> d.id().equals(regionId)).findAny().get();
-            Table table = metaService.metaServiceClient.getTableDefinition(mapping(tableId));
-            codec = new DingoKeyValueCodec(table.getDingoType(), table.getKeyMapping(), tableId.seq);
+            this.table = metaService.metaServiceClient.getTableDefinition(mapping(tableId));
+            this.codec = new DingoKeyValueCodec(table.getDingoType(), table.getKeyMapping(), tableId.seq);
         }
 
         @Override
@@ -136,8 +136,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
                 return tupleScan();
             }
             withEnd = end != null && withEnd;
-            byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), distribution::getStartKey);
-            byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), distribution::getEndKey);
+            byte[] startKey = Optional.mapOrGet(start, wrap(this::encodeKeyPrefix), distribution::getStartKey);
+            byte[] endKey = Optional.mapOrGet(end, wrap(this::encodeKeyPrefix), distribution::getEndKey);
             Iterator<KeyValue> keyValueIterator = storeService.scan(tableId, regionId,
                 new Range(startKey, endKey), withStart, withEnd);
             if (keyValueIterator == null) {
@@ -164,8 +164,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             Object[] start, Object[] end, boolean withStart, boolean withEnd, boolean doDelete
         ) {
             withEnd = end != null && withEnd;
-            byte[] startKey = Optional.mapOrGet(start, wrap(codec::encodeKey), distribution::getStartKey);
-            byte[] endKey = Optional.mapOrGet(end, wrap(codec::encodeKey), distribution::getEndKey);
+            byte[] startKey = Optional.mapOrGet(start, wrap(this::encodeKeyPrefix), distribution::getStartKey);
+            byte[] endKey = Optional.mapOrGet(end, wrap(this::encodeKeyPrefix), distribution::getEndKey);
             if (doDelete) {
                 return storeService.kvDeleteRange(
                     tableId, regionId, new RangeWithOptions(new Range(startKey, endKey), withStart, withEnd)
@@ -179,6 +179,10 @@ public class StoreService implements io.dingodb.store.api.StoreService {
                 count++;
             }
             return count;
+        }
+
+        private byte[] encodeKeyPrefix(Object[] key) throws IOException {
+            return codec.encodeKeyPrefix(key, key.length);
         }
     }
 

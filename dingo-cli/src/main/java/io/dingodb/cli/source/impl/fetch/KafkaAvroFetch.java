@@ -22,7 +22,6 @@ import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.cli.source.impl.AvroConverter;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericData;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -41,7 +40,7 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
     private KafkaAvroDeserializer deserializer = new KafkaAvroDeserializer();
 
     @Override
-    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(Properties props, String topic, TableDefinition tableDefinition) {
         deserializer.configure(
             Collections.singletonMap("schema.registry.url", props.getProperty("schema.registry.url")), false);
 
@@ -64,12 +63,12 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
                         log.error("Avro deserialization failed ", e);
                     }
                     if (result.size() >= 1000) {
-                        this.parse(tableDefinition, result, dingoClient);
+                        this.parse(tableDefinition, result);
                         result.clear();
                     }
                 }
                 if (result.size() != 0) {
-                    this.parse(tableDefinition, result, dingoClient);
+                    this.parse(tableDefinition, result);
                     result.clear();
                 }
             }
@@ -79,12 +78,11 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void fetch(String localFile, String separatorOrPattern, boolean state,
-                      DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(String localFile, String separatorOrPattern, boolean state, TableDefinition tableDefinition) {
     }
 
     @Override
-    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
+    public long parse(TableDefinition tableDefinition, List<Object[]> records) {
         long totalInsertCnt = 0L;
         List<Object[]> result = new ArrayList<>();
         for (Object[] arr : records) {
@@ -102,7 +100,7 @@ public class KafkaAvroFetch extends AbstractParser implements Fetch {
             }
         }
         try {
-            dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
+            //dingoClient.insert(tableDefinition.getName().toUpperCase(), result);
         } catch (Exception e) {
             log.error("Error encoding record", e);
             totalInsertCnt = 0;

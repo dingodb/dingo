@@ -20,13 +20,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionStrategy;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.meta.Distribution;
+import io.dingodb.common.partition.Distribution;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -39,7 +40,7 @@ import java.util.NavigableMap;
 @JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
 public final class PartitionOperator extends FanOutOperator {
     @JsonProperty("strategy")
-    private final PartitionStrategy<ComparableByteArray> strategy;
+    private final PartitionStrategy<CommonId> strategy;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
     @JsonProperty("partIndices")
@@ -47,7 +48,7 @@ public final class PartitionOperator extends FanOutOperator {
 
     @JsonCreator
     public PartitionOperator(
-        @JsonProperty("strategy") PartitionStrategy<ComparableByteArray> strategy,
+        @JsonProperty("strategy") PartitionStrategy<CommonId> strategy,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         super();
@@ -57,7 +58,7 @@ public final class PartitionOperator extends FanOutOperator {
 
     @Override
     protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
-        Object partId = strategy.calcPartId(tuple, keyMapping);
+        CommonId partId = strategy.calcPartId(tuple, keyMapping);
         return partIndices.get(partId.toString());
     }
 

@@ -17,11 +17,10 @@
 package io.dingodb.cli.source;
 
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
 
 import java.util.List;
 
 public interface Parser {
 
-    long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient);
+    long parse(TableDefinition tableDefinition, List<Object[]> records);
 }

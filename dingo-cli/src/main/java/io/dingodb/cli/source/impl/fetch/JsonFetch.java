@@ -23,7 +23,6 @@ import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -48,7 +47,6 @@ public class JsonFetch extends AbstractParser implements Fetch {
             String localFile,
             String separator,
             boolean state,
-            DingoClient dingoClient,
             TableDefinition tableDefinition) {
         try {
             long totalReadCnt = 0L;
@@ -61,7 +59,7 @@ public class JsonFetch extends AbstractParser implements Fetch {
                 totalReadCnt++;
                 List<Object[]> records = new ArrayList<>();
                 records.add(parseSingleRow(inputStr, tableDefinition));
-                totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                totalWriteCnt += this.parse(tableDefinition, records);
             } else if (parserJsonObj instanceof JSONArray) {
                 JSONArray jsonArray = (JSONArray) (parserJsonObj);
                 for (Object o : jsonArray) {
@@ -69,7 +67,7 @@ public class JsonFetch extends AbstractParser implements Fetch {
                     totalReadCnt++;
                     List<Object[]> records = new ArrayList<>();
                     records.add(parseSingleRow(jsonObject.toString(), tableDefinition));
-                    totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                    totalWriteCnt += this.parse(tableDefinition, records);
                 }
             }
             System.out.println("FileMode=>The total read count from File is:" + totalReadCnt
@@ -84,7 +82,7 @@ public class JsonFetch extends AbstractParser implements Fetch {
         }
 
         try {
-            doParseJsonRecord(localFile, dingoClient, tableDefinition);
+            doParseJsonRecord(localFile, tableDefinition);
         } catch (IOException exception) {
             log.error("IO Exception:{}", exception.toString(), exception);
         }
@@ -93,12 +91,10 @@ public class JsonFetch extends AbstractParser implements Fetch {
     @Override
     public void fetch(Properties props,
         String topic,
-        DingoClient dingoClient,
         TableDefinition tableDefinition) {
     }
 
     private void doParseJsonRecord(final String localFile,
-                                   final DingoClient dingoClient,
                                    final TableDefinition tableDefinition) throws IOException {
         long totalReadCnt = 0L;
         long totalWriteCnt = 0L;
@@ -122,20 +118,20 @@ public class JsonFetch extends AbstractParser implements Fetch {
             records.add(parseSingleRow(line, tableDefinition));
             totalReadCnt++;
             if (records.size() >= 1000) {
-                totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+                totalWriteCnt += this.parse(tableDefinition, records);
                 records.clear();
             }
         }
         if (records.size() != 0) {
-            totalWriteCnt += this.parse(tableDefinition, records, dingoClient);
+            totalWriteCnt += this.parse(tableDefinition, records);
         }
         System.out.println("LineMode=>The total read count from File is:" + totalReadCnt
             + ", real write count:" + totalWriteCnt);
     }
 
     @Override
-    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        return super.parse(tableDefinition, records, dingoClient);
+    public long parse(TableDefinition tableDefinition, List<Object[]> records) {
+        return super.parse(tableDefinition, records);
     }
 
     private Object[] parseSingleRow(String line, TableDefinition definition) throws JsonProcessingException {

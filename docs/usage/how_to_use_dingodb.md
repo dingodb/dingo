@@ -4,10 +4,10 @@ DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. I
 
 ## JDBC Driver
 
-In DingoDB cluster, A JDBC Driver proxy should be start, it will pass the SQL query to `Coordinator`.
+In DingoDB cluster, A JDBC Driver proxy should be start, it will pass the SQL query to `Executor`.
 
 ```shell
-./bin/start-driver.sh
+./bin/start-executor.sh
 ```
 
 The usage about SQL can be reference to [Play with DingoDB using SQL](./play_with_dingo_using_sql.md)

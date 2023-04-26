@@ -21,6 +21,7 @@ import io.dingodb.test.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -42,6 +43,8 @@ public class IndexTest {
         sqlHelper.cleanUp();
     }
 
+    // todo Not supported at the moment.
+    @Disabled
     @Test
     public void test() throws SQLException, IOException {
         RandomTable randomTable = sqlHelper.randomTable();

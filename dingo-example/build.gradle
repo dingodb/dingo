@@ -9,8 +9,7 @@ plugins {
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver:dingo-driver-client')
-    implementation project(':dingo-sdk')
-    implementation project(':dingo-server:dingo-server-executor')
+    implementation project(':dingo-client')
     runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 }
@@ -33,7 +32,7 @@ task fatJar(type: Jar) {
 
 fatJar.dependsOn([
     ':dingo-driver:dingo-driver-client:fatJar',
-    ':dingo-sdk:build',
+    ':dingo-client:build',
 ])
 
 tasks.named("build") { x ->

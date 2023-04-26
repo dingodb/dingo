@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.cli.source.Fetch;
 import io.dingodb.cli.source.impl.AbstractParser;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.client.DingoClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,7 +40,7 @@ public class KafkaJsonFetch extends AbstractParser implements Fetch {
     private ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public void fetch(Properties props, String topic, DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(Properties props, String topic, TableDefinition tableDefinition) {
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
@@ -58,12 +57,12 @@ public class KafkaJsonFetch extends AbstractParser implements Fetch {
                         log.error("The data:{} is not in JSON format, and parsing fails", record.value());
                     }
                     if (result.size() >= 1000) {
-                        this.parse(tableDefinition, result, dingoClient);
+                        this.parse(tableDefinition, result);
                         result.clear();
                     }
                 }
                 if (result.size() != 0) {
-                    this.parse(tableDefinition, result, dingoClient);
+                    this.parse(tableDefinition, result);
                     result.clear();
                 }
             }
@@ -73,12 +72,11 @@ public class KafkaJsonFetch extends AbstractParser implements Fetch {
     }
 
     @Override
-    public void fetch(String localFile, String separatorOrPattern, boolean state,
-                      DingoClient dingoClient, TableDefinition tableDefinition) {
+    public void fetch(String localFile, String separatorOrPattern, boolean state, TableDefinition tableDefinition) {
     }
 
     @Override
-    public long parse(TableDefinition tableDefinition, List<Object[]> records, DingoClient dingoClient) {
-        return super.parse(tableDefinition, records, dingoClient);
+    public long parse(TableDefinition tableDefinition, List<Object[]> records) {
+        return super.parse(tableDefinition, records);
     }
 }

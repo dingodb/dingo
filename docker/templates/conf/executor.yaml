@@ -1,19 +1,10 @@
 cluster:
     name: dingo
 exchange:
-    host: XXXXXX
-    port: 19191
+    host: HOSTNAME
+    port: 8765
 server:
-    coordinatorExchangeSvrList: coordinator3:19181,coordinator2:19181,coordinator1:19181
-    dataPath: /opt/dingo/executor/meta
-store:
-    dbPath: /opt/dingo/executor/raftDb
-    collectStatsInterval: 5
-security:
-    cipher:
-        keyPath: /opt/dingo/conf/dingodb.jks
-        keyPass: dingodb
-        storePass: dingodb
-        alias: dingodb
-        issuer: dingo
-    verify: true
+    coordinators: COORDINATORS
+    user: user
+    keyring: keyring
+    resourceTag: 1

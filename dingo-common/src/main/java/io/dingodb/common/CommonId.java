@@ -22,115 +22,97 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;
 
 import static io.dingodb.common.codec.PrimitiveCodec.decodeInt;
-import static io.dingodb.common.codec.PrimitiveCodec.encodeInt;
 
-@Accessors(fluent = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CommonId implements Comparable<CommonId>, Serializable {
     private static final long serialVersionUID = 3355195360067107406L;
 
     public static final int TYPE_LEN = 1;
-    public static final int IDENTIFIER_LEN = 2;
     public static final int DOMAIN_LEN = 4;
     public static final int SEQ_LEN = 4;
-    public static final int VER_LEN = 4;
-    public static final int LEN = TYPE_LEN + IDENTIFIER_LEN + DOMAIN_LEN + SEQ_LEN + VER_LEN;
+    public static final int LEN = TYPE_LEN + DOMAIN_LEN + SEQ_LEN;
 
     public static final int TYPE_IDX = 0;
-    public static final int IDENTIFIER_IDX = TYPE_IDX + TYPE_LEN;
-    public static final int DOMAIN_IDX = IDENTIFIER_IDX + IDENTIFIER_LEN;
+    public static final int DOMAIN_IDX = TYPE_IDX + TYPE_LEN;
     public static final int SEQ_IDX = DOMAIN_IDX + DOMAIN_LEN;
-    public static final int VER_IDX = SEQ_IDX + SEQ_LEN;
 
+    public enum CommonType {
+        TABLE(0),
+        SCHEMA(1),
+        DISTRIBUTION(2),
+        OP(100);
+
+        public final int code;
+
+        CommonType(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+
+        public static CommonType of(int code) {
+            switch (code) {
+                case 0: return TABLE;
+                case 1: return SCHEMA;
+                case 2: return DISTRIBUTION;
+                case 100: return OP;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + code);
+            }
+        }
+    }
+
+    public final CommonType type;
+    public final int domain;
+    public final int seq;
+
+    private transient volatile byte[] content;
     @EqualsAndHashCode.Include
-    private byte[] content;
+    private final transient String str;
 
-    @Getter public final byte type;
-    @Getter public final int domain;
-    @Getter public final int seq;
-
-    private transient volatile String str;
-
-    public CommonId(byte type, int domain, int seq) {
-        this(type, (byte) 0, (byte) 0, domain, seq, 0);
-    }
-
-    public CommonId(byte type, byte[] identifier, int domain, int seq) {
-        this(type, identifier, domain, seq, 1);
-    }
-
-    public CommonId(byte type, byte id0, byte id1, int domain, int seq) {
-        this(type, id0, id1, domain, seq, 1);
-    }
-
-    public CommonId(byte type, byte[] identifier, int domain, int seq, int ver) {
-        this(type, identifier[0], identifier[1], domain, seq, ver);
-    }
-
-    public CommonId(byte type, byte id0, byte id1, int domain, int seq, int ver) {
+    public CommonId(CommonType type, int domain, int seq) {
         this.type = type;
         this.domain = domain;
         this.seq = seq;
-        initContent(type, id0, id1, domain, seq, ver);
-    }
-
-    private void initContent(byte type, byte id0, byte id1, int domain, int seq, int ver) {
-        this.content = new byte[domain == 0 ? DOMAIN_IDX : seq == 0 ? SEQ_IDX : ver == 0 ? VER_IDX : LEN];
-        content[0] = type;
-        content[1] = id0;
-        content[2] = id1;
-        if (domain == 0) {
-            return;
-        }
-        encodeInt(domain, content, DOMAIN_IDX);
-        if (seq == 0) {
-            return;
-        }
-        encodeInt(seq, content, SEQ_IDX);
-        if (ver == 0) {
-            return;
-        }
-        encodeInt(ver, content, VER_IDX);
+        this.str = type.name() + '_' + domain + '_' + seq;
     }
 
     @Override
-    public int compareTo(CommonId other) {
-        return ByteArrayUtils.compare(content, other.content);
-    }
-
-    public byte[] identifier() {
-        return new byte[] {0, 0};
-    }
-
-    public byte[] content() {
-        byte[] content = new byte[this.content.length];
-        System.arraycopy(this.content, 0, content, 0, content.length);
-        return content;
+    public int compareTo(@NonNull CommonId other) {
+        return ByteArrayUtils.compare(encode(), other.encode());
     }
 
     @Override
     public String toString() {
-        if (str == null) {
-            this.str = new String(new byte[] {type, '_', 0, 0}) + '_' + domain + '_' + seq + '_' + 0;
-        }
         return str;
     }
 
     public byte[] encode() {
-        return encode(new byte[content.length], 0);
+        if (content == null) {
+            content = new byte[LEN];
+            content[0] = (byte) type.code;
+            PrimitiveCodec.encodeInt(domain, content, DOMAIN_IDX);
+            PrimitiveCodec.encodeInt(seq, content, SEQ_IDX);
+        }
+        return content;
     }
 
     public byte[] encode(byte[] target, int index) {
-        System.arraycopy(content, 0, target, index, target.length);
+        if (content == null) {
+            encode();
+        }
+        System.arraycopy(content, 0, target, index, LEN);
         return target;
     }
 
@@ -140,29 +122,20 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     public static CommonId decode(byte[] content, int index) {
         return new CommonId(
-            content[index],
-            content[index + 1], content[index + 2],
+            CommonType.of(content[index]),
             content.length >= SEQ_IDX ? decodeInt(content, index + DOMAIN_IDX) : 0,
-            content.length >= VER_IDX ? decodeInt(content, index + SEQ_IDX) : 0,
-            content.length == LEN ? decodeInt(content, index + VER_IDX) : 0
+            content.length >= LEN ? decodeInt(content, index + SEQ_IDX) : 0
         );
     }
 
-    public static CommonId prefix(byte type, byte[] identifier) {
-        return prefix(type, identifier, 0);
+    public static CommonId prefix(byte type, int domain) {
+        return new CommonId(CommonType.of(type), domain, 0);
     }
 
-    public static CommonId prefix(byte type, int domain) {
+    public static CommonId prefix(CommonType type, int domain) {
         return new CommonId(type, domain, 0);
     }
 
-    public static CommonId prefix(byte type, byte[] identifier, int domain) {
-        return prefix(type, identifier, domain, 0);
-    }
-
-    public static CommonId prefix(byte type, byte[] identifier, int domain, int seq) {
-        return new CommonId(type, identifier, domain, seq, 0);
-    }
 
     public static class JacksonSerializer extends StdSerializer<CommonId> {
         protected JacksonSerializer() {
@@ -171,7 +144,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeBinary(value.content);
+            gen.writeBinary(value.encode());
         }
     }
 

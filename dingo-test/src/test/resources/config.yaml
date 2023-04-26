@@ -5,3 +5,5 @@ exchange:
   port: 0
 client:
   coordinatorExchangeSvrList: localhost:19181
+security:
+  verify: false

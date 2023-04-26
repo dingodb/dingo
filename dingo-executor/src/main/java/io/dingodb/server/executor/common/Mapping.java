@@ -23,7 +23,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.json.runtime.Parser;
-import io.dingodb.meta.RangeDistribution;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.partition.Partition;
@@ -93,14 +93,14 @@ public final class Mapping {
 
     public static CommonId mapping(DingoCommonId commonId) {
         return new CommonId(
-            (byte) commonId.type().ordinal(),
+            CommonId.CommonType.of(commonId.type().ordinal()),
             (int) commonId.parentId(),
             (int) commonId.entityId());
     }
 
     public static DingoCommonId mapping(CommonId commonId) {
         //return new io.dingodb.server.executor.common.DingoCommonId(commonId);
-        return new SDKCommonId(DingoCommonId.Type.values()[commonId.type], commonId.domain, commonId.seq);
+        return new SDKCommonId(DingoCommonId.Type.values()[commonId.type.code], commonId.domain, commonId.seq);
     }
 
     public static io.dingodb.sdk.common.KeyValue mapping(KeyValue keyValue) {

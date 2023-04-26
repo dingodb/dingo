@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.table;
 
-import com.google.common.collect.Iterators;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.type.DingoType;
@@ -192,9 +191,11 @@ public final class PartInKvStore implements Part {
     }
 
     public Iterator<Object[]> keyValuePrefixScan(byte[] prefix) {
-        return Iterators.transform(
-            store.keyValuePrefixScan(prefix),
-            wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-        );
+        // todo
+        //return Iterators.transform(
+        //    store.keyValuePrefixScan(prefix),
+        //    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
+        //);
+        return null;
     }
 }

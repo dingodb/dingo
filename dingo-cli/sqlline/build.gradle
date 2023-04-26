@@ -52,8 +52,6 @@ dependencies {
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-driver:dingo-driver-host")
-    implementation project(":dingo-server:dingo-server-client")
-    implementation project(":dingo-server:dingo-server-protocol")
     implementation project(':dingo-verify')
 }
 
@@ -71,8 +69,7 @@ task fatJar(type: Jar) {
 }
 
 fatJar.dependsOn([
-    ':dingo-driver:dingo-driver-client:fatJar',
-    ':dingo-server:dingo-server-driver-proxy:jar'
+    ':dingo-driver:dingo-driver-client:fatJar'
 ])
 
 tasks.named("build") { x ->

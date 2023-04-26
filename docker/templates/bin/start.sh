@@ -16,51 +16,30 @@
 #
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-COORDINATOR_JAR_PATH=$(find $ROOT -name dingo-*-coordinator-*.jar)
-EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
-DRIVER_JAR_PATH=$(find $ROOT -name dingo-cli-*.jar)
+#EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
 WEB_JAR_PATH=$(find $ROOT -name dingo-web*.jar)
-NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
+#NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 ROLE=$DINGO_ROLE
 HOSTNAME=$DINGO_HOSTNAME
+COORDINATORS=$DINGO_COORDINATORS
 
 if [ X"$HOSTNAME" = "X" ]; then
    echo -e "HOSTNAME has not set, will exist" > ${ROOT}/log/$ROLE.out
    exit -1
 fi
 
-sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/coordinator.yaml
-sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/executor.yaml
-sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/client.yaml
-sed -i 's/XXXXXX/'"$HOSTNAME"'/g' ${ROOT}/conf/application-dev.yaml
+sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/executor.yaml
+sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/client.yaml
+sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/application-dev.yaml
 
-if [[ $ROLE == "coordinator" ]]
+sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/executor.yaml
+sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/client.yaml
+sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-dev.yaml
+
+if [[ $ROLE == "executor" ]]
 then
-    java ${JAVA_OPTS} \
-         -Dlogback.configurationFile=file:${ROOT}/conf/logback-coordinator.xml \
-         -classpath ${COORDINATOR_JAR_PATH}:${NET_JAR_PATH} \
-         io.dingodb.server.coordinator.Starter \
-         --config ${ROOT}/conf/coordinator.yaml \
-         > ${ROOT}/log/coordinator.out
-elif [[ $ROLE == "executor" ]]
-then
-    sleep 20
-    /opt/dingo/bin/wait-for-it.sh coordinator1:19181 -t 0 -s -- echo "Wait Coordniator1 Start Successfully!"
-    /opt/dingo/bin/wait-for-it.sh coordinator2:19181 -t 0 -s -- echo "Wait Coordniator2 Start Successfully!"
-    /opt/dingo/bin/wait-for-it.sh coordinator3:19181 -t 0 -s -- echo "Wait Coordniator3 Start Successfully!"
     ./bin/start-executor.sh  &
-    P1=$!
-    sleep 20
-    ./bin/start-driver.sh &
-    P2=$!
-    wait $P1 $P2
-elif [[ $ROLE == "driver" ]]
-then
-    sleep 60
-    ./bin/start-driver.sh &
-    P3=$!
-    wait $P3
 elif [[ $ROLE == "web" ]]
 then
     java ${JAVA_OPTS} \

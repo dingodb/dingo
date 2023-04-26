@@ -20,16 +20,15 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Part;
-import io.dingodb.meta.RangeDistribution;
 import io.dingodb.meta.TableStatistic;
+import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.server.executor.Configuration;
-import io.dingodb.server.executor.common.DingoCommonId;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -40,6 +39,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.CommonId.CommonType.SCHEMA;
 import static io.dingodb.server.executor.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
@@ -56,7 +56,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     public static CommonId getParentSchemaId(CommonId tableId) {
-        return new CommonId((byte) DingoCommonId.EntityType.ENTITY_TYPE_SCHEMA.getCode(), 0, tableId.domain);
+        return new CommonId(SCHEMA, 0, tableId.domain);
     }
 
     protected final MetaServiceClient metaServiceClient;
@@ -136,21 +136,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(String tableName) {
-        return null;
-    }
-
-    @Override
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, Part> getParts(CommonId id) {
-        return null;
-    }
-
-    @Override
     public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        NavigableMap<io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> distribution =
+        NavigableMap<ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> distribution =
             metaServiceClient.getRangeDistribution(mapping(id));
-        for (Map.Entry<io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {
+        for (Map.Entry<ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {
             result.put(new ByteArrayUtils.ComparableByteArray(entry.getKey().getBytes()), mapping(entry.getValue()));
         }
         return result;
@@ -169,11 +159,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public void dropIndex(String tableName, String indexName) {
 
-    }
-
-    @Override
-    public <T> T getTableProxy(Class<T> clazz, CommonId tableId) {
-        return null;
     }
 
     @Override
