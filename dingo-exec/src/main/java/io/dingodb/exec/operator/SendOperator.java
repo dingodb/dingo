@@ -28,9 +28,9 @@ import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.utils.TagUtils;
+import io.dingodb.net.BufferOutputStream;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -105,7 +105,7 @@ public final class SendOperator extends SinkOperator {
     @Override
     public void fin(Fin fin) {
         try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            BufferOutputStream bos = endpoint.getOutputStream(maxBufferSize);
             codec.encodeFin(bos, fin);
             if (!(fin instanceof FinWithException)) {
                 sendTupleList();
@@ -113,7 +113,7 @@ public final class SendOperator extends SinkOperator {
             if (log.isDebugEnabled()) {
                 log.debug("Send FIN with detail:\n{}", fin.detail());
             }
-            endpoint.send(bos.toByteArray(), true);
+            endpoint.send(bos, true);
         } catch (IOException e) {
             log.error("Encode FIN failed. fin = {}", fin, e);
         }
@@ -121,12 +121,12 @@ public final class SendOperator extends SinkOperator {
 
     private boolean sendTupleList() throws IOException {
         if (!tupleList.isEmpty()) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(maxBufferSize);
+            BufferOutputStream bos = endpoint.getOutputStream(maxBufferSize);
             codec.encodeTuples(bos, tupleList);
-            if (bos.size() > maxBufferSize) {
-                maxBufferSize = bos.size();
+            if (bos.bytes() > maxBufferSize) {
+                maxBufferSize = bos.bytes();
             }
-            boolean result = endpoint.send(bos.toByteArray());
+            boolean result = endpoint.send(bos);
             tupleList.clear();
             return result;
         }

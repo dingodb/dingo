@@ -16,13 +16,15 @@
 
 package io.dingodb.exec.channel;
 
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.exec.Services;
+import io.dingodb.net.BufferOutputStream;
 import io.dingodb.net.Channel;
-import io.dingodb.net.Message;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -31,6 +33,7 @@ public class SendEndpoint {
     private final int port;
     @Getter
     private final String tag;
+    private final byte[] binaryTag;
 
     private Channel channel;
 
@@ -38,6 +41,7 @@ public class SendEndpoint {
         this.host = host;
         this.port = port;
         this.tag = tag;
+        this.binaryTag = PrimitiveCodec.encodeString(tag);
     }
 
     public void init() {
@@ -74,15 +78,14 @@ public class SendEndpoint {
         return true;
     }
 
-    public boolean send(byte @NonNull [] content) {
+    public boolean send(BufferOutputStream content) {
         return send(content, false);
     }
 
-    public boolean send(byte @NonNull [] content, boolean needed) {
-        boolean ok = checkAvailableBufferCount(content.length);
+    public boolean send(@NonNull BufferOutputStream content, boolean needed) {
+        boolean ok = checkAvailableBufferCount(content.bytes());
         if (ok || needed) {
-            Message msg = new Message(tag, content);
-            channel.send(msg, needed);
+            channel.send(content, needed);
         }
         return ok;
     }
@@ -93,5 +96,11 @@ public class SendEndpoint {
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
         }
+    }
+
+    public BufferOutputStream getOutputStream(int size) throws IOException {
+        BufferOutputStream bos = channel.getOutputStream(size);
+        bos.write(binaryTag);
+        return bos;
     }
 }

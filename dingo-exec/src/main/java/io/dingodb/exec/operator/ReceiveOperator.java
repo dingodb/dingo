@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.codec.TxRxCodecImpl;
@@ -31,11 +30,7 @@ import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.utils.QueueUtils;
 import io.dingodb.exec.utils.TagUtils;
-import io.dingodb.net.Channel;
-import io.dingodb.net.Message;
-import io.dingodb.net.MessageListener;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.List;
@@ -46,7 +41,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 @JsonPropertyOrder({"host", "port", "schema", "output"})
 @JsonTypeName("receive")
 public final class ReceiveOperator extends SourceOperator {
-    private static final int BUFFER_LENGTH = 65536;
     private static final int QUEUE_CAPACITY = 1024;
 
     @JsonProperty("host")
@@ -59,10 +53,8 @@ public final class ReceiveOperator extends SourceOperator {
     private String tag;
     private TxRxCodec codec;
     private BlockingQueue<Object[]> tupleQueue;
-    private ReceiveMessageListener messageListener;
     private ReceiveEndpoint endpoint;
     private Fin finObj;
-    private boolean stopped;
 
     @JsonCreator
     public ReceiveOperator(
@@ -81,16 +73,23 @@ public final class ReceiveOperator extends SourceOperator {
         super.init();
         codec = new TxRxCodecImpl(schema);
         tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
-        messageListener = new ReceiveMessageListener();
         tag = TagUtils.tag(getTask().getJobId(), getId());
-        Services.NET.registerTagMessageListener(tag, messageListener);
-        endpoint = new ReceiveEndpoint(host, port, tag);
+        endpoint = new ReceiveEndpoint(host, port, tag, (byte[] content) -> {
+            try {
+                List<Object[]> tuples = codec.decode(content);
+                for (Object[] tuple : tuples) {
+                    if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
+                        QueueUtils.forcePut(tupleQueue, tuple);
+                    }
+                }
+            } catch (IOException e) {
+                log.error("Exception in receive handler:", e);
+            }
+        });
         endpoint.init();
         if (log.isDebugEnabled()) {
             log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
         }
-        stopped = false;
-        endpoint.sendIncreaseBuffer(BUFFER_LENGTH);
     }
 
     @Override
@@ -120,8 +119,7 @@ public final class ReceiveOperator extends SourceOperator {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
                 }
                 if (!output.push(tuple)) {
-                    endpoint.sendStopTx();
-                    stopped = true;
+                    endpoint.stop();
                     // Stay in loop to receive FIN.
                 }
             } else {
@@ -144,33 +142,12 @@ public final class ReceiveOperator extends SourceOperator {
 
     @Override
     public void destroy() {
-        Services.NET.unregisterTagMessageListener(tag, messageListener);
         safeCloseEndpoint();
     }
 
     private void safeCloseEndpoint() {
         if (endpoint != null) {
             endpoint.close();
-        }
-    }
-
-    private class ReceiveMessageListener implements MessageListener {
-        @Override
-        public void onMessage(@NonNull Message message, Channel channel) {
-            try {
-                final byte[] content = message.content();
-                endpoint.sendIncreaseBuffer(content.length);
-                List<Object[]> tuples = codec.decode(content);
-                for (Object[] tuple : tuples) {
-                    if (!stopped || tuple[0] instanceof Fin) {
-                        QueueUtils.forcePut(tupleQueue, tuple);
-                    }
-                }
-            } catch (IOException e) {
-                log.error("ReceiveMessageListener ({}:{} tag = {}) catch exception:{}",
-                    host, port, tag, e, e);
-                throw new RuntimeException(e);
-            }
         }
     }
 }
