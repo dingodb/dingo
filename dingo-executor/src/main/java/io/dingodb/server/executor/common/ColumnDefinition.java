@@ -17,9 +17,12 @@
 package io.dingodb.server.executor.common;
 
 import io.dingodb.sdk.common.table.Column;
+import lombok.experimental.Delegate;
+
 
 public class ColumnDefinition implements Column {
 
+    @Delegate
     private final io.dingodb.common.table.ColumnDefinition columnDefinition;
 
     public ColumnDefinition(io.dingodb.common.table.ColumnDefinition columnDefinition) {
@@ -27,42 +30,7 @@ public class ColumnDefinition implements Column {
     }
 
     @Override
-    public String getName() {
-        return columnDefinition.getName();
-    }
-
-    @Override
     public String getType() {
         return columnDefinition.getTypeName();
-    }
-
-    @Override
-    public String getElementType() {
-        return columnDefinition.getElementType();
-    }
-
-    @Override
-    public int getPrecision() {
-        return columnDefinition.getPrecision();
-    }
-
-    @Override
-    public int getScale() {
-        return columnDefinition.getScale();
-    }
-
-    @Override
-    public boolean isNullable() {
-        return columnDefinition.isNullable();
-    }
-
-    @Override
-    public int getPrimary() {
-        return columnDefinition.getPrimary();
-    }
-
-    @Override
-    public String getDefaultValue() {
-        return columnDefinition.getDefaultValue();
     }
 }

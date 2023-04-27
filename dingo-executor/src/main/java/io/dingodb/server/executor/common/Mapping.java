@@ -51,7 +51,8 @@ public final class Mapping {
             table.getTtl(),
             mapping(table.getPartDefinition()),
             table.getEngine(),
-            null);
+            null,
+            1);
     }
 
     public static ColumnDefinition mapping(Column column) {
@@ -63,7 +64,8 @@ public final class Mapping {
             column.getScale(),
             column.isNullable(),
             column.getPrimary(),
-            column.getDefaultValue());
+            column.getDefaultValue(),
+            false);
     }
 
     public static PartitionDefinition mapping(Partition partition) {

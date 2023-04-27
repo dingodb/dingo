@@ -29,11 +29,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default"})
+@JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default", })
 @EqualsAndHashCode
 @Builder
 @Slf4j
-public class ColumnDefinition {
+public class    ColumnDefinition {
     public static final int DEFAULT_PRECISION = -1;
     public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
 
@@ -82,6 +82,11 @@ public class ColumnDefinition {
     @Builder.Default
     private final String defaultValue = null;
 
+    @JsonProperty("autoIncrement")
+    @Getter
+    @Builder.Default
+    private final boolean autoIncrement = false;
+
     @JsonCreator
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
@@ -91,7 +96,8 @@ public class ColumnDefinition {
         @JsonProperty("scale") Integer scale,
         @JsonProperty("nullable") boolean nullable,
         @JsonProperty("primary") int primary,
-        @JsonProperty("default") String defaultValue
+        @JsonProperty("default") String defaultValue,
+        @JsonProperty("autoIncrement") boolean autoIncrement
     ) {
         return builder()
             .name(name)
@@ -102,6 +108,7 @@ public class ColumnDefinition {
             .nullable(nullable)
             .primary(primary)
             .defaultValue(defaultValue)
+            .autoIncrement(autoIncrement)
             .build();
     }
 

@@ -65,6 +65,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -143,7 +144,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
-        @NonNull SqlColumnDeclaration scd,
+        @NonNull DingoSqlColumn scd,
         SqlValidator validator,
         List<String> pkSet
     ) {
@@ -186,6 +187,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .nullable(!(primary >= 0) && dataType.isNullable())
             .primary(primary)
             .defaultValue(defaultValue)
+            .autoIncrement(scd.isAutoIncrement())
             .build();
     }
 
@@ -255,7 +257,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // Mapping, column node -> column definition
         List<ColumnDefinition> columns = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.COLUMN_DECL)
-            .map(col -> fromSqlColumnDeclaration((SqlColumnDeclaration) col, validator, pks))
+            .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, pks))
             .collect(Collectors.toCollection(ArrayList::new));
 
 
@@ -290,7 +292,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getTtl(),
             create.getPartDefinition(),
             create.getEngine(),
-            create.getProperties()
+            create.getProperties(),
+            create.getAutoIncrement()
         );
         List<Index> indexList = getIndex(create);
 

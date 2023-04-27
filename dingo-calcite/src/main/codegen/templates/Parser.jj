@@ -7659,6 +7659,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >
 |   < AUTHORIZATION: "AUTHORIZATION" >
+|   < AUTO_INCREMENT: "AUTO_INCREMENT" >
 |   < AVG: "AVG" >
 |   < BEFORE: "BEFORE" >
 |   < BEGIN: "BEGIN" >

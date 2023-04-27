@@ -127,11 +127,13 @@ void TableElement(List<SqlNode> list) :
     final Span s = Span.of();
     final ColumnStrategy strategy;
     final String index;
+    Boolean autoIncrement = false;
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
     (
         type = DataType()
+        [ <AUTO_INCREMENT> {autoIncrement = true; } ]
         nullable = NullableOptDefaultTrue()
         (
             [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
@@ -156,8 +158,9 @@ void TableElement(List<SqlNode> list) :
         )
         {
             list.add(
-                SqlDdlNodes.column(s.add(id).end(this), id,
-                    type.withNullable(nullable), e, strategy));
+                DingoSqlDdlNodes.createColumn(
+                s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement)
+                );
         }
     |
         { list.add(id); }
@@ -278,6 +281,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     PartitionDefinition partitionDefinition = null;
     String engine = null;
     Properties properties = null;
+    int autoIncrement = 1;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -297,9 +301,11 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     ]
     [ <WITH> properties = readProperties() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }]
     {
         return DingoSqlDdlNodes.createTable(
-            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, engine, properties
+            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition,
+            engine, properties, autoIncrement
         );
     }
 }

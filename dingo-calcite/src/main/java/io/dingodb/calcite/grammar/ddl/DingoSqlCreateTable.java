@@ -37,6 +37,8 @@ public class DingoSqlCreateTable extends SqlCreateTable {
 
     @Getter String engine;
 
+    @Getter int autoIncrement;
+
     /**
      * Creates a SqlCreateTable.
      *
@@ -57,12 +59,14 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         int ttl,
         PartitionDefinition partDefinition,
         String engine,
-        Properties properties
+        Properties properties,
+        int autoIncrement
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.properties = properties;
         this.partDefinition = partDefinition;
         this.ttl = ttl;
         this.engine = engine;
+        this.autoIncrement = autoIncrement;
     }
 }

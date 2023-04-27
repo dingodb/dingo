@@ -93,6 +93,10 @@ public class TableDefinition {
     @Setter
     private Properties properties;
 
+    @JsonProperty("autoIncrement")
+    @Getter
+    private long autoIncrement;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;

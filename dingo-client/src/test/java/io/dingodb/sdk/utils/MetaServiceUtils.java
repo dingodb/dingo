@@ -41,7 +41,8 @@ public class MetaServiceUtils {
             null,
             false,
             0,
-            null)
+            null,
+            false)
         );
         columns.add(ColumnDefinition.getInstance(
             "name",
@@ -51,7 +52,8 @@ public class MetaServiceUtils {
             0,
             false,
             1,
-            null)
+            null,
+            false)
         );
         columns.add(ColumnDefinition.getInstance(
             "salary",
@@ -61,7 +63,8 @@ public class MetaServiceUtils {
             3,
             false,
             2,
-            null)
+            null,
+            false)
         );
         TableDefinition tableDefinition = new TableDefinition(tableName);
         tableDefinition.setColumns(columns);
@@ -78,7 +81,8 @@ public class MetaServiceUtils {
             null,
             false,
             0,
-            null)
+            null,
+            false)
         );
 
         columns.add(ColumnDefinition.getInstance(
@@ -89,7 +93,8 @@ public class MetaServiceUtils {
             null,
             false,
             1,
-            null)
+            null,
+            false)
         );
 
         columns.add(ColumnDefinition.getInstance(
@@ -100,7 +105,8 @@ public class MetaServiceUtils {
             null,
             false,
             2,
-            null)
+            null,
+            false)
         );
 
         columns.add(ColumnDefinition.getInstance(
@@ -111,7 +117,8 @@ public class MetaServiceUtils {
             null,
             false,
             3,
-            null)
+            null,
+            false)
         );
 
         columns.add(ColumnDefinition.getInstance(
@@ -122,7 +129,8 @@ public class MetaServiceUtils {
             null,
             false,
             4,
-            null)
+            null,
+            false)
         );
 
         columns.add(ColumnDefinition.getInstance(
@@ -133,7 +141,8 @@ public class MetaServiceUtils {
             null,
             false,
             5,
-            null)
+            null,
+            false)
         );
 
         TableDefinition tableDefinition = new TableDefinition(tableName);

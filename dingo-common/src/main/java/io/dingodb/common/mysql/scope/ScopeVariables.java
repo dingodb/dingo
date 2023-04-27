@@ -47,7 +47,10 @@ public class ScopeVariables {
         globalVariables.put("character_set_connection", "utf8");
         globalVariables.put("character_set_client", "utf8");
         globalVariables.put("auto_increment_increment", "1");
+        globalVariables.put("auto_increment_offset", "1");
 
         sessionVariables.put("transaction_read_only", "0");
+        sessionVariables.put("auto_increment_increment", "1");
+        sessionVariables.put("auto_increment_offset", "1");
     }
 }
