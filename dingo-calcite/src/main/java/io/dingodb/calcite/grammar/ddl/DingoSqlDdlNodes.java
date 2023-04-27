@@ -17,11 +17,16 @@
 package io.dingodb.calcite.grammar.ddl;
 
 import io.dingodb.common.partition.PartitionDefinition;
+import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.ddl.DingoSqlColumn;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Properties;
 
@@ -39,7 +44,8 @@ public class DingoSqlDdlNodes {
         int ttl,
         PartitionDefinition partitionDefinition,
         String engine,
-        Properties properties
+        Properties properties,
+        int autoIncrement
     ) {
         return new DingoSqlCreateTable(
             pos,
@@ -51,8 +57,20 @@ public class DingoSqlDdlNodes {
             ttl,
             partitionDefinition,
             engine,
-            properties
+            properties,
+            autoIncrement
         );
+    }
+
+    public static SqlColumnDeclaration createColumn(
+        SqlParserPos pos,
+        SqlIdentifier name,
+        SqlDataTypeSpec dataType,
+        @Nullable SqlNode expression,
+        ColumnStrategy strategy,
+        boolean autoIncrement
+    ) {
+        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement);
     }
 
 }

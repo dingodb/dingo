@@ -929,7 +929,8 @@ public class ClassCacheEntry<T> {
                 sqlTypeInfo.getScale(),
                 !isKey,
                 primary,
-                sqlTypeInfo.getDefaultValue()
+                sqlTypeInfo.getDefaultValue(),
+                false
             );
             tableDefinition.addColumn(columnDefinition);
         }

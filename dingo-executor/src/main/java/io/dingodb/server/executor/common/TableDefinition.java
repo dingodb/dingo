@@ -75,6 +75,11 @@ public class TableDefinition implements Table {
     }
 
     @Override
+    public long autoIncrement() {
+        return tableDefinition.getAutoIncrement();
+    }
+
+    @Override
     public int getReplica() {
         return 1;
     }
