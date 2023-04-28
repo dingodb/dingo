@@ -84,6 +84,9 @@ public class DingoGetByIndexRule extends ConverterRule {
             log.debug("Definition of table = {}", td);
         }
         Index selectedIndex = null;
+        if (indexes == null) {
+            return null;
+        }
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
             Index index = entry.getValue();
             List<Integer> indices = td.getColumnIndices(Arrays.asList(index.getColumns()));

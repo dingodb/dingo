@@ -53,6 +53,8 @@ public class Configuration {
     private String keyring;
     private String resourceTag;
 
+    private Integer mysqlPort;
+
     public static String coordinators() {
         return INSTANCE.coordinators;
     }
@@ -67,5 +69,9 @@ public class Configuration {
 
     public static String resourceTag() {
         return INSTANCE.resourceTag;
+    }
+
+    public static Integer mysqlPort() {
+        return INSTANCE.mysqlPort;
     }
 }

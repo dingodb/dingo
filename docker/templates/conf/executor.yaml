@@ -8,3 +8,4 @@ server:
     user: user
     keyring: keyring
     resourceTag: 1
+    mysqlPort: 3307

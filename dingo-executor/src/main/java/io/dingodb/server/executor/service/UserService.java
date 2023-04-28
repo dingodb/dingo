@@ -115,8 +115,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] keys = getUserKeys(userDefinition.getUser(), userDefinition.getHost());
         boolean result = delete(userTable, keys);
         if (result) {
-            deleteRange(dbPrivilegeTable, keys);
-            deleteRange(tablePrivilegeTable, keys);
+            Object[] dbPrivKeys = getDbPrivilegeKeys(userDefinition.getUser(), userDefinition.getHost(), null);
+            deleteRange(dbPrivilegeTable, dbPrivKeys);
+            Object[] tablePrivKeys = getTablePrivilegeKeys(userDefinition.getUser(),
+                userDefinition.getHost(), null, null);
+            deleteRange(tablePrivilegeTable, tablePrivKeys);
         }
     }
 
@@ -196,7 +199,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
         return PrivilegeGather.builder()
             .user(user)
-            .host(host)
+            .host(userDefinition.getHost())
             .userDef(userDefinition)
             .schemaPrivDefMap(schemaPrivDefMap)
             .tablePrivDefMap(tablePrivDefMap)
@@ -295,7 +298,6 @@ public class UserService implements io.dingodb.verify.service.UserService {
         CommonId tableId = metaService.getTableId(tableName);
         CommonId regionId = getRegionId(tableId);
         try {
-            Object[] value = storeService.getInstance(tableId,regionId).getTupleByPrimaryKey(startKey);
             Iterator<Object[]> iterator = storeService.getInstance(tableId, regionId).tupleScan(startKey, endKey, true, true);
             if (iterator == null) {
                return null;
@@ -544,7 +546,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] values = new Object[dbPrivTd.getColumns().size()];
         values[0] = host;
         values[1] = user;
-        values[2] = db;
+        if (StringUtils.isNotBlank(db)) {
+            values[2] = db;
+        }
         return values;
     }
 
@@ -552,8 +556,12 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] values = new Object[tablePrivTd.getColumns().size()];
         values[0] = host;
         values[1] = user;
-        values[2] = db;
-        values[3] = tableName;
+        if (StringUtils.isNotBlank(db)) {
+            values[2] = db;
+        }
+        if (StringUtils.isNotBlank(tableName)) {
+            values[3] = tableName;
+        }
         return values;
     }
 

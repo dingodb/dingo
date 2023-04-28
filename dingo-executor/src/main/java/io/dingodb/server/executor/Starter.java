@@ -67,7 +67,7 @@ public class Starter {
         Services.initControlMsgService();
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
             .iterator().next().get();
-        mysqlNetService.listenPort(3307);
+        mysqlNetService.listenPort(Configuration.mysqlPort());
 
         SessionVariableWatched.getInstance().addObserver(new IdleTimeWatcher());
 

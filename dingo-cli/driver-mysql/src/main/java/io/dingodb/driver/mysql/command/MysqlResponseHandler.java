@@ -42,6 +42,9 @@ public class MysqlResponseHandler {
 
     static MysqlPacketFactory factory = MysqlPacketFactory.getInstance();
 
+    private MysqlResponseHandler() {
+    }
+
     public static void responseShowField(ResultSet resultSet,
                                          AtomicLong packetId,
                                          MysqlConnection mysqlConnection) {
@@ -120,7 +123,7 @@ public class MysqlResponseHandler {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
             for (int i = 1; i <= columnCount; i ++) {
-                resultSetRowPacket.values.add(resultSet.getString(i));
+                resultSetRowPacket.addColumnValue(resultSet.getString(i));
             }
             resultSetRowPacket.write(buffer);
             int writerIndex = buffer.writerIndex();

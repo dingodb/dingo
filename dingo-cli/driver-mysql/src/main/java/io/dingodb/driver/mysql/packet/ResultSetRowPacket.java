@@ -20,13 +20,14 @@ import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResultSetRowPacket extends MysqlPacket {
 
-    public List<String> values = new ArrayList();
+    public List<String> values = new ArrayList<>();
     private static final byte NULL_MARK = (byte) 251;
 
     public long columnCount;
@@ -112,5 +113,12 @@ public class ResultSetRowPacket extends MysqlPacket {
                 + ", packetSequenceId=" + packetId
                 + ", values=" + values
                 + "}\n";
+    }
+
+    public void addColumnValue(String val) {
+        if (StringUtils.isBlank(val)) {
+            val = "";
+        }
+        values.add(val);
     }
 }

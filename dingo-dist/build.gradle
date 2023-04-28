@@ -46,11 +46,6 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-cli:driver-mysql').layout.buildDirectory) {
-        include('libs/driver-mysql-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
     from(project(':dingo-web').layout.buildDirectory) {
         include("libs/dingo-web-*.jar")
         exclude("libs/dingo-web-*-plain.jar")
@@ -87,7 +82,6 @@ copyDepends.dependsOn([
     ':dingo-web:build',
     ':dingo-net-netty:fatJar',
     ':dingo-cli:sqlline:fatJar',
-    ':dingo-cli:driver-mysql:fatJar',
     ':dingo-executor:fatJar'
 ])
 
