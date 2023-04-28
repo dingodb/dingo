@@ -21,6 +21,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.net.BufferOutputStream;
 import io.dingodb.net.Message;
 import io.dingodb.net.MessageListener;
 import io.dingodb.net.netty.api.ApiRegistryImpl;
@@ -57,20 +58,17 @@ public class Channel implements io.dingodb.net.Channel {
     private static final MessageListener EMPTY_MESSAGE_LISTENER = (msg, ch) -> {
         log.warn("Receive message, but listener is empty.");
     };
-    private static final Consumer<io.dingodb.net.Channel> EMPTY_CLOSE_LISTENER = ch -> { };
-
-    private int closeRetry = 300;
+    private static final Consumer<io.dingodb.net.Channel> EMPTY_CLOSE_LISTENER = ch -> {
+    };
     @Getter
     protected final long channelId;
     @Getter
     protected final Connection connection;
     protected final Consumer<Long> onClose;
-
     protected LinkedRunner runner;
-
     @Getter
     protected Status status;
-
+    private final int closeRetry = 300;
     @Setter
     private Consumer<ByteBuffer> directListener = null;
     private MessageListener messageListener = null;
@@ -92,19 +90,6 @@ public class Channel implements io.dingodb.net.Channel {
             .writeByte(type);
     }
 
-    public synchronized void close() {
-        if (this.status == Status.CLOSE) {
-            debug(log, "Channel [{}] already close", channelId);
-            return;
-        }
-        this.shutdown();
-        try {
-            connection.sendAsync(buffer(COMMAND_T, 1).writeByte(CLOSE_C));
-        } catch (Exception e) {
-            log.error("Send close message error.", e);
-        }
-    }
-
     public synchronized void shutdown() {
         if (this.status == Status.CLOSE) {
             return;
@@ -112,30 +97,6 @@ public class Channel implements io.dingodb.net.Channel {
         this.status = Status.CLOSE;
         runner.forceFollow(() -> onClose.accept(channelId));
         runner.forceFollow(() -> closeListener.accept(this));
-    }
-
-    @Override
-    public synchronized void setMessageListener(MessageListener listener) {
-        messageListener = Parameters.cleanNull(listener, EMPTY_MESSAGE_LISTENER);
-    }
-
-    @Override
-    public synchronized void setCloseListener(Consumer<io.dingodb.net.Channel> listener) {
-        if (isClosed()) {
-            runner.forceFollow(() -> closeListener.accept(this));
-        } else {
-            this.closeListener = Parameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
-        }
-    }
-
-    @Override
-    public Map<String, Object[]> auth() {
-        return connection.authContent();
-    }
-
-    @Override
-    public Location remoteLocation() {
-        return connection.remote();
     }
 
     @Override
@@ -169,6 +130,73 @@ public class Channel implements io.dingodb.net.Channel {
         } catch (Exception e) {
             log.error("Send message to {} on {} error.", remoteLocation().url(), channelId, e);
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void send(BufferOutputStream content, boolean sync) {
+        if (isClosed()) {
+            throw new RuntimeException("The channel [" + channelId + "] is closed, current thread " + threadName());
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("Send message to [{}] on [{}].", remoteLocation().url(), channelId);
+        }
+        ByteBuf header = connection.alloc().buffer(Integer.BYTES + Long.BYTES + Byte.BYTES);
+        header.writeInt(content.bytes() + Long.BYTES + Byte.BYTES)
+            .writeLong(channelId)
+            .writeByte(USER_DEFINE_T);
+        ByteBuf bytes = Unpooled.wrappedBuffer(header, (ByteBuf) content.getBuffer());
+        try {
+            if (sync) {
+                connection.send(bytes);
+            } else {
+                connection.sendAsync(bytes);
+            }
+        } catch (Exception e) {
+            log.error("Send message to {} on {} error.", remoteLocation().url(), channelId, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public synchronized void setMessageListener(MessageListener listener) {
+        messageListener = Parameters.cleanNull(listener, EMPTY_MESSAGE_LISTENER);
+    }
+
+    @Override
+    public synchronized void setCloseListener(Consumer<io.dingodb.net.Channel> listener) {
+        if (isClosed()) {
+            runner.forceFollow(() -> closeListener.accept(this));
+        } else {
+            this.closeListener = Parameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
+        }
+    }
+
+    @Override
+    public Map<String, Object[]> auth() {
+        return connection.authContent();
+    }
+
+    @Override
+    public Location remoteLocation() {
+        return connection.remote();
+    }
+
+    @Override
+    public NettyBufferOutputStream getOutputStream(int size) {
+        return new NettyBufferOutputStream(connection, size);
+    }
+
+    public synchronized void close() {
+        if (this.status == Status.CLOSE) {
+            debug(log, "Channel [{}] already close", channelId);
+            return;
+        }
+        this.shutdown();
+        try {
+            connection.sendAsync(buffer(COMMAND_T, 1).writeByte(CLOSE_C));
+        } catch (Exception e) {
+            log.error("Send close message error.", e);
         }
     }
 

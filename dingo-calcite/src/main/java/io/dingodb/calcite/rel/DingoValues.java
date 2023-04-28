@@ -45,11 +45,6 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     }
 
     @Override
-    public @Nullable RelNode passThrough(@NonNull RelTraitSet required) {
-        return copy(required, getInputs());
-    }
-
-    @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoValues(getCluster(), traitSet, getRowType(), getTuples());
     }

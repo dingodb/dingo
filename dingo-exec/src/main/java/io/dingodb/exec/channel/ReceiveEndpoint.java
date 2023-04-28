@@ -23,23 +23,35 @@ import io.dingodb.exec.channel.message.IncreaseBuffer;
 import io.dingodb.exec.channel.message.StopTx;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import io.dingodb.net.MessageListener;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.function.Consumer;
 
 import static io.dingodb.exec.Services.CTRL_TAG;
 
 @Slf4j
 public class ReceiveEndpoint {
+    private static final int BUFFER_LENGTH = 65536;
+
     private final String host;
     private final int port;
     private final String tag;
+    private final Consumer<byte[]> handler;
+
+    @Getter
+    private boolean stopped;
 
     private Channel channel;
+    private ReceiveMessageListener messageListener;
 
-    public ReceiveEndpoint(String host, int port, String tag) {
+    public ReceiveEndpoint(String host, int port, String tag, Consumer<byte[]> handler) {
         this.host = host;
         this.port = port;
         this.tag = tag;
+        this.handler = handler;
     }
 
     public void init() {
@@ -47,21 +59,31 @@ public class ReceiveEndpoint {
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
         }
+        messageListener = new ReceiveMessageListener();
+        Services.NET.registerTagMessageListener(tag, messageListener);
+        stopped = false;
+        sendIncreaseBuffer(BUFFER_LENGTH);
+    }
+
+    public void stop() {
+        sendStopTx();
+        stopped = true;
     }
 
     public void close() {
+        Services.NET.unregisterTagMessageListener(tag, messageListener);
         channel.close();
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
         }
     }
 
-    public void sendStopTx() {
+    private void sendStopTx() {
         StopTx control = new StopTx(tag);
         sendControl(control);
     }
 
-    public void sendIncreaseBuffer(int bytes) {
+    private void sendIncreaseBuffer(int bytes) {
         IncreaseBuffer control = new IncreaseBuffer(tag, bytes);
         sendControl(control);
     }
@@ -77,6 +99,15 @@ public class ReceiveEndpoint {
         channel.send(new Message(CTRL_TAG, content), false);
         if (log.isDebugEnabled()) {
             log.debug("(tag = {}) Sent control message \"{}\".", tag, control);
+        }
+    }
+
+    private class ReceiveMessageListener implements MessageListener {
+        @Override
+        public void onMessage(@NonNull Message message, @NonNull Channel channel) {
+            sendIncreaseBuffer(message.length());
+            final byte[] content = message.content();
+            handler.accept(content);
         }
     }
 }

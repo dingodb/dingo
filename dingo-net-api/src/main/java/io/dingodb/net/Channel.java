@@ -36,6 +36,8 @@ public interface Channel extends AutoCloseable {
 
     void send(Message message, boolean sync);
 
+    void send(BufferOutputStream content, boolean sync);
+
     /**
      * Set message listener on the channel. When the remote-end returns a message, listener will be notified.
      */
@@ -63,6 +65,8 @@ public interface Channel extends AutoCloseable {
      * Returns remote-end location.
      */
     Location remoteLocation();
+
+    BufferOutputStream getOutputStream(int size);
 
     /**
      * Returns true if current channel available.
@@ -103,5 +107,4 @@ public interface Channel extends AutoCloseable {
          */
         CLOSE
     }
-
 }

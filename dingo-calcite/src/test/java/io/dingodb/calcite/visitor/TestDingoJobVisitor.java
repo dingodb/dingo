@@ -34,9 +34,6 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.operator.CoalesceOperator;
-import io.dingodb.exec.operator.PartModifyOperator;
-import io.dingodb.exec.operator.ReceiveOperator;
-import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
@@ -225,16 +222,15 @@ public class TestDingoJobVisitor {
             cluster.traitSetOf(DingoConvention.INSTANCE),
             table,
             context.getCatalogReader(),
-            new DingoValues(
+            new DingoTableScan(
                 parser.getCluster(),
                 parser.getPlanner().emptyTraitSet()
                     .replace(DingoConvention.INSTANCE)
                     .replace(DingoRelStreaming.of(table)),
-                rowType,
-                ImmutableList.of(
-                    new Object[]{1, "Alice", 1.0},
-                    new Object[]{2, "Betty", 2.0}
-                )
+                ImmutableList.of(),
+                table,
+                null,
+                null
             ),
             TableModify.Operation.INSERT,
             null,
@@ -244,8 +240,6 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
-            .task("0001").location(MockMetaServiceProvider.LOC_1).operatorNum(2)
-            .soleSource().isA(ValuesOperator.class)
-            .soleOutput().isA(PartModifyOperator.class);
+            .task("0001").location(MockMetaServiceProvider.LOC_0).operatorNum(4);
     }
 }

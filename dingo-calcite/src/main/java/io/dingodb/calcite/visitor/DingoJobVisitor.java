@@ -655,38 +655,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
             task.putOperator(operator);
             return operator.getOutputs();
         }
-        DingoRelPartition distribution = streaming.getDistribution();
-        if (distribution instanceof DingoRelPartitionByTable) {
-            List<Output> outputs = new LinkedList<>();
-            final TableInfo tableInfo = MetaServiceUtils.getTableInfo(
-                ((DingoRelPartitionByTable) distribution).getTable()
-            );
-            final TableDefinition td = TableUtils.getTableDefinition(
-                ((DingoRelPartitionByTable) distribution).getTable()
-            );
-            final NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-            final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-            Map<CommonId, List<Object[]>> partMap = ps.partTuples(
-                rel.getTuples(),
-                td.getKeyMapping()
-            );
-            for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-                ValuesOperator operator = new ValuesOperator(
-                    entry.getValue(),
-                    Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
-                );
-                operator.setId(idGenerator.get());
-                OutputHint hint = new OutputHint();
-                hint.setPartId(entry.getKey());
-                Location location = currentLocation;
-                hint.setLocation(location);
-                operator.getSoleOutput().setHint(hint);
-                Task task = job.getOrCreate(location, idGenerator);
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
-            }
-            return outputs;
-        }
         throw new IllegalArgumentException("Unsupported streaming \"" + streaming + "\" of values.");
     }
 

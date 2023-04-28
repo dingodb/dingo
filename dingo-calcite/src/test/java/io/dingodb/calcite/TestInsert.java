@@ -105,6 +105,7 @@ public class TestInsert {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(1).containsExactlyInAnyOrder(
@@ -127,6 +128,7 @@ public class TestInsert {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
@@ -150,6 +152,7 @@ public class TestInsert {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
@@ -193,6 +196,7 @@ public class TestInsert {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoValues.class);
     }
 
@@ -212,6 +216,7 @@ public class TestInsert {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoValues.class);
     }
 

@@ -18,8 +18,9 @@ package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.Distribution;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,10 +32,11 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class RangeDistribution implements Distribution {
 
-
     private static final long serialVersionUID = -2767354268752865267L;
 
     @JsonProperty("id")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private CommonId id;
 
     @JsonProperty("startKey")

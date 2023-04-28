@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
@@ -48,7 +50,6 @@ public class RangeStrategy extends PartitionStrategy<CommonId> {
     private final NavigableMap<ComparableByteArray, Distribution> ranges;
 
     private final transient DingoKeyValueCodec codec;
-    private final transient DingoType keySchema;
 
     @JsonCreator
     public RangeStrategy(
@@ -57,7 +58,6 @@ public class RangeStrategy extends PartitionStrategy<CommonId> {
     ) {
         this.ranges = ranges;
         this.definition = definition;
-        this.keySchema = definition.getDingoType(true);
         this.codec = definition.createCodec();
     }
 
