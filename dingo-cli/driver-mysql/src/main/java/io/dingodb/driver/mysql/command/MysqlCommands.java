@@ -42,18 +42,17 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.common.mysql.constant.ErrorCode.ER_NOT_ALLOWED_COMMAND;
 import static io.dingodb.common.mysql.constant.ErrorCode.ER_UNKNOWN_ERROR;
 
 @Slf4j
-public class DingoCommands {
+public class MysqlCommands {
 
     MysqlPacketFactory mysqlPacketFactory = MysqlPacketFactory.getInstance();
 
-    public void executeShowFields(String table, AtomicLong packetId, MysqlConnection mysqlConnection) {
+    public static void executeShowFields(String table, AtomicLong packetId, MysqlConnection mysqlConnection) {
         try {
             ResultSet rs = mysqlConnection.getConnection().getMetaData().getColumns(null, null,
                 table, null);
@@ -219,7 +218,7 @@ public class DingoCommands {
                         case MysqlType.FIELD_TYPE_DATE:
                             long timestamp = MysqlByteUtil.bytesToDateLittleEndian(v.getValue());
                             Date dateVal = new Date(timestamp);
-                            preparedStatement.setDate(k, new Date(timestamp));
+                            preparedStatement.setDate(k, dateVal);
                             break;
                         case MysqlType.FIELD_TYPE_TIME:
                             Time time = MysqlByteUtil.bytesToTimeLittleEndian(v.getValue());

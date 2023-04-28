@@ -23,7 +23,7 @@ import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.NativeConstants;
-import io.dingodb.driver.mysql.command.DingoCommands;
+import io.dingodb.driver.mysql.command.MysqlCommands;
 import io.dingodb.driver.mysql.command.MysqlResponseHandler;
 import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public final class MessageProcess {
 
-    public static final DingoCommands commands = new DingoCommands();
+    public static final MysqlCommands commands = new MysqlCommands();
 
     private MessageProcess() {
     }
@@ -101,7 +101,7 @@ public final class MessageProcess {
                 byte[] tableBytes = new byte[length - 2];
                 System.arraycopy(array, 2, tableBytes, 0, tableBytes.length);
                 String table = new String(tableBytes);
-                commands.executeShowFields(table, packetId, mysqlConnection);
+                MysqlCommands.executeShowFields(table, packetId, mysqlConnection);
                 break;
             case NativeConstants.COM_CREATE_DB:
                 // create database
