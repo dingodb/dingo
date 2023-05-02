@@ -25,14 +25,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 @JsonTypeName("count")
@@ -69,12 +64,7 @@ public final class PartCountOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
-        part = new PartInKvStore(
-            store,
-            schema,
-            keyMapping
-        );
+        part = null;
     }
 
     @Override
@@ -82,7 +72,7 @@ public final class PartCountOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.getEntryCnt();
+        long count = 0; // todo count must have range, delete this class?;
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Count table by partition, get count: {}, cost: {} ms.",

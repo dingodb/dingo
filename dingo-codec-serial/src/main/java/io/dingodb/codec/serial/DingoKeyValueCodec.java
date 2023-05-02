@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+package io.dingodb.codec.serial;
 
+import io.dingodb.codec.Codec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -81,7 +83,7 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     public byte[] encodeKey(Object[] keys) throws IOException {
-        Object[] key = (Object[]) keySchema.convertTo(keys, DingoConverter.INSTANCE);
+        Object[] key = (Object[]) keySchema.convertTo(keyMapping.revMap(keys), DingoConverter.INSTANCE);
         return keyCodec.encodeKey(key);
     }
 
@@ -96,5 +98,10 @@ public class DingoKeyValueCodec implements KeyValueCodec {
             record[valueMapping.get(i)] = value[i];
         }
         return (Object[]) schema.convertFrom(record, DingoConverter.INSTANCE);
+    }
+
+    @Override
+    public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
+        return keyCodec.encodeKeyForRangeScan(keyMapping.revMap(record), columnCount);
     }
 }

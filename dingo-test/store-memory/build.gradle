@@ -20,25 +20,15 @@ plugins {
 }
 
 dependencies {
+    api project(':dingo-store-api')
+    api project(':dingo-codec-api')
+
+    implementation project(':dingo-meta-api')
+
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly project(':dingo-store-api')
-    implementation project(':dingo-common')
-    api project(':dingo-meta-api')
-}
 
-//task fatJar(type: Jar) {
-//    classifier 'all'
-//    from(
-//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-//    )
-//    with jar
-//
-//    exclude "META-INF/*.SF"
-//    exclude "META-INF/*.DSA"
-//    exclude "META-INF/*.RSA"
-//}
-//
-//tasks.named("build") { x ->
-//    x.finalizedBy("fatJar")
-//}
+    implementation project(':dingo-common')
+    implementation project(':dingo-codec-serial')
+
+}

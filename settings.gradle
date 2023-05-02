@@ -68,4 +68,6 @@ findProject(':dingo-cli:sqlline')?.name = 'sqlline'
 include 'dingo-cli:driver-mysql'
 findProject(':dingo-cli:driver-mysql')?.name = 'driver-mysql'
 include 'dingo-executor'
+include 'dingo-codec-api'
+include 'dingo-codec-serial'
 

@@ -20,11 +20,11 @@ import java.util.ServiceLoader;
 
 public interface UserServiceProvider {
 
-    UserService root();
+    UserService get();
 
     static UserService getRoot() {
         try {
-            return ServiceLoader.load(UserServiceProvider.class).iterator().next().root();
+            return ServiceLoader.load(UserServiceProvider.class).iterator().next().get();
         } catch (Exception e) {
             return null;
         }

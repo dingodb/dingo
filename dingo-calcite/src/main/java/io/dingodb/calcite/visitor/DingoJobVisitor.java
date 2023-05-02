@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.visitor;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByIndex;
@@ -35,97 +34,58 @@ import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
 import io.dingodb.calcite.traits.DingoRelPartitionByTable;
-import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
+import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
+import io.dingodb.calcite.visitor.function.DingoCoalesce;
+import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
+import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
+import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
+import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
+import io.dingodb.calcite.visitor.function.DingoHashJoinVisitFun;
+import io.dingodb.calcite.visitor.function.DingoLikeScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoProjectVisitFun;
+import io.dingodb.calcite.visitor.function.DingoRangeDeleteVisitFun;
+import io.dingodb.calcite.visitor.function.DingoRangeScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoReduceVisitFun;
+import io.dingodb.calcite.visitor.function.DingoRootVisitFun;
+import io.dingodb.calcite.visitor.function.DingoSortVisitFun;
+import io.dingodb.calcite.visitor.function.DingoStreamingConverterVisitFun;
+import io.dingodb.calcite.visitor.function.DingoTableModifyVisitFun;
+import io.dingodb.calcite.visitor.function.DingoUnionVisitFun;
+import io.dingodb.calcite.visitor.function.DingoValuesVisitFun;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.Distribution;
-import io.dingodb.common.partition.PartitionStrategy;
-import io.dingodb.common.partition.RangeStrategy;
-import io.dingodb.common.table.Index;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.common.util.Optional;
-import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
-import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.impl.IdGeneratorImpl;
-import io.dingodb.exec.operator.AggregateOperator;
-import io.dingodb.exec.operator.CoalesceOperator;
-import io.dingodb.exec.operator.EmptySourceOperator;
-import io.dingodb.exec.operator.FilterOperator;
-import io.dingodb.exec.operator.GetByIndexOperator;
-import io.dingodb.exec.operator.GetByKeysOperator;
-import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
-import io.dingodb.exec.operator.LikeScanOperator;
-import io.dingodb.exec.operator.PartCountOperator;
-import io.dingodb.exec.operator.PartDeleteOperator;
-import io.dingodb.exec.operator.PartInsertOperator;
-import io.dingodb.exec.operator.PartRangeDeleteOperator;
-import io.dingodb.exec.operator.PartRangeScanOperator;
-import io.dingodb.exec.operator.PartScanOperator;
-import io.dingodb.exec.operator.PartUpdateOperator;
 import io.dingodb.exec.operator.PartitionOperator;
-import io.dingodb.exec.operator.ProjectOperator;
-import io.dingodb.exec.operator.ReceiveOperator;
-import io.dingodb.exec.operator.ReduceOperator;
-import io.dingodb.exec.operator.RemovePartOperator;
-import io.dingodb.exec.operator.RootOperator;
-import io.dingodb.exec.operator.SendOperator;
-import io.dingodb.exec.operator.SortOperator;
-import io.dingodb.exec.operator.SumUpOperator;
-import io.dingodb.exec.operator.ValuesOperator;
-import io.dingodb.exec.operator.data.SortCollation;
-import io.dingodb.exec.operator.data.SortDirection;
-import io.dingodb.exec.operator.data.SortNullDirection;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.exec.partition.RangeStrategy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.common.util.Utils.sole;
 
 @Slf4j
 public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
@@ -156,668 +116,95 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         }
     }
 
-    private static @NonNull SortCollation toSortCollation(@NonNull RelFieldCollation collation) {
-        SortDirection d;
-        switch (collation.direction) {
-            case DESCENDING:
-            case STRICTLY_DESCENDING:
-                d = SortDirection.DESCENDING;
-                break;
-            default:
-                d = SortDirection.ASCENDING;
-                break;
-        }
-        SortNullDirection n;
-        switch (collation.nullDirection) {
-            case FIRST:
-                n = SortNullDirection.FIRST;
-                break;
-            case LAST:
-                n = SortNullDirection.LAST;
-                break;
-            default:
-                n = SortNullDirection.UNSPECIFIED;
-        }
-        return new SortCollation(collation.getFieldIndex(), d, n);
-    }
-
-    private static @NonNull TupleMapping getAggKeys(@NonNull ImmutableBitSet groupSet) {
-        return TupleMapping.of(
-            groupSet.asList().stream()
-                .mapToInt(Integer::intValue)
-                .toArray()
-        );
-    }
-
-    private static List<Agg> getAggList(
-        @NonNull List<AggregateCall> aggregateCallList,
-        DingoType schema
-    ) {
-        return aggregateCallList.stream()
-            .map(c -> AggFactory.getAgg(
-                c.getAggregation().getKind(),
-                c.getArgList(),
-                schema
-            ))
-            .collect(Collectors.toList());
-    }
-
-    private @NonNull List<Output> coalesce(@NonNull Collection<Output> inputs) {
-        // Coalesce inputs from the same task. taskId --> list of inputs
-        Map<Id, List<Output>> inputsMap = new HashMap<>();
-        for (Output input : inputs) {
-            Id taskId = input.getTaskId();
-            List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
-            list.add(input);
-        }
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<Id, List<Output>> entry : inputsMap.entrySet()) {
-            List<Output> list = entry.getValue();
-            int size = list.size();
-            if (size <= 1) {
-                // Need no coalescing.
-                outputs.addAll(list);
-            } else {
-                Output one = list.get(0);
-                Task task = one.getTask();
-                Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.get());
-                task.putOperator(operator);
-                int i = 0;
-                for (Output input : list) {
-                    input.setLink(operator.getInput(i));
-                    ++i;
-                }
-                Output newOutput = operator.getSoleOutput();
-                newOutput.copyHint(one);
-                if (one.isToSumUp()) {
-                    Operator sumUpOperator = new SumUpOperator();
-                    sumUpOperator.setId(idGenerator.get());
-                    task.putOperator(sumUpOperator);
-                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
-                    sumUpOperator.getSoleOutput().copyHint(newOutput);
-                    outputs.add(sumUpOperator.getSoleOutput());
-                } else {
-                    outputs.add(newOutput);
-                }
-            }
-        }
-        return outputs;
-    }
-
-    private Output exchange(@NonNull Output input, @NonNull Location target, DingoType schema) {
-        Task task = input.getTask();
-        if (target.equals(task.getLocation())) {
-            return input;
-        }
-        Id id = idGenerator.get();
-        Id receiveId = idGenerator.get();
-        SendOperator send = new SendOperator(
-            target.getHost(),
-            target.getPort(),
-            receiveId,
-            schema
-        );
-        send.setId(id);
-        input.setLink(send.getInput(0));
-        task.putOperator(send);
-        ReceiveOperator receive = new ReceiveOperator(
-            task.getHost(),
-            task.getLocation().getPort(),
-            schema
-        );
-        receive.setId(receiveId);
-        receive.getSoleOutput().copyHint(input);
-        Task rcvTask = job.getOrCreate(target, idGenerator);
-        rcvTask.putOperator(receive);
-        return receive.getSoleOutput();
-    }
-
-    private @NonNull Collection<Output> bridge(
-        @NonNull Collection<Output> inputs,
-        Supplier<Operator> operatorSupplier
-    ) {
-        List<Output> outputs = new LinkedList<>();
-        for (Output input : inputs) {
-            Operator operator = operatorSupplier.get();
-            Task task = input.getTask();
-            operator.setId(idGenerator.get());
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    private @NonNull Collection<Output> partition(
-        @NonNull Collection<Output> inputs,
-        @NonNull DingoRelPartitionByTable partition
-    ) {
-        List<Output> outputs = new LinkedList<>();
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-        for (Output input : inputs) {
-            Task task = input.getTask();
-            PartitionOperator operator = new PartitionOperator(
-                ps,
-                td.getKeyMapping()
-            );
-            operator.setId(idGenerator.get());
-            operator.createOutputs(distributions);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    private @NonNull Collection<Output> hash(
-        @NonNull Collection<Output> inputs,
-        @NonNull DingoRelPartitionByKeys hash
-    ) {
-        List<Output> outputs = new LinkedList<>();
-        final Collection<Location> locations = ClusterService.getDefault().getComputingLocations();
-        final HashStrategy hs = new SimpleHashStrategy();
-        for (Output input : inputs) {
-            Task task = input.getTask();
-            HashOperator operator = new HashOperator(hs, TupleMapping.of(hash.getKeys()));
-            operator.setId(idGenerator.get());
-            operator.createOutputs(locations);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
-    }
-
-    public @NonNull Collection<Output> convertStreaming(
-        @NonNull Collection<Output> inputs,
-        @NonNull DingoRelStreaming srcStreaming,
-        @NonNull DingoRelStreaming dstStreaming,
-        DingoType schema
-    ) {
-        final Set<DingoRelPartition> dstPartitions = dstStreaming.getPartitions();
-        final Set<DingoRelPartition> srcPartitions = srcStreaming.getPartitions();
-        assert dstPartitions != null && srcPartitions != null;
-        final DingoRelPartition dstDistribution = dstStreaming.getDistribution();
-        final DingoRelPartition srcDistribution = srcStreaming.getDistribution();
-        DingoRelStreaming media = dstStreaming.withPartitions(srcPartitions);
-        assert media.getPartitions() != null;
-        Collection<Output> outputs = inputs;
-        if (media.getPartitions().size() > srcPartitions.size()) {
-            for (DingoRelPartition partition : media.getPartitions()) {
-                if (!srcPartitions.contains(partition)) {
-                    if (partition instanceof DingoRelPartitionByTable) {
-                        outputs = partition(outputs, (DingoRelPartitionByTable) partition);
-                    } else if (partition instanceof DingoRelPartitionByKeys) {
-                        outputs = hash(outputs, (DingoRelPartitionByKeys) partition);
-                    } else {
-                        throw new IllegalStateException("Not supported.");
-                    }
-                }
-            }
-        }
-        if (!Objects.equals(dstDistribution, srcDistribution)) {
-            outputs = outputs.stream().map(input -> {
-                Location targetLocation = (dstDistribution == null ? currentLocation : input.getTargetLocation());
-                return exchange(input, targetLocation, schema);
-            }).collect(Collectors.toList());
-        }
-        if (dstPartitions.size() < media.getPartitions().size()) {
-            assert dstDistribution == null && dstPartitions.size() == 0 || dstPartitions.size() == 1;
-            outputs = coalesce(outputs);
-        }
-        return outputs;
+    @Override
+    public Collection<Output> visit(@NonNull DingoStreamingConverter rel) {
+        return DingoStreamingConverterVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoAggregate rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return bridge(inputs, () -> new AggregateOperator(
-            getAggKeys(rel.getGroupSet()),
-            getAggList(
-                rel.getAggCallList(),
-                DefinitionMapper.mapToDingoType(rel.getInput().getRowType())
-            )
-        ));
+        return DingoAggregateVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoFilter rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        RexNode condition = rel.getCondition();
-        return bridge(inputs, () -> new FilterOperator(
-            SqlExprUtils.toSqlExpr(condition),
-            DefinitionMapper.mapToDingoType(rel.getInput().getRowType())
-        ));
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoGetByIndex rel) {
-        final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        Index index = td.getIndex(rel.getIndexName());
-        TupleMapping mapping = TupleMapping.of(td.getColumnIndices(index.getColumns()));
-        List<Object[]> keyTuples = TableUtils.getTuplesForMapping(rel.getPoints(), td, mapping);
-        GetByIndexOperator operator = new GetByIndexOperator(
-            tableId,
-            td.getDingoType(),
-            mapping,
-            keyTuples,
-            SqlExprUtils.toSqlExpr(rel.getFilter()),
-            rel.getSelection()
-        );
-        operator.setId(idGenerator.get());
-        Task task = job.getOrCreate(currentLocation, idGenerator);
-        task.putOperator(operator);
-        return new LinkedList<>(operator.getOutputs());
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoGetByKeys rel) {
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-        final List<Output> outputs = new LinkedList<>();
-        List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
-        if (keyTuples.isEmpty()) {
-            EmptySourceOperator operator = new EmptySourceOperator();
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-            return outputs;
-        }
-        Map<CommonId, List<Object[]>> partMap = ps.partKeyTuples(keyTuples);
-        for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysOperator operator = new GetByKeysOperator(
-                tableInfo.getId(),
-                entry.getKey(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                entry.getValue(),
-                SqlExprUtils.toSqlExpr(rel.getFilter()),
-                rel.getSelection()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoFilterVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoHashJoin rel) {
-        Collection<Output> leftInputs = dingo(rel.getLeft()).accept(this);
-        Collection<Output> rightInputs = dingo(rel.getRight()).accept(this);
-        Map<Id, Output> leftInputsMap = new HashMap<>(leftInputs.size());
-        Map<Id, Output> rightInputsMap = new HashMap<>(rightInputs.size());
-        // Only one left input in each task, because of coalescing.
-        leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
-        rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<Id, Output> entry : leftInputsMap.entrySet()) {
-            Id taskId = entry.getKey();
-            Output left = entry.getValue();
-            Output right = rightInputsMap.get(taskId);
-            JoinInfo joinInfo = rel.analyzeCondition();
-            Operator operator = new HashJoinOperator(
-                TupleMapping.of(joinInfo.leftKeys),
-                TupleMapping.of(joinInfo.rightKeys),
-                rel.getLeft().getRowType().getFieldCount(),
-                rel.getRight().getRowType().getFieldCount(),
-                rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
-                rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
-            );
-            operator.setId(idGenerator.get());
-            left.setLink(operator.getInput(0));
-            right.setLink(operator.getInput(1));
-            Task task = job.getTask(taskId);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoHashJoinVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoTableModify rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        List<Output> outputs = new LinkedList<>();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
-        for (Output input : inputs) {
-            Task task = input.getTask();
-            Operator operator;
-            switch (rel.getOperation()) {
-                case INSERT:
-                    operator = new PartInsertOperator(
-                        tableId,
-                        input.getHint().getPartId(),
-                        td.getDingoType(),
-                        td.getKeyMapping()
-                    );
-                    break;
-                case UPDATE:
-                    operator = new PartUpdateOperator(
-                        tableId,
-                        input.getHint().getPartId(),
-                        td.getDingoType(),
-                        td.getKeyMapping(),
-                        TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
-                        rel.getSourceExpressionList().stream()
-                            .map(SqlExprUtils::toSqlExpr)
-                            .collect(Collectors.toList())
-                    );
-                    break;
-                case DELETE:
-                    operator = new PartDeleteOperator(
-                        tableId,
-                        input.getHint().getPartId(),
-                        td.getDingoType(),
-                        td.getKeyMapping()
-                    );
-                    break;
-                default:
-                    throw new IllegalStateException(
-                        "Operation \"" + rel.getOperation() + "\" is not supported."
-                    );
-            }
-            operator.setId(idGenerator.get());
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            OutputHint hint = new OutputHint();
-            hint.setToSumUp(true);
-            operator.getSoleOutput().setHint(hint);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoProject rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return bridge(inputs, () -> new ProjectOperator(
-            SqlExprUtils.toSqlExprList(rel.getProjects(), rel.getRowType()),
-            DefinitionMapper.mapToDingoType(rel.getInput().getRowType())
-        ));
+        return DingoProjectVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoReduce rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        Operator operator;
-        operator = new ReduceOperator(
-            getAggKeys(rel.getGroupSet()),
-            getAggList(
-                rel.getAggregateCallList(),
-                DefinitionMapper.mapToDingoType(rel.getOriginalInputType())
-            )
-        );
-        operator.setId(idGenerator.get());
-        Output input = sole(inputs);
-        Task task = input.getTask();
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
-        return operator.getOutputs();
+        return DingoReduceVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoRoot rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        if (inputs.size() != 1) {
-            throw new IllegalStateException("There must be one input to job root.");
-        }
-        Output input = sole(inputs);
-        Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()));
-        Task task = input.getTask();
-        Id id = idGenerator.get();
-        operator.setId(id);
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
-        task.markRoot(id);
-        job.markRoot(task.getId());
-        return ImmutableList.of();
+        return DingoRootVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoGetByIndex rel) {
+        return DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoGetByKeys rel) {
+        return DingoGetByKeysFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoSort rel) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(this);
-        return bridge(inputs, () -> new SortOperator(
-            rel.getCollation().getFieldCollations().stream()
-                .map(DingoJobVisitor::toSortCollation)
-                .collect(Collectors.toList()),
-            rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
-            rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
-        ));
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoStreamingConverter rel) {
-        return convertStreaming(
-            dingo(rel.getInput()).accept(this),
-            dingo(rel.getInput()).getStreaming(),
-            rel.getStreaming(),
-            DefinitionMapper.mapToDingoType(rel.getRowType())
-        );
+        return DingoSortVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoTableScan rel) {
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final CommonId tableId = tableInfo.getId();
-
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        List<Output> outputs = new ArrayList<>(distributions.size());
-        SqlExpr sqlExpr = Optional.mapOrNull(rel.getFilter(), SqlExprUtils::toSqlExpr);
-
-        for (Distribution distribution : distributions.values()) {
-            PartScanOperator operator = new PartScanOperator(
-                tableId,
-                distribution.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                sqlExpr,
-                rel.getSelection()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        // current version scan must have range
+        return visit(DingoPartRangeScan.of(rel));
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoUnion rel) {
-        Collection<Output> inputs = new LinkedList<>();
-        for (RelNode node : rel.getInputs()) {
-            inputs.addAll(dingo(node).accept(this));
-        }
-        return coalesce(inputs);
+        return DingoUnionVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoValues rel) {
-        DingoRelStreaming streaming = rel.getStreaming();
-        if (streaming.equals(DingoRelStreaming.ROOT)) {
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            ValuesOperator operator = new ValuesOperator(
-                rel.getTuples(),
-                Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
-            );
-            operator.setId(idGenerator.get());
-            task.putOperator(operator);
-            return operator.getOutputs();
-        }
-        throw new IllegalArgumentException("Unsupported streaming \"" + streaming + "\" of values.");
+        return DingoValuesVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartCountDelete rel) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        CommonId tableId = tableInfo.getId();
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-
-        List<Output> outputs = new ArrayList<>(distributions.size());
-        for (Distribution distribution : distributions.values()) {
-            Operator operator = rel.isDoDeleting() ? new RemovePartOperator(
-                tableId,
-                distribution.id(),
-                td.getDingoType(),
-                td.getKeyMapping()
-            ) : new PartCountOperator(
-                tableId,
-                distribution.id(),
-                td.getDingoType(),
-                td.getKeyMapping()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            OutputHint hint = new OutputHint();
-            hint.setToSumUp(true);
-            operator.getSoleOutput().setHint(hint);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoCountDeleteVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartRangeScan rel) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        SqlExpr filter = null;
-        if (rel.getFilter() != null) {
-            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
-        }
-
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        byte[] startKey = rel.getStartKey();
-        byte[] endKey = rel.getEndKey();
-
-        ComparableByteArray startByteArray = distributions.floorKey(new ComparableByteArray(startKey));
-        if (!rel.isNotBetween() && startByteArray == null) {
-            log.warn("Get part from table:{} by startKey:{}, result is null", td.getName(), startKey);
-            return null;
-        }
-
-        // Get all ranges that need to be queried
-        Map<byte[], byte[]> allRangeMap = new TreeMap<>(ByteArrayUtils::compare);
-        if (rel.isNotBetween()) {
-            allRangeMap.put(distributions.firstKey().getBytes(), startKey);
-            allRangeMap.put(endKey, distributions.lastKey().getBytes());
-        } else {
-            allRangeMap.put(startKey, endKey);
-        }
-
-        List<Output> outputs = new ArrayList<>();
-
-        Iterator<Map.Entry<byte[], byte[]>> allRangeIterator = allRangeMap.entrySet().iterator();
-        while (allRangeIterator.hasNext()) {
-            Map.Entry<byte[], byte[]> entry = allRangeIterator.next();
-            startKey = entry.getKey();
-            endKey = entry.getValue();
-
-            // Get all partitions based on startKey and endKey
-            final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-            Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, rel.isIncludeEnd());
-
-            Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
-            boolean includeStart = rel.isIncludeStart();
-            while (partIterator.hasNext()) {
-                Map.Entry<byte[], byte[]> next = partIterator.next();
-                PartRangeScanOperator operator = new PartRangeScanOperator(
-                    tableInfo.getId(),
-                    distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
-                    td.getDingoType(),
-                    td.getKeyMapping(),
-                    filter,
-                    rel.getSelection(),
-                    next.getKey(),
-                    next.getValue(),
-                    includeStart,
-                    next.getValue() != null && rel.isIncludeEnd(),
-                    false
-                );
-                operator.setId(idGenerator.get());
-                Task task = job.getOrCreate(
-                    currentLocation, idGenerator
-                );
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
-                includeStart = true;
-            }
-        }
-
-        return outputs;
+        return DingoRangeScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoPartRangeDelete rel) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        List<Output> outputs = new ArrayList<>();
-
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        // Get all partitions based on startKey and endKey
-        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-        Map<byte[], byte[]> partMap = ps.calcPartitionRange(rel.getStartKey(), rel.getEndKey(), false);
-        for (Map.Entry<byte[], byte[]> next : partMap.entrySet()) {
-            PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
-                tableInfo.getId(),
-                distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                next.getKey(),
-                next.getValue(),
-                rel.isIncludeStart(),
-                rel.isIncludeEnd()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoRangeDeleteVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
     public Collection<Output> visit(@NonNull DingoLikeScan rel) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        SqlExpr filter = null;
-        if (rel.getFilter() != null) {
-            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
-        }
-        NavigableMap<ComparableByteArray, Distribution> distributions = tableInfo.getDistributions();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId> ps = new RangeStrategy(td, distributions);
-        Map<byte[], byte[]> prefixRange = ps.calcPartitionByPrefix(rel.getPrefix());
-        List<Output> outputs = new ArrayList<>();
-
-        Iterator<Map.Entry<byte[], byte[]>> partIterator = prefixRange.entrySet().iterator();
-        while (partIterator.hasNext()) {
-            Map.Entry<byte[], byte[]> next = partIterator.next();
-            LikeScanOperator operator = new LikeScanOperator(
-                tableInfo.getId(),
-                distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                filter,
-                rel.getSelection(),
-                rel.getPrefix()
-            );
-            operator.setId(idGenerator.get());
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
-        }
-        return outputs;
+        return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
+
 }

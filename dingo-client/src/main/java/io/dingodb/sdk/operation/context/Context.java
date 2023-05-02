@@ -16,8 +16,7 @@
 
 package io.dingodb.sdk.operation.context;
 
-import io.dingodb.common.codec.DingoKeyValueCodec;
-import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.Key;
@@ -185,6 +184,6 @@ public class Context {
     }
 
     public KeyValueCodec keyValueCodec() {
-        return new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
+        return null;// new DingoKeyValueCodec(definition.getDingoType(), definition.getKeyMapping());
     }
 }

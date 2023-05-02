@@ -48,6 +48,10 @@ public final class RawJsonDeserializer extends StdDeserializer<JsonNode> {
         throw new IllegalStateException("Tuples must be a json array.");
     }
 
+    public static Object[] convertTupleBySchema(JsonNode jsonNode, DingoType schema) {
+        return (Object[]) schema.convertFrom(jsonNode, JsonConverter.INSTANCE);
+    }
+
     @Override
     public JsonNode deserialize(
         @NonNull JsonParser parser,

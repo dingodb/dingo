@@ -22,9 +22,10 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
 import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.codec.Codec;
-import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -42,8 +43,8 @@ import java.util.List;
 
 @Slf4j
 @Value.Enclosing
-public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
-    public DingoPartRangeRule(Config config) {
+public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> {
+    public DingoRangeScanRule(Config config) {
         super(config);
     }
 
@@ -53,8 +54,8 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
         final DingoTableScan rel = call.rel(0);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
-        Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getType().toDingoSchema(0)), null, true);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
+        Object[] tuple = new Object[td.getColumnsCount()];
         if (rel.getFilter().getKind() == SqlKind.AND) {
             RexCall filter = (RexCall) rel.getFilter();
             byte[] left = ByteArrayUtils.EMPTY_BYTES;
@@ -82,18 +83,20 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
                         case LESS_THAN:
                             includeEnd = false;
                         case LESS_THAN_OR_EQUAL:
-                            right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                            tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
                                 DefinitionMapper.mapToDingoType(info.value.getType())
-                            )});
+                            );
+                            right = codec.encodeKeyPrefix(tuple, 1);
                             break;
                         case GREATER_THAN:
                             includeStart = false;
                         case GREATER_THAN_OR_EQUAL:
-                            left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                            tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                                 info.value,
                                 DefinitionMapper.mapToDingoType(info.value.getType())
-                            )});
+                            );
+                            left = codec.encodeKeyPrefix(tuple, 1);
                             break;
                         default:
                             break;
@@ -128,7 +131,7 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        DingoPartRangeRule.Config DEFAULT = ImmutableDingoPartRangeRule.Config.builder()
+        DingoRangeScanRule.Config DEFAULT = ImmutableDingoRangeScanRule.Config.builder()
             .operandSupplier(
                 b0 -> b0.operand(DingoTableScan.class)
                     .predicate(r -> {
@@ -161,8 +164,8 @@ public class DingoPartRangeRule extends RelRule<DingoPartRangeRule.Config> {
             .build();
 
         @Override
-        default DingoPartRangeRule toRule() {
-            return new DingoPartRangeRule(this);
+        default DingoRangeScanRule toRule() {
+            return new DingoRangeScanRule(this);
         }
     }
 }

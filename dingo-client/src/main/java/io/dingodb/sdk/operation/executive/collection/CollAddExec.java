@@ -17,10 +17,10 @@
 package io.dingodb.sdk.operation.executive.collection;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.codec.Codec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Executive;
-import io.dingodb.common.codec.DingoCodec;
-import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -93,7 +93,7 @@ public class CollAddExec extends AbstractExecutive<Context, Iterator<Object[]>> 
 
                 DingoType schema = definition.getDingoType(false);
                 TupleMapping valueMapping = definition.getValueMapping();
-                DingoCodec valueCodec = new DingoCodec(schema.toDingoSchemas(), valueMapping);
+                Codec valueCodec = null;// todo fix " = new DingoCodec(schema.toDingoSchemas(), valueMapping);"
 
                 Object[] objects = (Object[]) schema.parse(defValues);
                 Object[] value = (Object[]) schema.convertTo(objects, DingoConverter.INSTANCE);

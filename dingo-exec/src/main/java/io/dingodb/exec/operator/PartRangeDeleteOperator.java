@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -29,7 +30,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -89,11 +89,9 @@ public final class PartRangeDeleteOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
-            store,
-            schema,
-            keyMapping
+            Services.KV_STORE.getInstance(tableId, partId),
+            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
         );
     }
 
@@ -102,7 +100,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.countDeleteByRange(startKey, endKey, includeStart, includeEnd);
+        long count = part.delete(startKey, endKey, includeStart, includeEnd);
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",

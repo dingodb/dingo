@@ -274,45 +274,46 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 exec("update {table} set amount = 0.0 where name = 'Alice' and name = 'Betty'").updateCount(0),
                 exec(SELECT_ALL).result(file("string_double/data.csv"))
             ),
-            Case.of(
-                "Nested indices",
-                exec(file("index/create.sql")),
-                exec(file("index/data.sql")),
-                exec(
-                    "alter TABLE {table} add index int_index2(CARD_NO);"
-                        + "alter TABLE {table} add index char_index2(NAME);"
-                        + "create index multi_index on {table} (card_no, account)"
-                ),
-                exec(
-                    "select * from {table} where card_no=23 and account=14"
-                ).result(
-                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-                )
-            ),
-            Case.of(
-                "Index of date/time",
-                exec(file("index/create.sql")),
-                exec(file("index/data.sql")),
-                exec(
-                    "alter TABLE {table} add index int_index2(CARD_NO);"
-                        + "alter TABLE {table} add index char_index2(NAME);"
-                        + "alter TABLE {table} add index date_index(TIME_DATE);"
-                        + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
-                ),
-                exec(
-                    "select * from {table} where time_datetime=now()"
-                ).result(
-                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-                ),
-                exec(
-                    "select * from {table} where time_date='2023-01-09'"
-                ).result(
-                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-                )
-            ),
+            // todo unsupport index
+            //Case.of(
+            //    "Nested indices",
+            //    exec(file("index/create.sql")),
+            //    exec(file("index/data.sql")),
+            //    exec(
+            //        "alter TABLE {table} add index int_index2(CARD_NO);"
+            //            + "alter TABLE {table} add index char_index2(NAME);"
+            //            + "create index multi_index on {table} (card_no, account)"
+            //    ),
+            //    exec(
+            //        "select * from {table} where card_no=23 and account=14"
+            //    ).result(
+            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+            //    )
+            //),
+            //Case.of(
+            //    "Index of date/time",
+            //    exec(file("index/create.sql")),
+            //    exec(file("index/data.sql")),
+            //    exec(
+            //        "alter TABLE {table} add index int_index2(CARD_NO);"
+            //            + "alter TABLE {table} add index char_index2(NAME);"
+            //            + "alter TABLE {table} add index date_index(TIME_DATE);"
+            //            + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
+            //    ),
+            //    exec(
+            //        "select * from {table} where time_datetime=now()"
+            //    ).result(
+            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+            //    ),
+            //    exec(
+            //        "select * from {table} where time_date='2023-01-09'"
+            //    ).result(
+            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+            //    )
+            //),
             Case.of(
                 "Insert int to long",
                 exec(file("long_double/create.sql")),

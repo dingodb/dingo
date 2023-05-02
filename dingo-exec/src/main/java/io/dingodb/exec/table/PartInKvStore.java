@@ -16,186 +16,150 @@
 
 package io.dingodb.exec.table;
 
-import io.dingodb.common.codec.DingoKeyValueCodec;
-import io.dingodb.common.codec.KeyValueCodec;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
+import com.google.common.collect.Iterators;
+import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Optional;
 import io.dingodb.store.api.StoreInstance;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public final class PartInKvStore implements Part {
     private final StoreInstance store;
-    @Getter
     private final KeyValueCodec codec;
 
-    public PartInKvStore(StoreInstance store, DingoType schema, TupleMapping keyMapping) {
+    public PartInKvStore(StoreInstance store, KeyValueCodec codec) {
         this.store = store;
-        this.codec = new DingoKeyValueCodec(schema, keyMapping);
+        this.codec = codec;
     }
 
     @Override
-    public @NonNull Iterator<Object[]> getIterator() {
+    public @NonNull Iterator<Object[]> scan(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.tupleScan();
+            return Iterators.transform(store.scan(new StoreInstance.Range(start, end, withStart, withEnd)),
+                wrap(codec::decode)::apply
+            );
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }
 
     @Override
-    public @NonNull Iterator<Object[]> getIteratorByRange(
-        byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd, boolean prefixScan
-    ) {
+    public long delete(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.tupleScan(
-                startKey == null ? null : codec.decodeKey(startKey),
-                endKey == null ? null: codec.decodeKey(endKey),
-                includeStart,
-                includeEnd
-            );
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return store.delete(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore getIterator cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }
 
     @Override
-    public long countDeleteByRange(
-        byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd
-    ) {
-        return countOrDeleteByRange(startPrimaryKey, endPrimaryKey, includeStart, includeEnd, true);
-    }
-
-    public long countOrDeleteByRange(
-        byte[] start, byte[] end, boolean includeStart, boolean includeEnd, boolean doDelete
-    ) {
+    public boolean insert(@NonNull Object[] keyValue) {
         try {
-            return store.countDeleteByRange(
-                start == null || start.length == 0 ? null : codec.decodeKey(start),
-                end == null ? null : codec.decodeKey(end),
-                includeStart,
-                includeEnd,
-                doDelete
-            );
+            return insert(codec.encode(keyValue));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean insert(Object @NonNull [] tuple) {
+    public boolean insert(@NonNull KeyValue keyValue) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.insert(tuple);
-        } catch (Exception e) {
-            log.error("Insert: encode error.", e);
+            return store.insert(keyValue);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
-        return false;
     }
 
     @Override
-    public void upsert(Object @NonNull [] tuple) {
+    public boolean update(@NonNull Object[] keyValue) {
+        try {
+            return update(codec.encode(keyValue));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean update(@NonNull KeyValue keyValue) {
         final long startTime = System.currentTimeMillis();
         try {
-            store.update(tuple);
+            return store.update(keyValue, new KeyValue(keyValue.getKey(), null));
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore upsert cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }
 
     @Override
-    public boolean remove(Object @NonNull [] tuple) {
+    public boolean remove(@NonNull Object[] tuple) {
+        try {
+            return remove(codec.encode(tuple).getKey());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean remove(byte @NonNull [] key) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.delete(tuple);
+            return store.delete(key);
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore remove cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }
 
     @Override
-    public long getEntryCntAndDeleteByPart() {
-        return countOrDeleteByRange(null, null, true, false, true);
-    }
-
-    @Override
-    public long getEntryCnt(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd) {
-        return countOrDeleteByRange(startKey, endKey, includeStart, includeEnd, false);
-    }
-
-    @Override
-    public Object @Nullable [] getByKey(Object @NonNull [] keyTuple) {
+    public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.getTupleByPrimaryKey(keyTuple);
+            return store.count(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore getByKey cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }
 
     @Override
-    public @NonNull List<Object[]> getByMultiKey(final @NonNull List<Object[]> keyTuples) {
-        List<byte[]> keyList = keyTuples.stream()
-            .map(wrap(codec::encodeKey, e -> log.error("GetByMultiKey: encode key error.", e)))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-        List<Object[]> tuples = new ArrayList<>(keyList.size());
-        final long startTime = System.currentTimeMillis();
+    public Object @Nullable [] get(Object @NonNull [] key) {
         try {
-            List<Object[]> valueList = store.getTuplesByPrimaryKeys(keyTuples);
-            if (keyList.size() != valueList.size()) {
-                log.error("Get KeyValues from Store => keyCnt:{} mismatch valueCnt:{}",
-                    keyList.size(),
-                    valueList.size()
-                );
-            }
-            return valueList;
-        } catch (Exception e) {
-            log.error("Get KeyValues from Store => Catch Exception:{} when read data", e.getMessage(), e);
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore getByMultiKey cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            return get(codec.encodeKey(key));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return tuples;
     }
 
-    public Iterator<Object[]> keyValuePrefixScan(byte[] prefix) {
-        // todo
-        //return Iterators.transform(
-        //    store.keyValuePrefixScan(prefix),
-        //    wrap(codec::decode, e -> log.error("Iterator: decode error.", e))::apply
-        //);
-        return null;
+    @Override
+    public Object @Nullable [] get(byte @NonNull [] key) {
+        final long startTime = System.currentTimeMillis();
+        try {
+            return Optional.mapOrNull(store.get(key), wrap(codec::decode));
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
+        }
     }
+
 }

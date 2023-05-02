@@ -17,10 +17,10 @@
 package io.dingodb.sdk.operation.executive;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.codec.Codec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
-import io.dingodb.common.codec.DingoCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -81,7 +81,7 @@ public class UpdateExec extends AbstractExecutive<Context, Void> {
 
                 DingoType schema = definition.getDingoType(false);
                 TupleMapping valueMapping = definition.getValueMapping();
-                DingoCodec valueCodec = new DingoCodec(schema.toDingoSchemas(), valueMapping);
+                Codec valueCodec = null;// todo fix" = new DingoCodec(schema.toDingoSchemas(), valueMapping);"
 
                 Object[] objects = (Object[]) schema.parse(defValues);
                 Object[] value = (Object[]) schema.convertTo(objects, DingoConverter.INSTANCE);
@@ -89,7 +89,7 @@ public class UpdateExec extends AbstractExecutive<Context, Void> {
 
                 context.writer().set(context.startKey().get(0), valueBytes);
             } else {
-                DingoCodec valueCodec = new DingoCodec(definition.getDingoSchemaOfValue());
+                Codec valueCodec = null;// todo fix" = new DingoCodec(definition.getDingoSchemaOfValue());"
                 int[] indexOfValue = new int[cols.length];
                 for (int i = 0; i < cols.length; i++) {
                     indexOfValue[i] = definition.getColumnIndexOfValue(cols[i].name);

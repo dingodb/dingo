@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+package io.dingodb.codec;
 
 import io.dingodb.common.type.TupleMapping;
 
@@ -41,7 +41,7 @@ public interface Codec {
         return encode(origin, tuple, schemaIndex);
     }
 
-    default byte[] encodeKeyForRangeScan(Object[] tuple) throws IOException, ClassCastException {
+    default byte[] encodeKeyForRangeScan(Object[] tuple, int columnCount) throws IOException, ClassCastException {
         return encode(tuple);
     }
 

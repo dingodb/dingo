@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.TableStatistic;
 import lombok.Getter;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
 
 public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
+    private final CommonId tableId;
+    @Getter
     private final DingoParserContext context;
     @Getter
     private final List<String> names;
@@ -51,11 +54,15 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     private final TableStatistic tableStatistic;
 
-    protected DingoTable(DingoParserContext context,
-                         List<String> names,
-                         TableDefinition tableDefinition,
-                         TableStatistic tableStatistic) {
+    protected DingoTable(
+        CommonId tableId,
+        DingoParserContext context,
+        List<String> names,
+        TableDefinition tableDefinition,
+        TableStatistic tableStatistic
+    ) {
         super();
+        this.tableId = tableId;
         this.context = context;
         this.names = names;
         this.tableDefinition = tableDefinition;

@@ -17,10 +17,8 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
-import com.google.common.collect.Maps;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.DingoKeyValueCodec;
-import io.dingodb.common.codec.KeyValueCodec;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
@@ -28,14 +26,17 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.store.api.StoreService;
-import io.dingodb.store.api.StoreServiceProvider;
+import io.dingodb.common.util.Optional;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
+import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,96 +45,102 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.concurrent.ConcurrentHashMap;
+
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
 public class UserService implements io.dingodb.verify.service.UserService {
-    StoreService storeService = StoreServiceProvider.getDefault().get();
-    public static final UserService ROOT = new UserService();
+    public static final UserService INSTANCE = new UserService();
 
-    public static final String UPDATE = "update";
-    public static final String INSERT = "insert";
-
-    @AutoService(io.dingodb.verify.service.UserServiceProvider.class)
-    public static class UserServiceProvider implements io.dingodb.verify.service.UserServiceProvider {
-
+    @AutoService(UserServiceProvider.class)
+    public static class Provider implements UserServiceProvider {
         @Override
-        public io.dingodb.verify.service.UserService root() {
-            return ROOT;
+        public io.dingodb.verify.service.UserService get() {
+            return INSTANCE;
         }
     }
 
-    static final String userTable = "USER";
-    static final String dbPrivilegeTable = "DB";
-    static final String tablePrivilegeTable = "TABLES_PRIV";
-
-    Map<CommonId, CommonId> regionIdMap = new ConcurrentHashMap<>();
-    Map<String, KeyValueCodec> codecMap = new ConcurrentHashMap<>();
-
-    TableDefinition userTd;
-    TableDefinition dbPrivTd;
-    TableDefinition tablePrivTd;
-
-    io.dingodb.meta.MetaService metaService;
-
-    public UserService() {
-        io.dingodb.server.executor.service.MetaService rootMeta
-            = io.dingodb.server.executor.service.MetaService.ROOT;
-        metaService = rootMeta.getSubMetaService("mysql");
-
-        log.info("user service client,meta service:" + metaService);
-        userTd = metaService.getTableDefinition(userTable);
-        dbPrivTd = metaService.getTableDefinition(dbPrivilegeTable);
-        tablePrivTd = metaService.getTableDefinition(tablePrivilegeTable);
-        KeyValueCodec userCodec = new DingoKeyValueCodec(userTd.getDingoType(), userTd.getKeyMapping());
-        KeyValueCodec dbPrivCodec = new DingoKeyValueCodec(dbPrivTd.getDingoType(), dbPrivTd.getKeyMapping());
-        KeyValueCodec tablePrivCodec = new DingoKeyValueCodec(tablePrivTd.getDingoType(), tablePrivTd.getKeyMapping());
-        codecMap.put(userTable, userCodec);
-        codecMap.put(dbPrivilegeTable, dbPrivCodec);
-        codecMap.put(tablePrivilegeTable, tablePrivCodec);
-        log.info("init user service client, store service:" + storeService);
+    private UserService() {
     }
+
+    public static final String userTable = "USER";
+    public static final String dbPrivilegeTable = "DB";
+    public static final String tablePrivilegeTable = "TABLES_PRIV";
+
+    private final MetaService metaService = MetaService.ROOT.getSubMetaService("mysql");
+    private final StoreService storeService = StoreService.DEFAULT_INSTANCE;
+
+    private final CommonId userTblId = metaService.getTableId(userTable);
+    private final CommonId dbPrivTblId = metaService.getTableId(dbPrivilegeTable);
+    private final CommonId tablePrivTblId = metaService.getTableId(tablePrivilegeTable);
+
+    private final TableDefinition userTd = metaService.getTableDefinition(userTable);
+    private final TableDefinition dbPrivTd = metaService.getTableDefinition(dbPrivilegeTable);
+    private final TableDefinition tablePrivTd = metaService.getTableDefinition(tablePrivilegeTable);
+
+    private final KeyValueCodec userCodec = CodecService.INSTANCE.createKeyValueCodec(userTblId, userTd);
+    private final KeyValueCodec dbPrivCodec = CodecService.INSTANCE.createKeyValueCodec(dbPrivTblId, dbPrivTd);
+    private final KeyValueCodec tablePrivCodec = CodecService.INSTANCE.createKeyValueCodec(tablePrivTblId, tablePrivTd);
+
+    private final StoreInstance userStore = storeService.getInstance(userTblId, getRegionId(userTblId));
+    private final StoreInstance dbPrivStore = storeService.getInstance(dbPrivTblId, getRegionId(dbPrivTblId));
+    private final StoreInstance tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {
-        Object[] keys = getUserKeys(userDefinition.getUser(), userDefinition.getHost());
-        Object[] values = get(userTable, keys);
+        Object[] keys = getUserKeys(userDefinition);
+        Object[] values = get(userStore, userCodec, keys);
         return values != null;
     }
 
     @Override
     public void createUser(UserDefinition userDefinition) {
-        Map<String, Object> map = getUserObjectMap(userDefinition.getUser(), userDefinition.getHost());
-        map.put("AUTHENTICATION_STRING", userDefinition.getPassword());
-        map.put("PLUGIN", userDefinition.getPlugin());
-        upsert(userTable, map.values().toArray(new Object[0]), INSERT);
-        log.info("create user: {}", userDefinition);
+        try {
+            Object[] userRow = createUserRow(userDefinition);
+            userStore.insert(userCodec.encode(userRow));
+            log.info("create user: {}", userDefinition);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void dropUser(UserDefinition userDefinition) {
-        Object[] keys = getUserKeys(userDefinition.getUser(), userDefinition.getHost());
-        boolean result = delete(userTable, keys);
-        if (result) {
-            Object[] dbPrivKeys = getDbPrivilegeKeys(userDefinition.getUser(), userDefinition.getHost(), null);
-            deleteRange(dbPrivilegeTable, dbPrivKeys);
-            Object[] tablePrivKeys = getTablePrivilegeKeys(userDefinition.getUser(),
-                userDefinition.getHost(), null, null);
-            deleteRange(tablePrivilegeTable, tablePrivKeys);
+        try {
+            Object[] key = getUserKeys(userDefinition);
+            boolean result = userStore.delete(userCodec.encodeKey(key));
+            if (result) {
+                Object[] dbPrivKeys = getDbPrivilegeKeys(userDefinition, null);
+                deletePrefix(dbPrivStore, dbPrivCodec, dbPrivKeys);
+                Object[] tablePrivKeys = getTablePrivilegeKeys(
+                    userDefinition, null, null
+                );
+                deletePrefix(tablePrivStore, tablePrivCodec, tablePrivKeys);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException();
         }
     }
 
     @Override
     public void setPassword(UserDefinition userDefinition) {
-        Object[] keys = getUserKeys(userDefinition.getHost(), userDefinition.getUser());
-        Object[] values = get(userTable, keys);
-        if (values == null) {
-            throw new RuntimeException("user not exists");
+        try {
+            Object[] key = getUserKeys(userDefinition);
+            Object[] values = userCodec.decode(userStore.get(userCodec.encodeKey(key)));
+            if (values == null) {
+                throw new RuntimeException("user not exists");
+            }
+            String plugin = (String) values[39];
+            String digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
+            values[40] = digestPwd;
+
+            // todo fix null old value
+            KeyValue row = userCodec.encode(values);
+            userStore.update(row, new KeyValue(row.getKey(), null));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        String plugin = (String) values[39];
-        String digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
-        values[40] = digestPwd;
-        upsert(userTable, values, UPDATE);
     }
 
     @Override
@@ -150,15 +157,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
     @Override
     public void revoke(PrivilegeDefinition privilegeDefinition) {
         if (privilegeDefinition instanceof UserDefinition) {
-            revokeUser(privilegeDefinition.getUser(), privilegeDefinition.getHost(),
+            revokeUser(privilegeDefinition,
                 privilegeDefinition.getPrivilegeList());
         } else if (privilegeDefinition instanceof SchemaPrivDefinition) {
             SchemaPrivDefinition schemaPrivDefinition = (SchemaPrivDefinition) privilegeDefinition;
-            revokeDbPrivilege(privilegeDefinition.getUser(), privilegeDefinition.getHost(),
+            revokeDbPrivilege(privilegeDefinition,
                 schemaPrivDefinition.getSchemaName(), privilegeDefinition.getPrivilegeList());
         } else if (privilegeDefinition instanceof TablePrivDefinition) {
             TablePrivDefinition tablePrivDefinition = (TablePrivDefinition) privilegeDefinition;
-            revokeTablePrivilege(privilegeDefinition.getUser(), privilegeDefinition.getHost(),
+            revokeTablePrivilege(privilegeDefinition,
                 tablePrivDefinition.getSchemaName(), tablePrivDefinition.getTableName(),
                 privilegeDefinition.getPrivilegeList());
         }
@@ -170,8 +177,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         if (userDefinition == null) {
             return null;
         }
-        List<Object[]> dpValues = getSchemaPrivilegeList(user, userDefinition.getHost());
-        List<Object[]> tpValues = getTablePrivilegeList(user, userDefinition.getHost());
+        List<Object[]> dpValues = getSchemaPrivilegeList(userDefinition);
+        List<Object[]> tpValues = getTablePrivilegeList(userDefinition);
         Map<String, SchemaPrivDefinition> schemaPrivDefMap = new HashMap<>();
         if (dpValues != null) {
             dpValues.forEach(dbValue -> {
@@ -208,11 +215,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
-        Object[] keys = getUserKeys(user, host);
-        Object[] userPrivilege = get(userTable, keys);
+        Object[] keys = new Object[] {host, user};
+        Object[] userPrivilege = get(userStore, userCodec, keys);
         if (userPrivilege == null) {
             keys[0] = "%";
-            userPrivilege = get(userTable, keys);
+            userPrivilege = get(userStore, userCodec, keys);
             if (userPrivilege == null) {
                 return null;
             }
@@ -242,133 +249,99 @@ public class UserService implements io.dingodb.verify.service.UserService {
         log.info("flush privileges");
     }
 
-    private Map<String, Object> getUserObjectMap(String user, String host) {
-        Map<String, Object> map = Maps.newLinkedHashMap();
-        userTd.getColumns().forEach(column -> {
+    private Object[] createUserRow(UserDefinition user) {
+        Object[] row = new Object[userTd.getColumnsCount()];
+        for (int i = 0; i < userTd.getColumns().size(); i++) {
+            ColumnDefinition column = userTd.getColumn(i);
             switch (column.getName()) {
                 case "USER":
-                    map.put(column.getName(), user);
+                    row[i] = user.getUser();
                     break;
                 case "HOST":
-                    map.put(column.getName(), host);
+                    row[i] = user.getHost();
                     break;
                 case "AUTHENTICATION_STRING":
+                    row[i] = user.getPassword();
+                    break;
                 case "SSL_TYPE":
                 case "SSL_CIPHER":
                 case "X509_ISSUER":
                 case "X509_SUBJECT":
-                    map.put(column.getName(), "");
+                    row[i] = "";
                     break;
                 case "PASSWORD_LIFETIME":
                 case "MAX_QUESTIONS":
                 case "MAX_UPDATES":
                 case "MAX_CONNECTIONS":
                 case "MAX_USER_CONNECTIONS":
-                    map.put(column.getName(), 0);
+                    row[i] = 0;
                     break;
                 case "PLUGIN":
-                    map.put(column.getName(), "mysql_native_password");
+                    row[i] = user.getPlugin();
                     break;
                 case "PASSWORD_LAST_CHANGED":
-                    map.put(column.getName(), new Timestamp(System.currentTimeMillis()));
+                    row[i] = new Timestamp(System.currentTimeMillis());
                     break;
                 default:
-                    map.put(column.getName(), "N");
-
+                    row[i] = "N";
             }
-        });
-        return map;
-    }
-
-    public void upsert(String tableName, Object[] values, String operator) {
-        CommonId tableId = metaService.getTableId(tableName);
-        CommonId regionId = getRegionId(tableId);
-        try {
-            if (operator.equals(UPDATE)) {
-                storeService.getInstance(tableId, regionId).update(values);
-            } else {
-                storeService.getInstance(tableId, regionId).insert(values);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
-    }
-
-    public List<Object[]> getScan(String tableName, Object[] startKey, Object[] endKey) {
-        CommonId tableId = metaService.getTableId(tableName);
-        CommonId regionId = getRegionId(tableId);
-        try {
-            Iterator<Object[]> iterator = storeService.getInstance(tableId, regionId).tupleScan(startKey, endKey, true, true);
-            if (iterator == null) {
-               return null;
-            }
-            List<Object[]> list = new ArrayList<>();
-            while (iterator.hasNext()) {
-                list.add(iterator.next());
-            }
-            return list;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Object[] get(String tableName, Object[] key) {
-        CommonId tableId = metaService.getTableId(tableName);
-        CommonId regionId = getRegionId(tableId);
-        try {
-            return storeService.getInstance(tableId, regionId).getTupleByPrimaryKey(key);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public boolean delete(String tableName, Object[] keys) {
-        CommonId tableId = metaService.getTableId(tableName);
-        CommonId regionId = getRegionId(tableId);
-        try {
-            return storeService.getInstance(tableId, regionId).delete(keys);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return row;
     }
 
     private void grantUser(UserDefinition userDefinition) {
-        Object[] userValues = get(userTable, getUserKeys(userDefinition.getUser(), userDefinition.getHost()));
-
-        userDefinition.getPrivilegeList().forEach(privilege -> {
-            Integer index = PrivilegeDict.userPrivilegeIndex.get(privilege.toLowerCase());
-            if (index != null) {
-                userValues[index] = "Y";
-            }
-        });
-        upsert(userTable, userValues, UPDATE);
+        try {
+            Object[] userValues = userCodec.decode(
+                userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)))
+            );
+            userDefinition.getPrivilegeList().forEach(privilege -> {
+                Integer index = PrivilegeDict.userPrivilegeIndex.get(privilege.toLowerCase());
+                if (index != null) {
+                    userValues[index] = "Y";
+                }
+            });
+            // todo fix null old value
+            KeyValue row = userCodec.encode(userValues);
+            userStore.update(row, new KeyValue(row.getKey(), null));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void grantDbPrivilege(SchemaPrivDefinition schemaPrivDefinition) {
-        String operator = UPDATE;
-        Object[] dbValues = get(dbPrivilegeTable, getDbPrivilegeKeys(schemaPrivDefinition.getUser(),
-            schemaPrivDefinition.getHost(), schemaPrivDefinition.getSchemaName()));
+        boolean exist = true;
+        Object[] dbValues = get(
+            dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(schemaPrivDefinition, schemaPrivDefinition.getSchemaName())
+        );
         if (dbValues == null) {
             log.info("db privilege is empty");
             dbValues = getDbPrivilege(schemaPrivDefinition.getUser(), schemaPrivDefinition.getHost(),
                 schemaPrivDefinition.getSchemaName());
-            operator = INSERT;
+            exist = false;
         }
         Object[] finalDbValues = dbValues;
         schemaPrivDefinition.getPrivilegeList().forEach(privilege ->
             finalDbValues[PrivilegeDict.dbPrivilegeIndex.get(privilege.toLowerCase())] = "Y");
 
-        upsert(dbPrivilegeTable, finalDbValues, operator);
+        if (exist) {
+            update(dbPrivStore, dbPrivCodec, finalDbValues);
+        } else {
+            insert(dbPrivStore, dbPrivCodec, finalDbValues);
+        }
     }
 
     private void grantTablePrivilege(TablePrivDefinition tablePrivDefinition) {
-        String operator = UPDATE;
-        Object[] tpValues = get(tablePrivilegeTable, getTablePrivilegeKeys(tablePrivDefinition.getUser(),
-            tablePrivDefinition.getHost(), tablePrivDefinition.getSchemaName(), tablePrivDefinition.getTableName()));
+        boolean exist = true;
+        String schemaName = tablePrivDefinition.getSchemaName();
+        String tableName = tablePrivDefinition.getTableName();
+        Object[] tpValues = get(
+            tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(tablePrivDefinition, schemaName, tableName)
+        );
         if (tpValues == null) {
-            tpValues = getTablePrivilege(tablePrivDefinition.getUser(), tablePrivDefinition.getHost(),
-                tablePrivDefinition.getSchemaName(), tablePrivDefinition.getTableName());
-            operator = INSERT;
+            tpValues = getTablePrivilege(
+                tablePrivDefinition.getUser(), tablePrivDefinition.getHost(), schemaName, tableName
+            );
+            exist = false;
         }
         String tp = (String) tpValues[6];
         String[] privileges = tp.split(",");
@@ -380,7 +353,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
 
         tpValues[6] = String.join(",", privilegeList);
-        upsert(tablePrivilegeTable, tpValues, operator);
+        if (exist) {
+            update(tablePrivStore, tablePrivCodec, tpValues);
+        } else {
+            insert(tablePrivStore, tablePrivCodec, tpValues);
+        }
     }
 
     private static Object[] getDbPrivilege(String user, String host, String db) {
@@ -394,9 +371,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
         return dbValues;
     }
 
-    private List<Object[]> getTablePrivilegeList(String user, String host) {
-        Object[] keys = getTablePrivilegeKeys(user, host, "", "");
-        return getScan(tablePrivilegeTable, keys, keys);
+    private List<Object[]> getTablePrivilegeList(UserDefinition user) {
+        Object[] keys = getTablePrivilegeKeys(user, "", "");
+        return scan(tablePrivStore, tablePrivCodec, keys, keys);
     }
 
     private static Object[] getTablePrivilege(String user, String host, String db, String tableName) {
@@ -411,23 +388,21 @@ public class UserService implements io.dingodb.verify.service.UserService {
         return tpValues;
     }
 
-    public void revokeUser(String user, String host, List<String> privilegeList) {
-        Object[] userValues = get(userTable, getUserKeys(user, host));
+    public void revokeUser(PrivilegeDefinition privilege, List<String> privilegeList) {
+        Object[] userValues = get(userStore, userCodec, getUserKeys(privilege));
         if (userValues == null) {
             return;
         }
-        privilegeList.forEach(privilege -> userValues[PrivilegeDict.userPrivilegeIndex
-            .get(privilege.toLowerCase())] = "N");
-        upsert(userTable, userValues, UPDATE);
+        privilegeList.forEach(priv -> userValues[PrivilegeDict.userPrivilegeIndex.get(priv.toLowerCase())] = "N");
+        update(userStore, userCodec, userValues);
     }
 
-    public void revokeDbPrivilege(String user, String host, String schema, List<String> privilegeList) {
-        Object[] dbValues = get(dbPrivilegeTable, getDbPrivilegeKeys(user, host, schema));
+    public void revokeDbPrivilege(PrivilegeDefinition privilege, String schema, List<String> privilegeList) {
+        Object[] dbValues = get(dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(privilege, schema));
         if (dbValues == null) {
             return;
         }
-        privilegeList.forEach(privilege -> dbValues[PrivilegeDict.dbPrivilegeIndex
-            .get(privilege.toLowerCase())] = "N");
+        privilegeList.forEach(priv -> dbValues[PrivilegeDict.dbPrivilegeIndex.get(priv.toLowerCase())] = "N");
 
         int n = 0;
         for (int i = 3; i < dbValues.length; i++) {
@@ -436,26 +411,27 @@ public class UserService implements io.dingodb.verify.service.UserService {
             }
         }
         if (n == 19) {
-            delete(dbPrivilegeTable, dbValues);
+            delete(dbPrivStore, dbPrivCodec, dbValues);
         } else {
-            upsert(dbPrivilegeTable, dbValues, UPDATE);
+            update(dbPrivStore, dbPrivCodec, dbValues);
         }
     }
 
-    public void revokeTablePrivilege(String user, String host, String schemaName,
-                                     String tableNameOwner,
-                                     List<String> privilegeList) {
-        Object[] tablesPrivValues = get(tablePrivilegeTable, getTablePrivilegeKeys(user, host,
-            schemaName, tableNameOwner));
+    public void revokeTablePrivilege(
+        PrivilegeDefinition privilege, String schemaName, String tableNameOwner, List<String> privilegeList
+    ) {
+        Object[] tablesPrivValues = get(
+            tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(privilege, schemaName, tableNameOwner)
+        );
         if (tablesPrivValues == null) {
             return;
         }
         String tablePriv = (String) tablesPrivValues[6];
         String[] privileges = tablePriv.split(",");
         StringBuilder tpBuilder = new StringBuilder();
-        for (String privilege : privileges) {
-            if (!privilegeList.contains(privilege.toLowerCase())) {
-                tpBuilder.append(privilege);
+        for (String priv : privileges) {
+            if (!privilegeList.contains(priv.toLowerCase())) {
+                tpBuilder.append(priv);
                 tpBuilder.append(",");
             }
         }
@@ -465,15 +441,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
         tablePriv = tpBuilder.toString();
         tablesPrivValues[6] = tablePriv;
         if (StringUtils.isBlank(tablePriv)) {
-            delete(tablePrivilegeTable, tablesPrivValues);
+            delete(tablePrivStore, tablePrivCodec, tablesPrivValues);
         } else {
-            upsert(tablePrivilegeTable, tablesPrivValues, UPDATE);
+            update(tablePrivStore, tablePrivCodec, tablesPrivValues);
         }
     }
 
-    private List<Object[]> getSchemaPrivilegeList(String user, String host) {
-        Object[] keys = getDbPrivilegeKeys(user, host, "");
-        return getScan(dbPrivilegeTable, keys, keys);
+    private List<Object[]> getSchemaPrivilegeList(PrivilegeDefinition user) {
+        Object[] keys = getDbPrivilegeKeys(user, "");
+        return scan(dbPrivStore, dbPrivCodec, keys, keys);
     }
 
     private static Boolean[] tpMapping(Object[] tpValues) {
@@ -492,7 +468,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         PrivilegeDict.privilegeIndexDict.forEach((k, v) -> {
             Integer index = PrivilegeDict.userPrivilegeIndex.get(k);
             if (index != null) {
-                userPrivileges[v] = getTrue(userValues[index]);
+                userPrivileges[v] = isTrue(userValues[index]);
             }
         });
         return userPrivileges;
@@ -504,65 +480,97 @@ public class UserService implements io.dingodb.verify.service.UserService {
         PrivilegeDict.privilegeIndexDict.forEach((k, v) -> {
             Integer index = PrivilegeDict.dbPrivilegeIndex.get(k);
             if (index != null) {
-                schemaPrivileges[v] = getTrue(dbValues[index]);
+                schemaPrivileges[v] = isTrue(dbValues[index]);
             }
         });
         return schemaPrivileges;
     }
 
-    private static Boolean getTrue(Object value) {
+    private static Boolean isTrue(Object value) {
         return "Y".equalsIgnoreCase(value.toString());
     }
 
     private CommonId getRegionId(CommonId tableId) {
-        return regionIdMap.computeIfAbsent(tableId, k -> {
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-                metaService.getRangeDistribution(tableId);
-            if (parts.isEmpty()) {
-                return null;
-            }
-            return parts.firstEntry().getValue().getId();
-        });
+        return Optional.ofNullable(metaService.getRangeDistribution(tableId))
+            .map(NavigableMap::firstEntry)
+            .map(Map.Entry::getValue)
+            .map(RangeDistribution::getId)
+            .orElseThrow("Cannot get region for " + tableId);
     }
 
-    private void deleteRange(String tableName, Object[] startKey) {
-        CommonId tableId = metaService.getTableId(tableName);
-        CommonId regionId = getRegionId(tableId);
+    private static void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {
         try {
-            storeService.getInstance(tableId, regionId).countDeleteByRange(startKey, startKey, true, true, true);
+            store.insert(codec.encode(row));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void update(StoreInstance store, KeyValueCodec codec, Object[] row) {
+        try {
+            // todo fix old row is null
+            KeyValue keyValue = codec.encode(row);
+            store.update(keyValue, new KeyValue(keyValue.getKey(), null));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<Object[]> scan(StoreInstance store, KeyValueCodec codec, Object[] startKey, Object[] endKey) {
+        try {
+            Iterator<KeyValue> iterator = store.scan(
+                new StoreInstance.Range(codec.encodeKey(startKey), codec.encodeKey(endKey), true, true)
+            );
+            if (iterator == null) {
+                return null;
+            }
+            List<Object[]> list = new ArrayList<>();
+            while (iterator.hasNext()) {
+                list.add(codec.decode(iterator.next()));
+            }
+            return list;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Object[] getUserKeys(String user, String host) {
-        Object[] values = new Object[userTd.getColumns().size()];
-        values[0] = host;
-        values[1] = user;
-        return values;
+    public static Object[] get(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            return Optional.mapOrNull(store.get(codec.encodeKey(key)), wrap(codec::decode));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private Object[] getDbPrivilegeKeys(String user, String host, String db) {
-        Object[] values = new Object[dbPrivTd.getColumns().size()];
-        values[0] = host;
-        values[1] = user;
-        if (StringUtils.isNotBlank(db)) {
-            values[2] = db;
+    public static boolean delete(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            return store.delete(codec.encodeKey(key));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return values;
     }
 
-    private Object[] getTablePrivilegeKeys(String user, String host, String db, String tableName) {
-        Object[] values = new Object[tablePrivTd.getColumns().size()];
-        values[0] = host;
-        values[1] = user;
-        if (StringUtils.isNotBlank(db)) {
-            values[2] = db;
+    private static void deletePrefix(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            byte[] prefix = codec.encodeKey(key);
+            store.delete(new StoreInstance.Range(prefix, prefix, true, true));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        if (StringUtils.isNotBlank(tableName)) {
-            values[3] = tableName;
-        }
-        return values;
+    }
+
+    private static Object[] getUserKeys(PrivilegeDefinition user) {
+        return new Object[] {user.getHost(), user.getUser()};
+    }
+
+    private static Object[] getDbPrivilegeKeys(PrivilegeDefinition user, String db) {
+        return new Object[] {user.getHost(), user.getUser(), isNotBlank(db) ? db : null};
+    }
+
+    private static Object[] getTablePrivilegeKeys(PrivilegeDefinition user, String db, String table) {
+        return new Object[] {
+            user.getHost(), user.getUser(), isNotBlank(db) ? db : null, isNotBlank(table) ? table : null
+        };
     }
 
 }
