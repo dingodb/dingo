@@ -51,7 +51,7 @@ public class QueryLikeWithPrefixTest {
     public void cleanUp() throws Exception {
     }
 
-    @Disabled
+    //@Disabled
     @Test
     public void testLike() throws SQLException, IOException {
         // abc%c%
@@ -65,7 +65,7 @@ public class QueryLikeWithPrefixTest {
         );
     }
 
-    @Disabled
+    //@Disabled
     @Test
     public void testLike2() throws SQLException, IOException {
         // abc_c_
@@ -76,7 +76,7 @@ public class QueryLikeWithPrefixTest {
         );
     }
 
-    @Disabled
+    //@Disabled
     @Test
     public void testLike3() throws SQLException, IOException {
         // a[a-zA-Z]c
@@ -87,7 +87,7 @@ public class QueryLikeWithPrefixTest {
         );
     }
 
-    @Disabled
+    //@Disabled
     @Test
     public void testLike4() throws SQLException, IOException {
         // a[^a-z]c
@@ -98,7 +98,7 @@ public class QueryLikeWithPrefixTest {
         );
     }
 
-    @Disabled
+    //@Disabled
     @Test
     public void testLike5() throws SQLException, IOException {
         // a[^a-z]c

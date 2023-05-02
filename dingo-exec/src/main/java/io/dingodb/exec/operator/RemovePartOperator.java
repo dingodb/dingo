@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -29,10 +30,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 @JsonTypeName("removePart")
@@ -72,11 +70,9 @@ public final class RemovePartOperator extends SourceOperator {
     @Override
     public void init() {
         super.init();
-        StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
         part = new PartInKvStore(
-            store,
-            schema,
-            keyMapping
+            Services.KV_STORE.getInstance(tableId, partId),
+            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
         );
     }
 
@@ -85,7 +81,7 @@ public final class RemovePartOperator extends SourceOperator {
         OperatorProfile profile = getProfile();
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
-        long count = part.getEntryCntAndDeleteByPart();
+        long count = 0;// todo must have range
         output.push(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("delete table by partition, get count: {}, cost: {} ms.",

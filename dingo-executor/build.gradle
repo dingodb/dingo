@@ -34,13 +34,13 @@ application {
 
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
+
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
 
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
@@ -49,9 +49,11 @@ dependencies {
     implementation project(":dingo-calcite")
     implementation project(":dingo-verify")
 
+    implementation project(":dingo-codec-api")
     implementation project(':dingo-net-api')
     implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
+
     implementation project(":dingo-cli:driver-mysql")
 
     implementation project(':dingo-driver:dingo-driver-host')

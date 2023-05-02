@@ -21,9 +21,10 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.codec.Codec;
-import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -38,7 +39,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Slf4j
 @Value.Enclosing
@@ -108,13 +108,15 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             return;
         }
 
-        Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(firstPrimaryColumnIndex).getType().toDingoSchema(0)), null, true);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
+        Object[] tuple = new Object[td.getColumnsCount()];
+
         byte[] prefixBytes;
         try {
-            prefixBytes = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+            tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                 prefix, DefinitionMapper.mapToDingoType(prefix.getType())
-            )});
+            );
+            prefixBytes = codec.encodeKeyPrefix(tuple, 1);
         } catch (IOException e) {
             log.error("Some errors occurred in encodeKeyForRangeScan: ", e);
             throw new RuntimeException(e);

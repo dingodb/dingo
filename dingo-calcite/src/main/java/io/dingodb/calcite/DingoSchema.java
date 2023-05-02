@@ -57,6 +57,7 @@ public class DingoSchema extends MutableSchema {
         tds.forEach((name, td) -> tableMap.put(
             name,
             new DingoTable(
+                metaService.getTableId(name),
                 context,
                 ImmutableList.<String>builder()
                     .addAll(names)

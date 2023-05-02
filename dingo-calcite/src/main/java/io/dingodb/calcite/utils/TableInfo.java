@@ -17,8 +17,9 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.partition.Distribution;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.RequiredArgsConstructor;
 
 import java.util.NavigableMap;
@@ -27,13 +28,14 @@ import java.util.NavigableMap;
 public class TableInfo {
 
     private final CommonId id;
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, ? extends Distribution> distributions;
+    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
 
     public CommonId getId() {
         return this.id;
     }
 
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, Distribution> getDistributions() {
-        return (NavigableMap<ByteArrayUtils.ComparableByteArray, Distribution>) this.distributions;
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRangeDistributions() {
+        return this.distributions;
     }
+
 }

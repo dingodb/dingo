@@ -20,7 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.DingoOpResult;
 import io.dingodb.common.Executive;
-import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.Key;

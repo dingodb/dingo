@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.codec.DingoKeyValueCodec;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -278,10 +277,6 @@ public class TableDefinition {
                 .map(ColumnDefinition::getType)
                 .toArray(DingoType[]::new)
         );
-    }
-
-    public DingoKeyValueCodec createCodec() {
-        return new DingoKeyValueCodec(getDingoType(), getKeyMapping());
     }
 
     public String toJson() throws JsonProcessingException {

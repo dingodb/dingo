@@ -19,15 +19,11 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Map;
-
 public interface StoreService {
 
     static StoreService getDefault() {
         return StoreServiceProvider.getDefault().get();
     }
-
-    default StoreInstance getInstance(@NonNull CommonId tableId) {return null;}
 
     default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
         return null;

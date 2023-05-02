@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.visitor;
+package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.CountAgg;
 import io.dingodb.exec.aggregate.CountAllAgg;
@@ -24,10 +25,13 @@ import io.dingodb.exec.aggregate.MaxAgg;
 import io.dingodb.exec.aggregate.MinAgg;
 import io.dingodb.exec.aggregate.Sum0Agg;
 import io.dingodb.exec.aggregate.SumAgg;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -55,5 +59,23 @@ final class AggFactory {
                 break;
         }
         throw new UnsupportedOperationException("Unsupported aggregation function \"" + kind + "\".");
+    }
+
+    static @NonNull TupleMapping getAggKeys(@NonNull ImmutableBitSet groupSet) {
+        return TupleMapping.of(
+            groupSet.asList().stream()
+                .mapToInt(Integer::intValue)
+                .toArray()
+        );
+    }
+
+    static List<Agg> getAggList(@NonNull List<AggregateCall> aggregateCallList, DingoType schema) {
+        return aggregateCallList.stream()
+            .map(c -> AggFactory.getAgg(
+                c.getAggregation().getKind(),
+                c.getArgList(),
+                schema
+            ))
+            .collect(Collectors.toList());
     }
 }

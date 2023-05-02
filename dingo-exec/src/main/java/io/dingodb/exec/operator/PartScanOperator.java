@@ -27,6 +27,7 @@ import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 @Slf4j
@@ -48,6 +49,6 @@ public final class PartScanOperator extends PartIteratorSourceOperator {
 
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
-        return part.getIterator();
+        return Collections.emptyIterator();// todo scan must have range
     }
 }

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @AutoService(UserServiceProvider.class)
 public class UserTestServiceProvider implements UserServiceProvider {
     @Override
-    public UserService root() {
+    public UserService get() {
         return UserTestService.INSTANCE;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.partition;
+package io.dingodb.exec.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,14 +23,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.DingoKeyValueCodec;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -41,38 +39,28 @@ import java.util.TreeMap;
 
 @JsonPropertyOrder({"definition", "ranges"})
 @JsonTypeName("RangeHash")
-public class RangeStrategy extends PartitionStrategy<CommonId> {
+public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
 
     @JsonProperty("definition")
     private final TableDefinition definition;
 
     @JsonProperty("ranges")
-    private final NavigableMap<ComparableByteArray, Distribution> ranges;
-
-    private final transient DingoKeyValueCodec codec;
+    @JsonSerialize(keyUsing = ComparableByteArray.JacksonKeySerializer.class)
+    @JsonDeserialize(keyUsing = ComparableByteArray.JacksonKeyDeserializer.class)
+    private final NavigableMap<ComparableByteArray, RangeDistribution> ranges;
 
     @JsonCreator
     public RangeStrategy(
         @JsonProperty("definition") @NonNull TableDefinition definition,
-        @JsonProperty("ranges") NavigableMap<ComparableByteArray, Distribution> ranges
+        @JsonProperty("ranges") NavigableMap<ComparableByteArray, RangeDistribution> ranges
     ) {
         this.ranges = ranges;
         this.definition = definition;
-        this.codec = definition.createCodec();
     }
 
     @Override
     public int getPartNum() {
         return ranges.size();
-    }
-
-    @Override
-    public CommonId calcPartId(Object @NonNull [] keyTuple) {
-        try {
-            return calcPartId(codec.encodeKey(keyTuple));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

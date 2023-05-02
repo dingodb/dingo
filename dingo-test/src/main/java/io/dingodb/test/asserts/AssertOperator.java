@@ -19,6 +19,7 @@ package io.dingodb.test.asserts;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Input;
 import io.dingodb.exec.base.Operator;
+import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.PartScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
 
@@ -45,6 +46,12 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
 
     public AssertOperator isPartScan(CommonId tableId, CommonId partId) {
         return isA(PartScanOperator.class)
+            .prop("tableId", tableId)
+            .prop("partId", partId);
+    }
+
+    public AssertOperator isPartRangeScan(CommonId tableId, CommonId partId) {
+        return isA(PartRangeScanOperator.class)
             .prop("tableId", tableId)
             .prop("partId", partId);
     }

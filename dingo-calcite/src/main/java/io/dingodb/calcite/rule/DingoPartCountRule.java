@@ -41,18 +41,20 @@ public class DingoPartCountRule extends RelRule<DingoPartCountRule.Config> {
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        final LogicalAggregate aggregate = call.rel(0);
-        final LogicalDingoTableScan scan = call.rel(1);
-        RelTraitSet traits = scan.getTraitSet()
-            .replace(DingoConvention.INSTANCE)
-            .replace(DingoRelStreaming.of(scan.getTable()));
-        call.transformTo(new DingoPartCountDelete(
-            scan.getCluster(),
-            traits,
-            scan.getTable(),
-            false,
-            aggregate.getRowType()
-        ));
+        // todo count or delete must have range
+        //
+        //final LogicalAggregate aggregate = call.rel(0);
+        //final LogicalDingoTableScan scan = call.rel(1);
+        //RelTraitSet traits = scan.getTraitSet()
+        //    .replace(DingoConvention.INSTANCE)
+        //    .replace(DingoRelStreaming.of(scan.getTable()));
+        //call.transformTo(new DingoPartCountDelete(
+        //    scan.getCluster(),
+        //    traits,
+        //    scan.getTable(),
+        //    false,
+        //    aggregate.getRowType()
+        //));
     }
 
     @Value.Immutable

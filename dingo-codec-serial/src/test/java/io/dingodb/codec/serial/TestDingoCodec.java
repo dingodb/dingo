@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+package io.dingodb.codec.serial;
 
+import io.dingodb.codec.Codec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import org.junit.jupiter.api.Assertions;

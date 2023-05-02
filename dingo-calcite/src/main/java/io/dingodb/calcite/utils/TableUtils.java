@@ -18,6 +18,9 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.parser.Expr;
@@ -38,6 +41,10 @@ public final class TableUtils {
 
     public static TableDefinition getTableDefinition(@NonNull RelOptTable table) {
         return Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableDefinition();
+    }
+
+    public static CommonId getTableId(@NonNull RelOptTable table) {
+        return Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId();
     }
 
     public static List<Object[]> getTuplesForMapping(
@@ -68,4 +75,9 @@ public final class TableUtils {
     ) {
         return getTuplesForMapping(items, td, td.getKeyMapping());
     }
+
+    public static KeyValueCodec getKeyValueCodecForTable(CommonId tableId, TableDefinition td) {
+        return CodecService.getDefault().createKeyValueCodec(tableId, td);
+    }
+
 }

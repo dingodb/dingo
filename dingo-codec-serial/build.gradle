@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+plugins {
+    id 'java-conventions'
+    id 'java-library'
+}
 
-import io.dingodb.common.store.KeyValue;
-import org.checkerframework.checker.nullness.qual.NonNull;
+dependencies {
+    api project(':dingo-codec-api')
 
-import java.io.IOException;
-
-public interface KeyValueCodec {
-    Object[] decode(KeyValue keyValue) throws IOException;
-
-    Object[] decodeKey(byte @NonNull [] bytes) throws IOException;
-
-    KeyValue encode(Object @NonNull [] tuple) throws IOException;
-
-    byte[] encodeKey(Object[] keys) throws IOException;
-
-    Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException;
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 }

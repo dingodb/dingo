@@ -16,7 +16,7 @@
 
 package io.dingodb.sdk.operation;
 
-import io.dingodb.common.codec.KeyValueCodec;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;

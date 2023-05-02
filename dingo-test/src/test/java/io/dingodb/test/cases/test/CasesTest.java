@@ -55,14 +55,12 @@ public class CasesTest {
         ).run(sqlHelper.getConnection());
     }
 
-    @Disabled
     @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(CasesJUnit5.class)
     public void test(String ignored, @NonNull Case testCase) throws Exception {
         testCase.run(sqlHelper.getConnection());
     }
 
-    @Disabled
     @ParameterizedTest(name = "StatementForEachStep [{index}] {0}")
     @ArgumentsSource(CasesJUnit5.class)
     public void testWithStatementForEachStep(String ignored, @NonNull Case testCase) throws Exception {

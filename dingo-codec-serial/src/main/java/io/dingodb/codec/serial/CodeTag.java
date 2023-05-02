@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+package io.dingodb.codec.serial;
 
 public class CodeTag {
     public static final byte UNFINISHFALG = 0;

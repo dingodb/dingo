@@ -82,8 +82,8 @@ public class TestAggregate {
         log.info("Graph of planner:\n {}", parser.getPlanner().toDot());
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoPartCountDelete.class).prop("doDeleting", false);
+            .soleInput().isA(DingoReduce.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class);
     }
 
     @Test

@@ -23,8 +23,8 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.RuleUtils;
 import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.codec.Codec;
-import io.dingodb.common.codec.DingoCodec;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,13 +40,12 @@ import org.immutables.value.Value;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
 @Value.Enclosing
-public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.Config> {
-    public DingoPartRangeDeleteRule(Config config) {
+public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
+    public DingoRangeDeleteRule(Config config) {
         super(config);
     }
 
@@ -86,11 +85,11 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
         final DingoTableModify rel0 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        Codec codec = new DingoCodec(Collections.singletonList(
-            td.getColumn(td.getFirstPrimaryColumnIndex()).getType().toDingoSchema(0)), null, true);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
 
         List<byte[]> byteList = calLeftAndRight(
-            ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, td.getFirstPrimaryColumnIndex(), codec);
+            ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, td.getFirstPrimaryColumnIndex(), codec
+        );
         byte[] left = byteList.get(0);
         byte[] right = byteList.get(1);
 
@@ -118,7 +117,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
     }
 
     private List<byte[]> calLeftAndRight(
-        byte[] left, byte[] right, DingoTableScan rel, int firstPrimaryColumnIndex, Codec codec) {
+        byte[] left, byte[] right, DingoTableScan rel, int firstPrimaryColumnIndex, KeyValueCodec codec) {
         List<byte[]> list = new ArrayList();
         switch (rel.getFilter().getKind()) {
             case AND: {
@@ -134,17 +133,17 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                         switch (info.kind) {
                             case LESS_THAN:
                             case LESS_THAN_OR_EQUAL:
-                                right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                                right = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
                                     DefinitionMapper.mapToDingoType(info.value.getType())
-                                )});
+                                )}, 1);
                                 break;
                             case GREATER_THAN:
                             case GREATER_THAN_OR_EQUAL:
-                                left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                                left = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
                                     DefinitionMapper.mapToDingoType(info.value.getType())
-                                )});
+                                )}, 1);
                                 break;
                             default:
                                 break;
@@ -163,10 +162,10 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                     break;
                 }
                 try {
-                    right = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                    right = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                         info.value,
                         DefinitionMapper.mapToDingoType(info.value.getType())
-                    )});
+                    )}, 1);
                     left = null;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -180,10 +179,10 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
                     break;
                 }
                 try {
-                    left = codec.encodeKeyForRangeScan(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                    left = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
                         info.value,
                         DefinitionMapper.mapToDingoType(info.value.getType())
-                    )});
+                    )}, 1);
                     right = null;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -200,7 +199,7 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoPartRangeDeleteRule.Config.builder()
+        Config DEFAULT = ImmutableDingoRangeDeleteRule.Config.builder()
             .operandSupplier(
                 b0 -> b0.operand(DingoTableModify.class)
                     // It is a delete operation
@@ -230,8 +229,8 @@ public class DingoPartRangeDeleteRule extends RelRule<DingoPartRangeDeleteRule.C
             .build();
 
         @Override
-        default DingoPartRangeDeleteRule toRule() {
-            return new DingoPartRangeDeleteRule(this);
+        default DingoRangeDeleteRule toRule() {
+            return new DingoRangeDeleteRule(this);
         }
     }
 }

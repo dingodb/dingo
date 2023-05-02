@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.partition;
+package io.dingodb.exec.partition;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dingodb.common.type.TupleMapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -26,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -34,18 +34,14 @@ import java.util.Map;
 @JsonSubTypes({
     @JsonSubTypes.Type(RangeStrategy.class),
 })
-public abstract class PartitionStrategy<I> {
+public abstract class PartitionStrategy<I, K> {
 
     public abstract int getPartNum();
 
-    // Should be `String` for json serialization.
-    public abstract I calcPartId(final Object @NonNull [] keyTuple);
+    public abstract I calcPartId(final @NonNull K key);
 
-    public abstract I calcPartId(final byte @NonNull [] keyBytes);
-
-    public I calcPartId(final @NonNull Object[] tuple, @NonNull TupleMapping keyMapping) {
-        Object[] keyTuple = keyMapping.revMap(tuple);
-        return calcPartId(keyTuple);
+    public I calcPartId(final Object @NonNull [] key, @NonNull Function<Object[], K> getKeyFunction) {
+        return calcPartId(getKeyFunction.apply(key));
     }
 
     public abstract Map<byte[], byte[]> calcPartitionRange(
@@ -63,25 +59,23 @@ public abstract class PartitionStrategy<I> {
 
     public abstract Map<byte[], byte[]> calcPartitionByPrefix(final byte @NonNull [] prefix);
 
-    public Map<I, List<Object[]>> partKeyTuples(
-        final @NonNull Collection<Object[]> keyTuples
-    ) {
-        Map<I, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
-        for (Object[] tuple : keyTuples) {
-            I partId = calcPartId(tuple);
+    public Map<I, List<K>> partKeys(final @NonNull Collection<K> keys) {
+        Map<I, List<K>> map = new LinkedHashMap<>(getPartNum());
+        for (K key : keys) {
+            I partId = calcPartId(key);
             map.putIfAbsent(partId, new LinkedList<>());
-            map.get(partId).add(tuple);
+            map.get(partId).add(key);
         }
         return map;
     }
 
     public Map<I, List<Object[]>> partTuples(
         final @NonNull Collection<Object[]> tuples,
-        @NonNull TupleMapping keyMappings
+        @NonNull Function<Object[], K> getKeyFunction
     ) {
         Map<I, List<Object[]>> map = new LinkedHashMap<>(getPartNum());
         for (Object[] tuple : tuples) {
-            I partId = calcPartId(tuple, keyMappings);
+            I partId = calcPartId(getKeyFunction.apply(tuple));
             map.putIfAbsent(partId, new LinkedList<>());
             map.get(partId).add(tuple);
         }

@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.cluster.ClusterServiceProvider;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.sdk.common.cluster.Executor;
@@ -31,21 +32,28 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ClusterService implements io.dingodb.cluster.ClusterService {
+public final class ClusterService implements io.dingodb.cluster.ClusterService {
 
     public static final ClusterService DEFAULT_INSTANCE = new ClusterService();
 
-    private static final CoordinatorServiceConnector connector = getCoordinatorServiceConnector();
-
-    private static final ClusterServiceClient client = new ClusterServiceClient(connector);
-
-    @AutoService(io.dingodb.cluster.ClusterServiceProvider.class)
-    public static class ClusterServiceProvider implements io.dingodb.cluster.ClusterServiceProvider {
+    @AutoService(ClusterServiceProvider.class)
+    public static final class Provider implements ClusterServiceProvider {
         @Override
         public io.dingodb.cluster.ClusterService get() {
             return DEFAULT_INSTANCE;
         }
     }
+
+    private ClusterService() {
+    }
+
+    //
+    // Cluster service.
+    //
+
+    private static final CoordinatorServiceConnector connector = getCoordinatorServiceConnector();
+
+    private static final ClusterServiceClient client = new ClusterServiceClient(connector);
 
     @Override
     public List<Location> getComputingLocations() {

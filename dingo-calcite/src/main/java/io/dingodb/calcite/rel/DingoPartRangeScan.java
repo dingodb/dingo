@@ -89,4 +89,21 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    public static DingoPartRangeScan of(DingoTableScan tableScan) {
+        return new DingoPartRangeScan(
+            tableScan.getCluster(),
+            tableScan.getTraitSet(),
+            tableScan.getHints(),
+            tableScan.getTable(),
+            tableScan.getFilter(),
+            tableScan.getSelection(),
+            null,
+            null,
+            false,
+            true,
+            false
+        );
+    }
+
 }

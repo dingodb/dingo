@@ -45,7 +45,6 @@ public class RangeDistribution implements Distribution {
     @JsonProperty("endKey")
     private byte[] endKey;
 
-    @JsonCreator
     public RangeDistribution(@JsonProperty("id") CommonId id) {
         this.id = id;
     }

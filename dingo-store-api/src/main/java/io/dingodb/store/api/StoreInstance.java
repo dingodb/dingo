@@ -16,52 +16,55 @@
 
 package io.dingodb.store.api;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.store.Part;
-import io.dingodb.common.store.Row;
-import io.dingodb.common.util.ByteArrayUtils;
+import lombok.AllArgsConstructor;
 
 import java.util.Iterator;
 import java.util.List;
 
 public interface StoreInstance {
 
-    default long countDeleteByRange(
-        Object[] startPrimaryKey, Object[] endPrimaryKey, boolean includeStart, boolean includeEnd, boolean doDelete
-    ) {
+    @AllArgsConstructor
+    class Range {
+        public final byte[] start;
+        public final byte[] end;
+        public final boolean withStart;
+        public final boolean withEnd;
+    }
+
+    default boolean insert(KeyValue row) {
         throw new UnsupportedOperationException();
     }
 
-    default Object[] getTupleByPrimaryKey(Object[] primaryKey) {
+    default boolean update(KeyValue row, KeyValue old) {
         throw new UnsupportedOperationException();
     }
 
-    default List<Object[]> getTuplesByPrimaryKeys(List<Object[]> primaryKeys) {
+    default boolean delete(byte[] key) {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<Object[]> tupleScan() {
+    default long delete(Range range) {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<Object[]> tupleScan(Object[] start, Object[] end, boolean withStart, boolean withEnd) {
+    default KeyValue get(byte[] key) {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<Object[]> keyValuePrefixScan(Object[] prefix) {
+    default List<KeyValue> get(List<byte[]> keys) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean insert(Object[] row) {
+    default Iterator<KeyValue> scan(byte[] prefix) {
+        return scan(new Range(prefix, prefix, true, true));
+    }
+
+    default Iterator<KeyValue> scan(Range range) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean update(Object[] row) {
-        throw new UnsupportedOperationException();
-    }
-
-    default boolean delete(Object[] row) {
+    default long count(Range range) {
         throw new UnsupportedOperationException();
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.partition;
+package io.dingodb.exec.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,7 +30,7 @@ import java.util.Objects;
 
 @JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
-public final class SimplePartitionStrategy extends PartitionStrategy<String> {
+public final class SimplePartitionStrategy extends PartitionStrategy<String, Object[]> {
     @JsonProperty("partNum")
     @Getter
     private final int partNum;
@@ -46,12 +46,6 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String> {
     @Override
     public @NonNull String calcPartId(Object @NonNull [] keyTuples) {
         int hash = Objects.hash(keyTuples);
-        return Integer.toString(Math.abs(hash) % partNum);
-    }
-
-    @Override
-    public @NonNull String calcPartId(byte @NonNull [] keyBytes) {
-        int hash = Objects.hash(keyBytes);
         return Integer.toString(Math.abs(hash) % partNum);
     }
 

@@ -231,7 +231,7 @@ public class RecordEncoder {
     }
 
     public byte[] encodeKey(Object[] record) throws IOException {
-        return internalEncodeKey(record).getByteArray();
+        return internalEncodeKey(record, schemas.size()).getByteArray();
     }
 
     public byte[] encodeKey(byte[] record, int[] index, Object[] columns) throws IOException {
@@ -348,11 +348,11 @@ public class RecordEncoder {
         }
     }
 
-    public byte[] encodeKeyWithoutLength(Object[] record) throws IOException {
-        return internalEncodeKey(record).getByteArrayWithoutLength();
+    public byte[] encodeKeyWithoutLength(Object[] record, int columnCount) throws IOException {
+        return internalEncodeKey(record, columnCount).getByteArrayWithoutLength();
     }
 
-    private BinaryEncoder internalEncodeKey(Object[] record) throws IOException {
+    private BinaryEncoder internalEncodeKey(Object[] record, int columnCount) throws IOException {
         BinaryEncoder be = new BinaryEncoder(new byte[approPerRecordSize], new byte[perRecordKeySize]);
         be.write(finishedFlag);
         be.writeBytes(transactionId);
@@ -408,6 +408,9 @@ public class RecordEncoder {
                     be.writeStringList(Utils.processNullColumn(schema, record[schema.getIndex()]));
                     break;
                 default:
+            }
+            if (--columnCount < 1) {
+                break;
             }
         }
         return be;

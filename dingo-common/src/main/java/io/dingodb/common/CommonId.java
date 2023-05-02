@@ -19,9 +19,10 @@ package io.dingodb.common;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.EqualsAndHashCode;
@@ -30,15 +31,15 @@ import lombok.NonNull;
 import java.io.IOException;
 import java.io.Serializable;
 
-import static io.dingodb.common.codec.PrimitiveCodec.decodeInt;
+import static io.dingodb.common.codec.PrimitiveCodec.decodeLong;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CommonId implements Comparable<CommonId>, Serializable {
     private static final long serialVersionUID = 3355195360067107406L;
 
     public static final int TYPE_LEN = 1;
-    public static final int DOMAIN_LEN = 4;
-    public static final int SEQ_LEN = 4;
+    public static final int DOMAIN_LEN = 8;
+    public static final int SEQ_LEN = 8;
     public static final int LEN = TYPE_LEN + DOMAIN_LEN + SEQ_LEN;
 
     public static final int TYPE_IDX = 0;
@@ -74,14 +75,14 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     public final CommonType type;
-    public final int domain;
-    public final int seq;
+    public final long domain;
+    public final long seq;
 
     private transient volatile byte[] content;
     @EqualsAndHashCode.Include
     private final transient String str;
 
-    public CommonId(CommonType type, int domain, int seq) {
+    public CommonId(CommonType type, long domain, long seq) {
         this.type = type;
         this.domain = domain;
         this.seq = seq;
@@ -102,8 +103,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         if (content == null) {
             content = new byte[LEN];
             content[0] = (byte) type.code;
-            PrimitiveCodec.encodeInt(domain, content, DOMAIN_IDX);
-            PrimitiveCodec.encodeInt(seq, content, SEQ_IDX);
+            PrimitiveCodec.encodeLong(domain, content, DOMAIN_IDX);
+            PrimitiveCodec.encodeLong(seq, content, SEQ_IDX);
         }
         return content;
     }
@@ -123,39 +124,49 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static CommonId decode(byte[] content, int index) {
         return new CommonId(
             CommonType.of(content[index]),
-            content.length >= SEQ_IDX ? decodeInt(content, index + DOMAIN_IDX) : 0,
-            content.length >= LEN ? decodeInt(content, index + SEQ_IDX) : 0
+            content.length >= SEQ_IDX ? decodeLong(content, index + DOMAIN_IDX) : 0,
+            content.length >= LEN ? decodeLong(content, index + SEQ_IDX) : 0
         );
     }
 
-    public static CommonId prefix(byte type, int domain) {
+    public static CommonId prefix(byte type, long domain) {
         return new CommonId(CommonType.of(type), domain, 0);
     }
 
-    public static CommonId prefix(CommonType type, int domain) {
+    public static CommonId prefix(CommonType type, long domain) {
         return new CommonId(type, domain, 0);
     }
 
 
-    public static class JacksonSerializer extends StdSerializer<CommonId> {
-        protected JacksonSerializer() {
-            super(CommonId.class);
-        }
-
+    public static class JacksonSerializer extends JsonSerializer<CommonId> {
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             gen.writeBinary(value.encode());
         }
     }
 
-    public static class JacksonDeserializer extends StdDeserializer<CommonId> {
-        protected JacksonDeserializer() {
-            super(CommonId.class);
-        }
+    public static class JacksonDeserializer extends JsonDeserializer<CommonId> {
 
         @Override
         public CommonId deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             return decode(parser.getBinaryValue());
         }
     }
+
+    public static class JacksonKeySerializer extends JsonSerializer<CommonId> {
+        @Override
+        public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeFieldName(new String(value.encode()));
+        }
+    }
+
+    public static class JacksonKeyDeserializer extends KeyDeserializer {
+
+        @Override
+        public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+            return decode(key.getBytes());
+        }
+
+    }
+
 }

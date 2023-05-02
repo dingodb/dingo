@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.codec;
+package io.dingodb.codec.serial;
 
+import io.dingodb.codec.Codec;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.serial.io.RecordDecoder;
 import io.dingodb.serial.io.RecordEncoder;
@@ -89,8 +90,8 @@ public class DingoCodec implements Codec {
     }
 
     @Override
-    public byte[] encodeKeyForRangeScan(Object[] tuple) throws IOException, ClassCastException {
-        return re.encodeKeyWithoutLength(tuple);
+    public byte[] encodeKeyForRangeScan(Object[] tuple, int columnCount) throws IOException, ClassCastException {
+        return re.encodeKeyWithoutLength(tuple, columnCount);
     }
 
     @Override

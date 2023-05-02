@@ -520,7 +520,6 @@ public class DdlTest {
         table.drop();
     }
 
-    @Disabled
     @Test
     public void testCreateTableWithPartition1() throws SQLException, JsonProcessingException {
         RandomTable table = sqlHelper.randomTable();

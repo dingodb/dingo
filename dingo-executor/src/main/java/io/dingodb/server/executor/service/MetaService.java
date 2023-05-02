@@ -18,25 +18,22 @@ package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.meta.Meta;
+import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
-import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.SCHEMA;
@@ -44,16 +41,25 @@ import static io.dingodb.server.executor.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
-    public static final MetaService ROOT = new MetaService(
-        new MetaServiceClient(MetaServiceConnector.getMetaServiceConnector(Configuration.coordinators())));
+    public static final MetaService ROOT = new MetaService(new MetaServiceClient(
+        MetaServiceConnector.getMetaServiceConnector(Configuration.coordinators()))
+    );
 
-    @AutoService(io.dingodb.meta.MetaServiceProvider.class)
-    public static class MetaServiceProvider implements io.dingodb.meta.MetaServiceProvider {
+    @AutoService(MetaServiceProvider.class)
+    public static class Provider implements MetaServiceProvider {
         @Override
         public io.dingodb.meta.MetaService root() {
             return ROOT;
         }
     }
+
+    private MetaService(MetaServiceClient metaServiceClient) {
+        this.metaServiceClient = metaServiceClient;
+    }
+
+    //
+    // Meta service.
+    //
 
     public static CommonId getParentSchemaId(CommonId tableId) {
         return new CommonId(SCHEMA, 0, tableId.domain);
@@ -61,13 +67,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     protected final MetaServiceClient metaServiceClient;
 
-    public MetaService(MetaServiceClient metaServiceClient) {
-        this.metaServiceClient = metaServiceClient;
-    }
-
     @Override
     public CommonId id() {
-        return null;
+        // todo refactor
+        Meta.DingoCommonId id = metaServiceClient.id();
+        return new CommonId(
+            CommonId.CommonType.of(id.getEntityType().getNumber()), id.getParentEntityId(), id.getEntityId()
+        );
     }
 
     @Override
@@ -83,12 +89,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public Map<String, io.dingodb.meta.MetaService> getSubMetaServices() {
         return metaServiceClient.getSubMetaServices().values().stream()
-            .map(MetaService::new)
-            .collect(Collectors.toMap(MetaService::name, Function.identity()));
+            .collect(Collectors.toMap(MetaServiceClient::name, MetaService::new));
     }
 
     @Override
-    public io.dingodb.meta.MetaService getSubMetaService(String name) {
+    public MetaService getSubMetaService(String name) {
         return new MetaService(metaServiceClient.getSubMetaService(name.toLowerCase()));
     }
 
@@ -118,11 +123,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
-        return metaServiceClient.getTableDefinitions()
-            .values()
-            .stream()
-            .map(Mapping::mapping)
-            .collect(Collectors.toMap(TableDefinition::getName, Function.identity()));
+        return metaServiceClient.getTableDefinitions().values().stream()
+            .collect(Collectors.toMap(Table::getName, Mapping::mapping));
     }
 
     @Override
@@ -135,30 +137,17 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return mapping(metaServiceClient.getTableDefinition(mapping(id)));
     }
 
+    public RangeDistribution getRangeDistribution(CommonId tableId, CommonId distributionId) {
+        return getRangeDistribution(tableId).values().stream()
+            .filter(d -> d.id().equals(distributionId))
+            .findAny().get();
+    }
+
     @Override
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        NavigableMap<ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> distribution =
-            metaServiceClient.getRangeDistribution(mapping(id));
-        for (Map.Entry<ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {
-            result.put(new ByteArrayUtils.ComparableByteArray(entry.getKey().getBytes()), mapping(entry.getValue()));
-        }
+    public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        metaServiceClient.getRangeDistribution(mapping(id)).forEach((k, v) -> result.put(mapping(k), mapping(v)));
         return result;
-    }
-
-    @Override
-    public Location currentLocation() {
-        return DingoConfiguration.location();
-    }
-
-    @Override
-    public void createIndex(String tableName, List<Index> indexList) {
-
-    }
-
-    @Override
-    public void dropIndex(String tableName, String indexName) {
-
     }
 
     @Override

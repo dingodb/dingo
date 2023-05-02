@@ -18,7 +18,9 @@ package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -152,15 +154,32 @@ public interface MetaService {
     }
 
     /**
+     * Get range distributions by table id.
+     *
+     * @param id table id
+     * @return table range distributions
+     */
+    default NavigableMap<ComparableByteArray, RangeTupleDistribution> getRangeTupleDistribution(CommonId id) {
+        // todo
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Returns current process location.
      *
      * @return current process location
      */
-    Location currentLocation();
+    default Location currentLocation() {
+        return DingoConfiguration.location();
+    }
 
-    void createIndex(String tableName, List<Index> indexList);
+    default void createIndex(String tableName, List<Index> indexList) {
+        throw new UnsupportedOperationException();
+    }
 
-    void dropIndex(String tableName, String indexName);
+    default void dropIndex(String tableName, String indexName) {
+        throw new UnsupportedOperationException();
+    }
 
     TableStatistic getTableStatistic(@NonNull String tableName);
 }

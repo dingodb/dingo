@@ -75,7 +75,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
                 }
             }
             if (updated) {
-                part.upsert(Arrays.copyOf(tuple, schema.fieldCount()));
+                part.update(Arrays.copyOf(tuple, schema.fieldCount()));
                 count++;
             }
         } catch (Exception ex) {

@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.table;
 
+import io.dingodb.common.store.KeyValue;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -25,40 +26,38 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public interface Part {
-    @NonNull Iterator<Object[]> getIterator();
 
-    @NonNull Iterator<Object[]> getIteratorByRange(
-        byte[] startKey,
-        byte[] endKey,
-        boolean includeStart,
-        boolean includeEnd,
-        boolean prefixScan
-    );
-
-    long countDeleteByRange(byte[] startPrimaryKey, byte[] endPrimaryKey, boolean includeStart, boolean includeEnd);
-
-    boolean insert(Object @NonNull [] tuple);
-
-    void upsert(Object @NonNull [] tuple);
-
-    boolean remove(Object @NonNull [] tuple);
-
-    long getEntryCntAndDeleteByPart();
-
-    default long getEntryCnt() {
-        return getEntryCnt(null, null, true, false);
+    default @NonNull Iterator<Object[]> scan(byte[] prefix) {
+        return scan(prefix, prefix, true, true);
     }
 
-    long getEntryCnt(byte[] startKey, byte[] endKey, boolean includeStart, boolean includeEnd);
+    @NonNull Iterator<Object[]> scan(byte[] start, byte[] end, boolean withStart, boolean withEnd);
 
-    Object @Nullable [] getByKey(Object @NonNull [] keyTuple);
+    long delete(byte[] start, byte[] end, boolean withStart, boolean withEnd);
 
-    default @NonNull List<Object[]> getByMultiKey(final @NonNull List<Object[]> keyTuples) {
-        return keyTuples.stream()
-            .map(this::getByKey)
+    boolean insert(@NonNull KeyValue keyValue);
+
+    boolean insert(@NonNull Object[] keyValue);
+
+    boolean update(@NonNull KeyValue keyValue);
+
+    boolean update(@NonNull Object[] keyValue);
+
+    boolean remove(byte @NonNull [] key);
+
+    boolean remove(@NonNull Object[] key);
+
+    long count(byte[] start, byte[] end, boolean withStart, boolean withEnd);
+
+    Object @Nullable [] get(byte @NonNull [] key);
+
+    Object @Nullable [] get(Object @NonNull [] key);
+
+    default @NonNull List<Object[]> get(final @NonNull List<byte[]> keys) {
+        return keys.stream()
+            .map(this::get)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
 
-    Iterator<Object[]> keyValuePrefixScan(byte[] prefix);
 }

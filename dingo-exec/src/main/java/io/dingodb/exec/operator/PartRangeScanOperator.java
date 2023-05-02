@@ -44,8 +44,6 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     private final boolean includeStart;
     @JsonProperty("includeEnd")
     private final boolean includeEnd;
-    @JsonProperty("prefixScan")
-    private final boolean prefixScan;
 
     @JsonCreator
     public PartRangeScanOperator(
@@ -58,19 +56,17 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey,
         @JsonProperty("includeStart") boolean includeStart,
-        @JsonProperty("includeEnd") boolean includeEnd,
-        @JsonProperty("prefixScan") boolean prefixScan
+        @JsonProperty("includeEnd") boolean includeEnd
     ) {
         super(tableId, partId, schema, keyMapping, filter, selection);
         this.startKey = startKey;
         this.endKey = endKey;
         this.includeStart = includeStart;
         this.includeEnd = includeEnd;
-        this.prefixScan = prefixScan;
     }
 
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
-        return part.getIteratorByRange(startKey, endKey, includeStart, includeEnd, prefixScan);
+        return part.scan(startKey, endKey, includeStart, includeEnd);
     }
 }

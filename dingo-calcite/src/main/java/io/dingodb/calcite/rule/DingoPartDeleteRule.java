@@ -38,19 +38,20 @@ public class DingoPartDeleteRule extends RelRule<DingoPartDeleteRule.Config> {
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        final LogicalTableModify modify = call.rel(0);
-        final LogicalDingoTableScan scan = call.rel(1);
-        assert scan.getTable().getQualifiedName().equals(modify.getTable().getQualifiedName());
-        RelTraitSet traits = modify.getTraitSet()
-            .replace(DingoConvention.INSTANCE)
-            .replace(DingoRelStreaming.of(modify.getTable()));
-        call.transformTo(new DingoPartCountDelete(
-            modify.getCluster(),
-            traits,
-            scan.getTable(),
-            true,
-            modify.getRowType()
-        ));
+        // todo count or delete must have range
+        //final LogicalTableModify modify = call.rel(0);
+        //final LogicalDingoTableScan scan = call.rel(1);
+        //assert scan.getTable().getQualifiedName().equals(modify.getTable().getQualifiedName());
+        //RelTraitSet traits = modify.getTraitSet()
+        //    .replace(DingoConvention.INSTANCE)
+        //    .replace(DingoRelStreaming.of(modify.getTable()));
+        //call.transformTo(new DingoPartCountDelete(
+        //    modify.getCluster(),
+        //    traits,
+        //    scan.getTable(),
+        //    true,
+        //    modify.getRowType()
+        //));
     }
 
     @Value.Immutable

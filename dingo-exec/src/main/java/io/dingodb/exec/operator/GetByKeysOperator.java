@@ -80,7 +80,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
         return keyTuples.stream()
-            .map(part::getByKey)
+            .map(part::get)
             .filter(Objects::nonNull)
             .collect(Collectors.toList())
             .iterator();

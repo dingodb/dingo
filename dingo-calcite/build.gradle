@@ -39,6 +39,7 @@ dependencies {
     annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
     api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
     api project(':dingo-exec')
+    implementation project(':dingo-codec-api')
     compileOnly group: 'org.immutables', name: 'value', version: 'immutables'.v()
     implementation project(':dingo-expr:dingo-expr-parser')
     implementation project(':dingo-verify')
@@ -48,6 +49,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation project(':dingo-test')
     testImplementation project(':dingo-test:dingo-meta-local')
+    testImplementation project(':dingo-codec-serial')
     fmppTask "com.googlecode.fmpp-maven-plugin:fmpp-maven-plugin:1.0"
     fmppTask "org.freemarker:freemarker:2.3.31"
 }

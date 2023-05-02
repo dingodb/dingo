@@ -17,6 +17,10 @@
 package io.dingodb.common.util;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -25,8 +29,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,6 +64,24 @@ public class ByteArrayUtils {
                 return compare(bytes, other.bytes);
             } else {
                 return compareWithoutLen(bytes, other.bytes);
+            }
+        }
+
+        public static class JacksonKeySerializer extends JsonSerializer<ComparableByteArray> {
+            @Override
+            public void serialize(ComparableByteArray value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
+                byte[] bytes = unsliced(value.bytes, 1, value.bytes.length + 1);
+                bytes[0] = (byte) (value.ignoreLen ? 1 : 0);
+                gen.writeFieldName(new String(bytes));
+            }
+        }
+
+        public static class JacksonKeyDeserializer extends com.fasterxml.jackson.databind.KeyDeserializer {
+            @Override
+            public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+                byte[] bytes = key.getBytes();
+                return new ComparableByteArray(slice(bytes, 1, bytes.length - 1), bytes[0] != 0);
             }
         }
     }

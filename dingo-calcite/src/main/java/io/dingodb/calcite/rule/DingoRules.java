@@ -41,10 +41,10 @@ public final class DingoRules {
         = DingoPartCountRule.Config.DEFAULT.toRule();
     public static final DingoPartDeleteRule DINGO_PART_DELETE_RULE
         = DingoPartDeleteRule.Config.DEFAULT.toRule();
-    public static final DingoPartRangeRule DINGO_PART_RANGE_RULE
-        = DingoPartRangeRule.Config.DEFAULT.toRule();
-    public static final DingoPartRangeDeleteRule DINGO_PART_RANGE_DELETE_RULE
-        = DingoPartRangeDeleteRule.Config.DEFAULT.toRule();
+    public static final DingoRangeScanRule DINGO_PART_RANGE_RULE
+        = DingoRangeScanRule.Config.DEFAULT.toRule();
+    public static final DingoRangeDeleteRule DINGO_PART_RANGE_DELETE_RULE
+        = DingoRangeDeleteRule.Config.DEFAULT.toRule();
     public static final DingoProjectRule DINGO_PROJECT_RULE
         = DingoProjectRule.DEFAULT.toRule(DingoProjectRule.class);
     public static final DingoRootRule DINGO_ROOT_RULE
