@@ -6,6 +6,6 @@ exchange:
 server:
     coordinators: COORDINATORS
     user: user
-    keyring: keyring
+    keyring: TO_BE_CONTINUED
     resourceTag: 1
     mysqlPort: 3307
