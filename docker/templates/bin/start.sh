@@ -39,7 +39,7 @@ sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-dev.yaml
 
 if [[ $ROLE == "executor" ]]
 then
-    ./bin/start-executor.sh  &
+    ./bin/start-executor.sh  
 elif [[ $ROLE == "web" ]]
 then
     java ${JAVA_OPTS} \
