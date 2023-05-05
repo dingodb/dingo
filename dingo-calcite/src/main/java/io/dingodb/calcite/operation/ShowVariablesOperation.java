@@ -44,7 +44,7 @@ public class ShowVariablesOperation implements QueryOperation {
 
     @Override
     public Iterator getIterator() {
-        Properties variablesMap = null;
+        Properties variablesMap;
         if (isGlobal) {
             variablesMap = ScopeVariables.globalVariables;
         } else {

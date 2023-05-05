@@ -49,7 +49,7 @@ public class DingoRootSchema extends AbstractSchema {
     protected Map<String, Schema> getSubSchemaMap() {
         return ROOT_META_SERVICE.getSubMetaServices().entrySet().stream()
             .collect(Collectors.toMap(
-                Map.Entry::getKey,
+                e -> e.getKey().toUpperCase(),
                 e -> new DingoSchema(context, names, ROOT_META_SERVICE.getSubMetaService(e.getKey())))
             );
     }
