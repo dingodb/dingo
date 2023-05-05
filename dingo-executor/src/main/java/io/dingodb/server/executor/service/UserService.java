@@ -215,7 +215,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
-        Object[] keys = new Object[] {host, user};
+        Object[] keys = new Object[userTd.getColumnsCount()];
+        keys[0] = host;
+        keys[1] = user;
         Object[] userPrivilege = get(userStore, userCodec, keys);
         if (userPrivilege == null) {
             keys[0] = "%";
@@ -360,8 +362,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    private static Object[] getDbPrivilege(String user, String host, String db) {
-        Object[] dbValues = new Object[22];
+    private Object[] getDbPrivilege(String user, String host, String db) {
+        Object[] dbValues = new Object[dbPrivTd.getColumnsCount()];
         dbValues[0] = host;
         dbValues[1] = user;
         dbValues[2] = db;
@@ -376,8 +378,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         return scan(tablePrivStore, tablePrivCodec, keys, keys);
     }
 
-    private static Object[] getTablePrivilege(String user, String host, String db, String tableName) {
-        Object[] tpValues = new Object[8];
+    private Object[] getTablePrivilege(String user, String host, String db, String tableName) {
+        Object[] tpValues = new Object[tablePrivTd.getColumnsCount()];
         tpValues[0] = host;
         tpValues[1] = user;
         tpValues[2] = db;
@@ -518,8 +520,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private static List<Object[]> scan(StoreInstance store, KeyValueCodec codec, Object[] startKey, Object[] endKey) {
         try {
+            byte[] prefix = codec.encodeKeyPrefix(startKey, 2);
             Iterator<KeyValue> iterator = store.scan(
-                new StoreInstance.Range(codec.encodeKey(startKey), codec.encodeKey(endKey), true, true)
+                new StoreInstance.Range(prefix, prefix, true, true)
             );
             if (iterator == null) {
                 return null;
@@ -552,25 +555,41 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private static void deletePrefix(StoreInstance store, KeyValueCodec codec, Object[] key) {
         try {
-            byte[] prefix = codec.encodeKey(key);
+            byte[] prefix = codec.encodeKeyPrefix(key, 2);
             store.delete(new StoreInstance.Range(prefix, prefix, true, true));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static Object[] getUserKeys(PrivilegeDefinition user) {
-        return new Object[] {user.getHost(), user.getUser()};
+    private Object[] getUserKeys(PrivilegeDefinition user) {
+        Object[] values = new Object[userTd.getColumnsCount()];
+        values[0] = user.getHost();
+        values[1] = user.getUser();
+        return values;
     }
 
-    private static Object[] getDbPrivilegeKeys(PrivilegeDefinition user, String db) {
-        return new Object[] {user.getHost(), user.getUser(), isNotBlank(db) ? db : null};
+    private Object[] getDbPrivilegeKeys(PrivilegeDefinition user, String db) {
+        Object[] values = new Object[dbPrivTd.getColumnsCount()];
+        values[0] = user.getHost();
+        values[1] = user.getUser();
+        if (isNotBlank(db)) {
+            values[2] = db;
+        }
+        return values;
     }
 
-    private static Object[] getTablePrivilegeKeys(PrivilegeDefinition user, String db, String table) {
-        return new Object[] {
-            user.getHost(), user.getUser(), isNotBlank(db) ? db : null, isNotBlank(table) ? table : null
-        };
+    private Object[] getTablePrivilegeKeys(PrivilegeDefinition user, String db, String table) {
+        Object[] values = new Object[tablePrivTd.getColumnsCount()];
+        values[0] = user.getHost();
+        values[1] = user.getUser();
+        if (isNotBlank(db)) {
+            values[2] = db;
+        }
+        if (isNotBlank(table)) {
+            values[3] = table;
+        }
+        return values;
     }
 
 }

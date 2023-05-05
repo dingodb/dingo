@@ -42,7 +42,8 @@ public class ShowTableOperation implements QueryOperation{
     public Iterator getIterator() {
         try {
             List<Object[]> tables = new ArrayList<>();
-            ResultSet rs = connection.getMetaData().getTables(null, schemaName, null, null);
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName.toUpperCase(),
+                null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
