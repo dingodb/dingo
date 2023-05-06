@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -46,7 +47,9 @@ import static java.util.Objects.requireNonNull;
 
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     private final RelOptTableImpl relOptTable;
+    @Getter
     private final String tableName;
+    @Getter
     private final String schemaName;
     private final String user;
     private final String host;

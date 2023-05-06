@@ -56,6 +56,8 @@ public class LocalMetaService implements MetaService {
 
     private static NavigableMap<ComparableByteArray, RangeDistribution> defaultDistributions;
 
+    private static long autoIncrementId = 1;
+
     private final CommonId id;
     private final String name;
 
@@ -201,5 +203,10 @@ public class LocalMetaService implements MetaService {
     @Override
     public TableStatistic getTableStatistic(@NonNull String tableName) {
         return () -> 30000d;
+    }
+
+    @Override
+    public Long getAutoIncrement(CommonId tableId) {
+        return autoIncrementId++;
     }
 }

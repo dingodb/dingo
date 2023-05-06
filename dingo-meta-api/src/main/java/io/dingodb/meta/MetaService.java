@@ -182,4 +182,6 @@ public interface MetaService {
     }
 
     TableStatistic getTableStatistic(@NonNull String tableName);
+
+    Long getAutoIncrement(CommonId tableId);
 }

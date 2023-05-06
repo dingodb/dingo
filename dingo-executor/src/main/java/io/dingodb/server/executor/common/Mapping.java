@@ -70,7 +70,7 @@ public final class Mapping {
             mapping(table.getPartDefinition()),
             table.getEngine(),
             null,
-            1);
+            table.autoIncrement());
     }
 
     public static ColumnDefinition mapping(Column column) {
@@ -83,7 +83,7 @@ public final class Mapping {
             column.isNullable(),
             column.getPrimary(),
             column.getDefaultValue(),
-            false);
+            column.isAutoIncrement());
     }
 
     public static PartitionDefinition mapping(Partition partition) {

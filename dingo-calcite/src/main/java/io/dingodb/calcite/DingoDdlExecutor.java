@@ -66,7 +66,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
@@ -171,6 +170,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .withQuoteAllIdentifiers(false)
                 ).getSql();
             }
+        }
+
+        // Obtaining id from method
+        if (scd.isAutoIncrement()) {
+            defaultValue = "";
         }
 
         String name = scd.name.getSimple().toUpperCase();
